@@ -138,6 +138,14 @@ const OUTCOME_ICONS: Record<string, string> = { NO_ACCESS_1_WAITING_72H: "🔒",
 
 // The version this app was built as (set by the Cloudflare build; empty in development).
 const BUILT_COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
+const BUILT_NUMBER = process.env.NEXT_PUBLIC_APP_NUMBER || "";
+const BUILT_AT = process.env.NEXT_PUBLIC_APP_BUILT_AT || "";
+// "Updated Oct 16, 4:10 PM · #312": when this version was made, in New York time.
+const versionLabel = () => {
+  const when = BUILT_AT ? new Date(BUILT_AT).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+  return [when ? `Updated ${when}` : "", BUILT_NUMBER ? `#${BUILT_NUMBER}` : BUILT_COMMIT ? `v${BUILT_COMMIT}` : ""].filter(Boolean).join(" · ");
+};
+type WhatsNew = { date: string; title: string; items: string[] }[];
 
 function itbFileName(job: JobRecord | null | undefined) {
   const raw = String((job as Record<string, unknown> | null)?.ITBFile || (job as Record<string, unknown> | null)?.itbFile || "").trim();
@@ -1004,6 +1012,40 @@ export default function FieldCommandClient() {
   const [chromeOpen, setChromeOpen] = useState(false);
   // Which version is running (from /version.json, written by every deploy).
   const [appVersion, setAppVersion] = useState(BUILT_COMMIT);
+  // What's new (public/data/whats-new.json, written with every change) and "App updated" once per new version.
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  const [whatsNew, setWhatsNew] = useState<WhatsNew | null | undefined>(undefined);
+  const [justUpdated, setJustUpdated] = useState(false);
+  // Ask for a change from inside the app: saved on the status server (key CHANGE-REQUEST-<time>) and on this
+  // phone; the next upgrade session reads them all (scripts/list-change-requests.mjs).
+  const [changeText, setChangeText] = useState("");
+  const [changeStatus, setChangeStatus] = useState("");
+  const [myRequests, setMyRequests] = useState<{ at: string; text: string }[]>([]);
+  useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
+  const askForChange = async () => {
+    const text = changeText.trim();
+    if (!text) return;
+    const at = new Date().toISOString();
+    const list = [{ at, text }, ...myRequests].slice(0, 50);
+    setMyRequests(list);
+    try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
+    setChangeText("");
+    try {
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      setChangeStatus(r.ok ? "✓ Saved. It will be in the next upgrade." : "Saved on this phone; it will be sent when the server answers.");
+    } catch { setChangeStatus("Saved on this phone (offline)."); }
+  };
+  const loadWhatsNew = async () => {
+    if (whatsNew) return whatsNew;
+    try { const r = await fetch("/data/whats-new.json", { cache: "no-cache" }); const d = r.ok ? await r.json() : null; setWhatsNew(Array.isArray(d?.versions) ? d.versions : null); return d?.versions; } catch { setWhatsNew(null); return null; }
+  };
+  useEffect(() => {
+    const id = BUILT_COMMIT || "";
+    if (!id) return;
+    let seen = "";
+    try { seen = localStorage.getItem("hpd-version-seen") || ""; localStorage.setItem("hpd-version-seen", id); } catch { return; }
+    if (seen && seen !== id) { setJustUpdated(true); void loadWhatsNew(); window.setTimeout(() => setJustUpdated(false), 12000); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // A newer version is live but a job card is open: offer it instead of waiting.
   const [updateReady, setUpdateReady] = useState(false);
   const appVersionRef = useRef("");
@@ -3530,7 +3572,38 @@ export default function FieldCommandClient() {
       </div>
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
-      {appVersion && !selectedJob ? <small className="fc-version-tag" data-hpd-smoke="fc-version-tag">v{appVersion}</small> : null}
+      {appVersion && !selectedJob ? <button type="button" className="fc-version-tag" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new</button> : null}
+      {justUpdated && !selectedJob && !whatsNewOpen ? (
+        <div className="fc-updated-banner" role="status" data-hpd-smoke="fc-updated-banner">
+          <span>✨ App updated{whatsNew?.[0]?.items?.[0] ? `: ${whatsNew[0].items[0]}` : ""}</span>
+          <button type="button" onClick={() => { setWhatsNewOpen(true); setJustUpdated(false); }}>What&apos;s new</button>
+          <button type="button" aria-label="Dismiss" onClick={() => setJustUpdated(false)}>✕</button>
+        </div>
+      ) : null}
+      {whatsNewOpen ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-whatsnew-sheet" role="dialog" aria-label="What's new" data-hpd-smoke="fc-whatsnew">
+          <header>
+            <button type="button" aria-label="Close" onClick={() => setWhatsNewOpen(false)}>Close</button>
+            <strong>✨ What&apos;s new</strong>
+          </header>
+          <div className="fc-summary-body">
+            <p className="fc-follow-note" data-hpd-smoke="fc-whatsnew-version">This version: {versionLabel() || `v${appVersion}`}{BUILT_COMMIT ? ` (${BUILT_COMMIT})` : ""}. Every version is kept.</p>
+            <section className="fc-ask-change" data-hpd-smoke="fc-ask-change">
+              <h4>💡 Ask for a change</h4>
+              <textarea rows={3} data-hpd-smoke="fc-ask-change-text" placeholder="What should be better? e.g. make the notice text bigger, add 15 days to the filter…" value={changeText} onChange={(e) => setChangeText(e.target.value)} />
+              <button type="button" data-hpd-smoke="fc-ask-change-save" disabled={!changeText.trim()} onClick={() => void askForChange()}>Save my request</button>
+              {changeStatus ? <p className="fc-follow-note" data-hpd-smoke="fc-ask-change-status">{changeStatus}</p> : null}
+              {myRequests.length ? <ul>{myRequests.slice(0, 5).map((r) => <li key={r.at}><small>{new Date(r.at).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</small> {r.text}</li>)}</ul> : null}
+            </section>
+            {whatsNew === null ? <p className="fc-follow-note">Couldn&apos;t load the list of changes.</p> : !whatsNew ? <p className="fc-follow-note">Loading…</p> : whatsNew.map((v) => (
+              <section key={v.date + v.title} className="fc-whatsnew-day" data-hpd-smoke="fc-whatsnew-day">
+                <h4>{v.date} · {v.title}</h4>
+                <ul>{v.items.map((i) => <li key={i}>{i}</li>)}</ul>
+              </section>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <BidsMode
         open={bidsOpen}
         map={mapRef.current}

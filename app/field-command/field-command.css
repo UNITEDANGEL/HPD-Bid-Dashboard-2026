@@ -2712,3 +2712,19 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-follow-section.is-cleared li { color: #bbf7d0; font: 600 14px system-ui; }
 .fc-notices-sheet .fc-to-print-actions > button { width: auto !important; display: inline-flex !important; align-items: center; flex: 0 0 auto; }
 .fc-notices-sheet .fc-print-steps li { flex: 0 0 auto; }
+
+/* Version at the bottom (tap: what's new) and the "App updated" banner after a new version loads. */
+button.fc-version-tag { border: 0; cursor: pointer; font: 700 11.5px system-ui; }
+.fc-updated-banner { position: absolute; z-index: 1700; left: 50%; bottom: calc(max(24px, env(safe-area-inset-bottom)) + 66px); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 110px); padding: 8px 10px 8px 14px; border-radius: 22px; background: #1e1b4b; color: #f5f3ff; border: 1px solid #a78bfa; box-shadow: 0 8px 22px rgba(0,0,0,.35); font: 700 13.5px system-ui; }
+.fc-updated-banner span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-updated-banner button { flex: 0 0 auto; min-height: 34px; padding: 0 10px; border-radius: 17px; border: 1px solid #a78bfa; background: #4c1d95; color: #fff; font: 800 12.5px system-ui; }
+.fc-whatsnew-day { margin-bottom: 12px; }
+.fc-whatsnew-day h4 { margin: 0 0 4px; }
+.fc-whatsnew-day ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font: 500 14.5px/1.45 system-ui; color: #e2e8f0; }
+
+.fc-ask-change { display: grid; gap: 6px; margin: 0 0 14px; padding: 10px; border-radius: 12px; background: #111827; border: 1px solid #a78bfa; }
+.fc-ask-change h4 { margin: 0; }
+.fc-ask-change textarea { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 8px; border: 1px solid #334155; background: #020617; color: #f8fafc; font: 500 15px/1.4 system-ui; }
+.fc-ask-change button { justify-self: start; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #7c3aed; color: #fff; font: 800 14px system-ui; }
+.fc-ask-change ul { margin: 0; padding-left: 18px; color: #cbd5e1; font: 500 13.5px/1.4 system-ui; }
+button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px; color: #cbd5e1; background: rgba(15, 23, 42, 0.85); }

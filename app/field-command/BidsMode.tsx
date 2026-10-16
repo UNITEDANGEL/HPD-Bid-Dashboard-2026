@@ -19,7 +19,8 @@ import ItbPages, { pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
-import { myPrice, readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
+import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
+import { calcContext, calcPrice } from "../../lib/bid-calc";
 import { isNoBid, mergeServerNoBids, NO_BID_REASONS, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
@@ -411,8 +412,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   }, [help, draftNumber, highPrice, selFloor]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const summary = useMemo(() => jobSummary(selected?.description || ""), [selected]);
-  const myCalc = useMemo(() => myPrice(summary, rates), [summary, rates]);
-  useEffect(() => { setRateEdit({}); setNoBidAsk(false); }, [selected?.omo]);
+  // Bid calculator: your rates + extras (floors, locations, borough), lines changed for this job, +/- %.
+  const [calcOverride, setCalcOverride] = useState<Record<string, number>>({});
+  const [calcAdjust, setCalcAdjust] = useState(0);
+  const [overrideEdit, setOverrideEdit] = useState<{ key: string; value: string } | null>(null);
+  const calc = useMemo(() => calcPrice(summary, rates, calcContext(summary, scope.tasks, selected?.borough || ""), calcOverride, calcAdjust), [summary, rates, scope.tasks, selected?.borough, calcOverride, calcAdjust]);
+  const myCalc = { total: calc.total, complete: calc.complete, missing: calc.missing };
+  useEffect(() => { setRateEdit({}); setNoBidAsk(false); setCalcOverride({}); setCalcAdjust(0); setOverrideEdit(null); }, [selected?.omo]);
   const markNoBid = async (reason: string | null) => {
     if (!selected) return;
     const nb: NoBid = { omo: selected.omo, bidDue: selected.bidDue, reason: reason || "", at: new Date().toISOString(), ...(reason === null ? { undone: true } : {}) };
@@ -813,33 +819,54 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 </div>
               ) : null}
               <div className="fc-my-price" data-hpd-smoke="fc-my-price">
-                <b>🧮 My price (your rates)</b>
-                {myCalc.rows.map((r) => {
-                  const k = r.line.key;
+                <b>🧮 Price calculator (your rates)</b>
+                {calc.lines.map((l) => {
+                  const k = l.key;
                   const editing = rateEdit[k] !== undefined;
+                  const unitText = l.unit;
                   return (
-                    <div key={k} className="fc-my-row" data-hpd-smoke="fc-my-row" data-key={k}>
-                      <span>{lineText(r.line)}</span>
+                    <div key={k} className={`fc-my-row${l.extra ? " is-extra" : ""}${l.overridden ? " is-changed" : ""}`} data-hpd-smoke="fc-my-row" data-key={k}>
+                      <span>{l.extra ? l.label : lineText(summary.lines.find((x) => x.key === k) || { key: k, label: l.label, qty: l.qty, unit: "job", detail: "" })}</span>
                       {editing ? (
                         <span className="fc-my-edit">
-                          <label>$<input inputMode="decimal" aria-label={`Your rate ${unitWord(r.line.unit)} for ${r.line.label}`} data-hpd-smoke="fc-rate-input" value={rateEdit[k]} onChange={(e) => setRateEdit((x) => ({ ...x, [k]: e.target.value }))} /></label>
-                          <small>{unitWord(r.line.unit)}</small>
+                          <label>$<input inputMode="decimal" aria-label={`Your rate ${unitText} for ${l.label}`} data-hpd-smoke="fc-rate-input" value={rateEdit[k]} onChange={(e) => setRateEdit((x) => ({ ...x, [k]: e.target.value }))} /></label>
+                          <small>{unitText}</small>
                           <button type="button" data-hpd-smoke="fc-rate-save" onClick={() => { setRates(saveRate(k, Number(rateEdit[k].replace(/[^0-9.]/g, "")) || null)); setRateEdit((x) => { const n = { ...x }; delete n[k]; return n; }); }}>Save</button>
                         </span>
+                      ) : overrideEdit?.key === k ? (
+                        <span className="fc-my-edit">
+                          <label>$<input inputMode="decimal" aria-label={`This job only: ${l.label}`} data-hpd-smoke="fc-calc-override-input" value={overrideEdit.value} onChange={(e) => setOverrideEdit({ key: k, value: e.target.value })} /></label>
+                          <small>this job only</small>
+                          <button type="button" data-hpd-smoke="fc-calc-override-save" onClick={() => { const v = Number(overrideEdit.value.replace(/[^0-9.]/g, "")); setCalcOverride((x) => { const n = { ...x }; if (v > 0) n[k] = Math.round(v); else delete n[k]; return n; }); setOverrideEdit(null); }}>OK</button>
+                        </span>
                       ) : (
-                        <button type="button" className="fc-my-rate" data-hpd-smoke="fc-rate-edit" onClick={() => setRateEdit((x) => ({ ...x, [k]: r.rate ? String(r.rate) : "" }))}>
-                          {r.rate ? <>{money2(r.rate).replace(".00", "")} {unitWord(r.line.unit)}{r.amount !== null ? <b> = {money(r.amount)}</b> : <em> · {r.why}</em>}</> : <>Set my rate {unitWord(r.line.unit)}</>}
-                        </button>
+                        <span className="fc-calc-cell">
+                          <button type="button" className="fc-my-rate" data-hpd-smoke="fc-rate-edit" onClick={() => setRateEdit((x) => ({ ...x, [k]: l.rate ? String(l.rate) : "" }))}>
+                            {l.rate ? <>{money2(l.rate).replace(".00", "")} {unitText}{l.amount !== null && !l.overridden ? <b> = {money(l.amount)}</b> : !l.overridden ? <em> · {l.why}</em> : null}</> : <>Set my rate {unitText}</>}
+                          </button>
+                          {l.amount !== null || l.rate ? <button type="button" className="fc-calc-amount" data-hpd-smoke="fc-calc-override" aria-label={`Change ${l.label} for this job`} onClick={() => setOverrideEdit({ key: k, value: l.amount ? String(l.amount) : "" })}>{l.overridden ? <><b>{money(l.amount || 0)}</b> ✎ this job</> : "✎"}</button> : null}
+                        </span>
                       )}
                     </div>
                   );
                 })}
-                {myCalc.total > 0 ? (
-                  <div className="fc-my-total" data-hpd-smoke="fc-my-total">
-                    <span>{myCalc.complete ? "My price" : `My price so far (${myCalc.missing} line${myCalc.missing === 1 ? "" : "s"} without a rate)`}: <b>{money(myCalc.total)}</b>{help && help.prices.length >= 5 ? <small> · wins about {Math.round(winChance(help, myCalc.total) * 100)}% of jobs like this</small> : null}</span>
-                    <button type="button" data-hpd-smoke="fc-my-use" onClick={() => pickPrice(String(myCalc.total))}>Use {money(myCalc.total)}</button>
-                  </div>
-                ) : <small className="fc-my-hint">Tap a line to set what you charge (per sq ft, per door, each part). Saved on this phone for every job like it.</small>}
+                {calc.subtotal > 0 ? (
+                  <>
+                    <div className="fc-calc-adjust" data-hpd-smoke="fc-calc-adjust">
+                      <span>Does it sound right? Move the total:</span>
+                      {[-10, -5, 5, 10].map((p) => <button key={p} type="button" className={calcAdjust === p ? "is-on" : ""} data-hpd-smoke={`fc-calc-adjust-${p}`} onClick={() => setCalcAdjust((a) => (a === p ? 0 : p))}>{p > 0 ? `+${p}` : p}%</button>)}
+                    </div>
+                    <div className="fc-my-total" data-hpd-smoke="fc-my-total">
+                      <span>{myCalc.complete ? "My price" : `My price so far (${myCalc.missing} line${myCalc.missing === 1 ? "" : "s"} without a rate)`}: <b>{money(myCalc.total)}</b>{calcAdjust ? <small> ({money(calc.subtotal)} {calcAdjust > 0 ? "+" : ""}{calcAdjust}%)</small> : null}{help && help.prices.length >= 5 ? <small> · wins about {Math.round(winChance(help, myCalc.total) * 100)}% of jobs like this</small> : null}</span>
+                      <button type="button" data-hpd-smoke="fc-my-use" onClick={() => pickPrice(String(myCalc.total))}>Use {money(myCalc.total)}</button>
+                    </div>
+                    {help && help.prices.length >= 5 ? (() => {
+                      const best = bestWithFloor(help, selFloor);
+                      const diff = Math.round((myCalc.total / best.price - 1) * 100);
+                      return <p className="fc-calc-verdict" data-hpd-smoke="fc-calc-verdict">{Math.abs(diff) <= 5 ? "✓ About the market's best price" : diff > 0 ? `↑ ${diff}% above the market's best price` : `↓ ${-diff}% under the market's best price`} ({money(best.price)}, wins ~{Math.round(best.chance * 100)}%).{diff > 15 ? " Raise only if this job is harder than it looks (floors, access, parts)." : diff < -15 ? " You may be leaving money on the table." : ""}</p>;
+                    })() : null}
+                  </>
+                ) : <small className="fc-my-hint">Tap a line to set what you charge (per sq ft, per door, each part, per floor up, per extra location). Saved on this phone for every job like it; ✎ changes a line for this job only.</small>}
               </div>
               {help ? (
                 <div className={`fc-bid-help is-${help.confidence}`} data-hpd-smoke="fc-bid-help">
@@ -1119,7 +1146,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                     <button type="button" onClick={() => openBid(bid)}>
                       <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
-                      {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = myPrice(sm, rates); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}
+                      {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = calcPrice(sm, rates, calcContext(sm, readScope(bid.description).tasks, bid.borough || "")); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>

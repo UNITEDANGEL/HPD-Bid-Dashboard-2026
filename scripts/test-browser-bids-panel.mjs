@@ -28,13 +28,15 @@ try {
     await page.waitForTimeout(1500);
     assert.equal(await list.getAttribute("data-size"), "peek", `${where}: opens on the map`);
     assert.equal(await list.locator("ol").isVisible(), false);
-    // Pins in the visible map: between the header and the bar.
-    const inView = await page.evaluate(() => {
+    // Pins in the visible map: between the header and the bar (wait for the map's zoom animation to settle).
+    const countInView = () => page.evaluate(() => {
       const top = document.querySelector('[data-hpd-smoke="fc-bids-banner"]').getBoundingClientRect().bottom;
       const bottom = document.querySelector('[data-hpd-smoke="fc-bids-list"]').getBoundingClientRect().top;
       const pins = [...document.querySelectorAll(".fc-bid-pin")].map((p) => p.getBoundingClientRect());
       return { n: pins.length, ok: pins.filter((r) => r.top >= top - 4 && r.bottom <= bottom + 4 && r.left >= 0 && r.right <= innerWidth).length };
     });
+    let inView = await countInView();
+    for (let i = 0; i < 10 && !(inView.n > 0 && inView.ok / inView.n >= 0.8); i++) { await page.waitForTimeout(400); inView = await countInView(); }
     assert.ok(inView.n > 0 && inView.ok / inView.n >= 0.8, `${where}: pins in the visible map (${inView.ok}/${inView.n})`);
     // Pull up with a finger: short -> half, long -> full.
     const drag = async (dy) => {

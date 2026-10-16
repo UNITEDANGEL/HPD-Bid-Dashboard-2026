@@ -74,6 +74,13 @@ function appCommit() {
   return commit.slice(0, 7);
 }
 
+// A plain version number for the owner: the deploy's run number on GitHub, else how many commits there are.
+const BUILT_AT = new Date().toISOString();
+function appNumber() {
+  if (process.env.GITHUB_RUN_NUMBER) return String(process.env.GITHUB_RUN_NUMBER);
+  try { return require("child_process").execSync("git rev-list --count HEAD", { cwd: root }).toString().trim(); } catch { return ""; }
+}
+
 function currentCommit() {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
 
@@ -169,6 +176,8 @@ try {
       CLOUDFLARE_STATIC_EXPORT: "1",
       // Built into the app, so it knows which version it is running (same value as /version.json).
       NEXT_PUBLIC_APP_COMMIT: appCommit(),
+      NEXT_PUBLIC_APP_NUMBER: appNumber(),
+      NEXT_PUBLIC_APP_BUILT_AT: BUILT_AT,
     },
   });
 
@@ -231,6 +240,6 @@ fs.writeFileSync(
 const { execSync } = require("child_process");
 let commit = process.env.GITHUB_SHA || "";
 try { commit = commit || execSync("git rev-parse HEAD", { cwd: root }).toString().trim(); } catch {}
-fs.writeFileSync(path.join(outDir, "version.json"), `${JSON.stringify({ commit: commit.slice(0, 7), builtAt: new Date().toISOString() }, null, 2)}\n`);
+fs.writeFileSync(path.join(outDir, "version.json"), `${JSON.stringify({ commit: commit.slice(0, 7), number: appNumber(), builtAt: BUILT_AT }, null, 2)}\n`);
 
 console.log("Cloudflare Pages static export ready in out/");

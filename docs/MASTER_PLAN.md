@@ -251,11 +251,17 @@ Done 16 Oct (same day):
 ## Next level (owner, 16 Oct 2026, night): the plan + recommendations
 Owner: "keep upgrading this app until it looks perfect." Everything below is wanted; order is my recommendation.
 
-A. **Version on screen, every version saved.** At the bottom: "Version 2026.10.16 #42 · updated 4:10 PM · what's
+A. ✅ (done 16 Oct: "Updated Oct 16, 3:06 PM · #1901 · what's new" at the bottom; tap -> What's new from
+   public/data/whats-new.json (add an entry with every change); "App updated" banner once per new version;
+   💡 Ask for a change saves the owner's request (CHANGE-REQUEST-* on the status server, scripts/list-change-requests.mjs).)
+   **Version on screen, every version saved.** At the bottom: "Version 2026.10.16 #42 · updated 4:10 PM · what's
    new" (tap -> the list of changes in plain words). Every deploy is kept (git + Cloudflare keep each build;
    a "What's new" file is written from each change). Recommendation: do this first, it's small and lets the
    owner know where we stand after every update.
-B. **Bid calculator ("calculation mode") on every invitation.** The whole job read neatly on screen first (what,
+B. ✅ (done 16 Oct, first version: lib/bid-calc.ts. Lines at your rates + extras: floors up the stairs above the
+   2nd, extra locations, borough travel; ✎ changes a line for this job only; -10/-5/+5/+10% on the total; verdict
+   vs the market's best price. Next: materials and labor lines from the costs database (C), stories from building facts.)
+   B. **Bid calculator ("calculation mode") on every invitation.** The whole job read neatly on screen first (what,
    where, how many locations, which floor / how many stories up, sq ft, doors, parts: "trace & locate leak + repair
    · 2 locations · 3rd floor walk-up"), then a price built line by line from my rates (per sq ft / door / part /
    location) + materials + labor + extras (stories without elevator, far borough, 2nd location), shown next to
@@ -273,6 +279,9 @@ E. **Notices flow finished** (see the rules below): rejections before/after with
 F. **Map screen neat at iPhone size**: one compact top bar (search + one menu for days 15 / 30 / 45 / 60 / custom
    and boroughs); every button glows / reacts when pressed; large clear text everywhere (jobs, invitations,
    messages, previews).
+H. **Change the app from the app** (owner, 16 Oct): today "Ask for a change" collects requests for the next
+   session. Fully automatic (the app files a request, an AI on GitHub makes the change, the owner approves the
+   preview) needs a Claude GitHub Action with its own API key and costs: owner's decision before setting it up.
 G. **Email from the app to anybody**, with "Send to me first" to check (done for the HPD note), then replies to
    any HPD email and to tenants / landlords from the job card.
 

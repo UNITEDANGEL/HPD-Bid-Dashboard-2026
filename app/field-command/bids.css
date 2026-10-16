@@ -568,3 +568,13 @@
 .fc-bid-sheet .jc-hero-photo.is-empty { min-height: 0; padding: 0; border: 0; background: transparent; }
 .fc-bid-sheet .jc-hero-photo.is-empty .jc-hero-empty { display: none; }
 .fc-bid-sheet .jc-hero-photo.is-empty .jc-hero-actions { position: static; display: flex; gap: 6px; padding: 0; transform: none; }
+
+/* Bid calculator: extras, lines changed for this job, the +/- % row and the verdict. */
+.fc-my-row.is-extra > span:first-child { color: #c7d2fe; font-style: italic; }
+.fc-my-row.is-changed { background: #312e8155; border-radius: 8px; }
+.fc-calc-cell { display: inline-flex; align-items: center; gap: 6px; }
+.fc-calc-amount { min-height: 40px; min-width: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid #a5b4fc; background: #1e1b4b; color: #fff; font: 800 13.5px system-ui; }
+.fc-calc-adjust { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 6px; border-top: 1px solid #a5b4fc44; font: 700 13px system-ui; color: #c7d2fe; }
+.fc-calc-adjust button { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid #a5b4fc; background: #1e1b4b; color: #fff; font: 800 13px system-ui; }
+.fc-calc-adjust button.is-on { background: #a5b4fc; color: #1e1b4b; }
+.fc-calc-verdict { margin: 4px 0 0; font: 700 14px/1.4 system-ui; color: #fde68a; }
