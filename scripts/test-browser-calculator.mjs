@@ -70,7 +70,7 @@ try {
   const tag = page.locator('[data-hpd-smoke="fc-version-tag"]');
   await tag.waitFor({ timeout: 20000 });
   assert.match(await tag.innerText(), /what's new/);
-  assert.match(await tag.innerText(), /1 new update/, "badge for a new progress report");
+  await page.waitForFunction(() => /1 new update/.test(document.querySelector('[data-hpd-smoke="fc-version-tag"]')?.textContent || ""), null, { timeout: 15000 }); // the replies load after the map
   await tag.click();
   const wn = page.locator('[data-hpd-smoke="fc-whatsnew"]');
   await wn.waitFor({ timeout: 5000 });
