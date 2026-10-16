@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-16T16:37:11.274645+00:00",
+  "generatedAt": "2026-10-16T16:46:51.584847+00:00",
   "days": 14,
   "bids": [
     {
@@ -1171,136 +1171,6 @@
       },
       "lat": 40.700819,
       "lng": -73.918878
-    },
-    {
-      "omo": "ER07750",
-      "bidDue": "2026-10-16",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-18",
-      "workCompletion": "2026-11-01",
-      "address": "1939 PARK PLACE",
-      "borough": "BK",
-      "itbFile": "ER07750_101526031516.pdf",
-      "description": "AT BATHROOM AT APT 3I. REPLACE FLOOR. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT THE BATHROOM APT 3I. AT BATHROOM FLOOR, PROPERLY REMOVE THE DEFECTIVE CERAMIC FLOOR TILES AT APPROX. 6 SQ. FT. SUPPLY AND INSTALL WITH NEW CERAMIC TILES SIMILAR TO EXISTING TILE. GROUT AND SEAL AFFECTED AREAS. RESTORE AND LEAVE AFFECTED AREAS IN PROPER WORKING ORDER. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
-      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008. MOORE AYEISHA (phone: sign in to see)",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1792091717000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "lat": 40.671618,
-      "lng": -73.912866
     },
     {
       "omo": "ER07978",
@@ -2602,6 +2472,136 @@
       },
       "lat": 40.790428,
       "lng": -73.948498
+    },
+    {
+      "omo": "ER07750",
+      "bidDue": "2026-10-19",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-20",
+      "workCompletion": "2026-11-03",
+      "address": "1939 PARK PLACE",
+      "borough": "BK",
+      "itbFile": "ER07750_101626123901.pdf",
+      "description": "AT BATHROOM AT APT 3I. REPLACE FLOOR. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT THE BATHROOM APT 3I. AT BATHROOM FLOOR, PROPERLY REMOVE THE DEFECTIVE CERAMIC FLOOR TILES AT APPROX. 6 SQ. FT. SUPPLY AND INSTALL WITH NEW CERAMIC TILES SIMILAR TO EXISTING TILE. GROUT AND SEAL AFFECTED AREAS. RESTORE AND LEAVE AFFECTED AREAS IN PROPER WORKING ORDER. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008. MOORE AYEISHA (phone: sign in to see)",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792168744000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.671618,
+      "lng": -73.912866
     },
     {
       "omo": "ER08010",
