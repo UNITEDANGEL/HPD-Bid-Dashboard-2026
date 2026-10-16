@@ -14,7 +14,8 @@ import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
-import ItbPages from "./ItbPages";
+import ItbPages, { bidPages, pagePictures } from "./ItbPages";
+import { getPages } from "../../lib/page-cache";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
@@ -84,6 +85,10 @@ function badge(record?: BidRecord) {
 
 export default function BidsMode({ open, map, history, onClose }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
+  // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
+  const [privOk, setPrivOk] = useState(false);
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  const [pagesFor, setPagesFor] = useState<UpcomingBid | null>(null);
   const [bidsReadAt, setBidsReadAt] = useState("");
   // Invitation PDFs the reader couldn't read (no OMO # or bid due date): shown, never dropped silently.
   const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
@@ -203,6 +208,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (bids) return;
     Promise.all([fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))), loadPrivate()])
       // HPD's notes with the tenant's contact come from the signed-in private route.
+      .then(([raw, priv]) => { setPrivOk(!!priv); return [raw, priv] as const; })
       .then(([raw, priv]) => ({ ...raw, bids: Array.isArray(raw?.bids) ? withPrivate(raw.bids, priv?.bids) : raw?.bids }))
       .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); })
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
@@ -232,6 +238,36 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
   const dayKeys = useMemo(() => [0, 1, 2].map((n) => NY_DAY.format(new Date(clock + n * 86400000))), [clock]);
   const shownBids = useMemo(() => (bids || []).filter((b) => dayPick === "all" || b.bidDue === dayKeys[Number(dayPick)]), [bids, dayPick, dayKeys]);
+  // HPD's pages load fast: the job-description page of every bid already drawn on this phone shows as a small
+  // picture on its row; the next bids due are drawn ahead (one at a time, after the list shows), so opening
+  // them is instant.
+  useEffect(() => {
+    if (!open || !privOk || !bids?.length) return;
+    let live = true;
+    const made: string[] = [];
+    const descPage = (b: UpcomingBid) => (b.descPages?.length ? b.descPages[0] : 3);
+    const show = (omo: string, blob: Blob) => { if (!live) return; const u = URL.createObjectURL(blob); made.push(u); setThumbs((t) => (t[omo] ? t : { ...t, [omo]: u })); };
+    const withFile = bids.filter((b) => b.itbFile);
+    (async () => {
+      for (const b of withFile) {
+        const kept = await getPages(itbPdfUrl(b.itbFile!), [descPage(b)]);
+        const blob = kept.get(descPage(b));
+        if (blob) show(b.omo, blob);
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+      for (const b of withFile.slice(0, 8)) {
+        if (!live) return;
+        try {
+          const pics = await pagePictures(itbPdfUrl(b.itbFile!), bidPages(b.pages || 3, b.descPages));
+          const d = pics.find((p) => p.page === descPage(b));
+          if (d) show(b.omo, d.blob);
+        } catch {
+          // not signed in any more / PDF missing: the bid card says so when opened
+        }
+      }
+    })();
+    return () => { live = false; made.forEach((u) => URL.revokeObjectURL(u)); setThumbs({}); };
+  }, [open, privOk, bids]);
   // A day with nothing left to bid (e.g. today after the 11 AM bids): show all of them instead of an empty list.
   useEffect(() => {
     if (bids && bids.length && dayPick !== "all" && !shownBids.length) setDayPick("all");
@@ -843,6 +879,19 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           </div>
         </div>
       ) : (
+        <>
+        {pagesFor?.itbFile ? (
+          <div className="fc-bid-pages-sheet" role="dialog" aria-label={`HPD's pages for ${pagesFor.omo}`} data-hpd-smoke="fc-bid-pages-sheet">
+            <header>
+              <button type="button" data-hpd-smoke="fc-bid-pages-close" onClick={() => setPagesFor(null)}>← Bids</button>
+              <strong>{pagesFor.omo} · {pagesFor.address}</strong>
+              <button type="button" className="is-go" data-hpd-smoke="fc-bid-pages-open" onClick={() => { const b = pagesFor; setPagesFor(null); openBid(b); }}>Price it →</button>
+            </header>
+            <div className="fc-bid-pages-body">
+              <ItbPages pdfUrl={itbPdfUrl(pagesFor.itbFile)} pageCount={pagesFor.pages || 3} descPages={pagesFor.descPages} />
+            </div>
+          </div>
+        ) : null}
         <aside className={`fc-bids-list${listCollapsed ? " is-collapsed" : ""}`} style={listRoom && !listCollapsed ? { maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
           <button type="button" className="fc-bids-handle" data-hpd-smoke="fc-bids-collapse" onClick={() => setListCollapsed((v) => !v)}>
             {listCollapsed ? `▲ Show the list · ${todayInfo.total ? `${todayInfo.sent} of ${todayInfo.total} due today sent` : `${list.length} open`}` : "▼ Hide the list (see the map)"}
@@ -931,6 +980,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>
+                    {bid.itbFile ? (
+                      <button type="button" className="fc-bid-pages-btn" data-hpd-smoke="fc-bid-pages-btn" aria-label={`HPD's pages for ${bid.omo}`} onClick={() => setPagesFor(bid)}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {thumbs[bid.omo] ? <img src={thumbs[bid.omo]} alt="" data-hpd-smoke="fc-bid-thumb" /> : <span aria-hidden="true">📄</span>}
+                        <small>Pages</small>
+                      </button>
+                    ) : null}
                   </li>
                 );
               })}</ol>
@@ -971,6 +1027,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             </div>
           )}
         </aside>
+        </>
       )}
     </>
   );

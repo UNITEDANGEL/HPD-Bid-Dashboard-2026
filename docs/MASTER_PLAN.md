@@ -291,7 +291,12 @@ Collected from the owner's requests; every change is checked against these.
   data only, no private bid prices).
 
 ## Next on the plan
-- Invitation pages: load faster (keep the drawn pages on the phone) and show them in the bid list too.
+- ~~Invitation pages: load faster (keep the drawn pages on the phone) and show them in the bid list too.~~
+  **Done 2026-10-16**: drawn pages are kept on the phone for 21 days (lib/page-cache.ts, IndexedDB), so a bid
+  opened before shows its pages at once with no download; the next 8 bids due are drawn ahead after the
+  list shows (about 6 s for 8). Each bid-list row has a **Pages** button with a small picture of HPD's job
+  description; it opens the pages full screen without opening the bid (**← Bids** / **Price it →**).
+  Test: scripts/test-browser-bid-pages.mjs (pages from the phone in under 0.1 s).
 - ~~Notices: per-notice preview of HPD's own email/PDF inside the app (not only the Gmail link).~~ **Done
   2026-10-15**: each rejection in HPD notices has **👁 See HPD's notice**: HPD's email (subject, date,
   sender, full text) and every page of the PDF they sent back as pictures (tap = full screen, zoom), then

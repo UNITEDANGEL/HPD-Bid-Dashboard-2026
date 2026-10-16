@@ -14,7 +14,9 @@ try {
   // Every bid open tomorrow, so the list always has them.
   const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
   const tomorrow = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + 86400000));
-  const bids = fetched.bids.map((b) => ({ ...b, bidDue: tomorrow, bidDueTime: "11:00 AM" }));
+  // The first bid's work is fixed (glass at the entrance door), so the matching violations don't depend on the
+  // day's invitations.
+  const bids = fetched.bids.map((b, i) => ({ ...b, bidDue: tomorrow, bidDueTime: "11:00 AM", ...(i === 0 ? { description: "PUBLIC PARTS REPLACE CRACKED GLASS AT BUILDING ENTRANCE DOOR PUBLIC HALL 1ST FL. TOTAL GLASS 1" } : {}) }));
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids } }));
   let down = true, geoCalls = 0;
   await context.route(/geosearch\.planninglabs\.nyc/, (r) => { geoCalls++; return down ? r.fulfill({ status: 503, body: "busy" }) : r.fulfill({ json: { features: [{ properties: { addendum: { pad: { bbl: "1019660042", bin: "1059533" } } } }] } }); });
@@ -35,9 +37,9 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
   const list = page.locator('[data-hpd-smoke="fc-bids-list"]');
-  await list.locator("ol > li button").first().waitFor({ timeout: 20000 });
+  await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 20000 });
   // Pick a bid whose description names a door or glass so matching violations show.
-  const pick = bids.find((b) => /DOOR|GLASS/i.test(b.description)) || bids[0];
+  const pick = bids[0];
   await page.evaluate(() => { for (let i = 0; i < localStorage.length; i++) if (localStorage.key(i)?.startsWith("hpd-building-")) localStorage.removeItem(localStorage.key(i)); });
   await list.locator("ol > li", { hasText: pick.omo }).first().locator("button").first().click();
   const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');

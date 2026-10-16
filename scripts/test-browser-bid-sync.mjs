@@ -96,7 +96,7 @@ try {
   await page.waitForFunction(() => /Fax confirmed · \$1,987/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 20000 });
   assert.equal(faxChecks[0].omo, "ER77777");
   assert.equal(faxChecks[0].sentAt, newerSentAt, "checked from the time of the revised fax");
-  await row.locator("button").click();
+  await row.locator("button").first().click();
   const status = page.locator('[data-hpd-smoke="fc-bid-status"]');
   await status.waitFor({ timeout: 10000 });
   assert.match(await status.innerText(), /Fax confirmed by HumbleFax[\s\S]*at \$1,987\.00 to HPD fax[\s\S]*2 sends[\s\S]*Successful transmission/);
@@ -115,7 +115,7 @@ try {
 
   // Learning from you: the same kind of job starts from your $1,987, with your reason.
   await page.getByRole("tab", { name: /^Open/ }).click();
-  await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').filter({ hasText: "ER77778" }).locator("button").click();
+  await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').filter({ hasText: "ER77778" }).locator("button").first().click();
   const mineBox = page.locator('[data-hpd-smoke="fc-bid-mine"]');
   await mineBox.waitFor({ timeout: 10000 });
   assert.match(await mineBox.innerText(), /Your price for this work: \$1,987[\s\S]*ER77777[\s\S]*sent to HPD[\s\S]*Secure-Tech lock costs ~\$2,000/);

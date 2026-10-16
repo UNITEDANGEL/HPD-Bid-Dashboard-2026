@@ -101,7 +101,7 @@ try {
   if (await easyChips.count()) {
     const row = list.locator("ol > li").filter({ has: page.locator('[data-hpd-smoke="fc-bid-easy-chip"]') }).first();
     const chipPrice = (await easyChips.first().innerText()).match(/\$[\d,]+/)[0];
-    await row.locator("button").click();
+    await row.locator("button").first().click();
     const easyBox = page.locator('[data-hpd-smoke="fc-bid-easy"]');
     await easyBox.waitFor({ timeout: 10000 });
     const easyText = await easyBox.innerText();
@@ -112,7 +112,7 @@ try {
   }
 
   // 1. Save a price.
-  await list.locator("ol > li button").first().click();
+  await list.locator("ol > li > button:first-child").first().click();
   const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
   await sheet.waitFor();
   const omo = (await sheet.locator("header strong").innerText()).trim();
@@ -143,7 +143,7 @@ try {
   assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isDisabled(), "send waits for the review");
   await sheet.locator("header button").first().click();
   assert.match(await list.locator("ol > li").first().innerText(), /\$1,250 saved/);
-  await list.locator("ol > li button").first().click();
+  await list.locator("ol > li > button:first-child").first().click();
 
   // 2. Fill and review: the price is on page 1, page 2 and the work form.
   await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
@@ -174,7 +174,7 @@ try {
   assert.equal(await page.locator(".fc-bid-pin.is-sent").count(), Number.isFinite(bid.lat) ? 1 : 0, "the pin turns green");
 
   // 4. A failed fax offers Resend.
-  const second = list.locator("ol > li button").nth(1);
+  const second = list.locator("ol > li > button:first-child").nth(1);
   const omo2 = (await second.locator("b").first().innerText()).trim();
   failOmo = omo2;
   await second.click();
@@ -202,7 +202,7 @@ try {
   // 4b. Revise the first bid: $1,250 -> $1,100. The old price is crossed out with initials and the
   // revision date, and the cover tells HPD to disregard the earlier price.
   await sheet.locator("header button").first().click();
-  await list.locator("ol > li button").first().click();
+  await list.locator("ol > li > button:first-child").first().click();
   // Sent and confirmed: the price is locked, the package can't be sent again, the only way is Revise.
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-locked"]').innerText(), /Sent to HPD at \$1,250\.00/);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').isDisabled(), true);
@@ -253,7 +253,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
   await page.getByRole("tab", { name: /^Open/ }).click();
-  const third = list.locator("ol > li button").nth(2);
+  const third = list.locator("ol > li > button:first-child").nth(2);
   waitOmo = (await third.locator("b").first().innerText()).trim();
   await third.click();
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("700");
@@ -317,7 +317,7 @@ try {
   assert.match(await summary.innerText(), /^1 jobs/);
   const item = page.locator('[data-hpd-smoke="fc-history"] .fc-history-list li').first();
   assert.ok((await item.innerText()).includes(`${pick.omo} · $${pick.amount.toLocaleString("en-US")}`) && /other contractor/.test(await item.innerText()));
-  await item.locator("button").click();
+  await item.locator("button").first().click();
   assert.equal((await page.locator('[data-hpd-smoke="fc-history-desc"]').innerText()).trim(), pick.description.trim());
 
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();

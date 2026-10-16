@@ -4,17 +4,18 @@
 // wording, tables and sketches read exactly as HPD wrote them. Tap a page to open it full screen
 // (pinch to zoom); "All pages" shows the whole invitation.
 import { useEffect, useRef, useState } from "react";
+import { getPages, prunePages, putPages } from "../../lib/page-cache";
 
 type Rendered = { page: number; url: string };
 
-async function renderPages(pdfUrl: string, pages: number[]) {
+async function drawPages(pdfUrl: string, pages: number[]): Promise<{ page: number; blob: Blob }[]> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url).toString();
   const res = await fetch(pdfUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const task = pdfjs.getDocument({ data: new Uint8Array(await res.arrayBuffer()), stopAtErrors: false });
   const doc = await task.promise;
-  const out: Rendered[] = [];
+  const out: { page: number; blob: Blob }[] = [];
   try {
     for (const n of pages.filter((p) => p >= 1 && p <= doc.numPages)) {
       const page = await doc.getPage(n);
@@ -27,17 +28,40 @@ async function renderPages(pdfUrl: string, pages: number[]) {
       canvas.height = Math.floor(viewport.height);
       await page.render({ canvas, canvasContext: ctx, viewport }).promise;
       const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.88));
-      if (blob) out.push({ page: n, url: URL.createObjectURL(blob) });
+      if (blob) out.push({ page: n, blob });
     }
-    return { pages: out, total: doc.numPages };
+    return out;
   } finally {
     await task.destroy();
   }
 }
 
+// Pages already drawn come from the phone (lib/page-cache); only the missing ones are drawn (and kept).
+// The PDF is only downloaded when a page is missing.
+export async function pagePictures(pdfUrl: string, pages: number[]): Promise<{ page: number; blob: Blob }[]> {
+  void prunePages();
+  const kept = await getPages(pdfUrl, pages);
+  const missing = pages.filter((p) => !kept.has(p));
+  let drawn: { page: number; blob: Blob }[] = [];
+  if (missing.length) {
+    drawn = await drawPages(pdfUrl, missing);
+    void putPages(pdfUrl, drawn);
+  }
+  const all = new Map<number, Blob>([...kept, ...drawn.map((d) => [d.page, d.blob] as [number, Blob])]);
+  return pages.filter((p) => all.has(p)).map((p) => ({ page: p, blob: all.get(p)! }));
+}
+
+async function renderPages(pdfUrl: string, pages: number[]) {
+  const pics = await pagePictures(pdfUrl, pages);
+  return { pages: pics.map((p) => ({ page: p.page, url: URL.createObjectURL(p.blob) })) as Rendered[] };
+}
+
+// The pages a bid card shows: HPD's form (page 2) and every page the job description is on (3, 4+).
+export const bidPages = (pageCount: number, descPages?: number[]) => [...new Set([2, ...(descPages?.length ? descPages : [3])])].filter((p) => p <= pageCount).sort((a, b) => a - b);
+
 export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
-  const descriptionPages = [...new Set([2, ...(descPages?.length ? descPages : [3])])].filter((p) => p <= pageCount).sort((a, b) => a - b);
+  const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
   const [all, setAll] = useState(false);
   const [error, setError] = useState("");
