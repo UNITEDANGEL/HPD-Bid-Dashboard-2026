@@ -21,6 +21,7 @@ import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "..
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
 import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
 import { calcContext, calcPrice } from "../../lib/bid-calc";
+import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "../../lib/costs";
 import { isNoBid, mergeServerNoBids, NO_BID_REASONS, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
@@ -105,6 +106,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // HPD's full description text is folded away by default (the page pictures above show the same words).
   const [showText, setShowText] = useState(false);
   useEffect(() => { setRates(readRates()); }, []);
+  // Your costs (lib/costs): materials + labor per kind of work, and the trip; the calculator shows the profit.
+  const [costs, setCosts] = useState<Costs>({});
+  const [costEdit, setCostEdit] = useState<Record<string, { material: string; labor: string }>>({});
+  useEffect(() => { setCosts(readCosts()); }, []);
   // No bid (lib/no-bid): decided not to bid this invitation, with a reason.
   const [noBids, setNoBids] = useState<Record<string, NoBid>>({});
   const [noBidAsk, setNoBidAsk] = useState(false);
@@ -865,6 +870,22 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                       const diff = Math.round((myCalc.total / best.price - 1) * 100);
                       return <p className="fc-calc-verdict" data-hpd-smoke="fc-calc-verdict">{Math.abs(diff) <= 5 ? "✓ About the market's best price" : diff > 0 ? `↑ ${diff}% above the market's best price` : `↓ ${-diff}% under the market's best price`} ({money(best.price)}, wins ~{Math.round(best.chance * 100)}%).{diff > 15 ? " Raise only if this job is harder than it looks (floors, access, parts)." : diff < -15 ? " You may be leaving money on the table." : ""}</p>;
                     })() : null}
+                    {(() => {
+                      const cost = jobCost(calc.lines, costs);
+                      if (!cost.total) return <p className="fc-calc-cost is-empty" data-hpd-smoke="fc-calc-cost">💵 Add your costs (Bids → Stats → Your costs) to see your profit on this job.</p>;
+                      const mine = profitAt(myCalc.total, cost.total);
+                      const best = help && help.prices.length >= 5 ? bestWithFloor(help, selFloor) : null;
+                      const atBest = best ? profitAt(best.price, cost.total) : null;
+                      const names = cost.missing.map((k) => COST_ITEMS.find((c) => c.key === k)?.label || k);
+                      return (
+                        <div className="fc-calc-cost" data-hpd-smoke="fc-calc-cost">
+                          <b>💵 Your cost {money(cost.total)}</b> <small>(materials {money(cost.material)}{cost.labor ? ` + labor ${money(cost.labor)}` : ""}{cost.trip ? ` + trip ${money(cost.trip)}` : ""})</small>
+                          <span className={mine.profit < 0 ? "is-loss" : ""} data-hpd-smoke="fc-calc-profit">Profit at your price {money(myCalc.total)}: <b>{money(mine.profit)} ({mine.pct}%)</b></span>
+                          {atBest && best ? <span className={atBest.profit < 0 ? "is-loss" : ""} data-hpd-smoke="fc-calc-profit-best">At the best price {money(best.price)}: {money(atBest.profit)} ({atBest.pct}%)</span> : null}
+                          {names.length ? <small className="fc-calc-cost-missing" data-hpd-smoke="fc-calc-cost-missing">No cost set yet for: {names.join(", ")} (the profit doesn&apos;t count them).</small> : null}
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : <small className="fc-my-hint">Tap a line to set what you charge (per sq ft, per door, each part, per floor up, per extra location). Saved on this phone for every job like it; ✎ changes a line for this job only.</small>}
               </div>
@@ -1164,6 +1185,22 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           ) : tab === "stats" ? (
             <>
               <section className="fc-stats-block fc-floors" data-hpd-smoke="fc-floors">
+                <h4>🧾 Your costs</h4>
+                <p className="fc-stats-note">What each kind of work costs you (materials and labor), counted the same way as the price. The calculator shows your profit on every bid. Kept on this phone.</p>
+                <div className="fc-costs" data-hpd-smoke="fc-costs">
+                  {COST_ITEMS.map((it) => {
+                    const c = costs[it.key];
+                    const e = costEdit[it.key] || { material: c ? String(c.material || "") : "", labor: c ? String(c.labor || "") : "" };
+                    const save = (next: { material: string; labor: string }) => { const m = Number(next.material.replace(/[^0-9.]/g, "")) || 0, l = Number(next.labor.replace(/[^0-9.]/g, "")) || 0; setCosts(saveCost(it.key, m || l ? { material: m, labor: l } : null)); };
+                    return (
+                      <div key={it.key} className="fc-cost-row" data-hpd-smoke="fc-cost-row" data-key={it.key}>
+                        <span><b>{it.label}</b><small>{it.unit}{it.note ? ` · ${it.note}` : ""}</small></span>
+                        <label>Materials $<input inputMode="decimal" aria-label={`Materials ${it.unit} for ${it.label}`} data-hpd-smoke="fc-cost-material" value={e.material} onChange={(ev) => setCostEdit((x) => ({ ...x, [it.key]: { ...e, material: ev.target.value } }))} onBlur={() => save(e)} /></label>
+                        <label>Labor $<input inputMode="decimal" aria-label={`Labor ${it.unit} for ${it.label}`} data-hpd-smoke="fc-cost-labor" value={e.labor} onChange={(ev) => setCostEdit((x) => ({ ...x, [it.key]: { ...e, labor: ev.target.value } }))} onBlur={() => save(e)} /></label>
+                      </div>
+                    );
+                  })}
+                </div>
                 <h4>Your rates</h4>
                 {Object.keys(rates).length ? (
                   <ul data-hpd-smoke="fc-rates-list">{Object.entries(rates).sort((x, y) => x[0].localeCompare(y[0])).map(([key, amount]) => (

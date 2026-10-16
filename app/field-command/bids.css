@@ -578,3 +578,21 @@
 .fc-calc-adjust button { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid #a5b4fc; background: #1e1b4b; color: #fff; font: 800 13px system-ui; }
 .fc-calc-adjust button.is-on { background: #a5b4fc; color: #1e1b4b; }
 .fc-calc-verdict { margin: 4px 0 0; font: 700 14px/1.4 system-ui; color: #fde68a; }
+
+/* Your costs and the profit on each bid. */
+.fc-calc-cost { display: grid; gap: 3px; margin-top: 6px; padding: 8px 10px; border-radius: 10px; background: #052e16; border: 1px solid #22c55e66; color: #dcfce7; font: 600 14px/1.4 system-ui; }
+.fc-calc-cost.is-empty { background: transparent; border-style: dashed; color: #bbf7d0; }
+.fc-calc-cost b { color: #fff; }
+.fc-calc-cost .is-loss, .fc-calc-cost .is-loss b { color: #fca5a5; }
+.fc-calc-cost-missing { color: #fde68a; }
+.fc-costs { display: grid; gap: 6px; margin-bottom: 12px; }
+.fc-cost-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 8px; align-items: center; padding: 6px 0; border-top: 1px solid #ffffff1f; }
+.fc-cost-row > span { display: grid; min-width: 0; }
+.fc-cost-row > span b { font: 700 14px system-ui; }
+.fc-cost-row > span small { color: #a8a29e; font: 600 12px system-ui; }
+.fc-cost-row label { display: grid; gap: 2px; font: 700 11px system-ui; color: #a8a29e; }
+.fc-cost-row input { width: 76px; min-height: 38px; padding: 0 8px; border-radius: 8px; border: 1px solid #57534e; background: #0c0a09; color: #fff; font: 800 15px system-ui; }
+@media (max-width: 400px) { .fc-cost-row { grid-template-columns: 1fr 1fr; } .fc-cost-row > span { grid-column: 1 / -1; } .fc-cost-row input { width: 100%; box-sizing: border-box; } }
+.fc-costs { padding: 0 12px; }
+/* The panel's Map button scrolls away with its bar (it sat on top of the tabs when the list was scrolled). */
+.fc-bids-tomap { position: static !important; margin: -42px 8px 6px auto !important; }

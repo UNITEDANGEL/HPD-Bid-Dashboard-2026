@@ -32,19 +32,25 @@ try {
     await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="fc-bid-thumb"]').length >= 2, null, { timeout: 90000 });
     const thumbs = await page.locator('[data-hpd-smoke="fc-bid-thumb"]').count();
     // The row's own button still opens the bid; the Pages button is beside it, on screen.
-    const btn = page.locator('[data-hpd-smoke="fc-bid-pages-btn"]').first();
+    // A row whose pages are already drawn (it shows the picture): opening it must not download the PDF again.
+    const btn = page.locator('[data-hpd-smoke="fc-bid-pages-btn"]', { has: page.locator('[data-hpd-smoke="fc-bid-thumb"]') }).first();
     const box = await btn.boundingBox();
     assert.ok(box && box.width >= 44 && box.height >= 44 && box.x + box.width <= w, `${where}: Pages button big enough and on screen`);
     // Open: from the phone, no new PDF download.
     await page.waitForTimeout(2500);
-    const before = pdfLoads.length;
+    // Only this bid counts: the app keeps drawing the next bids' pages in the background.
+    const label = await btn.getAttribute("aria-label");
+    const omo = /[EK][A-Z]\d{5}/.exec(label)[0];
+    const file = bids.find((b) => b.omo === omo).itbFile;
+    const mine = () => pdfLoads.filter((u) => decodeURIComponent(u).includes(file)).length;
+    const before = mine();
     const t0 = Date.now();
     await btn.click();
     const sheet = page.locator('[data-hpd-smoke="fc-bid-pages-sheet"]');
     await sheet.locator('[data-hpd-smoke="fc-itb-thumb"] img').first().waitFor({ timeout: 10000 });
     await page.waitForFunction(() => { const i = document.querySelector('[data-hpd-smoke="fc-bid-pages-sheet"] [data-hpd-smoke="fc-itb-thumb"] img'); return i && i.naturalWidth > 300; }, null, { timeout: 10000 });
     const ms = Date.now() - t0;
-    assert.equal(pdfLoads.length, before, `${where}: pages came from the phone, no PDF download`);
+    assert.equal(mine(), before, `${where}: ${omo}'s pages came from the phone, no PDF download`);
     assert.ok(ms < 3000, `${where}: pages shown in ${ms} ms`);
     const sb = await sheet.boundingBox();
     assert.ok(sb.width >= w - 1 && sb.height >= h - 1, `${where}: full screen`);

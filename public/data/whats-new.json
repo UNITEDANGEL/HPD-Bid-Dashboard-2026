@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Your costs and profit on every bid",
+      "items": [
+        "Bids → Stats → Your costs: what each kind of work costs you (materials and labor) plus the trip. Starts with your numbers: hollow metal door $500, hinges $15 each, door closer $30, Secure Tech lock $1,000, electric strike $150.",
+        "Every bid now shows your cost and your profit (and %) at your price and at the market's best price, and which parts still have no cost."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Requests checked every 5 minutes",
       "items": [
         "Claude checks your requests every 5 minutes (7 AM to 11 PM) while the Claude app is open on the computer.",

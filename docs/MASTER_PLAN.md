@@ -267,7 +267,11 @@ B. ✅ (done 16 Oct, first version: lib/bid-calc.ts. Lines at your rates + extra
    location) + materials + labor + extras (stories without elevator, far borough, 2nd location), shown next to
    the market's best price and its chance to win: "Does this sound right?" -> I raise / lower a line and it
    recalculates. HPD's whole document stays one tap away to verify.
-C. **Materials & costs database** (my real costs, editable list, kept private): hollow metal door ~$500, hopper
+C. ✅ (done 16 Oct, first version: lib/costs.ts, Bids -> Stats -> Your costs (materials + labor per unit, trip per
+   job; starts with the owner's numbers); the calculator shows cost, profit and % at my price and at the best
+   price, and names the parts without a cost. Next: sync costs / rates between phone and computer; profit after
+   payment per job in Stats.)
+   C. **Materials & costs database** (my real costs, editable list, kept private): hollow metal door ~$500, hopper
    door ~$300, hinges ~$15, door closer ~$30, locks, Secure Tech lock ~$1,000+, electric strike ~$150, tile /
    sheetrock / paint per sq ft, labor per hour / per day, trip cost. Each job then shows estimated cost and
    **profit (and %)** at my price and at the best price, and the stats show profit per kind of work.
