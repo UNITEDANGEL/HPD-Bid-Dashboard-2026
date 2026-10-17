@@ -2999,3 +2999,4 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-ai-ask input { min-height: 46px; padding: 0 10px; border-radius: 10px; border: 1px solid #475569; background: #0b1220; color: #f8fafc; font: 600 15px system-ui; }
 .fc-ai-ask button { min-height: 46px; padding: 0 12px; border-radius: 10px; border: 0; background: #6366f1; color: #fff; font: 800 14.5px system-ui; white-space: nowrap; }
 .fc-ai-ask button:disabled { opacity: 0.6; }
+.fc-board-row .fc-notice-actions a.fc-board-send { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 20px; background: #1d4ed8; color: #fff; font: 800 14px system-ui; text-decoration: none; }

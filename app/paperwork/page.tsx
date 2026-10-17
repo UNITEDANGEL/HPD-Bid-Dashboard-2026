@@ -1297,6 +1297,49 @@ export default function PaperworkPage() {
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
+  // Opened from the 24 / 72-hour board (?vt=1; who to send to is in session storage "hpd-vt-send"): once the package is
+  // made, email the signed copy to the vendor tracking person who sent the notice (two taps), and tick the board.
+  const [vtSend, setVtSend] = useState<{ to: string; name: string; notice: string; subject: string; text: string; armed: boolean; status: string; sent: boolean } | null>(null);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const job = String(q.get("job") || "").toUpperCase();
+    if (q.get("vt") !== "1") return;
+    let saved: { omo?: string; to?: string; name?: string; notice?: string; subject?: string } = {};
+    try { saved = JSON.parse(sessionStorage.getItem("hpd-vt-send") || "{}"); } catch { /* private mode */ }
+    const to = String(saved.to || "").trim().toLowerCase();
+    if (String(saved.omo || "").toUpperCase() !== job || !/^[a-z0-9._%+-]+@hpd\.nyc\.gov$/.test(to)) return;
+    const name = String(saved.name || "").slice(0, 80);
+    const first = name.split(/\s+/)[0] || "";
+    setVtSend({ to, name, notice: String(saved.notice || "").slice(0, 120), subject: String(saved.subject || `OMO# ${job}`).replace(/[\r\n]/g, " ").slice(0, 200), armed: false, status: "", sent: false,
+      text: `Hello${first ? ` ${first}` : ""},\n\nRe: OMO# ${job}\n\nAttached is the affidavit and invoice for this job. Please let us know if you need anything else.\n\nThank you,\nJot Singh\nUnited Angel Construction Corp` });
+  }, []);
+  async function sendToVendorTracking(toSelf: boolean) {
+    if (!vtSend || !packagePreview) return;
+    if (!toSelf && !vtSend.armed) { setVtSend({ ...vtSend, armed: true }); return; }
+    setVtSend({ ...vtSend, status: "Sending…" });
+    try {
+      const bytes = new Uint8Array(await (await fetch(packagePreview.pdfUrl)).arrayBuffer());
+      if (bytes.byteLength > 9_500_000) throw new Error(`the PDF is ${(bytes.byteLength / 1_000_000).toFixed(1)} MB, too big to attach; use Save PDF only and attach it in Gmail`);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const attachment = { name: packagePreview.pdfFileName.replace(/[^A-Za-z0-9 _.,()-]/g, "-").slice(0, 96).replace(/\.pdf$/i, "") + ".pdf", data: btoa(bin) };
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: vtSend.subject, text: vtSend.text, attachment } : { to: vtSend.to, subject: vtSend.subject, text: vtSend.text, attachment }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      if (toSelf) { setVtSend({ ...vtSend, armed: false, status: `✓ Sent to you (${d.to}) with the PDF. Nothing went to HPD.` }); return; }
+      if (vtSend.notice) {
+        try {
+          const marks = JSON.parse(localStorage.getItem("hpd-notice-board-v1") || "{}");
+          const now = new Date().toISOString();
+          marks[vtSend.notice] = { ...(marks[vtSend.notice] || {}), replied: marks[vtSend.notice]?.replied || now, made: marks[vtSend.notice]?.made || now, sent: now };
+          localStorage.setItem("hpd-notice-board-v1", JSON.stringify(marks));
+        } catch { /* private mode */ }
+      }
+      setVtSend({ ...vtSend, armed: false, sent: true, status: `✓ Sent to ${d.to} with ${d.attached || "the PDF"}. The board shows 📤 Sent.` });
+    } catch (e) {
+      setVtSend({ ...vtSend, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
+    }
+  }
   // What the package carries, shown on the review screen before approving.
   // Email choice on the review screen: before + after media, or after only (Drive always gets all).
   const [emailBeforeMedia, setEmailBeforeMedia] = useState(() => {
@@ -5682,6 +5725,21 @@ export default function PaperworkPage() {
                   Edit details
                 </button>
               </div>
+
+              {vtSend && !packagePreview.printCopy ? (
+                <div className="pkg-vt-send" data-hpd-smoke="paperwork-vt-send">
+                  <b>📤 Send to vendor tracking: {vtSend.name || "HPD"} &lt;{vtSend.to}&gt;</b>
+                  <small>The signed copy (shown below) is attached. Look it over first.</small>
+                  <label>Subject<input value={vtSend.subject} onChange={(e) => setVtSend({ ...vtSend, subject: e.target.value.replace(/[\r\n]/g, " "), armed: false })} /></label>
+                  <label>Message<textarea rows={7} data-hpd-smoke="paperwork-vt-text" value={vtSend.text} onChange={(e) => setVtSend({ ...vtSend, text: e.target.value, armed: false })} /></label>
+                  <div className="pkg-vt-actions">
+                    <button type="button" className={vtSend.armed ? "is-armed" : ""} data-hpd-smoke="paperwork-vt-send-btn" disabled={vtSend.sent || vtSend.status === "Sending…"} onClick={() => void sendToVendorTracking(false)}>{vtSend.sent ? "✓ Sent" : vtSend.armed ? `✅ Tap again: send to ${vtSend.to}` : "📤 Send with the PDF"}</button>
+                    <button type="button" data-hpd-smoke="paperwork-vt-me" disabled={vtSend.status === "Sending…"} onClick={() => void sendToVendorTracking(true)}>📨 Send to me first</button>
+                  </div>
+                  {vtSend.status ? <p data-hpd-smoke="paperwork-vt-status">{vtSend.status}</p> : null}
+                  {vtSend.sent ? <a href="/map/?view=all&map=1">← Back to the map</a> : null}
+                </div>
+              ) : null}
 
               {packageContents ? (() => {
                 const photos = packageContents.photos - (emailBeforeMedia ? 0 : packageContents.beforePhotos);

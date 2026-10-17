@@ -18,6 +18,11 @@ type Props = {
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
 
+// The paperwork page, set up to email the finished package to whoever sent the notice and tick the board.
+const paperHref = (row: BoardRow, outcome: string) => `/paperwork/?job=${encodeURIComponent(row.omo)}${outcome ? `&outcome=${outcome}` : ""}${row.to ? "&vt=1" : ""}`;
+// Who to send it to rides in this tab's session storage (not in the page address).
+const rememberSend = (row: BoardRow) => { try { if (row.to) sessionStorage.setItem("hpd-vt-send", JSON.stringify({ omo: row.omo, to: row.to, name: row.who, notice: row.key, subject: `RE: ${row.subject}` })); } catch { /* private mode */ } };
+
 function clock(h: number) {
   const m = Math.round(Math.abs(h) * 60);
   const txt = m >= 1440 ? `${Math.floor(m / 1440)}d ${Math.floor((m % 1440) / 60)}h` : m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
@@ -97,16 +102,17 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
           })}
         </ol>
         {row.next === "replied" || row.next === "sent" ? (
-          <p className="fc-board-todo">{row.next === "replied" ? "Next: answer them (a reply is ready below)." : "Next: email them the affidavit and invoice, then tap 📤."}</p>
+          <p className="fc-board-todo">{row.next === "replied" ? "Next: answer them (a reply is ready below)." : "Next: email them the affidavit and invoice: open the paperwork (it sends from there), or tap 📤 if you sent it yourself."}</p>
         ) : row.next === "made" ? (
           <>
             <p className="fc-board-todo">Next: the paperwork. What happened at the job?</p>
-            <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={`/paperwork/?job=${encodeURIComponent(row.omo)}&outcome=${k}`} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div>
+            <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={paperHref(row, k)} onClick={() => rememberSend(row)} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div>
           </>
         ) : row.next === "confirmed" ? <p className="fc-board-todo">Waiting for them to confirm. Tap ✅ when they do.</p> : null}
         <div className="fc-notice-actions">
           {row.next ? <button type="button" data-hpd-smoke="fc-board-reply" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, ""); }}>✨ Reply (AI)</button> : null}
           <button type="button" onClick={() => onOpenThread(row.threadId, `${row.omo}: ${row.subject}`)}>💬 Their email</button>
+          {row.next === "sent" ? <a className="fc-board-send" data-hpd-smoke="fc-board-send" href={paperHref(row, "")} onClick={() => rememberSend(row)}>📤 Send the paperwork</a> : null}
           {hasJob(row.omo) ? <button type="button" onClick={() => onOpenJob(row.omo)}>Open job</button> : null}
         </div>
         {reply?.key === row.key ? (

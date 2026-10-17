@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "📤 Send the paperwork to vendor tracking from the board",
+      "items": [
+        "On the board, pick what happened (Work completed, Refused access...) or tap 📤 Send the paperwork: the paperwork page opens for that job.",
+        "When the package is made, a box at the top says \"Send to vendor tracking: <their name and email>\" with a ready message. The signed copy is attached.",
+        "Send to me first, or 📤 Send with the PDF (two taps). The board then shows 📤 Sent · waiting for them to confirm.",
+        "Their email address is never put in the page address."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "✨ AI-written replies on the 24 / 72-hour board",
       "items": [
         "On the board, ✨ Reply (AI): the AI writes the reply from their notice and the facts on record (paperwork sent on <date>, made, deadline). It is told never to make anything up.",
