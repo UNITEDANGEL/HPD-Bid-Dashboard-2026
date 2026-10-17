@@ -21,6 +21,7 @@ export type BoardRow = {
   steps: Record<BoardStep, { done: boolean; at: string; how: "email" | "record" | "tap" | "" }>;
   next: BoardStep | null;                     // the first step not done (null: done)
   sentAt: string;                             // paperwork on record for the job (sent_paperwork.json)
+  noticeText: string;                         // their notice (for the AI-written reply)
 };
 
 const PPN = /poor performance|performance notice|\bPPN\b/i;
@@ -72,7 +73,7 @@ export function buildBoard(input: {
     rows.push({
       key, omo, threadId: t.id, subject: t.subject, hours, who: t.people[0] || "Vendor tracking", to,
       noticeAt: notice.at, dueAt: new Date(Date.parse(notice.at) + hours * 3600000).toISOString(),
-      steps, next: BOARD_STEPS.find((s) => !steps[s.key].done)?.key ?? null, sentAt,
+      steps, next: BOARD_STEPS.find((s) => !steps[s.key].done)?.key ?? null, sentAt, noticeText: notice.text.slice(0, 2500),
     });
   }
   // Still to do first (the nearest deadline first), then sent and waiting on them, then done (newest first).

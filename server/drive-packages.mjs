@@ -2,6 +2,8 @@
 // and an email of the PDF and photos sent from the owner's own Gmail.
 // Only reachable through handleDriveAuth, after the owner/session/Google identity checks.
 
+import { aiDraft, draftFacts } from "./ai-draft.mjs";
+
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const GMAIL_SEND = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media";
@@ -208,6 +210,17 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
         || replies.filter((r) => !names(r).some((o) => o !== omo)).sort((a, b) => a.at.localeCompare(b.at))[0];
       const status = pick ? faxResult(pick.subject, pick.snippet) || "confirmed" : "waiting";
       return reply({ status, subject: pick?.subject || "", at: pick?.at || "" });
+    }
+
+    if (action === "hpd-draft") {
+      // An AI-written reply for the 24 / 72-hour board, for the owner to read and edit. Never sends anything.
+      const facts = draftFacts(await request.json().catch(() => null));
+      if (!facts) fail("Invalid draft request.", 400);
+      try {
+        return reply(await aiDraft(env, facts, fetcher));
+      } catch (e) {
+        return reply({ ai: false, reason: `The AI didn’t answer (${e instanceof Error ? e.message.slice(0, 120) : "error"}).` });
+      }
     }
 
     if (action === "hpd-reply") {

@@ -14,6 +14,21 @@ try {
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   let sends = 0;
   await context.route("**/api/drive/hpd-reply", (r) => { sends += 1; return r.fulfill({ status: 500, json: { error: "test: no sending" } }); });
+  // The AI (server/ai-draft.mjs, tested in test-ai-draft): answers from the facts the board sends.
+  const asked = [];
+  await context.route("**/api/drive/hpd-draft", async (r) => {
+    const b = JSON.parse(r.request().postData() || "{}");
+    asked.push(b);
+    return r.fulfill({ json: { ai: true, model: "test", text: `Hello Joy-Ann,
+
+Re: OMO# ${b.omo} - ${b.address}
+
+AI reply${b.note ? ` (${b.note})` : ""}.
+
+Thank you,
+Jot Singh
+United Angel Construction Corp` } });
+  });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -40,6 +55,14 @@ try {
   await row.locator('[data-hpd-smoke="fc-board-reply"]').click();
   const box = row.locator('[data-hpd-smoke="fc-board-reply-box"]');
   await box.waitFor();
+  // The AI writes it right away from the facts on record; you can tell it what to add and write again.
+  await box.locator('[data-hpd-smoke="fc-board-ai-msg"]', { hasText: "Written by AI" }).waitFor({ timeout: 10000 });
+  assert.match(await box.locator('[data-hpd-smoke="fc-board-reply-text"]').inputValue(), /AI reply./);
+  assert.equal(asked[0].omo, omo);
+  assert.ok(asked[0].noticeText.length > 0 && asked[0].dueAt && "steps" in asked[0], "the AI gets their notice and the facts");
+  await box.locator('[data-hpd-smoke="fc-board-ai-note"]').fill("we went back Friday");
+  await box.locator('[data-hpd-smoke="fc-board-ai-write"]').click();
+  await page.waitForFunction(() => /we went back Friday/.test(document.querySelector('[data-hpd-smoke="fc-board-reply-text"]')?.value || ""), null, { timeout: 10000 });
   assert.match(await box.locator('[data-hpd-smoke="fc-board-reply-text"]').inputValue(), new RegExp(`^Hello .*\\n\\nRe: OMO# ${omo}`));
   assert.match(await box.locator("b").first().innerText(), /@hpd\.nyc\.gov>/);
   await box.locator('[data-hpd-smoke="fc-board-reply-send"]').click();
@@ -78,7 +101,7 @@ try {
   assert.ok((await p2.locator('[data-hpd-smoke="fc-board-row"].is-hot').count()) > 0, "hot rows marked");
   await ctx2.close();
   assert.deepEqual(errors, []);
-  console.log(`PASS notice board: ${n} notices (${sum.replace(/\s+/g, " ")}), countdowns + 4 steps, ready reply to ${omo} (first tap only arms, nothing sent), hand tick kept after reload, under-6-hour reminder opens the board`);
+  console.log(`PASS notice board: ${n} notices (${sum.replace(/\s+/g, " ")}), countdowns + 4 steps, AI-written reply to ${omo} (+ owner note, rewrite; first tap only arms, nothing sent), hand tick kept after reload, under-6-hour reminder opens the board`);
 } finally {
   await browser.close();
 }

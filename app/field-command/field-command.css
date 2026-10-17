@@ -2991,3 +2991,11 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
   .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg { width: 46px !important; height: 46px !important; padding: 11px; }
   .fc-app .fc-map-controls .fc-map-fab .fc-fab-label { font-size: 12px; line-height: 16px; }
 }
+
+/* AI-written replies on the board (17 Oct). */
+.fc-ai-msg { margin: 0; padding: 8px 10px; border-radius: 10px; background: #1e1b4b; border: 1px solid #6366f1; color: #e0e7ff; font: 700 14px/1.35 system-ui; }
+.fc-ai-msg.is-busy { animation: fc-board-pulse 1.4s ease-in-out infinite; }
+.fc-ai-ask { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.fc-ai-ask input { min-height: 46px; padding: 0 10px; border-radius: 10px; border: 1px solid #475569; background: #0b1220; color: #f8fafc; font: 600 15px system-ui; }
+.fc-ai-ask button { min-height: 46px; padding: 0 12px; border-radius: 10px; border: 0; background: #6366f1; color: #fff; font: 800 14.5px system-ui; white-space: nowrap; }
+.fc-ai-ask button:disabled { opacity: 0.6; }

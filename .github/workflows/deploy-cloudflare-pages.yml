@@ -133,6 +133,7 @@ jobs:
           node scripts/test-costs.mjs
           node scripts/test-priorities.mjs
           node scripts/test-notice-board.mjs
+          node scripts/test-ai-draft.mjs
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs

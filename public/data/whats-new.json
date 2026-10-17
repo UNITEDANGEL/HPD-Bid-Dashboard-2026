@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "✨ AI-written replies on the 24 / 72-hour board",
+      "items": [
+        "On the board, ✨ Reply (AI): the AI writes the reply from their notice and the facts on record (paperwork sent on <date>, made, deadline). It is told never to make anything up.",
+        "Tell the AI what to add (e.g. \"we went back Friday\") and tap Write again.",
+        "You read and edit it; Send to me first, or Send with two taps. The AI never sends anything.",
+        "Until AI is switched on for the app, the ready-made reply is used and the box says so."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "Bigger and clearer on the iPhone; everything pops when you touch it",
       "items": [
         "Bigger map buttons with bigger names (Route, Today, Stats, Notices...), bigger borough buttons (All, MN, BK, QN, BX, SI) and the 📅 days button.",

@@ -2,7 +2,7 @@ import { handleDriveBackups } from "./drive-backups.mjs";
 import { handleDrivePackages } from "./drive-packages.mjs";
 import { handleDriveVideos } from "./drive-videos.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
-const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply"];
+const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply", "hpd-draft"];
 const VIDEO_ACTIONS = ["video-start", "video-piece", "video-to-package"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 // Sends approved packages from the owner's Gmail. Optional: Drive works if it is not granted.

@@ -30,6 +30,23 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
   const [reply, setReply] = useState<{ key: string; to: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
+  // AI-written reply (server/ai-draft.mjs): written from the facts on record and their notice; you read and edit it.
+  const [ai, setAi] = useState<{ key: string; note: string; busy: boolean; msg: string }>({ key: "", note: "", busy: false, msg: "" });
+  const writeWithAi = async (row: BoardRow, note: string) => {
+    setAi({ key: row.key, note, busy: true, msg: "✨ AI is writing the reply…" });
+    try {
+      const r = await fetch("/api/drive/hpd-draft", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo: row.omo, address: addressOf(row.omo), who: row.who, hours: row.hours, noticeAt: row.noticeAt, dueAt: row.dueAt, hoursLeft: hoursLeft(row, Date.now()), sentAt: row.sentAt, steps: { replied: row.steps.replied.done, made: row.steps.made.done, sent: row.steps.sent.done }, note, noticeText: row.noticeText }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ai && d.text) {
+        setReply((cur) => (cur && cur.key === row.key ? { ...cur, text: d.text, armed: false } : cur));
+        setAi({ key: row.key, note, busy: false, msg: "✨ Written by AI from the facts on record. Read it and fix anything before sending." });
+      } else {
+        setAi({ key: row.key, note, busy: false, msg: r.status === 401 ? "Sign in with Google on this phone to use the AI. The ready reply is below." : d.reason === "not-set-up" ? "AI isn’t switched on for the app yet. The ready reply is below." : `${d.reason || d.error || "The AI didn’t answer"}. The ready reply is below.` });
+      }
+    } catch {
+      setAi({ key: row.key, note, busy: false, msg: "No connection to the AI. The ready reply is below." });
+    }
+  };
   const open = rows.filter((r) => r.next);
   const done = rows.filter((r) => !r.next);
   const under6 = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 6 && hoursLeft(r, now) >= 0).length;
@@ -88,7 +105,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
           </>
         ) : row.next === "confirmed" ? <p className="fc-board-todo">Waiting for them to confirm. Tap ✅ when they do.</p> : null}
         <div className="fc-notice-actions">
-          {row.next ? <button type="button" data-hpd-smoke="fc-board-reply" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); }}>✉ Reply (ready)</button> : null}
+          {row.next ? <button type="button" data-hpd-smoke="fc-board-reply" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, ""); }}>✨ Reply (AI)</button> : null}
           <button type="button" onClick={() => onOpenThread(row.threadId, `${row.omo}: ${row.subject}`)}>💬 Their email</button>
           {hasJob(row.omo) ? <button type="button" onClick={() => onOpenJob(row.omo)}>Open job</button> : null}
         </div>
@@ -96,6 +113,11 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
           <div className="fc-ack" data-hpd-smoke="fc-board-reply-box">
             <b>Email to {row.who}{reply.to ? ` <${reply.to}>` : ""}</b>
             {!reply.to ? <p className="fc-ack-status">No @hpd.nyc.gov address in their email: use 💬 Their email -&gt; Reply in Gmail.</p> : null}
+            {ai.key === row.key && ai.msg ? <p className={`fc-ai-msg${ai.busy ? " is-busy" : ""}`} data-hpd-smoke="fc-board-ai-msg">{ai.msg}</p> : null}
+            <div className="fc-ai-ask">
+              <input data-hpd-smoke="fc-board-ai-note" placeholder="Tell the AI what to add (optional), e.g. we went back Friday" value={ai.key === row.key ? ai.note : ""} onChange={(e) => setAi({ ...ai, key: row.key, note: e.target.value })} />
+              <button type="button" data-hpd-smoke="fc-board-ai-write" disabled={ai.busy} onClick={() => void writeWithAi(row, ai.key === row.key ? ai.note : "")}>✨ {ai.key === row.key && ai.msg && !ai.busy ? "Write again" : "Write with AI"}</button>
+            </div>
             <label>Subject<input value={reply.subject} onChange={(e) => setReply({ ...reply, subject: e.target.value, armed: false })} /></label>
             <label>Message<textarea data-hpd-smoke="fc-board-reply-text" rows={8} value={reply.text} onChange={(e) => setReply({ ...reply, text: e.target.value, armed: false })} /></label>
             <div className="fc-ack-actions">
