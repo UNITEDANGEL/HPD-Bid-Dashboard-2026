@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Notices split: Procurement vs Vendor tracking; days in one small menu; icons pop",
+      "items": [
+        "HPD notices now has two separate boxes. 💵 Procurement (they pay you: the job is done, the invoice was sent, and they rejected the invoice / affidavit): Rejected, Corrections, Print & mail.",
+        "📋 Vendor tracking (Lewis / Gafur asking for documents or an update): Due now, Requests, Messages. The two are never mixed.",
+        "The 30 / 60 / 90 days, Custom and 2024-25 buttons are gone from the map. One small 📅 button next to SI opens them all: 15, 30, 45, 60, 90 days, this year, all dates, custom dates, 2024-25 jobs.",
+        "The borough buttons (All, MN, BK, QN, BX, SI) and the map buttons pop up when you point at them or tap them."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Reply to Lewis / Gafur from the Priority list",
       "items": [
         "Each poor performance notice and missing-documents item has ✉ Reply: a ready message (paperwork sent on <date>, or the affidavit and invoice will follow) to their @hpd.nyc.gov address. Edit it, Send to me first, or Send with two taps."

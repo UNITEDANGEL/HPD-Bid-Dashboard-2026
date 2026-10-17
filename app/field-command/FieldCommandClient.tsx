@@ -74,7 +74,9 @@ const BOROUGH_ICONS: Record<BoroughKey, string> = { MN: "🏙️", BK: "🌉", Q
 const QUICK_DATE_RANGES = [
   { key: "year", label: "This year" },
   { key: "next30", label: "Next 30 days" },
+  { key: "last15", label: "Last 15 days" },
   { key: "last30", label: "Last 30 days" },
+  { key: "last45", label: "Last 45 days" },
   { key: "last60", label: "Last 60 days" },
   { key: "last90", label: "Last 90 days" },
   { key: "all", label: "All dates" },
@@ -90,7 +92,9 @@ function shiftDay(iso: string, days: number) {
 function quickDateBounds(key: QuickDateKey, today: string) {
   if (key === "year") return { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` };
   if (key === "next30") return { from: today, to: shiftDay(today, 30) };
+  if (key === "last15") return { from: shiftDay(today, -15), to: today };
   if (key === "last30") return { from: shiftDay(today, -30), to: today };
+  if (key === "last45") return { from: shiftDay(today, -45), to: today };
   if (key === "last60") return { from: shiftDay(today, -60), to: today };
   if (key === "last90") return { from: shiftDay(today, -90), to: today };
   return { from: "", to: "" };
@@ -964,6 +968,8 @@ export default function FieldCommandClient() {
   const [olderJobs, setOlderJobs] = useState<JobRecord[]>([]);
   // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
   const [showOlderLayer, setShowOlderLayer] = useState(false);
+  // The days menu on the borough bar (owner, 16 Oct): one small button, the choices open under it.
+  const [daysMenuOpen, setDaysMenuOpen] = useState(false);
   const [olderLayer, setOlderLayer] = useState<JobRecord[] | null>(null);
   useEffect(() => {
     if (!showOlderLayer || olderLayer) return;
@@ -1494,6 +1500,8 @@ export default function FieldCommandClient() {
     // Nothing to do on jobs HPD closed or PIP paid.
     closed: new Set([...Object.entries(followRef.current?.hpd || {}).filter(([, h]) => (h as { closedReason?: string })?.closedReason).map(([o]) => o), ...Object.entries(pipMap).filter(([, p]) => p?.status === "paid").map(([o]) => o)]),
   });
+  // Vendor tracking's list (Due now); rejected paperwork and printing are Procurement's tabs.
+  const vendorTodo = priorities.filter((p) => p.kind === "24h" || p.kind === "72h" || p.kind === "missing");
   const followMatch = (job: JobRecord) => {
     const f = followUps.get(jobId(job));
     if (!f) return false;
@@ -2717,16 +2725,23 @@ export default function FieldCommandClient() {
               </button>
             ))}
           </div>
-          <div className="fc-bar-days-row">
-            {(["last30", "last60", "last90"] as const).map((key) => (
-              <button key={key} type="button" className={quickDateKey === key ? "is-active" : ""} aria-pressed={quickDateKey === key} onClick={() => applyQuickDate(quickDateKey === key ? "year" : key)}>
-                {key.slice(4)} days
-              </button>
-            ))}
-            <button type="button" onClick={() => setFiltersOpen(true)}>Custom</button>
-            <button type="button" className={showOlderLayer ? "is-active fc-older-chip" : "fc-older-chip"} aria-pressed={showOlderLayer} data-hpd-smoke="fc-older-layer" title="Your 2024-2025 jobs (HPD Open Data + PIP paid status)" onClick={() => { setSelectedJob(null); setFollowFilter(""); setShowOlderLayer((v) => !v); }}>
-              {showOlderLayer ? `2024-25 · ${olderLayer ? olderLayer.length : "…"}` : "2024-25"}
+          <div className="fc-bar-days">
+            <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
+              <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small>
             </button>
+            {daysMenuOpen ? (
+              <div className="fc-days-menu" role="menu" data-hpd-smoke="fc-days-menu">
+                {(["last15", "last30", "last45", "last60", "last90", "year", "all"] as const).map((key) => (
+                  <button key={key} type="button" role="menuitemradio" aria-checked={quickDateKey === key && !showOlderLayer} className={quickDateKey === key && !showOlderLayer ? "is-active" : ""} data-hpd-smoke={`fc-days-${key}`} onClick={() => { applyQuickDate(key); setShowOlderLayer(false); setDaysMenuOpen(false); }}>
+                    {QUICK_DATE_RANGES.find((r) => r.key === key)?.label}
+                  </button>
+                ))}
+                <button type="button" role="menuitem" data-hpd-smoke="fc-days-custom" onClick={() => { setDaysMenuOpen(false); setFiltersOpen(true); }}>Custom dates…</button>
+                <button type="button" role="menuitemcheckbox" aria-checked={showOlderLayer} className={showOlderLayer ? "is-active fc-older-chip" : "fc-older-chip"} data-hpd-smoke="fc-older-layer" title="Your 2024-2025 jobs (HPD Open Data + PIP paid status)" onClick={() => { setSelectedJob(null); setFollowFilter(""); setShowOlderLayer((v) => !v); setDaysMenuOpen(false); }}>
+                  {showOlderLayer ? `✓ 2024-25 jobs · ${olderLayer ? olderLayer.length : "…"}` : "2024-25 jobs"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </nav>
       ) : null}
@@ -3820,37 +3835,47 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setFollowFilter(""); }}>Show all jobs</button>
           </header>
           <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
-            {/* One kind per tab, never mixed (owner, 16 Oct): rejected paperwork / HPD's correction requests /
-                requests for affidavits, invoices, photos / other messages / fixed paperwork waiting to print. */}
-            <nav className="fc-notice-tabs" role="tablist" data-hpd-smoke="fc-notice-tabs">
+            {/* Two departments, never mixed (owner, 16 Oct): PROCUREMENT pays you (job done, invoice sent; they reject
+                the invoice / affidavit and you correct it) and VENDOR TRACKING (Lewis, Gafur) asks for documents or updates. */}
+            <nav className="fc-notice-tabs fc-notice-depts" role="tablist" data-hpd-smoke="fc-notice-tabs">
               {([
-                ["priority", "🔥 Priority", priorities.length],
-                ["rejected", "💵 Payment rejected", openRejections.length],
-                ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
-                ["requests", "📋 Vendor tracking", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
-                ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
-                ["print", "🖨 Print folder", toPrint.filter((c) => !c.mailedAt).length],
-              ] as const).map(([key, label, n]) => (
-                <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => setNoticesTab(key)}>{label}{n ? <b>{n}</b> : null}</button>
-              ))}
+                ["procure", "💵 Procurement", "Pays you. Job done, invoice sent: fix what they rejected.", [
+                  ["rejected", "❗ Rejected", openRejections.length],
+                  ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
+                  ["print", "🖨 Print & mail", toPrint.filter((c) => !c.mailedAt).length],
+                ]],
+                ["vendor", "📋 Vendor tracking", "Lewis / Gafur asking for documents or an update.", [
+                  ["priority", "🔥 Due now", vendorTodo.length],
+                  ["requests", "📎 Requests", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
+                  ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
+                ]],
+              ] as const).map(([dept, title, note, tabsRaw]) => {
+                const tabs = tabsRaw as readonly (readonly [typeof noticesTab, string, number])[];
+                const on = tabs.some(([key]) => key === noticesTab);
+                const total = tabs.reduce((a, [, , n]) => a + n, 0);
+                return (
+                  <div key={dept} className={`fc-notice-dept is-${dept}${on ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-dept-${dept}`}>
+                    <button type="button" className="fc-notice-dept-head" onClick={() => setNoticesTab(tabs[0][0])}><strong>{title}</strong>{total ? <b>{total}</b> : null}<small>{note}</small></button>
+                    <div className="fc-notice-dept-tabs">
+                      {tabs.map(([key, label, n]) => (
+                        <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => setNoticesTab(key)}>{label}{n ? <b>{n}</b> : null}</button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </nav>
             {noticesTab === "priority" ? (
               <section className="fc-follow-section is-priority" data-hpd-smoke="fc-priorities">
-                <h4>🔥 HPD is waiting on these ({priorities.length})</h4>
-                <p className="fc-follow-note">Most urgent first: 24-hour notices, 72-hour notices, rejected paperwork, missing documents, fixed paperwork to print. Do each one, then tap Handled.{threads === null ? " Sign in with Google on this phone to see HPD's emails here." : ""}</p>
-                {!priorities.length ? <p className="fc-follow-note">Nothing waiting. 🎉</p> : (
+                <h4>🔥 Vendor tracking is waiting on these ({vendorTodo.length})</h4>
+                <p className="fc-follow-note">Most urgent first: 24-hour notices, 72-hour notices, missing documents. Payment problems (rejected invoice / affidavit) are under 💵 Procurement. Do each one, then tap Handled.{threads === null ? " Sign in with Google on this phone to see HPD's emails here." : ""}</p>
+                {!vendorTodo.length ? <p className="fc-follow-note">Nothing waiting. 🎉</p> : (
                   <ol className="fc-prio-list">
-                    {priorities.map((it, idx) => {
+                    {vendorTodo.map((it) => {
                       const job = findAnyJob(it.omo);
                       const due = dueText(it.dueAt);
-                      // Three kinds, kept apart: vendor tracking (affidavit / invoice, poor performance), payment rejected, print & mail.
-                      const group = (k: string) => (k === "rejection" ? "payment" : k === "print" ? "print" : "vendor");
-                      const head = idx === 0 || group(priorities[idx - 1].kind) !== group(it.kind)
-                        ? { vendor: "📋 Vendor tracking: Lewis / Gafur asking for the affidavit, invoice, photos (poor performance notices first)", payment: "💵 Payment rejected: paperwork you sent, rejected for payment", print: "🖨 Fixed: print, sign in ink and mail" }[group(it.kind)]
-                        : "";
                       return (
                         <Fragment key={it.key}>
-                        {head ? <li className="fc-prio-group" data-hpd-smoke="fc-prio-group">{head}</li> : null}
                         <li className={`is-${it.kind}${/overdue/.test(due) ? " is-overdue" : ""}`} data-hpd-smoke="fc-prio-item" data-kind={it.kind}>
                           <div className="fc-prio-head"><b>{it.omo}</b><span>{job ? jobAddress(job) : ""}</span></div>
                           <p className="fc-prio-title">{it.kind === "24h" ? "🔥" : it.kind === "72h" ? "⏰" : it.kind === "rejection" ? "❗" : it.kind === "print" ? "🖨" : "📎"} {it.title}{it.who ? ` · ${it.who}` : ""}</p>
@@ -3951,7 +3976,7 @@ export default function FieldCommandClient() {
               </section>
             ) : null}
             {noticesTab === "rejected" ? (<>
-            <p className="fc-follow-note">HPD&apos;s automatic notices that payment paperwork was rejected. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>
+            <p className="fc-follow-note">💵 Procurement (they pay you): the job is done and the invoice was sent, but the invoice / affidavit was rejected. Fix it and send it again. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>
             <section className="fc-follow-section is-rejected" data-hpd-smoke="fc-notices-rejected">
               <h4>❗ Rejected paperwork · fix &amp; resend ({openRejections.length})</h4>
               {openRejections.length ? <ol>{openRejections.map((r) => (

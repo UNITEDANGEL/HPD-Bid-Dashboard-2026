@@ -2800,3 +2800,46 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-notices-sheet .fc-notice-actions > button.is-armed { background: #16a34a !important; border-color: #16a34a !important; }
 .fc-notices-sheet .fc-notice-actions > button.is-notice { background: #0f172a !important; border-color: #a78bfa !important; }
 .fc-prio-replied { align-self: center; color: #86efac; font: 800 13px system-ui; }
+
+/* Notices: two departments side by side, never mixed (16 Oct). */
+.fc-notice-tabs.fc-notice-depts { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; overflow: visible; margin: -12px -14px 12px; padding: 10px 10px; }
+.fc-notice-dept { display: grid; gap: 6px; align-content: start; padding: 8px; border-radius: 14px; border: 2px solid #334155; background: #0f172a; }
+.fc-notice-dept.is-procure.is-on { border-color: #22c55e; background: #052e1a; }
+.fc-notice-dept.is-vendor.is-on { border-color: #60a5fa; background: #0b2447; }
+.fc-notice-tabs .fc-notice-dept-head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 6px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; text-align: left; }
+.fc-notice-dept-head strong { font: 900 15px/1.2 system-ui; color: #f8fafc; }
+.fc-notice-dept-head small { grid-column: 1 / -1; font: 600 11.5px/1.3 system-ui; color: #cbd5e1; white-space: normal; }
+.fc-notice-dept-tabs { display: grid; gap: 5px; }
+.fc-notice-dept-tabs button { justify-content: space-between; width: 100%; min-height: 40px; }
+.fc-notice-dept.is-procure .fc-notice-dept-tabs button.is-active { background: #22c55e; border-color: #22c55e; color: #052e1a; }
+.fc-notice-dept.is-vendor .fc-notice-dept-tabs button.is-active { background: #60a5fa; border-color: #60a5fa; color: #0b2447; }
+
+/* Borough bar: boroughs and one small days button in one row; the days choices open under it. */
+.fc-borough-bar { grid-template-columns: 1fr auto; align-items: start; }
+.fc-bar-days { position: relative; }
+.fc-borough-bar .fc-days-btn { height: 52px; min-width: 58px; display: grid; place-items: center; align-content: center; gap: 1px; padding: 0 6px; border-radius: 13px; }
+.fc-days-btn span { font-size: 19px; line-height: 1; }
+.fc-days-btn small { font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+.fc-borough-bar .fc-days-btn.is-open, .fc-borough-bar .fc-days-btn.is-older { border-color: #1d7a52; box-shadow: 0 0 0 2.5px #1d7a52, 0 3px 12px #233b4230; }
+.fc-days-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 5; display: grid; gap: 4px; width: 190px; padding: 6px; border-radius: 14px; background: #ffffff; border: 1px solid #d2dad9; box-shadow: 0 10px 30px #0f172a40; animation: fc-pop-in 0.14s ease-out; }
+.fc-borough-bar .fc-days-menu button { height: 40px; border-radius: 10px; box-shadow: none; font: 750 14px system-ui; text-align: left; padding: 0 12px; }
+.fc-borough-bar .fc-days-menu button.is-active { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+@keyframes fc-pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* Every icon pops up when you point at it or tap it (owner, 16 Oct). */
+.fc-bar-boroughs button, .fc-days-btn, .fc-map-fab, .fc-notice-tabs button, .fc-quick-chips button { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.fc-bar-boroughs button span, .fc-days-btn span, .fc-map-fab svg, .fc-map-fab span { display: inline-block; transition: transform 0.15s ease; }
+@media (hover: hover) {
+  .fc-bar-boroughs button:hover, .fc-days-btn:hover, .fc-map-fab:hover { transform: translateY(-3px) scale(1.08); box-shadow: 0 8px 20px #233b4240; z-index: 1; }
+  .fc-bar-boroughs button:hover span, .fc-days-btn:hover span, .fc-map-fab:hover svg, .fc-map-fab:hover span { transform: scale(1.3); }
+  .fc-notice-tabs button:hover, .fc-quick-chips button:hover { transform: translateY(-2px) scale(1.04); }
+}
+.fc-bar-boroughs button:active, .fc-days-btn:active, .fc-map-fab:active { transform: scale(1.12); }
+.fc-bar-boroughs button:active span, .fc-days-btn:active span, .fc-map-fab:active svg, .fc-map-fab:active span { transform: scale(1.35); }
+.fc-bar-boroughs button.is-active span { animation: fc-icon-pop 0.3s ease-out; }
+@keyframes fc-icon-pop { 0% { transform: scale(1); } 50% { transform: scale(1.45); } 100% { transform: scale(1); } }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .fc-app .fc-borough-bar { grid-template-columns: 1fr auto; }
+  .fc-app .fc-borough-bar .fc-days-btn { height: 32px; grid-auto-flow: column; gap: 3px; }
+}
+@media (max-width: 380px) { .fc-notice-dept-head small { display: none; } }

@@ -370,6 +370,17 @@ folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer qu
 - **Test all (16 Oct)**: 60 unit tests + 21 browser tests pass, including the whole-app sweep
   (test-browser-all-buttons: 17 pages, 75 links, 64 buttons, no missing-data text), now run on every deploy.
 
+## Owner's requests 16 Oct 2026 (midnight): two departments, days menu, icons pop
+1. **Procurement and vendor tracking are two different departments, never mixed.** Procurement pays you: the job
+   is done, the invoice was sent, and they reject the invoice / affidavit, so you correct it. Vendor tracking (J. Lewis,
+   D. Gafur) asks for documents or an update. (Done: HPD notices shows two boxes, 💵 Procurement: Rejected ·
+   Corrections · Print & mail, and 📋 Vendor tracking: Due now · Requests · Messages. Due now lists only 24-hour /
+   72-hour notices and missing documents. Test: test-browser-notice-depts.)
+2. **Days in one small menu**: the 30 / 60 / 90 days, Custom and 2024-25 chips took a whole row. (Done: one 📅 button
+   next to SI opens 15 / 30 / 45 / 60 / 90 days, this year, all dates, custom dates, 2024-25 jobs.)
+3. **Every icon pops up** when pointed at or tapped: boroughs (All, MN, BK, QN, BX, SI), the days button, map buttons,
+   notice tabs. (Done.)
+
 ## Done 16 Oct 2026: your price vs the app's best price
 - Finding (1,547 of your faxed bids that HPD awarded, Nov 2025 - Oct 2026): your prices were a median 16%
   above the app's best price (about 20% since March; half of all bids more than 15% above). Typical chance to
