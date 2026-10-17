@@ -14,6 +14,7 @@ type Props = {
   onOpenThread: (threadId: string, title: string) => void;
   onMark: (key: string, step: BoardStep, on: boolean) => void;
   onClose: () => void;
+  initialShow?: "all" | "ppn" | "docs";
 };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
@@ -30,7 +31,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose }: Props) {
+export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all" }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
@@ -56,7 +57,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
     }
   };
   // Filter: everything, the 24 / 72-hour notices, or the missing-documents lists (Gafur).
-  const [show, setShow] = useState<"all" | "ppn" | "docs">("all");
+  const [show, setShow] = useState<"all" | "ppn" | "docs">(initialShow);
   const shown = rows.filter((r) => show === "all" || r.kind === show);
   const open = shown.filter((r) => r.next);
   const done = shown.filter((r) => !r.next);

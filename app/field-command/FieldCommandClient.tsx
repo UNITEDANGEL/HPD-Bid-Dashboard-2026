@@ -981,6 +981,16 @@ export default function FieldCommandClient() {
   const [noticeKind, setNoticeKind] = useState<NoticeKind>("");
   // The 24 / 72-hour board (17 Oct) and the steps ticked by hand on this phone.
   const [boardOpen, setBoardOpen] = useState(false);
+  const [boardShow, setBoardShow] = useState<"all" | "ppn" | "docs">("all");
+  // Morning summary (owner, 17 Oct): the first time the app opens each day, what needs doing today, one tap to each.
+  const [summaryToday, setSummaryToday] = useState(false);
+  useEffect(() => {
+    // Automated test browsers open it with ?today=1 (so it doesn't cover the map buttons they tap).
+    if (new URLSearchParams(window.location.search).get("today") === "1") { setSummaryToday(true); return; }
+    if (navigator.webdriver) return;
+    try { if (localStorage.getItem("hpd-summary-seen") !== new Date().toLocaleDateString("en-CA")) setSummaryToday(true); } catch { setSummaryToday(true); }
+  }, []);
+  const closeSummary = () => { setSummaryToday(false); try { localStorage.setItem("hpd-summary-seen", new Date().toLocaleDateString("en-CA")); } catch { /* private mode */ } };
   const [boardMarks, setBoardMarks] = useState<BoardMarks>({});
   useEffect(() => { try { setBoardMarks(JSON.parse(localStorage.getItem("hpd-notice-board-v1") || "{}")); } catch { /* private mode */ } }, []);
   // Every button / link pops for a moment when touched (iPhone has no hover); the touch listener turns on :active in Safari.
@@ -1546,6 +1556,11 @@ export default function FieldCommandClient() {
   const boardRows = threads ? buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
   const boardUrgent = urgentRows(boardRows);
+  // For the morning summary: notices due by tonight (or overdue) with nothing sent, missing documents waiting.
+  const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+  const dueToday = boardOpenRows.filter((r) => r.kind === "ppn" && !r.steps.sent.done && r.dueAt && Date.parse(r.dueAt) <= endOfToday.getTime()).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
+  const docsWaiting = boardOpenRows.filter((r) => r.kind === "docs" && !r.steps.sent.done);
+  const waitingOnThem = boardOpenRows.filter((r) => r.next === "confirmed").length;
   // Vendor tracking's list (Due now); rejected paperwork and printing are Procurement's tabs.
   const vendorTodo = priorities.filter((p) => p.kind === "24h" || p.kind === "72h" || p.kind === "missing");
   // Rejections tracked to the money (17 Oct): rejected -> fixed -> printed -> emailed -> mailed -> paid in PIP.
@@ -1776,6 +1791,7 @@ export default function FieldCommandClient() {
     if (keep !== "bids") setBidsOpen(false);
     if (keep !== "notices") { setNoticesOpen(false); setNoticeChooser(false); }
     if (keep !== "board") setBoardOpen(false);
+    if (summaryToday) closeSummary();
     if (keep !== "stats") setStatsOpen(false);
     if (keep !== "agenda") setAgendaOpen(false);
     if (keep !== "follow") setFollowOpen(false);
@@ -3969,11 +3985,12 @@ export default function FieldCommandClient() {
         <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
           <header>
             <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}{noticeMini ? ` · ${filteredJobs.length}` : `: ${filteredJobs.length} on the map${noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}`}</strong>
+            {!noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-today-open" onClick={() => { setNoticeChooser(false); setSummaryToday(true); }}>☀️ Today</button> : null}
             {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-change" onClick={() => setNoticeMini(false)}>Change ▴</button> : null}
             {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-mini-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
           </header>
-          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardOpen(true); }}>
+          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }}>
             <span aria-hidden="true">⏱</span><b>Vendor tracking board</b><small>{boardOpenRows.filter((r) => r.kind === "ppn").length} notices · {boardOpenRows.filter((r) => r.kind === "docs").length} missing docs{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
           </button>
           <div className="fc-notice-picks">
@@ -4304,6 +4321,7 @@ export default function FieldCommandClient() {
       {boardOpen ? (
         <NoticeBoard
           rows={boardRows}
+          initialShow={boardShow}
           addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}
@@ -4312,8 +4330,32 @@ export default function FieldCommandClient() {
           onClose={() => setBoardOpen(false)}
         />
       ) : null}
-      {boardUrgent.length && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen && !followFilter ? (
-        <button type="button" className="fc-board-alert" data-hpd-smoke="fc-board-alert" onClick={() => { closeScreens("board"); setBoardOpen(true); }}>
+      {summaryToday && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen ? (
+        <div className="fc-today" role="dialog" aria-label="Today" data-hpd-smoke="fc-today">
+          <header>
+            <strong>☀️ Today · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</strong>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-today-close" onClick={closeSummary}>Got it</button>
+          </header>
+          <button type="button" className={`fc-today-line${dueToday.length ? " is-hot" : ""}`} data-hpd-smoke="fc-today-due" onClick={() => { closeSummary(); setBoardShow("ppn"); closeScreens("board"); setBoardOpen(true); }}>
+            <span aria-hidden="true">⏱</span><b>{dueToday.length ? `${dueToday.length} notice${dueToday.length === 1 ? "" : "s"} due today` : "No 24 / 72-hour deadline today"}</b>
+            <small>{dueToday.length ? `First one: ${dueText(dueToday[0].dueAt)} · ${dueToday[0].omo}` : `${boardOpenRows.filter((r) => r.kind === "ppn").length} notices open on the board`}</small>
+          </button>
+          <button type="button" className="fc-today-line" data-hpd-smoke="fc-today-docs" onClick={() => { closeSummary(); setBoardShow("docs"); closeScreens("board"); setBoardOpen(true); }}>
+            <span aria-hidden="true">📋</span><b>{docsWaiting.length} missing-documents request{docsWaiting.length === 1 ? "" : "s"}</b>
+            <small>{docsWaiting.length ? `Waiting up to ${Math.max(...docsWaiting.map((r) => Math.floor((Date.now() - Date.parse(r.noticeAt)) / 86400000)))} days` : "Nothing waiting"}{waitingOnThem ? ` · ${waitingOnThem} sent, waiting on them` : ""}</small>
+          </button>
+          <button type="button" className="fc-today-line is-money" data-hpd-smoke="fc-today-money" onClick={() => { closeSummary(); closeScreens("notices"); setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("money"); setNoticesOpen(true); }}>
+            <span aria-hidden="true">💵</span><b>{money(payTrack.summary.held)} held by rejections</b>
+            <small>{payTrack.summary.toFix} to fix · {payTrack.summary.inTheMail} in the mail{toPrint.filter((c) => !c.mailedAt).length ? ` · ${toPrint.filter((c) => !c.mailedAt).length} to print & mail` : ""}</small>
+          </button>
+          <button type="button" className="fc-today-line" data-hpd-smoke="fc-today-bids" onClick={() => { closeSummary(); closeScreens("bids"); setBidsOpen(true); }}>
+            <span aria-hidden="true">🧾</span><b>{bidsDue.today ? `${bidsDue.today} bid${bidsDue.today === 1 ? "" : "s"} due today` : `${bidsDue.open} invitation${bidsDue.open === 1 ? "" : "s"} open`}</b>
+            <small>{bidsDue.tomorrow ? `${bidsDue.tomorrow} due tomorrow` : "Invitations to bid"}</small>
+          </button>
+        </div>
+      ) : null}
+      {boardUrgent.length && !summaryToday && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen && !followFilter ? (
+        <button type="button" className="fc-board-alert" data-hpd-smoke="fc-board-alert" onClick={() => { closeScreens("board"); setBoardShow("ppn"); setBoardOpen(true); }}>
           ⏱ {boardUrgent.length} notice{boardUrgent.length === 1 ? "" : "s"} under 6 hours · open the board
         </button>
       ) : null}

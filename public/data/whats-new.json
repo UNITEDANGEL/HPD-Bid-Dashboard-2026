@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "☀️ Morning summary on the map",
+      "items": [
+        "The first time you open the app each day, a card on the map says what needs doing today:",
+        "⏱ notices due today (and the first deadline) · 📋 missing-documents requests (and how long they have waited) · 💵 money held by rejections (to fix / in the mail) · 🧾 bids due today.",
+        "Tap a line to go straight there (the board on that filter, 💰 To get paid, or the bids). Got it closes it for the day; ☀️ Today in Notices opens it again."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "Notices take you to the map; reply to many at once",
       "items": [
         "Notices -> Priority (or any kind): the picker shrinks to a thin bar at the bottom and the map zooms to fit those jobs, so you see them right away. Change ▴ opens the picker again; List opens the list; ✕ goes back to all jobs.",

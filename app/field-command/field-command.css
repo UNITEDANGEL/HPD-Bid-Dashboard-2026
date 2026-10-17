@@ -3067,3 +3067,15 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-notice-chooser header .fc-notice-mini-btn { width: auto; padding: 0 12px; border-radius: 18px; background: #f8fafc; color: #0f172a; font: 900 14px system-ui; white-space: nowrap; }
 .fc-notice-chooser.is-mini header { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; }
 .fc-notice-chooser.is-mini header .fc-notice-mini-btn { height: 38px; padding: 0 10px; }
+
+/* Morning summary (17 Oct). */
+.fc-today { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 3200; max-width: 560px; margin: 0 auto; display: grid; gap: 7px; padding: 12px; border-radius: 20px; background: #0b1220f5; border: 1px solid #334155; box-shadow: 0 14px 40px #0008; animation: fc-pop-in 0.18s ease-out; }
+.fc-today header { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #fde68a; font: 900 17px system-ui; }
+.fc-today header button { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 0; background: #f8fafc; color: #0f172a; font: 900 14px system-ui; }
+.fc-today-line { display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 0 10px; min-height: 58px; padding: 6px 12px; border-radius: 14px; border: 2px solid #334155; background: #111827; color: #f8fafc; text-align: left; transition: transform 0.15s ease; }
+.fc-today-line span { grid-row: span 2; font-size: 26px; text-align: center; }
+.fc-today-line b { font: 900 16px/1.2 system-ui; }
+.fc-today-line small { font: 700 13px/1.3 system-ui; color: #cbd5e1; }
+.fc-today-line.is-hot { border-color: #ef4444; background: #450a0a; animation: fc-board-pulse 1.6s ease-in-out infinite; }
+.fc-today-line.is-money { border-color: #22c55e; }
+.fc-today-line:active { transform: scale(0.97); }
