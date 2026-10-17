@@ -5,7 +5,7 @@
 
 const SYSTEM = [
   "You write short email replies for United Angel Construction Corp, an NYC HPD emergency repair contractor,",
-  "to the HPD vendor tracking person who sent a poor performance notice (24 or 72 hours).",
+  "to the HPD vendor tracking person who sent a poor performance notice (24 or 72 hours) or a missing-documents request.",
   "Rules:",
   "- Use only the facts given. Never invent dates, times, amounts, work done, visits or documents.",
   "- If the affidavit and invoice were already sent, say so with the date given and offer to resend.",
@@ -26,7 +26,7 @@ export function draftFacts(body) {
     omo,
     address: clip(body.address, 120),
     from: clip(body.who, 80),
-    notice: `${body.hours === 72 ? 72 : 24}-hour poor performance notice`,
+    notice: body.kind === "docs" ? `missing documents request (they asked for: ${clip(body.want, 60) || "documents / an update"})` : `${body.hours === 72 ? 72 : 24}-hour poor performance notice`,
     received: clip(body.noticeAt, 40),
     deadline: clip(body.dueAt, 40),
     hoursLeft: Number.isFinite(Number(body.hoursLeft)) ? Math.round(Number(body.hoursLeft) * 10) / 10 : null,

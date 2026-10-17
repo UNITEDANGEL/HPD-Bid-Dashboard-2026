@@ -3961,7 +3961,7 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
           </header>
           <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardOpen(true); }}>
-            <span aria-hidden="true">⏱</span><b>24 / 72-hour board</b><small>{boardOpenRows.length} open{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
+            <span aria-hidden="true">⏱</span><b>Vendor tracking board</b><small>{boardOpenRows.filter((r) => r.kind === "ppn").length} notices · {boardOpenRows.filter((r) => r.kind === "docs").length} missing docs{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
           </button>
           <div className="fc-notice-picks">
             {NOTICE_KINDS.map((k) => (

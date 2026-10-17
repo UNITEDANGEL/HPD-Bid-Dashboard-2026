@@ -44,10 +44,22 @@ United Angel Construction Corp` } });
   const sum = await board.locator('[data-hpd-smoke="fc-board-sum"]').innerText();
   assert.match(sum, /\d+\s*open/);
   const clocks = await rows.locator('[data-hpd-smoke="fc-board-clock"]').allInnerTexts();
-  assert.ok(clocks.every((c) => /left|OVERDUE|Sent · waiting/.test(c)), `countdowns: ${clocks.slice(0, 4)}`);
+  assert.ok(clocks.every((c) => /left|OVERDUE|Sent · waiting|Waiting \d+ days|Done/.test(c)), `countdowns: ${clocks.slice(0, 4)}`);
   assert.equal(await rows.first().locator('[data-hpd-smoke="fc-board-steps"] li').count(), 4);
   await page.waitForTimeout(700);
   if (shots) await page.screenshot({ path: `${shots}/board-1.png` });
+  // Missing documents (Gafur's lists): their own filter, one row per job with what they want.
+  await board.locator('[data-hpd-smoke="fc-board-show-docs"]').click();
+  const docRows = board.locator('[data-hpd-smoke="fc-board-row"]');
+  await docRows.first().waitFor();
+  const nDocs = await docRows.count();
+  assert.ok(nDocs >= 5, `missing-documents rows: ${nDocs}`);
+  assert.ok((await board.locator(".fc-board-row:not(.is-docs)").count()) === 0, "only missing documents");
+  assert.match(await docRows.first().locator('[data-hpd-smoke="fc-board-want"]').innerText(), /They want: .+/);
+  assert.match(await docRows.first().locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /Waiting \d+ days|Sent · waiting/);
+  await page.waitForTimeout(400);
+  if (shots) await page.screenshot({ path: `${shots}/board-4-docs.png` });
+  await board.locator('[data-hpd-smoke="fc-board-show-all"]').click();
 
   // The ready reply: says the OMO, first tap only arms.
   const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').first();

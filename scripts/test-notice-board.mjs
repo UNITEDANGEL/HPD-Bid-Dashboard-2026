@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { loadLib } from "./daily-report.mjs";
 
-const { buildBoard, draftReply, hoursLeft, urgentRows } = await loadLib("notice-board");
+const { buildBoard, daysWaiting, draftReply, hoursLeft, urgentRows } = await loadLib("notice-board");
 
 const now = Date.parse("2026-10-17T10:00:00Z");
 const hpd = (at, text = "Notice. Darlene Lewis lewisd@hpd.nyc.gov") => ({ at, text, hpd: true, mine: false });
@@ -40,4 +40,32 @@ assert.match(draftReply(by.ER05228, "1 MAIN ST").text, /^Hello Darlene,\n\nRe: O
 assert.match(draftReply(by.EQ30401, "").text, /were sent on 10\/1\/2026/);
 assert.match(draftReply(by.EQ31123, "").text, /were sent\./);
 assert.equal(draftReply(by.ER05228, "").subject, "RE: 24 HR POOR PERFORMANCE NOTICE- OMO#ER05228");
-console.log("PASS notice board: 5 notices (2 too old / not notices left out), steps from emails / record / taps, deadlines 24 vs 72 h, under-6-hour reminder, closed = done, drafts say what's true");
+// Missing-documents lists (Gafur): one row per job, what they want, steps per job (our PDFs must name the OMO).
+const list = "These are the list of OMOs that are missing documents.\n1. EP27489 - Affidavit and Invoice\n2. EO18305 - photos\n3. EP27310 - update / documents\nDeoranie Gafur gafurd@hpd.nyc.gov";
+const docsThread = { id: "m", subject: "Missing Documents", omos: ["EP27489", "EO18305", "EP27310"], people: ["Deoranie Gafur"], messages: [
+  hpd("2026-10-07T15:25:00-04:00", list),
+  { at: "2026-10-09T10:00:00-04:00", text: "Attached for OMO EO18305", hpd: false, mine: true, files: ["photos.pdf"] },
+  hpd("2026-10-16T15:26:00-04:00", "Following up on the list"),
+] };
+const docs = buildBoard({ threads: [docsThread], sent: { EP27489: { sentAt: "2026-09-20" } }, marks: {}, now });
+const d = Object.fromEntries(docs.map((r) => [r.omo, r]));
+assert.equal(docs.length, 3);
+assert.equal(d.EP27489.kind, "docs");
+assert.equal(d.EP27489.want, "Affidavit and Invoice");
+assert.equal(d.EO18305.want, "photos");
+assert.equal(d.EP27489.to, "gafurd@hpd.nyc.gov");
+assert.equal(d.EP27489.dueAt, "");
+assert.equal(hoursLeft(d.EP27489, now), Infinity);
+assert.equal(daysWaiting(d.EP27489, now), 9);
+assert.equal(d.EP27489.followUpAt, "2026-10-16T15:26:00-04:00");
+assert.equal(d.EO18305.next, "confirmed", "our PDFs naming EO18305 = sent");
+assert.equal(d.EP27310.steps.sent.done, false, "PDFs for another job don't count for this one");
+assert.equal(d.EP27489.next, "replied");
+assert.equal(d.EP27489.steps.made.how, "record");
+assert.deepEqual(urgentRows(docs, now), [], "no deadline, no 6-hour reminder");
+assert.match(draftReply(d.EP27489, "").text, /were sent on 9\/20\/2026\. We will send them to you again today/);
+assert.match(draftReply(d.EO18305, "").text, /The photos for this job were sent/);
+assert.match(draftReply(d.EP27310, "").text, /will send the affidavit and invoice \(or an update\) as soon as possible/);
+// Notices with a deadline come before the lists.
+assert.equal(buildBoard({ threads: [docsThread, threads[0]], sent: {}, marks: {}, now })[0].kind, "ppn");
+console.log("PASS notice board: missing-documents lists (one row per job, what they want, steps per job, no deadline); 5 notices (2 too old / not notices left out), steps from emails / record / taps, deadlines 24 vs 72 h, under-6-hour reminder, closed = done, drafts say what's true");

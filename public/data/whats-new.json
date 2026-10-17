@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "Vendor tracking board: Gafur's missing documents added",
+      "items": [
+        "The board is now the Vendor tracking board: the 24 / 72-hour notices AND every job on a missing-documents list (Gafur), one card per job.",
+        "Filter at the top: All · ⏱ 24 / 72-hour · 📋 Missing documents.",
+        "Each missing-documents card says what they want (Affidavit and Invoice, photos, update / documents), how many days they have been waiting, and when they followed up.",
+        "Same 4 steps and buttons: AI reply, make the paperwork, send it to them with the PDF, confirmed. A reply or PDFs about another job on the list don't count for this one."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "📤 Send the paperwork to vendor tracking from the board",
       "items": [
         "On the board, pick what happened (Work completed, Refused access...) or tap 📤 Send the paperwork: the paperwork page opens for that job.",

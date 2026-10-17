@@ -4,7 +4,7 @@
 // and four steps (reply sent -> paperwork made -> sent to vendor tracking -> confirmed). Steps tick by themselves
 // from the emails / paperwork on record, or with a tap. Replies are drafted here; nothing is sent without two taps.
 import { useEffect, useState } from "react";
-import { BOARD_STEPS, draftReply, hoursLeft, type BoardRow, type BoardStep } from "../../lib/notice-board";
+import { BOARD_STEPS, daysWaiting, draftReply, hoursLeft, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
   rows: BoardRow[];
@@ -40,7 +40,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
   const writeWithAi = async (row: BoardRow, note: string) => {
     setAi({ key: row.key, note, busy: true, msg: "✨ AI is writing the reply…" });
     try {
-      const r = await fetch("/api/drive/hpd-draft", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo: row.omo, address: addressOf(row.omo), who: row.who, hours: row.hours, noticeAt: row.noticeAt, dueAt: row.dueAt, hoursLeft: hoursLeft(row, Date.now()), sentAt: row.sentAt, steps: { replied: row.steps.replied.done, made: row.steps.made.done, sent: row.steps.sent.done }, note, noticeText: row.noticeText }) });
+      const r = await fetch("/api/drive/hpd-draft", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo: row.omo, address: addressOf(row.omo), who: row.who, kind: row.kind, want: row.want, hours: row.hours, noticeAt: row.noticeAt, dueAt: row.dueAt, hoursLeft: hoursLeft(row, Date.now()), sentAt: row.sentAt, steps: { replied: row.steps.replied.done, made: row.steps.made.done, sent: row.steps.sent.done }, note, noticeText: row.noticeText }) });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.ai && d.text) {
         setReply((cur) => (cur && cur.key === row.key ? { ...cur, text: d.text, armed: false } : cur));
@@ -52,8 +52,11 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
       setAi({ key: row.key, note, busy: false, msg: "No connection to the AI. The ready reply is below." });
     }
   };
-  const open = rows.filter((r) => r.next);
-  const done = rows.filter((r) => !r.next);
+  // Filter: everything, the 24 / 72-hour notices, or the missing-documents lists (Gafur).
+  const [show, setShow] = useState<"all" | "ppn" | "docs">("all");
+  const shown = rows.filter((r) => show === "all" || r.kind === show);
+  const open = shown.filter((r) => r.next);
+  const done = shown.filter((r) => !r.next);
   const under6 = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 6 && hoursLeft(r, now) >= 0).length;
   const overdue = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 0).length;
   const waiting = open.filter((r) => r.next === "confirmed").length;
@@ -80,13 +83,14 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
     const hot = !row.steps.sent.done && h < 6;
     const address = addressOf(row.omo);
     return (
-      <li key={row.key} className={`fc-board-row is-${row.hours}h${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}`} data-hpd-smoke="fc-board-row" data-next={row.next || "done"}>
+      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}`} data-hpd-smoke="fc-board-row" data-next={row.next || "done"}>
         <div className="fc-board-top">
-          <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (row.steps.sent.done ? "📤 Sent · waiting" : `⏱ ${clock(h)}`) : "✅ Done"}</span>
-          <span className="fc-board-kind">{row.hours}-HOUR</span>
+          <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
+          <span className="fc-board-kind">{row.kind === "docs" ? "MISSING DOCS" : `${row.hours}-HOUR`}</span>
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
-        <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
+        <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
+        {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
         <ol className="fc-board-steps" data-hpd-smoke="fc-board-steps">
           {BOARD_STEPS.map((s) => {
             const st = row.steps[s.key];
@@ -139,20 +143,25 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
   };
 
   return (
-    <div className="fc-package-sheet fc-summary-sheet fc-board-sheet" role="dialog" aria-label="24 / 72-hour board" data-hpd-smoke="fc-board">
+    <div className="fc-package-sheet fc-summary-sheet fc-board-sheet" role="dialog" aria-label="Vendor tracking board" data-hpd-smoke="fc-board">
       <header>
-        <strong>⏱ 24 / 72-hour board</strong>
+        <strong>⏱ Vendor tracking board</strong>
         <button type="button" aria-label="Close" data-hpd-smoke="fc-board-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-summary-body">
+        <div className="fc-board-filter" role="tablist" data-hpd-smoke="fc-board-filter">
+          {([["all", "All", rows.filter((r) => r.next).length], ["ppn", "⏱ 24 / 72-hour", rows.filter((r) => r.next && r.kind === "ppn").length], ["docs", "📋 Missing documents", rows.filter((r) => r.next && r.kind === "docs").length]] as const).map(([k, label, n]) => (
+            <button key={k} type="button" role="tab" aria-selected={show === k} className={show === k ? "is-on" : ""} data-hpd-smoke={`fc-board-show-${k}`} onClick={() => setShow(k)}>{label} <b>{n}</b></button>
+          ))}
+        </div>
         <div className="fc-board-sum" data-hpd-smoke="fc-board-sum">
           <span><b>{open.length}</b> open</span>
           <span className={overdue ? "is-late" : ""}><b>{overdue}</b> overdue</span>
           <span className={under6 ? "is-hot" : ""}><b>{under6}</b> under 6 h</span>
           <span><b>{waiting}</b> waiting on them</span>
         </div>
-        <p className="fc-follow-note">Each notice from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p>
-        {!rows.length ? <p className="fc-follow-note">No 24 / 72-hour notices in the last 30 days. 🎉</p> : null}
+        <p className="fc-follow-note">Each notice and missing-documents request from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p>
+        {!rows.length ? <p className="fc-follow-note">Nothing from vendor tracking here right now. 🎉</p> : null}
         <ol className="fc-board-list">{open.map(card)}</ol>
         {done.length ? (
           <>
