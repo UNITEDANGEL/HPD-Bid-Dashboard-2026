@@ -44,6 +44,8 @@ import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
 import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
+import { buildBoard, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
+import NoticeBoard from "./NoticeBoard";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
@@ -972,6 +974,19 @@ export default function FieldCommandClient() {
   type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print";
   const [noticeChooser, setNoticeChooser] = useState(false);
   const [noticeKind, setNoticeKind] = useState<NoticeKind>("");
+  // The 24 / 72-hour board (17 Oct) and the steps ticked by hand on this phone.
+  const [boardOpen, setBoardOpen] = useState(false);
+  const [boardMarks, setBoardMarks] = useState<BoardMarks>({});
+  useEffect(() => { try { setBoardMarks(JSON.parse(localStorage.getItem("hpd-notice-board-v1") || "{}")); } catch { /* private mode */ } }, []);
+  const markBoard = (key: string, step: BoardStep, on: boolean) => {
+    setBoardMarks((cur) => {
+      const row = { ...(cur[key] || {}) };
+      if (on) row[step] = new Date().toISOString(); else delete row[step];
+      const next = { ...cur, [key]: row };
+      try { localStorage.setItem("hpd-notice-board-v1", JSON.stringify(next)); } catch { /* private mode */ }
+      return next;
+    });
+  };
   // Jobs that glow on the map for the picked notice kind, with their tag (e.g. "24h · 5h left").
   const glowRef = useRef<Map<string, { tag: string; cls: string }>>(new Map());
   // The days menu on the borough bar (owner, 16 Oct): one small button, the choices open under it.
@@ -1499,13 +1514,18 @@ export default function FieldCommandClient() {
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
   const [openNotice, setOpenNotice] = useState("");
   const senderName = (by: string) => (/^Department of Housing/i.test(by) ? "HPD Accounts Payable" : by);
+  // Jobs HPD closed or PIP paid: nothing left to do on them.
+  const closedJobs = new Set([...Object.entries(followRef.current?.hpd || {}).filter(([, h]) => (h as { closedReason?: string })?.closedReason).map(([o]) => o), ...Object.entries(pipMap).filter(([, p]) => p?.status === "paid").map(([o]) => o)]);
   const priorities: PriorityItem[] = buildPriorities({
     threads: (threads || []) as unknown as Parameters<typeof buildPriorities>[0]["threads"],
     rejections: openRejections.map((r) => ({ omo: r.omo, at: r.at, reason: r.reason || "", by: senderName(r.by || "HPD") })),
     toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, done: prioDone,
     // Nothing to do on jobs HPD closed or PIP paid.
-    closed: new Set([...Object.entries(followRef.current?.hpd || {}).filter(([, h]) => (h as { closedReason?: string })?.closedReason).map(([o]) => o), ...Object.entries(pipMap).filter(([, p]) => p?.status === "paid").map(([o]) => o)]),
+    closed: closedJobs,
   });
+  const boardRows = threads ? buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
+  const boardOpenRows = boardRows.filter((r) => r.next);
+  const boardUrgent = urgentRows(boardRows);
   // Vendor tracking's list (Due now); rejected paperwork and printing are Procurement's tabs.
   const vendorTodo = priorities.filter((p) => p.kind === "24h" || p.kind === "72h" || p.kind === "missing");
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
@@ -1731,6 +1751,7 @@ export default function FieldCommandClient() {
   const closeScreens = (keep = "") => {
     if (keep !== "bids") setBidsOpen(false);
     if (keep !== "notices") { setNoticesOpen(false); setNoticeChooser(false); }
+    if (keep !== "board") setBoardOpen(false);
     if (keep !== "stats") setStatsOpen(false);
     if (keep !== "agenda") setAgendaOpen(false);
     if (keep !== "follow") setFollowOpen(false);
@@ -3924,6 +3945,9 @@ export default function FieldCommandClient() {
             <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}: {filteredJobs.length} on the map{noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}</strong>
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
           </header>
+          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardOpen(true); }}>
+            <span aria-hidden="true">⏱</span><b>24 / 72-hour board</b><small>{boardOpenRows.length} open{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
+          </button>
           <div className="fc-notice-picks">
             {NOTICE_KINDS.map((k) => (
               <button key={k.key} type="button" title={k.note} aria-pressed={noticeKind === k.key} className={`fc-notice-pick is-${k.key}${noticeKind === k.key ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-pick-${k.key}`} onClick={() => pickNotices(k.key)}>
@@ -4211,6 +4235,22 @@ export default function FieldCommandClient() {
             ))}
           </div>
         </div>
+      ) : null}
+      {boardOpen ? (
+        <NoticeBoard
+          rows={boardRows}
+          addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
+          hasJob={(omo) => Boolean(findAnyJob(omo))}
+          onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}
+          onOpenThread={(id, title) => setThreadView({ ids: [id], title })}
+          onMark={markBoard}
+          onClose={() => setBoardOpen(false)}
+        />
+      ) : null}
+      {boardUrgent.length && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen && !followFilter ? (
+        <button type="button" className="fc-board-alert" data-hpd-smoke="fc-board-alert" onClick={() => { closeScreens("board"); setBoardOpen(true); }}>
+          ⏱ {boardUrgent.length} notice{boardUrgent.length === 1 ? "" : "s"} under 6 hours · open the board
+        </button>
       ) : null}
       {followFilter && !followOpen && !(followFilter === "notices" && noticeChooser) ? (
         <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">

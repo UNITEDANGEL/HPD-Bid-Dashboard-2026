@@ -2905,3 +2905,41 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-follow-active .fc-follow-active-list { width: auto; min-width: 54px; height: 34px; padding: 0 12px; border-radius: 17px; font: 800 13.5px system-ui; }
 .fc-follow-active > span { overflow: hidden; text-overflow: ellipsis; }
 .fc-app .fc-follow-active { left: 12px; right: 74px; transform: none; max-width: none; justify-content: space-between; }
+
+/* 24 / 72-hour board (17 Oct). */
+.fc-board-open { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0 10px; min-height: 52px; padding: 6px 12px; border-radius: 14px; border: 2px solid #ef4444; background: #450a0a; color: #fff; text-align: left; transition: transform 0.15s ease; }
+.fc-board-open span { grid-row: span 2; font-size: 24px; }
+.fc-board-open b { font: 900 15px system-ui; }
+.fc-board-open small { font: 700 12px system-ui; color: #fecaca; }
+.fc-board-open.is-hot { animation: fc-board-pulse 1.6s ease-in-out infinite; }
+.fc-board-open:active { transform: scale(0.97); }
+@keyframes fc-board-pulse { 0%, 100% { box-shadow: 0 0 0 0 #ef444466; } 50% { box-shadow: 0 0 0 6px #ef444400, 0 0 18px #ef4444aa; } }
+.fc-board-alert { position: absolute; z-index: 1500; top: calc(max(12px, env(safe-area-inset-top)) + 120px); left: 12px; right: 74px; min-height: 40px; padding: 6px 12px; border: 0; border-radius: 20px; background: #b91c1c; color: #fff; font: 900 13.5px system-ui; box-shadow: 0 4px 14px #0006; animation: fc-board-pulse 1.6s ease-in-out infinite; }
+.fc-board-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.fc-board-sum span { display: grid; justify-items: center; padding: 8px 4px; border-radius: 12px; background: #111827; border: 1px solid #334155; color: #cbd5e1; font: 700 11.5px/1.2 system-ui; text-align: center; }
+.fc-board-sum b { font: 900 22px system-ui; color: #f8fafc; }
+.fc-board-sum .is-late { border-color: #ef4444; background: #450a0a; }
+.fc-board-sum .is-hot { border-color: #f97316; background: #431407; }
+.fc-board-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.fc-board-row { display: grid; gap: 6px; padding: 12px; border-radius: 16px; border: 2px solid #f59e0b; background: #0f172a; color: #e2e8f0; }
+.fc-board-row.is-24h { border-color: #f97316; }
+.fc-board-row.is-hot { border-color: #ef4444; box-shadow: 0 0 16px #ef444455; }
+.fc-board-row.is-late { border-color: #ef4444; background: #2a0b0b; }
+.fc-board-row.is-done { border-color: #22c55e; opacity: 0.85; }
+.fc-board-row p { margin: 0; }
+.fc-board-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fc-board-clock { font: 900 22px/1.1 system-ui; color: #fdba74; }
+.fc-board-row.is-hot .fc-board-clock, .fc-board-row.is-late .fc-board-clock { color: #fca5a5; }
+.fc-board-row.is-done .fc-board-clock { color: #86efac; }
+.fc-board-kind { padding: 2px 8px; border-radius: 8px; background: #1e293b; font: 900 12px system-ui; letter-spacing: 0.04em; }
+.fc-board-job { font: 600 14.5px/1.3 system-ui; color: #f8fafc; }
+.fc-board-from { font: 600 12.5px/1.3 system-ui; color: #94a3b8; }
+.fc-board-steps { list-style: none; margin: 2px 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.fc-board-steps button { width: 100%; min-height: 58px; display: grid; justify-items: center; align-content: center; gap: 2px; padding: 4px 2px; border-radius: 12px; border: 2px solid #334155; background: #111827; color: #cbd5e1; }
+.fc-board-steps button span { font: 900 17px system-ui; }
+.fc-board-steps button small { font: 700 10.5px/1.15 system-ui; text-align: center; }
+.fc-board-steps li.is-done button { border-color: #22c55e; background: #052e1a; color: #bbf7d0; }
+.fc-board-steps li.is-next button { border-color: #f97316; background: #431407; color: #fff; animation: fc-icon-pop 0.4s ease-out; }
+.fc-board-steps button:disabled { opacity: 1; }
+.fc-board-todo { font: 800 13.5px/1.3 system-ui; color: #fde68a; }
+.fc-board-done-toggle { width: 100%; min-height: 44px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: #111827; color: #e2e8f0; font: 800 14px system-ui; }

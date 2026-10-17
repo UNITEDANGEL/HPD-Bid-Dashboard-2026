@@ -3,6 +3,17 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "⏱ 24 / 72-hour board",
+      "items": [
+        "Notices -> ⏱ 24 / 72-hour board: every poor performance notice from vendor tracking (last 30 days) with a big countdown.",
+        "Each one has 4 steps: ✉ Reply sent -> 📄 Paperwork made -> 📤 Sent to vendor tracking -> ✅ Confirmed. They tick by themselves from your emails (your reply, your email with the PDFs, their answer) and the paperwork on record. Tap a step to tick it by hand.",
+        "✉ Reply (ready): a reply that says what is true for that job (paperwork sent on <date>, ready today, or on it). Edit it, Send to me first, or Send with two taps.",
+        "Under 6 hours left and nothing sent: a red reminder on the map opens the board.",
+        "Confirmed ones (or jobs HPD closed / PIP paid) move to Done."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "Notices on the map: everything at once, Priority glows with its timer",
       "items": [
         "Tap 📩 Notices: every notice job is on the map at once, glowing in its color: 🔥 Priority (orange, red for 24-hour), 💵 Payment rejected (green), ✏️ Corrections (yellow), 🖨 Print & mail (purple).",
