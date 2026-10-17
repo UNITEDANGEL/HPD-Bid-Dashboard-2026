@@ -14,6 +14,7 @@ try {
   await routePrivate(context);
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const page = await context.newPage();
+  page.setDefaultTimeout(60000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });

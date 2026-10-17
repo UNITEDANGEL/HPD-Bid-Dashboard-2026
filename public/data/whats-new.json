@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "Bigger and clearer on the iPhone; everything pops when you touch it",
+      "items": [
+        "Bigger map buttons with bigger names (Route, Today, Stats, Notices...), bigger borough buttons (All, MN, BK, QN, BX, SI) and the 📅 days button.",
+        "Bigger words on the notices picker, the 24 / 72-hour board, the Priority box and the timers on the map.",
+        "Every button and link pops up for a moment when your finger touches it.",
+        "On a short screen (Safari with its bars) the map buttons stay a little smaller so all 9 still fit."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "⏱ 24 / 72-hour board",
       "items": [
         "Notices -> ⏱ 24 / 72-hour board: every poor performance notice from vendor tracking (last 30 days) with a big countdown.",

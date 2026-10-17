@@ -390,6 +390,7 @@ folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer qu
 3. **Outcome from the priority**: tap a priority job -> PRIORITY box with the hours left and five outcomes (work completed,
    refused access, no access, completed by others, partly done / going back) -> the affidavit opens with that outcome, put
    the date, preview, copy + original. (Done: links to /paperwork/?job=..&outcome=..)
+5. **Bigger and clearer on the iPhone; everything pops when touched** (done 17 Oct: bigger map / borough / days buttons and words, tap pop on every button and link; short screens keep the 9 map buttons fitting).
 4. **24 / 72-hour board** (done 17 Oct: lib/notice-board.ts, NoticeBoard.tsx, tests test-notice-board + test-browser-notice-board; replies are template drafts that say what is true, AI-written drafts still planned): a dedicated 24 / 72-hour board that tracks each notice to the end: reply sent -> paperwork made ->
    sent to vendor tracking -> confirmed; AI drafts the reply for each one (owner approves, two taps); reminders when
    under 6 hours left; done items drop off by themselves when the paperwork is on record.

@@ -978,6 +978,21 @@ export default function FieldCommandClient() {
   const [boardOpen, setBoardOpen] = useState(false);
   const [boardMarks, setBoardMarks] = useState<BoardMarks>({});
   useEffect(() => { try { setBoardMarks(JSON.parse(localStorage.getItem("hpd-notice-board-v1") || "{}")); } catch { /* private mode */ } }, []);
+  // Every button / link pops for a moment when touched (iPhone has no hover); the touch listener turns on :active in Safari.
+  useEffect(() => {
+    const pop = (e: PointerEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("button, a, [role=button]") as HTMLElement | null;
+      if (!el || el.closest(".leaflet-pane")) return;
+      el.classList.remove("fc-tap-pop");
+      void el.offsetWidth;
+      el.classList.add("fc-tap-pop");
+      window.setTimeout(() => el.classList.remove("fc-tap-pop"), 320);
+    };
+    const noop = () => {};
+    document.addEventListener("pointerdown", pop, { passive: true });
+    document.addEventListener("touchstart", noop, { passive: true });
+    return () => { document.removeEventListener("pointerdown", pop); document.removeEventListener("touchstart", noop); };
+  }, []);
   const markBoard = (key: string, step: BoardStep, on: boolean) => {
     setBoardMarks((cur) => {
       const row = { ...(cur[key] || {}) };
