@@ -18,7 +18,7 @@ try {
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
-    await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+    await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
     // Kinds are kept apart: Corrections / Requests / Messages each have their own tab (Rejected is separate).
     await page.locator('[data-hpd-smoke="fc-notice-tab-messages"]').click();
     const box = page.locator('[data-hpd-smoke="fc-threads-messages"]');

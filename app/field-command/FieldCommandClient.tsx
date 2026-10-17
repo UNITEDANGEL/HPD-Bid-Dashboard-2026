@@ -968,6 +968,12 @@ export default function FieldCommandClient() {
   const [olderJobs, setOlderJobs] = useState<JobRecord[]>([]);
   // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
   const [showOlderLayer, setShowOlderLayer] = useState(false);
+  // Notices button (owner, 16 Oct): first asks what you're looking for, then the map shows just those jobs.
+  type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print";
+  const [noticeChooser, setNoticeChooser] = useState(false);
+  const [noticeKind, setNoticeKind] = useState<NoticeKind>("");
+  // Jobs that glow on the map for the picked notice kind, with their tag (e.g. "24h · 5h left").
+  const glowRef = useRef<Map<string, { tag: string; cls: string }>>(new Map());
   // The days menu on the borough bar (owner, 16 Oct): one small button, the choices open under it.
   const [daysMenuOpen, setDaysMenuOpen] = useState(false);
   const [olderLayer, setOlderLayer] = useState<JobRecord[] | null>(null);
@@ -1502,7 +1508,52 @@ export default function FieldCommandClient() {
   });
   // Vendor tracking's list (Due now); rejected paperwork and printing are Procurement's tabs.
   const vendorTodo = priorities.filter((p) => p.kind === "24h" || p.kind === "72h" || p.kind === "missing");
+  const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
+    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo)]),
+    rejected: new Set(openRejections.map((r) => r.omo)),
+    corrections: new Set(threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).flatMap((t) => t.omos)),
+    print: new Set(toPrint.filter((c) => !c.mailedAt).map((c) => c.omo)),
+    all: new Set<string>(),
+  };
+  noticeSets.all = new Set([...noticeSets.priority, ...noticeSets.rejected, ...noticeSets.corrections, ...noticeSets.print]);
+  const noticeSetKey = noticeKind ? [...noticeSets[noticeKind]].sort().join(",") : "";
+  const NOTICE_KINDS = [
+    { key: "all", icon: "📩", short: "All notices", title: "All notices", note: "Everything on the map at once" },
+    { key: "priority", icon: "🔥", short: "Priority", title: "Priority · vendor tracking", note: "Lewis / Gafur want the affidavit, invoice or an update" },
+    { key: "rejected", icon: "💵", short: "Payment rejected", title: "Payment rejected", note: "Procurement rejected the invoice / affidavit: fix & resend" },
+    { key: "corrections", icon: "✏️", short: "Corrections", title: "Corrections", note: "HPD staff asked you to correct paperwork" },
+    { key: "print", icon: "🖨", short: "Print & mail", title: "Print & mail", note: "Fixed paperwork to sign in ink and mail" },
+  ] as const;
+  // Earliest Priority item per job (24-hour before 72-hour before missing documents).
+  const prioByOmo = new Map<string, PriorityItem>();
+  for (const it of vendorTodo) if (!prioByOmo.has(it.omo)) prioByOmo.set(it.omo, it);
+  const glow = new Map<string, { tag: string; cls: string }>();
+  if (followFilter === "notices" && noticeKind) {
+    for (const omo of noticeSets[noticeKind]) {
+      const kind = noticeKind !== "all" ? noticeKind
+        : noticeSets.priority.has(omo) ? "priority" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
+      const it = prioByOmo.get(omo);
+      const due = it ? dueText(it.dueAt) : "";
+      const tag = kind === "priority"
+        ? (it ? (it.kind === "missing" ? "🔥 Docs" : `🔥 ${it.kind === "24h" ? "24h" : "72h"} · ${due.replace(" left", "").replace("overdue ", "-")}`) : "🔥 Asked")
+        : kind === "rejected" ? "💵 Fix" : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
+      glow.set(omo, { tag, cls: `is-glow is-glow-${kind}${kind === "priority" && it?.kind === "24h" ? " is-glow-24h" : ""}${kind === "priority" && /overdue/.test(due) ? " is-glow-late" : ""}` });
+    }
+  }
+  glowRef.current = glow;
+  const glowKey = [...glow].map(([o, g]) => `${o}:${g.tag}`).join("|");
+  // Narrow the map to one kind; the picker stays so you can switch like the other filters.
+  const pickNotices = (kind: NoticeKind) => {
+    setSelectedJob(null);
+    setFollowFilter("notices");
+    setNoticeKind(kind);
+    if (kind && kind !== "all") setNoticesTab(kind);
+    setNoticeChooser(true);
+  };
+  // The nearest 24 / 72-hour deadline (for the timer on the Priority chip).
+  const nextDue = vendorTodo.filter((p) => p.dueAt).sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)))[0];
   const followMatch = (job: JobRecord) => {
+    if (followFilter === "notices" && noticeKind) return noticeSets[noticeKind].has(jobId(job));
     const f = followUps.get(jobId(job));
     if (!f) return false;
     if (followFilter === "recent") return followReport.recent.some((r) => r.omo === f.omo);
@@ -1513,7 +1564,9 @@ export default function FieldCommandClient() {
 
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const olderOnNotices = followFilter === "notices" ? olderJobs.filter((j) => openRejections.some((r) => r.omo === jobId(j))) : [];
+    const olderOnNotices = followFilter !== "notices" ? []
+      : noticeKind ? olderJobs.filter((j) => noticeSets[noticeKind].has(jobId(j)))
+      : olderJobs.filter((j) => openRejections.some((r) => r.omo === jobId(j)));
     // 2024-2025 jobs: only with the "2024-25" button on (and no follow-up filter), same borough / search.
     if (showOlderLayer && !followFilter && olderLayer) {
       return olderLayer.filter((job) => (borough === "ALL" || jobBorough(job) === borough) && (!q || [jobId(job), jobAddress(job)].join(" ").toLowerCase().includes(q)));
@@ -1545,7 +1598,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The open job card has priority over "follow me": stop following and show the job's pin in
   // the open strip of map between the search bar and the top of the card. The locate button
@@ -1677,7 +1730,7 @@ export default function FieldCommandClient() {
   // summary, route, the job card, menus) before opening its own. Tapping it again closes it (back to the map).
   const closeScreens = (keep = "") => {
     if (keep !== "bids") setBidsOpen(false);
-    if (keep !== "notices") setNoticesOpen(false);
+    if (keep !== "notices") { setNoticesOpen(false); setNoticeChooser(false); }
     if (keep !== "stats") setStatsOpen(false);
     if (keep !== "agenda") setAgendaOpen(false);
     if (keep !== "follow") setFollowOpen(false);
@@ -1939,25 +1992,28 @@ export default function FieldCommandClient() {
               const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const screen = map.latLngToContainerPoint(position);
               const showLabel = reservePinLabel(screen.x, screen.y, occupied);
-              const html = showLabel
+              const lit = glowRef.current.get(jobId(job));
+              const html = (showLabel || lit
                 ? jobPinHtml(job, meta, priority, visit.count)
-                : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`;
+                : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
+                + (lit ? `<span class="fc-glow-tag">${lit.tag}</span>` : "");
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
               // Pins grow as you zoom in; the one nearest the middle of the screen is the focus.
               const zoomClass = map.getZoom() >= 18 ? " is-z18" : map.getZoom() >= 16 ? " is-z16" : "";
               // The pin's tip sits on the building.
-              const icon = L.divIcon({ className: (showLabel ? "fc-label-marker" : "fc-dot-marker") + zoomClass, html, iconSize: showLabel ? [36, 42] : [14, 14], iconAnchor: showLabel ? [18, 40] : [7, 7] });
-              const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
+              const big = showLabel || Boolean(lit);
+              const icon = L.divIcon({ className: (big ? "fc-label-marker" : "fc-dot-marker") + zoomClass + (lit ? ` ${lit.cls}` : ""), html, iconSize: big ? [36, 42] : [14, 14], iconAnchor: big ? [18, 40] : [7, 7] });
+              const marker = L.marker(position, { icon, title: lit ? `${title} - ${lit.tag}` : title, zIndexOffset: lit ? 3000 : showLabel ? 1000 : 0 });
               marker.on("click", () => {
-                if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
+                if (!big || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
                 else pinTapRef.current = true;
                 setSelectedJob(job);
               });
               marker.addTo(layerGroupRef.current);
               marker.getElement()?.setAttribute("aria-label", title);
-              if (showLabel && map.getZoom() >= 15) {
+              if (big && map.getZoom() >= 15) {
                 const size = map.getSize();
                 const distance = Math.hypot(screen.x - size.x / 2, screen.y - size.y / 2);
                 if (distance < focusDistance) { focusDistance = distance; focusElement = marker.getElement() || null; }
@@ -1977,7 +2033,7 @@ export default function FieldCommandClient() {
       // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
       // filters just change which pins show; the map stays on you.
       // The HPD notices layer frames its jobs too (they're spread over the city).
-      const framing = `${borough}|${search}|${followFilter === "notices" ? "notices" : ""}|${showOlderLayer ? "older" : ""}`;
+      const framing = `${borough}|${search}|${followFilter === "notices" ? `notices-${noticeKind}` : ""}|${showOlderLayer ? "older" : ""}`;
       if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
         // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
@@ -2018,6 +2074,8 @@ export default function FieldCommandClient() {
     if (useVector) tileLayerRef.current.remove();
     else tileLayerRef.current.addTo(mapRef.current);
   }, [darkTiles]);
+  // The glow follows the picked notice kind and the countdowns.
+  useEffect(() => { renderMarkersRef.current?.(); }, [glowKey]);
 
   useEffect(() => () => {
     mapRef.current?.remove();
@@ -2941,13 +2999,15 @@ export default function FieldCommandClient() {
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen} title="HPD notices: rejected paperwork and requests" onClick={() => {
-            // Always opens the notices list (the map shows those jobs); tapping again closes the list.
-            // "Show all jobs" in the list (or ✕ on the map) goes back to every job.
+          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
+            // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
+            // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
             if (noticesOpen) { setNoticesOpen(false); return; }
+            if (noticeChooser) { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); return; }
             closeScreens("notices");
             setFollowFilter("notices");
-            setNoticesOpen(true);
+            setNoticeKind("all");
+            setNoticeChooser(true);
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
@@ -3095,6 +3155,37 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
               </button>
+              {(() => {
+                const omo = jobId(selectedJob);
+                const it = prioByOmo.get(omo);
+                const rj = openRejections.find((r) => r.omo === omo);
+                if (!it && !rj) return null;
+                const due = it ? dueText(it.dueAt) : "";
+                const outcomes = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
+                return (
+                  <div className={`fc-prio-card${it?.kind === "24h" ? " is-24h" : ""}${/overdue/.test(due) ? " is-late" : ""}`} data-hpd-smoke="fc-prio-card">
+                    {it ? <>
+                      <p className="fc-prio-card-head"><b>🔥 PRIORITY</b> · {it.title}{it.who ? ` · ${it.who}` : ""}</p>
+                      {due ? <p className="fc-prio-card-due" data-hpd-smoke="fc-prio-card-due">⏱ {due}</p> : <p className="fc-prio-card-due">Asked {new Date(it.askedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>}
+                      <p className="fc-prio-card-want">{it.want}</p>
+                      <p className={`fc-prio-sent${it.sentAt ? " is-sent" : ""}`}>{it.sentAt ? `✓ Paperwork already sent ${it.sentAt}` : "⚠️ No paperwork sent for this job yet"}</p>
+                      <p className="fc-prio-card-q">What happened? Pick it, put the date, and the affidavit (copy + original) is made for you to check:</p>
+                      <div className="fc-prio-outcomes" data-hpd-smoke="fc-prio-outcomes">
+                        {outcomes.map(([k, label]) => <a key={k} href={`/paperwork/?job=${encodeURIComponent(omo)}&outcome=${k}`} data-hpd-smoke={`fc-prio-outcome-${k}`}>{label}</a>)}
+                      </div>
+                      <div className="fc-notice-actions">
+                        {it.threadId ? <button type="button" onClick={() => setThreadView({ ids: [it.threadId], title: `${omo}: ${it.title}` })}>💬 Their email</button> : null}
+                        <button type="button" onClick={() => { setNoticesTab("priority"); setNoticesOpen(true); }}>✉ Reply / Handled</button>
+                      </div>
+                    </> : null}
+                    {rj ? <>
+                      <p className="fc-prio-card-head is-pay"><b>💵 PAYMENT REJECTED</b> · {rj.at}</p>
+                      {rj.reason ? <p className="fc-prio-card-want">{rj.reason}</p> : null}
+                      <div className="fc-notice-actions"><a className="is-autofix" href={`/paperwork/?job=${encodeURIComponent(omo)}&fix=${encodeURIComponent(rj.at)}&auto=1`}>✨ Auto-fix &amp; preview</a></div>
+                    </> : null}
+                  </div>
+                );
+              })()}
               <header className="jc-hero">
                 {/* First thing on the card: what the building looks like, then where it is and how to get there. */}
                 <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
@@ -3827,12 +3918,33 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {noticeChooser && !noticesOpen && !selectedJob ? (
+        <div className="fc-notice-chooser" role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
+          <header>
+            <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}: {filteredJobs.length} on the map{noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}</strong>
+            <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
+          </header>
+          <div className="fc-notice-picks">
+            {NOTICE_KINDS.map((k) => (
+              <button key={k.key} type="button" title={k.note} aria-pressed={noticeKind === k.key} className={`fc-notice-pick is-${k.key}${noticeKind === k.key ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-pick-${k.key}`} onClick={() => pickNotices(k.key)}>
+                <span className="fc-notice-pick-icon" aria-hidden="true">{k.icon}</span>
+                <b>{k.short}</b>
+                <em>{noticeSets[k.key].size}</em>
+                {k.key === "priority" && nextDue ? <small className="fc-notice-pick-timer" data-hpd-smoke="fc-notice-timer">⏱ {dueText(nextDue.dueAt)}</small> : null}
+              </button>
+            ))}
+            <button type="button" className="fc-notice-pick is-list" data-hpd-smoke="fc-notice-pick-list" onClick={() => setNoticesOpen(true)}>
+              <span className="fc-notice-pick-icon" aria-hidden="true">📋</span><b>The list</b>
+            </button>
+          </div>
+        </div>
+      ) : null}
       {noticesOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-notices-sheet" role="dialog" aria-label="HPD notices" data-hpd-smoke="fc-notices-sheet">
           <header>
             <strong>📩 HPD notices</strong>
             <button type="button" aria-label="Close" onClick={() => setNoticesOpen(false)}>Close (keep on map)</button>
-            <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setFollowFilter(""); }}>Show all jobs</button>
+            <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>Show all jobs</button>
           </header>
           <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
             {/* Two departments, never mixed (owner, 16 Oct): PROCUREMENT pays you (job done, invoice sent; they reject
@@ -3844,9 +3956,9 @@ export default function FieldCommandClient() {
                   ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
                   ["print", "🖨 Print & mail", toPrint.filter((c) => !c.mailedAt).length],
                 ]],
-                ["vendor", "📋 Vendor tracking", "Lewis / Gafur asking for documents or an update.", [
-                  ["priority", "🔥 Due now", vendorTodo.length],
-                  ["requests", "📎 Requests", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
+                ["vendor", "🔥 Vendor tracking = Priority", "Lewis / Gafur asking for the affidavit, invoice or an update.", [
+                  ["priority", "🔥 Priority", vendorTodo.length],
+                  ["requests", "📧 Their emails", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
                   ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
                 ]],
               ] as const).map(([dept, title, note, tabsRaw]) => {
@@ -3855,10 +3967,10 @@ export default function FieldCommandClient() {
                 const total = tabs.reduce((a, [, , n]) => a + n, 0);
                 return (
                   <div key={dept} className={`fc-notice-dept is-${dept}${on ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-dept-${dept}`}>
-                    <button type="button" className="fc-notice-dept-head" onClick={() => setNoticesTab(tabs[0][0])}><strong>{title}</strong>{total ? <b>{total}</b> : null}<small>{note}</small></button>
+                    <button type="button" className="fc-notice-dept-head" onClick={() => { const k = tabs[0][0]; setNoticesTab(k); setNoticeKind(k === "priority" || k === "rejected" || k === "corrections" || k === "print" ? k : ""); }}><strong>{title}</strong>{total ? <b>{total}</b> : null}<small>{note}</small></button>
                     <div className="fc-notice-dept-tabs">
                       {tabs.map(([key, label, n]) => (
-                        <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => setNoticesTab(key)}>{label}{n ? <b>{n}</b> : null}</button>
+                        <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => { setNoticesTab(key); setNoticeKind(key === "priority" || key === "rejected" || key === "corrections" || key === "print" ? key : ""); }}>{label}{n ? <b>{n}</b> : null}</button>
                       ))}
                     </div>
                   </div>
@@ -4100,11 +4212,12 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {followFilter && !followOpen ? (
+      {followFilter && !followOpen && !(followFilter === "notices" && noticeChooser) ? (
         <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">
-          <span>Showing: <b>{followFilter === "notices" ? `Notices: ${filteredJobs.length} on map${openRejections.filter((r) => !r.onMap).length ? ` · ${openRejections.filter((r) => !r.onMap).length} older` : ""}` : ({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b>{followFilter === "notices" ? null : ` · ${filteredJobs.length} jobs`}</span>
-          {followFilter === "notices" ? <button type="button" className="fc-follow-active-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
-          <button type="button" onClick={() => setFollowFilter("")} aria-label="Stop the follow-up filter">✕</button>
+          <span>Showing: <b>{followFilter === "notices" && noticeKind ? `${NOTICE_KINDS.find((k) => k.key === noticeKind)?.icon} ${NOTICE_KINDS.find((k) => k.key === noticeKind)?.short}: ${filteredJobs.length} on map${noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}` : followFilter === "notices" ? `Notices: ${filteredJobs.length} on map${openRejections.filter((r) => !r.onMap).length ? ` · ${openRejections.filter((r) => !r.onMap).length} older` : ""}` : ({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b>{followFilter === "notices" ? null : ` · ${filteredJobs.length} jobs`}</span>
+          {followFilter === "notices" ? <button type="button" className="fc-follow-active-list" data-hpd-smoke="fc-notices-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
+          {followFilter === "notices" ? <button type="button" className="fc-follow-active-list" data-hpd-smoke="fc-notices-change" onClick={() => { setNoticesOpen(false); setSelectedJob(null); setNoticeChooser(true); if (!noticeKind) setNoticeKind("all"); }}>Change</button> : null}
+          <button type="button" onClick={() => { setFollowFilter(""); setNoticeKind(""); }} aria-label="Stop the follow-up filter">✕</button>
         </div>
       ) : null}
       {stats && statsOpenWork ? (

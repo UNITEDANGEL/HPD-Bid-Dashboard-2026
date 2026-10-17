@@ -45,7 +45,7 @@ try {
   assert.notEqual(tf, "none", "Queens button pops on press");
 
   // Notices: two departments with their own tabs.
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
   const proc = page.locator('[data-hpd-smoke="fc-notice-dept-procure"]');
   const vend = page.locator('[data-hpd-smoke="fc-notice-dept-vendor"]');
   await proc.waitFor();

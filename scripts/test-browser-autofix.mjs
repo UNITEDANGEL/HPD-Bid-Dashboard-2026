@@ -25,7 +25,7 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   // From the Rejected tab.
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
     await page.locator('[data-hpd-smoke="fc-notice-tab-rejected"]').click(); // Priority is the first tab
   const link = page.locator('[data-hpd-smoke="fc-notices-rejected"] li', { hasText: OMO }).locator('[data-hpd-smoke="fc-notice-autofix"]');
   await link.waitFor({ timeout: 15000 });
@@ -53,7 +53,7 @@ try {
   await page.locator('[data-hpd-smoke="paperwork-correction-saved"]').waitFor({ timeout: 10000 });
   assert.match(await page.locator('[data-hpd-smoke="paperwork-correction-saved"]').innerText(), /fixed folder/);
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-tab-print"]').click();
   await page.locator('[data-hpd-smoke="fc-to-print-row"]', { hasText: OMO }).waitFor({ timeout: 15000 });
   // Tell HPD it's fixed and in the mail: to whoever signed the notice, shown first, sent on the second tap.

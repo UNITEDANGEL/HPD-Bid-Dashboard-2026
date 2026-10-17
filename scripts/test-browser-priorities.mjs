@@ -15,7 +15,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
   const box = page.locator('[data-hpd-smoke="fc-priorities"]');
   await box.waitFor({ timeout: 15000 });
   const items = box.locator('[data-hpd-smoke="fc-prio-item"]');

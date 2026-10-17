@@ -2,6 +2,17 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 17, 2026",
+      "title": "Notices on the map: everything at once, Priority glows with its timer",
+      "items": [
+        "Tap 📩 Notices: every notice job is on the map at once, glowing in its color: 🔥 Priority (orange, red for 24-hour), 💵 Payment rejected (green), ✏️ Corrections (yellow), 🖨 Print & mail (purple).",
+        "A small picker at the bottom narrows it: All notices · Priority · Payment rejected · Corrections · Print & mail · The list. The Priority button shows the nearest deadline (⏱ hours left).",
+        "Each Priority pin shows its timer (\"24h · 19h left\"). Tap it: the card says PRIORITY with the hours left, what Lewis / Gafur want, and whether paperwork was already sent.",
+        "On that card, pick what happened (Work completed, Refused access, No access, Completed by others, Partly done / going back): the affidavit opens with that outcome so you put the date, check it and make the copy + original.",
+        "Priority and Vendor tracking are the same thing now (Lewis / Gafur asking for the affidavit and invoice)."
+      ]
+    },
+    {
       "date": "Oct 16, 2026",
       "title": "Notices split: Procurement vs Vendor tracking; days in one small menu; icons pop",
       "items": [

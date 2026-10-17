@@ -11,7 +11,7 @@ const BUTTONS = {
   route: { tap: '[data-hpd-smoke="fc-route-open"]', open: '.fc-route-toggle[aria-expanded="true"]' },
   today: { tap: '.fc-map-fab[aria-label="Today\'s appointments"]', open: ".fc-appointment-agenda" },
   stats: { tap: '[data-hpd-smoke="fc-stats-open"]', open: '[data-hpd-smoke="fc-stats-sheet"]', close: '[data-hpd-smoke="fc-stats-sheet"] header button' },
-  notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notices-sheet"]', close: '[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]' },
+  notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]', close: '[data-hpd-smoke="fc-notice-chooser-close"]' },
   follow: { tap: '[data-hpd-smoke="fc-follow-open"]', open: '[data-hpd-smoke="fc-follow-sheet"]', close: '[data-hpd-smoke="fc-follow-sheet"] header button' },
   bids: { tap: '[data-hpd-smoke="fc-bids-open"]', open: '[data-hpd-smoke="fc-bids-list"]' },
   closeout: { tap: '[data-hpd-smoke="fc-close-out"]', open: '[data-hpd-smoke="fc-close-out-sheet"]', close: '[data-hpd-smoke="fc-close-out-sheet"] header button' },
@@ -108,7 +108,8 @@ try {
     await page.locator(BUTTONS.notices.close).click();
     assert.equal(await page.locator(BUTTONS.notices.tap).getAttribute("aria-pressed"), "false");
     await page.locator(BUTTONS.notices.tap).click();
-    await page.locator(BUTTONS.notices.open).waitFor({ timeout: 5000 });
+    await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
+    await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
     // Show all jobs: list closes, every job is back on the map.
     const before = await page.locator(".fc-pin, .leaflet-marker-icon").count();
     await page.locator('[data-hpd-smoke="fc-notices-show-all"]').click();

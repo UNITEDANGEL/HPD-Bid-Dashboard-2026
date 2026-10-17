@@ -185,6 +185,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-prefill.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-priorities.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-notice-depts.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-priority-map.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 

@@ -381,6 +381,19 @@ folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer qu
 3. **Every icon pops up** when pointed at or tapped: boroughs (All, MN, BK, QN, BX, SI), the days button, map buttons,
    notice tabs. (Done.)
 
+## Owner's requests 17 Oct 2026: notices on the map, Priority first (priority 1)
+1. **Tap Notices -> everything on the map at once**, then pick what to look at, like the other filters. (Done: all notice
+   jobs glow in their color; a small picker at the bottom: All · 🔥 Priority · 💵 Payment rejected · ✏️ Corrections ·
+   🖨 Print & mail · The list. Test: test-browser-priority-map.)
+2. **Priority = vendor tracking** (Lewis / Gafur asking for the affidavit, invoice, update; 24 / 72-hour notices). Pins glow
+   with a timer ("24h · 19h left"); the Priority button shows the nearest deadline. (Done.)
+3. **Outcome from the priority**: tap a priority job -> PRIORITY box with the hours left and five outcomes (work completed,
+   refused access, no access, completed by others, partly done / going back) -> the affidavit opens with that outcome, put
+   the date, preview, copy + original. (Done: links to /paperwork/?job=..&outcome=..)
+4. **Next (planned)**: a dedicated 24 / 72-hour board that tracks each notice to the end: reply sent -> paperwork made ->
+   sent to vendor tracking -> confirmed; AI drafts the reply for each one (owner approves, two taps); reminders when
+   under 6 hours left; done items drop off by themselves when the paperwork is on record.
+
 ## Done 16 Oct 2026: your price vs the app's best price
 - Finding (1,547 of your faxed bids that HPD awarded, Nov 2025 - Oct 2026): your prices were a median 16%
   above the app's best price (about 20% since March; half of all bids more than 15% above). Typical chance to
