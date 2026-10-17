@@ -34,6 +34,9 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
+  // Reply to many (17 Oct): every reply written on one screen; each one still goes out with its own two taps.
+  type BatchItem = { key: string; subject: string; text: string; armed: boolean; status: string; sent: boolean };
+  const [batch, setBatch] = useState<{ pick: "record" | "none" | "all"; items: BatchItem[]; selfStatus: string } | null>(null);
   const [reply, setReply] = useState<{ key: string; to: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
   // AI-written reply (server/ai-draft.mjs): written from the facts on record and their notice; you read and edit it.
   const [ai, setAi] = useState<{ key: string; note: string; busy: boolean; msg: string }>({ key: "", note: "", busy: false, msg: "" });
@@ -74,6 +77,39 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
       setReply({ ...reply, armed: false, status: `✓ Sent to ${d.to}.` });
     } catch (e) {
       setReply({ ...reply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
+    }
+  };
+
+  // Who can get a reply now: open, their address known, not already waiting on them.
+  const replyable = rows.filter((r) => r.next && r.next !== "confirmed" && r.to);
+  const batchRows = (pick: "record" | "none" | "all") => replyable.filter((r) => pick === "all" || (pick === "record" ? !!r.sentAt || r.steps.made.done : !r.sentAt && !r.steps.made.done));
+  const startBatch = (pick: "record" | "none" | "all") => setBatch({ pick, selfStatus: "", items: batchRows(pick).map((r) => { const d = draftReply(r, addressOf(r.omo)); return { key: r.key, subject: d.subject, text: d.text, armed: false, status: "", sent: false }; }) });
+  const setItem = (key: string, patch: Partial<BatchItem>) => setBatch((b) => (b ? { ...b, items: b.items.map((it) => (it.key === key ? { ...it, ...patch } : it)) } : b));
+  const sendItem = async (row: BoardRow, it: BatchItem) => {
+    if (!it.armed) { setItem(it.key, { armed: true }); return; }
+    setItem(it.key, { status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: row.to, subject: it.subject, text: it.text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      onMark(row.key, "replied", true);
+      setItem(it.key, { armed: false, sent: true, status: `✓ Sent to ${d.to}.` });
+    } catch (e) {
+      setItem(it.key, { armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
+    }
+  };
+  // All the replies in one email to yourself, to read them over first.
+  const sendAllToMe = async () => {
+    if (!batch) return;
+    setBatch({ ...batch, selfStatus: "Sending…" });
+    const text = batch.items.map((it, i) => { const row = rows.find((r) => r.key === it.key); return `===== ${i + 1}. To ${row?.who || ""} <${row?.to || ""}> · ${it.subject}\n\n${it.text}`; }).join("\n\n");
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ toSelf: true, subject: `${batch.items.length} replies to vendor tracking`, text: text.slice(0, 3990) }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      setBatch((b) => (b ? { ...b, selfStatus: `✓ All ${b.items.length} sent to you (${d.to}) in one email. Nothing went to HPD.${text.length > 3990 ? " (Long: the last ones were cut off in that email.)" : ""}` } : b));
+    } catch (e) {
+      setBatch((b) => (b ? { ...b, selfStatus: `Not sent: ${e instanceof Error ? e.message : "error"}.` } : b));
     }
   };
 
@@ -162,8 +198,44 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
         </div>
         <p className="fc-follow-note">Each notice and missing-documents request from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p>
         {!rows.length ? <p className="fc-follow-note">Nothing from vendor tracking here right now. 🎉</p> : null}
-        <ol className="fc-board-list">{open.map(card)}</ol>
-        {done.length ? (
+        {batch ? (
+          <section className="fc-batch" data-hpd-smoke="fc-batch">
+            <div className="fc-batch-head">
+              <button type="button" data-hpd-smoke="fc-batch-back" onClick={() => setBatch(null)}>← Back to the board</button>
+              <b data-hpd-smoke="fc-batch-count">{batch.items.filter((i) => i.sent).length} of {batch.items.length} sent</b>
+            </div>
+            <div className="fc-board-filter" role="tablist">
+              {([["record", "Paperwork on record"], ["none", "No paperwork yet"], ["all", "All"]] as const).map(([k, label]) => (
+                <button key={k} type="button" role="tab" aria-selected={batch.pick === k} className={batch.pick === k ? "is-on" : ""} data-hpd-smoke={`fc-batch-pick-${k}`} onClick={() => startBatch(k)}>{label} <b>{batchRows(k).length}</b></button>
+              ))}
+            </div>
+            <p className="fc-follow-note">Every reply is written. Read each one; fix anything; then Send (two taps) one by one. Or send them all to yourself first in one email.</p>
+            <button type="button" className="fc-batch-self" data-hpd-smoke="fc-batch-self" disabled={!batch.items.length || batch.selfStatus === "Sending…"} onClick={() => void sendAllToMe()}>📨 Send all {batch.items.length} to me first (one email)</button>
+            {batch.selfStatus ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-self-status">{batch.selfStatus}</p> : null}
+            {!batch.items.length ? <p className="fc-follow-note">No replies to write here.</p> : null}
+            <ol className="fc-batch-list">
+              {batch.items.map((it, i) => {
+                const row = rows.find((r) => r.key === it.key);
+                if (!row) return null;
+                return (
+                  <li key={it.key} className={it.sent ? "is-sent" : ""} data-hpd-smoke="fc-batch-item">
+                    <p className="fc-batch-to"><b>{i + 1}. {row.omo}</b> · to {row.who} &lt;{row.to}&gt; · {row.kind === "docs" ? `missing docs (${row.want})` : `${row.hours}-hour notice`}</p>
+                    <input aria-label="Subject" value={it.subject} disabled={it.sent} onChange={(e) => setItem(it.key, { subject: e.target.value, armed: false })} />
+                    <textarea aria-label="Message" rows={7} value={it.text} disabled={it.sent} data-hpd-smoke="fc-batch-text" onChange={(e) => setItem(it.key, { text: e.target.value, armed: false })} />
+                    <button type="button" className={it.sent ? "is-sent" : it.armed ? "is-armed" : ""} disabled={it.sent || it.status === "Sending…"} data-hpd-smoke="fc-batch-send" onClick={() => void sendItem(row, it)}>{it.sent ? "✓ Sent" : it.armed ? `✅ Tap again: send to ${row.to}` : "✉ Send"}</button>
+                    {it.status ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-status">{it.status}</p> : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ) : (
+          <>
+            {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}
+            <ol className="fc-board-list">{open.map(card)}</ol>
+          </>
+        )}
+        {done.length && !batch ? (
           <>
             <button type="button" className="fc-board-done-toggle" data-hpd-smoke="fc-board-done-toggle" onClick={() => setShowDone((v) => !v)}>{showDone ? "Hide" : "Show"} done ({done.length})</button>
             {showDone ? <ol className="fc-board-list">{done.map(card)}</ol> : null}

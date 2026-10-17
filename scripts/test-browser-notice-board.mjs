@@ -83,6 +83,26 @@ United Angel Construction Corp` } });
   if (shots) await page.screenshot({ path: `${shots}/board-2-reply.png` });
   await box.locator("button", { hasText: "Close" }).click();
 
+  // Reply to many: every reply written on one screen; each Send still takes two taps; all to me first in one email.
+  await board.locator('[data-hpd-smoke="fc-batch-open"]').click();
+  const batch = board.locator('[data-hpd-smoke="fc-batch"]');
+  await batch.waitFor();
+  const items = batch.locator('[data-hpd-smoke="fc-batch-item"]');
+  const nItems = await items.count();
+  assert.ok(nItems >= 1, `batch items: ${nItems}`);
+  assert.match(await items.first().locator('[data-hpd-smoke="fc-batch-text"]').inputValue(), /^Hello .*\n\nRe: OMO# [A-Z]{2}\d{5}/);
+  await batch.locator('[data-hpd-smoke="fc-batch-self"]').click();
+  await batch.locator('[data-hpd-smoke="fc-batch-self-status"]').waitFor();
+  assert.equal(sends, 1, "all to me first: one email");
+  await items.first().locator('[data-hpd-smoke="fc-batch-send"]').click();
+  assert.match(await items.first().locator('[data-hpd-smoke="fc-batch-send"]').innerText(), /Tap again: send to .*@hpd\.nyc\.gov/);
+  assert.equal(sends, 1, "first tap only arms");
+  await batch.locator('[data-hpd-smoke="fc-batch-pick-all"]').click();
+  assert.ok((await items.count()) >= nItems, "All shows at least as many");
+  if (shots) await page.screenshot({ path: `${shots}/board-5-batch.png` });
+  await batch.locator('[data-hpd-smoke="fc-batch-back"]').click();
+  sends = 0;
+
   // Tick "Reply sent" by hand: the next step moves on, and it's kept after reload.
   await row.locator('[data-hpd-smoke="fc-board-step-replied"]').click();
   const ticked = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();

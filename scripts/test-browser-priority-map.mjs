@@ -39,17 +39,22 @@ try {
 
   // Priority: just those jobs, glowing with the hours left.
   await chooser.locator('[data-hpd-smoke="fc-notice-pick-priority"]').click();
-  assert.match(await title.innerText(), /Priority: \d+ on the map/);
+  assert.match(await title.innerText(), /Priority · \d+/);
   await page.waitForTimeout(1500);
   const lit = await page.locator(".leaflet-marker-icon.is-glow").count();
   const others = await page.locator(".leaflet-marker-icon.fc-label-marker:not(.is-glow), .leaflet-marker-icon.fc-dot-marker:not(.is-glow)").count();
   assert.equal(others, 0, "only priority jobs on the map");
   const tags = await page.locator(".is-glow .fc-glow-tag").allInnerTexts();
   assert.ok(tags.length && tags.every((t) => /^🔥 (24h|72h) · |^🔥 Docs$|^🔥 Asked$/.test(t)), `countdown tags: ${tags.slice(0, 5)}`);
+  // The picker shrinks to a thin bar and the map frames those jobs above it.
+  assert.match(await chooser.getAttribute("class"), /is-mini/);
+  await page.waitForTimeout(1200);
+  const ys = await page.locator(".leaflet-marker-icon.is-glow").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+  assert.ok(ys.length && ys.every((y) => y > 60 && y < 844 - 90), `priority jobs in view above the bar: ${ys.map(Math.round)}`);
   if (shots) await page.screenshot({ path: `${shots}/2-priority-map.png` });
 
   // A glowing job: PRIORITY box with the countdown and the affidavit outcomes.
-  await page.locator(".leaflet-marker-icon.is-glow").first().click({ force: true });
+  await page.locator(".leaflet-marker-icon.is-glow").first().dispatchEvent("click");
   const card = page.locator('[data-hpd-smoke="fc-prio-card"]');
   await card.waitFor({ timeout: 8000 });
   assert.match(await card.innerText(), /PRIORITY|PAYMENT REJECTED/);
@@ -61,11 +66,12 @@ try {
   await page.locator(".fc-job-sheet-close").click();
 
   // The picker comes back: Payment rejected switches the map.
+  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-pick-rejected"]').click();
-  assert.match(await title.innerText(), /Payment rejected: \d+ on the map/);
+  assert.match(await title.innerText(), /Payment rejected · \d+/);
   await page.waitForFunction(() => document.querySelector(".leaflet-marker-icon.is-glow .fc-glow-tag")?.textContent === "💵 Fix", null, { timeout: 15000 });
   // The list opens on that tab; closing it brings the picker back; ✕ goes back to every job.
-  await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
+  await page.locator('[data-hpd-smoke="fc-notice-mini-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notices-rejected"]').waitFor();
   await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-chooser-close"]').click();

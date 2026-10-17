@@ -30,7 +30,7 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/money-1-map.png` });
 
   // The list: Procurement -> 💰 To get paid.
-  await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
+  await page.locator('[data-hpd-smoke="fc-notice-mini-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-tab-money"]').click();
   const box = page.locator('[data-hpd-smoke="fc-money"]');
   await box.waitFor();

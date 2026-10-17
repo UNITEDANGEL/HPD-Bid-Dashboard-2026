@@ -392,7 +392,9 @@ folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer qu
    the date, preview, copy + original. (Done: links to /paperwork/?job=..&outcome=..)
 7. **Missing documents (Gafur) on the board** (done 17 Oct): one card per job on a missing-documents list (last 31 days), what they want, days waiting, follow-up date; steps count only replies / PDFs that name that job (or the whole list). Filter All / 24-72 / Missing documents.
 9. **Rejections tracked to PIP paid** (done 17 Oct: lib/payment-track.ts, Procurement -> 💰 To get paid, $ held on the picker and pins; tests test-payment-track, test-browser-money).
-8. **Next ideas (owner to pick)**: reply to many at once; phone alerts (home-screen app); morning notices summary.
+10. **Notices take you to the map** (owner, 17 Oct: "it should take me to the map"; done: after a pick the picker becomes a thin bar, the map fits those jobs above it).
+11. **Reply to many at once** (done 17 Oct: board -> Reply to many; all replies written; each sent with its own two taps; all to me first in one email).
+8. **Next ideas (owner to pick)**: phone alerts (home-screen app); morning notices summary.
 6. **Send the paperwork to vendor tracking from the board** (done 17 Oct): outcome / 📤 Send the paperwork -> paperwork page (?vt=1, recipient in session storage) -> package made -> "Send to vendor tracking" box, signed copy attached, Send to me first or two-tap send (hpd-reply) -> board step 📤 ticked. Test: test-browser-vt-send.
 5. **Bigger and clearer on the iPhone; everything pops when touched** (done 17 Oct: bigger map / borough / days buttons and words, tap pop on every button and link; short screens keep the 9 map buttons fitting).
 4. **24 / 72-hour board** (done 17 Oct: lib/notice-board.ts, NoticeBoard.tsx, tests test-notice-board + test-browser-notice-board; replies: ✨ AI-written from the notice + facts on record (server/ai-draft.mjs, action hpd-draft, signed-in only; Cloudflare Workers AI binding "AI" or secret ANTHROPIC_API_KEY; owner must switch one on), ready-made draft as fallback): a dedicated 24 / 72-hour board that tracks each notice to the end: reply sent -> paperwork made ->

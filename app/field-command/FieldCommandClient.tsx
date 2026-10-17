@@ -974,6 +974,10 @@ export default function FieldCommandClient() {
   // Notices button (owner, 16 Oct): first asks what you're looking for, then the map shows just those jobs.
   type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print";
   const [noticeChooser, setNoticeChooser] = useState(false);
+  // After a pick the picker shrinks to a thin bar so the map is in view (owner, 17 Oct: "take me to the map").
+  const [noticeMini, setNoticeMini] = useState(false);
+  const noticeMiniRef = useRef(false);
+  noticeMiniRef.current = noticeMini;
   const [noticeKind, setNoticeKind] = useState<NoticeKind>("");
   // The 24 / 72-hour board (17 Oct) and the steps ticked by hand on this phone.
   const [boardOpen, setBoardOpen] = useState(false);
@@ -1588,6 +1592,7 @@ export default function FieldCommandClient() {
     setNoticeKind(kind);
     if (kind && kind !== "all") setNoticesTab(kind);
     setNoticeChooser(true);
+    setNoticeMini(true);
   };
   // The nearest 24 / 72-hour deadline (for the timer on the Priority chip).
   const nextDue = vendorTodo.filter((p) => p.dueAt).sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)))[0];
@@ -2091,7 +2096,8 @@ export default function FieldCommandClient() {
           if (me) { followMeRef.current = true; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 15)); }
         } else if (points.length > 1) {
           const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
-          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+          if (followFilter === "notices") map.fitBounds(bounds, { paddingTopLeft: [16, 150], paddingBottomRight: [84, noticeMiniRef.current ? 110 : 360], maxZoom: 15 });
+          else map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
         }
       }
       renderMarkersRef.current();
@@ -3048,6 +3054,7 @@ export default function FieldCommandClient() {
             setFollowFilter("notices");
             setNoticeKind("all");
             setNoticeChooser(true);
+            setNoticeMini(false);
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
@@ -3959,9 +3966,11 @@ export default function FieldCommandClient() {
         </div>
       ) : null}
       {noticeChooser && !noticesOpen && !selectedJob ? (
-        <div className="fc-notice-chooser" role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
+        <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
           <header>
-            <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}: {filteredJobs.length} on the map{noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}</strong>
+            <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}{noticeMini ? ` · ${filteredJobs.length}` : `: ${filteredJobs.length} on the map${noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}`}</strong>
+            {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-change" onClick={() => setNoticeMini(false)}>Change ▴</button> : null}
+            {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-mini-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
           </header>
           <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardOpen(true); }}>
