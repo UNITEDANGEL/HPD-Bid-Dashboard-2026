@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-17T14:57:20.831414+00:00",
+  "generatedAt": "2026-10-17T15:07:27.193450+00:00",
   "days": 14,
   "bids": [
     {
@@ -1561,6 +1561,136 @@
       },
       "lat": 40.62205,
       "lng": -74.083806
+    },
+    {
+      "omo": "ER07371",
+      "bidDue": "2026-10-20",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-22",
+      "workCompletion": "2026-10-29",
+      "address": "470 MONTGOMERY STREET",
+      "borough": "BK",
+      "itbFile": "ER07371_101726105325.pdf",
+      "description": "REPAIR BULKHEAD DOOR TO ADHERE TO LOCAL LAW 111 OF 2018. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING BULKHEAD DOOR LEADING TO ROOF, “NORTH SECTION – E-G.” REMOVE DEFECTIVE DOOR CLOSER. SUPPLY AND INSTALL THE NEW DOOR CLOSER. MAKE ALL THE NECESSARY REPAIRS WITH ADJUSTMENTS AND ALIGNMENT TO DOOR TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. RESTORE DOOR TO PROPER WORKING ORDER. TOTAL DOOR = (1) ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. REMOVE ALL WORK-RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; K. BRYANT 212863 8496; R. REED- 212 863 5481 __________________________________________________________________ IF NO WORK IS PERFORMED OR THE LANDLORD REFUSES ACCESS TO CONTRACTOR TO COMPLETED WORK, OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792248809000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.665066,
+      "lng": -73.949325
     },
     {
       "omo": "ER07761",
