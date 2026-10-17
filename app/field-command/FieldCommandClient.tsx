@@ -45,6 +45,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
 import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
 import { buildBoard, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
+import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import NoticeBoard from "./NoticeBoard";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
@@ -804,7 +805,7 @@ export default function FieldCommandClient() {
   const [threadsAll, setThreadsAll] = useState(false);
   useEffect(() => { loadConversations().then((d) => setThreads(d ? d.threads : null)); }, []);
   const threadsFor = (omo: string) => (threads || []).filter((t) => t.omos.includes(omo));
-  const [noticesTab, setNoticesTab] = useState<"priority" | "rejected" | "corrections" | "requests" | "messages" | "print">("priority");
+  const [noticesTab, setNoticesTab] = useState<"priority" | "rejected" | "corrections" | "requests" | "messages" | "print" | "money">("priority");
   // Priority list (lib/priorities): what HPD is waiting on, most urgent first; "Handled" (two taps) hides an item
   // on this phone.
   const [prioDone, setPrioDone] = useState<Record<string, string>>({});
@@ -1543,6 +1544,9 @@ export default function FieldCommandClient() {
   const boardUrgent = urgentRows(boardRows);
   // Vendor tracking's list (Due now); rejected paperwork and printing are Procurement's tabs.
   const vendorTodo = priorities.filter((p) => p.kind === "24h" || p.kind === "72h" || p.kind === "missing");
+  // Rejections tracked to the money (17 Oct): rejected -> fixed -> printed -> emailed -> mailed -> paid in PIP.
+  const payTrack = trackPayments({ rejections, corrections: toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }> });
+  const heldBy = new Map(payTrack.rows.filter((r) => r.status === "held").map((r) => [r.omo, r.held]));
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
     priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo)]),
     rejected: new Set(openRejections.map((r) => r.omo)),
@@ -1571,7 +1575,7 @@ export default function FieldCommandClient() {
       const due = it ? dueText(it.dueAt) : "";
       const tag = kind === "priority"
         ? (it ? (it.kind === "missing" ? "🔥 Docs" : `🔥 ${it.kind === "24h" ? "24h" : "72h"} · ${due.replace(" left", "").replace("overdue ", "-")}`) : "🔥 Asked")
-        : kind === "rejected" ? "💵 Fix" : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
+        : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
       glow.set(omo, { tag, cls: `is-glow is-glow-${kind}${kind === "priority" && it?.kind === "24h" ? " is-glow-24h" : ""}${kind === "priority" && /overdue/.test(due) ? " is-glow-late" : ""}` });
     }
   }
@@ -3970,6 +3974,7 @@ export default function FieldCommandClient() {
                 <b>{k.short}</b>
                 <em>{noticeSets[k.key].size}</em>
                 {k.key === "priority" && nextDue ? <small className="fc-notice-pick-timer" data-hpd-smoke="fc-notice-timer">⏱ {dueText(nextDue.dueAt)}</small> : null}
+                {k.key === "rejected" && payTrack.summary.held ? <small className="fc-notice-pick-timer is-money" data-hpd-smoke="fc-notice-held">{money(payTrack.summary.held)} held</small> : null}
               </button>
             ))}
             <button type="button" className="fc-notice-pick is-list" data-hpd-smoke="fc-notice-pick-list" onClick={() => setNoticesOpen(true)}>
@@ -3994,6 +3999,7 @@ export default function FieldCommandClient() {
                   ["rejected", "❗ Rejected", openRejections.length],
                   ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
                   ["print", "🖨 Print & mail", toPrint.filter((c) => !c.mailedAt).length],
+                  ["money", `💰 To get paid · ${money(payTrack.summary.held)}`, 0],
                 ]],
                 ["vendor", "🔥 Vendor tracking = Priority", "Lewis / Gafur asking for the affidavit, invoice or an update.", [
                   ["priority", "🔥 Priority", vendorTodo.length],
@@ -4006,10 +4012,10 @@ export default function FieldCommandClient() {
                 const total = tabs.reduce((a, [, , n]) => a + n, 0);
                 return (
                   <div key={dept} className={`fc-notice-dept is-${dept}${on ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-dept-${dept}`}>
-                    <button type="button" className="fc-notice-dept-head" onClick={() => { const k = tabs[0][0]; setNoticesTab(k); setNoticeKind(k === "priority" || k === "rejected" || k === "corrections" || k === "print" ? k : ""); }}><strong>{title}</strong>{total ? <b>{total}</b> : null}<small>{note}</small></button>
+                    <button type="button" className="fc-notice-dept-head" onClick={() => { const k = tabs[0][0]; setNoticesTab(k); setNoticeKind(k === "money" ? "rejected" : k === "priority" || k === "rejected" || k === "corrections" || k === "print" ? k : ""); }}><strong>{title}</strong>{total ? <b>{total}</b> : null}<small>{note}</small></button>
                     <div className="fc-notice-dept-tabs">
                       {tabs.map(([key, label, n]) => (
-                        <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => { setNoticesTab(key); setNoticeKind(key === "priority" || key === "rejected" || key === "corrections" || key === "print" ? key : ""); }}>{label}{n ? <b>{n}</b> : null}</button>
+                        <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => { setNoticesTab(key); setNoticeKind(key === "money" ? "rejected" : key === "priority" || key === "rejected" || key === "corrections" || key === "print" ? key : ""); }}>{label}{n ? <b>{n}</b> : null}</button>
                       ))}
                     </div>
                   </div>
@@ -4124,6 +4130,41 @@ export default function FieldCommandClient() {
                     </ul>
                   </details>
                 ) : null}
+              </section>
+            ) : null}
+            {noticesTab === "money" ? (
+              <section className="fc-follow-section is-money" data-hpd-smoke="fc-money">
+                <h4>💰 To get paid: rejections until HPD pays</h4>
+                <div className="fc-money-sum" data-hpd-smoke="fc-money-sum">
+                  <span className="is-held"><b>{money(payTrack.summary.held)}</b>held by {payTrack.summary.withAmount}{payTrack.summary.notInPip ? ` (+${payTrack.summary.notInPip} not in PIP yet)` : ""}</span>
+                  <span className="is-fix"><b>{payTrack.summary.toFix}</b>to fix</span>
+                  <span><b>{payTrack.summary.inTheMail}</b>in the mail</span>
+                  <span className="is-paid"><b>{money(payTrack.summary.paid)}</b>paid after a rejection (90 days)</span>
+                </div>
+                <p className="fc-follow-note">Each rejection until the money comes in: ✏️ fix → 🖨 print &amp; sign in ink → ✉ email the copy → 📮 mail the original → 💵 paid. Paid comes from PIP (updated by the app every day).{payTrack.summary.lostCount ? ` ${payTrack.summary.lostCount} closed by HPD with $0 paid are at the bottom: dispute those with HPD.` : ""}</p>
+                <ol className="fc-money-list">
+                  {payTrack.rows.map((r) => {
+                    const job = findAnyJob(r.omo);
+                    return (
+                      <li key={`${r.omo}-${r.at}`} className={`is-${r.status}`} data-hpd-smoke="fc-money-row" data-next={r.next || r.status}>
+                        <div className="fc-money-top"><b>{r.omo}</b><strong>{r.status === "held" ? (r.inPip ? `${money(r.held)} held` : "Not in PIP yet") : r.status === "paid" ? `✓ ${money(r.paid)} paid` : "⚠️ Closed, $0 paid"}</strong></div>
+                        <p className="fc-money-addr">{r.address || (job ? jobAddress(job) : "")} · rejected {r.at}{r.attempt ? ` · ${r.attempt.toLowerCase()}` : ""}</p>
+                        {r.reason ? <p className="fc-money-reason">{r.reason}</p> : null}
+                        <ol className="fc-money-steps">
+                          {PAY_STEPS.map((st) => (
+                            <li key={st.key} className={`${r.steps[st.key].done ? "is-done" : ""}${r.next === st.key ? " is-next" : ""}`}><span aria-hidden="true">{r.steps[st.key].done ? "✓" : st.icon}</span><small>{st.label}{r.steps[st.key].at ? ` ${new Date(r.steps[st.key].at.length === 10 ? `${r.steps[st.key].at}T12:00:00` : r.steps[st.key].at).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}` : ""}</small></li>
+                          ))}
+                        </ol>
+                        <div className="fc-notice-actions">
+                          {r.next === "fixed" && job ? <a className="is-autofix" data-hpd-smoke="fc-money-fix" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1`}>✨ Auto-fix &amp; preview</a> : null}
+                          {r.next === "printed" || r.next === "emailed" || r.next === "mailed" ? <button type="button" data-hpd-smoke="fc-money-print" onClick={() => { setNoticesTab("print"); setNoticeKind("print"); }}>🖨 Print folder: {PAY_STEPS.find((x) => x.key === r.next)?.label.toLowerCase()}</button> : null}
+                          {r.next === "paid" ? <span className="fc-money-wait">Waiting for HPD to pay</span> : null}
+                          {job ? <button type="button" onClick={() => { setNoticesOpen(false); setSelectedJob(job); }}>Open job</button> : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
               </section>
             ) : null}
             {noticesTab === "rejected" ? (<>

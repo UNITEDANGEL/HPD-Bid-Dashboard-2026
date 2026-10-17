@@ -3,6 +3,17 @@
   "versions": [
     {
       "date": "Oct 17, 2026",
+      "title": "💰 Rejections tracked until HPD pays",
+      "items": [
+        "HPD notices -> 💵 Procurement -> 💰 To get paid: every payment rejection until the money comes in: ❗ rejected -> ✏️ fixed -> 🖨 printed & signed -> ✉ copy emailed -> 📮 original mailed -> 💵 paid in PIP.",
+        "At the top: how much money the rejections are holding up, how many to fix, how many are in the mail, and what was paid after a rejection (last 90 days).",
+        "Biggest money first. Each one shows the next thing to do: ✨ Auto-fix, the print folder step, or waiting for HPD to pay.",
+        "On the map, Payment rejected shows $ held, and each pin shows its dollars (e.g. 💵 $570). Jobs PIP has no record of yet say Not in PIP yet.",
+        "Paid ticks by itself from PIP. HPD closing a job with $0 paid is listed at the bottom to dispute."
+      ]
+    },
+    {
+      "date": "Oct 17, 2026",
       "title": "Vendor tracking board: Gafur's missing documents added",
       "items": [
         "The board is now the Vendor tracking board: the 24 / 72-hour notices AND every job on a missing-documents list (Gafur), one card per job.",

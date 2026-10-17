@@ -134,6 +134,7 @@ jobs:
           node scripts/test-priorities.mjs
           node scripts/test-notice-board.mjs
           node scripts/test-ai-draft.mjs
+          node scripts/test-payment-track.mjs
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs
@@ -190,6 +191,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-priority-map.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-notice-board.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-vt-send.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-money.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 
