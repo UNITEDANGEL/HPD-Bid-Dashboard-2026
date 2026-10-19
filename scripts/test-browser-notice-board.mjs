@@ -128,10 +128,11 @@ United Angel Construction Corp` } });
 
   // Under 6 hours left (clock set to 8 AM Monday, 2 hours before the Friday notices are due at 10): the Notices button pulses red.
   const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
-  await routePrivate(ctx2);
+  // A fresh 24-hour notice (Monday 6 AM, nothing sent) so this check doesn't depend on which notices are answered.
+  await routePrivate(ctx2, { conversations: (d) => ({ ...d, threads: [...d.threads, { id: "test-urgent", subject: "24 HR POOR PERFORMANCE NOTICE - OMO#EQ99999", omos: ["EQ99999"], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: "2026-10-19T10:00:00Z", waiting: true, messages: [{ at: "2026-10-19T10:00:00Z", from: "test@hpd.nyc.gov", hpd: true, mine: false, subject: "24 HR", text: "Notice test@hpd.nyc.gov", files: [] }] }] }) });
   await ctx2.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const p2 = await ctx2.newPage();
-  await p2.clock.install({ time: new Date("2026-10-19T12:00:00Z") });
+  await p2.clock.install({ time: new Date("2026-10-20T07:00:00Z") }); // Tuesday 3 AM: the Monday 6 AM notice is due 6 AM, 3 hours left
   await p2.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   // The Notices button pulses red with an hours tag; Notices -> the board (pulsing) -> hot rows.
   const tag = p2.locator('[data-hpd-smoke="fc-urgent-tag"]');

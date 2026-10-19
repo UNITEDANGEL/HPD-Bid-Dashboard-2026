@@ -1574,7 +1574,38 @@ export default function FieldCommandClient() {
     // Nothing to do on jobs HPD closed or PIP paid.
     closed: closedJobs,
   });
-  const boardRows = threads ? buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
+  // "Check my emails now" (19 Oct): your sent replies and HPD's answers read live from Gmail, added to the threads so the
+  // board updates at once (the encrypted copy catches up on the next refresh).
+  type ScanMsg = { threadId: string; at: string; subject: string; omos: string[]; files?: boolean };
+  const [scan, setScan] = useState<{ checkedAt: string; sent: ScanMsg[]; received: ScanMsg[] } | null>(null);
+  const [scanStatus, setScanStatus] = useState("");
+  const boardThreads = !threads ? null : !scan ? threads : threads.map((t) => {
+    const extra = [
+      ...scan.sent.filter((m) => m.threadId === t.id).map((m) => ({ at: m.at, from: "", hpd: false, mine: true, subject: m.subject, text: m.subject, files: m.files ? ["pdf"] : [] })),
+      ...scan.received.filter((m) => m.threadId === t.id).map((m) => ({ at: m.at, from: "", hpd: true, mine: false, subject: m.subject, text: m.subject, files: [] as string[] })),
+    ].filter((m) => !t.messages.some((x) => Math.abs(Date.parse(x.at) - Date.parse(m.at)) < 90000 && x.mine === m.mine));
+    return extra.length ? { ...t, messages: [...t.messages, ...extra] } : t;
+  });
+  const runScan = async () => {
+    setScanStatus("Checking your email…");
+    try {
+      const r = await fetch("/api/drive/hpd-scan", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ days: 7 }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(r.status === 401 ? "sign in with Google on this phone first" : d.error || `HTTP ${r.status}`);
+      setScan(d);
+      const withFiles = (d.sent || []).filter((m: ScanMsg) => m.files).length;
+      setScanStatus(`✓ Checked your email ${new Date(d.checkedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}: ${(d.sent || []).length} sent to HPD (${withFiles} with PDFs), ${(d.received || []).length} from HPD in the last ${d.days} days.`);
+    } catch (e) {
+      setScanStatus(`Couldn't check your email: ${e instanceof Error ? e.message : "error"}.`);
+    }
+  };
+  // Opening the board checks your email by itself (at most every 10 minutes).
+  useEffect(() => {
+    if (!boardOpen || scanStatus === "Checking your email…") return;
+    if (scan && Date.now() - Date.parse(scan.checkedAt) < 600000) return;
+    void runScan();
+  }, [boardOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
   const boardUrgent = urgentRows(boardRows);
   // For the morning summary: notices due by tonight (or overdue) with nothing sent, missing documents waiting.
@@ -4359,6 +4390,9 @@ export default function FieldCommandClient() {
         <NoticeBoard
           rows={boardRows}
           initialShow={boardShow}
+          onScan={() => void runScan()}
+          scanStatus={scanStatus}
+          scanChanged={scan && threads ? (() => { const before = new Map(buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }).map((r) => [r.key, r.next])); return boardRows.filter((r) => before.has(r.key) && before.get(r.key) !== r.next).map((r) => ({ omo: r.omo, now: r.next === "confirmed" ? "📤 Sent, waiting on them" : r.next === null ? "✅ Confirmed" : `next: ${r.next}` })); })() : []}
           findingsOf={(row) => noticeFindings({ omo: row.omo, job: findAnyJob(row.omo) as Record<string, unknown> | null, sent: followRef.current?.sent?.[row.omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[row.omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[row.omo], rejection: rejections.find((r) => r.omo === row.omo) || null, ourFilesAt: row.steps.sent.how === "email" ? row.steps.sent.at : "" })}
           addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}

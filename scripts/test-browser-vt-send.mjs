@@ -68,7 +68,7 @@ try {
   await send.locator('[data-hpd-smoke="paperwork-vt-status"]', { hasText: "The board shows" }).waitFor();
   const sent = replies[1];
   assert.match(sent.to, /@hpd\.nyc\.gov$/);
-  assert.match(sent.subject, /^RE: .*POOR PERFORMANCE/i);
+  assert.match(sent.subject, /^RE: .*PERFORMANCE NOTICE/i);
   assert.ok(sent.attachment.data.startsWith("JVBER") && /\.pdf$/.test(sent.attachment.name), "the signed copy PDF is attached");
   if (shots) await page.screenshot({ path: `${shots}/vt-2-sent.png` });
 

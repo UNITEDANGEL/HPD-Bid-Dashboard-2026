@@ -20,7 +20,8 @@ function open(file, k) {
   return Buffer.concat([d.update(buf.subarray(12, buf.length - 16)), d.final()]);
 }
 
-export async function routePrivate(context) {
+// opts.conversations: change the decrypted HPD emails before the page gets them (e.g. add a fresh notice for a test).
+export async function routePrivate(context, opts = {}) {
   const k = key();
   await context.route(/\/api\/private\//, (route) => {
     if (!k) return route.fulfill({ status: 401, json: { error: "not signed in (test)" } });
@@ -29,6 +30,7 @@ export async function routePrivate(context) {
     const file = target && path.join(ROOT, "public", "private", target);
     if (!file || rel.includes("..") || !fs.existsSync(file)) return route.fulfill({ status: 404, body: "Not found" });
     const type = rel === "tenants" || rel === "notices" || rel === "conversations" ? "application/json" : rel.endsWith(".png") ? "image/png" : "application/pdf";
+    if (rel === "conversations" && opts.conversations) return route.fulfill({ status: 200, contentType: type, body: JSON.stringify(opts.conversations(JSON.parse(open(file, k).toString("utf8")))) });
     return route.fulfill({ status: 200, contentType: type, body: open(file, k) });
   });
 }

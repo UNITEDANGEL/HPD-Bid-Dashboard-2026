@@ -46,3 +46,26 @@ assert.equal(mail.length, 0, "nothing was sent");
 const bad = await handleDrivePackages(new Request("https://app.example.test/api/drive/hpd-draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo: "nope" }) }), "hpd-draft", auth, async () => Response.json({}), cf, "owner@example.test");
 assert.equal(bad.status, 400);
 console.log("PASS AI draft: facts only (OMO checked, their email clipped), Workers AI and Anthropic paths, off-topic answers refused, not set up -> ai:false, the action never sends");
+
+// "Check my emails now" (hpd-scan): sent to HPD (with / without PDFs) and HPD's answers by thread; subjects only; read-only.
+{
+  const calls = [];
+  const gmail = async (url) => {
+    calls.push(url);
+    const u = new URL(url);
+    const q = u.searchParams.get("q") || "";
+    if (q.includes("has:attachment")) return Response.json({ messages: [{ id: "s1" }] });
+    if (q.startsWith("in:sent")) return Response.json({ messages: [{ id: "s1" }, { id: "s2" }] });
+    if (q.startsWith("from:hpd.nyc.gov")) return Response.json({ messages: [{ id: "r1" }] });
+    const id = u.pathname.split("/").pop();
+    return Response.json({ id, threadId: `t-${id}`, internalDate: String(Date.parse("2026-10-19T11:08:00Z")), payload: { headers: [{ name: "Subject", value: `RE: 24 HR POOR PERFORMANCE NOTICE - OMO#EQ31364 (${id})` }] } });
+  };
+  const res = await handleDrivePackages(new Request("https://app.example.test/api/drive/hpd-scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ days: 7 }) }), "hpd-scan", { Authorization: "Bearer test" }, gmail, {}, "owner@example.test");
+  assert.equal(res.status, 200);
+  const d = await res.json();
+  assert.deepEqual(d.sent.map((m) => [m.id, m.threadId, m.files, m.omos[0]]), [["s1", "t-s1", true, "EQ31364"], ["s2", "t-s2", false, "EQ31364"]]);
+  assert.equal(d.received[0].threadId, "t-r1");
+  assert.ok(calls.every((u) => !/\/send/.test(u)), "read-only");
+  assert.ok(calls.some((u) => /newer_than%3A7d|newer_than:7d/.test(u)));
+  console.log("PASS hpd-scan: sent (PDFs or not) and HPD's answers by thread, subjects only, read-only");
+}

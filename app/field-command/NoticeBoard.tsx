@@ -17,6 +17,9 @@ type Props = {
   onClose: () => void;
   initialShow?: "all" | "ppn" | "docs";
   findingsOf?: (row: BoardRow) => NoticeFindings; // what the app already has for the job (a head start)
+  onScan?: () => void;                              // "Check my emails now"
+  scanStatus?: string;
+  scanChanged?: { omo: string; now: string }[];     // notices the check just updated
 };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
@@ -33,7 +36,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf }: Props) {
+export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
@@ -201,6 +204,13 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
         <button type="button" aria-label="Close" data-hpd-smoke="fc-board-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-summary-body">
+        {onScan ? (
+          <div className="fc-scan" data-hpd-smoke="fc-scan">
+            <button type="button" data-hpd-smoke="fc-scan-btn" disabled={scanStatus === "Checking your email…"} onClick={onScan}>{scanStatus === "Checking your email…" ? "⏳ Checking your email…" : "🔄 Check my emails now"}</button>
+            {scanStatus && scanStatus !== "Checking your email…" ? <p data-hpd-smoke="fc-scan-status">{scanStatus}</p> : <small>Reads your sent replies and HPD&apos;s answers (last 7 days) and updates the steps right away.</small>}
+            {scanChanged.length ? <ul data-hpd-smoke="fc-scan-changed">{scanChanged.map((c) => <li key={c.omo}><b>{c.omo}</b> {c.now}</li>)}</ul> : scanStatus.startsWith("✓") ? <small>No notice changed: everything was already up to date.</small> : null}
+          </div>
+        ) : null}
         <div className="fc-board-filter" role="tablist" data-hpd-smoke="fc-board-filter">
           {([["all", "All", rows.filter((r) => r.next).length], ["ppn", "⏱ 24 / 72-hour", rows.filter((r) => r.next && r.kind === "ppn").length], ["docs", "📋 Missing documents", rows.filter((r) => r.next && r.kind === "docs").length]] as const).map(([k, label, n]) => (
             <button key={k} type="button" role="tab" aria-selected={show === k} className={show === k ? "is-on" : ""} data-hpd-smoke={`fc-board-show-${k}`} onClick={() => setShow(k)}>{label} <b>{n}</b></button>

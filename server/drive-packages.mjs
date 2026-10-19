@@ -212,6 +212,44 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       return reply({ status, subject: pick?.subject || "", at: pick?.at || "" });
     }
 
+    if (action === "hpd-scan") {
+      // "Check my emails now" (owner, 19 Oct): the owner's emails with HPD from the last N days (read-only): what you sent
+      // (and whether PDFs were attached) and what HPD wrote back, by thread, so the board updates at once. Subjects and
+      // dates only, never the message text.
+      const body = await request.json().catch(() => ({}));
+      const days = Math.min(30, Math.max(1, Number(body?.days) || 7));
+      const list = async (q) => {
+        const ids = [];
+        let page = "";
+        for (let i = 0; i < 4; i++) {
+          const r = await call(`${GMAIL_API}?q=${encodeURIComponent(q)}&maxResults=100${page ? `&pageToken=${page}` : ""}`);
+          if (r.status === 403) fail("Checking your email needs read access: on the Storage page tap Disconnect, then Connect, and allow reading email.", 403);
+          if (!r.ok) fail(`Couldn't read your email (HTTP ${r.status}).`);
+          const d = await r.json();
+          for (const m of d.messages || []) ids.push(m.id);
+          page = d.nextPageToken || "";
+          if (!page) break;
+        }
+        return ids;
+      };
+      const [sentIds, withFiles, receivedIds] = await Promise.all([
+        list(`in:sent to:hpd.nyc.gov newer_than:${days}d`),
+        list(`in:sent to:hpd.nyc.gov has:attachment newer_than:${days}d`),
+        list(`from:hpd.nyc.gov newer_than:${days}d`),
+      ]);
+      const files = new Set(withFiles);
+      const meta = async (id) => {
+        const r = await call(`${GMAIL_API}/${encodeURIComponent(id)}?format=metadata&metadataHeaders=Subject&metadataHeaders=Date`);
+        if (!r.ok) return null;
+        const m = await r.json();
+        const subject = String((m.payload?.headers || []).find((h) => String(h.name).toLowerCase() === "subject")?.value || "").slice(0, 200);
+        return { id, threadId: String(m.threadId || ""), at: new Date(Number(m.internalDate) || 0).toISOString(), subject, omos: [...new Set(subject.toUpperCase().match(/\b[A-Z]{2}\d{5}\b/g) || [])] };
+      };
+      const all = async (ids) => (await Promise.all(ids.slice(0, 150).map(meta))).filter(Boolean);
+      const [sent, received] = await Promise.all([all(sentIds), all(receivedIds)]);
+      return reply({ days, checkedAt: new Date().toISOString(), sent: sent.map((m) => ({ ...m, files: files.has(m.id) })), received });
+    }
+
     if (action === "hpd-draft") {
       // An AI-written reply for the 24 / 72-hour board, for the owner to read and edit. Never sends anything.
       const facts = draftFacts(await request.json().catch(() => null));
