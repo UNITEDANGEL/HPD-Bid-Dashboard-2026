@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T10:37:46.734976+00:00",
+"generatedAt": "2026-10-19T10:45:49.080761+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -21052,6 +21052,14 @@
 "file": "ER05228-refused-access-affidavit-invoice.pdf",
 "outcome": "refused_access",
 "subject": "ER05228 - Refused Access - 6 WEST 132 STREET, 10037"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "PHOTO-2026-09-15-12-20-58.jpg",
+"outcome": "",
+"subject": "OMO No: ER05228 Issuer: CONRAD MARTIN Boro: Manhattan Bldg Address: 6, WEST 132 STREET",
+"via": "hpd-staff"
 }
 ],
 "ER05329": [
