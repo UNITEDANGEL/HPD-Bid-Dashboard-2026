@@ -3119,3 +3119,17 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .is-glow-aep .fc-pin { --glow: #38bdf8; }
 .is-glow-aep .fc-glow-tag { border-color: #38bdf8; }
 .fc-notice-pick.is-aep { border-color: #38bdf8; }
+
+/* New email from HPD: banner + chime (19 Oct). */
+.fc-hpd-ping { position: fixed; top: calc(max(10px, env(safe-area-inset-top)) + 4px); left: 10px; right: 10px; z-index: 200500; max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: stretch; padding: 8px; border-radius: 18px; background: #0b1220f5; border: 2px solid #38bdf8; box-shadow: 0 12px 30px #0008; animation: fc-ping-in 0.3s ease-out; }
+@keyframes fc-ping-in { from { transform: translateY(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.fc-hpd-ping-main { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 0 8px; padding: 4px 6px; border: 0; background: none; color: #f8fafc; text-align: left; }
+.fc-hpd-ping-main span { grid-row: span 2; font-size: 26px; }
+.fc-hpd-ping-main b { font: 900 15px/1.2 system-ui; }
+.fc-hpd-ping-main small { font: 600 12.5px/1.25 system-ui; color: #bae6fd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-hpd-ping > button:not(.fc-hpd-ping-main) { width: 42px; border-radius: 12px; border: 1px solid #334155; background: #111827; color: #f8fafc; font: 800 17px system-ui; }
+/* The notices picker stays left of the round map buttons, so Bids / Map / Locate stay tappable. */
+@media (orientation: portrait), (min-height: 541px) {
+  .fc-app ~ .fc-notice-chooser, .fc-notice-chooser { right: calc(78px + env(safe-area-inset-right)); left: 8px; margin: 0; max-width: none; }
+  .fc-notice-pick b { font-size: 13px; }
+}

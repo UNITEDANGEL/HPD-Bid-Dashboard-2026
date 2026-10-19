@@ -39,7 +39,16 @@ export async function handlePrivate(request, env, signedIn = signedInOwner) {
   else return new Response("Not found", { status: 404, headers: NO_STORE });
   if (!env.HPD_PRIVATE_DATA_KEY) return new Response(JSON.stringify({ error: "Private data is not set up on the server." }), { status: 503, headers: { ...NO_STORE, "Content-Type": "application/json" } });
   if (!(await signedIn(request, env))) return new Response(JSON.stringify({ error: "Sign in with Google (Storage page) to see tenant details and invitation pages." }), { status: 401, headers: { ...NO_STORE, "Content-Type": "application/json" } });
-  const res = await env.ASSETS.fetch(new URL(asset, url.origin));
+  // HPD's emails and notices: the newest copy the email reader committed (every ~10 minutes), straight from the repo
+  // (still encrypted), so new emails show without waiting for the next site update; the deployed copy if that fails.
+  let res = null;
+  if (name === "conversations" || name === "notices") {
+    try {
+      const fresh = await fetch(`https://raw.githubusercontent.com/UNITEDANGEL/HPD-Bid-Dashboard-2026/main/public${asset}`, { signal: AbortSignal.timeout(5000), cf: { cacheTtl: 60 } });
+      if (fresh.ok) res = fresh;
+    } catch { /* use the deployed copy */ }
+  }
+  if (!res) res = await env.ASSETS.fetch(new URL(asset, url.origin));
   if (!res.ok) return new Response("Not found", { status: 404, headers: NO_STORE });
   try {
     const plain = await decryptPrivate(await res.arrayBuffer(), env.HPD_PRIVATE_DATA_KEY);

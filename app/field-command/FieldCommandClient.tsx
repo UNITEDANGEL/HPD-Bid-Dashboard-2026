@@ -16,7 +16,7 @@ import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDa
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
-import { loadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
+import { loadConversations, reloadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
 import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
@@ -48,6 +48,7 @@ import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
 import { buildBoard, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
+import { chimeMuted, playChime, setChimeMuted, unlockChime } from "../../lib/chime";
 import NoticeBoard from "./NoticeBoard";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
@@ -805,7 +806,16 @@ export default function FieldCommandClient() {
   const [threads, setThreads] = useState<HpdThread[] | null | undefined>(undefined);
   const [threadView, setThreadView] = useState<{ ids: string[]; title: string } | null>(null);
   const [threadsAll, setThreadsAll] = useState(false);
-  useEffect(() => { loadConversations().then((d) => setThreads(d ? d.threads : null)); }, []);
+  // The app's email reader adds new emails every ~10 minutes: load them now and again every 5 minutes while open.
+  const [threadsAt, setThreadsAt] = useState("");
+  useEffect(() => {
+    const load = (fresh: boolean) => (fresh ? reloadConversations() : loadConversations()).then((d) => { if (d) { setThreads(d.threads); setThreadsAt((d as { generatedAt?: string }).generatedAt || ""); } else setThreads((t) => (t === undefined ? null : t)); });
+    void load(false);
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(true); }, 300000);
+    const onShow = () => { if (document.visibilityState === "visible") void load(true); };
+    document.addEventListener("visibilitychange", onShow);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onShow); };
+  }, []);
   const threadsFor = (omo: string) => (threads || []).filter((t) => t.omos.includes(omo));
   const [noticesTab, setNoticesTab] = useState<"priority" | "rejected" | "corrections" | "requests" | "messages" | "print" | "money">("priority");
   // Priority list (lib/priorities): what HPD is waiting on, most urgent first; "Handled" (two taps) hides an item
@@ -1567,13 +1577,6 @@ export default function FieldCommandClient() {
   const senderName = (by: string) => (/^Department of Housing/i.test(by) ? "HPD Accounts Payable" : by);
   // Jobs HPD closed or PIP paid: nothing left to do on them.
   const closedJobs = new Set([...Object.entries(followRef.current?.hpd || {}).filter(([, h]) => (h as { closedReason?: string })?.closedReason).map(([o]) => o), ...Object.entries(pipMap).filter(([, p]) => p?.status === "paid").map(([o]) => o)]);
-  const priorities: PriorityItem[] = buildPriorities({
-    threads: (threads || []) as unknown as Parameters<typeof buildPriorities>[0]["threads"],
-    rejections: openRejections.map((r) => ({ omo: r.omo, at: r.at, reason: r.reason || "", by: senderName(r.by || "HPD") })),
-    toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, done: prioDone,
-    // Nothing to do on jobs HPD closed or PIP paid.
-    closed: closedJobs,
-  });
   // "Check my emails now" (19 Oct): your sent replies and HPD's answers read live from Gmail, added to the threads so the
   // board updates at once (the encrypted copy catches up on the next refresh).
   type ScanMsg = { threadId: string; at: string; subject: string; omos: string[]; files?: boolean };
@@ -1581,24 +1584,82 @@ export default function FieldCommandClient() {
   const [scanStatus, setScanStatus] = useState("");
   const boardThreads = !threads ? null : !scan ? threads : threads.map((t) => {
     const extra = [
-      ...scan.sent.filter((m) => m.threadId === t.id).map((m) => ({ at: m.at, from: "", hpd: false, mine: true, subject: m.subject, text: m.subject, files: m.files ? ["pdf"] : [] })),
-      ...scan.received.filter((m) => m.threadId === t.id).map((m) => ({ at: m.at, from: "", hpd: true, mine: false, subject: m.subject, text: m.subject, files: [] as string[] })),
+      ...(scan.sent || []).filter((m) => m.threadId === t.id).map((m) => ({ at: m.at, from: "", hpd: false, mine: true, subject: m.subject, text: m.subject, files: m.files ? ["pdf"] : [] })),
+      ...(scan.received || []).filter((m) => m.threadId === t.id).map((m) => ({ at: m.at, from: "", hpd: true, mine: false, subject: m.subject, text: m.subject, files: [] as string[] })),
     ].filter((m) => !t.messages.some((x) => Math.abs(Date.parse(x.at) - Date.parse(m.at)) < 90000 && x.mine === m.mine));
     return extra.length ? { ...t, messages: [...t.messages, ...extra] } : t;
   });
+  const [hpdPing, setHpdPing] = useState<{ count: number; subject: string; omo: string } | null>(null);
+  const [chimeOff, setChimeOff] = useState(false);
+  useEffect(() => {
+    if (!threads) return;
+    try {
+      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "" })));
+      const raw = localStorage.getItem("hpd-seen-thread-msgs");
+      const seen = new Set<string>(raw ? JSON.parse(raw) : []);
+      const fresh = recent.filter((m) => !seen.has(m.key));
+      for (const m of recent) seen.add(m.key);
+      localStorage.setItem("hpd-seen-thread-msgs", JSON.stringify([...seen].slice(-800)));
+      if (raw && fresh.length) {
+        const newest = [...fresh].sort((a, b) => b.at.localeCompare(a.at))[0];
+        setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omo });
+        playChime();
+      }
+    } catch { /* private mode */ }
+  }, [threadsAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setChimeOff(chimeMuted()); }, []);
   const runScan = async () => {
     setScanStatus("Checking your email…");
     try {
       const r = await fetch("/api/drive/hpd-scan", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ days: 7 }) });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(r.status === 401 ? "sign in with Google on this phone first" : d.error || `HTTP ${r.status}`);
+      // Only a real answer counts (an offline page or an error page falls back to the reader's copy, quietly).
+      if (!r.ok || !Array.isArray(d.sent) || !Array.isArray(d.received)) {
+        // Not signed in, no read access, or Gmail busy: the app's own email reader (every ~10 minutes) is enough.
+        const fresh = await reloadConversations();
+        if (fresh) { setThreads(fresh.threads); setThreadsAt((fresh as { generatedAt?: string }).generatedAt || ""); }
+        const at = (fresh as { generatedAt?: string } | null)?.generatedAt;
+        setScanStatus(`✓ Up to date with your email${at ? ` as of ${new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""} (the app reads it every 10 minutes).`);
+        return;
+      }
       setScan(d);
+      // Emails from HPD not seen before on this phone: chime + banner (the first check only remembers what's there).
+      try {
+        const seenRaw = localStorage.getItem("hpd-seen-hpd-msgs");
+        const seen = new Set<string>(seenRaw ? JSON.parse(seenRaw) : []);
+        const fresh = (d.received || []).filter((m: ScanMsg & { id?: string }) => m.id && !seen.has(m.id));
+        for (const m of d.received || []) if ((m as { id?: string }).id) seen.add((m as { id: string }).id);
+        localStorage.setItem("hpd-seen-hpd-msgs", JSON.stringify([...seen].slice(-800)));
+        if (seenRaw && fresh.length) {
+          const newest = [...fresh].sort((a: ScanMsg, b: ScanMsg) => b.at.localeCompare(a.at))[0];
+          setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omos?.[0] || "" });
+          playChime();
+        }
+      } catch { /* private mode */ }
       const withFiles = (d.sent || []).filter((m: ScanMsg) => m.files).length;
       setScanStatus(`✓ Checked your email ${new Date(d.checkedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}: ${(d.sent || []).length} sent to HPD (${withFiles} with PDFs), ${(d.received || []).length} from HPD in the last ${d.days} days.`);
     } catch (e) {
       setScanStatus(`Couldn't check your email: ${e instanceof Error ? e.message : "error"}.`);
     }
   };
+  const priorities: PriorityItem[] = buildPriorities({
+    threads: (boardThreads || []) as unknown as Parameters<typeof buildPriorities>[0]["threads"], // with replies just found
+    rejections: openRejections.map((r) => ({ omo: r.omo, at: r.at, reason: r.reason || "", by: senderName(r.by || "HPD") })),
+    toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, done: prioDone,
+    // Nothing to do on jobs HPD closed or PIP paid.
+    closed: closedJobs,
+  });
+  // While the app is open: check every 5 minutes and when you come back to it (signed in only; quiet when it can't).
+  useEffect(() => {
+    const tick = () => { if (document.visibilityState === "visible" && threads) void runScan(); };
+    const timer = window.setInterval(tick, 300000);
+    const onShow = () => { if (document.visibilityState === "visible" && threads && (!scan || Date.now() - Date.parse(scan.checkedAt) > 120000)) void runScan(); };
+    document.addEventListener("visibilitychange", onShow);
+    const unlock = () => unlockChime();
+    document.addEventListener("pointerdown", unlock, { once: true });
+    if (threads && !scan) void runScan();
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onShow); document.removeEventListener("pointerdown", unlock); };
+  }, [threads === null || threads === undefined ? 0 : 1, scan?.checkedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   // Opening the board checks your email by itself (at most every 10 minutes).
   useEffect(() => {
     if (!boardOpen || scanStatus === "Checking your email…") return;
@@ -4390,6 +4451,17 @@ export default function FieldCommandClient() {
               </section>
             ))}
           </div>
+        </div>
+      ) : null}
+      {hpdPing ? (
+        <div className="fc-hpd-ping" role="status" data-hpd-smoke="fc-hpd-ping">
+          <button type="button" className="fc-hpd-ping-main" onClick={() => { setHpdPing(null); closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }}>
+            <span aria-hidden="true">📩</span>
+            <b>{hpdPing.count === 1 ? "New email from HPD" : `${hpdPing.count} new emails from HPD`}{hpdPing.omo ? ` · ${hpdPing.omo}` : ""}</b>
+            <small>{hpdPing.subject.slice(0, 90)}</small>
+          </button>
+          <button type="button" aria-label={chimeOff ? "Turn the sound on" : "Turn the sound off"} data-hpd-smoke="fc-chime-toggle" onClick={() => { const off = !chimeOff; setChimeOff(off); setChimeMuted(off); if (!off) playChime(); }}>{chimeOff ? "🔕" : "🔔"}</button>
+          <button type="button" aria-label="Close" onClick={() => setHpdPing(null)}>✕</button>
         </div>
       ) : null}
       {boardOpen ? (

@@ -57,6 +57,11 @@ export const noticePdfUrl = (file: string) => `/api/private/notice/${encodeURICo
 export type HpdMessage = { at: string; from: string; hpd: boolean; mine: boolean; subject: string; text: string; files: string[] };
 export type HpdThread = { id: string; subject: string; omos: string[]; kind: string; people: string[]; count: number; lastAt: string; waiting: boolean; messages: HpdMessage[] };
 let convPending: Promise<{ generatedAt: string; threads: HpdThread[] } | null> | null = null;
+// Fetch again (the email reader adds new emails every ~10 minutes).
+export function reloadConversations(fetcher: typeof fetch = fetch) {
+  convPending = null;
+  return loadConversations(fetcher);
+}
 export function loadConversations(fetcher: typeof fetch = fetch) {
   if (!convPending) {
     convPending = fetcher("/api/private/conversations", { cache: "no-store", credentials: "same-origin" })

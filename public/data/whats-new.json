@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "Notices update by themselves, with a chime",
+      "items": [
+        "The app now picks up your emails with HPD by itself: every 5 minutes while it is open, and each time you come back to it. No more \"Couldn't check your email\": if the phone can't read Gmail, it uses the app's own email reader (it reads your email every 10 minutes) and says how fresh it is.",
+        "Both ways: your replies move notices to 📤 Sent; HPD's answers move them to ✅ Confirmed. Answered notices leave the Priority map.",
+        "📩 A new email from HPD rings a short chime and shows a banner at the top (tap it to open the board). 🔔 / 🔕 on the banner turns the sound on or off. On iPhone the sound works after you've tapped the app once; it can't ring while the app is closed.",
+        "The Notices picker no longer covers the Bids / Map / Locate buttons."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "Bids: Stats in pages, with daily progress",
       "items": [
         "Bids -> Stats now has 3 pages instead of one long scroll: 📈 Progress, 🏆 Wins & prices, 🧾 Costs & rates.",

@@ -16,7 +16,9 @@ try {
   let reply = null; // what the fake Gmail answers on the 2nd check
   await context.route("**/api/drive/hpd-scan", (r) => {
     scans += 1;
-    return r.fulfill({ json: { days: 7, checkedAt: new Date().toISOString(), sent: scans > 1 && reply ? [reply] : [], received: [] } });
+    const old = { id: "h0", threadId: "t0", at: "2026-10-18T14:00:00Z", subject: "RE: older email", omos: [] };
+    const fresh = { id: "h1", threadId: "t1", at: new Date().toISOString(), subject: "RE: 24 HR POOR PERFORMANCE NOTICE - OMO#EQ31364 received, thank you", omos: ["EQ31364"] };
+    return r.fulfill({ json: { days: 7, checkedAt: new Date().toISOString(), sent: scans > 1 && reply ? [reply] : [], received: scans > 1 && reply ? [old, fresh] : [old] } });
   });
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
@@ -48,8 +50,14 @@ try {
   assert.equal(await after.getAttribute("data-next"), "confirmed");
   assert.match(await after.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /Sent · waiting/);
   if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/scan-1.png` }); }
+  // A new email from HPD (not there at the first check): a banner (and the chime), tap -> the board.
+  const ping = page.locator('[data-hpd-smoke="fc-hpd-ping"]');
+  await ping.waitFor({ timeout: 10000 });
+  assert.match(await ping.innerText(), /New email from HPD · EQ31364[\s\S]*received, thank you/);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-chime-toggle"]').count(), 1, "sound on / off");
+  if (shots) await page.screenshot({ path: `${shots}/scan-2-ping.png` });
   assert.deepEqual(errors, []);
-  console.log(`PASS scan: the board checked email on opening; "Check my emails now" found your reply with PDFs on ${omo} -> 📤 Sent · waiting, listed as changed`);
+  console.log(`PASS scan: the board checked email on opening; "Check my emails now" found your reply with PDFs on ${omo} -> 📤 Sent · waiting, listed as changed; a new email from HPD rang and showed a banner`);
   await context.close();
 } finally {
   await browser.close();
