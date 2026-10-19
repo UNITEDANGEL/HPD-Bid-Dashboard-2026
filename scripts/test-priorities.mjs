@@ -13,7 +13,7 @@ const threads = [
 ];
 const items = buildPriorities({ threads, rejections: [{ omo: "EP19269", at: "2026-09-25", reason: "Address is spelled incorrectly", by: "HPD" }], toPrint: [{ omo: "EQ17038", savedAt: "2026-10-16T18:00:00Z" }, { omo: "EQ1", savedAt: "x", mailedAt: "y" }], sent: { EP27489: { sentAt: "2026-07-02" } }, done: { "72h:ER01987:a": "2026-10-16" }, now: Date.parse("2026-10-16T20:00:00Z") });
 assert.deepEqual(items.map((i) => `${i.kind}:${i.omo}`), ["24h:EQ22426", "rejection:EP19269", "missing:EP27489", "missing:EP27382", "missing:EO18305", "missing:EP04029", "print:EQ17038"]);
-assert.equal(items[0].dueAt, "2026-10-17T16:01:00.000Z", "24 hours after the notice");
+assert.equal(items[0].dueAt, "2026-10-19T14:00:00.000Z", "a Friday 24-hour notice: first thing Monday (10 AM)");
 assert.equal(items.find((i) => i.omo === "EO18305").want, "photos");
 assert.equal(items.find((i) => i.omo === "EP27489").sentAt, "2026-07-02", "already sent shown");
 assert.equal(dueText("2026-10-17T16:01:00Z", Date.parse("2026-10-17T12:49:00Z")), "3h 12m left");

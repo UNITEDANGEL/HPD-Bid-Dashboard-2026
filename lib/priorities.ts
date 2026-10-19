@@ -2,6 +2,8 @@
 // 24-hour poor performance notices, 72-hour ones, missing-documents lists (AEP), rejected paperwork to fix, and fixed
 // paperwork still to print and mail. Each item says who asked, what for, the deadline and what we already sent.
 
+import { dueAfterWeekdays } from "./business-days";
+
 export type PriorityThread = { id: string; subject: string; omos: string[]; kind: string; people: string[]; lastAt: string; waiting: boolean; messages: { at: string; text: string; hpd: boolean; mine: boolean }[] };
 export type PriorityKind = "24h" | "72h" | "missing" | "rejection" | "print";
 export type PriorityItem = {
@@ -13,7 +15,8 @@ export type PriorityItem = {
 };
 
 const KIND_ORDER: Record<PriorityKind, number> = { "24h": 0, "72h": 1, rejection: 2, missing: 3, print: 4 };
-const hours = (iso: string, h: number) => new Date(Date.parse(iso) + h * 3600000).toISOString();
+// Deadlines count weekdays only (a 24-hour notice from Friday is due Monday).
+const hours = (iso: string, h: number) => dueAfterWeekdays(iso, h);
 
 export function buildPriorities(input: {
   threads: PriorityThread[];

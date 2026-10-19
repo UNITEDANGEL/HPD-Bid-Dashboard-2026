@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 18, 2026",
+      "title": "24-hour notices from Friday are due Monday morning",
+      "items": [
+        "Deadlines now count weekdays only. A 24-hour notice that comes in on Friday (or over the weekend) is due first thing Monday (10 AM). Monday-Thursday ones are due 24 hours later. A 72-hour one from Friday is due Wednesday.",
+        "The board, the Priority timers on the map, the morning summary and the red Notices reminder all use this."
+      ]
+    },
+    {
+      "date": "Oct 18, 2026",
       "title": "Corrections highlighted on the copy HPD gets; Notices pulses when time is short",
       "items": [
         "The corrected affidavit and invoice emailed to HPD now starts with a cover page: COPY - CORRECTED PAPERWORK, the OMO, HPD's rejection, and each change in yellow (old -> new). Every page says COPY at the top. The original you print and sign in ink stays clean.",

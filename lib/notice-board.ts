@@ -4,6 +4,8 @@
 // with the PDFs, their answer after it), from the paperwork on record, or by the owner's tap. A job drops to "Done"
 // once confirmed (or HPD closed / PIP paid).
 
+import { dueAfterWeekdays } from "./business-days";
+
 export type BoardMessage = { at: string; text: string; hpd: boolean; mine: boolean; files?: string[] };
 export type BoardThread = { id: string; subject: string; omos: string[]; people: string[]; kind?: string; messages: BoardMessage[] };
 export type BoardStep = "replied" | "made" | "sent" | "confirmed";
@@ -82,7 +84,7 @@ export function buildBoard(input: {
       const sentAt = input.sent[omo]?.sentAt || "";
       finish({
         key, omo, threadId: t.id, subject: t.subject, kind: "ppn", hours, who, to,
-        noticeAt: notice.at, dueAt: new Date(Date.parse(notice.at) + hours * 3600000).toISOString(), followUpAt: "",
+        noticeAt: notice.at, dueAt: dueAfterWeekdays(notice.at, hours), followUpAt: "", // weekdays only: Friday's 24-hour notice is due Monday
         want: "the affidavit and invoice, or an update on the job",
         steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(withFiles?.at || "", "", mark.sent), confirmed: step(answer?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
         sentAt, noticeText: notice.text.slice(0, 2500),
@@ -120,7 +122,7 @@ export function buildBoard(input: {
   // waiting on them, then done (newest first).
   const rank = (r: BoardRow) => (!r.next ? 3 : r.steps.sent.done ? 2 : r.kind === "docs" ? 1 : 0);
   return rows.sort((a, b) => rank(a) - rank(b)
-    || (rank(a) === 0 ? Date.parse(a.dueAt) - Date.parse(b.dueAt) : rank(a) === 3 ? Date.parse(b.noticeAt) - Date.parse(a.noticeAt) : Date.parse(a.noticeAt) - Date.parse(b.noticeAt)));
+    || (rank(a) === 0 ? Date.parse(a.dueAt) - Date.parse(b.dueAt) || Date.parse(a.noticeAt) - Date.parse(b.noticeAt) : rank(a) === 3 ? Date.parse(b.noticeAt) - Date.parse(a.noticeAt) : Date.parse(a.noticeAt) - Date.parse(b.noticeAt)));
 }
 
 // Hours left before the deadline (negative: overdue; Infinity: no deadline).

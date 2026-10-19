@@ -117,12 +117,12 @@ United Angel Construction Corp` } });
   await board.locator('[data-hpd-smoke="fc-board-close"]').click();
   await context.close();
 
-  // Under 6 hours left (clock set to 3 hours before the 10/16 notices are due): the Notices button pulses red.
+  // Under 6 hours left (clock set to 8 AM Monday, 2 hours before the Friday notices are due at 10): the Notices button pulses red.
   const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(ctx2);
   await ctx2.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const p2 = await ctx2.newPage();
-  await p2.clock.install({ time: new Date("2026-10-17T17:00:00Z") });
+  await p2.clock.install({ time: new Date("2026-10-19T12:00:00Z") });
   await p2.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   // The Notices button pulses red with an hours tag; Notices -> the board (pulsing) -> hot rows.
   const tag = p2.locator('[data-hpd-smoke="fc-urgent-tag"]');

@@ -4,7 +4,7 @@ import { loadLib } from "./daily-report.mjs";
 
 const { buildBoard, daysWaiting, draftReply, hoursLeft, urgentRows } = await loadLib("notice-board");
 
-const now = Date.parse("2026-10-17T10:00:00Z");
+const now = Date.parse("2026-10-19T10:00:00Z"); // Monday: the Friday 10/16 notices are due today (weekdays only)
 const hpd = (at, text = "Notice. Darlene Lewis lewisd@hpd.nyc.gov") => ({ at, text, hpd: true, mine: false });
 const mine = (at, files = []) => ({ at, text: "reply", hpd: false, mine: true, files });
 const t = (id, subject, omo, messages) => ({ id, subject, omos: [omo], people: ["Darlene Lewis"], messages });
@@ -21,7 +21,7 @@ const rows = buildBoard({ threads, sent: { EQ30401: { sentAt: "2026-10-01" } }, 
 assert.deepEqual(rows.map((r) => r.omo), ["EQ00004", "ER05228", "EQ30401", "EQ31123", "EQ00001"], "to do by deadline, then sent / waiting, done last");
 const by = Object.fromEntries(rows.map((r) => [r.omo, r]));
 assert.equal(by.ER05228.hours, 24);
-assert.equal(by.ER05228.dueAt, "2026-10-17T15:39:00.000Z");
+assert.equal(by.ER05228.dueAt, "2026-10-19T14:00:00.000Z", "Friday 24-hour notice: due first thing Monday (10 AM)");
 assert.equal(by.ER05228.to, "lewisd@hpd.nyc.gov");
 assert.equal(by.ER05228.next, "replied");
 assert.equal(by.EQ31123.next, "confirmed", "reply with the PDFs = replied, made, sent");
@@ -31,7 +31,7 @@ assert.equal(by.EQ30401.next, "sent", "replied by email, paperwork on record, no
 assert.equal(by.EQ30401.steps.made.how, "record");
 assert.equal(by.EQ00001.next, null, "their answer after our PDFs = confirmed");
 assert.equal(by.EQ00004.steps.replied.how, "tap");
-assert.ok(Math.abs(hoursLeft(by.ER05228, now) - 5.65) < 0.01);
+assert.ok(Math.abs(hoursLeft(by.ER05228, now) - 4) < 0.01, "6 AM Monday: 4 hours to 10 AM");
 assert.deepEqual(urgentRows(rows, now).map((r) => r.omo), ["EQ00004", "ER05228"], "under 6 hours, nothing sent");
 // Closed at HPD / PIP paid: done.
 assert.equal(buildBoard({ threads: [threads[0]], sent: {}, marks: {}, closed: new Set(["ER05228"]), now })[0].next, null);
@@ -56,7 +56,7 @@ assert.equal(d.EO18305.want, "photos");
 assert.equal(d.EP27489.to, "gafurd@hpd.nyc.gov");
 assert.equal(d.EP27489.dueAt, "");
 assert.equal(hoursLeft(d.EP27489, now), Infinity);
-assert.equal(daysWaiting(d.EP27489, now), 9);
+assert.equal(daysWaiting(d.EP27489, now), 11);
 assert.equal(d.EP27489.followUpAt, "2026-10-16T15:26:00-04:00");
 assert.equal(d.EO18305.next, "confirmed", "our PDFs naming EO18305 = sent");
 assert.equal(d.EP27310.steps.sent.done, false, "PDFs for another job don't count for this one");
@@ -69,3 +69,12 @@ assert.match(draftReply(d.EP27310, "").text, /will send the affidavit and invoic
 // Notices with a deadline come before the lists.
 assert.equal(buildBoard({ threads: [docsThread, threads[0]], sent: {}, marks: {}, now })[0].kind, "ppn");
 console.log("PASS notice board: missing-documents lists (one row per job, what they want, steps per job, no deadline); 5 notices (2 too old / not notices left out), steps from emails / record / taps, deadlines 24 vs 72 h, under-6-hour reminder, closed = done, drafts say what's true");
+// Weekdays only (owner, 18 Oct): Friday / weekend 24 h -> first thing Monday (10 AM), Friday 72 h -> Wednesday,
+// Tuesday 24 h -> Wednesday same time.
+const { dueAfterWeekdays } = await loadLib("business-days");
+assert.equal(dueAfterWeekdays("2026-10-16T15:39:00-04:00", 24), "2026-10-19T14:00:00.000Z");
+assert.equal(dueAfterWeekdays("2026-10-16T15:39:00-04:00", 72), "2026-10-21T19:39:00.000Z");
+assert.equal(dueAfterWeekdays("2026-10-13T09:00:00-04:00", 24), "2026-10-14T13:00:00.000Z");
+assert.equal(dueAfterWeekdays("2026-10-17T11:00:00-04:00", 24), "2026-10-19T14:00:00.000Z");
+assert.equal(dueAfterWeekdays("2026-12-04T16:00:00-05:00", 24), "2026-12-07T15:00:00.000Z", "winter time: Monday 10 AM EST");
+console.log("PASS weekdays only: Friday / weekend 24h -> Monday 10 AM, Friday 72h -> Wednesday, Tuesday 24h -> Wednesday");
