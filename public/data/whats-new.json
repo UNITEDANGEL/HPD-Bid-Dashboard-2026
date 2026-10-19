@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "Bigger bid pins you can see on the iPhone",
+      "items": [
+        "Each bid pin is now a big white circle with the job picture (🔩 💧 🚪 🔒 🪟...), a thick ring in the due color (red today, orange soon, yellow later, green sent, blue fax going through) and the day in a bold tag under it.",
+        "Status as a corner badge: ✓ sent, ⏳ fax going through, ! due today and not sent (it pulses), $ easy win, 🚫 no bid.",
+        "Tap a pin: it pops, and the bid opens."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "🔁 Failed bid faxes are resent by themselves",
       "items": [
         "When HumbleFax says a bid fax failed, the app sends it again by itself (same price you approved) to HPD's next fax line: (212) 863-8655 -> 863-7804 -> 863-7805. Once per failure, up to 3 times, only before the bid is due. Then it checks HumbleFax's answer every minute and turns green when confirmed.",

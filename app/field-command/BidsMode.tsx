@@ -347,9 +347,15 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const kind = jobIcon(bid.description || "");
         return L.marker([bid.lat, bid.lng], {
           pane: "fc-bids", title: `${bid.omo} · ${kind.label} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<span class="fc-bid-ico" title="${kind.label}">${kind.icon}</span><b>${noBidPin ? "🚫" : sent ? "✓" : pendingFax ? "⏳" : faxFailed || alertPin ? "!" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [40, 48], iconAnchor: [20, 24] }),
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<div class="fc-bid-in"><span class="fc-bid-ico" title="${kind.label}">${kind.icon}</span><b>${dueLabel(bid).split(" ")[0]}</b>${noBidPin ? "<em>🚫</em>" : sent ? "<em class=\"is-ok\">✓</em>" : pendingFax ? "<em>⏳</em>" : faxFailed || alertPin ? "<em class=\"is-bad\">!</em>" : ""}${easyPin ? "<i>$</i>" : ""}</div>`, iconSize: [52, 52], iconAnchor: [26, 26] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
-        }).on("click", () => openBid(bid));
+        }).on("click", (e: { target?: { getElement?: () => HTMLElement | undefined } }) => {
+          // A pop you can see and feel, then the bid opens.
+          const el = e.target?.getElement?.();
+          if (el) { el.classList.remove("is-tapped"); void el.offsetWidth; el.classList.add("is-tapped"); }
+          try { navigator.vibrate?.(12); } catch { /* not on iPhone */ }
+          openBid(bid);
+        });
       });
       if (!markers.length) return;
       layerRef.current = L.featureGroup(markers).addTo(map);
@@ -363,8 +369,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const bar = document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.getBoundingClientRect();
         const top = banner ? Math.max(20, banner.bottom - area.top + 16) : 120;
         const below = bar && bar.top > area.top ? Math.max(48, area.bottom - bar.top + 24) : 124;
-        // Pins are 40 px with the due-day tag under them: keep half a pin + the tag clear of the edges.
-        map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [32, Math.min(top + 24, Math.max(44, area.height - 200))], paddingBottomRight: [98, Math.min(below, Math.max(48, area.height - top - 160))], maxZoom: 14 });
+        // Pins are 52 px with the due-day tag under them: keep half a pin + the tag clear of the edges.
+        map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [40, Math.min(top + 30, Math.max(50, area.height - 200))], paddingBottomRight: [104, Math.min(below + 14, Math.max(60, area.height - top - 160))], maxZoom: 14 });
       };
       fit();
       window.setTimeout(fit, 450);
