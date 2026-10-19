@@ -137,6 +137,7 @@ jobs:
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs
           node scripts/test-notice-findings.mjs
+          node scripts/test-job-icon.mjs
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs
@@ -193,6 +194,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-priority-map.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-notice-board.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-scan.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-bid-icons.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-vt-send.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-money.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs

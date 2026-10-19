@@ -19,6 +19,7 @@ import ItbPages, { pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
+import { jobIcon } from "../../lib/job-icon";
 import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
 import { calcContext, calcPrice } from "../../lib/bid-calc";
 import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "../../lib/costs";
@@ -341,20 +342,31 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const alertPin = alertOmos.has(bid.omo);
         const easyPin = !sent && !currentRecord(bid, records) && easyOmos.has(bid.omo);
         const noBidPin = !sent && !pendingFax && !!noBidOf(bid);
+        // A picture of the kind of job (hinges 🔩, leak 💧...), the due day under it (owner, 19 Oct).
+        const kind = jobIcon(bid.description || "");
         return L.marker([bid.lat, bid.lng], {
-          pane: "fc-bids", title: `${bid.omo} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<b>${noBidPin ? "🚫" : sent ? "✓" : pendingFax ? "⏳" : faxFailed || alertPin ? "!" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [34, 34], iconAnchor: [17, 17] }),
+          pane: "fc-bids", title: `${bid.omo} · ${kind.label} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<span class="fc-bid-ico" title="${kind.label}">${kind.icon}</span><b>${noBidPin ? "🚫" : sent ? "✓" : pendingFax ? "⏳" : faxFailed || alertPin ? "!" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [40, 48], iconAnchor: [20, 24] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
         }).on("click", () => openBid(bid));
       });
       if (!markers.length) return;
       layerRef.current = L.featureGroup(markers).addTo(map);
       // Fit the pins in the map you can actually see: below the header, above the list's bar, left of the buttons.
-      const area = map.getContainer().getBoundingClientRect();
-      const banner = bannerRef.current?.getBoundingClientRect();
-      const top = banner ? Math.max(20, banner.bottom - area.top + 16) : 120;
-      const room = area.height - top - 90;
-      map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [24, Math.min(top, Math.max(20, area.height - 200))], paddingBottomRight: [90, room > 120 ? 90 : 30], maxZoom: 14 });
+      // Again a moment later: the screen settles (header, list bar) after the bids open.
+      const fit = () => {
+        if (cancelled || !layerRef.current) return;
+        map.invalidateSize();
+        const area = map.getContainer().getBoundingClientRect();
+        const banner = bannerRef.current?.getBoundingClientRect();
+        const bar = document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.getBoundingClientRect();
+        const top = banner ? Math.max(20, banner.bottom - area.top + 16) : 120;
+        const below = bar && bar.top > area.top ? Math.max(48, area.bottom - bar.top + 24) : 124;
+        // Pins are 40 px with the due-day tag under them: keep half a pin + the tag clear of the edges.
+        map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [32, Math.min(top + 24, Math.max(44, area.height - 200))], paddingBottomRight: [98, Math.min(below, Math.max(48, area.height - top - 160))], maxZoom: 14 });
+      };
+      fit();
+      window.setTimeout(fit, 450);
     });
     return () => { cancelled = true; };
   }, [open, bids, map, records, easyOmos, alertKey, shownBids, noBids]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1209,7 +1221,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 return (
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
-                      <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
+                      <span className="fc-bid-row"><span className="fc-bid-row-ico" title={jobIcon(bid.description || "").label} data-hpd-smoke="fc-bid-row-ico">{jobIcon(bid.description || "").icon}</span><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = calcPrice(sm, rates, calcContext(sm, readScope(bid.description).tasks, bid.borough || "")); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>

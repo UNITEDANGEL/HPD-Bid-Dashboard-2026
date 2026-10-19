@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "Bid pins show the kind of job; Gafur (AEP) on her own",
+      "items": [
+        "Bids map: each pin now shows a picture of the job (🔩 hinges, 💧 leak, 🚪 door / closer, 🔒 lock, 🔐 Secure Tech, 🪟 window, 🚰 plumbing, 🧱 plaster, 🟫 floor...) with the due day under it. The list rows show the same picture.",
+        "Notices: 📋 Gafur · AEP has its own button on the map picker and its own filter on the Vendor tracking board.",
+        "Board -> Gafur · AEP -> ✉ Answer the whole list in one email: one line per job with what is on record (e.g. EP27450 affidavit and invoice sent on 10/8) or \"update:\" for you to fill in. Send to me first, or Send with two taps (it won't send while an update line is empty)."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "🔄 Check my emails now: the board updates from what you sent",
       "items": [
         "Your replies to Lewis this morning are in: 13 notices you answered with PDFs now show 📤 Sent · waiting on them.",

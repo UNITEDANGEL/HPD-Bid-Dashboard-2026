@@ -67,6 +67,21 @@ United Angel Construction Corp` } });
   assert.match(await docRows.first().locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /Waiting \d+ days|Sent · waiting/);
   await page.waitForTimeout(400);
   if (shots) await page.screenshot({ path: `${shots}/board-4-docs.png` });
+  // Gafur's whole list in one email: a line per job with what's on record (sent on <date>, PDFs in another email) or
+  // "update:" for you to fill in; Send refuses while an "update:" line is empty.
+  const listBox = board.locator('[data-hpd-smoke="fc-list-reply"]').first();
+  await listBox.locator('[data-hpd-smoke="fc-list-reply-open"]').click();
+  const listText = await listBox.locator('[data-hpd-smoke="fc-list-reply-text"]').inputValue();
+  assert.match(listText, /^Hello .+,\n\nThank you for the list\. Here is where each job stands:/);
+  assert.match(listText, /EP27450 \([^)]*\) - affidavit and invoice sent on 10\/8\/26/i);
+  assert.match(listText, /EP18784 \([^)]*\) - documents sent on 12\/10\/25/, "paperwork on record, with its date");
+  assert.match(listText, /EP22713 \([^)]*\) - update: /, "a group email about many jobs doesn't count as sent for this one");
+  assert.match(listText, /EN07390 \([^)]*\) - update: /);
+  await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
+  await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
+  assert.match(await listBox.locator('[data-hpd-smoke="fc-list-reply-status"]').innerText(), /Fill in the lines that end with "update:"/);
+  if (shots) await page.screenshot({ path: `${shots}/board-6-gafur.png` });
+  await listBox.locator("button", { hasText: "Close" }).click();
   await board.locator('[data-hpd-smoke="fc-board-show-all"]').click();
 
   // The ready reply: says the OMO, first tap only arms.

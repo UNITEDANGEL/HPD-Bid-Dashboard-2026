@@ -993,7 +993,7 @@ export default function FieldCommandClient() {
   // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
   const [showOlderLayer, setShowOlderLayer] = useState(false);
   // Notices button (owner, 16 Oct): first asks what you're looking for, then the map shows just those jobs.
-  type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print";
+  type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep";
   const [noticeChooser, setNoticeChooser] = useState(false);
   // After a pick the picker shrinks to a thin bar so the map is in view (owner, 17 Oct: "take me to the map").
   const [noticeMini, setNoticeMini] = useState(false);
@@ -1605,6 +1605,9 @@ export default function FieldCommandClient() {
     if (scan && Date.now() - Date.parse(scan.checkedAt) < 600000) return;
     void runScan();
   }, [boardOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The latest email with PDFs you sent about each job, in any thread (e.g. you sent EP22713's paperwork in its own thread).
+  const pdfsByOmo = new Map<string, string>();
+  for (const t of boardThreads || []) for (const m of t.messages) if (m.mine && (m.files?.length || 0) > 0) for (const o of t.omos) if ((t.omos.length <= 2 || m.text.includes(o)) && (!pdfsByOmo.has(o) || (pdfsByOmo.get(o) || "") < m.at)) pdfsByOmo.set(o, m.at);
   const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
   const boardUrgent = urgentRows(boardRows);
@@ -1624,6 +1627,8 @@ export default function FieldCommandClient() {
     corrections: new Set(threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).flatMap((t) => t.omos)),
     print: new Set(toPrint.filter((c) => !c.mailedAt).map((c) => c.omo)),
     all: new Set<string>(),
+    // Gafur (AEP): the jobs on her missing-documents lists still open.
+    aep: new Set(boardOpenRows.filter((r) => r.kind === "docs").map((r) => r.omo)),
   };
   noticeSets.all = new Set([...noticeSets.priority, ...noticeSets.rejected, ...noticeSets.corrections, ...noticeSets.print]);
   const noticeSetKey = noticeKind ? [...noticeSets[noticeKind]].sort().join(",") : "";
@@ -1632,6 +1637,7 @@ export default function FieldCommandClient() {
     { key: "priority", icon: "🔥", short: "Priority", title: "Priority · vendor tracking", note: "Lewis / Gafur want the affidavit, invoice or an update" },
     { key: "rejected", icon: "💵", short: "Payment rejected", title: "Payment rejected", note: "Procurement rejected the invoice / affidavit: fix & resend" },
     { key: "corrections", icon: "✏️", short: "Corrections", title: "Corrections", note: "HPD staff asked you to correct paperwork" },
+    { key: "aep", icon: "📋", short: "Gafur · AEP", title: "Gafur · AEP missing documents", note: "Her list: affidavit, invoice, photos, updates" },
     { key: "print", icon: "🖨", short: "Print & mail", title: "Print & mail", note: "Fixed paperwork to sign in ink and mail" },
   ] as const;
   // Earliest Priority item per job (24-hour before 72-hour before missing documents).
@@ -1641,12 +1647,12 @@ export default function FieldCommandClient() {
   if (followFilter === "notices" && noticeKind) {
     for (const omo of noticeSets[noticeKind]) {
       const kind = noticeKind !== "all" ? noticeKind
-        : noticeSets.priority.has(omo) ? "priority" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
+        : noticeSets.priority.has(omo) ? "priority" : noticeSets.aep.has(omo) ? "aep" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
       const it = prioByOmo.get(omo);
       const due = it ? dueText(it.dueAt) : "";
       const tag = kind === "priority"
         ? (it ? (it.kind === "missing" ? "🔥 Docs" : `🔥 ${it.kind === "24h" ? "24h" : "72h"} · ${due.replace(" left", "").replace("overdue ", "-")}`) : "🔥 Asked")
-        : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
+        : kind === "aep" ? "📋 Docs" : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
       glow.set(omo, { tag, cls: `is-glow is-glow-${kind}${kind === "priority" && it?.kind === "24h" ? " is-glow-24h" : ""}${kind === "priority" && /overdue/.test(due) ? " is-glow-late" : ""}` });
     }
   }
@@ -1657,7 +1663,7 @@ export default function FieldCommandClient() {
     setSelectedJob(null);
     setFollowFilter("notices");
     setNoticeKind(kind);
-    if (kind && kind !== "all") setNoticesTab(kind);
+    if (kind && kind !== "all" && kind !== "aep") setNoticesTab(kind);
     setNoticeChooser(true);
     setNoticeMini(true);
   };
@@ -4393,7 +4399,7 @@ export default function FieldCommandClient() {
           onScan={() => void runScan()}
           scanStatus={scanStatus}
           scanChanged={scan && threads ? (() => { const before = new Map(buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }).map((r) => [r.key, r.next])); return boardRows.filter((r) => before.has(r.key) && before.get(r.key) !== r.next).map((r) => ({ omo: r.omo, now: r.next === "confirmed" ? "📤 Sent, waiting on them" : r.next === null ? "✅ Confirmed" : `next: ${r.next}` })); })() : []}
-          findingsOf={(row) => noticeFindings({ omo: row.omo, job: findAnyJob(row.omo) as Record<string, unknown> | null, sent: followRef.current?.sent?.[row.omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[row.omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[row.omo], rejection: rejections.find((r) => r.omo === row.omo) || null, ourFilesAt: row.steps.sent.how === "email" ? row.steps.sent.at : "" })}
+          findingsOf={(row) => noticeFindings({ omo: row.omo, job: findAnyJob(row.omo) as Record<string, unknown> | null, sent: followRef.current?.sent?.[row.omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[row.omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[row.omo], rejection: rejections.find((r) => r.omo === row.omo) || null, ourFilesAt: (row.steps.sent.how === "email" ? row.steps.sent.at : "") || pdfsByOmo.get(row.omo) || "" })}
           addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}

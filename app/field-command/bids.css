@@ -604,3 +604,11 @@
 .fc-bid-reco button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 14px system-ui; }
 .fc-bid-reco button:active { transform: scale(0.96); }
 .fc-bid-reco small { grid-column: 1 / -1; color: #d6d3d1; font: 600 12.5px system-ui; }
+
+/* Bid pins show the kind of job (19 Oct): a big picture in the round pin, the due day as a tag under it. */
+.leaflet-marker-icon.fc-bid-pin { display: block; width: 40px !important; height: 40px !important; border-radius: 50%; }
+.fc-bid-pin .fc-bid-ico { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; line-height: 1; }
+.fc-bid-pin b { position: absolute; left: 50%; bottom: -12px; transform: translateX(-50%); padding: 1px 6px; border-radius: 8px; background: #0f172a; color: #fff; border: 1.5px solid #fff; font: 900 11px/14px system-ui, sans-serif; white-space: nowrap; }
+.fc-bid-pin.is-today b { background: #b91c1c; }
+.fc-bid-pin.is-sent b { background: #15803d; }
+.fc-bid-row-ico { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 6px; border-radius: 50%; background: #f1f5f9; font-size: 18px; vertical-align: middle; }

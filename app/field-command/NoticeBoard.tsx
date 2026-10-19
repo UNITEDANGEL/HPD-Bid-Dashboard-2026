@@ -88,6 +88,43 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
 
   // Who can get a reply now: open, their address known, not already waiting on them.
   const replyable = rows.filter((r) => r.next && r.next !== "confirmed" && r.to);
+  // Answer a whole missing-documents list in one email (owner, 19 Oct: "Gafur... very important, let's get her updated"):
+  // one line per job with what's on record (sent on <date> / PDFs emailed / photos) or that it's coming.
+  const lists = [...new Set(rows.filter((r) => r.kind === "docs").map((r) => r.threadId))].map((tid) => rows.filter((r) => r.kind === "docs" && r.threadId === tid)).sort((a, b) => b.length - a.length || Date.parse(b[0].noticeAt) - Date.parse(a[0].noticeAt)); // her biggest, newest list first
+  const [listReply, setListReply] = useState<{ threadId: string; to: string; who: string; subject: string; text: string; armed: boolean; status: string; sent: boolean } | null>(null);
+  const startListReply = (list: BoardRow[]) => {
+    const head = list[0];
+    const first = (head.who || "").split(/\s+/)[0] || "";
+    const lineFor = (r: BoardRow) => {
+      const f = findingsOf ? findingsOf(r) : null;
+      const sentLine = f?.lines.find((l) => /sent to HPD on|emailed them PDFs/.test(l.text))?.text || "";
+      const when = (sentLine.match(/on (\d+\/\d+\/\d+)/) || [])[1] || "";
+      const what = /photo/i.test(r.want) ? "photos" : /affidavit|invoice/i.test(r.want) ? "affidavit and invoice" : "documents";
+      if (r.steps.sent.done || when) return `${r.omo} (${r.want}) - ${what} sent${when ? ` on ${when}` : ""}. We will send them again to you today.`;
+      if (f?.advice.action === "make") return `${r.omo} (${r.want}) - ${f.lines.find((l) => /from your app/.test(l.text))?.text.replace(" (from your app)", "") || "work done"}; the affidavit and invoice will be sent to you shortly.`;
+      return `${r.omo} (${r.want}) - update: `;
+    };
+    const lines = list.map(lineFor);
+    setListReply({ threadId: head.threadId, to: head.to, who: head.who, armed: false, status: "", sent: false,
+      subject: `RE: ${head.subject}`.slice(0, 200),
+      text: `Hello${first ? ` ${first}` : ""},\n\nThank you for the list. Here is where each job stands:\n\n${lines.join("\n")}\n\nPlease let us know if anything else is needed.\n\nThank you,\nJot Singh\nUnited Angel Construction Corp` });
+  };
+  const sendListReply = async (toSelf: boolean) => {
+    if (!listReply) return;
+    if (!toSelf && !listReply.armed) { setListReply({ ...listReply, armed: true }); return; }
+    if (!toSelf && /update: \n/.test(listReply.text + "\n")) { setListReply({ ...listReply, armed: false, status: "Fill in the lines that end with \"update:\" first (or delete them)." }); return; }
+    setListReply({ ...listReply, status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: listReply.subject, text: listReply.text } : { to: listReply.to, subject: listReply.subject, text: listReply.text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      if (toSelf) { setListReply({ ...listReply, armed: false, status: `✓ Sent to you (${d.to}). Nothing went to HPD.` }); return; }
+      for (const row of rows.filter((x) => x.threadId === listReply.threadId)) onMark(row.key, "replied", true);
+      setListReply({ ...listReply, armed: false, sent: true, status: `✓ Sent to ${d.to}. Every job on the list shows Reply sent.` });
+    } catch (e) {
+      setListReply({ ...listReply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
+    }
+  };
   const batchRows = (pick: "record" | "none" | "all") => replyable.filter((r) => pick === "all" || (pick === "record" ? !!r.sentAt || r.steps.made.done : !r.sentAt && !r.steps.made.done));
   const startBatch = (pick: "record" | "none" | "all") => setBatch({ pick, selfStatus: "", items: batchRows(pick).map((r) => { const d = draftReply(r, addressOf(r.omo)); return { key: r.key, subject: d.subject, text: d.text, armed: false, status: "", sent: false }; }) });
   const setItem = (key: string, patch: Partial<BatchItem>) => setBatch((b) => (b ? { ...b, items: b.items.map((it) => (it.key === key ? { ...it, ...patch } : it)) } : b));
@@ -212,7 +249,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
           </div>
         ) : null}
         <div className="fc-board-filter" role="tablist" data-hpd-smoke="fc-board-filter">
-          {([["all", "All", rows.filter((r) => r.next).length], ["ppn", "⏱ 24 / 72-hour", rows.filter((r) => r.next && r.kind === "ppn").length], ["docs", "📋 Missing documents", rows.filter((r) => r.next && r.kind === "docs").length]] as const).map(([k, label, n]) => (
+          {([["all", "All", rows.filter((r) => r.next).length], ["ppn", "⏱ 24 / 72-hour", rows.filter((r) => r.next && r.kind === "ppn").length], ["docs", "📋 Gafur · AEP", rows.filter((r) => r.next && r.kind === "docs").length]] as const).map(([k, label, n]) => (
             <button key={k} type="button" role="tab" aria-selected={show === k} className={show === k ? "is-on" : ""} data-hpd-smoke={`fc-board-show-${k}`} onClick={() => setShow(k)}>{label} <b>{n}</b></button>
           ))}
         </div>
@@ -257,6 +294,26 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
           </section>
         ) : (
           <>
+            {show === "docs" ? lists.map((list) => (
+              <div key={list[0].threadId} className="fc-list-reply" data-hpd-smoke="fc-list-reply">
+                <b>📋 {list[0].who}&apos;s list · {list.length} job{list.length === 1 ? "" : "s"} · asked {new Date(list[0].noticeAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}{list[0].followUpAt ? ` · followed up ${new Date(list[0].followUpAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}` : ""}</b>
+                <small>{list.filter((r) => r.steps.replied.done).length} answered · {list.filter((r) => r.sentAt || r.steps.sent.done).length} with paperwork on record · {list.filter((r) => !r.sentAt && !r.steps.sent.done && !r.steps.made.done).length} with nothing sent</small>
+                {listReply?.threadId === list[0].threadId ? (
+                  <div className="fc-ack" data-hpd-smoke="fc-list-reply-box">
+                    <b>One email answering the whole list, to {listReply.who} &lt;{listReply.to}&gt;</b>
+                    <p className="fc-ack-status">Lines ending in &quot;update:&quot; need a word from you (what&apos;s happening on that job).</p>
+                    <label>Subject<input value={listReply.subject} onChange={(e) => setListReply({ ...listReply, subject: e.target.value, armed: false })} /></label>
+                    <label>Message<textarea rows={16} data-hpd-smoke="fc-list-reply-text" value={listReply.text} onChange={(e) => setListReply({ ...listReply, text: e.target.value, armed: false })} /></label>
+                    <div className="fc-ack-actions">
+                      <button type="button" className={listReply.armed ? "is-armed" : ""} disabled={listReply.sent || !listReply.to || listReply.status === "Sending…"} data-hpd-smoke="fc-list-reply-send" onClick={() => void sendListReply(false)}>{listReply.sent ? "✓ Sent" : listReply.armed ? `✅ Tap again: send to ${listReply.to}` : "✉ Send"}</button>
+                      <button type="button" disabled={listReply.status === "Sending…"} data-hpd-smoke="fc-list-reply-me" onClick={() => void sendListReply(true)}>📨 Send to me first</button>
+                      <button type="button" onClick={() => setListReply(null)}>Close</button>
+                    </div>
+                    {listReply.status ? <p className="fc-ack-status" data-hpd-smoke="fc-list-reply-status">{listReply.status}</p> : null}
+                  </div>
+                ) : <button type="button" className="fc-batch-open" data-hpd-smoke="fc-list-reply-open" onClick={() => startListReply(list)}>✉ Answer the whole list in one email</button>}
+              </div>
+            )) : null}
             {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}
             <ol className="fc-board-list">{open.map(card)}</ol>
           </>
