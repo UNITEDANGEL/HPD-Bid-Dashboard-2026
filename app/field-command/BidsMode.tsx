@@ -11,6 +11,7 @@ import { priceHelp, readScope, winChance, type PricedJob, bestPrice } from "../.
 import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
+import { autoResendPlan, lineOf } from "../../lib/bid-records";
 import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
@@ -512,6 +513,58 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (filled && filled.price !== draftValue) setFilled(null);
   }
 
+  async function buildPackageFor(bid: UpcomingBid, price: number) {
+    const [{ fillBidPackage }, pdf] = await Promise.all([
+      import("../../lib/bid-fill"),
+      fetch(itbPdfUrl(bid.itbFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
+    ]);
+    const bytes = await fillBidPackage(pdf, bid, price);
+    return { bytes, name: `${bid.omo}_BID_${Math.round(price)}_${bid.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf` };
+  }
+
+  // A failed fax is sent again (owner, 19 Oct: "this should be auto resend and confirm"): the same bid at the price
+  // already sent, to the next HPD fax line. By itself when the app is open (once per failure, up to 3, only before it's
+  // due), or with one tap on "Resend now". HumbleFax's answer is then checked every minute as usual.
+  const resending = useRef(new Set<string>());
+  const [autoNote, setAutoNote] = useState("");
+  async function resendFailed(rec: BidRecord, line: FaxLine, auto: boolean) {
+    const bid = (bids || []).find((b) => b.omo === rec.omo);
+    if (!bid || resending.current.has(rec.omo)) return;
+    resending.current.add(rec.omo);
+    const label = FAX_LINES.find((l) => l.id === line)!.label;
+    const price = rec.sentPrice || rec.price;
+    let base = rec;
+    try {
+      setAutoNote(`🔁 ${rec.omo}: fax failed, sending it again${auto ? " automatically" : ""} to ${label}…`);
+      if (auto) {
+        base = withLog({ ...rec, autoResendFor: rec.confirmedAt, autoResends: (rec.autoResends || 0) + 1, updatedAt: new Date().toISOString() }, `Fax failed: sending it again automatically to ${label}`);
+        await update(base);
+      }
+      const pkg = await buildPackageFor(bid, price);
+      const result = await sendBidFax(bid, price, pkg.bytes, pkg.name, fetch, undefined, line);
+      if (!result.ok) {
+        await update(withLog({ ...base, updatedAt: new Date().toISOString() }, `${auto ? "Automatic resend" : "Resend"} NOT sent to ${label}: ${result.error}`));
+        setAutoNote(`❌ ${rec.omo}: couldn't send it again (${result.error}). Open the bid and send it.`);
+        return;
+      }
+      await update(withLog({ ...base, status: "sent", sentAt: result.sentAt, sentPrice: price, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts: (base.attempts || 0) + 1, updatedAt: new Date().toISOString() },
+        `Fax sent again${auto ? " automatically" : ""} to HPD ${label} at ${money2(price)} (after a failed fax)`, result.sentAt));
+      setAutoNote(`🔁 ${rec.omo}: the fax failed, so it was sent again${auto ? " automatically" : ""} to ${label}. Waiting for HumbleFax to confirm.`);
+    } catch (err) {
+      setAutoNote(`❌ ${rec.omo}: couldn't send it again (${err instanceof Error ? err.message : String(err)}).`);
+    } finally {
+      resending.current.delete(rec.omo);
+    }
+  }
+  const nextLine = (rec: BidRecord): FaxLine => FAX_LINES[(FAX_LINES.findIndex((l) => l.id === lineOf(rec.faxTo)) + 1) % FAX_LINES.length].id;
+  useEffect(() => {
+    if (!pulled || !bids) return;
+    for (const rec of Object.values(records)) {
+      const plan = autoResendPlan(rec);
+      if (plan && bids.some((b) => b.omo === rec.omo)) void resendFailed(rec, plan.line, true);
+    }
+  }, [pulled, bids, Object.values(records).filter((r) => r.status === "failed").map((r) => `${r.omo}${r.confirmedAt}${r.autoResendFor || ""}`).join()]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function buildPackage(price: number) {
     if (!selected) return null;
     const [{ fillBidPackage }, pdf] = await Promise.all([
@@ -697,6 +750,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     <>
       <div className="fc-bids-banner" ref={bannerRef} data-hpd-smoke="fc-bids-banner">
         <strong>📨 Invitations to bid</strong>
+        {autoNote ? <small className="fc-bids-autonote" data-hpd-smoke="fc-bids-autonote">{autoNote}</small> : null}
         <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bids ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-today"> · {bids.filter((b) => b.receivedAt && new Date(b.receivedAt).toLocaleDateString("en-US", { timeZone: "America/New_York" }) === new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })).length} received today</small> : null}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
         {unread.length ? <p className="fc-bids-unread" role="alert" data-hpd-smoke="fc-bids-unread">⚠️ {unread.length} invitation{unread.length > 1 ? "s" : ""} couldn&apos;t be read, open in your email: {unread.map((u) => `${u.omo || u.file} (${u.why})`).join(", ")}</p> : null}
         <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
@@ -790,7 +844,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             {record && state !== "saved" ? (
               <div className={`fc-bid-status is-${state}`} data-hpd-smoke="fc-bid-status">
                 <b>{FAX_TEXT[state]}</b>
-                <span>Sent {when(record.sentAt)} at {money2(record.sentPrice || record.price)} to HPD fax (212) 863-8655{record.attempts > 1 ? ` · ${record.attempts} sends` : ""}</span>
+                <span>Sent {when(record.sentAt)} at {money2(record.sentPrice || record.price)} to HPD fax {FAX_LINES.find((l) => l.id === lineOf(record.faxTo))?.label || "(212) 863-8655"}{record.attempts > 1 ? ` · ${record.attempts} sends` : ""}</span>
                 {record.confirmedAt ? <span>HumbleFax {state === "failed" ? "reported" : "confirmed"} {when(record.confirmedAt)}{record.faxNote ? `: "${record.faxNote}"` : ""}</span> : null}
                 {note ? <small>{note}</small> : null}
                 {(state === "waiting" || state === "unconfirmed") && faxCheckNote ? (
@@ -1083,11 +1137,16 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   {busy === "Sending the fax…" ? "⏳ Sending the fax…" : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
                 </button>
                 {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
-                {reviewedSaved && (state === "failed" || state === "unconfirmed" || busy.startsWith("Not sent")) ? (
+                {state === "failed" || state === "unconfirmed" ? (
+                  <button type="button" className="fc-bid-fill is-send" data-hpd-smoke="fc-bid-resend" disabled={resending.current.has(record.omo) || busy === "Sending the fax…"} onClick={() => void resendFailed(record, nextLine(record), false)}>
+                    🔁 Resend now to {FAX_LINES.find((l) => l.id === nextLine(record))!.label} at {money2(record.sentPrice || record.price)}
+                  </button>
+                ) : null}
+                {state === "failed" || state === "unconfirmed" || (reviewedSaved && busy.startsWith("Not sent")) ? (
                   <div className="fc-bid-backup" data-hpd-smoke="fc-bid-backup">
                     <small>Didn&apos;t go through? Send to HPD&apos;s backup fax (HumbleFax):</small>
                     {FAX_LINES.filter((l) => l.id !== "main").map((l) => (
-                      <button key={l.id} type="button" className="fc-bid-fill is-secondary" data-hpd-smoke={`fc-bid-send-${l.id}`} disabled={busy === "Sending the fax…"} onClick={() => void send(l.id)}>
+                      <button key={l.id} type="button" className="fc-bid-fill is-secondary" data-hpd-smoke={`fc-bid-send-${l.id}`} disabled={busy === "Sending the fax…"} onClick={() => void (reviewedSaved ? send(l.id) : resendFailed(record, l.id, false))}>
                         {armed === `send-${l.id}` ? `✅ Tap again to send to ${l.label}` : `📠 Send to backup ${l.label}`}
                       </button>
                     ))}

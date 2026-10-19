@@ -197,14 +197,11 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Resend bid by fax/);
   assert.equal(await page.locator(".fc-bid-pin.is-fax-failed").count(), Number.isFinite(open.find((b) => b.omo === omo2)?.lat) ? 1 : 0, "a failed fax shows a red pin");
   failOmo = "";
-  // The failed fax offers HPD's backup lines (HumbleFax to 863-7804, then 863-7805): two taps, like Send.
-  await sheet.locator('[data-hpd-smoke="fc-bid-backup"]').waitFor();
-  await sheet.locator('[data-hpd-smoke="fc-bid-send-7804"]').click();
-  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send-7804"]').innerText(), /Tap again to send to \(212\) 863-7804/);
-  await sheet.locator('[data-hpd-smoke="fc-bid-send-7804"]').click();
-  await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
-  assert.equal(faxes.at(-1).line, "7804", "sent to the backup line");
-  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-log"]').innerText(), /Fax sent to HPD \(212\) 863-7804/);
+  // The failed fax goes again BY ITSELF to HPD's next line (HumbleFax to 863-7804), same price, and gets confirmed
+  // (owner, 19 Oct: "this should be auto resend and confirm"); the record says it was automatic.
+  await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 90000 });
+  assert.equal(faxes.at(-1).line, "7804", "sent again to the backup line");
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-log"]').innerText(), /Fax sent again automatically to HPD \(212\) 863-7804/);
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /2 sends/);
   assert.equal(faxes.length, 3);
 
@@ -334,7 +331,7 @@ try {
   await page.waitForTimeout(500);
   assert.equal(await page.locator(".fc-bid-pin").count(), 0);
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent and confirmed; My bids lists both; Bid stats shows; History matches the data; easy win ${easyChecked}`);
+  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent automatically to 863-7804 and confirmed; My bids lists both; Bid stats shows; History matches the data; easy win ${easyChecked}`);
 } finally {
   await browser.close();
 }

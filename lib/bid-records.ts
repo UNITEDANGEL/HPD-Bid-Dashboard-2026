@@ -13,6 +13,8 @@ export type BidRecord = {
   // HPD invited the same OMO again (a new due date): each earlier round, oldest first.
   rounds?: { bidDue: string; price: number; sentAt?: string; status: BidStatus }[];
   attempts: number; updatedAt: string;
+  // Auto-resend after a failed fax (owner, 19 Oct): the failure it answered (confirmedAt of that failure) and how many.
+  autoResendFor?: string; autoResends?: number;
   // Prices sent before a revision, oldest first: the latest one is crossed out on the revised package.
   revisions?: { price: number; sentAt?: string }[];
   // A bid faxed outside the app: the price HPD has, so a revision can cross it out.
@@ -185,6 +187,40 @@ export const FAX_LINES = [
   { id: "7805", label: "(212) 863-7805" },
 ] as const;
 export type FaxLine = (typeof FAX_LINES)[number]["id"];
+
+// The fax line a record went to ("2128638655@humblefax.com" -> "main").
+export function lineOf(faxTo?: string): FaxLine | "" {
+  const digits = String(faxTo || "").replace(/\D/g, "");
+  return FAX_LINES.find((l) => digits.includes(l.label.replace(/\D/g, "")))?.id || "";
+}
+
+// Minutes until a bid is due (New York time), from bidDue "2026-10-19" + bidDueTime "11:00 AM" (5 PM when no time).
+export function minutesToDue(record: { bidDue: string; bidDueTime?: string }, now = new Date()) {
+  const [y, m, d] = record.bidDue.split("-").map(Number);
+  const t = /(\d{1,2}):(\d{2})\s*([AP]M)/i.exec(record.bidDueTime || "") || ["", "5", "00", "PM"];
+  const h = (Number(t[1]) % 12) + (/p/i.test(t[3]) ? 12 : 0);
+  // New York is UTC-4 (summer) or UTC-5 (winter): pick the offset that gives that hour in New York.
+  for (const off of [4, 5]) {
+    const due = Date.UTC(y, m - 1, d, h + off, Number(t[2]));
+    const nyHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date(due)));
+    if (nyHour === h) return Math.round((due - now.getTime()) / 60000);
+  }
+  return Math.round((Date.UTC(y, m - 1, d, h + 5, Number(t[2])) - now.getTime()) / 60000);
+}
+
+// A failed fax is sent again by itself (owner, 19 Oct: "this should be auto resend and confirm"): the same bid at the
+// price already sent, to the next HPD fax line, once per failure, up to 3 times, only while there's time before it's due.
+export const AUTO_RESEND_MAX = 3;
+export function autoResendPlan(record: BidRecord, now = new Date()): { line: FaxLine; minutesLeft: number } | null {
+  if (record.status !== "failed" || !record.confirmedAt) return null;
+  if (!(record.sentPrice && record.sentPrice === record.price)) return null; // a revision in progress: you send it
+  if (record.autoResendFor === record.confirmedAt) return null;              // this failure was already answered
+  if ((record.autoResends || 0) >= AUTO_RESEND_MAX) return null;
+  const minutesLeft = minutesToDue(record, now);
+  if (minutesLeft <= 2) return null;
+  const at = FAX_LINES.findIndex((l) => l.id === lineOf(record.faxTo));
+  return { line: FAX_LINES[(at + 1) % FAX_LINES.length].id, minutesLeft };
+}
 
 export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, previousPrice?: number, line: FaxLine = "main") {
   const cover = bidFaxCover(bid, price, previousPrice);

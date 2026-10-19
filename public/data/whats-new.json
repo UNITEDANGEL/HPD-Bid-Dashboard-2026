@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "🔁 Failed bid faxes are resent by themselves",
+      "items": [
+        "When HumbleFax says a bid fax failed, the app sends it again by itself (same price you approved) to HPD's next fax line: (212) 863-8655 -> 863-7804 -> 863-7805. Once per failure, up to 3 times, only before the bid is due. Then it checks HumbleFax's answer every minute and turns green when confirmed.",
+        "It works while the app is open on a phone or computer (it needs your Google sign-in). The bid's log says each automatic send.",
+        "A failed fax also shows 🔁 Resend now: one tap, no need to refill the package first. The backup line buttons work right away too."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "Bid pins show the kind of job; Gafur (AEP) on her own",
       "items": [
         "Bids map: each pin now shows a picture of the job (🔩 hinges, 💧 leak, 🚪 door / closer, 🔒 lock, 🔐 Secure Tech, 🪟 window, 🚰 plumbing, 🧱 plaster, 🟫 floor...) with the due day under it. The list rows show the same picture.",
