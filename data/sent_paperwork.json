@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T11:17:15.941759+00:00",
+"generatedAt": "2026-10-19T11:28:18.545477+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -20224,6 +20224,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ30530": [
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ30530 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE- OMO#EQ30530",
+"via": "hpd-staff"
+}
+],
 "EQ30536": [
 {
 "date": "2026-06-12",
@@ -20976,6 +20986,14 @@
 "date": "2026-09-12",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "PHOTO-2026-09-12-11-58-04.jpg",
+"outcome": "",
+"subject": "OMO No: ER04312 Issuer: MATHEWS MATHI Boro: Bronx Bldg Address: 1050, CARROLL PLACE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-09-12-11-58-13.mp4",
 "outcome": "",
 "subject": "OMO No: ER04312 Issuer: MATHEWS MATHI Boro: Bronx Bldg Address: 1050, CARROLL PLACE",
 "via": "hpd-staff"
