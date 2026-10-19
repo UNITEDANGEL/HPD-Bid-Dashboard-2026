@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T10:58:28.612839+00:00",
+"generatedAt": "2026-10-19T11:07:46.852933+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -8580,6 +8580,14 @@
 "file": "EQ13366 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: Status Update",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ13366 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE - EQ31176",
 "via": "hpd-staff"
 }
 ],
@@ -20465,6 +20473,14 @@
 "file": "EQ31176_refused-access_Public-Hallway_package_20260722__invoice-affidavit-package__EQ31176-refused-access-affidavit-invo",
 "outcome": "refused_access",
 "subject": "EQ31176_refused-access_Public-Hallway_package_20260722__invoice-affidavit-package__EQ31176-refused-access-affidavit-invoice"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ13366 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE - EQ31176",
+"via": "hpd-staff"
 }
 ],
 "EQ31394": [
@@ -21086,6 +21102,13 @@
 "outcome": "",
 "subject": "Re: OMO No: ER05228 Issuer: CONRAD MARTIN Boro: Manhattan Bldg Address: 6, WEST 132 STREET",
 "via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER05228 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "SIGNED - ER05228 - Work Completed - 6 WEST 132 STREET, 10037"
 }
 ],
 "ER05329": [
