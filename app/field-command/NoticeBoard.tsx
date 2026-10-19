@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { holidaysBetween } from "../../lib/business-days";
 import type { NoticeFindings } from "../../lib/notice-findings";
-import { BOARD_STEPS, daysWaiting, draftReply, hoursLeft, type BoardRow, type BoardStep } from "../../lib/notice-board";
+import { BOARD_STEPS, NUDGE_AFTER_DAYS, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
   rows: BoardRow[];
@@ -43,8 +43,13 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
   const [showDone, setShowDone] = useState(false);
   // Reply to many (17 Oct): every reply written on one screen; each one still goes out with its own two taps.
   type BatchItem = { key: string; subject: string; text: string; armed: boolean; status: string; sent: boolean };
-  const [batch, setBatch] = useState<{ pick: "record" | "none" | "all"; items: BatchItem[]; selfStatus: string } | null>(null);
-  const [reply, setReply] = useState<{ key: string; to: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
+  const [batch, setBatch] = useState<{ pick: "record" | "none" | "all" | "nudge"; items: BatchItem[]; selfStatus: string } | null>(null);
+  const [reply, setReply] = useState<{ key: string; to: string; subject: string; text: string; armed: boolean; status: string; nudge?: boolean } | null>(null);
+  // When we last asked them to confirm, per row (this phone): the no-answer clock starts again from there.
+  const [nudged, setNudged] = useState<Record<string, string>>({});
+  useEffect(() => { try { setNudged(JSON.parse(localStorage.getItem("hpd-notice-nudged") || "{}")); } catch { /* private mode */ } }, []);
+  const markNudged = (key: string) => setNudged((m) => { const next = { ...m, [key]: new Date().toISOString() }; try { localStorage.setItem("hpd-notice-nudged", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+  const quiet = (r: BoardRow) => nudgeDays(r, now, nudged[r.key]);
   // AI-written reply (server/ai-draft.mjs): written from the facts on record and their notice; you read and edit it.
   const [ai, setAi] = useState<{ key: string; note: string; busy: boolean; msg: string }>({ key: "", note: "", busy: false, msg: "" });
   const writeWithAi = async (row: BoardRow, note: string) => {
@@ -81,7 +86,8 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
       if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
       if (toSelf) { setReply({ ...reply, armed: false, status: `✓ Sent to you (${d.to}). Nothing went to HPD.` }); return; }
       onMark(row.key, "replied", true);
-      setReply({ ...reply, armed: false, status: `✓ Sent to ${d.to}.` });
+      if (reply.nudge) markNudged(row.key);
+      setReply({ ...reply, armed: false, status: reply.nudge ? `✓ Sent to ${d.to}. The card waits ${NUDGE_AFTER_DAYS} more days before asking again.` : `✓ Sent to ${d.to}.` });
     } catch (e) {
       setReply({ ...reply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
     }
@@ -126,8 +132,9 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
       setListReply({ ...listReply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
     }
   };
-  const batchRows = (pick: "record" | "none" | "all") => replyable.filter((r) => pick === "all" || (pick === "record" ? !!r.sentAt || r.steps.made.done : !r.sentAt && !r.steps.made.done));
-  const startBatch = (pick: "record" | "none" | "all") => setBatch({ pick, selfStatus: "", items: batchRows(pick).map((r) => { const d = draftReply(r, addressOf(r.omo)); return { key: r.key, subject: d.subject, text: d.text, armed: false, status: "", sent: false }; }) });
+  const noAnswer = rows.filter((r) => r.to && quiet(r) > 0).sort((a, b) => quiet(b) - quiet(a));
+  const batchRows = (pick: "record" | "none" | "all" | "nudge") => pick === "nudge" ? noAnswer : replyable.filter((r) => pick === "all" || (pick === "record" ? !!r.sentAt || r.steps.made.done : !r.sentAt && !r.steps.made.done));
+  const startBatch = (pick: "record" | "none" | "all" | "nudge") => setBatch({ pick, selfStatus: "", items: batchRows(pick).map((r) => { const d = pick === "nudge" ? draftNudge(r, addressOf(r.omo)) : draftReply(r, addressOf(r.omo)); return { key: r.key, subject: d.subject, text: d.text, armed: false, status: "", sent: false }; }) });
   const setItem = (key: string, patch: Partial<BatchItem>) => setBatch((b) => (b ? { ...b, items: b.items.map((it) => (it.key === key ? { ...it, ...patch } : it)) } : b));
   const sendItem = async (row: BoardRow, it: BatchItem) => {
     if (!it.armed) { setItem(it.key, { armed: true }); return; }
@@ -137,6 +144,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
       onMark(row.key, "replied", true);
+      if (batch?.pick === "nudge") markNudged(row.key);
       setItem(it.key, { armed: false, sent: true, status: `✓ Sent to ${d.to}.` });
     } catch (e) {
       setItem(it.key, { armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
@@ -209,6 +217,11 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
             <p className="fc-board-todo">Next: the paperwork. What happened at the job?</p>
             <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={paperHref(row, k)} onClick={() => rememberSend(row)} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div>
           </>
+        ) : row.next === "confirmed" && quiet(row) ? (
+          <div className="fc-board-quiet" data-hpd-smoke="fc-board-quiet">
+            <p>⏰ No answer in <b>{quiet(row)} days</b>{nudged[row.key] ? ` (asked again ${day(nudged[row.key])})` : ""}. Ask them to confirm they got it, or tap ✅ if they did.</p>
+            {row.to ? <button type="button" data-hpd-smoke="fc-board-nudge" onClick={() => { const d = draftNudge(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "", nudge: true }); }}>⏰ Ask them to confirm</button> : null}
+          </div>
         ) : row.next === "confirmed" ? <p className="fc-board-todo">Waiting for them to confirm. Tap ✅ when they do.</p> : null}
         <div className="fc-notice-actions">
           {row.next ? <button type="button" data-hpd-smoke="fc-board-reply" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, ""); }}>✨ Reply (AI)</button> : null}
@@ -262,7 +275,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
           <span><b>{open.length}</b> open</span>
           <span className={overdue ? "is-late" : ""}><b>{overdue}</b> overdue</span>
           <span className={under6 ? "is-hot" : ""}><b>{under6}</b> under 6 h</span>
-          <span><b>{waiting}</b> waiting on them</span>
+          <span className={shown.some((r) => noAnswer.includes(r)) ? "is-quiet" : ""}><b>{waiting}</b> waiting on them{shown.some((r) => noAnswer.includes(r)) ? <small data-hpd-smoke="fc-board-quiet-count">⏰ {shown.filter((r) => noAnswer.includes(r)).length} no answer</small> : null}</span>
         </div>
         <p className="fc-follow-note">Each notice and missing-documents request from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p>
         {!rows.length ? <p className="fc-follow-note">Nothing from vendor tracking here right now. 🎉</p> : null}
@@ -273,7 +286,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
               <b data-hpd-smoke="fc-batch-count">{batch.items.filter((i) => i.sent).length} of {batch.items.length} sent</b>
             </div>
             <div className="fc-board-filter" role="tablist">
-              {([["record", "Paperwork on record"], ["none", "No paperwork yet"], ["all", "All"]] as const).map(([k, label]) => (
+              {([["record", "Paperwork on record"], ["none", "No paperwork yet"], ["all", "All"], ["nudge", "⏰ No answer"]] as const).map(([k, label]) => (
                 <button key={k} type="button" role="tab" aria-selected={batch.pick === k} className={batch.pick === k ? "is-on" : ""} data-hpd-smoke={`fc-batch-pick-${k}`} onClick={() => startBatch(k)}>{label} <b>{batchRows(k).length}</b></button>
               ))}
             </div>
@@ -319,6 +332,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
                 ) : <button type="button" className="fc-batch-open" data-hpd-smoke="fc-list-reply-open" onClick={() => startListReply(list)}>✉ Answer the whole list in one email</button>}
               </div>
             )) : null}
+            {noAnswer.length ? <button type="button" className="fc-batch-open is-nudge" data-hpd-smoke="fc-nudge-open" onClick={() => startBatch("nudge")}>⏰ Ask {noAnswer.length} to confirm (no answer {NUDGE_AFTER_DAYS}+ days)</button> : null}
             {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}
             <ol className="fc-board-list">{open.map(card)}</ol>
           </>

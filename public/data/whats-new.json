@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "⏰ No answer? Ask them to confirm",
+      "items": [
+        "When you've sent the paperwork to vendor tracking and they haven't confirmed in 5 days, the card turns orange: \"No answer in 9 days\" with ⏰ Ask them to confirm.",
+        "The follow-up is already written (job, address, the date you sent it, \"please confirm you received them\"). Two taps send it, like every email.",
+        "⏰ Ask N to confirm writes all of them on one screen. After you ask, that card waits 5 more days before asking again.",
+        "Right now all 11 waiting notices went out 10/16-10/19, so they'll start showing on Oct 21-24."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "🗓 Notice deadlines skip City holidays",
       "items": [
         "24 / 72-hour notices are never due on a New York City holiday (Columbus Day, Election Day, Veterans Day, Thanksgiving, Christmas, New Year's and the rest), the same as weekends.",

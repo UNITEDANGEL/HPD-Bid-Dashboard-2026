@@ -3140,3 +3140,11 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-board-due { margin: 2px 0 4px; font: 700 14.5px system-ui, sans-serif; color: #e2e8f0; }
 .fc-board-due b { color: #fff; }
 .fc-board-hol { color: #c4b5fd; font-weight: 800; }
+
+/* No answer -> ask them to confirm (19 Oct). */
+.fc-board-quiet { margin: 6px 0; padding: 10px; border-radius: 12px; background: #3b2a06; border: 1px solid #f59e0b; color: #fde68a; }
+.fc-board-quiet p { margin: 0 0 8px; font: 700 14.5px system-ui, sans-serif; }
+.fc-board-quiet button { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: #f59e0b; color: #1c1917; font: 900 16px system-ui, sans-serif; }
+.fc-board-sum span.is-quiet { border-color: #f59e0b; }
+.fc-board-sum span small { display: block; margin-top: 2px; font: 800 11.5px system-ui, sans-serif; color: #fbbf24; }
+.fc-batch-open.is-nudge { background: #f59e0b !important; color: #1c1917 !important; }

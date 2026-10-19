@@ -88,3 +88,17 @@ assert.equal(dueAfterWeekdays("2026-10-09T14:00:00-04:00", 24), "2026-10-13T14:0
 assert.equal(dueAfterWeekdays("2026-11-24T14:00:00-05:00", 72), "2026-11-30T19:00:00.000Z", "72h from Tuesday skips Thanksgiving: Wed, Fri, Mon");
 assert.equal(dueAfterWeekdays("2027-12-30T10:00:00-05:00", 24), "2028-01-03T15:00:00.000Z", "Thursday 30 Dec 2027, New Year's kept on Fri 31 Dec: Monday 10 AM");
 console.log("PASS weekdays only (and City holidays): Friday / weekend 24h -> Monday 10 AM, Friday 72h -> Wednesday, Tuesday 24h -> Wednesday");
+
+// No answer -> ask them to confirm (19 Oct): 5 days after our paperwork with no answer; the clock restarts after we ask.
+const { nudgeDays, draftNudge } = await loadLib("notice-board");
+const quietRow = { key: "k", omo: "EP12345", who: "Lewis Tracker", subject: "MISSING DOCUMENTS", kind: "docs", want: "Affidavit and Invoice", next: "confirmed", sentAt: "", steps: { replied: { done: true, at: "2026-10-08T15:00:00Z", how: "email" }, made: { done: true, at: "2026-10-08T15:00:00Z", how: "email" }, sent: { done: true, at: "2026-10-08T15:00:00Z", how: "email" }, confirmed: { done: false, at: "", how: "" } } };
+const oct = (d) => Date.parse(`2026-10-${d}T16:00:00Z`);
+assert.equal(nudgeDays(quietRow, oct(12)), 0, "4 days: not yet");
+assert.equal(nudgeDays(quietRow, oct(19)), 11);
+assert.equal(nudgeDays(quietRow, oct(19), "2026-10-17T12:00:00Z"), 0, "asked again 2 days ago: wait");
+assert.equal(nudgeDays({ ...quietRow, next: "sent" }, oct(19)), 0, "not sent yet: not a nudge");
+assert.equal(nudgeDays({ ...quietRow, next: null }, oct(19)), 0, "confirmed: nothing to ask");
+const nd = draftNudge(quietRow, "123 Main St");
+assert.equal(nd.subject, "RE: MISSING DOCUMENTS");
+assert.match(nd.text, /^Hello Lewis,\n\nRe: OMO# EP12345 - 123 Main St\n\nFollowing up: the affidavit and invoice for this job were sent to you on 10\/8\/2026\. Can you please confirm/);
+console.log("PASS no answer: flagged after 5 days with no answer, waits again after asking, follow-up names the job and the date sent");

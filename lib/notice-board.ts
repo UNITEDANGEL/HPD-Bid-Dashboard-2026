@@ -141,6 +141,28 @@ export function urgentRows(rows: BoardRow[], now = Date.now()) {
 }
 
 // A ready reply for the owner to check (never sent without the owner's taps): what we have and what comes next.
+// No answer (owner, 19 Oct "next upgrade"): paperwork sent, they never confirmed. Days since our last word (the reply,
+// the paperwork, or a follow-up we sent from the app); 0 until it's been 5 days.
+export const NUDGE_AFTER_DAYS = 5;
+export function nudgeDays(row: BoardRow, now = Date.now(), nudgedAt = "") {
+  if (row.next !== "confirmed") return 0;
+  const times = [row.steps.sent.at, row.steps.replied.at, nudgedAt].map((x) => Date.parse(x || "")).filter(Number.isFinite);
+  if (!times.length) return 0;
+  const days = Math.floor((now - Math.max(...times)) / 86400000);
+  return days >= NUDGE_AFTER_DAYS ? days : 0;
+}
+// The follow-up: "we sent it on <date>, please confirm you received it".
+export function draftNudge(row: BoardRow, address: string) {
+  const first = (row.who || "").split(/\s+/)[0] || "";
+  const at = row.steps.sent.at || row.sentAt;
+  const when = Date.parse(at || "") ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(at) ? `${at}T12:00:00` : at).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) : "";
+  const what = row.kind === "docs" && /photo/i.test(row.want) ? "photos" : "affidavit and invoice";
+  return {
+    subject: `RE: ${row.subject}`.slice(0, 200),
+    text: `Hello${first ? ` ${first}` : ""},\n\nRe: OMO# ${row.omo}${address ? ` - ${address}` : ""}\n\nFollowing up: the ${what} for this job ${when ? `were sent to you on ${when}` : "were sent to you"}. Can you please confirm you received them and that nothing else is needed? If anything is missing, let us know and we will send it right away.\n\nThank you,\nJot Singh\nUnited Angel Construction Corp`,
+  };
+}
+
 export function draftReply(row: BoardRow, address: string) {
   const first = (row.who || "").split(/\s+/)[0] || "";
   const sentDate = row.sentAt ? new Date(`${row.sentAt}T12:00:00`).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) : "";
