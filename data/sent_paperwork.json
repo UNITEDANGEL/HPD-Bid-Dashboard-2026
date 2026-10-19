@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T11:38:02.629835+00:00",
+"generatedAt": "2026-10-19T11:48:10.137131+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -20909,6 +20909,16 @@
 "file": "VIDEO-2026-07-22-16-39-29.mp4",
 "outcome": "",
 "subject": "OMO No: ER01115 Issuer: KELLY ANN PERROTTE-DAVID Boro: Manhattan Bldg Address: 115, EDGECOMBE AVENUE",
+"via": "hpd-staff"
+}
+],
+"ER01919": [
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER01919 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE - OMO#ER01919",
 "via": "hpd-staff"
 }
 ],
