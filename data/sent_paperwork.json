@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T11:28:18.545477+00:00",
+"generatedAt": "2026-10-19T11:38:02.629835+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -20715,6 +20715,14 @@
 "outcome": "",
 "subject": "OMO No: EQ32093 Issuer: DHANYA RAJAN Boro: Bronx Bldg Address: 1417, PROSPECT AVENUE",
 "via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-cpuub1rq.png",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE- EQ32093",
+"via": "hpd-staff"
 }
 ],
 "EQ32144": [
@@ -20997,6 +21005,22 @@
 "outcome": "",
 "subject": "OMO No: ER04312 Issuer: MATHEWS MATHI Boro: Bronx Bldg Address: 1050, CARROLL PLACE",
 "via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-pszwvbk5.png",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE - OMO#ER04312",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER04312 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO No: ER04312 Issuer: MATHEWS MATHI Boro: Bronx Bldg Address: 1050, CARROLL PLACE",
+"via": "hpd-staff"
 }
 ],
 "ER04403": [
@@ -21147,6 +21171,14 @@
 "file": "SIGNED - ER05228 - Work Completed.pdf",
 "outcome": "work_completed",
 "subject": "SIGNED - ER05228 - Work Completed - 6 WEST 132 STREET, 10037"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-svz4sas1.png",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE- OMO#ER05228",
+"via": "hpd-staff"
 }
 ],
 "ER05329": [
