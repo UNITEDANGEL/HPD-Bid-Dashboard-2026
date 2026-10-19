@@ -15,7 +15,11 @@ const STATUS_SERVER = "https://hpd-status-worker.uac525.workers.dev/overrides";
 
 // lib/*.ts -> temporary ES modules (the app's own code, so the numbers match the phone).
 export async function loadLib(entry) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hpd-report-"));
+  // Inside the repo (node_modules/.cache) so the compiled libs can import packages like pdf-lib (a temp folder outside
+  // the repo can't find them on the build server).
+  const cache = path.join(root, "node_modules", ".cache");
+  fs.mkdirSync(cache, { recursive: true });
+  const dir = fs.mkdtempSync(path.join(cache, "hpd-report-"));
   const done = new Set();
   const compile = (name) => {
     if (done.has(name)) return;
