@@ -695,3 +695,10 @@ i.is-sent { background: #2563eb; }
 i.is-won { background: #16a34a; }
 .fc-rate-cell { position: relative; }
 .fc-rate-bar { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: #16a34a; min-width: 2px; }
+/* Short sideways screens: slightly smaller pins so they all fit above the list bar. */
+@media (max-height: 500px) {
+  .leaflet-marker-icon.fc-bid-pin { width: 40px !important; height: 40px !important; margin-left: -20px !important; margin-top: -20px !important; }
+  .fc-bid-in { border-width: 3px; }
+  .fc-bid-pin .fc-bid-ico { font-size: 21px; }
+  .fc-bid-pin b { bottom: -14px; font-size: 11px; line-height: 13px; padding: 1px 6px; }
+}
