@@ -3,7 +3,9 @@
 // printed, signed by hand, stamped by the notary and mailed / handed in.
 
 // The print folder keeps each fixed rejection with its steps: printed, copy emailed to HPD, original mailed.
-export type SavedCorrection = { omo: string; savedAt: string; rejectedAt: string; reason: string; fileName: string; pdf: Blob; printedAt?: string; emailedAt?: string; emailedTo?: string; mailedAt?: string };
+export type SavedCorrection = { omo: string; savedAt: string; rejectedAt: string; reason: string; fileName: string; pdf: Blob; printedAt?: string; emailedAt?: string; emailedTo?: string; mailedAt?: string;
+  changes?: { label: string; from: string; to: string }[]; // what the fix changed (shown on the copy emailed to HPD)
+};
 
 const DB = "hpd-corrections";
 const STORE = "pdfs";

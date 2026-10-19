@@ -1701,7 +1701,8 @@ export default function PaperworkPage() {
     try {
       const pdf = await (await fetch(packagePreview.pdfUrl)).blob();
       const savedAt = new Date().toISOString();
-      await saveCorrection({ omo: selectedId.toUpperCase(), savedAt, rejectedAt: correction.rejectedAt, reason: correction.reason, fileName: packagePreview.pdfFileName, pdf });
+      await saveCorrection({ omo: selectedId.toUpperCase(), savedAt, rejectedAt: correction.rejectedAt, reason: correction.reason, fileName: packagePreview.pdfFileName, pdf,
+        changes: (autoFixed?.changes || []).map((c) => ({ label: c.label, from: c.from, to: c.to })) });
       saveLocalPackageOverride(selectedId, { RejectionCorrectedAt: todayIsoDate(), RejectionCorrectedFor: correction.rejectedAt, CorrectionSavedAt: savedAt, CorrectionReason: correction.reason });
       setCorrectionSaved(savedAt);
     } catch (error) {

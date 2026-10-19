@@ -3079,3 +3079,8 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-today-line.is-hot { border-color: #ef4444; background: #450a0a; animation: fc-board-pulse 1.6s ease-in-out infinite; }
 .fc-today-line.is-money { border-color: #22c55e; }
 .fc-today-line:active { transform: scale(0.97); }
+
+/* Notices under 6 hours: the Notices button pulses red with an hours tag (17 Oct; replaces the banner over the map). */
+.fc-app .fc-map-controls .fc-map-fab.is-urgent > svg { animation: fc-urgent 1.2s ease-in-out infinite; }
+@keyframes fc-urgent { 0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ef4444; } 50% { box-shadow: 0 0 0 2px #fff, 0 0 0 9px #ef444488, 0 0 18px #ef4444; } }
+.fc-urgent-tag { position: absolute; left: -46px; top: 12px; padding: 1px 6px; border-radius: 9px; background: #b91c1c; color: #fff; font: 900 11.5px/18px system-ui; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #0005; }

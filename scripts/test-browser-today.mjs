@@ -21,7 +21,7 @@ try {
   await page.waitForFunction(() => /\d+ missing-documents/.test(document.querySelector('[data-hpd-smoke="fc-today-docs"]')?.textContent || "") && !/^0 missing/.test(document.querySelector('[data-hpd-smoke="fc-today-docs"] b')?.textContent || ""), null, { timeout: 30000 });
   const lines = {};
   for (const k of ["due", "docs", "money", "bids"]) lines[k] = await card.locator(`[data-hpd-smoke="fc-today-${k}"]`).innerText();
-  assert.match(lines.due, /notices? due today|No 24 \/ 72-hour deadline today/);
+  assert.match(lines.due, /notices? OVERDUE|due today|No 24 \/ 72-hour deadline today/);
   assert.match(lines.money, /\$[\d,]+ held by rejections/);
   assert.match(lines.bids, /bids? due today|invitations? open/);
   if (shots) await page.screenshot({ path: `${shots}/today-1.png` });

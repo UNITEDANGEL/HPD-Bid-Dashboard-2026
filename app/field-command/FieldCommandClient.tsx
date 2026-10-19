@@ -20,6 +20,7 @@ import { loadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUr
 import ItbPages from "./ItbPages";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
 import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
+import { markCorrectedCopy } from "../../lib/correction-copy";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -856,6 +857,25 @@ export default function FieldCommandClient() {
   const [ack, setAck] = useState<{ omo: string; to: string; name: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
   const [ackSent, setAckSent] = useState<Record<string, string>>({});
   useEffect(() => { try { setAckSent(JSON.parse(localStorage.getItem("hpd-ack-sent-v1") || "{}")); } catch { /* private mode */ } }, []);
+  // The copy HPD gets by email: "COPY" on every page and a yellow box with what was corrected (the printed original
+  // stays clean for the ink signature).
+  const correctedCopy = async (c: SavedCorrection) => {
+    const rj = rejections.find((x) => x.omo === c.omo);
+    return markCorrectedCopy(await c.pdf.arrayBuffer(), { omo: c.omo, rejectedAt: c.rejectedAt || rj?.at || "", reason: c.reason || rj?.reason || "", changes: c.changes || [], fixedOn: new Date(c.savedAt).toLocaleDateString("en-US") });
+  };
+  const copyBase64 = async (c: SavedCorrection) => {
+    const bytes = await correctedCopy(c);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  };
+  const openCorrectedCopy = async (c: SavedCorrection) => {
+    const win = window.open("", "_blank");
+    const bytes = await correctedCopy(c);
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+    if (win) win.location.href = url; else window.location.href = url;
+    window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+  };
   const markPrinted = async (c: SavedCorrection) => { await updateCorrection(c.omo, { printedAt: c.printedAt ? undefined : new Date().toISOString() }); setToPrint(await listCorrections()); };
   const startAck = (omo: string, reason: string) => {
     const mail = noticeMail?.[omo]?.[0];
@@ -876,7 +896,7 @@ export default function FieldCommandClient() {
     setAck({ ...ack, status: "Sending to you…" });
     try {
       const saved = toPrint.find((x) => x.omo === ack.omo);
-      const data = saved?.pdf ? await new Promise<string>((ok, bad) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(",")[1] || ""); fr.onerror = () => bad(fr.error); fr.readAsDataURL(saved.pdf); }) : "";
+      const data = saved?.pdf ? await copyBase64(saved) : "";
       const attachment = data ? { name: `${ack.omo} corrected affidavit and invoice (copy).pdf`, data } : undefined;
       const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ toSelf: true, subject: ack.subject, text: ack.text, attachment }) });
       const d = await r.json().catch(() => ({}));
@@ -893,7 +913,7 @@ export default function FieldCommandClient() {
     try {
       // The copy of the fixed paperwork (the original is printed, signed in ink and mailed).
       const saved = toPrint.find((x) => x.omo === ack.omo);
-      const data = saved?.pdf ? await new Promise<string>((ok, bad) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(",")[1] || ""); fr.onerror = () => bad(fr.error); fr.readAsDataURL(saved.pdf); }) : "";
+      const data = saved?.pdf ? await copyBase64(saved) : "";
       const attachment = data ? { name: `${ack.omo} corrected affidavit and invoice (copy).pdf`, data } : undefined;
       const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: ack.to, subject: ack.subject, text: ack.text, attachment }) });
       const d = await r.json().catch(() => ({}));
@@ -3061,7 +3081,7 @@ export default function FieldCommandClient() {
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
+          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
             // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
             if (noticesOpen) { setNoticesOpen(false); return; }
@@ -3072,7 +3092,7 @@ export default function FieldCommandClient() {
             setNoticeChooser(true);
             setNoticeMini(false);
           }}>
-            <NoticesIcon /><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
+            <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
           <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
             <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
@@ -4118,7 +4138,8 @@ export default function FieldCommandClient() {
                           <li>Mail original</li>
                         </ol>
                         <div className="fc-to-print-actions">
-                          <button type="button" data-hpd-smoke="fc-to-print-open" onClick={() => openCorrectionPdf(c)}>📄 Open / print</button>
+                          <button type="button" data-hpd-smoke="fc-to-print-open" onClick={() => openCorrectionPdf(c)}>📄 Open / print (original)</button>
+                          <button type="button" data-hpd-smoke="fc-to-print-copy" onClick={() => void openCorrectedCopy(c)}>👁 See the copy HPD gets</button>
                           <button type="button" data-hpd-smoke="fc-to-print-printed" onClick={() => void markPrinted(c)}>{c.printedAt ? "↺ Not printed" : "✓ Printed"}</button>
                           {c.emailedAt ? null : <button type="button" data-hpd-smoke="fc-ack-open" onClick={() => startAck(c.omo, c.reason || "")}>✉ Email copy to {signer}</button>}
                           <button type="button" className={printArmed === c.omo ? "is-armed" : ""} data-hpd-smoke="fc-to-print-sent" onClick={() => void correctionSent(c)}>{printArmed === c.omo ? "Tap again: original mailed" : "📮 Original mailed"}</button>
@@ -4337,8 +4358,8 @@ export default function FieldCommandClient() {
             <button type="button" aria-label="Close" data-hpd-smoke="fc-today-close" onClick={closeSummary}>Got it</button>
           </header>
           <button type="button" className={`fc-today-line${dueToday.length ? " is-hot" : ""}`} data-hpd-smoke="fc-today-due" onClick={() => { closeSummary(); setBoardShow("ppn"); closeScreens("board"); setBoardOpen(true); }}>
-            <span aria-hidden="true">⏱</span><b>{dueToday.length ? `${dueToday.length} notice${dueToday.length === 1 ? "" : "s"} due today` : "No 24 / 72-hour deadline today"}</b>
-            <small>{dueToday.length ? `First one: ${dueText(dueToday[0].dueAt)} · ${dueToday[0].omo}` : `${boardOpenRows.filter((r) => r.kind === "ppn").length} notices open on the board`}</small>
+            <span aria-hidden="true">⏱</span><b>{(() => { const late = dueToday.filter((r) => Date.parse(r.dueAt) < Date.now()).length; const soon = dueToday.length - late; return dueToday.length ? [late ? `${late} notice${late === 1 ? "" : "s"} OVERDUE` : "", soon ? `${soon} due today` : ""].filter(Boolean).join(" · ") : "No 24 / 72-hour deadline today"; })()}</b>
+            <small>{dueToday.length ? `${Date.parse(dueToday[0].dueAt) < Date.now() ? "Oldest" : "First one"}: ${dueText(dueToday[0].dueAt)} · ${dueToday[0].omo}` : `${boardOpenRows.filter((r) => r.kind === "ppn").length} notices open on the board`}</small>
           </button>
           <button type="button" className="fc-today-line" data-hpd-smoke="fc-today-docs" onClick={() => { closeSummary(); setBoardShow("docs"); closeScreens("board"); setBoardOpen(true); }}>
             <span aria-hidden="true">📋</span><b>{docsWaiting.length} missing-documents request{docsWaiting.length === 1 ? "" : "s"}</b>
@@ -4353,11 +4374,6 @@ export default function FieldCommandClient() {
             <small>{bidsDue.tomorrow ? `${bidsDue.tomorrow} due tomorrow` : "Invitations to bid"}</small>
           </button>
         </div>
-      ) : null}
-      {boardUrgent.length && !summaryToday && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen && !followFilter ? (
-        <button type="button" className="fc-board-alert" data-hpd-smoke="fc-board-alert" onClick={() => { closeScreens("board"); setBoardShow("ppn"); setBoardOpen(true); }}>
-          ⏱ {boardUrgent.length} notice{boardUrgent.length === 1 ? "" : "s"} under 6 hours · open the board
-        </button>
       ) : null}
       {followFilter && !followOpen && !(followFilter === "notices" && noticeChooser) ? (
         <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">

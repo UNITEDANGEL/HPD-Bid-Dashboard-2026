@@ -2,6 +2,16 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 18, 2026",
+      "title": "Corrections highlighted on the copy HPD gets; Notices pulses when time is short",
+      "items": [
+        "The corrected affidavit and invoice emailed to HPD now starts with a cover page: COPY - CORRECTED PAPERWORK, the OMO, HPD's rejection, and each change in yellow (old -> new). Every page says COPY at the top. The original you print and sign in ink stays clean.",
+        "Print folder: 👁 See the copy HPD gets, to look at it before you email it.",
+        "When a 24 / 72-hour notice has under 6 hours left (or is overdue) and nothing is sent, the Notices button pulses red with a tag (e.g. ⏱ 10 <6h) instead of a banner over the map.",
+        "Morning summary says OVERDUE when a deadline has passed."
+      ]
+    },
+    {
       "date": "Oct 17, 2026",
       "title": "☀️ Morning summary on the map",
       "items": [

@@ -3,7 +3,23 @@
 // right and what to check by hand) and shows the preview. Reject deletes it and puts the old details back;
 // Auto-fix again, Accept saves it to the fixed folder (HPD notices -> 🖨 To print). Nothing real changes.
 import assert from "node:assert/strict";
+import zlib from "node:zlib";
 import { chromium } from "playwright";
+
+// Text drawn on PDF pages sits in compressed streams: open them all.
+function inflateAll(bytes) {
+  const b = Buffer.from(bytes);
+  const s = b.toString("latin1");
+  let all = s;
+  const re = /stream\r?\n/g;
+  let m;
+  while ((m = re.exec(s))) {
+    const start = m.index + m[0].length;
+    const end = s.indexOf("endstream", start);
+    try { all += zlib.inflateSync(b.subarray(start, end)).toString("latin1"); } catch { /* not compressed */ }
+  }
+  return all;
+}
 import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -83,6 +99,12 @@ try {
   assert.equal(replies[0].text, text);
   assert.equal(replies[0].attachment?.name, `${OMO} corrected affidavit and invoice (copy).pdf`);
   assert.ok(Buffer.from(replies[0].attachment.data, "base64").subarray(0, 5).toString() === "%PDF-", "the fixed copy (a PDF) is attached");
+  // The copy HPD gets is marked: COPY on each page and a cover page saying what was corrected (the printed original isn't).
+  const pagesText = inflateAll(Buffer.from(replies[0].attachment.data, "base64"));
+  const hex = (t) => Buffer.from(t, "latin1").toString("hex").toUpperCase();
+  assert.ok(pagesText.includes(hex("COPY - CORRECTED PAPERWORK")) && pagesText.includes(hex(`OMO# ${OMO}`)), "cover page on the emailed copy");
+  assert.ok(pagesText.includes(hex("COPY - CORRECTED PAPERWORK (original signed in ink, sent by mail)")), "COPY on the pages");
+  assert.equal(await row.locator('[data-hpd-smoke="fc-to-print-copy"]').count(), 1, "See the copy HPD gets");
   assert.match(await row.locator('[data-hpd-smoke="fc-print-steps"]').innerText(), /Copy emailed/);
   // The Rejected tab says it's fixed and in the print folder.
   await page.locator('[data-hpd-smoke="fc-notice-tab-rejected"]').click();

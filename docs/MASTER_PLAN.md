@@ -395,6 +395,8 @@ folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer qu
 10. **Notices take you to the map** (owner, 17 Oct: "it should take me to the map"; done: after a pick the picker becomes a thin bar, the map fits those jobs above it).
 11. **Reply to many at once** (done 17 Oct: board -> Reply to many; all replies written; each sent with its own two taps; all to me first in one email).
 12. **Morning summary on the map** (done 17 Oct: first open each day; notices due today, missing docs, money held, bids; each line opens its place; ☀️ Today in Notices reopens it). Test: test-browser-today.
+13. **Highlight corrections on the emailed copy** (done 18 Oct: lib/correction-copy.ts; cover page with HPD's reason + each change in yellow, COPY on every page; original stays clean for ink; print folder 👁 See the copy HPD gets). Signed copy: not made (corrections are signed in ink only).
+14. **Under-6-hour reminder** moved onto the Notices button (pulses red with a tag); the banner covered map buttons.
 8. **Next ideas (owner to pick)**: phone alerts (home-screen app); morning notices summary.
 6. **Send the paperwork to vendor tracking from the board** (done 17 Oct): outcome / 📤 Send the paperwork -> paperwork page (?vt=1, recipient in session storage) -> package made -> "Send to vendor tracking" box, signed copy attached, Send to me first or two-tap send (hpd-reply) -> board step 📤 ticked. Test: test-browser-vt-send.
 5. **Bigger and clearer on the iPhone; everything pops when touched** (done 17 Oct: bigger map / borough / days buttons and words, tap pop on every button and link; short screens keep the 9 map buttons fitting).

@@ -61,7 +61,7 @@ try {
   assert.doesNotMatch(await vend.getAttribute("class"), /is-on/);
   await page.locator('[data-hpd-smoke="fc-notices-rejected"]').waitFor();
   assert.equal(await page.locator('[data-hpd-smoke="fc-priorities"]').count(), 0, "rejected paperwork is not mixed with vendor tracking");
-  await page.screenshot({ path: process.env.SHOT || "notice-depts.png" });
+  if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
   assert.deepEqual(errors, []);
   console.log(`PASS notice departments: Procurement (rejected / corrections / print) and Vendor tracking (due now ${kinds.length} / requests / messages) kept apart; days menu (15-90, year, all, custom, 2024-25) in one row; icons pop`);
   await context.close();

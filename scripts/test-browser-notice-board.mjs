@@ -117,23 +117,27 @@ United Angel Construction Corp` } });
   await board.locator('[data-hpd-smoke="fc-board-close"]').click();
   await context.close();
 
-  // Under 6 hours left (clock set to 3 hours before the 10/16 notices are due): the red reminder opens the board.
+  // Under 6 hours left (clock set to 3 hours before the 10/16 notices are due): the Notices button pulses red.
   const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(ctx2);
   await ctx2.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const p2 = await ctx2.newPage();
   await p2.clock.install({ time: new Date("2026-10-17T17:00:00Z") });
   await p2.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
-  const alert = p2.locator('[data-hpd-smoke="fc-board-alert"]');
-  await alert.waitFor({ timeout: 30000 });
-  assert.match(await alert.innerText(), /\d+ notices? under 6 hours/);
+  // The Notices button pulses red with an hours tag; Notices -> the board (pulsing) -> hot rows.
+  const tag = p2.locator('[data-hpd-smoke="fc-urgent-tag"]');
+  await tag.waitFor({ timeout: 30000 });
+  assert.match(await tag.innerText(), /⏱ \d+ <6h/);
+  assert.match(await p2.locator('[data-hpd-smoke="fc-notices-open"]').getAttribute("class"), /is-urgent/);
   if (shots) await p2.screenshot({ path: `${shots}/board-3-alert.png` });
-  await alert.click();
+  await p2.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  assert.match(await p2.locator('[data-hpd-smoke="fc-notice-board-open"]').innerText(), /under 6 h/);
+  await p2.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
   await p2.locator('[data-hpd-smoke="fc-board"]').waitFor();
   assert.ok((await p2.locator('[data-hpd-smoke="fc-board-row"].is-hot').count()) > 0, "hot rows marked");
   await ctx2.close();
   assert.deepEqual(errors, []);
-  console.log(`PASS notice board: ${n} notices (${sum.replace(/\s+/g, " ")}), countdowns + 4 steps, AI-written reply to ${omo} (+ owner note, rewrite; first tap only arms, nothing sent), hand tick kept after reload, under-6-hour reminder opens the board`);
+  console.log(`PASS notice board: ${n} notices (${sum.replace(/\s+/g, " ")}), countdowns + 4 steps, AI-written reply to ${omo} (+ owner note, rewrite; first tap only arms, nothing sent), hand tick kept after reload, under 6 hours: the Notices button pulses red with an hours tag`);
 } finally {
   await browser.close();
 }
