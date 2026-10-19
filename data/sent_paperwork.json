@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T10:45:49.080761+00:00",
+"generatedAt": "2026-10-19T10:58:28.612839+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -20653,6 +20653,24 @@
 "via": "hpd-staff"
 }
 ],
+"EQ32093": [
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ32093 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO No: EQ32093 Issuer: DHANYA RAJAN Boro: Bronx Bldg Address: 1417, PROSPECT AVENUE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-07-29-13-59-30.mp4",
+"outcome": "",
+"subject": "OMO No: EQ32093 Issuer: DHANYA RAJAN Boro: Bronx Bldg Address: 1417, PROSPECT AVENUE",
+"via": "hpd-staff"
+}
+],
 "EQ32144": [
 {
 "date": "2026-07-14",
@@ -21059,6 +21077,14 @@
 "file": "PHOTO-2026-09-15-12-20-58.jpg",
 "outcome": "",
 "subject": "OMO No: ER05228 Issuer: CONRAD MARTIN Boro: Manhattan Bldg Address: 6, WEST 132 STREET",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER05228 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO No: ER05228 Issuer: CONRAD MARTIN Boro: Manhattan Bldg Address: 6, WEST 132 STREET",
 "via": "hpd-staff"
 }
 ],
