@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-19T11:48:10.137131+00:00",
+"generatedAt": "2026-10-19T11:58:23.459532+00:00",
 "since": "2026/10/05",
 "jobs": {
 "EN04541": [
@@ -16660,6 +16660,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ24040": [
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ24040 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE- OMO#EQ24040",
+"via": "hpd-staff"
+}
+],
 "EQ24059": [
 {
 "date": "2026-05-06",
@@ -20207,6 +20217,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ30401": [
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ30401 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 72HR POOR PERFORMANCE NOTICE- OMO#EQ30401",
+"via": "hpd-staff"
+}
+],
 "EQ30412": [
 {
 "date": "2026-09-17",
@@ -20464,6 +20484,14 @@
 "date": "2026-10-16",
 "to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
 "file": "Outlook-jp2tha5y.png",
+"outcome": "",
+"subject": "Re: OMO#EQ31123- 24 HR POOR PERFORMANCE NOTICE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ31123 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: OMO#EQ31123- 24 HR POOR PERFORMANCE NOTICE",
 "via": "hpd-staff"
@@ -20798,6 +20826,14 @@
 "file": "ER00460 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: Request for Affidavits, Invoices, Photos, and Videos",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER00460 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO#ER00460- AFFIDAVIT MISSING INFO",
 "via": "hpd-staff"
 }
 ],
