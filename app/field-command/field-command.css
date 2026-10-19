@@ -3133,3 +3133,5 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
   .fc-app ~ .fc-notice-chooser, .fc-notice-chooser { right: calc(78px + env(safe-area-inset-right)); left: 8px; margin: 0; max-width: none; }
   .fc-notice-pick b { font-size: 13px; }
 }
+
+.fc-fix-all { display: grid; place-items: center; min-height: 54px; margin: 6px 0 10px; border-radius: 14px; background: #16a34a; color: #fff; font: 900 16px system-ui; text-decoration: none; }

@@ -4302,6 +4302,12 @@ export default function FieldCommandClient() {
                   <span><b>{payTrack.summary.inTheMail}</b>in the mail</span>
                   <span className="is-paid"><b>{money(payTrack.summary.paid)}</b>paid after a rejection (90 days)</span>
                 </div>
+                {(() => {
+                  const toFix = payTrack.rows.filter((r) => r.next === "fixed" && findAnyJob(r.omo));
+                  if (!toFix.length) return null;
+                  const start = () => { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(toFix.map((r) => ({ omo: r.omo, at: r.at })))); } catch { /* private mode */ } };
+                  return <a className="fc-fix-all" data-hpd-smoke="fc-fix-all" href={`/paperwork/?job=${encodeURIComponent(toFix[0].omo)}&fix=${encodeURIComponent(toFix[0].at)}&auto=1`} onClick={start}>🔧 Fix them one by one ({toFix.length}) · {money(toFix.reduce((a, r) => a + r.held, 0))}</a>;
+                })()}
                 <p className="fc-follow-note">Each rejection until the money comes in: ✏️ fix → 🖨 print &amp; sign in ink → ✉ email the copy → 📮 mail the original → 💵 paid. Paid comes from PIP (updated by the app every day).{payTrack.summary.lostCount ? ` ${payTrack.summary.lostCount} closed by HPD with $0 paid are at the bottom: dispute those with HPD.` : ""}</p>
                 <ol className="fc-money-list">
                   {payTrack.rows.map((r) => {

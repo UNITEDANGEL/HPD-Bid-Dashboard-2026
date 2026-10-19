@@ -55,3 +55,8 @@
 .pkg-vt-actions button:disabled { opacity: 0.6; }
 .pkg-vt-send p { margin: 0; font: 700 14px system-ui; }
 .pkg-vt-send a { font: 800 15px system-ui; color: #1d4ed8; }
+
+/* Fix them one by one (19 Oct). */
+.pkg-fix-next { display: grid; gap: 6px; margin-top: 10px; padding: 10px; border-radius: 12px; background: #eff6ff; border: 1px solid #93c5fd; }
+.pkg-fix-next small { font: 800 13px system-ui, sans-serif; color: #1e3a8a; }
+.pkg-fix-next a { display: grid; place-items: center; min-height: 52px; border-radius: 12px; font: 900 16px system-ui, sans-serif; text-decoration: none; }

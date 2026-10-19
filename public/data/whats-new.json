@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "🔧 Fix payment rejections one by one",
+      "items": [
+        "HPD notices -> 💵 Procurement -> 💰 To get paid -> 🔧 Fix them one by one (26 · $4,720): opens the first rejection with Auto-fix and the preview.",
+        "Accept it, then Next: <OMO> -> opens the next one right away. \"Fixing one by one · 5 of 26\" shows where you are.",
+        "Jobs that need your real work dates first (2024-25 jobs) show Skip, so you can do the quick ones first and come back."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "Bigger bids panel with charts",
       "items": [
         "Tapping Mine, Stats or History opens the panel half-way up the screen (bigger than before); pull it up for the whole screen, pull it down or tap 🗺 Map to hide it.",

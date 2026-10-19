@@ -1244,6 +1244,12 @@ export default function PaperworkPage() {
   const [correction, setCorrection] = useState<{ rejectedAt: string; reason: string; attempt: string } | null>(null);
   // The corrected package once you've checked the preview and saved it to print (ISO time), or an error.
   const [correctionSaved, setCorrectionSaved] = useState("");
+  // "Fix them one by one" (owner, 19 Oct): the rejections still to fix, in order (session storage "hpd-fix-queue"),
+  // so after this one is saved the next one is one tap away.
+  const [fixQueue, setFixQueue] = useState<{ omo: string; at: string }[]>([]);
+  useEffect(() => { try { setFixQueue(JSON.parse(sessionStorage.getItem("hpd-fix-queue") || "[]")); } catch { /* private mode */ } }, []);
+  const queueAfter = (omo: string) => { const i = fixQueue.findIndex((q) => q.omo === omo.toUpperCase()); return i >= 0 ? fixQueue.slice(i + 1) : []; };
+  const nextFixHref = (q: { omo: string; at: string }) => `/paperwork/?job=${encodeURIComponent(q.omo)}&fix=${encodeURIComponent(q.at)}&auto=1`;
   // The outcome HPD's closing status shows, picked for you once the job has loaded (same as tapping it).
   const [hpdOutcome, setHpdOutcome] = useState("");
   // The dates on the paperwork you already sent HPD (Gmail Sent, scripts/fetch_sent_paperwork_dates.py).
@@ -5648,6 +5654,12 @@ export default function PaperworkPage() {
           {correction && !packagePreview ? (
             <div className="paperwork-correction" data-hpd-smoke="paperwork-correction">
               <b>❗ Correcting HPD&apos;s rejection of {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} ATTEMPT)` : ""}</b>
+              {selectedId && fixQueue.some((q) => q.omo === selectedId.toUpperCase()) ? (
+                <div className="pkg-fix-next" data-hpd-smoke="paperwork-fix-progress">
+                  <small>Fixing one by one · {fixQueue.findIndex((q) => q.omo === selectedId.toUpperCase()) + 1} of {fixQueue.length}</small>
+                  {queueAfter(selectedId).length ? <a className="paperwork-secondary" data-hpd-smoke="paperwork-fix-skip-early" href={nextFixHref(queueAfter(selectedId)[0])}>Skip this one → {queueAfter(selectedId)[0].omo}</a> : null}
+                </div>
+              ) : null}
               {correction.reason ? <span>HPD: {correction.reason}</span> : null}
               <small>Fix the details above, then preview the corrected package. Nothing is marked or sent until you check the preview and save it. HPD needs original ink signatures: it has <b>no signature pictures</b> (you and the notary sign by hand); the notary stamp stays and is dated <b>today ({todayIsoDate()})</b>. The paperwork check runs first.</small>
               {outcome === "pending" ? (
@@ -5837,6 +5849,16 @@ export default function PaperworkPage() {
                       <button type="button" className="paperwork-secondary is-reject" data-hpd-smoke="paperwork-correction-reject" onClick={() => void rejectAutoFix()}>✗ Reject: delete it and start again</button>
                     </div>
                   )}
+                  {selectedId && queueAfter(selectedId).length ? (
+                    <div className="pkg-fix-next" data-hpd-smoke="paperwork-fix-next">
+                      <small>Fixing one by one · {fixQueue.length - queueAfter(selectedId).length} of {fixQueue.length}</small>
+                      {correctionSaved && !correctionSaved.startsWith("error:")
+                        ? <a className="paperwork-print" data-hpd-smoke="paperwork-fix-next-go" href={nextFixHref(queueAfter(selectedId)[0])}>Next: {queueAfter(selectedId)[0].omo} →</a>
+                        : <a className="paperwork-secondary" data-hpd-smoke="paperwork-fix-skip" href={nextFixHref(queueAfter(selectedId)[0])}>Skip this one → {queueAfter(selectedId)[0].omo}</a>}
+                    </div>
+                  ) : selectedId && fixQueue.some((q) => q.omo === selectedId.toUpperCase()) && correctionSaved && !correctionSaved.startsWith("error:") ? (
+                    <p className="pkg-correction-done" data-hpd-smoke="paperwork-fix-done">🎉 That was the last one. <a href="/map/?view=all&map=1">Back to the map</a> to print and mail them (HPD notices → 🖨 Print folder).</p>
+                  ) : null}
                   {correctionSaved.startsWith("error:") ? <p className="pkg-correction-error">Couldn&apos;t save it on this phone ({correctionSaved.slice(6)}). Use Download PDF below instead.</p> : null}
                 </div>
               ) : null}

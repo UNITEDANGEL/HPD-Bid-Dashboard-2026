@@ -199,6 +199,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-auto-resend.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-vt-send.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-money.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-fix-queue.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
