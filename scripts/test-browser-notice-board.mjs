@@ -161,8 +161,25 @@ United Angel Construction Corp` } });
   await p2.locator('[data-hpd-smoke="fc-board"]').waitFor();
   assert.ok((await p2.locator('[data-hpd-smoke="fc-board-row"].is-hot').count()) > 0, "hot rows marked");
   await ctx2.close();
+
+  // City holiday (19 Oct): a 24-hour notice on Friday 9 Oct (Columbus Day Monday) is due Tuesday 10 AM, and the card says so.
+  const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await routePrivate(ctx3, { conversations: (d) => ({ ...d, threads: [...d.threads, { id: "test-holiday", subject: "24 HR POOR PERFORMANCE NOTICE - OMO#EQ99998", omos: ["EQ99998"], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: "2026-10-09T18:00:00Z", waiting: true, messages: [{ at: "2026-10-09T18:00:00Z", from: "test@hpd.nyc.gov", hpd: true, mine: false, subject: "24 HR", text: "Notice test@hpd.nyc.gov", files: [] }] }] }) });
+  await ctx3.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
+  const p3 = await ctx3.newPage();
+  await p3.clock.install({ time: new Date("2026-10-10T14:00:00Z") });
+  await p3.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
+  await p3.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await p3.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  const holRow = p3.locator('[data-hpd-smoke="fc-board-row"]', { hasText: "EQ99998" });
+  const due = holRow.locator('[data-hpd-smoke="fc-board-due"]');
+  await due.waitFor({ timeout: 20000 });
+  assert.match(await due.innerText(), /Due Tue, 10\/13, 10:00 AM · 🗓 Columbus Day not counted/);
+  await due.scrollIntoViewIfNeeded();
+  if (shots) await p3.screenshot({ path: `${shots}/board-4-holiday.png` });
+  await ctx3.close();
   assert.deepEqual(errors, []);
-  console.log(`PASS notice board: ${n} notices (${sum.replace(/\s+/g, " ")}), countdowns + 4 steps, AI-written reply to ${omo} (+ owner note, rewrite; first tap only arms, nothing sent), hand tick kept after reload, under 6 hours: the Notices button pulses red with an hours tag`);
+  console.log(`PASS notice board: ${n} notices (${sum.replace(/\s+/g, " ")}), countdowns + 4 steps, AI-written reply to ${omo} (+ owner note, rewrite; first tap only arms, nothing sent), hand tick kept after reload, under 6 hours: the Notices button pulses red with an hours tag; Friday before Columbus Day -> due Tuesday 10 AM, holiday named`);
 } finally {
   await browser.close();
 }

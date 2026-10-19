@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "🗓 Notice deadlines skip City holidays",
+      "items": [
+        "24 / 72-hour notices are never due on a New York City holiday (Columbus Day, Election Day, Veterans Day, Thanksgiving, Christmas, New Year's and the rest), the same as weekends.",
+        "A 24-hour notice on the day before a holiday is due first thing (10 AM) the next working day: Friday before Columbus Day -> Tuesday 10 AM; Wednesday before Thanksgiving -> Friday 10 AM.",
+        "Each open card on the vendor tracking board now shows the exact due time, and names the holiday that was not counted."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "🔧 Fix payment rejections one by one",
       "items": [
         "HPD notices -> 💵 Procurement -> 💰 To get paid -> 🔧 Fix them one by one (26 · $4,720): opens the first rejection with Auto-fix and the preview.",

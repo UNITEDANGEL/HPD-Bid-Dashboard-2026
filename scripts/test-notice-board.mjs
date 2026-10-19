@@ -77,4 +77,14 @@ assert.equal(dueAfterWeekdays("2026-10-16T15:39:00-04:00", 72), "2026-10-21T19:3
 assert.equal(dueAfterWeekdays("2026-10-13T09:00:00-04:00", 24), "2026-10-14T13:00:00.000Z");
 assert.equal(dueAfterWeekdays("2026-10-17T11:00:00-04:00", 24), "2026-10-19T14:00:00.000Z");
 assert.equal(dueAfterWeekdays("2026-12-04T16:00:00-05:00", 24), "2026-12-07T15:00:00.000Z", "winter time: Monday 10 AM EST");
-console.log("PASS weekdays only: Friday / weekend 24h -> Monday 10 AM, Friday 72h -> Wednesday, Tuesday 24h -> Wednesday");
+// City holidays (19 Oct): none is a due day.
+const { nycHolidays, holidayOn, holidaysBetween } = await loadLib("business-days");
+assert.deepEqual(holidaysBetween("2026-10-09T14:00:00-04:00", "2026-10-13T14:00:00.000Z"), ["Columbus Day"]);
+assert.deepEqual([...nycHolidays(2026).keys()], ["2026-01-01", "2026-01-19", "2026-02-12", "2026-02-16", "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07", "2026-10-12", "2026-11-03", "2026-11-11", "2026-11-26", "2026-12-25"]);
+assert.equal(holidayOn(Date.parse("2026-11-26T12:00:00-05:00")), "Thanksgiving");
+assert.equal(dueAfterWeekdays("2026-11-25T14:00:00-05:00", 24), "2026-11-27T15:00:00.000Z", "Wednesday before Thanksgiving: Friday 10 AM");
+assert.equal(dueAfterWeekdays("2026-11-02T14:00:00-05:00", 24), "2026-11-04T15:00:00.000Z", "Monday before Election Day: Wednesday 10 AM");
+assert.equal(dueAfterWeekdays("2026-10-09T14:00:00-04:00", 24), "2026-10-13T14:00:00.000Z", "Friday before Columbus Day: Tuesday 10 AM");
+assert.equal(dueAfterWeekdays("2026-11-24T14:00:00-05:00", 72), "2026-11-30T19:00:00.000Z", "72h from Tuesday skips Thanksgiving: Wed, Fri, Mon");
+assert.equal(dueAfterWeekdays("2027-12-30T10:00:00-05:00", 24), "2028-01-03T15:00:00.000Z", "Thursday 30 Dec 2027, New Year's kept on Fri 31 Dec: Monday 10 AM");
+console.log("PASS weekdays only (and City holidays): Friday / weekend 24h -> Monday 10 AM, Friday 72h -> Wednesday, Tuesday 24h -> Wednesday");

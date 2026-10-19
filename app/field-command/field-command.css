@@ -3135,3 +3135,8 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 }
 
 .fc-fix-all { display: grid; place-items: center; min-height: 54px; margin: 6px 0 10px; border-radius: 14px; background: #16a34a; color: #fff; font: 900 16px system-ui; text-decoration: none; }
+
+/* Due time on 24/72-hour cards, with City holidays that were skipped (19 Oct). */
+.fc-board-due { margin: 2px 0 4px; font: 700 14.5px system-ui, sans-serif; color: #e2e8f0; }
+.fc-board-due b { color: #fff; }
+.fc-board-hol { color: #c4b5fd; font-weight: 800; }

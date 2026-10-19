@@ -4,6 +4,7 @@
 // and four steps (reply sent -> paperwork made -> sent to vendor tracking -> confirmed). Steps tick by themselves
 // from the emails / paperwork on record, or with a tap. Replies are drafted here; nothing is sent without two taps.
 import { useEffect, useState } from "react";
+import { holidaysBetween } from "../../lib/business-days";
 import type { NoticeFindings } from "../../lib/notice-findings";
 import { BOARD_STEPS, daysWaiting, draftReply, hoursLeft, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
@@ -169,6 +170,10 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
+        {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
+          const hol = holidaysBetween(row.noticeAt, row.dueAt);
+          return <p className="fc-board-due" data-hpd-smoke="fc-board-due">Due <b>{new Date(row.dueAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</b>{hol.length ? <span className="fc-board-hol"> · 🗓 {hol.join(", ")} not counted</span> : null}</p>;
+        })() : null}
         {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
         {row.next && findingsOf ? (() => {
           const f = findingsOf(row);
