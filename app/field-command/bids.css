@@ -671,3 +671,27 @@ i.is-sent { background: #2563eb; }
 .fc-progress-legend { font: 600 12px system-ui, sans-serif; color: #475569; }
 .fc-progress-legend i { width: 14px; margin: 0 2px 0 8px; vertical-align: middle; }
 .fc-stats-pages button.is-on { background: #f97316; border-color: #f97316; color: #fff; }
+
+/* Bigger bids panel (owner, 19 Oct): half-way up and full width when open, bigger words and tabs, charts. */
+.fc-app.fc-bids-mode .fc-bids-list.is-half, .fc-app.fc-bids-mode .fc-bids-list.is-full { z-index: 1700; border-radius: 18px 18px 12px 12px; box-shadow: 0 -10px 30px #0f172a66; }
+.fc-bids-list.is-half li button, .fc-bids-list.is-full li button { font-size: 15.5px; padding: 12px 14px; }
+.fc-bid-tabs button { min-height: 48px; font-size: 15px !important; }
+.fc-mine-charts { display: grid; gap: 8px; margin: 8px 10px 12px; padding: 12px; border-radius: 14px; background: #f8fafc; color: #0f172a; }
+.fc-mine-charts > b { font: 900 16px system-ui, sans-serif; }
+.fc-hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fc-hbars li { display: grid; grid-template-columns: 130px 1fr 40px; align-items: center; gap: 8px; font: 700 13.5px system-ui, sans-serif; color: #334155; }
+.fc-hbars li i { display: block; height: 16px; min-width: 3px; border-radius: 8px; background: #94a3b8; }
+.fc-hbars li b { font: 900 16px system-ui, sans-serif; color: #0f172a; text-align: right; }
+.fc-hbars li.is-won i { background: #16a34a; }
+.fc-hbars li.is-lost i { background: #dc2626; }
+.fc-hbars li.is-wait i { background: #2563eb; }
+.fc-hbars li.is-saved i { background: #f59e0b; }
+.fc-vbars { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-items: end; height: 150px; padding-top: 4px; }
+.fc-vbars > div { display: grid; grid-template-rows: auto 1fr auto; justify-items: center; height: 100%; gap: 2px; }
+.fc-vbars small { font: 800 12px system-ui, sans-serif; color: #0f172a; }
+.fc-vbars i { position: relative; align-self: end; width: 70%; min-height: 3px; border-radius: 6px 6px 2px 2px; background: #2563eb; overflow: hidden; }
+.fc-vbars em { position: absolute; left: 0; right: 0; bottom: 0; background: #16a34a; }
+.fc-vbars span { font: 700 11px system-ui, sans-serif; color: #475569; }
+i.is-won { background: #16a34a; }
+.fc-rate-cell { position: relative; }
+.fc-rate-bar { display: block; height: 6px; margin-top: 3px; border-radius: 3px; background: #16a34a; min-width: 2px; }

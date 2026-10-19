@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 19, 2026",
+      "title": "Bigger bids panel with charts",
+      "items": [
+        "Tapping Mine, Stats or History opens the panel half-way up the screen (bigger than before); pull it up for the whole screen, pull it down or tap 🗺 Map to hide it.",
+        "Mine starts with charts: your bids by result (won / lost / waiting on HPD / saved, not sent) and bids sent per week for 8 weeks (the green part is what you won).",
+        "Stats -> Wins & prices: the win rate by month now has a bar for each month. Bigger tabs and words in the list."
+      ]
+    },
+    {
+      "date": "Oct 19, 2026",
       "title": "Notices update by themselves, with a chime",
       "items": [
         "The app now picks up your emails with HPD by itself: every 5 minutes while it is open, and each time you come back to it. No more \"Couldn't check your email\": if the phone can't read Gmail, it uses the app's own email reader (it reads your email every 10 minutes) and says how fresh it is.",

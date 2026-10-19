@@ -1190,7 +1190,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             </div>
           </div>
         ) : null}
-        <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.max(Math.min(200, listRoom * 0.6), listRoom * 0.5))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
+        <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.max(Math.min(340, listRoom * 0.9), listRoom * 0.6))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
           <button type="button" className="fc-bids-handle" data-hpd-smoke="fc-bids-collapse" aria-label={listSize === "full" ? "Make the list smaller" : "Show more of the list"}
             onClick={() => setListSize((v) => (v === "peek" ? "half" : v === "half" ? "full" : "half"))}
             onPointerDown={(e) => { dragRef.current = { y: e.clientY, size: listSize }; try { (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId); } catch { /* old browser */ } }}
@@ -1211,9 +1211,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           {!listCollapsed ? <button type="button" className="fc-bids-tomap" data-hpd-smoke="fc-bids-peek" onClick={() => setListSize("peek")}>🗺 Map</button> : null}
           <div className="fc-bid-tabs" role="tablist">
             <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({shownBids.length})</button>
-            <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => setTab("mine")}>Mine ({sentCount})</button>
-            <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => setTab("stats")}>Stats</button>
-            <button type="button" role="tab" aria-selected={tab === "history"} className={tab === "history" ? "is-active" : ""} data-hpd-smoke="fc-bids-history" onClick={() => setTab("history")}>History</button>
+            <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => { setTab("mine"); setListSize((v) => (v === "peek" ? "half" : v)); }}>Mine ({sentCount})</button>
+            <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => { setTab("stats"); setListSize((v) => (v === "peek" ? "half" : v)); }}>Stats</button>
+            <button type="button" role="tab" aria-selected={tab === "history"} className={tab === "history" ? "is-active" : ""} data-hpd-smoke="fc-bids-history" onClick={() => { setTab("history"); setListSize((v) => (v === "peek" ? "half" : v)); }}>History</button>
           </div>
           {/* Today's checklist and the bidding session belong to Open (Mine / Stats / History start clean). */}
           {tab === "open" && checklist.rows.length ? (
@@ -1352,6 +1352,37 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             <JobHistory jobs={marketJobs} loading={market === null} />
           ) : (
             <div data-hpd-smoke="fc-my-bids">
+              {(() => {
+                const res = mine.filter((r) => r.status !== "saved").map((r) => ({ r, res: bidResult(r, awarded, today, marketAwards).result }));
+                const counts = [
+                  ["Won", res.filter((x) => x.res === "won").length, "is-won"],
+                  ["Lost", res.filter((x) => x.res === "lost").length, "is-lost"],
+                  ["Waiting on HPD", res.filter((x) => x.res === "pending").length, "is-wait"],
+                  ["Price saved, not sent", mine.filter((r) => r.status === "saved").length, "is-saved"],
+                ] as const;
+                const maxC = Math.max(1, ...counts.map((c) => c[1]));
+                const weekStart = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+                const weeks = Array.from({ length: 8 }, (_, i) => weekStart(Date.now()) - (7 - i) * 7 * 86400000);
+                const perWeek = weeks.map((w) => ({ w, n: mine.filter((r) => r.sentAt && weekStart(Date.parse(r.sentAt)) === w).length, won: mine.filter((r) => r.sentAt && weekStart(Date.parse(r.sentAt)) === w && awarded.has(r.omo)).length }));
+                const maxW = Math.max(1, ...perWeek.map((x) => x.n));
+                return (
+                  <section className="fc-mine-charts" data-hpd-smoke="fc-mine-charts">
+                    <b>Your bids by result</b>
+                    <ul className="fc-hbars">{counts.map(([label, n, cls]) => (
+                      <li key={label} className={cls}><span>{label}</span><i style={{ width: `${(n / maxC) * 100}%` }} /><b>{n}</b></li>
+                    ))}</ul>
+                    <b>Bids sent per week</b>
+                    <div className="fc-vbars" data-hpd-smoke="fc-mine-weeks">{perWeek.map((x) => (
+                      <div key={x.w} title={`${x.n} sent, ${x.won} won`}>
+                        <small>{x.n || ""}</small>
+                        <i style={{ height: `${(x.n / maxW) * 100}%` }}>{x.won ? <em style={{ height: `${(x.won / Math.max(1, x.n)) * 100}%` }} /> : null}</i>
+                        <span>{new Date(x.w).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</span>
+                      </div>
+                    ))}</div>
+                    <small className="fc-progress-legend"><i className="is-sent" /> sent <i className="is-won" /> won (part of the bar)</small>
+                  </section>
+                );
+              })()}
               <p className="fc-bid-rate">{rate.decided ? `Won ${rate.won} of ${rate.decided} decided (${rate.percent}%)` : "No results yet"} · {rate.sent} sent{mine.length > sentCount ? ` · ${mine.length - sentCount} saved, not sent` : ""}</p>
               <ol>{mine.map((rec) => {
                 const res = bidResult(rec, awarded, today, marketAwards);
@@ -1515,7 +1546,7 @@ function BidStatsView({ stats, loading, jobs, learned }: { stats: ReturnType<typ
             <tr key={m.month} className={m.winRate < 0.2 ? "is-low" : m.winRate >= 0.3 ? "is-high" : ""}>
               <th>{new Date(`${m.month}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}</th>
               <td>{m.won} of {m.invitations}</td>
-              <td><b>{Math.round(m.winRate * 100)}%</b></td>
+              <td className="fc-rate-cell"><b>{Math.round(m.winRate * 100)}%</b><i className="fc-rate-bar" style={{ width: `${Math.min(100, Math.round(m.winRate * 100) * 2)}%` }} /></td>
               <td>{money(m.moneyWon)}</td>
             </tr>
           ))}</tbody>
