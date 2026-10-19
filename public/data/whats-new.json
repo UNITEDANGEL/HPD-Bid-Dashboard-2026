@@ -2,6 +2,14 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 19, 2026",
+      "title": "Revise paperwork works on the iPhone",
+      "items": [
+        "Revise paperwork did nothing on the iPhone (the app blocks pop-up boxes). Now it opens on the page: pick why (✅ It was completed, 🔁 Got access later, 🚫 Refused access, 🚪 No access, 📅 Wrong dates), add a note, tap Revise twice. The sent version is kept in the job's record and the paperwork switches to the new outcome (e.g. Work Completed) for you to put the dates and check the preview.",
+        "Archive, Change outcome, Approve return visit and Reset test job had the same problem: they now take two taps on the button instead of a pop-up."
+      ]
+    },
+    {
       "date": "Oct 18, 2026",
       "title": "🔎 A head start on every notice",
       "items": [

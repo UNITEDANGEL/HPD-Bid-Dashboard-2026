@@ -34,7 +34,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   const dialogs = [];
-  page.on("dialog", (d) => { dialogs.push(d.message()); d.accept(d.type() === "prompt" ? "Got access on 10/20, work done" : undefined); });
+  page.on("dialog", (d) => { dialogs.push(d.message()); void d.dismiss(); });
 
   // Job card: locked banner, no outcome change.
   await page.goto(`${baseUrl}/map/?omo=${job}&view=all`, { waitUntil: "load", timeout: 180000 });
@@ -55,10 +55,20 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="paperwork-generate-print"]').isVisible(), false, "no regenerating while locked");
   assert.equal(await page.locator('[data-hpd-smoke="paperwork-attempt-2"]').isVisible().catch(() => false), false, "dates not editable while locked");
 
-  // Revise: asks why, keeps the sent version, opens the job.
+  // Revise on the page (no pop-up: the iPhone app blocks them): pick why, tap twice; the sent version is kept and the
+  // new outcome is set (here: got access later, work completed).
+  const before = dialogs.length;
   await page.locator('[data-hpd-smoke="paperwork-revise"]').click();
+  const rbox = page.locator('[data-hpd-smoke="paperwork-revise-box"]');
+  await rbox.waitFor();
+  await rbox.locator('[data-hpd-smoke="paperwork-revise-pick-access"]').click();
+  await rbox.locator('[data-hpd-smoke="paperwork-revise-reason"]').fill("Got access on 10/20, work done");
+  assert.match(await rbox.innerText(), /The new paperwork will be: .*WORK PERFORMED|The new paperwork will be: .*[Ww]ork/);
+  await rbox.locator('[data-hpd-smoke="paperwork-revise-go"]').click();
+  assert.match(await rbox.locator('[data-hpd-smoke="paperwork-revise-go"]').innerText(), /Tap again/);
+  await rbox.locator('[data-hpd-smoke="paperwork-revise-go"]').click();
   await lockedCard.waitFor({ state: "detached", timeout: 10000 });
-  assert.match(dialogs.at(-1), /Revise the paperwork sent for EQ26843\?[\s\S]*sent version .* is kept/);
+  assert.equal(dialogs.length, before, "no pop-up boxes");
   const saved = await page.evaluate((job) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[job], job);
   assert.equal(saved.PackageApprovedAt, "");
   assert.equal(saved.PaperworkRevisions.length, 1);
@@ -72,7 +82,7 @@ try {
   await banner.waitFor({ timeout: 10000 });
   assert.match(await banner.innerText(), /✏️ Paperwork being revised[\s\S]*sent 10\/2\/26 is kept[\s\S]*Got access on 10\/20, work done[\s\S]*Revised 1x/);
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS paperwork lock: ${job} locked on the job card and paperwork page (no outcome change, no editing, no regenerating); Revise asked why, kept the sent version (outcome, dates, approval, email), reopened the job`);
+  console.log(`PASS paperwork lock: ${job} locked on the job card and paperwork page (no outcome change, no editing, no regenerating); Revise (on the page, no pop-up) picked why, kept the sent version (outcome, dates, approval, email), reopened the job`);
 } finally {
   await browser.close();
 }

@@ -1531,13 +1531,25 @@ export default function PaperworkPage() {
     setSentDatesUsed(true);
   }, [correction, sentDates, sentDatesUsed, selectedJob, outcome]);
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy && !locked);
+  // Revise on the page (owner, 19 Oct: the iPhone app blocks pop-up boxes, so "Revise paperwork" did nothing): pick why
+  // (e.g. "It was completed"), tap again to confirm; the sent version is kept and the new outcome is set.
+  const [revise, setRevise] = useState<{ reason: string; outcome: string; armed: boolean } | null>(null);
+  const REVISE_PICKS = [
+    ["completed", "✅ It was completed", "Work was completed", "work_completed"],
+    ["access", "🔁 Got access later, work done", "Got access later, work done", "work_completed"],
+    ["refused", "🚫 It was refused access", "It was refused access", "refused_access"],
+    ["noaccess", "🚪 It was no access", "It was no access", "no_access"],
+    ["dates", "📅 Wrong dates", "Wrong dates on the paperwork", ""],
+  ] as const;
   async function revisePaperwork() {
-    if (!savedJob || !selectedJobId) return;
-    const reason = window.prompt(`Revise the paperwork sent for ${selectedJobId}?\n\nThe sent version (outcome, dates, when it was emailed) is kept in the job's record. Why are you revising it? (e.g. "Got access on 10/20, work done")`);
-    if (!reason || !reason.trim()) return;
-    const patch = revisionPatch(savedJob, reason);
+    if (!savedJob || !selectedJobId || !revise || !revise.reason.trim()) return;
+    if (!revise.armed) { setRevise({ ...revise, armed: true }); return; }
+    const patch = revisionPatch(savedJob, revise.reason);
     saveLocalPackageOverride(selectedJobId, patch);
     setRevisedFor(selectedJobId);
+    const next = revise.outcome;
+    setRevise(null);
+    if (next) chooseOutcome(next);
     try { await flushOverrideOutbox(HPD_STATUS_WORKER_URL); } catch { /* queued; sent when back online */ }
   }
   const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
@@ -5146,6 +5158,18 @@ export default function PaperworkPage() {
         .paperwork-locked dd { margin: 0; color: #f0fdf4; }
         .paperwork-locked a { color: #93c5fd; font-weight: 700; }
         .paperwork-locked small { color: #bbf7d0; }
+        .paperwork-revise { display: grid; gap: 8px; padding: 10px; border-radius: 12px; background: #0b2e1b; border: 1px solid #4ade80; }
+        .paperwork-revise b { font: 800 16px system-ui, sans-serif; color: #fff; }
+        .paperwork-revise-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .paperwork-revise-picks button { min-height: 48px; padding: 4px 8px; border-radius: 12px; border: 1px solid #4ade80; background: #052e16; color: #f0fdf4; font: 800 14px/1.2 system-ui, sans-serif; }
+        .paperwork-revise-picks button.is-on { background: #f0fdf4; color: #052e16; }
+        .paperwork-revise label { display: grid; gap: 4px; font: 700 13px system-ui, sans-serif; color: #bbf7d0; }
+        .paperwork-revise input { min-height: 46px; padding: 0 10px; border-radius: 10px; border: 1px solid #4ade80; background: #fff; color: #111827; font: 500 16px system-ui, sans-serif; }
+        .paperwork-revise-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+        .paperwork-revise-actions button { min-height: 50px; border-radius: 12px; border: 0; background: #2563eb; color: #fff; font: 900 16px system-ui, sans-serif; }
+        .paperwork-revise-actions button + button { background: #475569; }
+        .paperwork-revise-actions button.is-armed { background: #16a34a; }
+        .paperwork-revise-actions button:disabled { opacity: 0.5; }
         .paperwork-locked button { justify-self: start; }
       `}</style>
 
@@ -5175,7 +5199,22 @@ export default function PaperworkPage() {
               </dl>
               {lock.driveLink ? <a href={lock.driveLink} target="_blank" rel="noreferrer" data-hpd-smoke="paperwork-locked-drive">Open the sent package in Google Drive</a> : null}
               {lock.revisions.length ? <small>Revised {lock.revisions.length}x before: {lock.revisions.map((r) => `${r.revisedAt.slice(0, 10)} (${r.reason})`).join("; ")}</small> : null}
-              <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-revise" onClick={() => void revisePaperwork()}>Revise paperwork</button>
+              {!revise ? <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-revise" onClick={() => setRevise({ reason: "", outcome: "", armed: false })}>Revise paperwork</button> : (
+                <div className="paperwork-revise" data-hpd-smoke="paperwork-revise-box">
+                  <b>Why are you revising {selectedJobId}?</b>
+                  <div className="paperwork-revise-picks">
+                    {REVISE_PICKS.map(([k, label, reason, out]) => (
+                      <button key={k} type="button" className={revise.reason === reason ? "is-on" : ""} data-hpd-smoke={`paperwork-revise-pick-${k}`} onClick={() => setRevise({ reason, outcome: out, armed: false })}>{label}</button>
+                    ))}
+                  </div>
+                  <label>Reason (kept with the sent version)<input data-hpd-smoke="paperwork-revise-reason" value={revise.reason} placeholder="e.g. Checked WhatsApp: work completed 10/14" onChange={(e) => setRevise({ ...revise, reason: e.target.value, armed: false })} /></label>
+                  {revise.outcome ? <small>The new paperwork will be: <b>{affidavitTemplateLabel(paperworkOutcomeFromValue(revise.outcome))}</b>. Then put the dates and check the preview.</small> : null}
+                  <div className="paperwork-revise-actions">
+                    <button type="button" className={revise.armed ? "is-armed" : ""} disabled={!revise.reason.trim()} data-hpd-smoke="paperwork-revise-go" onClick={() => void revisePaperwork()}>{revise.armed ? "✅ Tap again: revise it" : "Revise"}</button>
+                    <button type="button" onClick={() => setRevise(null)}>Cancel</button>
+                  </div>
+                </div>
+              )}
               <small>Revise when something changed after sending, e.g. no access was sent and later you got access. The sent version stays in the job&apos;s record.</small>
             </div>
           ) : null}

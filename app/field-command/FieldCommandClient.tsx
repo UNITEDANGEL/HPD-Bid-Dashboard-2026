@@ -2429,11 +2429,24 @@ export default function FieldCommandClient() {
     return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined,done}];
   }), [jobs, calendarDate]);
 
+  // Two taps instead of pop-up boxes (the iPhone home-screen app blocks confirm()): the first tap arms the button and
+  // says what will happen, the second does it; it disarms after 6 seconds.
+  const [armedTap, setArmedTap] = useState("");
+  const armedTimer = useRef<number | null>(null);
+  const tapTwice = (key: string, what: string) => {
+    if (armedTap === key) { setArmedTap(""); return true; }
+    setArmedTap(key);
+    setOutcomeMessage(`Tap again to ${what}.`);
+    if (armedTimer.current) window.clearTimeout(armedTimer.current);
+    armedTimer.current = window.setTimeout(() => setArmedTap((k) => (k === key ? "" : k)), 6000);
+    return false;
+  };
+
   // "Everything is correct": takes a finished job off the active map. Only offered once its
   // paperwork is approved; archived jobs stay under Status > Archive.
   async function archiveJob(job: JobRecord) {
     const id = jobId(job);
-    if (!window.confirm(`Archive ${id}? Only do this if the work, paperwork and email are all correct.`)) return;
+    if (!tapTwice(`archive:${id}`, `archive ${id} (only if the work, paperwork and email are all correct)`)) return;
     const now = new Date().toISOString();
     const patch = { ArchivedFromMap: true, archivedFromMap: true, ArchivedAt: now, archivedAt: now };
     try { writeSharedWorkflowPatch(id, patch); }
@@ -2769,7 +2782,7 @@ export default function FieldCommandClient() {
 
   // Test job only: start it over in one tap (no typing CLEAR), to run the whole flow again.
   async function resetTestJob(job: JobRecord) {
-    if (!window.confirm("Reset the test job? Its steps, outcome, package and photos/videos on this phone are cleared. Drive copies and sent emails stay.")) return;
+    if (!tapTwice("reset-test", "reset the test job (steps, outcome, package and photos on this phone are cleared; Drive copies and sent emails stay)")) return;
     setClearText("CLEAR");
     await clearWorkflow(job, true);
   }
@@ -2789,7 +2802,7 @@ export default function FieldCommandClient() {
     if (paperworkLock(job).locked && !isTestJob(jobId(job))) { setOutcomeMessage(lockedMessage(jobId(job), paperworkLock(job))); return; }
     const id = jobId(job);
     const previous = FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])] || value(job, ["StatusOverride", "status"]) || "outcome";
-    if (!window.confirm(`Clear "${previous}" for ${id}? Photos and visit history are kept.`)) return;
+    if (!tapTwice(`clear:${id}`, `clear "${previous}" for ${id} (photos and visit history are kept)`)) return;
     const now = new Date();
     const stamps = workflowStamps[id] || {};
     const statusLabel = stamps.work ? "Work Started" : stamps.arrived ? "Arrived" : "Pending";
@@ -3295,7 +3308,7 @@ export default function FieldCommandClient() {
                     <p className="jc-test-actions">
                       <button type="button" data-hpd-smoke="jc-test-move-here" onClick={() => moveTestJob(true)}>📍 Move test job here</button>
                       {testJobLocation() ? <button type="button" data-hpd-smoke="jc-test-move-back" onClick={() => moveTestJob(false)}>↩ Back to 100 Gold St</button> : null}
-                      <button type="button" data-hpd-smoke="jc-test-reset" onClick={() => void resetTestJob(selectedJob)}>🔄 Reset test job</button>
+                      <button type="button" data-hpd-smoke="jc-test-reset" onClick={() => void resetTestJob(selectedJob)}>{armedTap === "reset-test" ? "✅ Tap again: reset" : "🔄 Reset test job"}</button>
                     </p>
                   ) : <p>Use Start over to clear everything and run it again.</p>}
                 </div>
@@ -3533,7 +3546,7 @@ export default function FieldCommandClient() {
                       <strong>{icon} {label}</strong>
                       <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : "Outcome saved · ready to close out"}</span>
                       {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)} onClick={packageLinkClick(id, paperworkGenerateHref(id, outcome))}>Review package →</a> : null}
-                      {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>Change outcome</button> : null}
+                      {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>{armedTap === `clear:${jobId(selectedJob)}` ? "✅ Tap again: clear the outcome" : "Change outcome"}</button> : null}
                     </div>
                   );
                 })()}
@@ -3645,7 +3658,7 @@ export default function FieldCommandClient() {
                   {value(selectedJob, ["PackageApprovedAt"]) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])) ? (
                     <>
                       <span>Paperwork approved{value(selectedJob, ["PackageApprovedAt"]) ? ` ${formatSavedTime(value(selectedJob, ["PackageApprovedAt"]))}` : ""}.</span>
-                      <button type="button" data-hpd-smoke="jc-archive" onClick={() => void archiveJob(selectedJob)}>Everything is correct: Archive</button>
+                      <button type="button" data-hpd-smoke="jc-archive" onClick={() => void archiveJob(selectedJob)}>{armedTap === `archive:${jobId(selectedJob)}` ? "✅ Tap again: archive" : "Everything is correct: Archive"}</button>
                     </>
                   ) : (
                     <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} data-hpd-smoke="jc-done-paperwork">Paperwork not approved yet: finish the package →</a>
@@ -3750,11 +3763,11 @@ export default function FieldCommandClient() {
                 {visitState(selectedJob).note && <span>{visitState(selectedJob).note}</span>}
                 {visitState(selectedJob).kind === "blocked" && <span>Excluded from routes. Review required before returning.</span>}
                 {["blocked","return"].includes(visitState(selectedJob).kind) && <button type="button" onClick={() => {
-                  if (!window.confirm("Approve a return visit to this job? Existing visit records will be kept.")) return;
+                  if (!tapTwice(`revisit:${jobId(selectedJob)}`, "approve a return visit (visit records are kept)")) return;
                   const patch = {RevisitApprovedAt:new Date().toISOString()};
                   try { writeSharedWorkflowPatch(jobId(selectedJob),patch); mergeWorkflowPatchIntoScreen(jobId(selectedJob),patch); }
                   catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
-                }}>Approve return visit</button>}
+                }}>{armedTap === `revisit:${jobId(selectedJob)}` ? "✅ Tap again: approve return visit" : "Approve return visit"}</button>}
               </div>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
               <details className="jc-dates">
