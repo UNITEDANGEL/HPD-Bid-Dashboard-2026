@@ -1190,7 +1190,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             </div>
           </div>
         ) : null}
-        <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.max(Math.min(340, listRoom * 0.9), listRoom * 0.6))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
+        <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.min(listRoom - 60, Math.max(Math.min(340, listRoom * 0.8), listRoom * 0.6)))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
           <button type="button" className="fc-bids-handle" data-hpd-smoke="fc-bids-collapse" aria-label={listSize === "full" ? "Make the list smaller" : "Show more of the list"}
             onClick={() => setListSize((v) => (v === "peek" ? "half" : v === "half" ? "full" : "half"))}
             onPointerDown={(e) => { dragRef.current = { y: e.clientY, size: listSize }; try { (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId); } catch { /* old browser */ } }}
