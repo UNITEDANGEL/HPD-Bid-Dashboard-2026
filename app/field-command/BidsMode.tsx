@@ -122,6 +122,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"open" | "mine" | "stats" | "history">("open");
+  // Stats in separate pages, not one long scroll (owner, 19 Oct): progress, wins & prices, your costs & rates.
+  const [statsPage, setStatsPage] = useState<"progress" | "prices" | "costs">("progress");
   // The home screen's "Bid stats" opens straight on Stats (this stays mounted, so check each time it opens).
   useEffect(() => {
     if (!open) return;
@@ -1207,7 +1209,14 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             {listCollapsed ? `▲ ${list.length} invitation${list.length === 1 ? "" : "s"}${todayInfo.total ? ` · ${todayInfo.sent} of ${todayInfo.total} due today sent` : checklist.todo.length ? ` · ${checklist.todo.length} to bid` : ""}` : listSize === "half" ? "▲ Pull up for the whole list" : "▼ Smaller (see the map)"}
           </button>
           {!listCollapsed ? <button type="button" className="fc-bids-tomap" data-hpd-smoke="fc-bids-peek" onClick={() => setListSize("peek")}>🗺 Map</button> : null}
-          {checklist.rows.length ? (
+          <div className="fc-bid-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({shownBids.length})</button>
+            <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => setTab("mine")}>Mine ({sentCount})</button>
+            <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => setTab("stats")}>Stats</button>
+            <button type="button" role="tab" aria-selected={tab === "history"} className={tab === "history" ? "is-active" : ""} data-hpd-smoke="fc-bids-history" onClick={() => setTab("history")}>History</button>
+          </div>
+          {/* Today's checklist and the bidding session belong to Open (Mine / Stats / History start clean). */}
+          {tab === "open" && checklist.rows.length ? (
             <section className={`fc-checklist${checklistOpen ? "" : " is-closed"}`} data-hpd-smoke="fc-checklist">
               <button type="button" className="fc-checklist-head" data-hpd-smoke="fc-checklist-toggle" aria-expanded={checklistOpen} onClick={() => setChecklistOpen((v) => { const next = !v; try { localStorage.setItem(`hpd-checklist-${today}`, next ? "open" : "closed"); } catch {} return next; })}>
                 <b>☀️ Bid checklist · {checklist.sent} of {checklist.total} sent</b>
@@ -1252,7 +1261,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               ) : null}
             </section>
           ) : null}
-          {sessionOn ? (
+          {tab !== "open" ? null : sessionOn ? (
             <div className={`fc-session${todayInfo.allDone ? " is-done" : ""}`} data-hpd-smoke="fc-session">
               <div className="fc-session-head">
                 <b>{todayInfo.allDone ? "✓ All bids due today sent and confirmed" : "Bidding session on"}</b>
@@ -1270,12 +1279,6 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               ▶ Start bidding · {todayInfo.total} due today{todayInfo.notSent.length ? ` · ${todayInfo.notSent.length} not sent` : " · all sent"}
             </button>
           ) : null}
-          <div className="fc-bid-tabs" role="tablist">
-            <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({shownBids.length})</button>
-            <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => setTab("mine")}>Mine ({sentCount})</button>
-            <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => setTab("stats")}>Stats</button>
-            <button type="button" role="tab" aria-selected={tab === "history"} className={tab === "history" ? "is-active" : ""} data-hpd-smoke="fc-bids-history" onClick={() => setTab("history")}>History</button>
-          </div>
           {tab === "open" ? (
             bids === null ? <p>Loading invitations…</p> : shownBids.length ? (
               <ol>{shownBids.map((bid) => {
@@ -1305,6 +1308,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             ) : <p>{list.length ? "No invitations due that day. Pick another day above." : "No open invitations right now. New ones are read through the day (8 AM to 9 PM)."}</p>
           ) : tab === "stats" ? (
             <>
+              <div className="fc-stats-pages" role="tablist" data-hpd-smoke="fc-stats-pages">
+                {([["progress", "📈 Progress"], ["prices", "🏆 Wins & prices"], ["costs", "🧾 Costs & rates"]] as const).map(([k, label]) => (
+                  <button key={k} type="button" role="tab" aria-selected={statsPage === k} className={statsPage === k ? "is-on" : ""} data-hpd-smoke={`fc-stats-sub-${k}`} onClick={() => setStatsPage(k)}>{label}</button>
+                ))}
+              </div>
+              {statsPage === "progress" ? <BidProgress bids={list} mine={mine} awarded={awarded} today={today} rate={rate} /> : null}
+              {statsPage === "costs" ? (
               <section className="fc-stats-block fc-floors" data-hpd-smoke="fc-floors">
                 <h4>🧾 Your costs</h4>
                 <p className="fc-stats-note">What each kind of work costs you (materials and labor), counted the same way as the price. The calculator shows your profit on every bid. Kept on this phone.</p>
@@ -1335,7 +1345,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   ))}</ul>
                 ) : <p className="fc-stats-note">None yet. Open a bid and tap &quot;Set my minimum&quot; under the best price: the least you&apos;ll take for that kind of work. The best price never goes below it.</p>}
               </section>
-              <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} />
+              ) : null}
+              {statsPage === "prices" ? <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} /> : null}
             </>
           ) : tab === "history" ? (
             <JobHistory jobs={marketJobs} loading={market === null} />
@@ -1401,6 +1412,75 @@ function GroupTable({ title, rows, smoke }: { title: string; rows: Group[]; smok
 }
 
 // Bid stats: every invitation HPD awarded, yours or not, with the winning price (NYC Open Data).
+// Daily progress (owner, 19 Oct: "I need stats of daily progress"): today at a glance, then the last 7 days.
+function BidProgress({ bids, mine, awarded, today, rate }: { bids: UpcomingBid[]; mine: BidRecord[]; awarded: Map<string, number>; today: string; rate: { won: number; decided: number; percent: number; sent: number } }) {
+  const NY = (t: number | string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(t));
+  const dueToday = bids.filter((b) => b.bidDue === today);
+  const recToday = (omo: string) => mine.find((r) => r.omo === omo && r.bidDue === today);
+  const t = {
+    due: dueToday.length,
+    priced: dueToday.filter((b) => recToday(b.omo)).length,
+    sent: dueToday.filter((b) => { const r = recToday(b.omo); return r && r.status !== "saved"; }).length,
+    confirmed: dueToday.filter((b) => recToday(b.omo)?.status === "confirmed").length,
+    failed: dueToday.filter((b) => recToday(b.omo)?.status === "failed").length,
+  };
+  const left = t.due - t.sent;
+  const days = Array.from({ length: 7 }, (_, i) => NY(Date.now() - i * 86400000));
+  const rows = days.map((d) => {
+    const sent = mine.filter((r) => r.sentAt && NY(r.sentAt) === d);
+    return {
+      day: d,
+      received: bids.filter((b) => b.receivedAt && NY(b.receivedAt) === d).length,
+      sent: sent.length,
+      confirmed: sent.filter((r) => r.status === "confirmed").length,
+      failed: sent.filter((r) => r.status === "failed").length,
+      won: sent.filter((r) => awarded.has(r.omo)).length,
+      value: sent.reduce((a, r) => a + (r.sentPrice || r.price || 0), 0),
+    };
+  });
+  const max = Math.max(1, ...rows.map((r) => Math.max(r.sent, r.received)));
+  const week = rows.reduce((a, r) => ({ sent: a.sent + r.sent, won: a.won + r.won, value: a.value + r.value, received: a.received + r.received }), { sent: 0, won: 0, value: 0, received: 0 });
+  const label = (d: string) => (d === today ? "Today" : new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" }));
+  return (
+    <section className="fc-progress" data-hpd-smoke="fc-progress">
+      <div className="fc-progress-today" data-hpd-smoke="fc-progress-today">
+        <b>Today · {t.due} due</b>
+        <div className="fc-progress-bar" aria-label={`${t.sent} of ${t.due} sent`}><span style={{ width: `${t.due ? Math.round((t.sent / t.due) * 100) : 0}%` }} /></div>
+        <div className="fc-progress-tiles">
+          <span><b>{t.priced}</b>priced</span>
+          <span className="is-sent"><b>{t.sent}</b>sent</span>
+          <span className="is-ok"><b>{t.confirmed}</b>confirmed</span>
+          <span className={t.failed ? "is-bad" : ""}><b>{t.failed}</b>failed</span>
+          <span className={left ? "is-left" : "is-ok"}><b>{left}</b>to go</span>
+        </div>
+      </div>
+      <div className="fc-progress-week" data-hpd-smoke="fc-progress-week">
+        <b>Last 7 days</b>
+        <div className="fc-progress-tiles">
+          <span><b>{week.received}</b>received</span>
+          <span className="is-sent"><b>{week.sent}</b>sent</span>
+          <span className="is-ok"><b>{week.won}</b>won</span>
+          <span><b>${Math.round(week.value).toLocaleString("en-US")}</b>bid</span>
+        </div>
+        <ol className="fc-progress-days">
+          {rows.map((r) => (
+            <li key={r.day} data-hpd-smoke="fc-progress-day">
+              <span className="fc-progress-day">{label(r.day)}</span>
+              <span className="fc-progress-bars">
+                <i className="is-recv" style={{ width: `${(r.received / max) * 100}%` }} title={`${r.received} received`} />
+                <i className="is-sent" style={{ width: `${(r.sent / max) * 100}%` }} title={`${r.sent} sent`} />
+              </span>
+              <small>{r.received} in · {r.sent} sent{r.confirmed ? ` · ${r.confirmed} ✓` : ""}{r.failed ? ` · ${r.failed} ✗` : ""}{r.won ? ` · ${r.won} won` : ""}</small>
+            </li>
+          ))}
+        </ol>
+        <small className="fc-progress-legend"><i className="is-recv" /> received <i className="is-sent" /> sent</small>
+      </div>
+      <p className="fc-stats-note" data-hpd-smoke="fc-progress-rate">{rate.decided ? `All time: won ${rate.won} of ${rate.decided} decided (${rate.percent}%) · ${rate.sent} sent.` : `${rate.sent} sent so far; results come as HPD awards them.`}</p>
+    </section>
+  );
+}
+
 function BidStatsView({ stats, loading, jobs, learned }: { stats: ReturnType<typeof bidStats> | null; loading: boolean; jobs: MarketJob[]; learned: Map<string, { price: number; omo: string }[]> }) {
   if (!stats) return <p>{loading ? "Loading bid history…" : "No award history yet."}</p>;
   const o = stats.overall;

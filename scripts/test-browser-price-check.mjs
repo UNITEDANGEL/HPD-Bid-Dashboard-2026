@@ -76,13 +76,14 @@ try {
   await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load" });
   await openBidList(page);
   await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 30000 });
-  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click(); await page.locator('[data-hpd-smoke="fc-stats-sub-costs"]').click();
   const floorsBox = page.locator('[data-hpd-smoke="fc-floors"]');
   await floorsBox.waitFor({ timeout: 10000 });
   assert.ok((await floorsBox.innerText()).includes(money(floor)), "Stats lists your minimum");
   await floorsBox.locator('[data-hpd-smoke="fc-floors-remove"]').click();
   assert.match(await floorsBox.innerText(), /None yet/, "removed");
-  // Stats: the same totals as the data file.
+  // Stats -> Wins & prices: the same totals as the data file.
+  await page.locator('[data-hpd-smoke="fc-stats-sub-prices"]').click();
   const box = page.locator('[data-hpd-smoke="fc-vsbest"]');
   await box.waitFor({ timeout: 20000 });
   const v = stats.vsBest.total;

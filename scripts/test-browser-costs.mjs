@@ -32,7 +32,7 @@ try {
   await sheet.locator("header button").first().click();
   // Stats -> Your costs: the owner's starting numbers, then tile / leak / trip typed in.
   await openBidList(page);
-  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click(); await page.locator('[data-hpd-smoke="fc-stats-sub-costs"]').click();
   const row = (k) => page.locator(`[data-hpd-smoke="fc-cost-row"][data-key="${k}"]`);
   await row("door-new").waitFor({ timeout: 10000 });
   assert.equal(await row("door-new").locator('[data-hpd-smoke="fc-cost-material"]').inputValue(), "500");

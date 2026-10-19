@@ -641,3 +641,33 @@
 .fc-bid-pin i { top: -9px; left: -9px; right: auto; width: 22px; height: 22px; font-size: 13px; }
 .fc-bid-pin:active .fc-bid-in, .fc-bid-pin.is-tapped .fc-bid-in { animation: fc-bid-pop 0.35s ease-out; }
 @keyframes fc-bid-pop { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+/* Stats in pages + daily progress (19 Oct). */
+.fc-stats-pages { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 6px 0 8px; background: inherit; }
+.fc-stats-pages button { min-height: 46px; padding: 4px 6px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; font: 800 13.5px/1.15 system-ui, sans-serif; }
+.fc-stats-pages button.is-on { background: #0f172a; color: #fff; border-color: #0f172a; }
+.fc-progress { display: grid; gap: 12px; }
+.fc-progress-today, .fc-progress-week { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a; }
+.fc-progress-today > b, .fc-progress-week > b { font: 900 17px system-ui, sans-serif; }
+.fc-progress-bar { height: 14px; border-radius: 7px; background: #e2e8f0; overflow: hidden; }
+.fc-progress-bar span { display: block; height: 100%; background: #16a34a; border-radius: 7px; transition: width 0.4s ease; }
+.fc-progress-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; }
+.fc-progress-tiles span { display: grid; justify-items: center; padding: 8px 4px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; font: 700 12px/1.2 system-ui, sans-serif; color: #475569; }
+.fc-progress-tiles b { font: 900 20px system-ui, sans-serif; color: #0f172a; }
+.fc-progress-tiles .is-sent b { color: #2563eb; }
+.fc-progress-tiles .is-ok b { color: #16a34a; }
+.fc-progress-tiles .is-bad { border-color: #fecaca; background: #fef2f2; }
+.fc-progress-tiles .is-bad b { color: #dc2626; }
+.fc-progress-tiles .is-left { border-color: #fed7aa; background: #fff7ed; }
+.fc-progress-tiles .is-left b { color: #ea580c; }
+.fc-progress-days { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fc-progress-days li { display: grid; grid-template-columns: 82px 1fr; grid-template-rows: auto auto; gap: 2px 8px; align-items: center; }
+.fc-progress-day { grid-row: span 2; font: 800 13px system-ui, sans-serif; color: #0f172a; }
+.fc-progress-bars { display: grid; gap: 2px; }
+.fc-progress-bars i, .fc-progress-legend i { display: inline-block; height: 8px; min-width: 2px; border-radius: 4px; }
+.fc-progress-days small { font: 600 12px system-ui, sans-serif; color: #475569; }
+i.is-recv { background: #94a3b8; }
+i.is-sent { background: #2563eb; }
+.fc-progress-legend { font: 600 12px system-ui, sans-serif; color: #475569; }
+.fc-progress-legend i { width: 14px; margin: 0 2px 0 8px; vertical-align: middle; }
+.fc-stats-pages button.is-on { background: #f97316; border-color: #f97316; color: #fff; }

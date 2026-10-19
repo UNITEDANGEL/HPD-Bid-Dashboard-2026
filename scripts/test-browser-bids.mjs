@@ -278,6 +278,13 @@ try {
 
   // 6. Bid stats: every awarded invitation with the winning price, by kind of work and area.
   await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
+  // Stats opens on Progress (today + the last 7 days), each page on its own.
+  const prog = page.locator('[data-hpd-smoke="fc-progress"]');
+  await prog.waitFor({ timeout: 10000 });
+  assert.match(await prog.locator('[data-hpd-smoke="fc-progress-today"]').innerText(), /Today · \d+ due[\s\S]*priced[\s\S]*sent[\s\S]*confirmed[\s\S]*to go/);
+  assert.equal(await prog.locator('[data-hpd-smoke="fc-progress-day"]').count(), 7);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bid-stats"]').count(), 0, "wins & prices are on their own page");
+  await page.locator('[data-hpd-smoke="fc-stats-sub-prices"]').click();
   const stats = page.locator('[data-hpd-smoke="fc-bid-stats"]');
   await stats.waitFor({ timeout: 20000 });
   assert.match(await stats.innerText(), /invitations won/);

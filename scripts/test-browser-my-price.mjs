@@ -66,7 +66,7 @@ try {
   await openBidList(page);
   await row("ER90002").waitFor({ timeout: 30000 });
   assert.match(await row("ER90002").innerText(), /My price \$2,350/);
-  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click(); await page.locator('[data-hpd-smoke="fc-stats-sub-costs"]').click();
   const rl = page.locator('[data-hpd-smoke="fc-rates-list"]');
   await rl.waitFor({ timeout: 10000 });
   const t = await rl.innerText();
