@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T16:56:18.848607+00:00",
+  "generatedAt": "2026-10-19T17:07:48.847929+00:00",
   "days": 14,
   "bids": [
     {
@@ -2736,6 +2736,137 @@
       },
       "lat": 40.728407,
       "lng": -73.981204
+    },
+    {
+      "omo": "ER08120",
+      "bidDue": "2026-10-21",
+      "bidDueTime": "10:00 AM",
+      "workStart": "2026-10-23",
+      "workCompletion": "2026-11-09",
+      "address": "411 EAST 54 STREET",
+      "borough": "BK",
+      "itbFile": "ER08120_101926125432.pdf",
+      "description": "AEP APT # 1F REPAIR WATER DAMAGED BATHROOM, KITCHEN, FOYER, & LIVING ROOM. Bathroom: **Trace locate & repair the source of water leaks from above apt. Remove water damaged ceiling & wall approx. 85 sq. ft. Install 5/8” gwb sheetrock, tape, compound, apply 1-coat primer & 2-coats finish paint. Repair or replace wall tiles approx. 20 sq.ft. Remove & restore existing ceiling light fixture upon completion of ceiling works. **Remove defective bath floor including tiles & substrate approx. 40 sq.ft. Existing bathtub will remain. Repair wood joists as necessary & install ¾” plywood substate & new ceramic tiles & grout at entire bath floor. **Remove defective shower body. Install new single handle anti-scald shower body including faucet, overhead shower & diverter. Restore wall tiles upon completion of installation. **Replace defective wash basin vanity include faucet, waste line/trap, water hoses & valves. Repair backup wall as necessary prior to install. Make supe adequate water supply to faucet. **Replace bathtub waste line / trap / connections to prevent water leak & obstruction. Replace damaged or leaky pipe under the bathroom as necessary. **Replace defective tank less toilet flushing system at bathroom. Make sure smooth operation of toilet flushing. Livingroom: **Trace locate & repair source of water leaks from above apt. Remove water damaged entire ceiling at Livingroom approx. 190 sq.ft. Install 5/8” gwb sheetrock, tape, compound, apply 1-coat primer & 2-coats finish paint. Remove & restore existing ceiling light fixture upon completion of ceiling works. **Remove existing hardwood flooring at entire living room approx. 190 sq.ft. repair substrate as necessary. Supply & install new hard wood flooring at entire living room. Apply machine sanding, proper polish & polyurethane coating on new floor. Kitchen: **Trace locate & repair source of water leaks from above apt. Remove water damaged entire ceiling at Kitchen approx. 88 sq.ft. and wall approx. 50 sq.ft. Install 5/8” gwb sheetrock, tape, compound, apply 1-coat primer & 2-coats finish paint. Remove & restore existing ceiling light fixture upon completion of ceiling work. Foyer: **Trace locate & repair source of water leaks from above apt. Remove water damaged ceiling & wall at Foyer approx. 30 sq.ft. Install 5/8” gwb sheetrock, tape, compound, apply 1-coat primer & 2-coats finish paint. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD NYC GOV OR PEREZBIA@HPD NYC GOV OR EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID.VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM MOHAMMAD ALAM AT 212 863-5971, (phone: sign in to see) EMAIL ALAMMO@HPD.NYC.GOV, OR SUPERVISOR DELLITURRI PASQUALE 212 863-5111 TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 TENANT: (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1792428877000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.648719,
+      "lng": -73.925887
     }
   ],
   "unread": []
