@@ -136,6 +136,7 @@ jobs:
           node scripts/test-ai-draft.mjs
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs
+          node scripts/test-notice-findings.mjs
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs

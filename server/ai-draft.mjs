@@ -35,6 +35,7 @@ export function draftFacts(body) {
     paperworkMade: Boolean(body.steps?.made),
     paperworkSentToThem: Boolean(body.steps?.sent),
     ownerNote: clip(body.note, 500),
+    foundOnRecord: Array.isArray(body.found) ? body.found.slice(0, 12).map((x) => clip(x, 160)) : [],
     theirEmail: clip(body.noticeText, 2500),
   };
 }

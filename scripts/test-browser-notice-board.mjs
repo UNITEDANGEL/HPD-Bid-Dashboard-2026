@@ -46,6 +46,14 @@ United Angel Construction Corp` } });
   const clocks = await rows.locator('[data-hpd-smoke="fc-board-clock"]').allInnerTexts();
   assert.ok(clocks.every((c) => /left|OVERDUE|Sent · waiting|Waiting \d+ days|Done/.test(c)), `countdowns: ${clocks.slice(0, 4)}`);
   assert.equal(await rows.first().locator('[data-hpd-smoke="fc-board-steps"] li').count(), 4);
+  // A head start on every notice: what's on record (with dates) and the next step, with its button.
+  const found = rows.first().locator('[data-hpd-smoke="fc-found"]');
+  assert.ok((await found.locator("li").count()) >= 1, "found on record");
+  assert.match(await found.locator('[data-hpd-smoke="fc-found-next"]').innerText(), /^👉 .+/);
+  assert.equal(await found.locator('[data-hpd-smoke="fc-found-go"]').count(), 1);
+  const foundAll = await board.locator('[data-hpd-smoke="fc-found"]').count();
+  const openRows = await board.locator('[data-hpd-smoke="fc-board-row"]:not(.is-done)').count();
+  assert.equal(foundAll, openRows, "every open notice has its findings");
   await page.waitForTimeout(700);
   if (shots) await page.screenshot({ path: `${shots}/board-1.png` });
   // Missing documents (Gafur's lists): their own filter, one row per job with what they want.
@@ -72,6 +80,7 @@ United Angel Construction Corp` } });
   assert.match(await box.locator('[data-hpd-smoke="fc-board-reply-text"]').inputValue(), /AI reply./);
   assert.equal(asked[0].omo, omo);
   assert.ok(asked[0].noticeText.length > 0 && asked[0].dueAt && "steps" in asked[0], "the AI gets their notice and the facts");
+  assert.ok(Array.isArray(asked[0].found) && asked[0].found.length > 0, "the AI gets what was found on record");
   await box.locator('[data-hpd-smoke="fc-board-ai-note"]').fill("we went back Friday");
   await box.locator('[data-hpd-smoke="fc-board-ai-write"]').click();
   await page.waitForFunction(() => /we went back Friday/.test(document.querySelector('[data-hpd-smoke="fc-board-reply-text"]')?.value || ""), null, { timeout: 10000 });

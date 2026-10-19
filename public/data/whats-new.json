@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 18, 2026",
+      "title": "🔎 A head start on every notice",
+      "items": [
+        "Every notice on the Vendor tracking board (and the PRIORITY card when you tap a glowing pin) now shows what the app already has for that job, with dates: affidavit & invoice sent (date, files), paperwork made, PDFs you emailed them, the outcome (work completed / refused access / no access with both tries / completed by others), visits, when the work was due, HPD closed, PIP paid or open, a payment rejection.",
+        "Then the next step and its button: 📤 send the paperwork again (it went out on <date>), 📄 make it (e.g. refused access on 10/10), or ✨ write an update when nothing is on record.",
+        "The AI reply gets these facts too, so it can say exactly what was sent and when."
+      ]
+    },
+    {
+      "date": "Oct 18, 2026",
       "title": "24-hour notices from Friday are due Monday morning",
       "items": [
         "Deadlines now count weekdays only. A 24-hour notice that comes in on Friday (or over the weekend) is due first thing Monday (10 AM). Monday-Thursday ones are due 24 hours later. A 72-hour one from Friday is due Wednesday.",

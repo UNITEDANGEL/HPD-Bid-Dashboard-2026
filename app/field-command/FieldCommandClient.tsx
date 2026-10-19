@@ -47,6 +47,7 @@ import "./job-card-v2.css";
 import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
 import { buildBoard, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
+import { noticeFindings } from "../../lib/notice-findings";
 import NoticeBoard from "./NoticeBoard";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
@@ -3251,7 +3252,9 @@ export default function FieldCommandClient() {
                       <p className="fc-prio-card-head"><b>🔥 PRIORITY</b> · {it.title}{it.who ? ` · ${it.who}` : ""}</p>
                       {due ? <p className="fc-prio-card-due" data-hpd-smoke="fc-prio-card-due">⏱ {due}</p> : <p className="fc-prio-card-due">Asked {new Date(it.askedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>}
                       <p className="fc-prio-card-want">{it.want}</p>
-                      <p className={`fc-prio-sent${it.sentAt ? " is-sent" : ""}`}>{it.sentAt ? `✓ Paperwork already sent ${it.sentAt}` : "⚠️ No paperwork sent for this job yet"}</p>
+                      {(() => { const f = noticeFindings({ omo, job: selectedJob as Record<string, unknown>, sent: followRef.current?.sent?.[omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[omo], rejection: rj || null }); return (
+                        <div className="fc-found is-light" data-hpd-smoke="fc-prio-found"><b>🔎 Found on record</b><ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}>{l.icon} {l.text}</li>)}</ul><p className="fc-found-next">👉 {f.advice.text}</p></div>
+                      ); })()}
                       <p className="fc-prio-card-q">What happened? Pick it, put the date, and the affidavit (copy + original) is made for you to check:</p>
                       <div className="fc-prio-outcomes" data-hpd-smoke="fc-prio-outcomes">
                         {outcomes.map(([k, label]) => <a key={k} href={`/paperwork/?job=${encodeURIComponent(omo)}&outcome=${k}`} data-hpd-smoke={`fc-prio-outcome-${k}`}>{label}</a>)}
@@ -4343,6 +4346,7 @@ export default function FieldCommandClient() {
         <NoticeBoard
           rows={boardRows}
           initialShow={boardShow}
+          findingsOf={(row) => noticeFindings({ omo: row.omo, job: findAnyJob(row.omo) as Record<string, unknown> | null, sent: followRef.current?.sent?.[row.omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[row.omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[row.omo], rejection: rejections.find((r) => r.omo === row.omo) || null, ourFilesAt: row.steps.sent.how === "email" ? row.steps.sent.at : "" })}
           addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}

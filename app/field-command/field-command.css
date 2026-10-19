@@ -3084,3 +3084,19 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-app .fc-map-controls .fc-map-fab.is-urgent > svg { animation: fc-urgent 1.2s ease-in-out infinite; }
 @keyframes fc-urgent { 0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ef4444; } 50% { box-shadow: 0 0 0 2px #fff, 0 0 0 9px #ef444488, 0 0 18px #ef4444; } }
 .fc-urgent-tag { position: absolute; left: -46px; top: 12px; padding: 1px 6px; border-radius: 9px; background: #b91c1c; color: #fff; font: 900 11.5px/18px system-ui; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #0005; }
+
+/* Found on record: a head start on each notice (18 Oct). */
+.fc-found { display: grid; gap: 6px; padding: 10px; border-radius: 12px; background: #0b1730; border: 1px solid #3b82f6; }
+.fc-found > b { font: 900 15px system-ui; color: #93c5fd; }
+.fc-found ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fc-found li { font: 600 14.5px/1.35 system-ui; color: #e2e8f0; }
+.fc-found li.is-good { color: #bbf7d0; }
+.fc-found li.is-bad { color: #fecaca; }
+.fc-found-next { margin: 2px 0 0; font: 800 15px/1.35 system-ui; color: #fde68a; }
+.fc-found-go { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 14px; border-radius: 12px; border: 0; background: #2563eb; color: #fff; font: 800 15px system-ui; text-decoration: none; }
+.fc-found.is-light { background: #eff6ff; border-color: #3b82f6; }
+.fc-found.is-light > b { color: #1d4ed8; }
+.fc-found.is-light li { color: #1e293b; }
+.fc-found.is-light li.is-good { color: #166534; }
+.fc-found.is-light li.is-bad { color: #b91c1c; }
+.fc-found.is-light .fc-found-next { color: #92400e; }

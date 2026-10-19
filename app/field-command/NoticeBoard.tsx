@@ -4,6 +4,7 @@
 // and four steps (reply sent -> paperwork made -> sent to vendor tracking -> confirmed). Steps tick by themselves
 // from the emails / paperwork on record, or with a tap. Replies are drafted here; nothing is sent without two taps.
 import { useEffect, useState } from "react";
+import type { NoticeFindings } from "../../lib/notice-findings";
 import { BOARD_STEPS, daysWaiting, draftReply, hoursLeft, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
   onMark: (key: string, step: BoardStep, on: boolean) => void;
   onClose: () => void;
   initialShow?: "all" | "ppn" | "docs";
+  findingsOf?: (row: BoardRow) => NoticeFindings; // what the app already has for the job (a head start)
 };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
@@ -31,7 +33,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all" }: Props) {
+export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
@@ -44,7 +46,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
   const writeWithAi = async (row: BoardRow, note: string) => {
     setAi({ key: row.key, note, busy: true, msg: "✨ AI is writing the reply…" });
     try {
-      const r = await fetch("/api/drive/hpd-draft", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo: row.omo, address: addressOf(row.omo), who: row.who, kind: row.kind, want: row.want, hours: row.hours, noticeAt: row.noticeAt, dueAt: row.dueAt, hoursLeft: hoursLeft(row, Date.now()), sentAt: row.sentAt, steps: { replied: row.steps.replied.done, made: row.steps.made.done, sent: row.steps.sent.done }, note, noticeText: row.noticeText }) });
+      const r = await fetch("/api/drive/hpd-draft", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo: row.omo, address: addressOf(row.omo), who: row.who, kind: row.kind, want: row.want, hours: row.hours, noticeAt: row.noticeAt, dueAt: row.dueAt, hoursLeft: hoursLeft(row, Date.now()), sentAt: row.sentAt, steps: { replied: row.steps.replied.done, made: row.steps.made.done, sent: row.steps.sent.done }, note, noticeText: row.noticeText, found: findingsOf ? findingsOf(row).lines.map((l) => l.text) : [] }) });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.ai && d.text) {
         setReply((cur) => (cur && cur.key === row.key ? { ...cur, text: d.text, armed: false } : cur));
@@ -128,6 +130,19 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
         {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
+        {row.next && findingsOf ? (() => {
+          const f = findingsOf(row);
+          return (
+            <div className="fc-found" data-hpd-smoke="fc-found">
+              <b>🔎 Found on record</b>
+              <ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}><span aria-hidden="true">{l.icon}</span> {l.text}</li>)}</ul>
+              <p className="fc-found-next" data-hpd-smoke="fc-found-next">👉 {f.advice.text}</p>
+              {f.advice.action === "resend" ? <a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>📤 Open the paperwork and send it</a>
+                : f.advice.action === "make" ? <a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, f.advice.outcome || "")} onClick={() => rememberSend(row)}>📄 Make it ({f.advice.outcome?.replace(/_/g, " ")})</a>
+                : <button type="button" className="fc-found-go" data-hpd-smoke="fc-found-go" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, ""); }}>✨ Write the update</button>}
+            </div>
+          );
+        })() : null}
         <ol className="fc-board-steps" data-hpd-smoke="fc-board-steps">
           {BOARD_STEPS.map((s) => {
             const st = row.steps[s.key];
