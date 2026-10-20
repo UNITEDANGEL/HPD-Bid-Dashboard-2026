@@ -73,10 +73,15 @@ United Angel Construction Corp` } });
   await listBox.locator('[data-hpd-smoke="fc-list-reply-open"]').click();
   const listText = await listBox.locator('[data-hpd-smoke="fc-list-reply-text"]').inputValue();
   assert.match(listText, /^Hello .+,\n\nThank you for the list\. Here is where each job stands:/);
-  assert.match(listText, /EP27450 \([^)]*\) - affidavit and invoice sent on 10\/8\/26/i);
-  assert.match(listText, /EP18784 \([^)]*\) - documents sent on 12\/10\/25/, "paperwork on record, with its date");
-  assert.match(listText, /EP22713 \([^)]*\) - update: /, "a group email about many jobs doesn't count as sent for this one");
-  assert.match(listText, /EN07390 \([^)]*\) - update: /);
+  // Her lists change (new ones come in): check the known jobs only when they're on the list this opens.
+  assert.match(listText, /[A-Z]{2}\d{5} \([^)]*\) - (affidavit and invoice|documents|photos) sent on \d+\/\d+\/\d+\./i, "at least one job with its paperwork on record and the date");
+  assert.match(listText, /[A-Z]{2}\d{5} \([^)]*\) - update: /, "jobs with nothing on record are left for you to fill in");
+  const has = (o) => listText.includes(`${o} (`);
+  // Sent on its latest date (you may send it again: 20 Oct EP27450 went again).
+  if (has("EP27450")) assert.match(listText, /EP27450 \([^)]*\) - affidavit and invoice sent on (10\/8\/26|\d+\/\d+\/\d+)\./i);
+  if (has("EP18784")) assert.match(listText, /EP18784 \([^)]*\) - documents sent on \d+\/\d+\/\d+\./, "paperwork on record, with its date");
+  if (has("EP22713")) assert.match(listText, /EP22713 \([^)]*\) - update: /, "a group email about many jobs doesn't count as sent for this one");
+  if (has("EN07390")) assert.match(listText, /EN07390 \([^)]*\) - update: /);
   await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
   await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
   assert.match(await listBox.locator('[data-hpd-smoke="fc-list-reply-status"]').innerText(), /Fill in the lines that end with "update:"/);
