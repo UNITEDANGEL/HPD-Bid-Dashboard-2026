@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-20T20:35:31.892457+00:00",
+  "generatedAt": "2026-10-20T20:46:03.583624+00:00",
   "days": 14,
   "bids": [
     {
@@ -1306,6 +1306,136 @@
       },
       "lat": 40.648719,
       "lng": -73.925887
+    },
+    {
+      "omo": "ER07378",
+      "bidDue": "2026-10-21",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-26",
+      "workCompletion": "2026-11-17",
+      "address": "44 MAC DONOUGH STREET",
+      "borough": "BK",
+      "itbFile": "ER07378_102026043042.pdf",
+      "description": "REPAIR DEFECTIVE IN 5TH ROOM FROM NORTH AKA BEDROOM AT LEAST 260 SQ. FT. IN APARTMENT 1B NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT APARTMENT 1B, 1ST STORY, 1ST APARTMENT FROM NORTH AT EAST. PROPERLY REMOVE DEFECTIVE VINYL TILE FLOORING AT LEAST 260 SQ. FT., MAKE REPAIRS TO SUBFLOORING, LEVEL AREA AND REPLACING DEFECTIVE SUBFLOORING WITH THE ADEQUATE PLYWOOD SIZE OF AT LEAST ¾”. ENSURE WHEN FINISH SUBFLOORING HAS A FLAT AND LEVEL SURFACE TO INSTALL THE NEW VINYL FLOOR TILES SIMILAR TO THE EXISTING AT LEAST 260 SQ. FT. MAKE ALL NECESSARY CLEAN UP TO RESTORE FLOOR TO A SAFE/APPROPRIATE ORDER. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. REMOVE ALL WORK-RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; K. BRYANT 212863 8496; R. REED- 212 863 5481 __________________________________________________________________ IF NO WORK IS PERFORMED OR THE LANDLORD REFUSES ACCESS TO CONTRACTOR TO COMPLETED WORK, OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792528245000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501.1,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 45,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.9,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.680665,
+      "lng": -73.944484
     },
     {
       "omo": "ER07640",
