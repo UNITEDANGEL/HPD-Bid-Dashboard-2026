@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-20T15:10:00.628110+00:00",
+"generatedAt": "2026-10-20T15:19:23.759280+00:00",
 "since": "2026/10/06",
 "jobs": {
 "EN04541": [
@@ -2891,6 +2891,14 @@
 "file": "631f0c96-b781-4489-b092-2517800b4676.mp4",
 "outcome": "",
 "subject": "Fwd: OMO No: EP27450 Boro: Brooklyn Bldg Address: 765, LINCOLN AVENUE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-20",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EP27450 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Fwd: OMO No: EP27450 Boro: Brooklyn Bldg Address: 765, LINCOLN AVENUE",
 "via": "hpd-staff"
 }
 ],
