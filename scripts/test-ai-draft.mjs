@@ -69,3 +69,37 @@ console.log("PASS AI draft: facts only (OMO checked, their email clipped), Worke
   assert.ok(calls.some((u) => /newer_than%3A7d|newer_than:7d/.test(u)));
   console.log("PASS hpd-scan: sent (PDFs or not) and HPD's answers by thread, subjects only, read-only");
 }
+
+// "See what you sent" (hpd-sent / hpd-sent-pdf, 20 Oct): the sent emails naming a job that carry PDFs, and one PDF's bytes.
+{
+  const calls = [];
+  const pdfB64url = Buffer.from("%PDF-1.4 test pdf").toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
+  const msg = (id, at, parts) => ({ id, threadId: `t-${id}`, internalDate: String(Date.parse(at)), payload: { headers: [{ name: "Subject", value: `Re: OMO EP27382 (${id})` }, { name: "To", value: '"Gafur, Deoranie (HPD)" <GafurD@hpd.nyc.gov>' }], parts } });
+  const gmail = async (url) => {
+    calls.push(url);
+    const u = new URL(url);
+    if (u.searchParams.get("q")) return Response.json({ messages: [{ id: "aaaaaaaaaa1" }, { id: "bbbbbbbbbb2" }, { id: "cccccccccc3" }] });
+    if (/\/attachments\//.test(u.pathname)) return Response.json({ data: pdfB64url });
+    const id = u.pathname.split("/").pop();
+    if (id === "aaaaaaaaaa1") return Response.json(msg(id, "2026-10-20T10:47:00-04:00", [{ mimeType: "text/plain", body: { data: "eA" } }, { mimeType: "application/pdf", filename: "EP27382 AFF INVOICE.pdf", body: { attachmentId: "att1", size: 90000 } }]));
+    if (id === "bbbbbbbbbb2") return Response.json(msg(id, "2026-10-20T11:00:00-04:00", [{ mimeType: "multipart/mixed", parts: [{ mimeType: "application/octet-stream", filename: "EP27382 corrected.PDF", body: { attachmentId: "att2", size: 80000 } }] }]));
+    return Response.json(msg(id, "2026-10-20T09:00:00-04:00", [{ mimeType: "image/png", filename: "photo.png", body: { attachmentId: "x" } }]));
+  };
+  const call = (action, body) => handleDrivePackages(new Request(`https://app.example.test/api/drive/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }), action, { Authorization: "Bearer test" }, gmail, {}, "owner@example.test");
+  const res = await call("hpd-sent", { omo: "ep27382" });
+  assert.equal(res.status, 200);
+  const d = await res.json();
+  assert.equal(d.omo, "EP27382");
+  assert.deepEqual(d.emails.map((e) => [e.id, e.files.map((f) => f.name)]), [["bbbbbbbbbb2", ["EP27382 corrected.PDF"]], ["aaaaaaaaaa1", ["EP27382 AFF INVOICE.pdf"]]], "newest first, PDFs only, photo-only email left out");
+  assert.match(d.emails[0].to, /GafurD@hpd\.nyc\.gov/);
+  assert.equal(d.emails[0].threadId, "t-bbbbbbbbbb2");
+  assert.ok(calls.some((u) => decodeURIComponent(u).includes("in:sent EP27382 has:attachment")));
+  const pdf = await call("hpd-sent-pdf", { id: "aaaaaaaaaa1", i: 0 });
+  assert.equal(pdf.status, 200);
+  assert.equal(pdf.headers.get("Content-Type"), "application/pdf");
+  assert.equal(Buffer.from(await pdf.arrayBuffer()).toString(), "%PDF-1.4 test pdf");
+  assert.equal((await call("hpd-sent", { omo: "../x" })).status, 400);
+  assert.equal((await call("hpd-sent-pdf", { id: "aaaaaaaaaa1", i: 3 })).status, 404);
+  assert.ok(calls.every((u) => !/\/send/.test(u)), "read-only");
+  console.log("PASS hpd-sent: your sent emails naming the job with PDFs (newest first, to whom, thread for Gmail), one PDF's bytes, bad input refused, read-only");
+}

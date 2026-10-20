@@ -5,6 +5,7 @@
 // from the emails / paperwork on record, or with a tap. Replies are drafted here; nothing is sent without two taps.
 import { useEffect, useState } from "react";
 import { holidaysBetween } from "../../lib/business-days";
+import SentPaperwork from "./SentPaperwork";
 import type { NoticeFindings } from "../../lib/notice-findings";
 import { BOARD_STEPS, NUDGE_AFTER_DAYS, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
@@ -189,6 +190,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
             <div className="fc-found" data-hpd-smoke="fc-found">
               <b>🔎 Found on record</b>
               <ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}><span aria-hidden="true">{l.icon}</span> {l.text}</li>)}</ul>
+              {f.lines.some((l) => /sent to HPD on|emailed them PDFs|paperwork on record/i.test(l.text)) || row.sentAt || row.steps.sent.done ? <SentPaperwork omo={row.omo} /> : null}
               <p className="fc-found-next" data-hpd-smoke="fc-found-next">👉 {f.advice.text}</p>
               {f.advice.action === "resend" ? <a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>📤 Open the paperwork and send it</a>
                 : f.advice.action === "make" ? <a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, f.advice.outcome || "")} onClick={() => rememberSend(row)}>📄 Make it ({f.advice.outcome?.replace(/_/g, " ")})</a>

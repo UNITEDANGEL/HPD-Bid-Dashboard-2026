@@ -250,6 +250,63 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       return reply({ days, checkedAt: new Date().toISOString(), sent: sent.map((m) => ({ ...m, files: files.has(m.id) })), received });
     }
 
+    // "See what you sent" (owner, 20 Oct: "I need a link to see and confirm the paperwork that was sent, not just the
+    // dates"): the owner's sent emails naming a job that carry PDFs (read-only), newest first, and one PDF from one of
+    // them. Only to the signed-in owner, like the rest of the private data.
+    const pdfParts = (payload) => {
+      const out = [];
+      const walk = (p) => {
+        if (!p) return;
+        const name = String(p.filename || "");
+        if ((p.mimeType === "application/pdf" || /\.pdf$/i.test(name)) && (p.body?.attachmentId || p.body?.data)) out.push({ name: name || "document.pdf", size: Number(p.body?.size) || 0, attachmentId: p.body?.attachmentId || "", data: p.body?.data || "" });
+        for (const c of p.parts || []) walk(c);
+      };
+      walk(payload);
+      return out;
+    };
+    if (action === "hpd-sent") {
+      const body = await request.json().catch(() => null);
+      const omo = String(body?.omo || "").toUpperCase();
+      if (!/^[A-Z]{2}\d{5}$/.test(omo)) fail("Invalid job number.", 400);
+      const listed = await call(`${GMAIL_API}?q=${encodeURIComponent(`in:sent ${omo} has:attachment`)}&maxResults=10`);
+      if (listed.status === 403) fail("Seeing what you sent needs read access to email: on the Storage page tap Disconnect, then Connect, and allow reading email.", 403);
+      if (!listed.ok) fail(`Couldn't read your email (HTTP ${listed.status}).`);
+      const ids = ((await listed.json()).messages || []).map((m) => m.id).filter(validId);
+      const emails = [];
+      for (const id of ids) {
+        const got = await call(`${GMAIL_API}/${encodeURIComponent(id)}?format=full`);
+        if (!got.ok) continue;
+        const m = await got.json();
+        const header = (name) => String((m.payload?.headers || []).find((h) => String(h.name).toLowerCase() === name)?.value || "");
+        const files = pdfParts(m.payload).map((f, i) => ({ i, name: f.name.slice(0, 120), size: f.size }));
+        if (!files.length) continue;
+        emails.push({ id, threadId: String(m.threadId || ""), at: new Date(Number(m.internalDate) || Date.parse(header("date")) || 0).toISOString(), to: header("to").slice(0, 200), subject: header("subject").slice(0, 200), files });
+      }
+      emails.sort((a, b) => b.at.localeCompare(a.at));
+      return reply({ omo, emails });
+    }
+    if (action === "hpd-sent-pdf") {
+      const body = await request.json().catch(() => null);
+      const id = String(body?.id || "");
+      const i = Number(body?.i);
+      if (!validId(id) || !Number.isInteger(i) || i < 0 || i > 50) fail("Invalid file request.", 400);
+      const got = await call(`${GMAIL_API}/${encodeURIComponent(id)}?format=full`);
+      if (got.status === 403) fail("Seeing what you sent needs read access to email.", 403);
+      if (!got.ok) fail(`Couldn't read that email (HTTP ${got.status}).`);
+      const part = pdfParts((await got.json()).payload)[i];
+      if (!part) fail("That PDF is not in the email.", 404);
+      let data = part.data;
+      if (!data) {
+        const a = await call(`${GMAIL_API}/${encodeURIComponent(id)}/attachments/${encodeURIComponent(part.attachmentId)}`);
+        if (!a.ok) fail(`Couldn't open the PDF (HTTP ${a.status}).`);
+        data = String((await a.json()).data || "");
+      }
+      const bin = atob(data.replace(/-/g, "+").replace(/_/g, "/"));
+      const bytes = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+      return new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
+    }
+
     if (action === "hpd-draft") {
       // An AI-written reply for the 24 / 72-hour board, for the owner to read and edit. Never sends anything.
       const facts = draftFacts(await request.json().catch(() => null));

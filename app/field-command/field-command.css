@@ -3148,3 +3148,27 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-board-sum span.is-quiet { border-color: #f59e0b; }
 .fc-board-sum span small { display: block; margin-top: 2px; font: 800 11.5px system-ui, sans-serif; color: #fbbf24; }
 .fc-batch-open.is-nudge { background: #f59e0b !important; color: #1c1917 !important; }
+
+/* One banner for every notification (20 Oct), colored by kind. */
+.fc-hpd-ping.is-good { border-color: #22c55e !important; }
+.fc-hpd-ping.is-bad { border-color: #ef4444 !important; }
+.fc-hpd-ping.is-new { border-color: #f59e0b !important; }
+.fc-hpd-ping.is-urgent { border-color: #f97316 !important; }
+
+/* See what you sent (20 Oct): the PDFs you emailed for the job, opened right here. */
+.fc-sent-open { display: block; width: 100%; min-height: 46px; margin: 8px 0 4px; border-radius: 12px; border: 2px solid #60a5fa; background: #0b1b33; color: #dbeafe; font: 900 15.5px system-ui, sans-serif; }
+.fc-sent-open.is-light { background: #eff6ff; color: #1e3a8a; }
+.fc-sent { margin: 8px 0; padding: 10px; border-radius: 12px; border: 1px solid #60a5fa; background: #0b1b33; color: #e2e8f0; }
+.fc-sent.is-light { background: #f8fafc; color: #0f172a; }
+.fc-sent-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fc-sent-head button { min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #94a3b8; background: transparent; color: inherit; font: 800 13px system-ui; }
+.fc-sent ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+.fc-sent li p { margin: 0; font: 700 14px system-ui, sans-serif; }
+.fc-sent li small { display: block; opacity: .8; font: 600 12.5px system-ui, sans-serif; }
+.fc-sent-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.fc-sent-files button, .fc-sent-files a { min-height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid #60a5fa; background: #1d4ed8; color: #fff; font: 800 13.5px system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; }
+.fc-sent-files a { background: transparent; color: inherit; }
+.fc-sent-files button.is-on { background: #16a34a; border-color: #16a34a; }
+.fc-sent-msg { margin: 6px 0 0; font: 700 13.5px system-ui, sans-serif; }
+.fc-sent-pdf { margin-top: 8px; }
+.fc-sent-pdf > a { display: inline-block; margin-top: 4px; color: inherit; font: 800 13px system-ui; }

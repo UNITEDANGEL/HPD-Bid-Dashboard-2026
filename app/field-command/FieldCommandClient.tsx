@@ -45,11 +45,12 @@ import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
 import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
-import { buildBoard, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
+import { buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
-import { chimeMuted, playChime, setChimeMuted, unlockChime } from "../../lib/chime";
+import { chimeMuted, notify, playChime, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import NoticeBoard from "./NoticeBoard";
+import SentPaperworkLink from "./SentPaperwork";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
@@ -1234,7 +1235,16 @@ export default function FieldCommandClient() {
       const day = (offset: number) => new Date(Date.now() + offset * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
       const nowMin = (() => { const [h, m] = new Date().toLocaleTimeString("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number); return h * 60 + m; })();
       const minutes = (t: string) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
-      const bids: { bidDue: string; bidDueTime: string }[] = Array.isArray(d?.bids) ? d.bids : [];
+      const bids: { bidDue: string; bidDueTime: string; omo?: string; address?: string }[] = Array.isArray(d?.bids) ? d.bids : [];
+      try {
+        const raw = localStorage.getItem("hpd-seen-invites");
+        const seen = new Set<string>(raw ? JSON.parse(raw) : []);
+        const keys = bids.filter((b) => b.omo && b.bidDue >= day(0)).map((b) => ({ key: `${b.omo}|${b.bidDue}`, b }));
+        const fresh = keys.filter((k) => !seen.has(k.key));
+        for (const k of keys) seen.add(k.key);
+        localStorage.setItem("hpd-seen-invites", JSON.stringify([...seen].slice(-600)));
+        if (raw && fresh.length) notify({ kind: "new", go: "bids", omo: fresh[0].b.omo, title: fresh.length === 1 ? `New invitation to bid · ${fresh[0].b.omo}` : `${fresh.length} new invitations to bid`, text: fresh.length === 1 ? `${fresh[0].b.address || ""} · due ${fresh[0].b.bidDue.slice(5).replace("-", "/")} ${fresh[0].b.bidDueTime}` : fresh.slice(0, 4).map((k) => k.b.omo).join(", ") });
+      } catch { /* private mode */ }
       setBidsDue({
         today: bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin).length,
         tomorrow: bids.filter((b) => b.bidDue === day(1)).length,
@@ -1590,12 +1600,35 @@ export default function FieldCommandClient() {
     ].filter((m) => !t.messages.some((x) => Math.abs(Date.parse(x.at) - Date.parse(m.at)) < 90000 && x.mine === m.mine));
     return extra.length ? { ...t, messages: [...t.messages, ...extra] } : t;
   });
-  const [hpdPing, setHpdPing] = useState<{ count: number; subject: string; omo: string } | null>(null);
+  // The banner for every notification (new / reply email from HPD, fax confirmed or failed, new invitation, a notice
+  // running out of time), with its ring (owner, 20 Oct: "ring for all notifications").
+  const [ping, setPing] = useState<(AppNotice & { at: number }) | null>(null);
+  // Good news and new invitations step aside by themselves (they can sit over an open bid); replies, failed faxes and
+  // deadlines stay until you close them.
+  useEffect(() => {
+    if (!ping || (ping.kind !== "good" && ping.kind !== "new")) return;
+    const at = ping.at;
+    const t = window.setTimeout(() => setPing((p) => (p && p.at === at ? null : p)), ping.kind === "good" ? 6000 : 12000);
+    return () => window.clearTimeout(t);
+  }, [ping]);
+  const setHpdPing = (p: { count: number; subject: string; omo: string; from?: string } | null) => {
+    if (!p) { setPing(null); return; }
+    setPing({ kind: "email", go: "board", omo: p.omo, at: Date.now(), title: `${p.count === 1 ? "New email from HPD" : `${p.count} new emails from HPD`}${p.omo ? ` · ${p.omo}` : ""}`, text: `${p.from ? `${p.from}: ` : ""}${p.subject}`.slice(0, 110) });
+  };
+  useEffect(() => {
+    const on = (e: Event) => { const n = (e as CustomEvent<AppNotice>).detail; if (!n?.title) return; setPing({ ...n, at: Date.now() }); playChime(n.kind); };
+    window.addEventListener("hpd-notify", on);
+    // iPhone mutes sound after the app was in the background: every touch unlocks it again.
+    const unlock = () => unlockChime();
+    document.addEventListener("pointerdown", unlock, { passive: true });
+    document.addEventListener("touchend", unlock, { passive: true });
+    return () => { window.removeEventListener("hpd-notify", on); document.removeEventListener("pointerdown", unlock); document.removeEventListener("touchend", unlock); };
+  }, []);
   const [chimeOff, setChimeOff] = useState(false);
   useEffect(() => {
     if (!threads) return;
     try {
-      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "" })));
+      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "", from: senderName(m.from || "") })));
       const raw = localStorage.getItem("hpd-seen-thread-msgs");
       const seen = new Set<string>(raw ? JSON.parse(raw) : []);
       const fresh = recent.filter((m) => !seen.has(m.key));
@@ -1603,8 +1636,8 @@ export default function FieldCommandClient() {
       localStorage.setItem("hpd-seen-thread-msgs", JSON.stringify([...seen].slice(-800)));
       if (raw && fresh.length) {
         const newest = [...fresh].sort((a, b) => b.at.localeCompare(a.at))[0];
-        setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omo });
-        playChime();
+        setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omo, from: newest.from });
+        playChime("email");
       }
     } catch { /* private mode */ }
   }, [threadsAt]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1634,7 +1667,7 @@ export default function FieldCommandClient() {
         if (seenRaw && fresh.length) {
           const newest = [...fresh].sort((a: ScanMsg, b: ScanMsg) => b.at.localeCompare(a.at))[0];
           setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omos?.[0] || "" });
-          playChime();
+          playChime("email");
         }
       } catch { /* private mode */ }
       const withFiles = (d.sent || []).filter((m: ScanMsg) => m.files).length;
@@ -1656,10 +1689,8 @@ export default function FieldCommandClient() {
     const timer = window.setInterval(tick, 300000);
     const onShow = () => { if (document.visibilityState === "visible" && threads && (!scan || Date.now() - Date.parse(scan.checkedAt) > 120000)) void runScan(); };
     document.addEventListener("visibilitychange", onShow);
-    const unlock = () => unlockChime();
-    document.addEventListener("pointerdown", unlock, { once: true });
     if (threads && !scan) void runScan();
-    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onShow); document.removeEventListener("pointerdown", unlock); };
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onShow); };
   }, [threads === null || threads === undefined ? 0 : 1, scan?.checkedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   // Opening the board checks your email by itself (at most every 10 minutes).
   useEffect(() => {
@@ -1673,6 +1704,19 @@ export default function FieldCommandClient() {
   const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
   const boardUrgent = urgentRows(boardRows);
+  // A notice running out of time rings once (under 6 hours, nothing sent yet).
+  useEffect(() => {
+    if (!boardUrgent.length) return;
+    try {
+      const rang = new Set<string>(JSON.parse(localStorage.getItem("hpd-rang-urgent") || "[]"));
+      const fresh = boardUrgent.filter((r) => !rang.has(r.key));
+      if (!fresh.length) return;
+      for (const r of fresh) rang.add(r.key);
+      localStorage.setItem("hpd-rang-urgent", JSON.stringify([...rang].slice(-300)));
+      const h = Math.max(0, Math.round(hoursLeft(fresh[0], Date.now())));
+      notify({ kind: "urgent", go: "board", omo: fresh[0].omo, title: fresh.length === 1 ? `${fresh[0].omo}: ${h <= 0 ? "notice overdue" : `${h} h left on the notice`}` : `${fresh.length} notices under 6 hours`, text: "Nothing sent yet: answer them now" });
+    } catch { /* private mode */ }
+  }, [boardUrgent.map((r) => r.key).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   // For the morning summary: notices due by tonight (or overdue) with nothing sent, missing documents waiting.
   const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
   const dueToday = boardOpenRows.filter((r) => r.kind === "ppn" && !r.steps.sent.done && r.dueAt && Date.parse(r.dueAt) <= endOfToday.getTime()).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
@@ -3367,7 +3411,7 @@ export default function FieldCommandClient() {
                       {due ? <p className="fc-prio-card-due" data-hpd-smoke="fc-prio-card-due">⏱ {due}</p> : <p className="fc-prio-card-due">Asked {new Date(it.askedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>}
                       <p className="fc-prio-card-want">{it.want}</p>
                       {(() => { const f = noticeFindings({ omo, job: selectedJob as Record<string, unknown>, sent: followRef.current?.sent?.[omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[omo], rejection: rj || null }); return (
-                        <div className="fc-found is-light" data-hpd-smoke="fc-prio-found"><b>🔎 Found on record</b><ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}>{l.icon} {l.text}</li>)}</ul><p className="fc-found-next">👉 {f.advice.text}</p></div>
+                        <div className="fc-found is-light" data-hpd-smoke="fc-prio-found"><b>🔎 Found on record</b><ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}>{l.icon} {l.text}</li>)}</ul>{f.lines.some((l) => /sent to HPD on|emailed them PDFs/i.test(l.text)) ? <SentPaperworkLink omo={omo} light /> : null}<p className="fc-found-next">👉 {f.advice.text}</p></div>
                       ); })()}
                       <p className="fc-prio-card-q">What happened? Pick it, put the date, and the affidavit (copy + original) is made for you to check:</p>
                       <div className="fc-prio-outcomes" data-hpd-smoke="fc-prio-outcomes">
@@ -4462,15 +4506,19 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {hpdPing ? (
-        <div className="fc-hpd-ping" role="status" data-hpd-smoke="fc-hpd-ping">
-          <button type="button" className="fc-hpd-ping-main" onClick={() => { setHpdPing(null); closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }}>
-            <span aria-hidden="true">📩</span>
-            <b>{hpdPing.count === 1 ? "New email from HPD" : `${hpdPing.count} new emails from HPD`}{hpdPing.omo ? ` · ${hpdPing.omo}` : ""}</b>
-            <small>{hpdPing.subject.slice(0, 90)}</small>
+      {ping ? (
+        <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind}>
+          <button type="button" className="fc-hpd-ping-main" onClick={() => {
+            setPing(null);
+            if (ping.go === "bids") { closeScreens("bids"); setBidsOpen(true); }
+            else if (ping.go === "board") { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }
+          }}>
+            <span aria-hidden="true">{{ email: "📩", good: "✅", bad: "❌", new: "🧾", urgent: "⏰" }[ping.kind]}</span>
+            <b>{ping.title}</b>
+            {ping.text ? <small>{ping.text.slice(0, 110)}</small> : null}
           </button>
-          <button type="button" aria-label={chimeOff ? "Turn the sound on" : "Turn the sound off"} data-hpd-smoke="fc-chime-toggle" onClick={() => { const off = !chimeOff; setChimeOff(off); setChimeMuted(off); if (!off) playChime(); }}>{chimeOff ? "🔕" : "🔔"}</button>
-          <button type="button" aria-label="Close" onClick={() => setHpdPing(null)}>✕</button>
+          <button type="button" aria-label={chimeOff ? "Turn the sound on" : "Turn the sound off"} data-hpd-smoke="fc-chime-toggle" onClick={() => { const off = !chimeOff; setChimeOff(off); setChimeMuted(off); if (!off) playChime(ping.kind); }}>{chimeOff ? "🔕" : "🔔"}</button>
+          <button type="button" aria-label="Close" onClick={() => setPing(null)}>✕</button>
         </div>
       ) : null}
       {boardOpen ? (

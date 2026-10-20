@@ -39,7 +39,10 @@ try {
   const stillOpenNow = (b) => b.bidDue > today || (b.bidDue === today && mins(b.bidDueTime) > clockNow[0] * 60 + clockNow[1]);
   // Late in the day all of today's invitations can be past due: then the test moves the real ones to
   // tomorrow (test only), so the full flow always runs on real invitations and their PDFs.
-  const real = fetched.bids.filter(stillOpenNow).length >= 3 ? fetched : { ...fetched, bids: fetched.bids.map((b) => (stillOpenNow(b) ? b : { ...b, bidDue: tomorrow })) };
+  // Bids due within 3 hours move to tomorrow too: the flow (failed fax -> automatic resend, which only happens before
+  // the deadline) must not race a real 11:30 deadline (20 Oct: CI ran at 11:29).
+  const soon = (b) => b.bidDue === today && mins(b.bidDueTime) - (clockNow[0] * 60 + clockNow[1]) < 180;
+  const real = { ...fetched, bids: fetched.bids.map((b) => (stillOpenNow(b) && !soon(b) ? b : { ...b, bidDue: tomorrow })) };
   const past = [{ ...real.bids[0], omo: "PAST01", bidDue: yesterday, bidDueTime: "11:00 AM" }, { ...real.bids[0], omo: "PAST02", bidDue: today, bidDueTime: "12:01 AM" }];
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids], unread: [{ file: 'ER09999_101326.pdf', omo: 'ER09999', why: 'no bid due date' }] } }));
   // Fax: the request is checked and answered here; status is "confirmed" for the first bid, "failed" for the second.
@@ -123,7 +126,9 @@ try {
   // HPD's text is folded away (the page pictures show it): "Show HPD's text" opens it.
   await sheet.locator('[data-hpd-smoke="fc-bid-text-toggle"]').click();
   const shownDesc = (await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim();
-  assert.equal(shownDesc.replace(/\s+/g, " "), bid.description.replace(/\s+/g, " ").trim(), "nothing missing or changed");
+  // A phone in HPD's text is hidden in the public copy and shown when signed in: compare without phone numbers.
+  const noPhone = (t) => t.replace(/\(phone: sign in to see\)|\(?\b\d{3}\)?[ .-]?\d{3}[ .-]\d{4}\b/g, "#").replace(/\s+/g, " ").trim();
+  assert.equal(noPhone(shownDesc), noPhone(bid.description), "nothing missing or changed");
   // The invitation link opens HPD's PDF through the signed-in private route (fetched like the phone does).
   const viewHref = await sheet.locator('[data-hpd-smoke="fc-bid-view"]').getAttribute("href");
   assert.match(viewHref, /^\/api\/private\/itb\//);

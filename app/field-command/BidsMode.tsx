@@ -28,6 +28,7 @@ import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, 
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
+import { notify } from "../../lib/chime";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -398,6 +399,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           const latest = recordsRef.current[rec.omo];
           if (latest && latest.sentAt === rec.sentAt && latest.status === "sent") {
             await update(withLog({ ...latest, status: result.status, confirmedAt: result.at, faxNote: result.subject, updatedAt: new Date().toISOString() }, result.status === "confirmed" ? "HumbleFax: Successful Transmission" : `HumbleFax: FAX FAILED (${result.subject})`, result.at || new Date().toISOString()));
+            notify(result.status === "confirmed"
+              ? { kind: "good", go: "bids", omo: rec.omo, title: `Bid fax went through · ${rec.omo}`, text: `${money2(latest.sentPrice || latest.price)} · confirmed by HumbleFax` }
+              : { kind: "bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `${result.subject || "HumbleFax"} · the app sends it again to the next HPD line` });
           }
           setFaxCheckNote("");
         } else if (result.status === "unknown") {
@@ -520,7 +524,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const result = await checkBidFax(nb.omo, nb.faxedAt!);
         if (result.status !== "confirmed" && result.status !== "failed") continue;
         const latest = noBidsRef.current[nb.omo];
-        if (latest && latest.faxedAt === nb.faxedAt && latest.faxStatus === "sent") setNoBids(await saveNoBid({ ...latest, faxStatus: result.status, faxNote: result.subject, confirmedAt: result.at }, HPD_STATUS_WORKER_URL));
+        if (latest && latest.faxedAt === nb.faxedAt && latest.faxStatus === "sent") {
+          setNoBids(await saveNoBid({ ...latest, faxStatus: result.status, faxNote: result.subject, confirmedAt: result.at }, HPD_STATUS_WORKER_URL));
+          notify(result.status === "confirmed" ? { kind: "good", go: "bids", omo: nb.omo, title: `NO BID fax went through · ${nb.omo}` } : { kind: "bad", go: "bids", omo: nb.omo, title: `NO BID fax FAILED · ${nb.omo}`, text: "Open it and send it to a backup line" });
+        }
       }
     };
     void checkAll();

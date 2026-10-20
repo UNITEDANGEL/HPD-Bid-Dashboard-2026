@@ -3,6 +3,26 @@
   "versions": [
     {
       "date": "Oct 20, 2026",
+      "title": "🔔 A ring for every notification",
+      "items": [
+        "Rings and a banner when HPD writes or replies (with who it's from, e.g. Deoranie Gafur), when a new invitation to bid comes in, when a bid or NO BID fax goes through or fails, and when a 24-hour notice drops under 6 hours.",
+        "A different tone for each: two notes for an email, a rising tone for a fax that went through, a low tone for a failed fax, a double ping for a new invitation, three beeps for a notice running out of time.",
+        "Tap the banner to go straight there. 🔔 / 🔕 on the banner turns the sound on or off.",
+        "Fixed: on the iPhone the sound stopped after the app had been in the background; now every touch keeps it working.",
+        "The app has to be open to ring (a ring with the phone locked needs phone notifications: ask for it)."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
+      "title": "📄 See what you sent",
+      "items": [
+        "When Found on record says the paperwork was sent, tap 📄 See what you sent: the emails you sent for that job (date, to whom) with their PDFs, read from your Gmail.",
+        "Tap a PDF and its pages open right there (tap a page for full screen, pinch to zoom). Open in Gmail opens the email itself.",
+        "On the vendor tracking board and on the priority card of a job."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
       "title": "🚫 No bid now fills the form and faxes HPD",
       "items": [
         "Tap 🚫 No bid and pick why: the invitation is filled in right away with NO BID where the price goes (page 1, page total and bid amount), company, signature and date like a bid.",
