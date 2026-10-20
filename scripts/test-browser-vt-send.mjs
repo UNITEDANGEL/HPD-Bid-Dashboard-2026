@@ -44,6 +44,10 @@ try {
 
   // The paperwork page: sign (test squiggles), notary approves, the package is made.
   await page.waitForURL(/\/paperwork\//);
+  // The job was awarded months ago and the work date is today: the old-job date check asks first (20 Oct); here the
+  // dates are right (the job is being finished now), so say so.
+  const oldDates = page.locator('[data-hpd-smoke="paperwork-old-dates-ok-btn"]');
+  if (await oldDates.waitFor({ timeout: 8000 }).then(() => true).catch(() => false)) await oldDates.click();
   await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
   await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
   await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor();

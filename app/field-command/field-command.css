@@ -3172,3 +3172,14 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-sent-msg { margin: 6px 0 0; font: 700 13.5px system-ui, sans-serif; }
 .fc-sent-pdf { margin-top: 8px; }
 .fc-sent-pdf > a { display: inline-block; margin-top: 4px; color: inherit; font: 800 13px system-ui; }
+
+/* Phone alerts switch (20 Oct). */
+.fc-push { display: grid; gap: 8px; margin: 0 0 12px; padding: 14px; border-radius: 16px; background: #0b1b33; border: 2px solid #60a5fa; color: #e2e8f0; }
+.fc-push.is-on { border-color: #22c55e; }
+.fc-push b { font: 900 17px system-ui, sans-serif; }
+.fc-push p { margin: 0; font: 600 14px/1.4 system-ui, sans-serif; }
+.fc-push-on, .fc-push-row button { min-height: 52px; border: 0; border-radius: 14px; background: #2563eb; color: #fff; font: 900 16px system-ui, sans-serif; }
+.fc-push-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.fc-push-row button.is-off { background: #334155; padding: 0 16px; }
+.fc-push-note { color: #fde68a !important; }
+.fc-push-msg { color: #bbf7d0 !important; font-weight: 800 !important; }

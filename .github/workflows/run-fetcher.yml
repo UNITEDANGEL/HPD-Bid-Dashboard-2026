@@ -102,6 +102,15 @@ jobs:
           HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
         run: python scripts/fetch_hpd_conversations.py --days 180
 
+      # Phone alerts (20 Oct): anything new (HPD wrote / replied, a new invitation, a 24-hour notice under 6 hours) ->
+      # an alert to every phone that turned them on. Needs the VAPID_PRIVATE_KEY secret; without it, nothing is sent.
+      - name: Send phone alerts
+        continue-on-error: true
+        env:
+          HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: node scripts/send-push.mjs
+
       - name: Commit fetcher output
         if: always()
         shell: bash
@@ -130,6 +139,9 @@ jobs:
           # New jobs' ITB PDFs and page-3 pictures (job card "Job documents"), and the manifest that
           # points the app at them. Without these, recent jobs linked to files that didn't exist.
           git add public/data/itb_source_manifest.json
+
+          # What phone alerts were already sent (short hashes only).
+          if [ -f data/push_state.json ]; then git add data/push_state.json; fi
 
           # Upcoming invitations to bid for the map (not awarded yet).
           if [ -f data/upcoming_bids.json ]; then

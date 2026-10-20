@@ -60,3 +60,13 @@
 .pkg-fix-next { display: grid; gap: 6px; margin-top: 10px; padding: 10px; border-radius: 12px; background: #eff6ff; border: 1px solid #93c5fd; }
 .pkg-fix-next small { font: 800 13px system-ui, sans-serif; color: #1e3a8a; }
 .pkg-fix-next a { display: grid; place-items: center; min-height: 52px; border-radius: 12px; font: 900 16px system-ui, sans-serif; text-decoration: none; }
+
+/* Old-job date check (20 Oct). */
+.paperwork-old-dates { display: grid; gap: 8px; margin: 8px 0; padding: 12px; border-radius: 12px; background: #fffbeb; border: 2px solid #f59e0b; color: #78350f; }
+.paperwork-old-dates b { font: 900 16px system-ui, sans-serif; }
+.paperwork-old-dates p { margin: 0; font: 700 14.5px/1.4 system-ui, sans-serif; }
+.paperwork-old-dates .paperwork-old-dates-tip { font-weight: 600; font-size: 13px; }
+.paperwork-old-dates button { min-height: 48px; font-size: 15px; }
+.paperwork-old-dates-ok { color: #15803d; font-weight: 800; }
+.paperwork-old-dates, .paperwork-old-dates p, .paperwork-old-dates b { color: #78350f !important; }
+.paperwork-old-dates [data-hpd-smoke="paperwork-old-dates-ok-btn"] { background: #fff !important; color: #78350f !important; border: 2px solid #b45309 !important; border-radius: 12px; font-weight: 900; }

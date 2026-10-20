@@ -25,6 +25,7 @@ import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/fi
 import { visitRecordText } from "../../lib/visit-record";
 import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync";
 import { usePinchZoom } from "../../lib/use-pinch-zoom";
+import { oldJobDateCheck } from "../../lib/old-job-dates";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -1360,6 +1361,8 @@ export default function PaperworkPage() {
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pdfZoom = usePinchZoom(); // pinch / double-tap zoom on the pages (the app itself doesn't zoom)
+  // Old-job date check (20 Oct, after EP27382): the dates the owner said are right, for this job.
+  const [datesOkKey, setDatesOkKey] = useState("");
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
   // Drive links of the files saved on approve, so a resent email can still link a big video.
   const deliveredFileLinksRef = useRef<Record<string, string>>({});
@@ -1876,6 +1879,11 @@ export default function PaperworkPage() {
     const datesProblem = useWorkTemplate ? workDatesProblem(activeForm) : "";
     if (datesProblem) {
       setPdfStatus(datesProblem);
+      return null;
+    }
+    const oldDates = useWorkTemplate && !correction ? oldJobDateCheck({ omo: jobId, award: getJobDate(selectedJob, "award"), start: activeForm.workStart, complete: activeForm.workComplete || activeForm.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") }) : null;
+    if (oldDates && datesOkKey !== oldDates.key) {
+      setPdfStatus(`Check the work dates first: ${oldDates.text} Fix them, or tap "These dates are right".`);
       return null;
     }
 
@@ -5393,6 +5401,21 @@ export default function PaperworkPage() {
                 </label>
               </div>
               {workDatesProblem(form) ? <small data-hpd-smoke="paperwork-work-dates-status">{workDatesProblem(form)}</small> : null}
+              {(() => {
+                if (correction) return null;
+                const old = oldJobDateCheck({ omo: selectedId || "", award: getJobDate(selectedJob, "award"), start: form.workStart, complete: form.workComplete || form.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") });
+                if (!old) return null;
+                if (datesOkKey === old.key) return <small className="paperwork-old-dates-ok" data-hpd-smoke="paperwork-old-dates-ok">✓ You said these dates are right ({old.work}).</small>;
+                return (
+                  <div className="paperwork-old-dates" role="alert" data-hpd-smoke="paperwork-old-dates">
+                    <b>⚠️ Check the dates</b>
+                    <p>{old.text}</p>
+                    <p className="paperwork-old-dates-tip">Look at your photos or WhatsApp for the day you did it. HPD asks to confirm dates that don&apos;t match.</p>
+                    {old.suggest ? <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-old-dates-use" onClick={() => { update("workStart", old.suggest!.start); update("workComplete", old.suggest!.complete); }}>Use HPD&apos;s dates: {old.suggest.start} – {old.suggest.complete}</button> : null}
+                    <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-old-dates-ok-btn" onClick={() => setDatesOkKey(old.key)}>These dates are right</button>
+                  </div>
+                );
+              })()}
               {outcome === "partial_work_completed" ? (
                 <label className="paperwork-field">
                   What work was completed? (invoice description)

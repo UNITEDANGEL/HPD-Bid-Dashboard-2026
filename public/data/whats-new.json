@@ -3,6 +3,25 @@
   "versions": [
     {
       "date": "Oct 20, 2026",
+      "title": "📱 Phone alerts (even with the app closed)",
+      "items": [
+        "Alerts page (⚠️ on the map) → 🔔 Turn on phone alerts → Allow.",
+        "On the iPhone it works in the app on your Home Screen (Safari → Share → Add to Home Screen, then open HPD Field from the icon).",
+        "You get an alert when HPD writes or replies (with who), a new invitation to bid comes in, or a 24-hour notice drops under 6 hours, even with the phone locked. Checked every 10 minutes.",
+        "Tap the alert and the app opens there. Send a test alert / Turn off on the same page."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
+      "title": "⚠️ Old-job date check",
+      "items": [
+        "Making paperwork for a job awarded months ago with a work date long after it (like EP27382: awarded 5/21/2025, dated 2026) now stops and asks: Was the work really done then?",
+        "Use HPD's dates fills HPD's start / complete-by dates in one tap; These dates are right lets your dates through.",
+        "Nothing is made until you pick one. Corrections keep the dates you already sent."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
       "title": "🔔 A ring for every notification",
       "items": [
         "Rings and a banner when HPD writes or replies (with who it's from, e.g. Deoranie Gafur), when a new invitation to bid comes in, when a bid or NO BID fax goes through or fails, and when a 24-hour notice drops under 6 hours.",

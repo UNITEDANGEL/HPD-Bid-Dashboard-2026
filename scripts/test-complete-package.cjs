@@ -23,6 +23,7 @@ const noAccess = loadTs(path.join(root, 'lib/no-access.ts'));
 const tenantContact = loadTs(path.join(root, 'lib/tenantContact.ts'));
 const materials = loadTs(path.join(root, 'lib/invoice-materials.ts'));
 const descriptionQuality = loadTs(path.join(root, 'lib/description-quality.ts'));
+const oldJobDates = loadTs(path.join(root, 'lib/old-job-dates.ts')); // the old-job date check (20 Oct)
 // pdf-lib rejects objects created inside a vm context, so the invoice drawer loads in this realm.
 require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
 const { drawInvoicePage } = require(path.join(root, 'lib/invoice-pdf.ts'));
@@ -37,6 +38,7 @@ async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
   const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, ...descriptionQuality, drawInvoicePage, checkPaperwork, signatureBytes, visitRecordText, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+    ...oldJobDates, correction: null, datesOkKey: '',
     emailMediaCopies: async rows => rows,
     fitEmailVideos: async rows => rows,
     packageBusyRef: { current: false }, setPackageBusy() {},

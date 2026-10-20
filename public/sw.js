@@ -61,3 +61,27 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// Phone alerts (20 Oct): an alert from the 10-minute fetcher (scripts/send-push.mjs) -- HPD replied, a new invitation to
+// bid, a notice running out of time -- shows even when the app is closed; tapping it opens the app there.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { title: event.data ? event.data.text() : "HPD Field" }; }
+  const title = data.title || "HPD Field";
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || "",
+    tag: data.tag || undefined,
+    renotify: !!data.tag,
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    data: { url: data.url || "/map/?view=all&map=1" },
+  }));
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/map/", self.location.origin).href;
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+    for (const w of windows) { if (w.url.startsWith(self.location.origin)) { w.navigate(url).catch(() => {}); return w.focus(); } }
+    return self.clients.openWindow(url);
+  }));
+});

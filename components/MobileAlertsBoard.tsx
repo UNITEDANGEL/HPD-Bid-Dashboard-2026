@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import FieldTabBar from "./FieldTabBar";
+import PhoneAlerts from "./PhoneAlerts";
 import "../app/field-command/field-command.css";
 import type { JobRecord } from "../lib/types";
 import { jobQueue, savedJobStatus } from "../lib/job-queue";
@@ -118,6 +119,7 @@ export function MobileAlertsBoard({ jobs: sourceJobs }: { jobs: JobRecord[] }) {
       </header>
 
       <div className="fc-jobs-list">
+        <PhoneAlerts />
         {!overdue.length ? (
           <p className="fc-jobs-empty">No jobs are over {OVERDUE_THRESHOLD_DAYS} days old right now. Nice work.</p>
         ) : (

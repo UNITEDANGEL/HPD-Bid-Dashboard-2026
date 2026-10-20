@@ -1264,6 +1264,13 @@ export default function FieldCommandClient() {
     try { if (params.get("tab")) sessionStorage.setItem("hpd-bids-tab", String(params.get("tab"))); } catch {}
     try { window.history.replaceState(null, "", window.location.pathname); } catch {}
   }, []);
+  // A phone alert about HPD's email / a notice opens the vendor tracking board (…&board=1).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("board") !== "1") return;
+    setBoardShow("all");
+    setBoardOpen(true);
+    try { window.history.replaceState(null, "", window.location.pathname); } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
