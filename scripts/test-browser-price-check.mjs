@@ -28,12 +28,13 @@ try {
   await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 30000 });
   // A bid with a best price (needs past awards for its kind of work).
   let found = null;
-  for (let i = 0; i < Math.min(8, bids.length) && !found; i++) {
+  for (let i = 0; i < Math.min(14, bids.length) && !found; i++) {
     await list.locator("ol > li > button:first-child").nth(i).click();
     const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
     await sheet.waitFor({ timeout: 10000 });
     const best = sheet.locator('[data-hpd-smoke="fc-bid-best"] b');
-    if (await best.count().then((n) => n > 0) && await page.locator('[data-hpd-smoke="fc-bid-targets"]').count()) found = { sheet, best: Number((await best.first().innerText()).replace(/[^0-9]/g, "")) };
+    // The price notes need 5+ past awards (the 💡 Recommended line shows the same); with fewer the app only shows a rough guide.
+    if (await best.count().then((n) => n > 0) && await page.locator('[data-hpd-smoke="fc-bid-targets"]').count() && await sheet.locator('[data-hpd-smoke="fc-bid-reco"]').count()) found = { sheet, best: Number((await best.first().innerText()).replace(/[^0-9]/g, "")) };
     else await sheet.locator("header button").first().click();
   }
   assert.ok(found, "a bid with a best price");
