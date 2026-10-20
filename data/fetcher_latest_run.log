@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-20T19:15:58.491Z
+Fetcher run started: 2026-10-20T19:26:28.719Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,14 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/21 [00:00<?, ?it/s]Downloading COA messages:  10%|▉         | 2/21 [00:00<00:01, 15.35it/s]Downloading COA messages:  19%|█▉        | 4/21 [00:00<00:01, 15.20it/s]Downloading COA messages:  29%|██▊       | 6/21 [00:00<00:01, 14.61it/s]Downloading COA messages:  38%|███▊      | 8/21 [00:00<00:00, 14.28it/s]Downloading COA messages:  48%|████▊     | 10/21 [00:00<00:00, 14.56it/s]Downloading COA messages:  57%|█████▋    | 12/21 [00:00<00:00, 14.58it/s]Downloading COA messages:  67%|██████▋   | 14/21 [00:00<00:00, 14.60it/s]Downloading COA messages:  76%|███████▌  | 16/21 [00:01<00:00, 14.54it/s]Downloading COA messages:  86%|████████▌ | 18/21 [00:01<00:00, 14.70it/s]Downloading COA messages:  95%|█████████▌| 20/21 [00:01<00:00, 14.55it/s]Downloading COA messages: 100%|██████████| 21/21 [00:01<00:00, 14.66it/s]
-Geocoding COA addresses:   0%|          | 0/20 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 20/20 [00:00<00:00, 372827.02it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/20 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/20 [00:00<00:06,  3.08it/s]Fetching ITBs for COA OMOs:  10%|█         | 2/20 [00:00<00:05,  3.33it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 3/20 [00:01<00:06,  2.67it/s]Fetching ITBs for COA OMOs:  20%|██        | 4/20 [00:01<00:05,  2.90it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 5/20 [00:01<00:04,  3.11it/s]Fetching ITBs for COA OMOs:  30%|███       | 6/20 [00:01<00:04,  3.22it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 7/20 [00:02<00:03,  3.31it/s]Fetching ITBs for COA OMOs:  40%|████      | 8/20 [00:02<00:03,  3.40it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 9/20 [00:02<00:03,  3.36it/s]Fetching ITBs for COA OMOs:  50%|█████     | 10/20 [00:03<00:02,  3.40it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 11/20 [00:03<00:02,  3.46it/s]Fetching ITBs for COA OMOs:  60%|██████    | 12/20 [00:03<00:02,  3.56it/s]Fetching ITBs for COA OMOs:  65%|██████▌   | 13/20 [00:03<00:01,  3.64it/s]Fetching ITBs for COA OMOs:  70%|███████   | 14/20 [00:04<00:01,  3.55it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 15/20 [00:04<00:01,  3.49it/s]Fetching ITBs for COA OMOs:  80%|████████  | 16/20 [00:04<00:01,  3.55it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 17/20 [00:05<00:00,  3.50it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 18/20 [00:05<00:00,  3.55it/s]Fetching ITBs for COA OMOs:  95%|█████████▌| 19/20 [00:05<00:00,  3.51it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:06<00:00,  2.86it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:06<00:00,  3.27it/s]
+Downloading COA messages:   0%|          | 0/21 [00:00<?, ?it/s]Downloading COA messages:  10%|▉         | 2/21 [00:00<00:01, 16.51it/s]Downloading COA messages:  19%|█▉        | 4/21 [00:00<00:01, 15.42it/s]Downloading COA messages:  29%|██▊       | 6/21 [00:00<00:00, 16.27it/s]Downloading COA messages:  38%|███▊      | 8/21 [00:00<00:00, 16.15it/s]Downloading COA messages:  48%|████▊     | 10/21 [00:00<00:00, 16.08it/s]Downloading COA messages:  57%|█████▋    | 12/21 [00:00<00:00, 15.84it/s]Downloading COA messages:  67%|██████▋   | 14/21 [00:00<00:00, 14.90it/s]Downloading COA messages:  76%|███████▌  | 16/21 [00:01<00:00, 14.77it/s]Downloading COA messages:  86%|████████▌ | 18/21 [00:01<00:00, 15.03it/s]Downloading COA messages:  95%|█████████▌| 20/21 [00:01<00:00, 15.37it/s]Downloading COA messages: 100%|██████████| 21/21 [00:01<00:00, 15.50it/s]
+Geocoding COA addresses:   0%|          | 0/20 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 20/20 [00:00<00:00, 517815.31it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/20 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/20 [00:00<00:05,  3.56it/s]Fetching ITBs for COA OMOs:  10%|█         | 2/20 [00:00<00:04,  3.71it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 3/20 [00:00<00:04,  3.93it/s]Fetching ITBs for COA OMOs:  20%|██        | 4/20 [00:01<00:04,  3.92it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 5/20 [00:01<00:03,  3.90it/s]Fetching ITBs for COA OMOs:  30%|███       | 6/20 [00:03<00:13,  1.03it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 7/20 [00:04<00:10,  1.30it/s]Fetching ITBs for COA OMOs:  40%|████      | 8/20 [00:04<00:07,  1.60it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 9/20 [00:04<00:05,  1.93it/s]Fetching ITBs for COA OMOs:  50%|█████     | 10/20 [00:04<00:04,  2.26it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 11/20 [00:05<00:03,  2.57it/s]Fetching ITBs for COA OMOs:  60%|██████    | 12/20 [00:05<00:02,  2.88it/s]Fetching ITBs for COA OMOs:  65%|██████▌   | 13/20 [00:05<00:02,  3.19it/s]Fetching ITBs for COA OMOs:  70%|███████   | 14/20 [00:05<00:01,  3.29it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 15/20 [00:06<00:01,  3.50it/s]Fetching ITBs for COA OMOs:  80%|████████  | 16/20 [00:06<00:01,  3.59it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 17/20 [00:06<00:00,  3.75it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 18/20 [00:06<00:00,  3.79it/s]Fetching ITBs for COA OMOs:  95%|█████████▌| 19/20 [00:07<00:00,  3.73it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:07<00:00,  3.22it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:07<00:00,  2.63it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER08182: stored 465.00, COA 465.00
 Award amount check ER07315: stored 540.00, COA 540.00
 Award amount check ER07704: stored (none), COA (none)
 Award amount check ER07172: stored 870.00, COA 870.00
@@ -52,14 +53,14 @@ Award amount check ER07193: stored 890.00, COA 890.00
 Award amount check ER07281: stored 1890.00, COA 1890.00
 Award amount check ER07032: stored 440.00, COA 440.00
 Safe merge complete
-Master before: 691
+Master before: 692
 Incoming rows: 20
-Added new OMOs: 1
-Skipped existing OMOs: 19
+Added new OMOs: 0
+Skipped existing OMOs: 20
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 692
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -67,9 +68,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER08182 2144 PROSPECT AVENUE, 10457 40.848325 -73.885338 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -94,23 +94,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER08182 ER08182_102026123435.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER08182', 'Address': '2144 PROSPECT AVENUE, 10457', 'RecoveredFrom': 'ER08182_102026123435.pdf', 'Preview': ': LOCATION: AT APARTMRNT 3  -NYC HPD EMERGENCY OPE RATIONS DIVISION  ES SENTIAL SERVICE WORK LOCATION: AT APARMTENT 3  REPLACE LOCKING DEVICE AT LOWER SASH AT FIFTH ROOM FROM EAST AT NORTH >>  FIRE ESCAPE WINDOW MAKE ALL'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 691,
+  "rendered": 0,
+  "reused": 692,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -142,9 +140,9 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/06
-Upcoming bids: 25 not awarded yet (25 on the map), 13 received today, from 127 emails
+Upcoming bids: 27 not awarded yet (27 on the map), 15 received today, from 129 emails
 
-[0;93m2026-10-20 19:16:33.288041047 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+[0;93m2026-10-20 19:26:55.119785906 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
 
@@ -184,7 +182,7 @@ Reading 72 emails from HPD staff...
 Reading 69 emails you sent HPD staff...
 HPD requests: 44 OMOs HPD asked about (paperwork / status) from 72 staff emails since 2026/10/06
 
-[0;93m2026-10-20 19:22:55.232362478 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+[0;93m2026-10-20 19:31:33.551578219 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
 
@@ -196,7 +194,7 @@ HPD job status: 901 of 936 jobs found, 171 still open at HPD, 730 closed
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
-Market awards: 3725 awarded jobs with full descriptions (972 yours, 2753 other contractors) from 4118 invitations; 0 new descriptions kept tonight; 40038 awards in Open Data since 2025-01-01
+Market awards: 3725 awarded jobs with full descriptions (972 yours, 2753 other contractors) from 4120 invitations; 2 new descriptions kept tonight; 40038 awards in Open Data since 2025-01-01
 
 
 ========== Verify mapping ==========
@@ -284,13 +282,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-20T19:23:12.907Z
+Fetcher run finished: 2026-10-20T19:31:54.235Z
 {
   "fetchedCoaItems": 20,
   "fetchedItbItems": 20,
   "fetchedFinalJobRows": 20,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 19,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 20,
   "rawRows": 692,
   "rows2026": 641,
   "mapped2026": 641,
