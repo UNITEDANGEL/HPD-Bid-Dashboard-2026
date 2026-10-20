@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-20T14:52:00.000589+00:00",
+"generatedAt": "2026-10-20T15:01:47.543592+00:00",
 "since": "2026/10/06",
 "jobs": {
 "EN04541": [
@@ -594,6 +594,16 @@
 "file": "EO32548 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "EO32548",
+"via": "hpd-staff"
+}
+],
+"EO32701": [
+{
+"date": "2026-10-20",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EO32701 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: Missing Documents",
 "via": "hpd-staff"
 }
 ],
@@ -2832,6 +2842,14 @@
 "file": "VIDEO-2025-05-28-15-29-06.mp4",
 "outcome": "",
 "subject": "Fwd: OMO No: EP27382 Boro: Brooklyn Bldg Address: 447, EAST 45 STREET  DOOR CLOSER NEW",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-20",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EP27382 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: OMO No: EP27382 Boro: Brooklyn Bldg Address: 447, EAST 45 STREET DOOR CLOSER NEW",
 "via": "hpd-staff"
 }
 ],
