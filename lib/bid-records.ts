@@ -223,7 +223,29 @@ export function autoResendPlan(record: BidRecord, now = new Date()): { line: Fax
 }
 
 export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, previousPrice?: number, line: FaxLine = "main") {
-  const cover = bidFaxCover(bid, price, previousPrice);
+  return faxToHpd(bidFaxCover(bid, price, previousPrice), pdf, fileName, fetcher, line);
+}
+
+// "No bid" back to HPD (owner, 20 Oct): the invitation with NO BID on it. The owner's reason is not sent.
+export function noBidFaxCover(bid: { omo: string; address: string; borough?: string }) {
+  return {
+    subject: `NO BID - OMO ${bid.omo} - ${bid.address} - United Angel Construction Corp.`,
+    text: [
+      `NO BID for OMO ${bid.omo}`,
+      `${bid.address}${bid.borough ? `, ${bid.borough}` : ""}`,
+      "United Angel Construction Corp. will not be bidding on this job. Thank you for the invitation.",
+      "",
+      "United Angel Construction Corp.",
+      "Jot Singh · 718-989-1381 · Fax 718-989-1382",
+      "12017 91st Ave, Richmond Hill, NY 11418",
+    ].join("\n"),
+  };
+}
+export async function sendNoBidFax(bid: { omo: string; address: string; borough?: string }, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, line: FaxLine = "main") {
+  return faxToHpd(noBidFaxCover(bid), pdf, fileName, fetcher, line);
+}
+
+async function faxToHpd(cover: { subject: string; text: string }, pdf: Uint8Array, fileName: string, fetcher: typeof fetch, line: FaxLine) {
   const email = buildPackageEmail(cover.text, [{ name: fileName, mimeType: "application/pdf", bytes: pdf }]);
   const response = await fetcher("/api/drive/fax-bid", {
     method: "POST",

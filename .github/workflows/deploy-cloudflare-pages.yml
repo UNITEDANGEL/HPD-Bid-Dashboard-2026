@@ -47,6 +47,8 @@ jobs:
         with:
           # Latest main, including the data the fetcher just committed.
           ref: main
+          # History, so the build can tell a code change from a data-only change (the app reloads only for code).
+          fetch-depth: 300
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -201,6 +203,8 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-money.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-fix-queue.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-nudge.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-no-flash.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-page-zoom.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs

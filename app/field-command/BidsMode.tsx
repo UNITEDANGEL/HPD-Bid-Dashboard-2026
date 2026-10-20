@@ -12,7 +12,7 @@ import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { autoResendPlan, lineOf } from "../../lib/bid-records";
-import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
+import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, sendNoBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import { BuildingHero } from "./BuildingPhoto";
@@ -20,11 +20,11 @@ import ItbPages, { pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
-import { jobIcon } from "../../lib/job-icon";
+import { jobGlyphSvg, jobIcon } from "../../lib/job-icon";
 import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
 import { calcContext, calcPrice } from "../../lib/bid-calc";
 import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "../../lib/costs";
-import { isNoBid, mergeServerNoBids, NO_BID_REASONS, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
+import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
@@ -138,7 +138,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // A sent bid is locked: its price changes only through "Revise this bid" (HPD already has it).
   const [revising, setRevising] = useState(false);
   // Two taps instead of confirm() boxes: iPhone Safari blocks those after a few, and the button then does nothing.
-  const [armed, setArmed] = useState<"" | "send" | "send-7804" | "send-7805" | "revise" | "confirmed" | "self" | "high">("");
+  const [armed, setArmed] = useState<"" | "send" | "send-7804" | "send-7805" | "revise" | "confirmed" | "self" | "high" | "nobid" | "nobid-7804" | "nobid-7805">("");
   // "Price saved" shown for a few seconds after saving.
   const [savedFlash, setSavedFlash] = useState(0);
   const [shareNote, setShareNote] = useState("");
@@ -349,7 +349,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const kind = jobIcon(bid.description || "");
         return L.marker([bid.lat, bid.lng], {
           pane: "fc-bids", title: `${bid.omo} · ${kind.label} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<div class="fc-bid-in"><span class="fc-bid-ico" title="${kind.label}">${kind.icon}</span><b>${dueLabel(bid).split(" ")[0]}</b>${noBidPin ? "<em>🚫</em>" : sent ? "<em class=\"is-ok\">✓</em>" : pendingFax ? "<em>⏳</em>" : faxFailed || alertPin ? "<em class=\"is-bad\">!</em>" : ""}${easyPin ? "<i>$</i>" : ""}</div>`, iconSize: [52, 52], iconAnchor: [26, 26] }),
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<div class="fc-bid-in" style="--kind:${kind.color}"><span class="fc-bid-ico" title="${kind.label}" data-icon="${kind.icon}">${jobGlyphSvg(kind.group, 30)}</span><b>${dueLabel(bid).split(" ")[0]}</b>${noBidPin ? "<em>🚫</em>" : sent ? "<em class=\"is-ok\">✓</em>" : pendingFax ? "<em>⏳</em>" : faxFailed ? "<em class=\"is-bad\">!</em>" : ""}${easyPin ? "<i>$</i>" : ""}</div>`, iconSize: [52, 52], iconAnchor: [26, 26] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
         }).on("click", (e: { target?: { getElement?: () => HTMLElement | undefined } }) => {
           // A pop you can see and feel, then the bid opens.
@@ -465,12 +465,68 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     return () => { live = false; };
   }, [selected?.omo, records]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setRateEdit({}); setNoBidAsk(false); setCalcOverride({}); setCalcAdjust(0); setOverrideEdit(null); }, [selected?.omo]);
+  // No bid -> the NO BID form is made right away and faxed to HPD with two taps (owner, 20 Oct).
+  const [noBidDoc, setNoBidDoc] = useState<{ omo: string; url: string; name: string; bytes: Uint8Array } | null>(null);
+  const [noBidBusy, setNoBidBusy] = useState("");
+  const makeNoBidForm = async (bid: UpcomingBid) => {
+    setNoBidBusy("Making the NO BID form…");
+    try {
+      const [{ fillBidPackage }, pdf] = await Promise.all([
+        import("../../lib/bid-fill"),
+        fetch(itbPdfUrl(bid.itbFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
+      ]);
+      const bytes = await fillBidPackage(pdf, bid, 0, undefined, { noBid: true });
+      const name = `${bid.omo}_NO_BID_${bid.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf`;
+      setNoBidDoc((old) => { if (old) window.setTimeout(() => URL.revokeObjectURL(old.url), 60000); return { omo: bid.omo, name, bytes, url: URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" })) }; });
+      setNoBidBusy("");
+    } catch (err) { setNoBidBusy(`Couldn't make the NO BID form: ${err instanceof Error ? err.message : String(err)}`); }
+  };
   const markNoBid = async (reason: string | null) => {
     if (!selected) return;
     const nb: NoBid = { omo: selected.omo, bidDue: selected.bidDue, reason: reason || "", at: new Date().toISOString(), ...(reason === null ? { undone: true } : {}) };
     setNoBids(await saveNoBid(nb, HPD_STATUS_WORKER_URL));
     setNoBidAsk(false);
+    setArmed("");
+    if (reason !== null) void makeNoBidForm(selected);
   };
+  const faxNoBid = async (line: FaxLine = "main") => {
+    if (!selected || !noBidDoc || noBidDoc.omo !== selected.omo) return;
+    const nb = noBidOf(selected);
+    if (!nb) return;
+    const key = (line === "main" ? "nobid" : `nobid-${line}`) as typeof armed;
+    if (armed !== key) { setArmed(key); return; } // first tap: the button asks to tap again
+    setArmed("");
+    setNoBidBusy("Sending the NO BID fax…");
+    const result = await sendNoBidFax(selected, noBidDoc.bytes, noBidDoc.name, fetch, line);
+    if (!result.ok) { setNoBidBusy(`Not sent: ${result.error}`); return; }
+    setNoBids(await saveNoBid({ ...nb, faxedAt: result.sentAt, faxTo: result.to, faxStatus: "sent", faxNote: undefined, confirmedAt: undefined }, HPD_STATUS_WORKER_URL));
+    setNoBidBusy("");
+  };
+  // The open invitation marked No bid but not faxed: its form is made when the sheet opens.
+  useEffect(() => {
+    if (!selected) return;
+    const nb = noBidOf(selected);
+    if (nb && nb.faxStatus !== "sent" && nb.faxStatus !== "confirmed" && noBidDoc?.omo !== selected.omo && !noBidBusy) void makeNoBidForm(selected);
+  }, [selected?.omo, noBids]); // eslint-disable-line react-hooks/exhaustive-deps
+  // HumbleFax's answer for NO BID faxes, every minute (like bids).
+  const noBidsRef = useRef(noBids);
+  noBidsRef.current = noBids;
+  useEffect(() => {
+    if (!pulled) return;
+    let stopped = false;
+    const checkAll = async () => {
+      for (const nb of noBidsToCheck(noBidsRef.current)) {
+        if (stopped) return;
+        const result = await checkBidFax(nb.omo, nb.faxedAt!);
+        if (result.status !== "confirmed" && result.status !== "failed") continue;
+        const latest = noBidsRef.current[nb.omo];
+        if (latest && latest.faxedAt === nb.faxedAt && latest.faxStatus === "sent") setNoBids(await saveNoBid({ ...latest, faxStatus: result.status, faxNote: result.subject, confirmedAt: result.at }, HPD_STATUS_WORKER_URL));
+      }
+    };
+    void checkAll();
+    const timer = window.setInterval(() => void checkAll(), 60000);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, [pulled, noBidsToCheck(noBids).map((n) => n.omo + n.faxedAt).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
   const learned = useMemo(() => myPrices(Object.values(records), (omo) => descriptions.get(omo)), [records, descriptions]);
@@ -817,10 +873,23 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               const nb = noBidOf(selected);
               const sentAlready = !!record && record.status !== "saved";
               if (nb) return (
-                <div className="fc-nobid is-set" data-hpd-smoke="fc-nobid-set">
+                <div className={`fc-nobid is-set${nb.faxStatus ? ` is-fax-${nb.faxStatus}` : ""}`} data-hpd-smoke="fc-nobid-set">
                   <b>🚫 No bid{nb.reason ? `: ${nb.reason}` : ""}</b>
-                  <small>Marked {when(nb.at)}. The checklist won&apos;t ask for it.</small>
-                  <button type="button" data-hpd-smoke="fc-nobid-undo" onClick={() => void markNoBid(null)}>Undo</button>
+                  {nb.faxStatus === "confirmed" ? <p className="fc-nobid-fax is-ok" data-hpd-smoke="fc-nobid-fax-status">✅ NO BID faxed to HPD {when(nb.faxedAt || "")} and confirmed by HumbleFax.</p>
+                    : nb.faxStatus === "sent" ? <p className="fc-nobid-fax" data-hpd-smoke="fc-nobid-fax-status">📤 NO BID faxed to HPD {when(nb.faxedAt || "")}{nb.faxTo ? ` (${nb.faxTo})` : ""}. Waiting for HumbleFax to confirm (checked every minute).</p>
+                    : nb.faxStatus === "failed" ? <p className="fc-nobid-fax is-bad" data-hpd-smoke="fc-nobid-fax-status">❌ The NO BID fax failed{nb.faxNote ? ` (${nb.faxNote})` : ""}. Send it again to a backup line below.</p>
+                    : <small>Marked {when(nb.at)}. Now send HPD the NO BID form.</small>}
+                  {nb.faxStatus !== "sent" && nb.faxStatus !== "confirmed" ? (
+                    <div className="fc-nobid-send" data-hpd-smoke="fc-nobid-send-box">
+                      {noBidDoc?.omo === selected.omo ? <a href={noBidDoc.url} target="_blank" rel="noreferrer" data-hpd-smoke="fc-nobid-form">📄 Open the NO BID form</a> : null}
+                      {(nb.faxStatus === "failed" ? FAX_LINES.filter((l) => l.id !== "main") : FAX_LINES.slice(0, 1)).map((l) => {
+                        const key = l.id === "main" ? "nobid" : `nobid-${l.id}`;
+                        return <button key={l.id} type="button" className={armed === key ? "is-armed" : ""} data-hpd-smoke={l.id === "main" ? "fc-nobid-fax" : `fc-nobid-fax-${l.id}`} disabled={noBidDoc?.omo !== selected.omo || noBidBusy === "Sending the NO BID fax…"} onClick={() => void faxNoBid(l.id)}>{armed === key ? `✅ Tap again: fax NO BID to ${l.label}` : `📠 Fax NO BID to HPD${l.id === "main" ? "" : ` · ${l.label}`}`}</button>;
+                      })}
+                    </div>
+                  ) : null}
+                  {noBidBusy ? <p className="fc-nobid-fax" data-hpd-smoke="fc-nobid-busy">{noBidBusy}</p> : null}
+                  {!nb.faxStatus || nb.faxStatus === "failed" ? <button type="button" className="fc-nobid-undo" data-hpd-smoke="fc-nobid-undo" onClick={() => void markNoBid(null)}>Undo (I&apos;ll bid after all)</button> : null}
                 </div>
               );
               if (sentAlready) return null;
@@ -1289,7 +1358,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 return (
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
-                      <span className="fc-bid-row"><span className="fc-bid-row-ico" title={jobIcon(bid.description || "").label} data-hpd-smoke="fc-bid-row-ico">{jobIcon(bid.description || "").icon}</span><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
+                      <span className="fc-bid-row"><span className="fc-bid-row-ico" title={jobIcon(bid.description || "").label} data-icon={jobIcon(bid.description || "").icon} data-hpd-smoke="fc-bid-row-ico" style={{ background: jobIcon(bid.description || "").color }} dangerouslySetInnerHTML={{ __html: jobGlyphSvg(jobIcon(bid.description || "").group, 20) }} /><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = calcPrice(sm, rates, calcContext(sm, readScope(bid.description).tasks, bid.borough || "")); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>

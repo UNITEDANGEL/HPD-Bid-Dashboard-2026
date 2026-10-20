@@ -46,6 +46,24 @@ try {
   assert.match(await review.innerText(), /No signature pictures/);
   const pages = await page.locator('[data-hpd-smoke="paperwork-package-pages"] img').count();
   assert.ok(pages >= 3, `affidavit (2) + invoice pages shown (${pages})`);
+  // The pages zoom by themselves in full screen (20 Oct: only the job pages zoom, not the app): a two-finger pinch.
+  await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page').first().click();
+  const zbox = page.locator('[data-hpd-smoke="paperwork-zoombox"]');
+  await zbox.waitFor();
+  {
+    const cdp = await context.newCDPSession(page);
+    const zb = await zbox.boundingBox();
+    const cx = zb.x + zb.width / 2, cy = zb.y + 200;
+    const t = (type, pts) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y], id) => ({ x, y, id })) });
+    await t("touchStart", [[cx - 30, cy], [cx + 30, cy]]);
+    for (let i = 1; i <= 8; i++) await t("touchMove", [[cx - 30 - i * 10, cy], [cx + 30 + i * 10, cy]]);
+    await t("touchEnd", []);
+    await page.waitForTimeout(300);
+    const z = Number(await zbox.getAttribute("data-zoom"));
+    assert.ok(z > 2, `paperwork page pinch-zoomed (${z}x)`);
+    assert.equal(await page.evaluate(() => window.visualViewport?.scale || 1), 1, "the app did not zoom");
+  }
+  await page.locator('[data-hpd-smoke="paperwork-full-screen-close"]').click();
   assert.equal(posts.slice(before).filter((p) => JSON.stringify(p).includes("RejectionCorrectedAt")).length, 0, "nothing marked before saving");
   // The PDF itself (to look at): earlier form, no signature pictures, notary stamp + today's date.
   const b64 = await page.evaluate(async () => {

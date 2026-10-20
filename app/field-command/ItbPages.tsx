@@ -5,6 +5,7 @@
 // (pinch to zoom); "All pages" shows the whole invitation.
 import { useEffect, useRef, useState } from "react";
 import { getPages, prunePages, putPages } from "../../lib/page-cache";
+import { usePinchZoom } from "../../lib/use-pinch-zoom";
 
 type Rendered = { page: number; url: string };
 
@@ -68,8 +69,8 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   const [all, setAll] = useState(true);
   const [error, setError] = useState("");
   const [big, setBig] = useState<Rendered | null>(null);
-  const [zoom, setZoom] = useState(1);
   const urls = useRef<string[]>([]);
+  const { zoom, zoomTo, bind } = usePinchZoom();
 
   useEffect(() => {
     let live = true;
@@ -123,13 +124,14 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
                 <button type="button" disabled={shown[shown.length - 1].page === big.page} onClick={() => setBig(shown[shown.findIndex((p) => p.page === big.page) + 1])}>Next ›</button>
               </span>
             ) : null}
-            <button type="button" data-hpd-smoke="fc-itb-zoom" aria-label="Zoom" onClick={() => setZoom((z) => (z >= 3 ? 1 : z + 1))}>🔍 {zoom >= 3 ? "1×" : `${zoom + 1}×`}</button>
-            <button type="button" data-hpd-smoke="fc-itb-close" onClick={() => { setBig(null); setZoom(1); }}>Close</button>
+            <button type="button" data-hpd-smoke="fc-itb-zoom" aria-label="Zoom" onClick={() => zoomTo(zoom >= 2.95 ? 1 : Math.floor(zoom) + 1)}>🔍 {zoom >= 2.95 ? "1×" : `${Math.floor(zoom) + 1}×`}</button>
+            <button type="button" data-hpd-smoke="fc-itb-close" onClick={() => { setBig(null); zoomTo(1); }}>Close</button>
           </div>
-          <div className="fc-itb-full-body">
+          <div className="fc-itb-full-body" {...bind} data-hpd-smoke="fc-itb-zoombox">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={big.url} alt={`${title || "Invitation"} page ${big.page}`} style={{ width: `${zoom * 100}%`, maxWidth: "none" }} />
+            <img src={big.url} alt={`${title || "Invitation"} page ${big.page}`} draggable={false} style={{ width: `${zoom * 100}%`, maxWidth: "none" }} />
           </div>
+          <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>
         </div>
       ) : null}
     </section>

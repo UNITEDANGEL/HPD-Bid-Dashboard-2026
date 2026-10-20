@@ -684,3 +684,7 @@ select {
   .invoice-grid { display: block; }
   .invoice-row input { border: 0; color: #000; background: transparent; padding: 0; }
 }
+
+/* No double-tap / pinch zoom of the app (20 Oct); the job pages zoom themselves. */
+html, body { touch-action: pan-x pan-y; }
+[data-zoomable] { touch-action: none; }

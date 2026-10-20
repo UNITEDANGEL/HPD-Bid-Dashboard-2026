@@ -24,6 +24,7 @@ import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import { visitRecordText } from "../../lib/visit-record";
 import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync";
+import { usePinchZoom } from "../../lib/use-pinch-zoom";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -1358,6 +1359,7 @@ export default function PaperworkPage() {
   const [packageContents, setPackageContents] = useState<{ photos: number; videos: number; videoBytes: number; savedVideos: number; beforePhotos: number; beforeVideos: number; beforeVideoBytes: number } | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
+  const pdfZoom = usePinchZoom(); // pinch / double-tap zoom on the pages (the app itself doesn't zoom)
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
   // Drive links of the files saved on approve, so a resent email can still link a big video.
   const deliveredFileLinksRef = useRef<Record<string, string>>({});
@@ -6045,10 +6047,10 @@ export default function PaperworkPage() {
                   Close
                 </button>
               </div>
-              <div className="fullscreen-pdf-body">
+              <div className="fullscreen-pdf-body" {...pdfZoom.bind} data-hpd-smoke="paperwork-zoombox">
                 {packagePreview.pdfPreviewImageUrls.length ? (
                   packagePreview.pdfPreviewImageUrls.map((url, index) => (
-                    <img key={url} src={url} alt={`${packagePreview.jobId} generated PDF page ${index + 1}`} />
+                    <img key={url} src={url} alt={`${packagePreview.jobId} generated PDF page ${index + 1}`} draggable={false} style={pdfZoom.zoom > 1 ? { width: `${pdfZoom.zoom * 100}%`, maxWidth: "none" } : undefined} />
                   ))
                 ) : (
                   <div className="fullscreen-pdf-fallback">

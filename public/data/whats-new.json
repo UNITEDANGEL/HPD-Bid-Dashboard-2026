@@ -2,6 +2,39 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 20, 2026",
+      "title": "🚫 No bid now fills the form and faxes HPD",
+      "items": [
+        "Tap 🚫 No bid and pick why: the invitation is filled in right away with NO BID where the price goes (page 1, page total and bid amount), company, signature and date like a bid.",
+        "📄 Open the NO BID form to look at it, then 📠 Fax NO BID to HPD (two taps). The cover says you won't be bidding; your reason stays private.",
+        "HumbleFax's answer is checked every minute: ✅ confirmed, or ❌ failed with the backup lines to send it again. Every phone sees it."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
+      "title": "No more flashing",
+      "items": [
+        "The app was reloading itself every time new data came in (about every 10 minutes), closing the panel you had open and redrawing the map.",
+        "Now it only reloads for a real app update, and only when nothing is open. New bids, notices and emails still show up by themselves."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
+      "title": "Zoom only the job pages",
+      "items": [
+        "The app no longer zooms in when you pinch or double-tap by accident.",
+        "HPD's pages (invitations and notices) and your paperwork preview zoom by themselves in full screen: pinch, or double-tap to zoom in and back out; drag to move. 🔍 still works. The map still pinch-zooms."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
+      "title": "Better job pictures on the bid map",
+      "items": [
+        "Each pin is a bold white drawing on its own color (blue drop for leaks, purple lock, violet hinges, brown door, pink roller for painting...), so you can tell jobs apart at a glance.",
+        "The ring and the day tag show when it's due; the red ! is only on a failed fax now."
+      ]
+    },
+    {
       "date": "Oct 19, 2026",
       "title": "⏰ No answer? Ask them to confirm",
       "items": [

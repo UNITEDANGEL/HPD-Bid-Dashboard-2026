@@ -149,6 +149,7 @@ const OUTCOME_ICONS: Record<string, string> = { NO_ACCESS_1_WAITING_72H: "🔒",
 
 // The version this app was built as (set by the Cloudflare build; empty in development).
 const BUILT_COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
+const BUILT_CODE = process.env.NEXT_PUBLIC_APP_CODE || ""; // the code version (data-only deploys don't change it)
 const BUILT_NUMBER = process.env.NEXT_PUBLIC_APP_NUMBER || "";
 const BUILT_AT = process.env.NEXT_PUBLIC_APP_BUILT_AT || "";
 // "Updated Oct 16, 4:10 PM · #312": when this version was made, in New York time.
@@ -1838,12 +1839,14 @@ export default function FieldCommandClient() {
       try {
         const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) return;
-        const { commit } = await response.json() as { commit?: string };
+        const { commit, code } = await response.json() as { commit?: string; code?: string };
         if (!commit || stopped) return;
         // The version this app was built as; older builds didn't carry it, so they learn it here.
         if (!appVersionRef.current) appVersionRef.current = BUILT_COMMIT || commit;
         setAppVersion(appVersionRef.current);
         if (commit === appVersionRef.current) return;
+        // Only the data changed (the fetcher deploys every ~10 minutes): no reload, the app reads new data by itself.
+        if (code && BUILT_CODE && code === BUILT_CODE) return;
         latestCommitRef.current = commit;
         // Reload by itself once per new version; if the old version is still what loads (no
         // signal, old copy), stop and offer the Update button instead of reloading over and over.

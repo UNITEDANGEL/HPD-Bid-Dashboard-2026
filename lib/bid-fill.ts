@@ -63,9 +63,12 @@ export type BidRevision = { previousPrice: number; count: number; date: string }
 
 // noPrice: everything filled in (company, owner, address, phone, dates, description) except the price, so the bid
 // document is ready when the invitation opens and only the owner's price is missing (owner, 16 Oct 2026).
-export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: UpcomingBid, price: number, revision?: BidRevision, opts: { noPrice?: boolean } = {}): Promise<Uint8Array> {
+// noBid (owner, 20 Oct: "when I say no bid we need to fill no bid and send"): "NO BID" where the price goes, the rest
+// filled in like a bid, so the form goes back to HPD by fax.
+export const NO_BID_TEXT = "NO BID";
+export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: UpcomingBid, price: number, revision?: BidRevision, opts: { noPrice?: boolean; noBid?: boolean } = {}): Promise<Uint8Array> {
   const previousPrice = revision?.previousPrice;
-  if (!opts.noPrice && !(price > 0)) throw new Error("Enter a bid price above $0.");
+  if (!opts.noPrice && !opts.noBid && !(price > 0)) throw new Error("Enter a bid price above $0.");
   const doc = await PDFDocument.load(pdfBytes);
   const font = await doc.embedFont(StandardFonts.HelveticaBold);
   const pages = doc.getPages();
@@ -109,7 +112,11 @@ export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: Up
       page.drawText(BID_COMPANY.initials, { ...at(newWidth + 4, size * 0.45), size: 7, font, color: ink, rotate: rot });
     }
   };
-  if (!opts.noPrice) {
+  if (opts.noBid) {
+    write("price", NO_BID_TEXT, 12);
+    write("pageTotal", NO_BID_TEXT, 12);
+    write("bidAmount", NO_BID_TEXT, 12);
+  } else if (!opts.noPrice) {
     writePrice("price", true);
     writePrice("pageTotal");
     writePrice("bidAmount");

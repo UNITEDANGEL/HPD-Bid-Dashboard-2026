@@ -381,7 +381,7 @@
 .fc-itb-bar span { display: flex; gap: 6px; }
 .fc-itb-bar button { min-height: 40px; padding: 0 12px; border: 1px solid #475569; border-radius: 10px; background: #1f2937; color: #fff; font: 800 14px system-ui; }
 .fc-itb-bar button:disabled { opacity: .4; }
-.fc-itb-full-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch; background: #fff; }
+.fc-itb-full-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: none; -webkit-overflow-scrolling: touch; background: #fff; }
 .fc-itb-full-body img { display: block; width: 100%; height: auto; }
 
 /* The bids panel leaves the map buttons free, so Bids (tap again to close), Notices, Map and Locate can
@@ -546,9 +546,13 @@
 /* No bid. */
 .fc-nobid-open { display: inline-flex; align-items: center; min-height: 40px; margin: 6px 0; padding: 0 14px; border-radius: 10px; border: 1px solid #a8a29e; background: #292524; color: #e7e5e4; font: 800 13.5px system-ui; }
 .fc-nobid { display: grid; gap: 6px; margin: 6px 0; padding: 10px 12px; border-radius: 12px; background: #292524; border: 1px solid #a8a29e; color: #f5f5f4; font: 600 13.5px/1.35 system-ui; }
-.fc-nobid.is-set { grid-template-columns: 1fr auto; align-items: center; background: #44403c; }
-.fc-nobid.is-set small { grid-column: 1; color: #d6d3d1; }
-.fc-nobid.is-set button { grid-column: 2; grid-row: 1 / span 2; }
+.fc-nobid.is-set { grid-template-columns: 1fr; background: #44403c; }
+.fc-nobid.is-set small { color: #d6d3d1; }
+.fc-nobid.is-set > b { font: 900 16px system-ui, sans-serif; }
+.fc-nobid.is-set .fc-nobid-undo { justify-self: start; }
+.fc-nobid.is-fax-confirmed { border-color: #22c55e; }
+.fc-nobid.is-fax-sent { border-color: #60a5fa; }
+.fc-nobid.is-fax-failed { border-color: #ef4444; }
 .fc-nobid-reasons { display: flex; flex-wrap: wrap; gap: 6px; }
 .fc-nobid button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #d6d3d1; background: #1c1917; color: #fff; font: 700 13px system-ui; }
 .fc-nobid-cancel { justify-self: start; background: transparent !important; border-color: transparent !important; color: #d6d3d1 !important; }
@@ -702,3 +706,28 @@ i.is-won { background: #16a34a; }
   .fc-bid-pin .fc-bid-ico { font-size: 21px; }
   .fc-bid-pin b { bottom: -14px; font-size: 11px; line-height: 13px; padding: 1px 6px; }
 }
+
+/* No bid -> NO BID form faxed to HPD (20 Oct). */
+.fc-nobid-send { display: grid; gap: 8px; margin-top: 8px; }
+.fc-nobid-send a, .fc-nobid-send button { display: grid; place-items: center; min-height: 50px; border-radius: 12px; font: 900 16px system-ui, sans-serif; text-decoration: none; border: 0; }
+.fc-nobid-send a { background: #fff; color: #1e293b; border: 2px solid #94a3b8; }
+.fc-nobid-send button { background: #b91c1c; color: #fff; }
+.fc-nobid-send button.is-armed { background: #15803d; }
+.fc-nobid-send button:disabled { opacity: .55; }
+.fc-nobid-fax { margin: 6px 0 0; font: 700 14px system-ui, sans-serif; }
+.fc-nobid-fax.is-ok { color: #4ade80; }
+.fc-nobid-fax.is-bad { color: #fca5a5; }
+.fc-nobid .fc-nobid-undo { margin-top: 8px; }
+
+.fc-itb-hint { display: block; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); text-align: center; color: #cbd5e1; font: 700 13px system-ui, sans-serif; background: #020617; }
+
+/* Better job pictures (owner, 20 Oct): a bold white drawing on a disc in the job's color, the due color as a ring,
+   the due day in a tag below. One "!" only for a failed fax (due-soon pins pulse instead). */
+.fc-bid-in { background: var(--kind, #1e293b); border: 3px solid #fff; box-shadow: 0 0 0 3px var(--due, #f97316), 0 5px 12px #0f172a77; }
+.fc-bid-pin .fc-bid-ico { font-size: 0; }
+.fc-bid-pin .fc-glyph { display: block; filter: drop-shadow(0 1px 1px #0006); }
+.fc-bid-pin.is-nobid .fc-bid-in { filter: grayscale(1); }
+.fc-bid-pin.is-easy .fc-bid-in { box-shadow: 0 0 0 3px var(--due, #f97316), 0 0 0 7px #22c55e, 0 5px 12px #0f172a77; }
+.fc-bid-row-ico { display: inline-grid !important; place-items: center; width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 6px; box-shadow: 0 1px 3px #0f172a55; font-size: 0 !important; }
+.fc-bid-row-ico .fc-glyph { display: block; }
+@media (max-height: 500px) { .fc-bid-pin .fc-glyph { width: 22px; height: 22px; } }

@@ -3,7 +3,15 @@
 // counts never see a no-bid), on the phone and on the status server (key "NOBID-<OMO>") so every phone
 // agrees. Undo keeps the record with undone: true (the server only merges, never deletes).
 
-export type NoBid = { omo: string; bidDue: string; reason: string; at: string; undone?: boolean };
+export type NoBid = {
+  omo: string; bidDue: string; reason: string; at: string; undone?: boolean;
+  // The NO BID form faxed to HPD (20 Oct): when, to which line, and HumbleFax's answer.
+  faxedAt?: string; faxTo?: string; faxStatus?: "sent" | "confirmed" | "failed"; faxNote?: string; confirmedAt?: string;
+};
+// No-bid faxes still waiting for HumbleFax (last 2 days).
+export function noBidsToCheck(all: Record<string, NoBid>, now = Date.now()) {
+  return Object.values(all).filter((n) => !n.undone && n.faxStatus === "sent" && n.faxedAt && now - Date.parse(n.faxedAt) < 2 * 86400000);
+}
 export const NOBID_PREFIX = "NOBID-";
 const KEY = "hpd-no-bids-v1";
 

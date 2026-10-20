@@ -74,6 +74,20 @@ function appCommit() {
   return commit.slice(0, 7);
 }
 
+// The app's code version: the latest commit that changed anything but the data the fetcher refreshes every ~10 minutes
+// (owner, 20 Oct: "app keeps flashing" -- every data-only deploy made open apps reload). The app reloads by itself only
+// when this changes; new data is read live without a reload.
+const DATA_ONLY = ["public/data", "data", "public/private"];
+function appCode() {
+  try {
+    const excl = DATA_ONLY.map((p) => `:(exclude)${p}`);
+    const r = spawnSync("git", ["log", "-1", "--format=%H", "--", ".", ...excl], { cwd: root, encoding: "utf8", shell: false });
+    const h = String(r.stdout || "").trim();
+    if (h) return h.slice(0, 7);
+  } catch {}
+  return appCommit();
+}
+
 // A plain version number for the owner: the deploy's run number on GitHub, else how many commits there are.
 const BUILT_AT = new Date().toISOString();
 function appNumber() {
@@ -176,6 +190,7 @@ try {
       CLOUDFLARE_STATIC_EXPORT: "1",
       // Built into the app, so it knows which version it is running (same value as /version.json).
       NEXT_PUBLIC_APP_COMMIT: appCommit(),
+      NEXT_PUBLIC_APP_CODE: appCode(),
       NEXT_PUBLIC_APP_NUMBER: appNumber(),
       NEXT_PUBLIC_APP_BUILT_AT: BUILT_AT,
     },
@@ -240,6 +255,6 @@ fs.writeFileSync(
 const { execSync } = require("child_process");
 let commit = process.env.GITHUB_SHA || "";
 try { commit = commit || execSync("git rev-parse HEAD", { cwd: root }).toString().trim(); } catch {}
-fs.writeFileSync(path.join(outDir, "version.json"), `${JSON.stringify({ commit: commit.slice(0, 7), number: appNumber(), builtAt: BUILT_AT }, null, 2)}\n`);
+fs.writeFileSync(path.join(outDir, "version.json"), `${JSON.stringify({ commit: commit.slice(0, 7), code: appCode(), number: appNumber(), builtAt: BUILT_AT }, null, 2)}\n`);
 
 console.log("Cloudflare Pages static export ready in out/");
