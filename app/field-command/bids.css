@@ -739,3 +739,12 @@ i.is-won { background: #16a34a; }
 .fc-bids-banner { grid-template-columns: 1fr auto auto; }
 .fc-bids-banner .fc-bids-notif { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; padding: 0 8px; background: #ffffff26; color: #fff; }
 .fc-bids-banner [data-hpd-smoke="fc-bids-close"] { grid-column: 3; }
+
+/* Sending, moving (21 Oct). */
+.fc-bid-chip.is-pending::before { content: ""; display: inline-block; width: 0.9em; height: 0.9em; margin-right: 4px; vertical-align: -0.12em; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: hpd-spin 0.75s linear infinite; }
+.fc-bid-pin em.is-pending { background: #2563eb; }
+.fc-bid-pin em.is-pending .hpd-spin { width: 12px; height: 12px; border-width: 2px; color: #fff; }
+.fc-bid-pin.is-pending .fc-bid-in { animation: hpd-pulse 1.2s ease-in-out infinite; }
+.fc-bid-fill.hpd-sending { cursor: progress; }
+.fc-nobid-send button[data-sending] { position: relative; overflow: hidden; }
+.fc-bid-fill.hpd-sending, .fc-bid-fill.hpd-sending:disabled { opacity: 1 !important; color: #fff !important; background: #1d4ed8 !important; font-weight: 900; }

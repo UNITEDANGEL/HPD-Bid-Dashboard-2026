@@ -247,7 +247,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
               <button type="button" disabled={reply.status === "Sending…"} onClick={() => void send(row, true)}>📨 Send to me first</button>
               <button type="button" onClick={() => setReply(null)}>Close</button>
             </div>
-            {reply.status ? <p className="fc-ack-status">{reply.status}</p> : null}
+            {reply.status ? <p className="fc-ack-status">{reply.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : reply.status}</p> : null}
           </div>
         ) : null}
       </li>
@@ -263,7 +263,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
       <div className="fc-summary-body">
         {onScan ? (
           <div className="fc-scan" data-hpd-smoke="fc-scan">
-            <button type="button" data-hpd-smoke="fc-scan-btn" disabled={scanStatus === "Checking your email…"} onClick={onScan}>{scanStatus === "Checking your email…" ? "⏳ Checking your email…" : "🔄 Check my emails now"}</button>
+            <button type="button" data-hpd-smoke="fc-scan-btn" disabled={scanStatus === "Checking your email…"} onClick={onScan}>{scanStatus === "Checking your email…" ? <><span className="hpd-spin" aria-hidden="true" /> Checking your email<span className="hpd-dots" /></> : "🔄 Check my emails now"}</button>
             {scanStatus && scanStatus !== "Checking your email…" ? <p data-hpd-smoke="fc-scan-status">{scanStatus}</p> : <small>Reads your sent replies and HPD&apos;s answers (last 7 days) and updates the steps right away.</small>}
             {scanChanged.length ? <ul data-hpd-smoke="fc-scan-changed">{scanChanged.map((c) => <li key={c.omo}><b>{c.omo}</b> {c.now}</li>)}</ul> : scanStatus.startsWith("✓") ? <small>No notice changed: everything was already up to date.</small> : null}
           </div>
@@ -294,7 +294,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
             </div>
             <p className="fc-follow-note">Every reply is written. Read each one; fix anything; then Send (two taps) one by one. Or send them all to yourself first in one email.</p>
             <button type="button" className="fc-batch-self" data-hpd-smoke="fc-batch-self" disabled={!batch.items.length || batch.selfStatus === "Sending…"} onClick={() => void sendAllToMe()}>📨 Send all {batch.items.length} to me first (one email)</button>
-            {batch.selfStatus ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-self-status">{batch.selfStatus}</p> : null}
+            {batch.selfStatus ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-self-status">{batch.selfStatus === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : batch.selfStatus}</p> : null}
             {!batch.items.length ? <p className="fc-follow-note">No replies to write here.</p> : null}
             <ol className="fc-batch-list">
               {batch.items.map((it, i) => {
@@ -306,7 +306,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
                     <input aria-label="Subject" value={it.subject} disabled={it.sent} onChange={(e) => setItem(it.key, { subject: e.target.value, armed: false })} />
                     <textarea aria-label="Message" rows={7} value={it.text} disabled={it.sent} data-hpd-smoke="fc-batch-text" onChange={(e) => setItem(it.key, { text: e.target.value, armed: false })} />
                     <button type="button" className={it.sent ? "is-sent" : it.armed ? "is-armed" : ""} disabled={it.sent || it.status === "Sending…"} data-hpd-smoke="fc-batch-send" onClick={() => void sendItem(row, it)}>{it.sent ? "✓ Sent" : it.armed ? `✅ Tap again: send to ${row.to}` : "✉ Send"}</button>
-                    {it.status ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-status">{it.status}</p> : null}
+                    {it.status ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-status">{it.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : it.status}</p> : null}
                   </li>
                 );
               })}
@@ -329,7 +329,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
                       <button type="button" disabled={listReply.status === "Sending…"} data-hpd-smoke="fc-list-reply-me" onClick={() => void sendListReply(true)}>📨 Send to me first</button>
                       <button type="button" onClick={() => setListReply(null)}>Close</button>
                     </div>
-                    {listReply.status ? <p className="fc-ack-status" data-hpd-smoke="fc-list-reply-status">{listReply.status}</p> : null}
+                    {listReply.status ? <p className="fc-ack-status" data-hpd-smoke="fc-list-reply-status">{listReply.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : listReply.status}</p> : null}
                   </div>
                 ) : <button type="button" className="fc-batch-open" data-hpd-smoke="fc-list-reply-open" onClick={() => startListReply(list)}>✉ Answer the whole list in one email</button>}
               </div>

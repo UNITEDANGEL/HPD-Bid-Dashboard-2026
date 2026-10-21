@@ -90,7 +90,7 @@ function badge(record?: BidRecord) {
   if (state === "saved") return { text: `${money(record.price)} saved`, tone: "saved" };
   if (state === "failed") return { text: `Fax failed · resend ${money(record.sentPrice || record.price)}`, tone: "failed" };
   if (state === "confirmed") return { text: `✓ Fax confirmed · ${money(record.sentPrice || record.price)}`, tone: "sent" };
-  return { text: `⏳ Fax going through · ${money(record.sentPrice || record.price)}${state === "unconfirmed" ? " · no answer yet" : ""}`, tone: "pending" };
+  return { text: `Fax going through · ${money(record.sentPrice || record.price)}${state === "unconfirmed" ? " · no answer yet" : ""}`, tone: "pending" };
 }
 
 export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void }) {
@@ -350,7 +350,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         const kind = jobIcon(bid.description || "");
         return L.marker([bid.lat, bid.lng], {
           pane: "fc-bids", title: `${bid.omo} · ${kind.label} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<div class="fc-bid-in" style="--kind:${kind.color}"><span class="fc-bid-ico" title="${kind.label}" data-icon="${kind.icon}">${jobGlyphSvg(kind.group, 30)}</span><b>${dueLabel(bid).split(" ")[0]}</b>${noBidPin ? "<em>🚫</em>" : sent ? "<em class=\"is-ok\">✓</em>" : pendingFax ? "<em>⏳</em>" : faxFailed ? "<em class=\"is-bad\">!</em>" : ""}${easyPin ? "<i>$</i>" : ""}</div>`, iconSize: [52, 52], iconAnchor: [26, 26] }),
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<div class="fc-bid-in" style="--kind:${kind.color}"><span class="fc-bid-ico" title="${kind.label}" data-icon="${kind.icon}">${jobGlyphSvg(kind.group, 30)}</span><b>${dueLabel(bid).split(" ")[0]}</b>${noBidPin ? "<em>🚫</em>" : sent ? "<em class=\"is-ok\">✓</em>" : pendingFax ? "<em class=\"is-pending\"><span class=\"hpd-spin\"></span></em>" : faxFailed ? "<em class=\"is-bad\">!</em>" : ""}${easyPin ? "<i>$</i>" : ""}</div>`, iconSize: [52, 52], iconAnchor: [26, 26] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
         }).on("click", (e: { target?: { getElement?: () => HTMLElement | undefined } }) => {
           // A pop you can see and feel, then the bid opens.
@@ -892,11 +892,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                       {noBidDoc?.omo === selected.omo ? <a href={noBidDoc.url} target="_blank" rel="noreferrer" data-hpd-smoke="fc-nobid-form">📄 Open the NO BID form</a> : null}
                       {(nb.faxStatus === "failed" ? FAX_LINES.filter((l) => l.id !== "main") : FAX_LINES.slice(0, 1)).map((l) => {
                         const key = l.id === "main" ? "nobid" : `nobid-${l.id}`;
-                        return <button key={l.id} type="button" className={armed === key ? "is-armed" : ""} data-hpd-smoke={l.id === "main" ? "fc-nobid-fax" : `fc-nobid-fax-${l.id}`} disabled={noBidDoc?.omo !== selected.omo || noBidBusy === "Sending the NO BID fax…"} onClick={() => void faxNoBid(l.id)}>{armed === key ? `✅ Tap again: fax NO BID to ${l.label}` : `📠 Fax NO BID to HPD${l.id === "main" ? "" : ` · ${l.label}`}`}</button>;
+                        return <button key={l.id} type="button" className={armed === key ? "is-armed" : ""} data-hpd-smoke={l.id === "main" ? "fc-nobid-fax" : `fc-nobid-fax-${l.id}`} disabled={noBidDoc?.omo !== selected.omo || noBidBusy === "Sending the NO BID fax…"} data-sending={noBidBusy === "Sending the NO BID fax…" || undefined} onClick={() => void faxNoBid(l.id)}>{armed === key ? `✅ Tap again: fax NO BID to ${l.label}` : `📠 Fax NO BID to HPD${l.id === "main" ? "" : ` · ${l.label}`}`}</button>;
                       })}
                     </div>
                   ) : null}
-                  {noBidBusy ? <p className="fc-nobid-fax" data-hpd-smoke="fc-nobid-busy">{noBidBusy}</p> : null}
+                  {noBidBusy ? <p className="fc-nobid-fax" data-hpd-smoke="fc-nobid-busy">{/…$/.test(noBidBusy) ? <><span className="hpd-spin" aria-hidden="true" /> {noBidBusy.replace(/…$/, "")}<span className="hpd-dots" /></> : noBidBusy}</p> : null}
                   {!nb.faxStatus || nb.faxStatus === "failed" ? <button type="button" className="fc-nobid-undo" data-hpd-smoke="fc-nobid-undo" onClick={() => void markNoBid(null)}>Undo (I&apos;ll bid after all)</button> : null}
                 </div>
               );
@@ -1204,8 +1204,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             {record ? (
               <section className={`fc-bid-price fc-bid-step${reviewedSaved ? " is-done" : ""}`} data-hpd-smoke="fc-step-2">
                 <h4>{reviewedSaved ? "✓" : "2"} · Review the package{reviewedSaved ? ` · filled at ${money2(reviewedSaved.price)}` : ""}</h4>
-                <button type="button" className={`fc-bid-fill is-secondary${reviewedSaved ? " is-done" : ""}`} data-hpd-smoke="fc-bid-review" disabled={busy === "Filling the bid package…" || faxLocked} onClick={() => void review()}>
-                  {busy === "Filling the bid package…" ? "⏳ Filling the package…" : faxLocked ? `🔒 Package sent at ${money2(record.sentPrice || record.price)}` : reviewedSaved ? `✓ Package filled · ${money2(reviewedSaved.price)} · tap to refill` : revisedFrom(record) ? `Fill the revised package: ${money2(revisedFrom(record)!)} → ${money2(record.price)}` : `Fill the package at ${money2(record.price)}`}
+                <button type="button" className={`fc-bid-fill is-secondary${reviewedSaved ? " is-done" : ""}${busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-review" disabled={busy === "Filling the bid package…" || faxLocked} onClick={() => void review()}>
+                  {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling the package<span className="hpd-dots" /></> : faxLocked ? `🔒 Package sent at ${money2(record.sentPrice || record.price)}` : reviewedSaved ? `✓ Package filled · ${money2(reviewedSaved.price)} · tap to refill` : revisedFrom(record) ? `Fill the revised package: ${money2(revisedFrom(record)!)} → ${money2(record.price)}` : `Fill the package at ${money2(record.price)}`}
                 </button>
                 <small className="fc-bid-note">Price on page 1, page 2 and the Work Description Form, plus your company details, signatures, date and the work description.</small>
                 {reviewedSaved ? (
@@ -1217,9 +1217,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     {shareNote ? <small className="fc-bid-note" data-hpd-smoke="fc-bid-share-note">{shareNote}</small> : null}
                   </div>
                 ) : null}
-                <h4 className={step3Done ? `is-done is-${state}` : ""} data-hpd-smoke="fc-step-3">{step3Done ? (state === "confirmed" ? "✓" : state === "failed" ? "✗" : "⏳") : "3"} · Send to HPD{step3Done ? (state === "confirmed" ? ` · fax confirmed ${money2(record.sentPrice || record.price)}` : state === "failed" ? " · fax failed" : ` · fax going through ${money2(record.sentPrice || record.price)}`) : ""}</h4>
-                <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send("main")}>
-                  {busy === "Sending the fax…" ? "⏳ Sending the fax…" : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
+                <h4 className={step3Done ? `is-done is-${state}` : ""} data-hpd-smoke="fc-step-3">{step3Done ? (state === "confirmed" ? "✓" : state === "failed" ? "✗" : <span className="hpd-spin" aria-hidden="true" />) : "3"} · Send to HPD{step3Done ? (state === "confirmed" ? ` · fax confirmed ${money2(record.sentPrice || record.price)}` : state === "failed" ? " · fax failed" : ` · fax going through ${money2(record.sentPrice || record.price)}`) : ""}</h4>
+                <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}${busy === "Sending the fax…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send("main")}>
+                  {busy === "Sending the fax…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending the fax to HPD<span className="hpd-dots" /></> : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
                 </button>
                 {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
                 {state === "failed" || state === "unconfirmed" ? (
@@ -1313,7 +1313,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 <div className="fc-cl-rows" role="list">
                   {checklist.rows.map((r) => {
                     const bid = (bids || []).find((b) => b.omo === r.omo);
-                    const icon = { "not-priced": "○", saved: "💾", pending: "⏳", confirmed: "✓", failed: "!", past: "✕", "no-bid": "🚫" }[r.state];
+                    const icon = r.state === "pending" ? <span className="hpd-spin" aria-hidden="true" /> : { "not-priced": "○", saved: "💾", pending: "", confirmed: "✓", failed: "!", past: "✕", "no-bid": "🚫" }[r.state];
                     const stateText = { "not-priced": "no price yet", saved: "price saved, not sent", pending: "fax going through", confirmed: "sent and confirmed", failed: "fax failed: resend", past: "past due, no bid", "no-bid": `no bid${noBids[r.omo]?.reason ? `: ${noBids[r.omo].reason}` : ""}` }[r.state];
                     return (
                       <div key={r.omo} role="listitem" className={`fc-cl-row is-${r.state}${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed" || r.state === "no-bid") ? ` is-${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed" || r.state === "no-bid")}` : ""}`} data-hpd-smoke="fc-checklist-row" data-omo={r.omo}>

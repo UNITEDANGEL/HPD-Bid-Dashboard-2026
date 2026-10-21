@@ -49,7 +49,7 @@ export default function SentPaperwork({ omo, light = false }: { omo: string; lig
   return (
     <div className={`fc-sent${light ? " is-light" : ""}`} data-hpd-smoke="fc-sent">
       <div className="fc-sent-head"><b>📄 What you sent for {omo}</b><button type="button" onClick={() => { setOpen(false); setShown(null); }}>Hide</button></div>
-      {msg ? <p className="fc-sent-msg" data-hpd-smoke="fc-sent-msg">{msg}</p> : null}
+      {msg ? <p className="fc-sent-msg" data-hpd-smoke="fc-sent-msg">{/…$/.test(msg) ? <><span className="hpd-spin" aria-hidden="true" /> {msg.replace(/…$/, "")}<span className="hpd-dots" /></> : msg}</p> : null}
       {emails?.length ? (
         <ul>
           {emails.map((e) => (
@@ -59,7 +59,7 @@ export default function SentPaperwork({ omo, light = false }: { omo: string; lig
               <div className="fc-sent-files">
                 {e.files.map((f) => {
                   const key = `${e.id}|${f.i}`;
-                  return <button key={key} type="button" className={shown?.key === key ? "is-on" : ""} data-hpd-smoke="fc-sent-file" disabled={busy === key} onClick={() => void openPdf(e, f)}>{busy === key ? "⏳" : shown?.key === key ? "▾" : "📄"} {f.name}</button>;
+                  return <button key={key} type="button" className={shown?.key === key ? "is-on" : ""} data-hpd-smoke="fc-sent-file" disabled={busy === key} onClick={() => void openPdf(e, f)}>{busy === key ? <span className="hpd-spin" aria-hidden="true" /> : shown?.key === key ? "▾" : "📄"} {f.name}</button>;
                 })}
                 {e.threadId ? <a href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(e.threadId)}`} target="_blank" rel="noreferrer" data-hpd-smoke="fc-sent-gmail">Open in Gmail ↗</a> : null}
               </div>

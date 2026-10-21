@@ -88,10 +88,31 @@ export async function autoRegisterPush(fetcher: typeof fetch = fetch): Promise<"
     const json = sub.toJSON();
     let last: { endpoint?: string; at?: number } = {};
     try { last = JSON.parse(localStorage.getItem(REG_KEY) || "{}"); } catch { /* none */ }
-    if (last.endpoint === json.endpoint && Date.now() - (last.at || 0) < 86400000) { try { localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ } return "fresh"; }
+    // Registered today AND the server really has this phone: nothing to do. Otherwise register again (21 Oct: the phone
+    // said "On" but the server never got it).
+    if (last.endpoint === json.endpoint && Date.now() - (last.at || 0) < 86400000 && (await serverHasPhone(String(json.endpoint), fetcher)) !== false) { try { localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ } return "fresh"; }
     const r = await fetcher("/api/drive/push-subscribe", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: json, device: deviceName() }) });
     if (!r.ok) return "failed";
     try { localStorage.setItem(REG_KEY, JSON.stringify({ endpoint: json.endpoint, at: Date.now() })); localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ }
     return "registered";
   } catch { return "failed"; }
+}
+
+// Does the status server have this phone (by its id: the first 8 bytes of SHA-256 of the push address)? null: can't tell.
+export async function serverHasPhone(endpoint: string, fetcher: typeof fetch = fetch): Promise<boolean | null> {
+  try {
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
+    const id = `PUSH-${[...digest.slice(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+    const r = await fetcher(`https://hpd-status-worker.uac525.workers.dev/push-subs?t=${Date.now()}`, { cache: "no-store" });
+    if (!r.ok) return null;
+    const subs = (await r.json()).subs || {};
+    return !!subs[id] && !subs[id].off;
+  } catch { return null; }
+}
+export async function thisPhoneOnServer(fetcher: typeof fetch = fetch): Promise<boolean | null> {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    const sub = await reg?.pushManager.getSubscription();
+    return sub ? await serverHasPhone(sub.endpoint, fetcher) : false;
+  } catch { return null; }
 }

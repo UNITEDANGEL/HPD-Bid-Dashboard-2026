@@ -1,7 +1,7 @@
 "use client";
 // The phone-alert switch (owner, 20 Oct): turn alerts on (iPhone asks for permission), send a test, turn them off.
 import { useEffect, useState } from "react";
-import { autoRegisterPush, pushState, testAlert, turnOffPush, turnOnPush, type PushState } from "../lib/push";
+import { autoRegisterPush, pushState, testAlert, thisPhoneOnServer, turnOffPush, turnOnPush, type PushState } from "../lib/push";
 import { playChime, unlockChime } from "../lib/chime";
 import { ALERT_KINDS, type AlertKind } from "../lib/alert-kinds";
 
@@ -9,7 +9,10 @@ export default function PhoneAlerts() {
   const [state, setState] = useState<PushState | "">("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { void autoRegisterPush().finally(() => void pushState().then(setState)); }, []);
+  // Whether the server really has this phone (the alerts come from the server), checked after registering.
+  const [onServer, setOnServer] = useState<boolean | null | "checking">("checking");
+  const check = () => { setOnServer("checking"); void thisPhoneOnServer().then(setOnServer); };
+  useEffect(() => { void autoRegisterPush().finally(() => { void pushState().then(setState); check(); }); }, []);
   const on = async () => {
     setBusy(true);
     try { const r = await turnOnPush(); setMsg(r.message); } catch (e) { setMsg(`Couldn't turn alerts on: ${e instanceof Error ? e.message : "error"}`); }
@@ -27,6 +30,12 @@ export default function PhoneAlerts() {
         ? <div className="fc-push-row"><button type="button" data-hpd-smoke="fc-push-test" onClick={() => void testAlert().then((ok) => setMsg(ok ? "Test alert sent to this phone." : "Couldn't show a test alert."))}>Send a test alert</button><button type="button" className="is-off" data-hpd-smoke="fc-push-off" disabled={busy} onClick={() => void off()}>Turn off</button></div>
         : state === "unsupported" ? <p className="fc-push-note">This browser can&apos;t show phone alerts.</p>
         : <button type="button" className="fc-push-on" data-hpd-smoke="fc-push-on" disabled={busy || !state} onClick={() => void on()}>{busy ? "Turning on…" : "🔔 Turn on phone alerts"}</button>}
+      {state === "on" ? (
+        <p className={`fc-push-server${onServer === true ? " is-ok" : onServer === false ? " is-bad" : ""}`} data-hpd-smoke="fc-push-server">
+          {onServer === "checking" ? <><span className="hpd-spin" aria-hidden="true" /> Checking the server has this phone…</> : onServer === true ? "✓ The server has this phone: alerts will come here." : onServer === false ? "⚠️ The server doesn't have this phone yet." : "Couldn't check the server (no signal?)."}
+          {onServer === false || onServer === null ? <button type="button" data-hpd-smoke="fc-push-fix" onClick={() => void (async () => { setOnServer("checking"); const r = await turnOnPush(); setMsg(r.message); check(); })()}>Fix it now</button> : null}
+        </p>
+      ) : null}
       {msg ? <p className="fc-push-msg" data-hpd-smoke="fc-push-msg" role="status">{msg}</p> : null}
       <div className="fc-push-sounds" data-hpd-smoke="fc-push-sounds">
         <small>Hear each sound (every kind has its own):</small>

@@ -63,7 +63,7 @@ try {
 
   // A fax still going through: blue hourglass on the list and the map. A bid due within the hour that
   // isn't sent: red pulsing pin.
-  await page.waitForFunction(() => /⏳ Fax going through · \$500/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 15000 });
+  await page.waitForFunction(() => /Fax going through · \$500/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 15000 });
   if (Number.isFinite(pendingBid.lat)) assert.equal(await page.locator('.fc-bid-pin.is-pending[title^="ER77779 "]').count(), 1, "blue pin while the fax goes through");
   if (Number.isFinite(unsentBid.lat)) await page.waitForFunction(() => document.querySelectorAll('.fc-bid-pin.is-alert[title^="ER77780 "]').length === 1, null, { timeout: 10000 });
 

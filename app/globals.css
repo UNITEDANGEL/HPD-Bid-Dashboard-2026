@@ -688,3 +688,16 @@ select {
 /* No double-tap / pinch zoom of the app (20 Oct); the job pages zoom themselves. */
 html, body { touch-action: pan-x pan-y; }
 [data-zoomable] { touch-action: none; }
+
+/* Moving "it's working" signs (owner, 21 Oct: "the hourglass is static while it's sending; it should be spinning, I want
+   to see it going"): a spinning ring, animated dots, and a striped bar moving across a button that's sending. */
+.hpd-spin { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.18em; border-radius: 50%; border: 0.18em solid currentColor; border-right-color: transparent; animation: hpd-spin 0.75s linear infinite; flex: none; }
+@keyframes hpd-spin { to { transform: rotate(360deg); } }
+.hpd-dots::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: hpd-dots 1.2s steps(4, end) infinite; }
+@keyframes hpd-dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+.hpd-sending { position: relative; overflow: hidden; }
+.hpd-sending::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, #ffffff00 0 14px, #ffffff2e 14px 28px); background-size: 40px 40px; animation: hpd-stripes 0.8s linear infinite; pointer-events: none; }
+@keyframes hpd-stripes { to { background-position: 40px 0; } }
+.hpd-pulse { animation: hpd-pulse 1.2s ease-in-out infinite; }
+@keyframes hpd-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .hpd-spin { animation-duration: 2s; } .hpd-sending::before { animation: none; } }

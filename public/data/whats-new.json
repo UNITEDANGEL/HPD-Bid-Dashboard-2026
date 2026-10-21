@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "Moving 'sending' signs + alerts check themselves",
+      "items": [
+        "While a bid or NO BID fax is sending, the button shows a spinning ring and moving stripes (Sending the fax to HPD…); a fax going through spins on its pin, chip and checklist row; email checks, replies and opening sent PDFs spin too.",
+        "Phone alerts: every time the app opens the phone checks the server really has it and registers again if not. The Alerts page says ✓ The server has this phone (or Fix it now)."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "🔔 Phone alerts are automatic",
       "items": [
         "No sign-in needed: once the iPhone allows alerts, the phone registers itself, and again every time the app opens (so it fixes itself).",
