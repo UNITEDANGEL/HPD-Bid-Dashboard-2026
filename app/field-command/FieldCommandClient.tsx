@@ -1669,7 +1669,7 @@ export default function FieldCommandClient() {
       try { later = Number(localStorage.getItem("hpd-allow-alerts-later") || 0); } catch { /* private mode */ }
       if (r === "needs-allow" && (isHomeScreenApp() || !/iPhone|iPad/.test(navigator.userAgent)) && Date.now() - later > 3 * 86400000) setAllowAlerts("ask");
       // An iPhone in Chrome / Safari tab can't get alerts at all: say how, once in a while.
-      if (r === "unsupported" && /iPhone|iPad/.test(navigator.userAgent) && !isHomeScreenApp() && Date.now() - later > 3 * 86400000) setAllowAlerts(/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent) ? "You're in Chrome. iPhone alerts only work in the app added from Safari: open hpd-bid-dashboard-2026.pages.dev in Safari → Share → Add to Home Screen, then open HPD Field from that icon." : "To get alerts: tap Share → Add to Home Screen, then open HPD Field from that icon.");
+      if (r === "unsupported" && /iPhone|iPad/.test(navigator.userAgent) && !isHomeScreenApp() && Date.now() - later > 3 * 86400000) setAllowAlerts(/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent) ? "You're in a Chrome tab. iPhone alerts only work from a Home Screen icon: in Chrome tap Share (⬆ in the address bar, or ⋯ → Share) → Add to Home Screen, then open HPD Field from that icon." : "To get alerts: tap Share → Add to Home Screen, then open HPD Field from that icon.");
     });
   }, []);
   const [notifUnread, setNotifUnread] = useState(0);
