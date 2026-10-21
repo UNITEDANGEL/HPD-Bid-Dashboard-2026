@@ -77,7 +77,7 @@ export function playChime(kindIn: RingKind | string = "message") {
 }
 
 // Any part of the app rings and shows the banner through this (the map listens for it).
-export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "board" | "bids" | "money"; omo?: string };
+export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "board" | "bids" | "money" | "job"; omo?: string };
 export function notify(n: AppNotice) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent<AppNotice>("hpd-notify", { detail: n }));

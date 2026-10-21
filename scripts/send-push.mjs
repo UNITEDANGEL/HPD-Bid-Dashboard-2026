@@ -60,20 +60,20 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       const subject = String(t.subject || m.subject || "");
       const kind = kinds ? kinds.emailKind(subject, t.kind || "", m.from || "") : "message";
       const title = kinds ? kinds.emailTitle(kind, who, omo, replied, subject) : `📩 ${who || "HPD"} ${replied ? "replied" : "wrote"}${omo ? ` · ${omo}` : ""}`;
-      out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title, body: String(m.subject || t.subject || "").slice(0, 120), url: kind === "rejection" ? "/map/?view=all&map=1&money=1" : "/map/?view=all&map=1&board=1", tag: `t-${h(t.id)}` });
+      out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title, body: String(m.subject || t.subject || "").slice(0, 120), url: kind === "rejection" ? `/map/?view=all&map=1&money=1&omo=${omo}` : kind === "award" ? `/map/?view=all&map=1&omo=${omo}` : `/map/?view=all&map=1&board=1&omo=${omo}`, tag: `t-${h(t.id)}` });
     }
   }
   // Payment rejections (HPD's notices, last 7 days).
   for (const [omo, j] of Object.entries(requests?.jobs || {})) {
     const at = j?.rejectedAt;
     if (!at || now - Date.parse(at) > 7 * 86400000) continue;
-    out.push({ key: `r:${h(`${omo}|${at}`)}`, kind: "rejection", title: `💵 Payment rejected · ${omo}`, body: String(j.rejectedReason || "Fix it and send it back.").slice(0, 120), url: "/map/?view=all&map=1&money=1", tag: `r-${omo}` });
+    out.push({ key: `r:${h(`${omo}|${at}`)}`, kind: "rejection", title: `💵 Payment rejected · ${omo}`, body: String(j.rejectedReason || "Fix it and send it back.").slice(0, 120), url: `/map/?view=all&map=1&money=1&omo=${omo}`, tag: `r-${omo}` });
   }
   // New invitations to bid (still open).
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(now));
   for (const b of bids || []) {
     if (!b.omo || !b.bidDue || b.bidDue < today) continue;
-    out.push({ key: `b:${h(`${b.omo}|${b.bidDue}`)}`, kind: "bid", title: `🧾 New invitation to bid · ${b.omo}`, body: `${b.address || ""} · due ${b.bidDue.slice(5).replace("-", "/")} ${b.bidDueTime || ""}`.trim(), url: "/map/?bids=1", tag: `b-${b.omo}` });
+    out.push({ key: `b:${h(`${b.omo}|${b.bidDue}`)}`, kind: "bid", title: `🧾 New invitation to bid · ${b.omo}`, body: `${b.address || ""} · due ${b.bidDue.slice(5).replace("-", "/")} ${b.bidDueTime || ""}`.trim(), url: `/map/?bids=1&omo=${b.omo}`, tag: `b-${b.omo}` });
   }
   // A 24-hour notice under 6 hours with nothing sent (the board's own rule).
   if (loadLib && conversations?.threads) {
@@ -83,13 +83,13 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       const rows = buildBoard({ threads, sent: sent || {}, marks: {}, now });
       for (const r of urgentRows(rows, now)) {
         const left = Math.round(hoursLeft(r, now));
-        out.push({ key: `u:${h(r.key)}`, kind: "urgent", title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: "/map/?view=all&map=1&board=1", tag: `u-${r.omo}` });
+        out.push({ key: `u:${h(r.key)}`, kind: "urgent", title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `u-${r.omo}` });
         // Overdue: again every 2 hours, weekdays 8 AM - 8 PM New York, until it's answered (owner, 21 Oct: ER01987 went
         // overdue after one alert). Each 2-hour slot is its own alert.
         if (left <= 0 && workingHours(now)) {
           const slot = Math.floor(now / (2 * 3600000));
           const late = Math.max(1, Math.round(-hoursLeft(r, now)));
-          out.push({ key: `o:${h(`${r.key}|${slot}`)}`, kind: "urgent", title: `⏰ ${r.omo}: notice overdue ${late} h — answer now`, body: `${r.hours}-hour notice from ${r.who || "vendor tracking"}. Nothing sent yet.`, url: "/map/?view=all&map=1&board=1", tag: `u-${r.omo}` });
+          out.push({ key: `o:${h(`${r.key}|${slot}`)}`, kind: "urgent", title: `⏰ ${r.omo}: notice overdue ${late} h — answer now`, body: `${r.hours}-hour notice from ${r.who || "vendor tracking"}. Nothing sent yet.`, url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `u-${r.omo}` });
         }
       }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }

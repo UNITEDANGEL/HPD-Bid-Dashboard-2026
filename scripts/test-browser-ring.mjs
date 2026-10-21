@@ -56,7 +56,11 @@ try {
   assert.ok((await vib()).length > before, "rang");
   if (shots) await page.screenshot({ path: `${shots}/ring-2-invite.png` });
   await ping.locator(".fc-hpd-ping-main").click();
-  await page.locator('[data-hpd-smoke="fc-bids-list"], .fc-bids-list').first().waitFor({ timeout: 20000 });
+  // The alert opens that bid itself (21 Oct); back to the list.
+  const bidSheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
+  await bidSheet.waitFor({ timeout: 20000 });
+  assert.equal((await bidSheet.locator("header strong").innerText()).trim(), "EX99999");
+  await bidSheet.locator("header button").first().click();
   // 3. A 24-hour notice with under 6 hours left (Monday 1 PM notice, due Tuesday 1 PM; now Tuesday ~11 AM).
   stage = 3;
 

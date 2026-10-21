@@ -10,6 +10,7 @@ import type { NoticeFindings } from "../../lib/notice-findings";
 import { BOARD_STEPS, NUDGE_AFTER_DAYS, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
+  focusOmo?: string; // an alert's job: scrolled to and highlighted (21 Oct)
   rows: BoardRow[];
   addressOf: (omo: string) => string;
   hasJob: (omo: string) => boolean;
@@ -38,8 +39,19 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!focusOmo) return;
+    const t = window.setTimeout(() => {
+      const el = document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${focusOmo}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.add("is-focus");
+      window.setTimeout(() => el.classList.remove("is-focus"), 4000);
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [focusOmo, rows.length]);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
   // Reply to many (17 Oct): every reply written on one screen; each one still goes out with its own two taps.
@@ -172,7 +184,7 @@ export default function NoticeBoard({ rows, addressOf, hasJob, onOpenJob, onOpen
     const hot = !row.steps.sent.done && h < 6;
     const address = addressOf(row.omo);
     return (
-      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}`} data-hpd-smoke="fc-board-row" data-next={row.next || "done"}>
+      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}`} data-hpd-smoke="fc-board-row" data-omo={row.omo} data-next={row.next || "done"}>
         <div className="fc-board-top">
           <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
           <span className="fc-board-kind">{row.kind === "docs" ? "MISSING DOCS" : `${row.hours}-HOUR`}</span>

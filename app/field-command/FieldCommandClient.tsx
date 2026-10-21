@@ -1262,6 +1262,7 @@ export default function FieldCommandClient() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("bids") !== "1") return;
+    setBidsFocus((params.get("omo") || "").toUpperCase());
     setBidsOpen(true);
     // The tab goes by sessionStorage: changing the address twice reset the screen.
     try { if (params.get("tab")) sessionStorage.setItem("hpd-bids-tab", String(params.get("tab"))); } catch {}
@@ -1270,9 +1271,13 @@ export default function FieldCommandClient() {
   // A phone alert about HPD's email / a notice opens the vendor tracking board (…&board=1).
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
+    const omo = (q.get("omo") || "").toUpperCase();
+    // A rejection / a win with its job: the job card opens (the ?omo= link below does it once the jobs are loaded).
+    if (q.get("money") === "1" && omo) return;
     if (q.get("money") === "1") { setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("rejected"); setNoticesOpen(true); try { window.history.replaceState(null, "", window.location.pathname); } catch {} return; }
     if (q.get("board") !== "1") return;
     setBoardShow("all");
+    setBoardFocus(omo);
     setBoardOpen(true);
     try { window.history.replaceState(null, "", window.location.pathname); } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1640,7 +1645,7 @@ export default function FieldCommandClient() {
     let last: (AppNotice & { at: number }) | null = null;
     for (const m of sorted) {
       const kind: AlertKind = emailKind(m.subject, m.threadKind || "", m.from || "");
-      const n: AppNotice = { kind, go: kind === "rejection" ? "money" : "board", omo: m.omo, title: emailTitle(kind, m.from || "", m.omo, !!m.replied, m.subject), text: m.subject.slice(0, 110) };
+      const n: AppNotice = { kind, go: kind === "rejection" ? "money" : kind === "award" ? "job" : "board", omo: m.omo, title: emailTitle(kind, m.from || "", m.omo, !!m.replied, m.subject), text: m.subject.slice(0, 110) };
       addToLog(n);
       last = { ...n, at: Date.now() };
     }
@@ -1658,6 +1663,9 @@ export default function FieldCommandClient() {
   }, []);
   const [chimeOff, setChimeOff] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  // An alert opens its own job (owner, 21 Oct "next upgrade"): the board scrolled to it, that bid, or the job card.
+  const [boardFocus, setBoardFocus] = useState("");
+  const [bidsFocus, setBidsFocus] = useState("");
   // Phone alerts by themselves (21 Oct): registered on every open; "Allow alerts" only if the iPhone never allowed them.
   const [allowAlerts, setAllowAlerts] = useState("");
   useEffect(() => {
@@ -1678,10 +1686,13 @@ export default function FieldCommandClient() {
     window.addEventListener("hpd-notify-log", count);
     return () => window.removeEventListener("hpd-notify-log", count);
   }, []);
-  const goTo = (go?: string) => {
-    if (go === "bids") { closeScreens("bids"); setBidsOpen(true); }
-    else if (go === "board") { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }
+  const goTo = (go?: string, omo = "") => {
+    const job = omo ? findAnyJob(omo.toUpperCase()) : undefined;
+    if (go === "bids") { closeScreens("bids"); setBidsFocus(omo.toUpperCase()); setBidsOpen(true); }
+    else if (go === "board") { closeScreens("board"); setBoardShow("all"); setBoardFocus(omo.toUpperCase()); setBoardOpen(true); }
+    else if ((go === "money" || go === "job") && job) { closeScreens(); setSelectedJob(job); }
     else if (go === "money") { closeScreens("notices"); setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("rejected"); setNoticesOpen(true); }
+    else if (go === "job") { closeScreens("board"); setBoardShow("all"); setBoardFocus(omo.toUpperCase()); setBoardOpen(true); }
   };
   useEffect(() => {
     if (!threads) return;
@@ -2069,7 +2080,7 @@ export default function FieldCommandClient() {
     if (!jobs.length || requestedJobLoaded.current) return;
     requestedJobLoaded.current = true;
     const params = new URLSearchParams(window.location.search);
-    const requested = (params.get("omo") || params.get("job") || params.get("q") || "").trim().toUpperCase();
+    const requested = params.get("board") === "1" || params.get("bids") === "1" ? "" : (params.get("omo") || params.get("job") || params.get("q") || "").trim().toUpperCase();
     // Open the linked job once, then take it out of the address: the iPhone app reopens the last
     // address, and a job left in it kept coming back. No forced search or borough either -- they
     // hid every other job.
@@ -4124,6 +4135,8 @@ export default function FieldCommandClient() {
         onClose={() => setBidsOpen(false)}
         notifUnread={notifUnread}
         onNotifications={() => setNotifOpen(true)}
+        focusOmo={bidsFocus}
+        onFocused={() => setBidsFocus("")}
       />
       {closeOutOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-work-sheet" role="dialog" aria-label="Ready to close out" data-hpd-smoke="fc-close-out-sheet">
@@ -4571,10 +4584,10 @@ export default function FieldCommandClient() {
           <button type="button" className="is-later" onClick={() => { try { localStorage.setItem("hpd-allow-alerts-later", String(Date.now())); } catch { /* private mode */ } setAllowAlerts(""); }}>Later</button>
         </div>
       ) : null}
-      {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go); }} /> : null}
+      {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go, n.omo || ""); }} /> : null}
       {ping ? (
         <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind} style={{ borderColor: ALERT_KINDS[ping.kind]?.color }}>
-          <button type="button" className="fc-hpd-ping-main" onClick={() => { setPing(null); goTo(ping.go); }}>
+          <button type="button" className="fc-hpd-ping-main" onClick={() => { setPing(null); goTo(ping.go, ping.omo || ""); }}>
             <span aria-hidden="true">{ALERT_KINDS[ping.kind]?.icon || "🔔"}</span>
             <b>{ping.title}</b>
             {ping.text ? <small>{ping.text.slice(0, 110)}</small> : null}
@@ -4585,6 +4598,7 @@ export default function FieldCommandClient() {
       ) : null}
       {boardOpen ? (
         <NoticeBoard
+          focusOmo={boardFocus}
           rows={boardRows}
           initialShow={boardShow}
           onScan={() => void runScan()}

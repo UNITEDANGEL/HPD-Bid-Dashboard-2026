@@ -69,8 +69,8 @@ assert.ok(titles.includes("🧾 New invitation to bid · ER09999"));
 assert.ok(!titles.some((t) => /ER00001/.test(t)), "past invitations don't alert");
 assert.ok(titles.some((t) => /^⏰ EQ99997: \d+ h left on the notice$/.test(t)), titles.join(" | "));
 assert.ok(alerts.every((a) => /^[ebur]:[0-9a-f]{16}$/.test(a.key)), "kept as short hashes");
-assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=1&board=1");
-assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1", "a rejection opens the rejections");
+assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=1&board=1&omo=EP27382", "the alert opens that job on the board");
+assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1&omo=EQ12345", "a rejection opens that job");
 console.log("PASS phone alert finder: a different alert per kind: 💰 award (cha-ching), ⏱ notice, 📋 request (Gafur replied, Lewis status update), 💵 rejection (email + HPD notices), 📩 message, 🧾 invitation, ⏰ under 6 h; old ones left out; short hashes; rejections open the rejections");
 
 // Overdue notices remind again every 2 hours in working hours (21 Oct, ER01987).

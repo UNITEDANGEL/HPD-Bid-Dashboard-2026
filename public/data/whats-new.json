@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "Alerts open their own job",
+      "items": [
+        "Tap a phone alert, a banner or an item in 🔔: a notice or request opens the vendor tracking board scrolled to that job (outlined in yellow); a new invitation opens that bid; a rejection or a win opens the job's card."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "⏰ Overdue notices keep reminding you",
       "items": [
         "A 24/72-hour notice that's overdue with nothing sent alerts your phone again every 2 hours (weekdays 8 AM – 8 PM) until it's answered: \"⏰ ER01987: notice overdue 2 h — answer now\".",

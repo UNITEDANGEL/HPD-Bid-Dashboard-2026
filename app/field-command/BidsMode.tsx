@@ -93,7 +93,7 @@ function badge(record?: BidRecord) {
   return { text: `Fax going through · ${money(record.sentPrice || record.price)}${state === "unconfirmed" ? " · no answer yet" : ""}`, tone: "pending" };
 }
 
-export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void }) {
+export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
   const [privOk, setPrivOk] = useState(false);
@@ -543,6 +543,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   async function update(next: BidRecord) {
     setRecords(await saveBidRecord(next, HPD_STATUS_WORKER_URL));
   }
+
+  // An alert about a new invitation opens that bid (21 Oct).
+  useEffect(() => {
+    if (!open || !focusOmo || !bids) return;
+    const bid = bids.find((b) => b.omo.toUpperCase() === focusOmo);
+    if (bid) openBid(bid);
+    onFocused?.();
+  }, [open, focusOmo, bids]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openBid(bid: UpcomingBid) {
     setFullText(false);
