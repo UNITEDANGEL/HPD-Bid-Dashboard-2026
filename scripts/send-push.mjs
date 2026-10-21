@@ -14,7 +14,8 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const DRY = process.argv.includes("--dry-run");
-const TEST = process.argv.includes("--test"); // one test alert to every phone, nothing else (owner asked to try it)
+const TEST = process.argv.includes("--test");
+const BRIEF_NOW = process.argv.includes("--briefing"); // the morning briefing right now (owner asked to see it) // one test alert to every phone, nothing else (owner asked to try it)
 const STATE = path.join(ROOT, "data", "push_state.json");
 const WORKER = (process.env.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
 const SITE = "https://hpd-bid-dashboard-2026.pages.dev";
@@ -102,8 +103,8 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
 
 const nyParts = (now) => Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
 const minutesOf = (t) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
-export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib }) {
-  if (!workingHours(now)) return null;
+export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib, force = false }) {
+  if (!force && !workingHours(now)) return null;
   const p = nyParts(now);
   const today = `${p.year}-${p.month}-${p.day}`;
   const nowMin = Number(p.hour) * 60 + Number(p.minute);
@@ -148,12 +149,13 @@ async function main() {
   const sent = JSON.parse(read(path.join(ROOT, "public/data/sent_paperwork.json")) || "{}").jobs || {};
   const requests = JSON.parse(read(path.join(ROOT, "public/data/hpd_requests.json")) || "{}");
   const { loadLib } = await import("./daily-report.mjs");
-  const alerts = TEST ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib });
+  const alerts = TEST ? [] : BRIEF_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib });
+  if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
   const fresh = alerts.filter((a) => !seen.has(a.key));
   const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
-  if (!TEST && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
+  if (!TEST && !BRIEF_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
   if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).
@@ -181,8 +183,8 @@ async function main() {
       }
     }
   }
-  if (!TEST) fs.writeFileSync(STATE, JSON.stringify(nextState));
-  else console.log(`Test alert sent to ${subs.length} phone(s).`);
+  if (!TEST && !BRIEF_NOW) fs.writeFileSync(STATE, JSON.stringify(nextState));
+  else console.log(`${BRIEF_NOW ? "Morning briefing" : "Test alert"} sent to ${subs.length} phone(s).`);
 }
 
 if (/send-push\.mjs$/.test(process.argv[1] || "")) {
