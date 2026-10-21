@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T20:13:45.445827+00:00",
+  "generatedAt": "2026-10-21T20:26:09.407783+00:00",
   "days": 14,
   "bids": [
     {
@@ -4556,6 +4556,136 @@
       "lng": -74.006552
     },
     {
+      "omo": "ER08012",
+      "bidDue": "2026-10-22",
+      "bidDueTime": "11:30 AM",
+      "workStart": "2026-10-23",
+      "workCompletion": "2026-10-29",
+      "address": "2201 JEROME AVENUE",
+      "borough": "BX",
+      "itbFile": "ER08012_102126041506.pdf",
+      "description": "REPLACE VINYL TILES IN THE 4th ROOM (BEDROOM) FROM EAST AT SOUTH BOTTOM OF WEST SOUTH WALL LOCATED AT APT 6C, 6th STORY, 6th APARTMENT FROM NORTH AT EAST. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ IN THE 4th ROOM (BEDROOM) FROM EAST AT SOUTH LOCATED AT APT 6C, 6th STORY, 6th APARTMENT FROM NORTH AT EAST. MAKE ALL NECESSARY REPAIRS TO REMOVE THE LOOSEN OR BROKEN DEFECTIVE VINYL FLOOR TILES FLOORING IN BEDROOM BESIDE SOUTH WEST WALL. APROX 6 SQ. FT.. make any necessary repairs to subfloor as needed. make LEVEL with FLOOR. REPLACE WITH SIMILAR COLOUR APPROXIMATELY 6 SQ.FT. SEAL ALL EDGES AND CORNERS. RESTORE FLOOR TO A SAFE MANNER. REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 212 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792613710000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.857513,
+      "lng": -73.904883
+    },
+    {
       "omo": "ER07663",
       "bidDue": "2026-10-23",
       "bidDueTime": "11:00 AM",
@@ -5075,6 +5205,136 @@
       },
       "lat": 40.699742,
       "lng": -73.901251
+    },
+    {
+      "omo": "ER08678",
+      "bidDue": "2026-10-23",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-25",
+      "workCompletion": "2026-11-01",
+      "address": "34-25 150 PLACE",
+      "borough": "QN",
+      "itbFile": "ER08678_102126040536.pdf",
+      "description": "SELF CLOSING DOOR, LOCATED AT DOOR LABELLED \"GARBAGE RECYCLING\" ROOM, BASEMENT, PUBLIC HALL. INSTALL NEW PASSAGE LOCK AND MAKE ALL NECESSARY ADJUSTMENTS TO EXISTING HINGES TO MAKE DOOR SELF CLOSING AND PROPERLY LATCHING. LOCATED AT DOOR LABELLED \"GARBAGE RECYCLING\" ROOM, BASEMENT, PUBLIC HALL....TOTAL DOORS (1)",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792613138000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.766587,
+      "lng": -73.813909
     }
   ],
   "unread": []
