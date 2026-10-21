@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T19:25:35.155503+00:00",
+  "generatedAt": "2026-10-21T19:36:29.277107+00:00",
   "days": 14,
   "bids": [
     {
@@ -262,136 +262,6 @@
       },
       "lat": 40.680665,
       "lng": -73.944484
-    },
-    {
-      "omo": "ER07640",
-      "bidDue": "2026-10-21",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-21",
-      "workCompletion": "2026-10-31",
-      "address": "720 LINDEN BOULEVARD",
-      "borough": "BK",
-      "itbFile": "ER07640_102026034029.pdf",
-      "description": "REPAIR BULKHEAD AND BUILDING ENTRANCE DOORS TO ADHERE TO LOCAL LAW 111 OF 2018. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING BULKHEAD DOOR LEADING TO ROOF AND BUILDING ENTRANCE DOOR. BUILDING ENTRANCE (DOUBLE DOOR) AT PUBLIC HALL 1ST STORY. REMOVE DEFECTIVE DOOR CLOSER AND LOCKSET. SUPPLY AND INSTALL A NEW DOOR CLOSER ON EACH DOOR. MAKE ONE DOOR STATIONARY. INSTALL A NEW ADAM RITE PASSAGE LOCKSET WHILE MAKING ALL THE NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. RESTORE DOORS TO PROPER WORKING ORDER. BULKHEAD DOOR LEADING TO ROOF: REMOVE DEFECTIVE DOOR CLOSER. SUPPLY AND INSTALL A NEW DOOR CLOSER AND STORM CHAIN. MAKE ALL THE NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. RESTORE DOORS TO PROPER WORKING ORDER. TOTAL DOORS = (3) ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. REMOVE ALL WORK-RELATED DEBRIS.",
-      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; K. BRYANT 212863 8496; R. REED- 212 863 5481 __________________________________________________________________ IF NO WORK IS PERFORMED OR THE LANDLORD REFUSES ACCESS TO CONTRACTOR TO COMPLETED WORK, OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1792525233000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.7,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.6,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.6,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 500.5,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.7,
-          "y": 45.1,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 43.7,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496,
-          "y": 45.1,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.2,
-          "y": 44.4,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.2,
-          "y": 87.9,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 87.9,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 267.8,
-          "y": 467.3,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "lat": 40.65347,
-      "lng": -73.931762
     },
     {
       "omo": "ER07879",
@@ -3514,6 +3384,136 @@
       },
       "lat": 40.665845,
       "lng": -73.88229
+    },
+    {
+      "omo": "ER08170",
+      "bidDue": "2026-10-22",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-23",
+      "workCompletion": "2026-11-06",
+      "address": "273 EAST 176 STREET",
+      "borough": "BX",
+      "itbFile": "ER08170_102126032737.pdf",
+      "description": "DOOR REPAIR MAKE ALL NECESSARY REPAIRS TO REPLACE BROKEN ADAM RITE LOCK SET WITH NEW LOCK SET KEEP ORIGINAL CYLINDER AND STROKE PLATE TO ENSURE DOOR SELF CLOSES AND LATCH AT BUILDING ENTRANCE DOOR TOTAL DOORS= 1",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792610861000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.847509,
+      "lng": -73.903899
     },
     {
       "omo": "ER08186",
