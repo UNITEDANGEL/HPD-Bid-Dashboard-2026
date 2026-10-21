@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { handlePushSubscribe } from "../server/drive-packages.mjs";
-import { findAlerts, morningBriefing, openSealed, workingHours } from "./send-push.mjs";
+import { eveningWrapup, findAlerts, morningBriefing, openSealed, workingHours } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const key = crypto.randomBytes(32);
@@ -68,7 +68,7 @@ assert.ok(!titles.some((t) => /EQ00001/.test(t)), "old emails don't alert");
 assert.ok(titles.includes("🧾 New invitation to bid · ER09999"));
 assert.ok(!titles.some((t) => /ER00001/.test(t)), "past invitations don't alert");
 assert.ok(titles.some((t) => /^⏰ EQ99997: \d+ h left on the notice$/.test(t)), titles.join(" | "));
-assert.ok(alerts.every((a) => /^[ebur]:[0-9a-f]{16}$/.test(a.key) || /^m:\d{4}-\d{2}-\d{2}$/.test(a.key)), "kept as short hashes (the morning briefing by its day)");
+assert.ok(alerts.every((a) => /^[ebur]:[0-9a-f]{16}$/.test(a.key) || /^[mw]:\d{4}-\d{2}-\d{2}$/.test(a.key)), "kept as short hashes (briefing / wrap-up by their day)");
 assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=1&board=1&omo=EP27382", "the alert opens that job on the board");
 assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1&omo=EQ12345", "a rejection opens that job");
 console.log("PASS phone alert finder: a different alert per kind: 💰 award (cha-ching), ⏱ notice, 📋 request (Gafur replied, Lewis status update), 💵 rejection (email + HPD notices), 📩 message, 🧾 invitation, ⏰ under 6 h; old ones left out; short hashes; rejections open the rejections");
@@ -109,4 +109,26 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   const quiet = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
   assert.match(quiet.title, /nothing urgent today/);
   console.log(`PASS morning briefing: weekdays from 8 AM, once a day: "${b.body}"; nothing before 8 or on weekends; a quiet day says so`);
+}
+
+// 🌆 Evening wrap-up: weekdays from 6 PM, what got done today and what's left.
+{
+  const at = (h) => `2026-10-22T${h}:00:00Z`; // Thursday; 22:30Z = 6:30 PM NY
+  const records = {
+    "BID-ER1": { sentAt: at("14"), status: "confirmed", bidDue: "2026-10-22" },
+    "BID-ER2": { sentAt: at("15"), status: "sent", bidDue: "2026-10-23" },
+    "BID-ER3": { sentAt: at("16"), status: "failed", bidDue: "2026-10-23" },
+    "BID-ER9": { sentAt: "2026-10-21T15:00:00Z", status: "confirmed", bidDue: "2026-10-21" }, // yesterday
+    "NOBID-ER4": { at: at("17"), faxedAt: at("17"), faxStatus: "confirmed" },
+  };
+  const threads = [{ id: "n1", subject: "24 HR POOR PERFORMANCE NOTICE - OMO#EQ1", omos: ["EQ1"], kind: "past due", people: ["L"], messages: [{ at: "2026-10-22T13:00:00Z", hpd: true, mine: false, from: "x@hpd.nyc.gov", subject: "24 HR", text: "x@hpd.nyc.gov" }, { at: at("15"), hpd: false, mine: true, from: "me", subject: "Re", text: "", files: ["a.pdf"] }] }];
+  const bids = [{ omo: "ER2", bidDue: "2026-10-23", bidDueTime: "10:00 AM" }, { omo: "ER5", bidDue: "2026-10-23", bidDueTime: "11:30 AM" }, { omo: "ER6", bidDue: "2026-10-23", bidDueTime: "2:00 PM" }];
+  const w = await eveningWrapup({ conversations: { threads }, bids, sent: {}, records, now: Date.parse("2026-10-22T22:30:00Z"), loadLib });
+  assert.equal(w.key, "w:2026-10-22");
+  assert.match(w.body, /📠 3 bids faxed \(1 confirmed, 1 waiting, 1 failed\)/);
+  assert.match(w.body, /🚫 1 NO BID/);
+  assert.match(w.body, /✉ 1 notice \/ request answered/);
+  assert.match(w.body, /🧾 tomorrow: 2 bids to send \(first 11:30 AM\)/, "ER2 already sent for tomorrow");
+  assert.equal(await eveningWrapup({ conversations: { threads }, bids, sent: {}, records, now: Date.parse("2026-10-22T20:30:00Z"), loadLib }), null, "not before 6 PM");
+  console.log(`PASS evening wrap-up: weekdays from 6 PM, once a day: "${w.body}"`);
 }

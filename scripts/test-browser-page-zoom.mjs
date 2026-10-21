@@ -39,6 +39,9 @@ try {
   assert.match(vp, /user-scalable=no/);
   // The map still pinch-zooms.
   await page.locator(".leaflet-container").waitFor();
+  // The bids map fits itself to the pins right after it opens (twice): pinch once it has settled.
+  await page.waitForFunction(() => document.querySelectorAll(".fc-bid-pin").length > 0, null, { timeout: 60000 }).catch(() => {});
+  await page.waitForTimeout(1500);
   const z0 = await page.evaluate(() => Number((document.querySelector(".leaflet-proxy")?.style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || 0));
   await pinchAt(195, 300, 60, 240);
   await page.waitForTimeout(600);

@@ -15,7 +15,8 @@ import path from "node:path";
 const ROOT = process.cwd();
 const DRY = process.argv.includes("--dry-run");
 const TEST = process.argv.includes("--test");
-const BRIEF_NOW = process.argv.includes("--briefing"); // the morning briefing right now (owner asked to see it) // one test alert to every phone, nothing else (owner asked to try it)
+const BRIEF_NOW = process.argv.includes("--briefing"); // the morning briefing right now (owner asked to see it)
+const WRAP_NOW = process.argv.includes("--wrapup"); // the evening wrap-up right now // one test alert to every phone, nothing else (owner asked to try it)
 const STATE = path.join(ROOT, "data", "push_state.json");
 const WORKER = (process.env.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
 const SITE = "https://hpd-bid-dashboard-2026.pages.dev";
@@ -48,7 +49,7 @@ export function workingHours(now = Date.now()) {
 }
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {} }) {
   const out = [];
   const kinds = loadLib ? await loadLib("alert-kinds") : null;
   // HPD wrote or replied (last 2 days): a notice, a documents request, a rejection or a message.
@@ -98,7 +99,55 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
   const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib });
   if (brief) out.push(brief);
+  // 🌆 Evening wrap-up (owner, 21 Oct "next upgrade"): once each weekday from 6 PM, what got done and what's left.
+  const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib });
+  if (wrap) out.push(wrap);
   return out;
+}
+
+// The day's results from the bid records on the status server (BID-<OMO> / NOBID-<OMO>), the emails and tomorrow's bids.
+export async function eveningWrapup({ conversations, bids, sent, records = {}, now = Date.now(), loadLib, force = false }) {
+  const p = nyParts(now);
+  const hour = Number(p.hour);
+  if (!force && (!workingHours(now - 2 * 3600000) || hour < 18 || hour >= 22)) return null; // weekdays 6-10 PM
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const dayOf = (iso) => { if (!iso) return ""; const q = nyParts(Date.parse(iso)); return `${q.year}-${q.month}-${q.day}`; };
+  const lines = [];
+  const faxed = Object.entries(records).filter(([k, v]) => k.startsWith("BID-") && v && dayOf(v.sentAt) === today);
+  if (faxed.length) {
+    const ok = faxed.filter(([, v]) => v.status === "confirmed").length;
+    const bad = faxed.filter(([, v]) => v.status === "failed").length;
+    const wait = faxed.length - ok - bad;
+    lines.push(`📠 ${faxed.length} bid${faxed.length === 1 ? "" : "s"} faxed (${[ok ? `${ok} confirmed` : "", wait ? `${wait} waiting` : "", bad ? `${bad} failed` : ""].filter(Boolean).join(", ")})`);
+  }
+  const noBids = Object.entries(records).filter(([k, v]) => k.startsWith("NOBID-") && v && !v.undone && dayOf(v.faxedAt || v.at) === today);
+  if (noBids.length) lines.push(`🚫 ${noBids.length} NO BID${noBids.length === 1 ? "" : "s"}`);
+  // Notices / requests you answered today (your email in their thread).
+  const answered = new Set();
+  for (const t of conversations?.threads || []) {
+    const isVendor = /poor performance|missing documents|\b(24|72)[ -]?h(ou)?r/i.test(t.subject || "") || ["past due", "AEP", "correction"].includes(t.kind);
+    if (isVendor && (t.messages || []).some((m) => m.mine && dayOf(m.at) === today)) for (const o of t.omos || []) answered.add(o);
+  }
+  if (answered.size) lines.push(`✉ ${answered.size} notice${answered.size === 1 ? "" : "s"} / request${answered.size === 1 ? "" : "s"} answered`);
+  if (loadLib && conversations?.threads) {
+    try {
+      const { buildBoard, hoursLeft } = await loadLib("notice-board");
+      const threads = conversations.threads.map((t) => ({ ...t, omos: t.omos || [], people: t.people || [], subject: t.subject || "", messages: (t.messages || []).map((m) => ({ ...m, text: m.text || "", files: m.files || [] })) }));
+      const late = buildBoard({ threads, sent: sent || {}, marks: {}, now }).filter((r) => r.next && r.kind === "ppn" && !r.steps.sent.done && hoursLeft(r, now) < 24);
+      if (late.length) lines.push(`⏰ still open: ${late.slice(0, 3).map((r) => r.omo).join(", ")}${late.length > 3 ? ` +${late.length - 3}` : ""}`);
+    } catch (e) { console.log(`wrap-up notices skipped: ${e.message}`); }
+  }
+  const tomorrow = (() => { const d = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day) + 1)); return d.toISOString().slice(0, 10); })();
+  const dueTomorrow = (bids || []).filter((b) => b.bidDue === tomorrow).sort((a, b) => minutesOf(a.bidDueTime) - minutesOf(b.bidDueTime));
+  const sentFor = new Set(Object.entries(records).filter(([k, v]) => k.startsWith("BID-") && v?.sentAt && v.bidDue === tomorrow).map(([k]) => k.slice(4)));
+  const toBid = dueTomorrow.filter((b) => !sentFor.has(b.omo));
+  if (toBid.length) lines.push(`🧾 tomorrow: ${toBid.length} bid${toBid.length === 1 ? "" : "s"} to send (first ${toBid[0].bidDueTime})`);
+  return {
+    key: `w:${today}`, kind: "message",
+    title: "🌆 Today's wrap-up",
+    body: lines.length ? lines.join(" · ") : "A quiet day: nothing sent, nothing waiting. See you tomorrow.",
+    url: "/map/?view=all&map=1&today=1", tag: "wrapup",
+  };
 }
 
 const nyParts = (now) => Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
@@ -149,13 +198,17 @@ async function main() {
   const sent = JSON.parse(read(path.join(ROOT, "public/data/sent_paperwork.json")) || "{}").jobs || {};
   const requests = JSON.parse(read(path.join(ROOT, "public/data/hpd_requests.json")) || "{}");
   const { loadLib } = await import("./daily-report.mjs");
-  const alerts = TEST ? [] : BRIEF_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib });
+  // The bid records (faxes, NO BIDs) for the evening wrap-up.
+  let records = {};
+  try { const r = await fetch(`${WORKER}/overrides`, { cache: "no-store" }); if (r.ok) records = (await r.json()).overrides || {}; } catch { /* no records: the wrap-up leaves faxes out */ }
+  const alerts = TEST || BRIEF_NOW || WRAP_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records });
+  if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
   const fresh = alerts.filter((a) => !seen.has(a.key));
   const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
-  if (!TEST && !BRIEF_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
+  if (!TEST && !BRIEF_NOW && !WRAP_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
   if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).
@@ -183,8 +236,8 @@ async function main() {
       }
     }
   }
-  if (!TEST && !BRIEF_NOW) fs.writeFileSync(STATE, JSON.stringify(nextState));
-  else console.log(`${BRIEF_NOW ? "Morning briefing" : "Test alert"} sent to ${subs.length} phone(s).`);
+  if (!TEST && !BRIEF_NOW && !WRAP_NOW) fs.writeFileSync(STATE, JSON.stringify(nextState));
+  else console.log(`${BRIEF_NOW ? "Morning briefing" : WRAP_NOW ? "Evening wrap-up" : "Test alert"} sent to ${subs.length} phone(s).`);
 }
 
 if (/send-push\.mjs$/.test(process.argv[1] || "")) {
