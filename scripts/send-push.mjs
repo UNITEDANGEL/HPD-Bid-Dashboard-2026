@@ -94,7 +94,47 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }
+  // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
+  const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib });
+  if (brief) out.push(brief);
   return out;
+}
+
+const nyParts = (now) => Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
+const minutesOf = (t) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
+export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib }) {
+  if (!workingHours(now)) return null;
+  const p = nyParts(now);
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const nowMin = Number(p.hour) * 60 + Number(p.minute);
+  const lines = [];
+  // Bids due today (still open).
+  const dueToday = (bids || []).filter((b) => b.bidDue === today && minutesOf(b.bidDueTime) > nowMin).sort((a, b) => minutesOf(a.bidDueTime) - minutesOf(b.bidDueTime));
+  if (dueToday.length) lines.push(`🧾 ${dueToday.length} bid${dueToday.length === 1 ? "" : "s"} due today (first ${dueToday[0].bidDueTime})`);
+  // Notices: overdue / due today, and documents requests waiting.
+  if (loadLib && conversations?.threads) {
+    try {
+      const { buildBoard, hoursLeft } = await loadLib("notice-board");
+      const threads = conversations.threads.map((t) => ({ ...t, omos: t.omos || [], people: t.people || [], subject: t.subject || "", messages: (t.messages || []).map((m) => ({ ...m, text: m.text || "", files: m.files || [] })) }));
+      const rows = buildBoard({ threads, sent: sent || {}, marks: {}, now }).filter((r) => r.next);
+      const open = rows.filter((r) => r.kind === "ppn" && !r.steps.sent.done);
+      const overdue = open.filter((r) => hoursLeft(r, now) < 0);
+      const dueSoon = open.filter((r) => hoursLeft(r, now) >= 0 && hoursLeft(r, now) < 24);
+      if (overdue.length) lines.push(`⏰ ${overdue.length} notice${overdue.length === 1 ? "" : "s"} overdue (${overdue.slice(0, 3).map((r) => r.omo).join(", ")})`);
+      if (dueSoon.length) lines.push(`⏱ ${dueSoon.length} notice${dueSoon.length === 1 ? "" : "s"} due within 24 h`);
+      const docs = rows.filter((r) => r.kind === "docs" && !r.steps.sent.done);
+      if (docs.length) lines.push(`📋 ${docs.length} documents request${docs.length === 1 ? "" : "s"} to send`);
+    } catch (e) { console.log(`briefing notices skipped: ${e.message}`); }
+  }
+  // Payment rejections not answered yet (rejected after the paperwork on record, last 120 days).
+  const toFix = Object.entries(requests?.jobs || {}).filter(([omo, j]) => j?.rejectedAt && now - Date.parse(j.rejectedAt) < 120 * 86400000 && !(sent?.[omo]?.sentAt && sent[omo].sentAt > j.rejectedAt));
+  if (toFix.length) lines.push(`💵 ${toFix.length} payment rejection${toFix.length === 1 ? "" : "s"} to fix`);
+  return {
+    key: `m:${today}`, kind: "message",
+    title: lines.length ? "☀️ Good morning: your day" : "☀️ Good morning: nothing urgent today",
+    body: lines.length ? lines.join(" · ") : "No bids due, no notices running late. Open HPD Field for the map.",
+    url: "/map/?view=all&map=1&today=1", tag: "morning",
+  };
 }
 
 async function main() {
@@ -145,6 +185,6 @@ async function main() {
   else console.log(`Test alert sent to ${subs.length} phone(s).`);
 }
 
-if (import.meta.url === `file://${process.argv[1].replace(/\\/g, "/").replace(/^([A-Za-z]):/, "/$1:")}` || process.argv[1]?.endsWith("send-push.mjs")) {
+if (/send-push\.mjs$/.test(process.argv[1] || "")) {
   main().catch((e) => { console.log(`Phone alerts failed: ${e.message}`); process.exitCode = 0; });
 }

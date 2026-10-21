@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "☀️ Morning briefing on your phone",
+      "items": [
+        "Every weekday from about 8 AM, one alert with your day: bids due today (and the first time), notices overdue or due within 24 h, documents requests to send, payment rejections to fix.",
+        "Tap it and the app opens on today's summary. A quiet day says \"nothing urgent today\"."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "📠 Live fax tracker + more life when you tap",
       "items": [
         "Under Send: Package ready → Sent to HumbleFax → Faxing HPD (the line it went to) → HPD received. The current step spins, finished steps turn green with a moving line between them.",
