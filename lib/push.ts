@@ -78,24 +78,41 @@ export async function testAlert() {
 // already allows alerts, this phone (re)registers itself -- no tap, no sign-in. Once a day at most (or when the push
 // address changed), so the status server isn't written on every open.
 const REG_KEY = "hpd-push-reg";
-export async function autoRegisterPush(fetcher: typeof fetch = fetch): Promise<"registered" | "fresh" | "needs-allow" | "unsupported" | "failed"> {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "unsupported";
-  if (Notification.permission !== "granted") return Notification.permission === "default" ? "needs-allow" : "unsupported";
+// What happened on this phone, for fixing alerts from the computer (21 Oct): no personal data, one note per app open.
+let diagSent = false;
+export function reportPush(step: string, detail: Record<string, unknown> = {}) {
+  if (diagSent || typeof window === "undefined") return;
+  diagSent = true;
   try {
+    const n = { step, ...detail, permission: "Notification" in window ? Notification.permission : "none", homeScreen: isHomeScreenApp(), sw: "serviceWorker" in navigator, push: "PushManager" in window, origin: location.origin, app: (document.querySelector('meta[name="hpd-app"]') as HTMLMetaElement | null)?.content || "", device: deviceName(), ua: navigator.userAgent.slice(0, 160), at: new Date().toISOString() };
+    void fetch("https://hpd-status-worker.uac525.workers.dev/override", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `PUSHLOG-${deviceName()}`, patch: n }) }).catch(() => {});
+  } catch { /* nothing to report */ }
+}
+
+export async function autoRegisterPush(fetcher: typeof fetch = fetch): Promise<"registered" | "fresh" | "needs-allow" | "unsupported" | "failed"> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) { reportPush("unsupported"); return "unsupported"; }
+  if (Notification.permission !== "granted") { reportPush(Notification.permission === "default" ? "needs-allow" : "blocked"); return Notification.permission === "default" ? "needs-allow" : "unsupported"; }
+  let stage = "start";
+  try {
+    stage = "service worker";
     const reg = (await navigator.serviceWorker.getRegistration("/")) || (await navigator.serviceWorker.register("/sw.js", { scope: "/" }));
     await navigator.serviceWorker.ready;
+    stage = "subscribe";
     const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUSH_PUBLIC_KEY) }));
     const json = sub.toJSON();
+    stage = "server";
     let last: { endpoint?: string; at?: number } = {};
     try { last = JSON.parse(localStorage.getItem(REG_KEY) || "{}"); } catch { /* none */ }
     // Registered today AND the server really has this phone: nothing to do. Otherwise register again (21 Oct: the phone
     // said "On" but the server never got it).
-    if (last.endpoint === json.endpoint && Date.now() - (last.at || 0) < 86400000 && (await serverHasPhone(String(json.endpoint), fetcher)) !== false) { try { localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ } return "fresh"; }
+    const has = await serverHasPhone(String(json.endpoint), fetcher);
+    if (last.endpoint === json.endpoint && Date.now() - (last.at || 0) < 86400000 && has !== false) { try { localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ } reportPush("fresh", { onServer: has }); return "fresh"; }
     const r = await fetcher("/api/drive/push-subscribe", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: json, device: deviceName() }) });
-    if (!r.ok) return "failed";
+    if (!r.ok) { const t = await r.text().catch(() => ""); reportPush("server refused", { status: r.status, answer: t.slice(0, 200), host: new URL(String(json.endpoint)).host }); return "failed"; }
+    reportPush("registered", { host: new URL(String(json.endpoint)).host });
     try { localStorage.setItem(REG_KEY, JSON.stringify({ endpoint: json.endpoint, at: Date.now() })); localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ }
     return "registered";
-  } catch { return "failed"; }
+  } catch (e) { reportPush(`failed at ${stage}`, { error: e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 200) : String(e).slice(0, 200) }); return "failed"; }
 }
 
 // Does the status server have this phone (by its id: the first 8 bytes of SHA-256 of the push address)? null: can't tell.

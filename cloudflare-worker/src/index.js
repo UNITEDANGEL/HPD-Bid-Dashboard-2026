@@ -122,7 +122,7 @@ async function handle(request, env) {
       const out = {};
       let cursor;
       do {
-        const page = await env.HPD_STATUS_OVERRIDES.list({ prefix: "PUSH-", cursor });
+        const page = await env.HPD_STATUS_OVERRIDES.list({ prefix: url.searchParams.get("log") === "1" ? "PUSHLOG-" : "PUSH-", cursor });
         for (const item of page.keys) out[item.name] = await env.HPD_STATUS_OVERRIDES.get(item.name, "json");
         cursor = page.list_complete ? undefined : page.cursor;
       } while (cursor);
