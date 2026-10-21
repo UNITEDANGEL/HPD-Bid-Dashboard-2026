@@ -16,6 +16,9 @@ try {
     const page = await context.newPage();
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
     await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
+    // An alert banner on screen must not cover any map button (21 Oct: a ⏰ banner covered Route).
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "urgent", title: "⏰ EQ00000: notice overdue 2 h — answer now", text: "test banner" } })));
+    await page.locator('[data-hpd-smoke="fc-hpd-ping"]').waitFor();
     await page.waitForTimeout(800);
     const r = await page.evaluate(() => {
       const buttons = [...document.querySelectorAll(".fc-map-controls .fc-map-fab")].filter((x) => x.offsetParent);
