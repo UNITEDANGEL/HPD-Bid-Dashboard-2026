@@ -84,6 +84,7 @@ async function updateAll(env, key, value) {
 // over its free daily limit (14 Oct 2026) the phones get the last copy instead of an error.
 let memory = null; // { at, overrides }
 const FRESH_MS = 20_000;
+const pushListCache = {}; // prefix -> { at, subs }
 function remember(overrides) { memory = { at: Date.now(), overrides }; }
 function rememberChange(key, value) {
   if (!memory) return;
@@ -118,14 +119,25 @@ async function handle(request, env) {
     }
     // Phone alert addresses (encrypted) straight from storage, not from the combined list (21 Oct: a phone's entry was
     // lost from the combined list when other saves rewrote it at the same time).
+    // One phone by its id (a single read; the app checks itself with this on every open).
+    if (url.pathname === "/push-sub" && request.method === "GET") {
+      const id = cleanKey(url.searchParams.get("id"));
+      if (!/^PUSH-[0-9a-f]{16}$/.test(id)) return json({ ok: false, error: "Invalid id." }, 400);
+      return json({ ok: true, sub: await env.HPD_STATUS_OVERRIDES.get(id, "json") });
+    }
     if (url.pathname === "/push-subs" && request.method === "GET") {
+      // Storage listings are limited per day (21 Oct: used up by polling): kept for 5 minutes.
+      const prefix = url.searchParams.get("log") === "1" ? "PUSHLOG-" : "PUSH-";
+      const hit = pushListCache[prefix];
+      if (hit && Date.now() - hit.at < 300000) return json({ ok: true, subs: hit.subs, cached: true });
       const out = {};
       let cursor;
       do {
-        const page = await env.HPD_STATUS_OVERRIDES.list({ prefix: url.searchParams.get("log") === "1" ? "PUSHLOG-" : "PUSH-", cursor });
+        const page = await env.HPD_STATUS_OVERRIDES.list({ prefix, cursor });
         for (const item of page.keys) out[item.name] = await env.HPD_STATUS_OVERRIDES.get(item.name, "json");
         cursor = page.list_complete ? undefined : page.cursor;
       } while (cursor);
+      pushListCache[prefix] = { at: Date.now(), subs: out };
       return json({ ok: true, subs: out });
     }
     if (url.pathname === "/overrides" && request.method === "GET") {

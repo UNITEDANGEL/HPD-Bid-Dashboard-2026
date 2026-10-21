@@ -121,10 +121,10 @@ export async function serverHasPhone(endpoint: string, fetcher: typeof fetch = f
   try {
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
     const id = `PUSH-${[...digest.slice(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
-    const r = await fetcher(`https://hpd-status-worker.uac525.workers.dev/push-subs?t=${Date.now()}`, { cache: "no-store" });
+    const r = await fetcher(`https://hpd-status-worker.uac525.workers.dev/push-sub?id=${id}&t=${Date.now()}`, { cache: "no-store" });
     if (!r.ok) return null;
-    const subs = (await r.json()).subs || {};
-    return !!subs[id] && !subs[id].off;
+    const sub = (await r.json()).sub;
+    return !!sub && !sub.off;
   } catch { return null; }
 }
 export async function thisPhoneOnServer(fetcher: typeof fetch = fetch): Promise<boolean | null> {
