@@ -17,7 +17,7 @@ try {
   const tomorrow = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + 86400000));
   // The first bid's work is fixed (glass at the entrance door), so the matching violations don't depend on the
   // day's invitations.
-  const bids = fetched.bids.map((b, i) => ({ ...b, bidDue: tomorrow, bidDueTime: "11:00 AM", ...(i === 0 ? { description: "PUBLIC PARTS REPLACE CRACKED GLASS AT BUILDING ENTRANCE DOOR PUBLIC HALL 1ST FL. TOTAL GLASS 1" } : {}) }));
+  const bids = fetched.bids.map((b, i) => ({ ...b, bidDue: tomorrow, bidDueTime: "11:00 AM", ...(i === 0 ? { omo: "EQ99990", description: "PUBLIC PARTS REPLACE CRACKED GLASS AT BUILDING ENTRANCE DOOR PUBLIC HALL 1ST FL. TOTAL GLASS 1" } : {}) /* a job number with no private copy, so the signed-in description doesn't replace this one (21 Oct) */ }));
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids } }));
   let down = true, geoCalls = 0;
   await context.route(/geosearch\.planninglabs\.nyc/, (r) => { geoCalls++; return down ? r.fulfill({ status: 503, body: "busy" }) : r.fulfill({ json: { features: [{ properties: { addendum: { pad: { bbl: "1019660042", bin: "1059533" } } } }] } }); });

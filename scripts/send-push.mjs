@@ -14,6 +14,7 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const DRY = process.argv.includes("--dry-run");
+const TEST = process.argv.includes("--test"); // one test alert to every phone, nothing else (owner asked to try it)
 const STATE = path.join(ROOT, "data", "push_state.json");
 const WORKER = (process.env.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
 const SITE = "https://hpd-bid-dashboard-2026.pages.dev";
@@ -93,12 +94,13 @@ async function main() {
   const sent = JSON.parse(read(path.join(ROOT, "public/data/sent_paperwork.json")) || "{}").jobs || {};
   const requests = JSON.parse(read(path.join(ROOT, "public/data/hpd_requests.json")) || "{}");
   const { loadLib } = await import("./daily-report.mjs");
-  const alerts = await findAlerts({ conversations, bids, sent, requests, loadLib });
+  const alerts = TEST ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib });
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
   const fresh = alerts.filter((a) => !seen.has(a.key));
   const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
-  if (!state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
+  if (!TEST && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
+  if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).
   const res = await fetch(`${WORKER}/overrides`, { cache: "no-store" });
@@ -122,7 +124,8 @@ async function main() {
       }
     }
   }
-  fs.writeFileSync(STATE, JSON.stringify(nextState));
+  if (!TEST) fs.writeFileSync(STATE, JSON.stringify(nextState));
+  else console.log(`Test alert sent to ${subs.length} phone(s).`);
 }
 
 if (import.meta.url === `file://${process.argv[1].replace(/\\/g, "/").replace(/^([A-Za-z]):/, "/$1:")}` || process.argv[1]?.endsWith("send-push.mjs")) {
