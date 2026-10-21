@@ -1627,12 +1627,11 @@ export default function FieldCommandClient() {
   // The banner for every notification (new / reply email from HPD, fax confirmed or failed, new invitation, a notice
   // running out of time), with its ring (owner, 20 Oct: "ring for all notifications").
   const [ping, setPing] = useState<(AppNotice & { at: number }) | null>(null);
-  // Good news and new invitations step aside by themselves (they can sit over an open bid); replies, failed faxes and
-  // deadlines stay until you close them.
   useEffect(() => {
-    if (!ping || (ping.kind !== "fax-ok" && ping.kind !== "bid")) return;
+    // Every banner steps aside by itself (it sat over other screens' Close buttons, 21 Oct); all of them stay in 🔔.
+    if (!ping) return;
     const at = ping.at;
-    const t = window.setTimeout(() => setPing((p) => (p && p.at === at ? null : p)), ping.kind === "fax-ok" ? 6000 : 12000);
+    const t = window.setTimeout(() => setPing((p) => (p && p.at === at ? null : p)), ping.kind === "fax-ok" ? 6000 : ping.kind === "bid" ? 12000 : 20000);
     return () => window.clearTimeout(t);
   }, [ping]);
   type FreshEmail = { at: string; subject: string; omo: string; from?: string; threadKind?: string; replied?: boolean };

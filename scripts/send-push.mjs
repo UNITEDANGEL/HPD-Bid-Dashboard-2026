@@ -39,6 +39,13 @@ function vapidPrivate() {
 }
 const name = (from) => String(from || "").replace(/<[^>]*>/g, "").replace(/"/g, "").replace(/\s*\(HPD\)\s*/i, "").replace(/^([^,]+),\s*(.+)$/, "$2 $1").trim();
 
+// Weekdays 8 AM - 8 PM in New York (repeat reminders only then; no 3 AM alerts).
+export function workingHours(now = Date.now()) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
+  const hour = Number(p.hour);
+  return !["Sat", "Sun"].includes(p.weekday) && hour >= 8 && hour < 20;
+}
+
 // What is new since last time: [{ key, title, body, url, tag }].
 export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib }) {
   const out = [];
@@ -77,6 +84,13 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       for (const r of urgentRows(rows, now)) {
         const left = Math.round(hoursLeft(r, now));
         out.push({ key: `u:${h(r.key)}`, kind: "urgent", title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: "/map/?view=all&map=1&board=1", tag: `u-${r.omo}` });
+        // Overdue: again every 2 hours, weekdays 8 AM - 8 PM New York, until it's answered (owner, 21 Oct: ER01987 went
+        // overdue after one alert). Each 2-hour slot is its own alert.
+        if (left <= 0 && workingHours(now)) {
+          const slot = Math.floor(now / (2 * 3600000));
+          const late = Math.max(1, Math.round(-hoursLeft(r, now)));
+          out.push({ key: `o:${h(`${r.key}|${slot}`)}`, kind: "urgent", title: `⏰ ${r.omo}: notice overdue ${late} h — answer now`, body: `${r.hours}-hour notice from ${r.who || "vendor tracking"}. Nothing sent yet.`, url: "/map/?view=all&map=1&board=1", tag: `u-${r.omo}` });
+        }
       }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }

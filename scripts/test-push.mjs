@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { handlePushSubscribe } from "../server/drive-packages.mjs";
-import { findAlerts, openSealed } from "./send-push.mjs";
+import { findAlerts, openSealed, workingHours } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const key = crypto.randomBytes(32);
@@ -72,3 +72,20 @@ assert.ok(alerts.every((a) => /^[ebur]:[0-9a-f]{16}$/.test(a.key)), "kept as sho
 assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=1&board=1");
 assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1", "a rejection opens the rejections");
 console.log("PASS phone alert finder: a different alert per kind: 💰 award (cha-ching), ⏱ notice, 📋 request (Gafur replied, Lewis status update), 💵 rejection (email + HPD notices), 📩 message, 🧾 invitation, ⏰ under 6 h; old ones left out; short hashes; rejections open the rejections");
+
+// Overdue notices remind again every 2 hours in working hours (21 Oct, ER01987).
+{
+  const threads = [{ id: "od", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#ER01987", omos: ["ER01987"], kind: "past due", people: ["Joy-Ann Lewis"], messages: [{ at: "2026-10-16T19:58:35Z", mine: false, hpd: true, from: "Lewis, Joy-Ann (HPD)", subject: "72 HR", text: "Notice lewisj@hpd.nyc.gov" }] }];
+  const at = (iso) => findAlerts({ conversations: { threads }, bids: [], sent: {}, requests: {}, now: Date.parse(iso), loadLib });
+  const tue6pm = await at("2026-10-21T22:00:00Z"); // Wed 6 PM NY, 2 h overdue
+  const over = tue6pm.filter((a) => a.key.startsWith("o:"));
+  assert.equal(over.length, 1);
+  assert.match(over[0].title, /^⏰ ER01987: notice overdue 2 h — answer now$/);
+  const later = (await at("2026-10-22T00:30:00Z")).filter((a) => a.key.startsWith("o:")); // 8:30 PM NY: no repeat at night
+  assert.equal(later.length, 0, "no reminders after 8 PM");
+  const nextDay = (await at("2026-10-22T13:00:00Z")).filter((a) => a.key.startsWith("o:")); // Thu 9 AM
+  assert.equal(nextDay.length, 1);
+  assert.notEqual(nextDay[0].key, over[0].key, "a new 2-hour slot is a new reminder");
+  assert.equal(workingHours(Date.parse("2026-10-24T15:00:00Z")), false, "Saturday");
+  console.log("PASS overdue reminders: ER01987 (72 h, due 10/21 3:58 PM) -> '⏰ notice overdue 2 h — answer now' every 2 hours, weekdays 8 AM-8 PM only, each slot its own alert");
+}

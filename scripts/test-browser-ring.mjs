@@ -37,10 +37,11 @@ try {
   const ping = page.locator('[data-hpd-smoke="fc-hpd-ping"]');
   assert.equal(await ping.count(), 0, "the first look only remembers what's there");
   const vib = () => page.evaluate(() => window.__vib.slice());
-  const wait = async (re) => { for (let i = 0; i < 40; i++) { if (await ping.count() && re.test(await ping.innerText())) return; await page.clock.runFor(15000); } throw new Error(`no banner ${re}: ${await ping.innerText().catch(() => "none")}`); };
+  // Banners step aside after 20 s (21 Oct), so the clock moves in small steps while waiting for one.
+  const wait = async (re) => { for (let i = 0; i < 90; i++) { if (await ping.count() && re.test(await ping.innerText())) return; await page.clock.runFor(5000); } throw new Error(`no banner ${re}: ${await ping.innerText().catch(() => "none")}`); };
   // 1. Gafur replies.
   stage = 1;
-  await page.clock.runFor(5 * 60 * 1000 + 2000);
+
   await wait(/📋 Deoranie Gafur sent a request · EP27382/);
   assert.equal(await ping.getAttribute("data-kind"), "request", "Gafur's email is a 📋 request (its own alert)");
   assert.ok((await vib()).includes("[80,60,80]"), "the request tone rang");
@@ -49,7 +50,7 @@ try {
   // 2. A new invitation to bid.
   stage = 2;
   const before = (await vib()).length;
-  await page.clock.runFor(5 * 60 * 1000 + 2000);
+
   await wait(/New invitation to bid · EX99999/);
   assert.equal(await ping.getAttribute("data-kind"), "bid");
   assert.ok((await vib()).length > before, "rang");
@@ -58,7 +59,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-list"], .fc-bids-list').first().waitFor({ timeout: 20000 });
   // 3. A 24-hour notice with under 6 hours left (Monday 1 PM notice, due Tuesday 1 PM; now Tuesday ~11 AM).
   stage = 3;
-  await page.clock.runFor(5 * 60 * 1000 + 2000);
+
   await wait(/EQ99997: \d+ h left on the notice|24-hour notice · EQ99997/);
   // The new 24-hour notice alerts as a ⏱ notice, then (under 6 h) as a ⏰ deadline.
   await wait(/EQ99997: \d+ h left on the notice/);

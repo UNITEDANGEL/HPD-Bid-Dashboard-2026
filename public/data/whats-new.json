@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "⏰ Overdue notices keep reminding you",
+      "items": [
+        "A 24/72-hour notice that's overdue with nothing sent alerts your phone again every 2 hours (weekdays 8 AM – 8 PM) until it's answered: \"⏰ ER01987: notice overdue 2 h — answer now\".",
+        "Banners in the app step aside by themselves (20 seconds) so they never sit on a Close button; every alert stays in 🔔."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "Moving 'sending' signs + alerts check themselves",
       "items": [
         "While a bid or NO BID fax is sending, the button shows a spinning ring and moving stripes (Sending the fax to HPD…); a fax going through spins on its pin, chip and checklist row; email checks, replies and opening sent PDFs spin too.",
