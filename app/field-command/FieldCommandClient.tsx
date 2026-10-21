@@ -1668,6 +1668,8 @@ export default function FieldCommandClient() {
       let later = 0;
       try { later = Number(localStorage.getItem("hpd-allow-alerts-later") || 0); } catch { /* private mode */ }
       if (r === "needs-allow" && (isHomeScreenApp() || !/iPhone|iPad/.test(navigator.userAgent)) && Date.now() - later > 3 * 86400000) setAllowAlerts("ask");
+      // An iPhone in Chrome / Safari tab can't get alerts at all: say how, once in a while.
+      if (r === "unsupported" && /iPhone|iPad/.test(navigator.userAgent) && !isHomeScreenApp() && Date.now() - later > 3 * 86400000) setAllowAlerts(/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent) ? "You're in Chrome. iPhone alerts only work in the app added from Safari: open hpd-bid-dashboard-2026.pages.dev in Safari → Share → Add to Home Screen, then open HPD Field from that icon." : "To get alerts: tap Share → Add to Home Screen, then open HPD Field from that icon.");
     });
   }, []);
   const [notifUnread, setNotifUnread] = useState(0);
@@ -4566,7 +4568,7 @@ export default function FieldCommandClient() {
         <div className="fc-allow-alerts" role="dialog" aria-label="Allow alerts" data-hpd-smoke="fc-allow-alerts">
           <b>🔔 Get alerts on this phone</b>
           <span>{allowAlerts === "ask" ? "Wins (cha-ching), notices, Gafur / Lewis requests, rejections, new bids — even with the app closed. One tap, then it's automatic." : allowAlerts}</span>
-          <button type="button" data-hpd-smoke="fc-allow-alerts-yes" onClick={() => void import("../../lib/push").then(async ({ turnOnPush }) => { const r = await turnOnPush(); setAllowAlerts(r.ok ? "" : r.message); if (r.ok) notify({ kind: "fax-ok", title: "🔔 Phone alerts are on", text: "Automatic from now on." }); })}>Allow alerts</button>
+          {allowAlerts === "ask" || allowAlerts.startsWith("Alerts") || allowAlerts.startsWith("Couldn") ? <button type="button" data-hpd-smoke="fc-allow-alerts-yes" onClick={() => void import("../../lib/push").then(async ({ turnOnPush }) => { const r = await turnOnPush(); setAllowAlerts(r.ok ? "" : r.message); if (r.ok) notify({ kind: "fax-ok", title: "🔔 Phone alerts are on", text: "Automatic from now on." }); })}>Allow alerts</button> : null}
           <button type="button" className="is-later" onClick={() => { try { localStorage.setItem("hpd-allow-alerts-later", String(Date.now())); } catch { /* private mode */ } setAllowAlerts(""); }}>Later</button>
         </div>
       ) : null}
