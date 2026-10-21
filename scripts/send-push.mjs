@@ -104,7 +104,7 @@ async function main() {
   const res = await fetch(`${WORKER}/overrides`, { cache: "no-store" });
   const overrides = res.ok ? (await res.json()).overrides || {} : {};
   const subs = Object.entries(overrides).filter(([key, v]) => key.startsWith("PUSH-") && v?.enc && !v.off && !nextState.dead.includes(key)).map(([key, v]) => {
-    try { return { key, sub: JSON.parse(openSealed(Buffer.from(v.enc, "base64"), k).toString("utf8")) }; } catch { return null; }
+    try { return { key, full: v.signedIn === true, sub: JSON.parse(openSealed(Buffer.from(v.enc, "base64"), k).toString("utf8")) }; } catch { return null; }
   }).filter(Boolean);
   // Several new things: one alert each (up to 5), then one "and N more".
   const list = fresh.length > 6 ? [...fresh.slice(0, 5), { key: "more", title: `🔔 ${fresh.length - 5} more updates`, body: "Open HPD Field to see them.", url: "/map/?view=all&map=1", tag: "more" }] : fresh;
@@ -112,10 +112,10 @@ async function main() {
   if (DRY) { for (const a of list) console.log(` - ${a.title} | ${a.body}`); return; }
   const webpush = (await import("web-push")).default;
   webpush.setVapidDetails(SITE, PUSH_PUBLIC_KEY, priv);
-  for (const { key, sub } of subs) {
+  for (const { key, sub, full } of subs) {
     for (const a of list) {
       try {
-        await webpush.sendNotification(sub, JSON.stringify({ title: a.title, body: a.body, url: a.url, tag: a.tag, kind: a.kind || "message" }), { TTL: 6 * 3600, urgency: a.kind === "urgent" || a.kind === "notice" || a.kind === "rejection" || a.kind === "award" ? "high" : "normal" });
+        await webpush.sendNotification(sub, JSON.stringify({ title: a.title, body: full ? a.body : "Open HPD Field to see it.", url: a.url, tag: a.tag, kind: a.kind || "message" }), { TTL: 6 * 3600, urgency: a.kind === "urgent" || a.kind === "notice" || a.kind === "rejection" || a.kind === "award" ? "high" : "normal" });
       } catch (e) {
         if (e.statusCode === 404 || e.statusCode === 410) { nextState.dead.push(key); console.log(`${key}: phone turned alerts off (removed)`); break; }
         console.log(`${key}: not sent (${e.statusCode || e.message})`);

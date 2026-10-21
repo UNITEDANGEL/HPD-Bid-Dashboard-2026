@@ -1,8 +1,8 @@
 import { handleDriveBackups } from "./drive-backups.mjs";
-import { handleDrivePackages } from "./drive-packages.mjs";
+import { handleDrivePackages, handlePushSubscribe } from "./drive-packages.mjs";
 import { handleDriveVideos } from "./drive-videos.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
-const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply", "hpd-draft", "hpd-scan", "hpd-sent", "hpd-sent-pdf", "push-subscribe"];
+const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply", "hpd-draft", "hpd-scan", "hpd-sent", "hpd-sent-pdf"];
 const VIDEO_ACTIONS = ["video-start", "video-piece", "video-to-package"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 // Sends approved packages from the owner's Gmail. Optional: Drive works if it is not granted.
@@ -86,11 +86,16 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect", "check", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
-  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action) ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check", "push-subscribe", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", "push-subscribe", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
+    // Phone alerts register without a Google sign-in (21 Oct: "this has to be automatic").
+    if (action === "push-subscribe") {
+      const saved = await session(request, env, cfg).catch(() => null);
+      return await handlePushSubscribe(request, env, fetcher, Boolean(saved));
+    }
     if (action === "session") {
       const saved = await session(request, env, cfg);
       return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false });

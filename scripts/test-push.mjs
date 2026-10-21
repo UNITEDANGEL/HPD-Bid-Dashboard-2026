@@ -3,7 +3,7 @@
 // 24-hour notice under 6 hours) and decrypts the addresses with the same key.
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { handleDrivePackages } from "../server/drive-packages.mjs";
+import { handlePushSubscribe } from "../server/drive-packages.mjs";
 import { findAlerts, openSealed } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
@@ -12,7 +12,8 @@ const env = { HPD_PRIVATE_DATA_KEY: key.toString("base64") };
 const posted = [];
 const fetcher = async (url, opts) => { posted.push({ url, body: JSON.parse(opts.body) }); return Response.json({ ok: true }); };
 const sub = { endpoint: "https://web.push.apple.com/QGx1Y2FzLXRlc3QtZW5kcG9pbnQ", keys: { p256dh: "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM", auth: "tBHItJI5svbpez7KI4CCXg" } };
-const call = (body) => handleDrivePackages(new Request("https://app.example.test/api/drive/push-subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }), "push-subscribe", { Authorization: "Bearer test" }, fetcher, env, "owner@example.test");
+// No Google sign-in needed (21 Oct: "this has to be automatic"); signed in or not is kept with the phone.
+const call = (body, signedIn = false) => handlePushSubscribe(new Request("https://app.example.test/api/drive/push-subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }), env, fetcher, signedIn);
 
 const res = await call({ subscription: sub, device: "iPhone" });
 assert.equal(res.status, 200);
@@ -24,6 +25,8 @@ assert.equal(posted[0].body.key, `PUSH-${d.id}`);
 assert.ok(!JSON.stringify(posted[0].body).includes("web.push.apple.com"), "the address is not stored in plain text");
 assert.deepEqual(JSON.parse(openSealed(Buffer.from(posted[0].body.patch.enc, "base64"), key).toString("utf8")), sub, "the sender can open it with the same key");
 assert.equal(posted[0].body.patch.device, "iPhone");
+assert.equal(posted[0].body.patch.signedIn, false, "works without signing in (short alerts)");
+assert.equal((await (await call({ subscription: sub }, true)).json()).signedIn, true);
 assert.equal((await call({ subscription: { ...sub, endpoint: "https://evil.example.com/x" } })).status, 400, "only push services");
 assert.equal((await call({ subscription: { ...sub, keys: { p256dh: "x", auth: "y" } } })).status, 400);
 const off = await (await call({ subscription: sub, off: true })).json();

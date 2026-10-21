@@ -1,7 +1,7 @@
 "use client";
 // The phone-alert switch (owner, 20 Oct): turn alerts on (iPhone asks for permission), send a test, turn them off.
 import { useEffect, useState } from "react";
-import { pushState, testAlert, turnOffPush, turnOnPush, type PushState } from "../lib/push";
+import { autoRegisterPush, pushState, testAlert, turnOffPush, turnOnPush, type PushState } from "../lib/push";
 import { playChime, unlockChime } from "../lib/chime";
 import { ALERT_KINDS, type AlertKind } from "../lib/alert-kinds";
 
@@ -9,7 +9,7 @@ export default function PhoneAlerts() {
   const [state, setState] = useState<PushState | "">("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { void pushState().then(setState); }, []);
+  useEffect(() => { void autoRegisterPush().finally(() => void pushState().then(setState)); }, []);
   const on = async () => {
     setBusy(true);
     try { const r = await turnOnPush(); setMsg(r.message); } catch (e) { setMsg(`Couldn't turn alerts on: ${e instanceof Error ? e.message : "error"}`); }
@@ -20,7 +20,7 @@ export default function PhoneAlerts() {
   return (
     <section className={`fc-push is-${state || "loading"}`} data-hpd-smoke="fc-push" data-state={state}>
       <b>🔔 Phone alerts</b>
-      <p>{state === "on" ? "On: alerts come even with the app closed or the phone locked." : "An alert for everything, each with its own sound, even with the app closed: 💰 you won a job (cha-ching), ⏱ 24/72-hour notices, 📋 documents requests (Gafur, Lewis), 💵 payment rejections, 📩 messages from HPD, 🧾 new invitations to bid, ⏰ a notice under 6 hours."}</p>
+      <p>{state === "on" ? "On, automatic: alerts come even with the app closed or the phone locked. This phone re-registers itself every time the app opens." : "An alert for everything, each with its own sound, even with the app closed: 💰 you won a job (cha-ching), ⏱ 24/72-hour notices, 📋 documents requests (Gafur, Lewis), 💵 payment rejections, 📩 messages from HPD, 🧾 new invitations to bid, ⏰ a notice under 6 hours."}</p>
       {state === "need-home-screen" ? <p className="fc-push-note" data-hpd-smoke="fc-push-homescreen">On the iPhone: in Safari tap <b>Share → Add to Home Screen</b>, open <b>HPD Field</b> from the icon, then come back here.</p> : null}
       {state === "blocked" ? <p className="fc-push-note" data-hpd-smoke="fc-push-blocked">Alerts are blocked for this app: on the iPhone go to Settings → Notifications → HPD Field → Allow Notifications, then tap below.</p> : null}
       {state === "on"

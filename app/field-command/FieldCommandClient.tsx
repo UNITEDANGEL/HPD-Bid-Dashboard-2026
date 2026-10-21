@@ -1659,6 +1659,17 @@ export default function FieldCommandClient() {
   }, []);
   const [chimeOff, setChimeOff] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  // Phone alerts by themselves (21 Oct): registered on every open; "Allow alerts" only if the iPhone never allowed them.
+  const [allowAlerts, setAllowAlerts] = useState("");
+  useEffect(() => {
+    if (navigator.webdriver) return; // test browsers: the Alerts page tests this
+    void import("../../lib/push").then(async ({ autoRegisterPush, isHomeScreenApp }) => {
+      const r = await autoRegisterPush();
+      let later = 0;
+      try { later = Number(localStorage.getItem("hpd-allow-alerts-later") || 0); } catch { /* private mode */ }
+      if (r === "needs-allow" && (isHomeScreenApp() || !/iPhone|iPad/.test(navigator.userAgent)) && Date.now() - later > 3 * 86400000) setAllowAlerts("ask");
+    });
+  }, []);
   const [notifUnread, setNotifUnread] = useState(0);
   useEffect(() => {
     const count = () => setNotifUnread(unreadCount(readLog()));
@@ -4549,6 +4560,14 @@ export default function FieldCommandClient() {
               </section>
             ))}
           </div>
+        </div>
+      ) : null}
+      {allowAlerts ? (
+        <div className="fc-allow-alerts" role="dialog" aria-label="Allow alerts" data-hpd-smoke="fc-allow-alerts">
+          <b>🔔 Get alerts on this phone</b>
+          <span>{allowAlerts === "ask" ? "Wins (cha-ching), notices, Gafur / Lewis requests, rejections, new bids — even with the app closed. One tap, then it's automatic." : allowAlerts}</span>
+          <button type="button" data-hpd-smoke="fc-allow-alerts-yes" onClick={() => void import("../../lib/push").then(async ({ turnOnPush }) => { const r = await turnOnPush(); setAllowAlerts(r.ok ? "" : r.message); if (r.ok) notify({ kind: "fax-ok", title: "🔔 Phone alerts are on", text: "Automatic from now on." }); })}>Allow alerts</button>
+          <button type="button" className="is-later" onClick={() => { try { localStorage.setItem("hpd-allow-alerts-later", String(Date.now())); } catch { /* private mode */ } setAllowAlerts(""); }}>Later</button>
         </div>
       ) : null}
       {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go); }} /> : null}

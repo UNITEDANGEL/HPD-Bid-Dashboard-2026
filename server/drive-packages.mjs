@@ -307,36 +307,6 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       return new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
     }
 
-    // Phone alerts (owner, 20 Oct: "ring for all notifications"; app closed / phone locked): this phone's push address,
-    // encrypted with the private-data key, kept on the status server as PUSH-<id>. The 10-minute fetcher decrypts the
-    // addresses and sends the alerts (scripts/send-push.mjs). Only the signed-in owner can add one.
-    if (action === "push-subscribe") {
-      const body = await request.json().catch(() => null);
-      const sub = body?.subscription;
-      const endpoint = String(sub?.endpoint || "");
-      let host = "";
-      try { host = new URL(endpoint).hostname; } catch { fail("Invalid phone address.", 400); }
-      if (!/^https:\/\//.test(endpoint) || !/(^|\.)(push\.apple\.com|fcm\.googleapis\.com|push\.services\.mozilla\.com|notify\.windows\.com)$/.test(host)) fail("Not a phone alert address.", 400);
-      if (!/^[A-Za-z0-9_-]{20,200}$/.test(String(sub?.keys?.p256dh || "")) || !/^[A-Za-z0-9_-]{10,100}$/.test(String(sub?.keys?.auth || ""))) fail("Invalid phone alert keys.", 400);
-      const keyText = String(env?.HPD_PRIVATE_DATA_KEY || "").trim();
-      if (!keyText) fail("Phone alerts need the private-data key on the server.", 503);
-      const raw = Uint8Array.from(atob(keyText), (c) => c.charCodeAt(0));
-      if (raw.length !== 32) fail("Phone alerts need the private-data key on the server.", 503);
-      const key = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt"]);
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const plain = new TextEncoder().encode(JSON.stringify({ endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }));
-      const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plain));
-      const out = new Uint8Array(12 + sealed.length); out.set(iv); out.set(sealed, 12);
-      let bin = ""; for (const b of out) bin += String.fromCharCode(b);
-      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
-      const id = [...digest.slice(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("");
-      const device = String(body?.device || "").replace(/[^A-Za-z0-9 ._()-]/g, "").slice(0, 40) || "phone";
-      const worker = String(env?.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
-      const saved = await fetcher(`${worker}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `PUSH-${id}`, patch: { enc: btoa(bin), device, at: new Date().toISOString(), off: body?.off === true } }) });
-      if (!saved.ok) fail(`Couldn't save the phone (HTTP ${saved.status}).`);
-      return reply({ ok: true, id, off: body?.off === true });
-    }
-
     if (action === "hpd-draft") {
       // An AI-written reply for the 24 / 72-hour board, for the owner to read and edit. Never sends anything.
       const facts = draftFacts(await request.json().catch(() => null));
@@ -426,4 +396,36 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
     console.error(`drive ${action} failed: ${e.status || 503} ${e.status ? e.message : `${e?.name}: ${String(e?.message || "").slice(0, 120)}`}`);
     return reply({ error: e.status ? e.message : "Package delivery failed. The package is still on this device." }, e.status || 503);
   }
+}
+
+// Phone alerts (owner, 20 Oct: "ring for all notifications"; 21 Oct: "this has to be automatic, I shouldn't have to
+// turn it on"): this phone's push address, encrypted with the private-data key, kept on the status server as PUSH-<id>.
+// The 10-minute fetcher decrypts the addresses and sends the alerts (scripts/send-push.mjs). No Google sign-in needed
+// (the Home Screen app has its own sign-in): a phone that isn't signed in gets short alerts (kind, job, who) without
+// the email subject.
+export async function handlePushSubscribe(request, env, fetcher = fetch, signedIn = false) {
+  const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  const body = await request.json().catch(() => null);
+  const sub = body?.subscription;
+  const endpoint = String(sub?.endpoint || "");
+  let host = "";
+  try { host = new URL(endpoint).hostname; } catch { return reply({ error: "Invalid phone address." }, 400); }
+  if (!/^https:\/\//.test(endpoint) || !/(^|\.)(push\.apple\.com|fcm\.googleapis\.com|push\.services\.mozilla\.com|notify\.windows\.com)$/.test(host)) return reply({ error: "Not a phone alert address." }, 400);
+  if (!/^[A-Za-z0-9_-]{20,200}$/.test(String(sub?.keys?.p256dh || "")) || !/^[A-Za-z0-9_-]{10,100}$/.test(String(sub?.keys?.auth || ""))) return reply({ error: "Invalid phone alert keys." }, 400);
+  const keyText = String(env?.HPD_PRIVATE_DATA_KEY || "").trim();
+  const raw = keyText ? Uint8Array.from(atob(keyText), (c) => c.charCodeAt(0)) : new Uint8Array();
+  if (raw.length !== 32) return reply({ error: "Phone alerts need the private-data key on the server." }, 503);
+  const key = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plain = new TextEncoder().encode(JSON.stringify({ endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }));
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plain));
+  const out = new Uint8Array(12 + sealed.length); out.set(iv); out.set(sealed, 12);
+  let bin = ""; for (const b of out) bin += String.fromCharCode(b);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
+  const id = [...digest.slice(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const device = String(body?.device || "").replace(/[^A-Za-z0-9 ._()-]/g, "").slice(0, 40) || "phone";
+  const worker = String(env?.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
+  const saved = await fetcher(`${worker}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `PUSH-${id}`, patch: { enc: btoa(bin), device, signedIn: !!signedIn, at: new Date().toISOString(), off: body?.off === true } }) });
+  if (!saved.ok) return reply({ error: `Couldn't save the phone (HTTP ${saved.status}).` }, 503);
+  return reply({ ok: true, id, off: body?.off === true, signedIn: !!signedIn });
 }

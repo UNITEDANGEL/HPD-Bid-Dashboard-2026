@@ -3220,3 +3220,10 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-app .fc-search-row .fc-notif-btn.has-new { box-shadow: 0 0 0 3px #f59e0b; }
 .fc-notif-badge { background: #dc2626 !important; color: #fff !important; }
 .fc-app.fc-bids-mode .fc-search-row .fc-notif-btn { display: grid; }
+
+/* One tap to allow alerts (21 Oct); after that it's automatic. */
+.fc-allow-alerts { position: fixed; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom) + 70px); z-index: 200450; max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 12px; border-radius: 16px; background: #0b1220f7; border: 2px solid #f59e0b; box-shadow: 0 12px 30px #0009; color: #f8fafc; }
+.fc-allow-alerts b { grid-column: 1 / -1; font: 900 16px system-ui, sans-serif; }
+.fc-allow-alerts span { grid-column: 1 / -1; color: #cbd5e1; font: 600 13.5px/1.35 system-ui, sans-serif; }
+.fc-allow-alerts button { min-height: 48px; border: 0; border-radius: 12px; background: #f59e0b; color: #1c1917; font: 900 16px system-ui, sans-serif; }
+.fc-allow-alerts button.is-later { background: #334155; color: #fff; padding: 0 16px; }
