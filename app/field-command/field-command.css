@@ -3237,3 +3237,9 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-board-row.is-focus { outline: 4px solid #f59e0b; outline-offset: 2px; animation: hpd-pulse 0.9s ease-in-out 4; }
 /* Banners stop short of the map buttons on the right (21 Oct: a ⏰ banner covered Route). */
 .fc-hpd-ping { right: calc(78px + env(safe-area-inset-right, 0px)) !important; margin: 0 !important; }
+
+/* Map buttons press in when tapped, a bit more depth (21 Oct). */
+.fc-map-fab, .fc-work-fab { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.fc-map-fab:active, .fc-work-fab:active { transform: scale(0.9); }
+.fc-map-fab { background-image: linear-gradient(150deg, #ffffff40 0%, #ffffff00 45%, #00000026 100%) !important; }
+.fc-filter-btn:active, .fc-notif-btn:active { transform: scale(0.92); }

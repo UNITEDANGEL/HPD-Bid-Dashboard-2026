@@ -29,6 +29,7 @@ import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
+import FaxTracker from "./FaxTracker";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -1226,10 +1227,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                   </div>
                 ) : null}
                 <h4 className={step3Done ? `is-done is-${state}` : ""} data-hpd-smoke="fc-step-3">{step3Done ? (state === "confirmed" ? "✓" : state === "failed" ? "✗" : <span className="hpd-spin" aria-hidden="true" />) : "3"} · Send to HPD{step3Done ? (state === "confirmed" ? ` · fax confirmed ${money2(record.sentPrice || record.price)}` : state === "failed" ? " · fax failed" : ` · fax going through ${money2(record.sentPrice || record.price)}`) : ""}</h4>
-                <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}${busy === "Sending the fax…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send("main")}>
-                  {busy === "Sending the fax…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending the fax to HPD<span className="hpd-dots" /></> : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
+                <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}${busy === "Sending the fax…" ? " hpd-sending" : ""}${armed === "send" ? " is-armed" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send("main")}>
+                  {busy === "Sending the fax…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending the fax to HPD<span className="hpd-dots" /></> : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : <><span className="hpd-spin" aria-hidden="true" /> Fax going through · send again</>}
                 </button>
                 {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
+                {reviewedSaved || (record && record.status !== "saved") ? <FaxTracker packageReady={!!reviewedSaved} sending={busy === "Sending the fax…"} state={step3Done || record?.status !== "saved" ? state : "saved"} sentAt={record?.sentAt} confirmedAt={record?.confirmedAt} faxTo={record?.faxTo} error={/^Not sent/.test(busy) ? busy : ""} /> : null}
                 {state === "failed" || state === "unconfirmed" ? (
                   <button type="button" className="fc-bid-fill is-send" data-hpd-smoke="fc-bid-resend" disabled={resending.current.has(record.omo) || busy === "Sending the fax…"} onClick={() => void resendFailed(record, nextLine(record), false)}>
                     🔁 Resend now to {FAX_LINES.find((l) => l.id === nextLine(record))!.label} at {money2(record.sentPrice || record.price)}

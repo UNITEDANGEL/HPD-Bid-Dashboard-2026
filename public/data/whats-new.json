@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "📠 Live fax tracker + more life when you tap",
+      "items": [
+        "Under Send: Package ready → Sent to HumbleFax → Faxing HPD (the line it went to) → HPD received. The current step spins, finished steps turn green with a moving line between them.",
+        "When HumbleFax confirms, a big ✓ pops with confetti. A failed fax turns red and shakes (and is sent again by itself).",
+        "\"Tap again\" buttons pulse; sent replies pop green; map buttons press in when tapped; badge numbers pop when they change."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "Alerts open their own job",
       "items": [
         "Tap a phone alert, a banner or an item in 🔔: a notice or request opens the vendor tracking board scrolled to that job (outlined in yellow); a new invitation opens that bid; a rejection or a win opens the job's card."

@@ -701,3 +701,12 @@ html, body { touch-action: pan-x pan-y; }
 .hpd-pulse { animation: hpd-pulse 1.2s ease-in-out infinite; }
 @keyframes hpd-pulse { 50% { opacity: 0.55; } }
 @media (prefers-reduced-motion: reduce) { .hpd-spin { animation-duration: 2s; } .hpd-sending::before { animation: none; } }
+
+/* More life when tapping and sending (owner, 21 Oct: "better icons, more interaction like sending"). */
+.hpd-pop { animation: hpd-pop 0.45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes hpd-pop { 0% { transform: scale(0.3); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.is-armed { animation: hpd-armed 1s ease-in-out infinite; }
+@keyframes hpd-armed { 50% { box-shadow: 0 0 0 6px #22c55e55, 0 0 22px #22c55e88; } }
+.fc-ack-status.is-ok { color: #4ade80 !important; font-weight: 900; animation: hpd-pop 0.45s cubic-bezier(.2,1.6,.4,1); }
+button.is-sent { animation: hpd-pop 0.45s cubic-bezier(.2,1.6,.4,1); }
+@media (prefers-reduced-motion: reduce) { .hpd-pop, .is-armed, .fc-ack-status.is-ok, button.is-sent { animation: none; } }

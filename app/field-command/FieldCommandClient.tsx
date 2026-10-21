@@ -3075,7 +3075,7 @@ export default function FieldCommandClient() {
         {/* Every alert, kept to manage and keep track of (20 Oct). */}
         <button type="button" className={`fc-filter-btn fc-notif-btn${notifUnread ? " has-new" : ""}`} aria-label="Notifications" title="Notifications" data-hpd-smoke="fc-notif-open" aria-pressed={notifOpen} onClick={() => setNotifOpen((v) => !v)}>
           <span aria-hidden="true" className="fc-notif-bell">🔔</span>
-          {notifUnread ? <span className="fc-filter-badge fc-notif-badge" data-hpd-smoke="fc-notif-count">{notifUnread}</span> : null}
+          {notifUnread ? <span key={notifUnread} className="fc-filter-badge fc-notif-badge hpd-pop" data-hpd-smoke="fc-notif-count">{notifUnread}</span> : null}
         </button>
       </div>
       {!selectedJob && !filtersOpen ? (
@@ -3322,7 +3322,7 @@ export default function FieldCommandClient() {
           <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
             <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span className={`fc-follow-badge ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>
+          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}

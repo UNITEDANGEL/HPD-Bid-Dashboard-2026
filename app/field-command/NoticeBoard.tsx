@@ -259,7 +259,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
               <button type="button" disabled={reply.status === "Sending…"} onClick={() => void send(row, true)}>📨 Send to me first</button>
               <button type="button" onClick={() => setReply(null)}>Close</button>
             </div>
-            {reply.status ? <p className="fc-ack-status">{reply.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : reply.status}</p> : null}
+            {reply.status ? <p className={`fc-ack-status${reply.status.startsWith("✓") ? " is-ok" : ""}`}>{reply.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : reply.status}</p> : null}
           </div>
         ) : null}
       </li>
@@ -318,7 +318,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
                     <input aria-label="Subject" value={it.subject} disabled={it.sent} onChange={(e) => setItem(it.key, { subject: e.target.value, armed: false })} />
                     <textarea aria-label="Message" rows={7} value={it.text} disabled={it.sent} data-hpd-smoke="fc-batch-text" onChange={(e) => setItem(it.key, { text: e.target.value, armed: false })} />
                     <button type="button" className={it.sent ? "is-sent" : it.armed ? "is-armed" : ""} disabled={it.sent || it.status === "Sending…"} data-hpd-smoke="fc-batch-send" onClick={() => void sendItem(row, it)}>{it.sent ? "✓ Sent" : it.armed ? `✅ Tap again: send to ${row.to}` : "✉ Send"}</button>
-                    {it.status ? <p className="fc-ack-status" data-hpd-smoke="fc-batch-status">{it.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : it.status}</p> : null}
+                    {it.status ? <p className={`fc-ack-status${it.status.startsWith("✓") ? " is-ok" : ""}`} data-hpd-smoke="fc-batch-status">{it.status === "Sending…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending<span className="hpd-dots" /></> : it.status}</p> : null}
                   </li>
                 );
               })}
