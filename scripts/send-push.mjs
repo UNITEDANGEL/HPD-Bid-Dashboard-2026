@@ -103,8 +103,11 @@ async function main() {
   if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).
-  const res = await fetch(`${WORKER}/overrides`, { cache: "no-store" });
-  const overrides = res.ok ? (await res.json()).overrides || {} : {};
+  // Straight from storage (/push-subs); the combined list (/overrides) can miss a phone saved at a busy moment.
+  let overrides = {};
+  const direct = await fetch(`${WORKER}/push-subs`, { cache: "no-store" }).catch(() => null);
+  if (direct?.ok) overrides = (await direct.json()).subs || {};
+  else { const res = await fetch(`${WORKER}/overrides`, { cache: "no-store" }); overrides = res.ok ? (await res.json()).overrides || {} : {}; }
   const subs = Object.entries(overrides).filter(([key, v]) => key.startsWith("PUSH-") && v?.enc && !v.off && !nextState.dead.includes(key)).map(([key, v]) => {
     try { return { key, full: v.signedIn === true, sub: JSON.parse(openSealed(Buffer.from(v.enc, "base64"), k).toString("utf8")) }; } catch { return null; }
   }).filter(Boolean);

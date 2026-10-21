@@ -116,6 +116,18 @@ async function handle(request, env) {
     if (url.pathname === "/" || url.pathname === "/health") {
       return json({ ok: true, service: "HPD status override worker" });
     }
+    // Phone alert addresses (encrypted) straight from storage, not from the combined list (21 Oct: a phone's entry was
+    // lost from the combined list when other saves rewrote it at the same time).
+    if (url.pathname === "/push-subs" && request.method === "GET") {
+      const out = {};
+      let cursor;
+      do {
+        const page = await env.HPD_STATUS_OVERRIDES.list({ prefix: "PUSH-", cursor });
+        for (const item of page.keys) out[item.name] = await env.HPD_STATUS_OVERRIDES.get(item.name, "json");
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
+      return json({ ok: true, subs: out });
+    }
     if (url.pathname === "/overrides" && request.method === "GET") {
       const freshMs = env.OVERRIDES_CACHE_MS === undefined ? FRESH_MS : Number(env.OVERRIDES_CACHE_MS);
       if (memory && Date.now() - memory.at < freshMs) return json({ ok: true, overrides: memory.overrides });
