@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T19:30:01.233Z",
+  "generatedAt": "2026-10-21T19:40:34.282Z",
   "page": 3,
   "dpi": 150,
   "totalJobs": 694,
@@ -4868,8 +4868,8 @@
     }
   },
   "summary": {
-    "rendered": 1,
-    "reused": 693,
+    "rendered": 0,
+    "reused": 694,
     "copiedPdfs": 0,
     "missingSource": 0,
     "failed": 0
