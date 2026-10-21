@@ -82,6 +82,7 @@ const REG_KEY = "hpd-push-reg";
 let diagSent = false;
 export function reportPush(step: string, detail: Record<string, unknown> = {}) {
   if (diagSent || typeof window === "undefined") return;
+  if (location.hostname !== "hpd-bid-dashboard-2026.pages.dev" || navigator.webdriver) return; // only the real app on a phone
   diagSent = true;
   try {
     const n = { step, ...detail, permission: "Notification" in window ? Notification.permission : "none", homeScreen: isHomeScreenApp(), sw: "serviceWorker" in navigator, push: "PushManager" in window, origin: location.origin, app: (document.querySelector('meta[name="hpd-app"]') as HTMLMetaElement | null)?.content || "", device: deviceName(), ua: navigator.userAgent.slice(0, 160), at: new Date().toISOString() };
