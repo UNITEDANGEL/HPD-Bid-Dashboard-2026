@@ -41,10 +41,9 @@ try {
   // 1. Gafur replies.
   stage = 1;
   await page.clock.runFor(5 * 60 * 1000 + 2000);
-  await wait(/New email from HPD · EP27382/);
-  assert.match(await ping.innerText(), /Deoranie Gafur/);
-  assert.equal(await ping.getAttribute("data-kind"), "email");
-  assert.ok((await vib()).includes("[60,40,60]"), "rang");
+  await wait(/📋 Deoranie Gafur sent a request · EP27382/);
+  assert.equal(await ping.getAttribute("data-kind"), "request", "Gafur's email is a 📋 request (its own alert)");
+  assert.ok((await vib()).includes("[80,60,80]"), "the request tone rang");
   if (shots) await page.screenshot({ path: `${shots}/ring-1-reply.png` });
   await ping.locator('button[aria-label="Close"]').click();
   // 2. A new invitation to bid.
@@ -52,7 +51,7 @@ try {
   const before = (await vib()).length;
   await page.clock.runFor(5 * 60 * 1000 + 2000);
   await wait(/New invitation to bid · EX99999/);
-  assert.equal(await ping.getAttribute("data-kind"), "new");
+  assert.equal(await ping.getAttribute("data-kind"), "bid");
   assert.ok((await vib()).length > before, "rang");
   if (shots) await page.screenshot({ path: `${shots}/ring-2-invite.png` });
   await ping.locator(".fc-hpd-ping-main").click();
@@ -60,6 +59,8 @@ try {
   // 3. A 24-hour notice with under 6 hours left (Monday 1 PM notice, due Tuesday 1 PM; now Tuesday ~11 AM).
   stage = 3;
   await page.clock.runFor(5 * 60 * 1000 + 2000);
+  await wait(/EQ99997: \d+ h left on the notice|24-hour notice · EQ99997/);
+  // The new 24-hour notice alerts as a ⏱ notice, then (under 6 h) as a ⏰ deadline.
   await wait(/EQ99997: \d+ h left on the notice/);
   assert.equal(await ping.getAttribute("data-kind"), "urgent");
   assert.ok((await vib()).includes("[120,60,120,60,120]"), "urgent ring");
@@ -70,8 +71,36 @@ try {
   await page.clock.runFor(6 * 60 * 1000);
   assert.equal(await ping.count(), 0, "no repeat");
   assert.equal((await vib()).length, n, "no repeat ring");
+  // Every alert is kept in 🔔 Notifications (20 Oct: "keep track of all"): 3 new, by kind; tap -> there + read; ✓ handled.
+  // On the bids screen (opened from the invitation alert) the bell is in its header; back on the map, next to Filters.
+  const bell = page.locator('[data-hpd-smoke="fc-bids-notif"]');
+  await bell.waitFor();
+  const n0 = Number(await bell.locator("b").innerText());
+  assert.ok(n0 >= 4, `unread ${n0}`);
+  await bell.click();
+  const panel = page.locator('[data-hpd-smoke="fc-notif"]');
+  const rows = panel.locator('[data-hpd-smoke="fc-notif-row"]');
+  const kinds = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
+  for (const k of ["urgent", "notice", "bid", "request"]) assert.ok(kinds.includes(k), `${k} kept: ${kinds}`);
+  assert.ok(kinds.indexOf("urgent") < kinds.indexOf("bid") && kinds.indexOf("bid") < kinds.indexOf("request"), "newest first");
+  assert.match(await rows.filter({ hasText: "EP27382" }).first().innerText(), /Documents request[\s\S]*Deoranie Gafur sent a request · EP27382/);
+  assert.match(await panel.locator('[data-hpd-smoke="fc-notif-tab-request"]').innerText(), /Requests \d/);
+  const rowsBefore = await rows.count();
+  if (shots) await page.screenshot({ path: `${shots}/ring-4-list.png` });
+  await rows.filter({ hasText: "EX99999" }).locator('[data-hpd-smoke="fc-notif-done"]').click(); // the invitation: handled
+  assert.equal(await rows.count(), rowsBefore - 1);
+  await panel.locator('[data-hpd-smoke="fc-notif-tab-done"]').click();
+  assert.equal(await rows.count(), 1);
+  await panel.locator('[data-hpd-smoke="fc-notif-tab-all"]').click();
+  await rows.filter({ hasText: "EP27382" }).locator(".fc-notif-main").click(); // -> the vendor tracking board
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor();
+  const n1 = Number(await page.locator('[data-hpd-smoke="fc-notif-count"]').innerText());
+  assert.equal(n1, n0 - 2, "the invitation (handled) and the request (opened) are no longer new");
+  await page.reload({ waitUntil: "load" });
+  await page.locator('[data-hpd-smoke="fc-notif-open"]').waitFor();
+  assert.equal(Number(await page.locator('[data-hpd-smoke="fc-notif-count"]').innerText()), n1, "kept after reopening");
   assert.deepEqual(errors, []);
-  console.log("PASS ring: Gafur's reply on EP27382 (📩 email tone, her name in the banner), a new invitation EX99999 (🧾 new tone, tap opens the bids), a 24-hour notice under 6 h (⏰ urgent tone); the first look only remembers; each rings once");
+  console.log("PASS ring: Gafur's email on EP27382 (📋 request tone, her name), a new 24-hour notice (⏱ notice), a new invitation EX99999 (🧾 new tone, tap opens the bids), a 24-hour notice under 6 h (⏰ urgent tone); the first look only remembers; each rings once; all 3 kept in 🔔 Notifications (newest first, by kind), tap -> the board + read, ✓ handled, kept after reopening");
   await context.close();
 } finally {
   await browser.close();

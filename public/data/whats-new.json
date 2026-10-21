@@ -3,6 +3,25 @@
   "versions": [
     {
       "date": "Oct 20, 2026",
+      "title": "🔔 Notifications: every alert, kept to track",
+      "items": [
+        "🔔 next to Filters on the map (and on the bids screen) shows how many are new. Tap it for every alert, newest first.",
+        "Tabs: 💰 Won · ⏱ Notices · 📋 Requests · 💵 Rejections · 📩 Messages · 🧾 Bids · 📠 Faxes · ⏰ Deadlines · ✓ Handled.",
+        "Tap one to go straight there (it's marked read); ✓ marks it handled; Mark all read."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
+      "title": "A different alert for each kind (and cha-ching!)",
+      "items": [
+        "💰 You won a job: cha-ching. ⏱ 24/72-hour notice: a siren. 📋 Documents request (Gafur, Lewis): two soft notes. 💵 Payment rejected: a falling tone. 📩 Message from HPD: two notes up. 🧾 New invitation: a double ping. ✅ / ❌ fax, ⏰ deadline.",
+        "Each email is read for what it is: a status update or correction from Lewis or Gafur is a request, a payment rejection is a rejection, a confirmation of award is a win.",
+        "The phone alerts say the same (💰 You won · EQ…!, ⏱ 24-hour notice · …, 📋 Deoranie Gafur replied · …).",
+        "Hear every sound on the Alerts page."
+      ]
+    },
+    {
+      "date": "Oct 20, 2026",
       "title": "📱 Phone alerts (even with the app closed)",
       "items": [
         "Alerts page (⚠️ on the map) → 🔔 Turn on phone alerts → Allow.",

@@ -93,7 +93,7 @@ function badge(record?: BidRecord) {
   return { text: `⏳ Fax going through · ${money(record.sentPrice || record.price)}${state === "unconfirmed" ? " · no answer yet" : ""}`, tone: "pending" };
 }
 
-export default function BidsMode({ open, map, history, onClose }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void }) {
+export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
   const [privOk, setPrivOk] = useState(false);
@@ -400,8 +400,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           if (latest && latest.sentAt === rec.sentAt && latest.status === "sent") {
             await update(withLog({ ...latest, status: result.status, confirmedAt: result.at, faxNote: result.subject, updatedAt: new Date().toISOString() }, result.status === "confirmed" ? "HumbleFax: Successful Transmission" : `HumbleFax: FAX FAILED (${result.subject})`, result.at || new Date().toISOString()));
             notify(result.status === "confirmed"
-              ? { kind: "good", go: "bids", omo: rec.omo, title: `Bid fax went through · ${rec.omo}`, text: `${money2(latest.sentPrice || latest.price)} · confirmed by HumbleFax` }
-              : { kind: "bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `${result.subject || "HumbleFax"} · the app sends it again to the next HPD line` });
+              ? { kind: "fax-ok", go: "bids", omo: rec.omo, title: `Bid fax went through · ${rec.omo}`, text: `${money2(latest.sentPrice || latest.price)} · confirmed by HumbleFax` }
+              : { kind: "fax-bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `${result.subject || "HumbleFax"} · the app sends it again to the next HPD line` });
           }
           setFaxCheckNote("");
         } else if (result.status === "unknown") {
@@ -526,7 +526,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const latest = noBidsRef.current[nb.omo];
         if (latest && latest.faxedAt === nb.faxedAt && latest.faxStatus === "sent") {
           setNoBids(await saveNoBid({ ...latest, faxStatus: result.status, faxNote: result.subject, confirmedAt: result.at }, HPD_STATUS_WORKER_URL));
-          notify(result.status === "confirmed" ? { kind: "good", go: "bids", omo: nb.omo, title: `NO BID fax went through · ${nb.omo}` } : { kind: "bad", go: "bids", omo: nb.omo, title: `NO BID fax FAILED · ${nb.omo}`, text: "Open it and send it to a backup line" });
+          notify(result.status === "confirmed" ? { kind: "fax-ok", go: "bids", omo: nb.omo, title: `NO BID fax went through · ${nb.omo}` } : { kind: "fax-bad", go: "bids", omo: nb.omo, title: `NO BID fax FAILED · ${nb.omo}`, text: "Open it and send it to a backup line" });
         }
       }
     };
@@ -824,6 +824,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         {autoNote ? <small className="fc-bids-autonote" data-hpd-smoke="fc-bids-autonote">{autoNote}</small> : null}
         <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bids ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-today"> · {bids.filter((b) => b.receivedAt && new Date(b.receivedAt).toLocaleDateString("en-US", { timeZone: "America/New_York" }) === new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })).length} received today</small> : null}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
         {unread.length ? <p className="fc-bids-unread" role="alert" data-hpd-smoke="fc-bids-unread">⚠️ {unread.length} invitation{unread.length > 1 ? "s" : ""} couldn&apos;t be read, open in your email: {unread.map((u) => `${u.omo || u.file} (${u.why})`).join(", ")}</p> : null}
+        {onNotifications ? <button type="button" className={`fc-bids-notif${notifUnread ? " has-new" : ""}`} aria-label="Notifications" data-hpd-smoke="fc-bids-notif" onClick={onNotifications}>🔔{notifUnread ? <b>{notifUnread}</b> : null}</button> : null}
         <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
         {google && (!google.connected || !google.canEmail) ? <ReconnectGoogle text={google.connected ? "Google is connected but can't send email: reconnect and allow sending email." : "Google isn't connected: bids can't be faxed until you reconnect."} /> : null}
         <div className="fc-bids-days" role="group" aria-label="Which day" data-hpd-smoke="fc-bids-days">

@@ -51,6 +51,9 @@ import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
+import NotificationsPanel from "./NotificationsPanel";
+import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
+import { ALERT_KINDS, emailKind, emailTitle, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
@@ -1243,7 +1246,7 @@ export default function FieldCommandClient() {
         const fresh = keys.filter((k) => !seen.has(k.key));
         for (const k of keys) seen.add(k.key);
         localStorage.setItem("hpd-seen-invites", JSON.stringify([...seen].slice(-600)));
-        if (raw && fresh.length) notify({ kind: "new", go: "bids", omo: fresh[0].b.omo, title: fresh.length === 1 ? `New invitation to bid · ${fresh[0].b.omo}` : `${fresh.length} new invitations to bid`, text: fresh.length === 1 ? `${fresh[0].b.address || ""} · due ${fresh[0].b.bidDue.slice(5).replace("-", "/")} ${fresh[0].b.bidDueTime}` : fresh.slice(0, 4).map((k) => k.b.omo).join(", ") });
+        if (raw && fresh.length) notify({ kind: "bid", go: "bids", omo: fresh[0].b.omo, title: fresh.length === 1 ? `New invitation to bid · ${fresh[0].b.omo}` : `${fresh.length} new invitations to bid`, text: fresh.length === 1 ? `${fresh[0].b.address || ""} · due ${fresh[0].b.bidDue.slice(5).replace("-", "/")} ${fresh[0].b.bidDueTime}` : fresh.slice(0, 4).map((k) => k.b.omo).join(", ") });
       } catch { /* private mode */ }
       setBidsDue({
         today: bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin).length,
@@ -1266,7 +1269,9 @@ export default function FieldCommandClient() {
   }, []);
   // A phone alert about HPD's email / a notice opens the vendor tracking board (…&board=1).
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("board") !== "1") return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("money") === "1") { setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("rejected"); setNoticesOpen(true); try { window.history.replaceState(null, "", window.location.pathname); } catch {} return; }
+    if (q.get("board") !== "1") return;
     setBoardShow("all");
     setBoardOpen(true);
     try { window.history.replaceState(null, "", window.location.pathname); } catch {}
@@ -1590,6 +1595,18 @@ export default function FieldCommandClient() {
   const rejections = useMemo(() => paperworkRejections(askedMap, [...jobs, ...olderJobs], pipMap), [askedMap, jobs, olderJobs, pipMap]);
   const findAnyJob = (omo: string) => jobs.find((j) => jobId(j) === omo) || olderJobs.find((j) => jobId(j) === omo) || (olderLayer || []).find((j) => jobId(j) === omo);
   const openRejections = rejections.filter((r) => !r.answered);
+  useEffect(() => {
+    if (!openRejections.length) return;
+    try {
+      const raw = localStorage.getItem("hpd-seen-rejections");
+      const seen = new Set<string>(raw ? JSON.parse(raw) : []);
+      const keys = openRejections.map((r) => ({ key: `${r.omo}|${r.at}`, r }));
+      const fresh = keys.filter((k) => !seen.has(k.key));
+      for (const k of keys) seen.add(k.key);
+      localStorage.setItem("hpd-seen-rejections", JSON.stringify([...seen].slice(-600)));
+      if (raw && fresh.length) for (const { r } of fresh.slice(-5)) notify({ kind: "rejection", go: "money", omo: r.omo, title: `💵 Payment rejected · ${r.omo}`, text: String((r as { reason?: string }).reason || "Fix it and send it back").slice(0, 110) });
+    } catch { /* private mode */ }
+  }, [openRejections.map((r) => `${r.omo}|${r.at}`).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
   const [openNotice, setOpenNotice] = useState("");
   const senderName = (by: string) => (/^Department of Housing/i.test(by) ? "HPD Accounts Payable" : by);
@@ -1613,17 +1630,26 @@ export default function FieldCommandClient() {
   // Good news and new invitations step aside by themselves (they can sit over an open bid); replies, failed faxes and
   // deadlines stay until you close them.
   useEffect(() => {
-    if (!ping || (ping.kind !== "good" && ping.kind !== "new")) return;
+    if (!ping || (ping.kind !== "fax-ok" && ping.kind !== "bid")) return;
     const at = ping.at;
-    const t = window.setTimeout(() => setPing((p) => (p && p.at === at ? null : p)), ping.kind === "good" ? 6000 : 12000);
+    const t = window.setTimeout(() => setPing((p) => (p && p.at === at ? null : p)), ping.kind === "fax-ok" ? 6000 : 12000);
     return () => window.clearTimeout(t);
   }, [ping]);
-  const setHpdPing = (p: { count: number; subject: string; omo: string; from?: string } | null) => {
-    if (!p) { setPing(null); return; }
-    setPing({ kind: "email", go: "board", omo: p.omo, at: Date.now(), title: `${p.count === 1 ? "New email from HPD" : `${p.count} new emails from HPD`}${p.omo ? ` · ${p.omo}` : ""}`, text: `${p.from ? `${p.from}: ` : ""}${p.subject}`.slice(0, 110) });
+  type FreshEmail = { at: string; subject: string; omo: string; from?: string; threadKind?: string; replied?: boolean };
+  const emailAlerts = (list: FreshEmail[]) => {
+    const sorted = [...list].sort((a, b) => a.at.localeCompare(b.at)).slice(-8); // oldest first: the newest ends on top
+    let last: (AppNotice & { at: number }) | null = null;
+    for (const m of sorted) {
+      const kind: AlertKind = emailKind(m.subject, m.threadKind || "", m.from || "");
+      const n: AppNotice = { kind, go: kind === "rejection" ? "money" : "board", omo: m.omo, title: emailTitle(kind, m.from || "", m.omo, !!m.replied, m.subject), text: m.subject.slice(0, 110) };
+      addToLog(n);
+      last = { ...n, at: Date.now() };
+    }
+    if (last) { setPing(last); playChime(last.kind); }
   };
+  const setHpdPing = (p: null) => { if (!p) setPing(null); };
   useEffect(() => {
-    const on = (e: Event) => { const n = (e as CustomEvent<AppNotice>).detail; if (!n?.title) return; setPing({ ...n, at: Date.now() }); playChime(n.kind); };
+    const on = (e: Event) => { const n = (e as CustomEvent<AppNotice>).detail; if (!n?.title) return; addToLog(n); setPing({ ...n, at: Date.now() }); playChime(n.kind); };
     window.addEventListener("hpd-notify", on);
     // iPhone mutes sound after the app was in the background: every touch unlocks it again.
     const unlock = () => unlockChime();
@@ -1632,20 +1658,29 @@ export default function FieldCommandClient() {
     return () => { window.removeEventListener("hpd-notify", on); document.removeEventListener("pointerdown", unlock); document.removeEventListener("touchend", unlock); };
   }, []);
   const [chimeOff, setChimeOff] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifUnread, setNotifUnread] = useState(0);
+  useEffect(() => {
+    const count = () => setNotifUnread(unreadCount(readLog()));
+    count();
+    window.addEventListener("hpd-notify-log", count);
+    return () => window.removeEventListener("hpd-notify-log", count);
+  }, []);
+  const goTo = (go?: string) => {
+    if (go === "bids") { closeScreens("bids"); setBidsOpen(true); }
+    else if (go === "board") { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }
+    else if (go === "money") { closeScreens("notices"); setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("rejected"); setNoticesOpen(true); }
+  };
   useEffect(() => {
     if (!threads) return;
     try {
-      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "", from: senderName(m.from || "") })));
+      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "", from: senderName(m.from || ""), threadKind: (t as { kind?: string }).kind || "", replied: t.messages.some((x) => x.mine && x.at < m.at) })));
       const raw = localStorage.getItem("hpd-seen-thread-msgs");
       const seen = new Set<string>(raw ? JSON.parse(raw) : []);
       const fresh = recent.filter((m) => !seen.has(m.key));
       for (const m of recent) seen.add(m.key);
       localStorage.setItem("hpd-seen-thread-msgs", JSON.stringify([...seen].slice(-800)));
-      if (raw && fresh.length) {
-        const newest = [...fresh].sort((a, b) => b.at.localeCompare(a.at))[0];
-        setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omo, from: newest.from });
-        playChime("email");
-      }
+      if (raw && fresh.length) emailAlerts(fresh);
     } catch { /* private mode */ }
   }, [threadsAt]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setChimeOff(chimeMuted()); }, []);
@@ -1671,11 +1706,7 @@ export default function FieldCommandClient() {
         const fresh = (d.received || []).filter((m: ScanMsg & { id?: string }) => m.id && !seen.has(m.id));
         for (const m of d.received || []) if ((m as { id?: string }).id) seen.add((m as { id: string }).id);
         localStorage.setItem("hpd-seen-hpd-msgs", JSON.stringify([...seen].slice(-800)));
-        if (seenRaw && fresh.length) {
-          const newest = [...fresh].sort((a: ScanMsg, b: ScanMsg) => b.at.localeCompare(a.at))[0];
-          setHpdPing({ count: fresh.length, subject: newest.subject, omo: newest.omos?.[0] || "" });
-          playChime("email");
-        }
+        if (seenRaw && fresh.length) emailAlerts(fresh.map((m: ScanMsg) => ({ at: m.at, subject: m.subject, omo: m.omos?.[0] || "" })));
       } catch { /* private mode */ }
       const withFiles = (d.sent || []).filter((m: ScanMsg) => m.files).length;
       setScanStatus(`✓ Checked your email ${new Date(d.checkedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}: ${(d.sent || []).length} sent to HPD (${withFiles} with PDFs), ${(d.received || []).length} from HPD in the last ${d.days} days.`);
@@ -3018,6 +3049,11 @@ export default function FieldCommandClient() {
           <FilterIcon />
           {activeFilterCount ? <span className="fc-filter-badge">{activeFilterCount}</span> : null}
         </button>
+        {/* Every alert, kept to manage and keep track of (20 Oct). */}
+        <button type="button" className={`fc-filter-btn fc-notif-btn${notifUnread ? " has-new" : ""}`} aria-label="Notifications" title="Notifications" data-hpd-smoke="fc-notif-open" aria-pressed={notifOpen} onClick={() => setNotifOpen((v) => !v)}>
+          <span aria-hidden="true" className="fc-notif-bell">🔔</span>
+          {notifUnread ? <span className="fc-filter-badge fc-notif-badge" data-hpd-smoke="fc-notif-count">{notifUnread}</span> : null}
+        </button>
       </div>
       {!selectedJob && !filtersOpen ? (
         <nav className="fc-borough-bar" data-hpd-smoke="fc-borough-bar" aria-label="Borough and date">
@@ -4074,6 +4110,8 @@ export default function FieldCommandClient() {
         map={mapRef.current}
         history={bidHistory}
         onClose={() => setBidsOpen(false)}
+        notifUnread={notifUnread}
+        onNotifications={() => setNotifOpen(true)}
       />
       {closeOutOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-work-sheet" role="dialog" aria-label="Ready to close out" data-hpd-smoke="fc-close-out-sheet">
@@ -4513,14 +4551,11 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go); }} /> : null}
       {ping ? (
-        <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind}>
-          <button type="button" className="fc-hpd-ping-main" onClick={() => {
-            setPing(null);
-            if (ping.go === "bids") { closeScreens("bids"); setBidsOpen(true); }
-            else if (ping.go === "board") { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }
-          }}>
-            <span aria-hidden="true">{{ email: "📩", good: "✅", bad: "❌", new: "🧾", urgent: "⏰" }[ping.kind]}</span>
+        <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind} style={{ borderColor: ALERT_KINDS[ping.kind]?.color }}>
+          <button type="button" className="fc-hpd-ping-main" onClick={() => { setPing(null); goTo(ping.go); }}>
+            <span aria-hidden="true">{ALERT_KINDS[ping.kind]?.icon || "🔔"}</span>
             <b>{ping.title}</b>
             {ping.text ? <small>{ping.text.slice(0, 110)}</small> : null}
           </button>

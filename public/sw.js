@@ -72,6 +72,8 @@ self.addEventListener("push", (event) => {
     body: data.body || "",
     tag: data.tag || undefined,
     renotify: !!data.tag,
+    requireInteraction: data.kind === "notice" || data.kind === "urgent" || data.kind === "rejection",
+    vibrate: data.kind === "award" ? [40, 30, 40, 30, 200] : data.kind === "notice" ? [200, 80, 200, 80, 200] : data.kind === "rejection" ? [150, 60, 150, 60, 300] : data.kind === "bid" ? [40, 40, 40] : [60, 40, 60],
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
     data: { url: data.url || "/map/?view=all&map=1" },

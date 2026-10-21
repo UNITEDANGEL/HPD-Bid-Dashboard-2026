@@ -53,7 +53,9 @@ try {
   // A new email from HPD (not there at the first check): a banner (and the chime), tap -> the board.
   const ping = page.locator('[data-hpd-smoke="fc-hpd-ping"]');
   await ping.waitFor({ timeout: 10000 });
-  assert.match(await ping.innerText(), /New email from HPD · EQ31364[\s\S]*received, thank you/);
+  // An email on a 24-hour notice thread is a ⏱ notice alert (each kind its own, 20 Oct).
+  assert.match(await ping.innerText(), /24-hour notice · EQ31364[\s\S]*received, thank you/);
+  assert.equal(await ping.getAttribute("data-kind"), "notice");
   assert.equal(await page.locator('[data-hpd-smoke="fc-chime-toggle"]').count(), 1, "sound on / off");
   if (shots) await page.screenshot({ path: `${shots}/scan-2-ping.png` });
   assert.deepEqual(errors, []);

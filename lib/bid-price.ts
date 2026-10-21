@@ -140,7 +140,7 @@ function countAfter(text: string, noun: string) {
     const marks = [...text.matchAll(/(?:^|[\s.:;,])(\d{1,2})\s*\)\s*/g)].filter((m) => Number(m[1]) >= 1 && Number(m[1]) <= 20);
     marks.forEach((m, i) => {
       const body = text.slice(m.index! + m[0].length, marks[i + 1]?.index ?? text.length);
-      if (/doors?|latch|hinges?|closer|push ?bar|striker|saddle|mortise|hopper/.test(body)) items.add(m[1]);
+      if (/\bdoors?\b|latch|hinges?|closer|push ?bar|striker|saddle|mortise|hopper/.test(body)) items.add(m[1]);
     });
   }
   // Only a list counting 1, 2, 3... (not stray numbers).
@@ -164,7 +164,7 @@ export function measurements(text: string) {
     const unit = (m[2] || m[4] || "").toLowerCase();
     const feet = /ft|feet|'|’/.test(unit) && !/''/.test(unit);
     const inches = /["”″]|''|in/.test(unit);
-    if (/^\s*(?:ceramic |vinyl |floor |wall )?tiles?/.test(after) || /tiles?\s*(?:\(|size)?\s*$/.test(before)) continue; // a tile size
+    if (/^\s*(?:ceramic |vinyl |floor |wall )?tiles?\b/.test(after) || /\btiles?\s*(?:\(|size)?\s*$/.test(before)) continue; // a tile size
     const key = `${w}x${h}`;
     if (/glass|pane|sash|window|lite|mirror|plexi|wire[d]? glass/.test(before) && !feet) {
       if (seen.has(key + "g")) continue;
@@ -190,7 +190,7 @@ function squareFeet(text: string) {
     const before = text.slice(Math.max(from, m.index! - 140), m.index);
     from = m.index! + m[0].length;
     const n = Number(m[1]);
-    if (/paint|coats?|primer|prime/.test(before)) paint += n;
+    if (/paint|coats?\b|primer|prime\b/.test(before)) paint += n;
     else if (n !== lastRepair) { repair += n; lastRepair = n; }
   }
   return { paint: Math.round(paint), repair: Math.round(repair) };
@@ -258,7 +258,7 @@ export function readScope(description: string): JobScope {
   let windows = countAfter(text, "window");
   // HPD sometimes writes "TOTAL WINDOWS = 10" under a list of doors (ER07755): with no window work in the
   // job, those are doors.
-  const windowWork = /windows?|sash|glass|pane|window guard/.test(text.replace(/total[^.;=()\d]{0,22}windows?[^\d]{0,8}\d{1,2}/g, ""));
+  const windowWork = /\bwindows?\b|sash|glass|pane|window guard/.test(text.replace(/total[^.;=()\d]{0,22}windows?[^\d]{0,8}\d{1,2}/g, ""));
   if (windows > 0 && !windowWork && doors > 0) { doors = Math.max(doors, windows); windows = 0; }
   const area = squareFeet(text);
   const measured = measurements(text);

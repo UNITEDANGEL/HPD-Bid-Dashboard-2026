@@ -731,3 +731,11 @@ i.is-won { background: #16a34a; }
 .fc-bid-row-ico { display: inline-grid !important; place-items: center; width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 6px; box-shadow: 0 1px 3px #0f172a55; font-size: 0 !important; }
 .fc-bid-row-ico .fc-glyph { display: block; }
 @media (max-height: 500px) { .fc-bid-pin .fc-glyph { width: 22px; height: 22px; } }
+
+/* The notifications bell on the bids screen too (20 Oct). */
+.fc-bids-notif { position: relative; min-width: 44px; min-height: 40px; border-radius: 12px; border: 1px solid #fde68a55; background: #ffffff1f; color: #fff; font-size: 20px; }
+.fc-bids-notif.has-new { box-shadow: 0 0 0 2px #f59e0b; }
+.fc-bids-notif b { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #fff; font: 900 11px/18px system-ui; }
+.fc-bids-banner { grid-template-columns: 1fr auto auto; }
+.fc-bids-banner .fc-bids-notif { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; padding: 0 8px; background: #ffffff26; color: #fff; }
+.fc-bids-banner [data-hpd-smoke="fc-bids-close"] { grid-column: 3; }

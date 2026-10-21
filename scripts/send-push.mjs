@@ -1,6 +1,8 @@
 // Phone alerts (owner, 20 Oct: "ring for all notifications", app closed / phone locked). Runs in the 10-minute fetcher
 // after the emails and invitations are read: anything new since the last run -> an alert to every phone that turned
-// alerts on (Alerts page). New: an email / reply from HPD, a new invitation to bid, a 24-hour notice under 6 hours.
+// alerts on (Alerts page). Each kind its own alert (20 Oct: "unique alerts for bids, notices, rejections, requests"):
+// 💰 you won a job (cha-ching), ⏱ 24/72-hour notice, 📋 documents request (Gafur / AEP), 💵 payment rejected, 📩 message / reply (Lewis...),
+// 🧾 new invitation to bid, ⏰ a 24-hour notice under 6 hours.
 // What was already alerted is kept as short hashes in data/push_state.json (no names, no text). The first run only
 // remembers. Needs VAPID_PRIVATE_KEY (GitHub secret) and HPD_PRIVATE_DATA_KEY; without them it does nothing.
 //
@@ -37,21 +39,33 @@ function vapidPrivate() {
 const name = (from) => String(from || "").replace(/<[^>]*>/g, "").replace(/"/g, "").replace(/\s*\(HPD\)\s*/i, "").replace(/^([^,]+),\s*(.+)$/, "$2 $1").trim();
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, now = Date.now(), loadLib }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib }) {
   const out = [];
-  // HPD wrote or replied (last 2 days).
+  const kinds = loadLib ? await loadLib("alert-kinds") : null;
+  // HPD wrote or replied (last 2 days): a notice, a documents request, a rejection or a message.
   for (const t of conversations?.threads || []) {
     for (const m of t.messages || []) {
       if (!m.hpd || m.mine || now - Date.parse(m.at) > 2 * 86400000) continue;
       const omo = (t.omos || [])[0] || "";
-      out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, title: `📩 ${name(m.from) || "HPD"} ${t.messages.some((x) => x.mine && x.at < m.at) ? "replied" : "wrote"}${omo ? ` · ${omo}` : ""}`, body: String(m.subject || t.subject || "").slice(0, 120), url: "/map/?view=all&map=1&board=1", tag: `t-${h(t.id)}` });
+      const who = name(m.from);
+      const replied = (t.messages || []).some((x) => x.mine && x.at < m.at);
+      const subject = String(t.subject || m.subject || "");
+      const kind = kinds ? kinds.emailKind(subject, t.kind || "", m.from || "") : "message";
+      const title = kinds ? kinds.emailTitle(kind, who, omo, replied, subject) : `📩 ${who || "HPD"} ${replied ? "replied" : "wrote"}${omo ? ` · ${omo}` : ""}`;
+      out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title, body: String(m.subject || t.subject || "").slice(0, 120), url: kind === "rejection" ? "/map/?view=all&map=1&money=1" : "/map/?view=all&map=1&board=1", tag: `t-${h(t.id)}` });
     }
+  }
+  // Payment rejections (HPD's notices, last 7 days).
+  for (const [omo, j] of Object.entries(requests?.jobs || {})) {
+    const at = j?.rejectedAt;
+    if (!at || now - Date.parse(at) > 7 * 86400000) continue;
+    out.push({ key: `r:${h(`${omo}|${at}`)}`, kind: "rejection", title: `💵 Payment rejected · ${omo}`, body: String(j.rejectedReason || "Fix it and send it back.").slice(0, 120), url: "/map/?view=all&map=1&money=1", tag: `r-${omo}` });
   }
   // New invitations to bid (still open).
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(now));
   for (const b of bids || []) {
     if (!b.omo || !b.bidDue || b.bidDue < today) continue;
-    out.push({ key: `b:${h(`${b.omo}|${b.bidDue}`)}`, title: `🧾 New invitation to bid · ${b.omo}`, body: `${b.address || ""} · due ${b.bidDue.slice(5).replace("-", "/")} ${b.bidDueTime || ""}`.trim(), url: "/map/?bids=1", tag: `b-${b.omo}` });
+    out.push({ key: `b:${h(`${b.omo}|${b.bidDue}`)}`, kind: "bid", title: `🧾 New invitation to bid · ${b.omo}`, body: `${b.address || ""} · due ${b.bidDue.slice(5).replace("-", "/")} ${b.bidDueTime || ""}`.trim(), url: "/map/?bids=1", tag: `b-${b.omo}` });
   }
   // A 24-hour notice under 6 hours with nothing sent (the board's own rule).
   if (loadLib && conversations?.threads) {
@@ -61,7 +75,7 @@ export async function findAlerts({ conversations, bids, sent, now = Date.now(), 
       const rows = buildBoard({ threads, sent: sent || {}, marks: {}, now });
       for (const r of urgentRows(rows, now)) {
         const left = Math.round(hoursLeft(r, now));
-        out.push({ key: `u:${h(r.key)}`, title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: "/map/?view=all&map=1&board=1", tag: `u-${r.omo}` });
+        out.push({ key: `u:${h(r.key)}`, kind: "urgent", title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: "/map/?view=all&map=1&board=1", tag: `u-${r.omo}` });
       }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }
@@ -77,8 +91,9 @@ async function main() {
   const conversations = convBuf ? JSON.parse(openSealed(convBuf, k).toString("utf8")) : null;
   const bids = JSON.parse(read(path.join(ROOT, "public/data/upcoming_bids.json")) || "{}").bids || [];
   const sent = JSON.parse(read(path.join(ROOT, "public/data/sent_paperwork.json")) || "{}").jobs || {};
+  const requests = JSON.parse(read(path.join(ROOT, "public/data/hpd_requests.json")) || "{}");
   const { loadLib } = await import("./daily-report.mjs");
-  const alerts = await findAlerts({ conversations, bids, sent, loadLib });
+  const alerts = await findAlerts({ conversations, bids, sent, requests, loadLib });
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
   const fresh = alerts.filter((a) => !seen.has(a.key));
@@ -100,7 +115,7 @@ async function main() {
   for (const { key, sub } of subs) {
     for (const a of list) {
       try {
-        await webpush.sendNotification(sub, JSON.stringify({ title: a.title, body: a.body, url: a.url, tag: a.tag }), { TTL: 6 * 3600, urgency: a.key.startsWith("u:") ? "high" : "normal" });
+        await webpush.sendNotification(sub, JSON.stringify({ title: a.title, body: a.body, url: a.url, tag: a.tag, kind: a.kind || "message" }), { TTL: 6 * 3600, urgency: a.kind === "urgent" || a.kind === "notice" || a.kind === "rejection" || a.kind === "award" ? "high" : "normal" });
       } catch (e) {
         if (e.statusCode === 404 || e.statusCode === 410) { nextState.dead.push(key); console.log(`${key}: phone turned alerts off (removed)`); break; }
         console.log(`${key}: not sent (${e.statusCode || e.message})`);

@@ -52,7 +52,7 @@ export async function turnOnPush(fetcher: typeof fetch = fetch): Promise<{ ok: b
   if (r.status === 401) return { ok: false, message: "Sign in with Google on the Storage page first (alerts are only for you)." };
   if (!r.ok || !d.ok) return { ok: false, message: `Couldn't turn alerts on: ${d.error || `HTTP ${r.status}`}` };
   try { localStorage.setItem(ON_KEY, "1"); } catch { /* private mode */ }
-  return { ok: true, message: "🔔 Phone alerts are on. You'll get one when HPD writes or replies, a new invitation comes in, or a 24-hour notice drops under 6 hours — even with the app closed (checked every 10 minutes)." };
+  return { ok: true, message: "🔔 Phone alerts are on: wins (cha-ching), notices, requests, rejections, messages, new invitations and deadlines — even with the app closed (checked every 10 minutes)." };
 }
 
 export async function turnOffPush(fetcher: typeof fetch = fetch) {
