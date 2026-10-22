@@ -3324,3 +3324,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-board-moved button { min-height: 36px; padding: 0 12px; border-radius: 10px; border: 0; background: #3b82f6; color: #fff; font: 900 14px system-ui, sans-serif; }
 
 .fc-board-filed { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #052e16; border: 1px solid #16a34a; color: #dcfce7; font: 700 13.5px system-ui, sans-serif; }
+
+/* Voice alerts switch (22 Oct). */
+.fc-push-voice { display: block; width: 100%; min-height: 48px; margin: 4px 0 6px; border-radius: 12px; border: 2px solid #475569; background: #0f172a; color: #e2e8f0; font: 900 15px system-ui, sans-serif; }
+.fc-push-voice.is-on { border-color: #22c55e; background: #052e16; color: #dcfce7; }

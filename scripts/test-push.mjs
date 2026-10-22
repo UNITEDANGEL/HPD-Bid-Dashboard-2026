@@ -158,3 +158,24 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(await moneyReport({ pip, payments, requests, sent, now: Date.parse("2026-10-23T15:00:00Z") }), null, "not before 2 PM");
   console.log(`PASS Friday money report: Fridays from 2 PM: "${f.body}"`);
 }
+
+// 🗣 Voice + plain-words summary (owner, 22 Oct: "an actual voice: urgent email, message from Lewis, requesting
+// documents, new invitation to bid, confirmation of award; summarize: they're looking for this work order").
+{
+  const { summarizeHpd, spokenAlert, cleanEmailText } = await loadLib("alert-summary");
+  const gafurList = "Good day,\nThese are the list of OMOs that are missing documents, kindly submit the required documents.\n\n1. EP27489 – Affidavit and Invoice\n2. EP27382 - Affidavit and Invoice\n3. EP27310 – update / documents\n\nBest,\n\nDeoranie Gafur (She/Her)|Vendor Tracker\nAlternative Enforcement Program (AEP)";
+  assert.equal(summarizeHpd({ kind: "request", subject: "Missing Documents", text: gafurList }), "Missing documents for 3 work orders: EP27489 affidavit and invoice, EP27382 affidavit and invoice and 1 more");
+  assert.equal(summarizeHpd({ kind: "request", subject: "Missing Documents", text: "Good day,\nReceived.\n\nDeoranie Gafur (She/Her)|Vendor Tracker\n[cid:image001.png@01DD]<http://www.nyc.gov/x>" }), "They received it", "signature without 'Best,' and image tags dropped");
+  assert.equal(summarizeHpd({ kind: "request", subject: "OMO#ER06498- STATUS UPDATE", text: "Good afternoon,\nKindly provide a status update on OMO#ER06498 as estimated date of completion has passed.\nThank you,\nJoy", omo: "ER06498" }), "They want a status update on ER06498: the completion date has passed");
+  assert.equal(summarizeHpd({ kind: "request", subject: "OMO#ER01919- INCOMPLETE INVOICE", text: "Please see attached.", omo: "ER01919" }), "Incomplete invoice on ER01919");
+  assert.equal(summarizeHpd({ kind: "notice", subject: "24 HR POOR PERFORMANCE NOTICE - OMO#EQ31364", text: "Please submit the affidavit and invoice within 24 hours.", omo: "EQ31364" }), "24-hour notice: they want the affidavit and invoice for EQ31364");
+  assert.ok(!/wrote:|earlier/.test(cleanEmailText("Thanks for the update.\n\nOn Mon, Oct 20, 2026 at 9:00 AM Lewis wrote:\n> earlier text")), "quoted email left out");
+  const say = (n) => spokenAlert(n);
+  assert.equal(say({ kind: "award", title: "💰 You won · ER07640!", omo: "ER07640" }), "Confirmation of award! You won work order E R 0 7 6 4 0.");
+  assert.equal(say({ kind: "bid", title: "🧾 New invitation to bid · ER07749", omo: "ER07749", text: "1234 Main St · due 10/24 11:00 AM" }), "New invitation to bid. work order E R 0 7 7 4 9. 1234 Main St, due 10/24 11:00 AM");
+  assert.match(say({ kind: "notice", title: "⏱ 24-hour notice · EQ31364 from Joy-Ann Lewis", omo: "EQ31364", who: "Joy-Ann Lewis", text: "24-hour notice: they want the affidavit and invoice for EQ31364" }), /^Urgent email\. 24-hour notice from Lewis, work order E Q 3 1 3 6 4\. 24-hour notice: they want the affidavit and invoice for E Q 3 1 3 6 4$/);
+  assert.match(say({ kind: "request", title: "📋 Deoranie Gafur asked for documents", who: "Deoranie Gafur", text: "Missing documents for 3 work orders: EP27489 affidavit and invoice" }), /^Request from Gafur, requesting documents\. Missing documents for 3 work orders: E P 2 7 4 8 9 affidavit and invoice$/);
+  assert.equal(say({ kind: "request", title: "📋 Deoranie Gafur replied", who: "Deoranie Gafur", text: "They received it" }), "Gafur replied: received.");
+  assert.match(say({ kind: "message", title: "📩 Joy-Ann Lewis wrote · ER06498", omo: "ER06498", who: "Joy-Ann Lewis", text: "Kindly provide a status update on OMO#ER06498" }), /^Email from Lewis, work order E R 0 6 4 9 8\. Kindly provide a status update on work order E R 0 6 4 9 8$/);
+  console.log(`PASS voice + summary: Gafur's list -> "Missing documents for 3 work orders: EP27489 affidavit and invoice…"; "Received." / status update / incomplete invoice / 24-hour notice summarized; spoken: award, invitation, urgent notice, request, message with work orders read letter by letter`);
+}

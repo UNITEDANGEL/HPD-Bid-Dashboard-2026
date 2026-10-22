@@ -53,6 +53,8 @@ export function workingHours(now = Date.now()) {
 export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null }) {
   const out = [];
   const kinds = loadLib ? await loadLib("alert-kinds") : null;
+  // What they want in plain words (22 Oct): the alert text on a locked phone, instead of the email subject.
+  const summary = loadLib ? await loadLib("alert-summary") : null;
   // HPD wrote or replied (last 2 days): a notice, a documents request, a rejection or a message.
   for (const t of conversations?.threads || []) {
     for (const m of t.messages || []) {
@@ -63,7 +65,7 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       const subject = String(t.subject || m.subject || "");
       const kind = kinds ? kinds.emailKind(subject, t.kind || "", m.from || "") : "message";
       const title = kinds ? kinds.emailTitle(kind, who, omo, replied, subject) : `📩 ${who || "HPD"} ${replied ? "replied" : "wrote"}${omo ? ` · ${omo}` : ""}`;
-      out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title, body: String(m.subject || t.subject || "").slice(0, 120), url: kind === "rejection" ? `/map/?view=all&map=1&money=1&omo=${omo}` : kind === "award" ? `/map/?view=all&map=1&omo=${omo}` : `/map/?view=all&map=1&board=1&omo=${omo}`, tag: `t-${h(t.id)}` });
+      out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title, body: (summary ? summary.summarizeHpd({ kind, subject, text: m.text || "", omo }) : String(m.subject || t.subject || "")).slice(0, 160), url: kind === "rejection" ? `/map/?view=all&map=1&money=1&omo=${omo}` : kind === "award" ? `/map/?view=all&map=1&omo=${omo}` : `/map/?view=all&map=1&board=1&omo=${omo}`, tag: `t-${h(t.id)}` });
     }
   }
   // Payment rejections (HPD's notices, last 7 days).

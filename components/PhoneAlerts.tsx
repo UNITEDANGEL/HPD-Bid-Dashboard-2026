@@ -2,10 +2,28 @@
 // The phone-alert switch (owner, 20 Oct): turn alerts on (iPhone asks for permission), send a test, turn them off.
 import { useEffect, useState } from "react";
 import { autoRegisterPush, pushState, testAlert, thisPhoneOnServer, turnOffPush, turnOnPush, type PushState } from "../lib/push";
-import { playChime, unlockChime } from "../lib/chime";
+import { ring, unlockChime, type AppNotice } from "../lib/chime";
+import { setVoiceOff, voiceOff, voiceSupported } from "../lib/speak";
 import { ALERT_KINDS, type AlertKind } from "../lib/alert-kinds";
 
+// What each alert sounds like (tone, then the words), with made-up work orders.
+const SAMPLES: Record<AlertKind, AppNotice> = {
+  award: { kind: "award", title: "💰 You won · ER07640!", omo: "ER07640" },
+  notice: { kind: "notice", title: "⏱ 72-hour notice · EQ31364 from Joy-Ann Lewis", omo: "EQ31364", who: "Joy-Ann Lewis", text: "72-hour notice: they want the affidavit and invoice for EQ31364" },
+  request: { kind: "request", title: "📋 Deoranie Gafur asked for documents", who: "Deoranie Gafur", text: "Missing documents for 15 work orders: EP27489 affidavit and invoice, EP27382 affidavit and invoice and 13 more" },
+  rejection: { kind: "rejection", title: "💵 Payment rejected · EL25850", omo: "EL25850", text: "The work dates on the invoice and affidavit don't match" },
+  message: { kind: "message", title: "📩 Joy-Ann Lewis wrote · ER06498", omo: "ER06498", who: "Joy-Ann Lewis", text: "They want a status update on ER06498: the completion date has passed" },
+  bid: { kind: "bid", title: "🧾 New invitation to bid · ER07749", omo: "ER07749", text: "Brooklyn, due Friday 11:00 AM" },
+  "fax-ok": { kind: "fax-ok", title: "✅ Fax went through · ER07749: HPD received your bid" },
+  "fax-bad": { kind: "fax-bad", title: "❌ Fax failed · ER07749", text: "The line was busy. Send it again." },
+  urgent: { kind: "urgent", title: "⏰ ER01987: notice overdue 2 h", text: "Nothing sent yet: answer it now" },
+};
+
 export default function PhoneAlerts() {
+  // Checked after the page loads (the server copy can't know the phone's voices).
+  const [voice, setVoice] = useState(true);
+  const [canSpeak, setCanSpeak] = useState(true);
+  useEffect(() => { setCanSpeak(voiceSupported()); setVoice(voiceSupported() && !voiceOff()); }, []);
   const [state, setState] = useState<PushState | "">("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,8 +56,13 @@ export default function PhoneAlerts() {
       ) : null}
       {msg ? <p className="fc-push-msg" data-hpd-smoke="fc-push-msg" role="status">{msg}</p> : null}
       <div className="fc-push-sounds" data-hpd-smoke="fc-push-sounds">
-        <small>Hear each sound (every kind has its own):</small>
-        <div>{(Object.keys(ALERT_KINDS) as AlertKind[]).map((k) => <button key={k} type="button" data-hpd-smoke={`fc-push-sound-${k}`} onClick={() => { unlockChime(); playChime(k); }}>{ALERT_KINDS[k].icon} {ALERT_KINDS[k].name}</button>)}</div>
+        {/* Voice (22 Oct): the tone, then the alert said out loud while the app is open. */}
+        <button type="button" className={`fc-push-voice${voice ? " is-on" : ""}`} data-hpd-smoke="fc-push-voice" aria-pressed={voice} disabled={!canSpeak} onClick={() => { const next = !voice; setVoice(next); setVoiceOff(!next); unlockChime(); if (next) ring(SAMPLES.message); }}>
+          {voice ? "🗣 Voice on: alerts are read out loud" : "🔇 Voice off: tones only"}
+        </button>
+        <small>{canSpeak ? "While the app is open you hear the tone, then the words (who it's from, the work order, what they want). With the phone locked the alert shows the same words." : "This browser can't speak: tones only."}</small>
+        <small>Hear each one:</small>
+        <div>{(Object.keys(ALERT_KINDS) as AlertKind[]).map((k) => <button key={k} type="button" data-hpd-smoke={`fc-push-sound-${k}`} onClick={() => { unlockChime(); ring(SAMPLES[k]); }}>{ALERT_KINDS[k].icon} {ALERT_KINDS[k].name}</button>)}</div>
       </div>
     </section>
   );

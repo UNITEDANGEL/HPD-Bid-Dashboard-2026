@@ -48,7 +48,8 @@ import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
 import { buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
-import { chimeMuted, notify, playChime, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
+import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
+import { summarizeHpd } from "../../lib/alert-summary";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import NotificationsPanel from "./NotificationsPanel";
@@ -1657,7 +1658,7 @@ export default function FieldCommandClient() {
   const snoozed = (n: AppNotice) => { try { return Date.now() < Number(localStorage.getItem(snoozeKey(n)) || 0); } catch { return false; } };
   useEffect(() => {
     if (!critical || critical.rings >= 5) return;
-    const t = window.setTimeout(() => { playChime(critical.kind); setCritical((c) => (c && c.at === critical.at ? { ...c, rings: c.rings + 1 } : c)); }, 30000);
+    const t = window.setTimeout(() => { ring(critical); setCritical((c) => (c && c.at === critical.at ? { ...c, rings: c.rings + 1 } : c)); }, 30000);
     return () => window.clearTimeout(t);
   }, [critical]);
   // The Home Screen icon shows the unread count (like Gmail); the phone keeps counting alerts while the app is closed.
@@ -1675,17 +1676,18 @@ export default function FieldCommandClient() {
     const t = window.setTimeout(() => setPing((p) => (p && p.at === at ? null : p)), ping.kind === "fax-ok" ? 6000 : ping.kind === "bid" ? 12000 : 20000);
     return () => window.clearTimeout(t);
   }, [ping]);
-  type FreshEmail = { at: string; subject: string; omo: string; from?: string; threadKind?: string; replied?: boolean };
+  type FreshEmail = { at: string; subject: string; omo: string; from?: string; threadKind?: string; replied?: boolean; text?: string };
   const emailAlerts = (list: FreshEmail[]) => {
     const sorted = [...list].sort((a, b) => a.at.localeCompare(b.at)).slice(-8); // oldest first: the newest ends on top
     let last: (AppNotice & { at: number }) | null = null;
     for (const m of sorted) {
       const kind: AlertKind = emailKind(m.subject, m.threadKind || "", m.from || "");
-      const n: AppNotice = { kind, go: kind === "rejection" ? "money" : kind === "award" ? "job" : "board", omo: m.omo, title: emailTitle(kind, m.from || "", m.omo, !!m.replied, m.subject), text: m.subject.slice(0, 110) };
+      // What they want, in plain words (22 Oct): "Missing documents for 15 work orders: EP27489 affidavit and invoice…".
+      const n: AppNotice = { kind, go: kind === "rejection" ? "money" : kind === "award" ? "job" : "board", omo: m.omo, who: m.from || "", title: emailTitle(kind, m.from || "", m.omo, !!m.replied, m.subject), text: (m.text ? summarizeHpd({ kind, subject: m.subject, text: m.text, omo: m.omo }) : m.subject).slice(0, 160) };
       addToLog(n);
       last = { ...n, at: Date.now() };
     }
-    if (last) { setPing(last); playChime(last.kind); }
+    if (last) { setPing(last); ring(last); }
   };
   const setHpdPing = (p: null) => { if (!p) setPing(null); };
   useEffect(() => {
@@ -1693,7 +1695,7 @@ export default function FieldCommandClient() {
       const n = (e as CustomEvent<AppNotice>).detail;
       if (!n?.title) return;
       addToLog(n);
-      playChime(n.kind);
+      ring(n);
       // Overdue notices and failed faxes can't be missed (owner, 21 Oct: "better visual and sound alerts").
       // (Test browsers get it only when a test asks: real overdue notices would cover every other test.)
       const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-critical") !== "1"; } catch { return true; } })();
@@ -1743,7 +1745,7 @@ export default function FieldCommandClient() {
   useEffect(() => {
     if (!threads) return;
     try {
-      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "", from: senderName(m.from || ""), threadKind: (t as { kind?: string }).kind || "", replied: t.messages.some((x) => x.mine && x.at < m.at) })));
+      const recent = threads.flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ key: `${t.id}|${m.at}`, at: m.at, subject: t.subject, omo: t.omos[0] || "", from: senderName(m.from || ""), threadKind: (t as { kind?: string }).kind || "", replied: t.messages.some((x) => x.mine && x.at < m.at), text: m.text || "" })));
       const raw = localStorage.getItem("hpd-seen-thread-msgs");
       const seen = new Set<string>(raw ? JSON.parse(raw) : []);
       const fresh = recent.filter((m) => !seen.has(m.key));

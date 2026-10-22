@@ -5,6 +5,8 @@
 // Muting is remembered on this phone.
 
 import { kindOf, type AlertKind } from "./alert-kinds";
+import { spokenAlert } from "./alert-summary";
+import { primeVoice, speak } from "./speak";
 
 let ctx: AudioContext | null = null;
 const KEY = "hpd-chime-off";
@@ -39,6 +41,7 @@ export function unlockChime() {
       ctx = new AC();
     }
     if (ctx.state !== "running") void ctx.resume();
+    primeVoice();
     // A silent blip so iOS lets later sounds play.
     const o = ctx.createOscillator(); const g = ctx.createGain(); g.gain.value = 0; o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.01);
   } catch { /* no sound on this browser */ }
@@ -77,7 +80,15 @@ export function playChime(kindIn: RingKind | string = "message") {
 }
 
 // Any part of the app rings and shows the banner through this (the map listens for it).
-export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "board" | "bids" | "money" | "job"; omo?: string };
+export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "board" | "bids" | "money" | "job"; omo?: string; who?: string };
+
+// The tone, then the words (owner, 22 Oct: "an actual voice instead of beeps"): "Urgent email. 24-hour notice from
+// Lewis, work order E Q 3 1 3 6 4. They want the affidavit and invoice." Muting the sound mutes the voice too.
+export function ring(n: AppNotice) {
+  const played = playChime(n.kind);
+  if (played) speak(spokenAlert(n), kindOf(n.kind) === "award" ? 1500 : 950);
+  return played;
+}
 export function notify(n: AppNotice) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent<AppNotice>("hpd-notify", { detail: n }));
