@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T17:16:48.365562+00:00",
+  "generatedAt": "2026-10-22T17:26:07.619056+00:00",
   "days": 14,
   "bids": [
     {
@@ -3642,6 +3642,266 @@
       },
       "lat": 40.674349,
       "lng": -73.886822
+    },
+    {
+      "omo": "ER08203",
+      "bidDue": "2026-10-26",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-26",
+      "workCompletion": "2026-11-10",
+      "address": "1755 EASTBURN AVENUE",
+      "borough": "BX",
+      "itbFile": "ER08203_102226011736.pdf",
+      "description": "RESTORE FOLLOWING ITEMS TO PROPER WORKING ORDER. 1- AT DOOR AT ROOF AT 1st PUBLIC HALL BULKHEAD FROM NORTH, 5th STORY.2- AT WINDOWS AT INTERMEDIATE LANDING OF MAIN STAIRCASE AT PUBLIC HALL STAIRS, (3rd & 4TH) AND (2ND & 3RD) STORIES. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ 1- AT WINDOWS AT INTERMEDIATE LANDING OF MAIN STAIRCASE AT PUBLIC HALL STAIRS, (3rd & 4TH) AND (2ND & 3RD) STORY. MAKE ALL NECESSARY REPAIRS TO REPLACE THE MISSING CHAINS, MOLDING, BROKEN WOOD FRAMES WITH NEW, ADJUST SASHS WITH GUIDE RAILS, TO RESTORE WINDOWS TO PROPER WORKING ORDER. NUMBER: 2 WINDOWS 2- FIRE ROOF DOOR IN BULKHEAD. MAKE ALL NECESSARY REPAIRS TO FIX DEFECTIVE DOOR ALIGNMENT/ ADJUSTMENT WITH FRAME AND FLOOR, INSTALL NEW SPRING HINGES, PUSH BAR LOCK WITHOUT KEY CYLINDER SUPPORTED WITH RE- ENTRY HANDLE FROM OUTSIDE, TO MAKE DOOR SELF CLOSING AND LATCH, ACCORDING TO NYC GUIDELINES, RESTORE TO PROPER WORKING ORDER. ONE DOOR (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792689458000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.84577,
+      "lng": -73.90865
+    },
+    {
+      "omo": "ER08384",
+      "bidDue": "2026-10-26",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-26",
+      "workCompletion": "2026-11-06",
+      "address": "216 EAST 122 STREET",
+      "borough": "MN",
+      "itbFile": "ER08384_102226011856.pdf",
+      "description": "AT THE KITCHEN,AT APT 2. REPAIR FLOOR. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK\" --AT APT 2. REPLACE VINYL FLOOR AT KITCHEN. REMOVE OBSTRUCTIONS FROM BEDROOM 1. REPLACE APPROX 80 SQFT OF VINYL TILES. ENSURE THE SUBFLOOR IS LEVELED. REPAIR UNEVEN AREAS IN THE SUBFLOOR AS NECESSARY. INSTALL FLOORS INCLUDING HARDWARE AND SEALENT AS NECESSARY. ENSURE FLOOR IS SMOOTH AND LEVELED. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008. DOUMBIA SALIMATA (phone: sign in to see)",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792689540000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.801224,
+      "lng": -73.936477
     }
   ],
   "unread": []
