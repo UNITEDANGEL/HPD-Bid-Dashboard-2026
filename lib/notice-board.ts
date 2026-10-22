@@ -29,7 +29,27 @@ export type BoardRow = {
   next: BoardStep | null;                     // the first step not done (null: done)
   sentAt: string;                             // paperwork on record for the job (sent_paperwork.json)
   noticeText: string;                         // their notice (for the AI-written reply)
+  lastMineAt: string;                         // our latest email on it (after their notice / list)
+  lastTheirsAt: string;                       // their latest email after ours ("" if they haven't answered)
+  filed: { at: string; name: string; here: boolean } | null; // our latest email with a PDF named for the job (any thread)
+  generalOnly?: boolean;                      // the only answer was a note to the whole list ("I'll send them today")
 };
+
+// Where a row sits on the board (owner, 22 Oct: "once I hit send to vendor it should go to sent, waiting for a reply;
+// the not-sent ones on one side, the sent ones on another"): nothing sent yet / sent and waiting / they replied / done.
+export type BoardSide = "tosend" | "waiting" | "replied" | "done";
+export function boardSide(row: BoardRow): BoardSide {
+  if (!row.next) return "done";
+  if (!row.steps.replied.done && !row.steps.sent.done) return "tosend";
+  // A note to her whole list ("I'll send everything today") isn't this job sent: it stays to send until its PDF goes
+  // out or an email names it.
+  if (row.generalOnly && !row.steps.sent.done) return "tosend";
+  return row.lastTheirsAt && Date.parse(row.lastTheirsAt) > sentTime(row) ? "replied" : "waiting";
+}
+// When we last sent them something (an email, or a send ticked by hand).
+export function sentTime(row: BoardRow) {
+  return Math.max(0, ...[row.lastMineAt, row.steps.replied.at, row.steps.sent.at].map((x) => Date.parse(x || "")).filter(Number.isFinite));
+}
 
 const PPN = /poor performance|performance notice|\bPPN\b/i;
 const DOCS = /missing (required )?documents?/i;
@@ -53,6 +73,25 @@ export function buildBoard(input: {
   const closed = input.closed || new Set<string>();
   const rows: BoardRow[] = [];
   const seen = new Set<string>();
+  // Every email of ours with an affidavit / invoice named for a job ("EO32701 AFF INVOICE.pdf"), in any thread (owner,
+  // 22 Oct: "check the emails, AFF INVOICE is labeled with every OMO; I don't want to repeat what I've sent").
+  const filedAll = new Map<string, { at: string; name: string; threadId: string }[]>();
+  for (const t of input.threads) for (const m of t.messages) {
+    if (!m.mine) continue;
+    for (const f of m.files || []) {
+      if (!/aff|inv/i.test(f)) continue;
+      for (const o of new Set(f.toUpperCase().match(/[A-Z]{2}\d{5}/g) || [])) {
+        const list = filedAll.get(o) || [];
+        list.push({ at: m.at, name: f, threadId: t.id });
+        filedAll.set(o, list);
+      }
+    }
+  }
+  const latestFiled = (omo: string, threadId: string, since = "") => {
+    const list = (filedAll.get(omo) || []).filter((x) => !since || Date.parse(x.at) > Date.parse(since)).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+    return list[0] ? { at: list[0].at, name: list[0].name, here: list[0].threadId === threadId } : null;
+  };
+  const namesJob = (m: BoardMessage, omo: string) => (m.files || []).some((f) => f.toUpperCase().includes(omo));
   const finish = (row: Omit<BoardRow, "next">) => {
     const s = row.steps;
     // A later step done means the earlier ones are too (e.g. the paperwork went out with the reply).
@@ -77,12 +116,16 @@ export function buildBoard(input: {
       const hours: 24 | 72 = /\b24\s*-?\s*(HR|HOUR)/i.test(t.subject) && !/\b72\s*-?\s*(HR|HOUR)/i.test(t.subject) ? 24 : /\b72/.test(t.subject) ? 72 : 24;
       const after = msgs.filter((m) => Date.parse(m.at) > Date.parse(notice.at));
       const reply = after.find((m) => m.mine);
-      const withFiles = after.find((m) => m.mine && (m.files?.length || 0) > 0);
+      const filed = latestFiled(omo, t.id, notice.at);
+      const withFiles = after.find((m) => m.mine && (m.files?.length || 0) > 0) || (filed ? { at: filed.at, text: "", hpd: false, mine: true, files: [filed.name] } : undefined);
       const lastFiles = [...after].reverse().find((m) => m.mine && (m.files?.length || 0) > 0);
       const answer = lastFiles ? after.find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastFiles.at)) : undefined;
       const mark = input.marks[key] || {};
       const sentAt = input.sent[omo]?.sentAt || "";
+      const lastMine = [...after].reverse().find((m) => m.mine);
+      const lastTheirs = lastMine ? [...after].reverse().find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastMine.at)) : undefined;
       finish({
+        lastMineAt: [lastMine?.at || "", filed?.at || ""].sort().at(-1) || "", lastTheirsAt: lastTheirs?.at || "", filed,
         key, omo, threadId: t.id, subject: t.subject, kind: "ppn", hours, who, to,
         noticeAt: notice.at, dueAt: dueAfterWeekdays(notice.at, hours), followUpAt: "", // weekdays only: Friday's 24-hour notice is due Monday
         want: "the affidavit and invoice, or an update on the job",
@@ -102,14 +145,30 @@ export function buildBoard(input: {
       const line = new RegExp(`${omo}\\s*[-–:]\\s*([^\\n\\d]{3,60})`, "i").exec(listed.text);
       const after = msgs.filter((m) => Date.parse(m.at) > Date.parse(listed.at));
       // A reply counts for this job when it names it, or names no job (an answer to the whole list).
-      const reply = after.find((m) => m.mine && (m.text.includes(omo) || !/\b[A-Z]{2}\d{5}\b/.test(m.text)));
-      // Paperwork for THIS job: our email with files that names it.
-      const withFiles = after.find((m) => m.mine && (m.files?.length || 0) > 0 && m.text.includes(omo));
-      const answer = withFiles ? after.find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(withFiles.at) && m.text.includes(omo)) : undefined;
+      const reply = after.find((m) => m.mine && (m.text.includes(omo) || namesJob(m, omo) || (!/\b[A-Z]{2}\d{5}\b/.test(m.text) && !(m.files || []).some((f) => /[A-Z]{2}\d{5}/i.test(f)))));
+      // Paperwork for THIS job: our email with files that names it (in the text or the file name) in her thread, or an
+      // affidavit / invoice named for it sent anywhere (any date: she gets told it went, not sent it twice). Photos
+      // asks need photos, so a PDF elsewhere doesn't count for them.
+      const here = after.find((m) => m.mine && (m.files?.length || 0) > 0 && (m.text.includes(omo) || namesJob(m, omo)));
+      const photosOnly = /photo/i.test(line?.[1] || "") && !/affidavit|invoice/i.test(line?.[1] || "");
+      const filed = here ? { at: here.at, name: (here.files || []).find((f) => f.toUpperCase().includes(omo)) || (here.files || [])[0] || "", here: true } : photosOnly ? null : latestFiled(omo, t.id);
+      const withFiles = here || (filed ? { at: filed.at, text: "", hpd: false, mine: true, files: [filed.name] } : undefined);
+      // Their answer after ours in her thread: any answer counts when our email's files are named for this job.
+      const answer = here ? after.find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(here.at) && (m.text.includes(omo) || namesJob(here, omo))) : undefined;
       const follow = theirs.filter((m) => Date.parse(m.at) > Date.parse(listed.at)).at(-1);
       const mark = input.marks[key] || {};
       const sentAt = input.sent[omo]?.sentAt || "";
+      // Ours for this job (names it, or answers the whole list); theirs after it in the same thread.
+      // Only emails about THIS job (naming it, or its PDF) start the waiting clock and can be answered.
+      const lastMineHere = [...after].reverse().find((m) => m.mine && (m.text.includes(omo) || namesJob(m, omo)));
+      const lastMine = [lastMineHere, withFiles].filter(Boolean).sort((a, b) => Date.parse(b!.at) - Date.parse(a!.at))[0];
+      const generalOnly = !!reply && !lastMine && !mark.replied && !mark.sent;
+      // Her answer counts for this job when it names it, or comes right after our email about this job (no other email
+      // of ours in between: "Received." after the EO32701 PDF is for EO32701, not the rest of the list).
+      const lastTheirs = lastMine && lastMineHere ? [...after].reverse().find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastMine.at)
+        && (m.text.includes(omo) || !after.some((x) => x.mine && Date.parse(x.at) > Date.parse(lastMine.at) && Date.parse(x.at) < Date.parse(m.at)))) : undefined;
       finish({
+        lastMineAt: lastMine?.at || "", lastTheirsAt: lastTheirs?.at || "", filed, generalOnly,
         key, omo, threadId: t.id, subject: t.subject, kind: "docs", hours: 0, who, to,
         noticeAt: listed.at, dueAt: "", followUpAt: follow?.at || "",
         want: line ? line[1].trim().replace(/\s+/g, " ") : "documents / an update",

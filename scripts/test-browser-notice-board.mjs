@@ -81,7 +81,9 @@ United Angel Construction Corp` } });
   if (has("EP27450")) assert.match(listText, /EP27450 \([^)]*\) - affidavit and invoice sent on (10\/8\/26|\d+\/\d+\/\d+)\./i);
   if (has("EP18784")) assert.match(listText, /EP18784 \([^)]*\) - documents sent on \d+\/\d+\/\d+\./, "paperwork on record, with its date");
   if (has("EP22713")) assert.match(listText, /EP22713 \([^)]*\) - update: /, "a group email about many jobs doesn't count as sent for this one");
-  if (has("EN07390")) assert.match(listText, /EN07390 \([^)]*\) - update: /);
+  if (has("EO18305")) assert.match(listText, /EO18305 \(photos\) - update: /, "she wants photos: an old affidavit PDF isn't photos sent");
+  // EN07390: its PDF ("EN07390 AffF INVOICE.pdf") went to her 22 Oct with no text: the file name counts.
+  if (has("EN07390")) assert.match(listText, /EN07390 \([^)]*\) - \w[\w ]* sent on \d+\/\d+\/\d+\./);
   await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
   await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
   assert.match(await listBox.locator('[data-hpd-smoke="fc-list-reply-status"]').innerText(), /Fill in the lines that end with "update:"/);
@@ -133,12 +135,19 @@ United Angel Construction Corp` } });
   sends = 0;
 
   // Tick "Reply sent" by hand: the next step moves on, and it's kept after reload.
+  // It moves from 📝 To send to 📤 Sent · waiting right away (22 Oct).
+  const toSendBefore = Number(await board.locator('[data-hpd-smoke="fc-board-side-tosend"] b').innerText());
   await row.locator('[data-hpd-smoke="fc-board-step-replied"]').click();
+  assert.equal(Number(await board.locator('[data-hpd-smoke="fc-board-side-tosend"] b').innerText()), toSendBefore - 1, "left To send");
+  await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   const ticked = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
   assert.notEqual(await ticked.getAttribute("data-next"), "replied");
+  assert.match(await ticked.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /📤 Sent .* waiting/);
+  if (shots) await page.screenshot({ path: `${shots}/board-7-sent.png` });
   await page.reload({ waitUntil: "load" });
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   const again = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
   assert.match(await again.locator('[data-hpd-smoke="fc-board-step-replied"]').innerText(), /✓/);

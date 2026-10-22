@@ -3,6 +3,17 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Vendor tracking: To send / Sent / They replied",
+      "items": [
+        "The board has three tabs: 📝 To send (nothing sent yet), 📤 Sent · waiting (sent, waiting on them, with the date and days waiting), 💬 They replied (they wrote back after your last email).",
+        "Hit Send and the job moves to 📤 Sent right away; a note at the top says where it went.",
+        "Gafur's lists: the app reads your sent emails for PDFs named with the job (\"EO32701 AFF INVOICE.pdf\"), in her thread or any other. Those jobs show 📎 Already emailed <date>, and the list email says sent on that date, so nothing is sent twice.",
+        "Her \"Received.\" right after a PDF confirms that job only; your note to the whole list (\"I will send everything today\") no longer counts as sent for every job.",
+        "Photo requests aren't marked sent by an old affidavit PDF."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Jobs: the list and the map together",
       "items": [
         "🧰 Jobs opens in the lower half; the map above shows only the jobs of the tab you are on (To do, Close out, 2nd try, Waiting, All) and zooms to fit them.",

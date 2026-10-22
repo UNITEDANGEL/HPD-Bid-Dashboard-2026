@@ -35,7 +35,9 @@ try {
   const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').filter({ hasNotText: "paperwork on record" }).first();
   const omo = await row.locator(".fc-board-job b").innerText();
   await row.locator('[data-hpd-smoke="fc-board-step-replied"]').click();
-  const r2 = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
+  // Reply sent: it moves to 📤 Sent · waiting (22 Oct board tabs), the paperwork still next.
+  await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
+  const r2 =board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
   assert.equal(await r2.getAttribute("data-next"), "made");
   const link = r2.locator('[data-hpd-smoke="fc-board-outcome-work_completed"]');
   const href = await link.getAttribute("href");
@@ -80,10 +82,11 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   const back = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
   await back.waitFor({ timeout: 20000 });
   assert.equal(await back.getAttribute("data-next"), "confirmed");
-  assert.match(await back.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /Sent · waiting/);
+  assert.match(await back.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /📤 Sent \d+\/\d+ · waiting \d+ d/);
   assert.deepEqual(errors, []);
   console.log(`PASS board -> vendor tracking: ${omo} ticked Reply sent, Work completed opened the paperwork (no email in the address), package made, Send to me first, then two taps sent ${sent.attachment.name} to ${sent.to.replace(/^[^@]+/, "***")}; the board shows 📤 Sent · waiting`);
   await context.close();

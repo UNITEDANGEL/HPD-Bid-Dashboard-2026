@@ -46,9 +46,11 @@ try {
   await page.waitForFunction(() => /✓ Checked your email/.test(document.querySelector('[data-hpd-smoke="fc-scan-status"]')?.textContent || ""), null, { timeout: 15000 });
   assert.match(await board.locator('[data-hpd-smoke="fc-scan-status"]').innerText(), /1 sent to HPD \(1 with PDFs\)/);
   assert.match(await board.locator('[data-hpd-smoke="fc-scan-changed"]').innerText(), new RegExp(`${omo} 📤 Sent, waiting on them`));
+  // It moved to 📤 Sent · waiting (22 Oct board tabs).
+  await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   const after = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
   assert.equal(await after.getAttribute("data-next"), "confirmed");
-  assert.match(await after.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /Sent · waiting/);
+  assert.match(await after.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /📤 Sent \d+\/\d+ · waiting \d+ d/);
   if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/scan-1.png` }); }
   // A new email from HPD (not there at the first check): a banner (and the chime), tap -> the board.
   const ping = page.locator('[data-hpd-smoke="fc-hpd-ping"]');

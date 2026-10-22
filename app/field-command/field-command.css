@@ -3312,3 +3312,15 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-jobs-fold { min-height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid #0f766e; background: #134e4a; color: #fff; font: 900 14px system-ui, sans-serif; white-space: nowrap; }
 .fc-app .fc-jobs-sheet.is-mini { height: auto !important; max-height: none !important; }
 .fc-app .fc-jobs-sheet.is-mini .fc-jobs-search, .fc-app .fc-jobs-sheet.is-mini .fc-jobs-list, .fc-app .fc-jobs-sheet.is-mini .fc-follow-note { display: none; }
+
+/* Vendor tracking board sides (owner, 22 Oct): To send / Sent · waiting / They replied. */
+.fc-board-sides { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; }
+.fc-board-sides button { min-height: 48px; padding: 4px 6px; border-radius: 12px; border: 2px solid #334155; background: #0f172a; color: #e2e8f0; font: 800 13px system-ui, sans-serif; line-height: 1.15; }
+.fc-board-sides button b { display: block; font-size: 17px; }
+.fc-board-sides button.is-on.is-tosend { border-color: #f97316; background: #431407; }
+.fc-board-sides button.is-on.is-waiting { border-color: #3b82f6; background: #172554; }
+.fc-board-sides button.is-on.is-replied { border-color: #22c55e; background: #052e16; }
+.fc-board-moved { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0; padding: 10px 12px; border-radius: 12px; background: #172554; border: 1px solid #3b82f6; color: #e0f2fe; font: 700 14px system-ui, sans-serif; }
+.fc-board-moved button { min-height: 36px; padding: 0 12px; border-radius: 10px; border: 0; background: #3b82f6; color: #fff; font: 900 14px system-ui, sans-serif; }
+
+.fc-board-filed { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #052e16; border: 1px solid #16a34a; color: #dcfce7; font: 700 13.5px system-ui, sans-serif; }

@@ -102,3 +102,58 @@ const nd = draftNudge(quietRow, "123 Main St");
 assert.equal(nd.subject, "RE: MISSING DOCUMENTS");
 assert.match(nd.text, /^Hello Lewis,\n\nRe: OMO# EP12345 - 123 Main St\n\nFollowing up: the affidavit and invoice for this job were sent to you on 10\/8\/2026\. Can you please confirm/);
 console.log("PASS no answer: flagged after 5 days with no answer, waits again after asking, follow-up names the job and the date sent");
+
+// To send / Sent · waiting / They replied (owner, 22 Oct: "once I hit send to vendor it goes to sent, waiting for a
+// reply; the not-sent on one side, the sent on another").
+{
+  const { boardSide } = await loadLib("notice-board");
+  const hpd = (at, text = "x@hpd.nyc.gov") => ({ at, hpd: true, mine: false, text, files: [] });
+  const me = (at, text = "", files = []) => ({ at, hpd: false, mine: true, text, files });
+  const now = Date.parse("2026-10-22T15:00:00Z");
+  const threads = [
+    { id: "a", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#EQ00001", omos: ["EQ00001"], people: ["Joy-Ann Lewis"], messages: [hpd("2026-10-20T14:00:00Z")] },
+    { id: "b", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#EQ00002", omos: ["EQ00002"], people: ["Joy-Ann Lewis"], messages: [hpd("2026-10-19T14:00:00Z"), me("2026-10-20T14:00:00Z", "We are working on it")] },
+    { id: "c", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#EQ00003", omos: ["EQ00003"], people: ["Joy-Ann Lewis"], messages: [hpd("2026-10-19T14:00:00Z"), me("2026-10-20T14:00:00Z", "Update"), hpd("2026-10-21T14:00:00Z", "Please send the affidavit x@hpd.nyc.gov")] },
+    { id: "d", subject: "Missing Documents", omos: ["EQ00004", "EQ00005"], people: ["Gafur"], messages: [hpd("2026-10-15T14:00:00Z", "EQ00004 - affidavit\nEQ00005 - photos\nx@hpd.nyc.gov"), me("2026-10-16T14:00:00Z", "EQ00004 sent on 10/1"), hpd("2026-10-17T14:00:00Z", "Thank you, EQ00004 received x@hpd.nyc.gov")] },
+  ];
+  const rows = buildBoard({ threads, sent: {}, marks: {}, now });
+  const side = (omo) => boardSide(rows.find((r) => r.omo === omo));
+  assert.equal(side("EQ00001"), "tosend", "nothing sent yet");
+  assert.equal(side("EQ00002"), "waiting", "sent, no answer");
+  assert.equal(side("EQ00003"), "replied", "they wrote back after ours");
+  assert.equal(side("EQ00004"), "replied", "Gafur answered after our reply naming the job");
+  assert.equal(side("EQ00005"), "tosend", "our reply didn't name EQ00005");
+  // Hitting Send in the app (ticks Reply sent) moves it at once, before the email is read back.
+  const after = buildBoard({ threads, sent: {}, marks: { "EQ00001:a": { replied: "2026-10-22T14:59:00Z" } }, now });
+  assert.equal(boardSide(after.find((r) => r.omo === "EQ00001")), "waiting");
+  console.log("PASS board sides: 📝 to send / 📤 sent · waiting / 💬 they replied; Send moves a job to Sent right away; a list reply counts only for the jobs it names");
+}
+
+// Gafur's list vs what's already emailed (owner, 22 Oct: "AFF INVOICE is labeled with every OMO; I don't want to repeat
+// what I've sent"): a PDF named for the job counts as sent (her thread or any other), with no text needed; "Received."
+// right after it confirms that job only; a note to the whole list doesn't move the others out of To send.
+{
+  const { boardSide } = await loadLib("notice-board");
+  const hpd = (at, text = "x@hpd.nyc.gov") => ({ at, hpd: true, mine: false, text, files: ["image001.png"] });
+  const me = (at, text = "", files = ["image001.png"]) => ({ at, hpd: false, mine: true, text, files });
+  const now = Date.parse("2026-10-22T15:00:00Z");
+  const threads = [
+    { id: "g", subject: "Missing Documents", omos: ["EO32701", "EP27382", "EP27310", "EO18305"], people: ["Deoranie Gafur"], messages: [
+      hpd("2026-10-07T19:25:00Z", "1. EO32701 - update / documents\n2. EP27382 - Affidavit and Invoice\n3. EP27310 - update / documents\n4. EO18305 - photos\nx@hpd.nyc.gov"),
+      me("2026-10-19T14:00:00Z", "I will send all of the missing items back to you today."),
+      me("2026-10-20T14:57:00Z", "", ["EO32701 AFF INVOICE.pdf", "image001.png"]),
+      hpd("2026-10-21T12:58:00Z", "Received. x@hpd.nyc.gov"),
+    ] },
+    { id: "p", subject: "OMO No: EP27382 correction", omos: ["EP27382"], people: ["Procurement"], messages: [hpd("2026-10-15T14:00:00Z"), me("2026-10-20T15:00:00Z", "attached", ["EP27382 AFF INVOICE.pdf"])] },
+    { id: "o", subject: "OMO EO18305", omos: ["EO18305"], people: ["X"], messages: [hpd("2026-08-01T14:00:00Z"), me("2026-08-19T15:00:00Z", "", ["EO18305 AFF INVOICE.pdf"])] },
+  ];
+  const rows = buildBoard({ threads, sent: {}, marks: {}, now, docsDays: 40 });
+  const row = (omo) => rows.find((r) => r.omo === omo && r.threadId === "g");
+  assert.equal(boardSide(row("EO32701")), "done", "PDF with no text + 'Received.' = confirmed");
+  assert.equal(row("EO32701").filed.name, "EO32701 AFF INVOICE.pdf");
+  assert.equal(boardSide(row("EP27382")), "waiting", "PDF sent in another thread counts: not to send again");
+  assert.equal(row("EP27382").filed.here, false);
+  assert.equal(boardSide(row("EP27310")), "tosend", "the note to the whole list doesn't count as sent");
+  assert.equal(boardSide(row("EO18305")), "tosend", "she wants photos: an old affidavit PDF isn't that");
+  console.log("PASS Gafur's list vs emails: PDFs named for the job count as sent (any thread, no text needed), 'Received.' confirms only that job, a note to the whole list leaves the rest to send, photos asks need photos");
+}

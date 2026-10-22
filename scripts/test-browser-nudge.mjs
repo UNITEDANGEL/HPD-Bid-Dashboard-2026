@@ -30,8 +30,12 @@ try {
   const n = Number((/Ask (\d+) to confirm/.exec(await open.innerText()) || [])[1]);
   assert.ok(n >= 1, await open.innerText());
   assert.match(await board.locator('[data-hpd-smoke="fc-board-quiet-count"]').innerText(), new RegExp(`⏰ ${n} no answer`));
+  // No-answer jobs sit under 📤 Sent · waiting (22 Oct: To send / Sent · waiting / They replied).
   const quietRows = board.locator('[data-hpd-smoke="fc-board-row"]', { has: page.locator('[data-hpd-smoke="fc-board-quiet"]') });
-  assert.equal(await quietRows.count(), n);
+  let quietAll = 0;
+  for (const k of ["tosend", "replied", "waiting"]) { await board.locator(`[data-hpd-smoke="fc-board-side-${k}"]`).click(); quietAll += await quietRows.count(); }
+  assert.equal(quietAll, n);
+  assert.ok((await quietRows.count()) >= 1, "no-answer jobs under Sent · waiting");
   const omo = (await quietRows.first().locator(".fc-board-job b").innerText()).trim();
   const row = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator(".fc-board-job b", { hasText: omo }) }).first(); // stays on this job after it stops asking
   const quietText = await row.locator('[data-hpd-smoke="fc-board-quiet"]').innerText();

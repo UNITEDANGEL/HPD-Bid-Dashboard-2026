@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { holidaysBetween } from "../../lib/business-days";
 import SentPaperwork from "./SentPaperwork";
 import type { NoticeFindings } from "../../lib/notice-findings";
-import { BOARD_STEPS, NUDGE_AFTER_DAYS, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
+import { BOARD_STEPS, NUDGE_AFTER_DAYS, boardSide, sentTime, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
   focusOmo?: string; // an alert's job: scrolled to and highlighted (21 Oct)
@@ -83,7 +83,15 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
   // Filter: everything, the 24 / 72-hour notices, or the missing-documents lists (Gafur).
   const [show, setShow] = useState<"all" | "ppn" | "docs">(initialShow);
   const shown = rows.filter((r) => show === "all" || r.kind === show);
+  // To send / Sent · waiting / They replied (owner, 22 Oct): a job moves to Sent the moment you send it.
+  const [side, setSide] = useState<"tosend" | "waiting" | "replied">(() => {
+    const f = focusOmo ? rows.find((r) => r.omo === focusOmo && r.next) : undefined;
+    return f ? (boardSide(f) as "tosend" | "waiting" | "replied") : "tosend";
+  });
+  const [moved, setMoved] = useState<{ omo: string; to: string } | null>(null);
+  const movedToSent = (omo: string, to: string) => setMoved({ omo, to });
   const open = shown.filter((r) => r.next);
+  const onSide = open.filter((r) => boardSide(r) === side);
   const done = shown.filter((r) => !r.next);
   const under6 = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 6 && hoursLeft(r, now) >= 0).length;
   const overdue = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 0).length;
@@ -99,6 +107,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
       if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
       if (toSelf) { setReply({ ...reply, armed: false, status: `✓ Sent to you (${d.to}). Nothing went to HPD.` }); return; }
       onMark(row.key, "replied", true);
+      movedToSent(row.omo, d.to);
       if (reply.nudge) markNudged(row.key);
       setReply({ ...reply, armed: false, status: reply.nudge ? `✓ Sent to ${d.to}. The card waits ${NUDGE_AFTER_DAYS} more days before asking again.` : `✓ Sent to ${d.to}.` });
     } catch (e) {
@@ -120,6 +129,9 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
       const sentLine = f?.lines.find((l) => /sent to HPD on|emailed them PDFs/.test(l.text))?.text || "";
       const when = (sentLine.match(/on (\d+\/\d+\/\d+)/) || [])[1] || "";
       const what = /photo/i.test(r.want) ? "photos" : /affidavit|invoice/i.test(r.want) ? "affidavit and invoice" : "documents";
+      // She asked for photos: a PDF sent before isn't photos (EO18305: "photos sent on 8/19" was an affidavit). You say.
+      if (what === "photos" && !r.steps.sent.done) return `${r.omo} (${r.want}) - update: `;
+      if (r.filed) return `${r.omo} (${r.want}) - ${what} sent on ${new Date(r.filed.at).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" })}.`;
       if (r.steps.sent.done || when) return `${r.omo} (${r.want}) - ${what} sent${when ? ` on ${when}` : ""}. We will send them again to you today.`;
       if (f?.advice.action === "make") return `${r.omo} (${r.want}) - ${f.lines.find((l) => /from your app/.test(l.text))?.text.replace(" (from your app)", "") || "work done"}; the affidavit and invoice will be sent to you shortly.`;
       return `${r.omo} (${r.want}) - update: `;
@@ -140,6 +152,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
       if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
       if (toSelf) { setListReply({ ...listReply, armed: false, status: `✓ Sent to you (${d.to}). Nothing went to HPD.` }); return; }
       for (const row of rows.filter((x) => x.threadId === listReply.threadId)) onMark(row.key, "replied", true);
+      movedToSent(`${rows.filter((x) => x.threadId === listReply.threadId).length} jobs on the list`, d.to);
       setListReply({ ...listReply, armed: false, sent: true, status: `✓ Sent to ${d.to}. Every job on the list shows Reply sent.` });
     } catch (e) {
       setListReply({ ...listReply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
@@ -186,7 +199,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
     return (
       <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}`} data-hpd-smoke="fc-board-row" data-omo={row.omo} data-next={row.next || "done"}>
         <div className="fc-board-top">
-          <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
+          <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (boardSide(row) === "replied" ? `💬 ${(row.who || "They").split(/\s+/)[0]} replied ${day(row.lastTheirsAt)}` : boardSide(row) === "waiting" ? `📤 Sent ${day(new Date(sentTime(row)).toISOString())} · waiting ${Math.max(0, Math.floor((now - sentTime(row)) / 86400000))} d` : row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
           <span className="fc-board-kind">{row.kind === "docs" ? "MISSING DOCS" : `${row.hours}-HOUR`}</span>
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
@@ -196,6 +209,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
           return <p className="fc-board-due" data-hpd-smoke="fc-board-due">Due <b>{new Date(row.dueAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</b>{hol.length ? <span className="fc-board-hol"> · 🗓 {hol.join(", ")} not counted</span> : null}</p>;
         })() : null}
         {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
+        {row.filed ? <p className="fc-board-filed" data-hpd-smoke="fc-board-filed">📎 Already emailed <b>{day(row.filed.at)}</b>: {row.filed.name}{row.filed.here ? "" : " (in another email)"}. Don&apos;t send it again; tell them the date.</p> : null}
         {row.next && findingsOf ? (() => {
           const f = findingsOf(row);
           return (
@@ -203,8 +217,10 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
               <b>🔎 Found on record</b>
               <ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}><span aria-hidden="true">{l.icon}</span> {l.text}</li>)}</ul>
               {f.lines.some((l) => /sent to HPD on|emailed them PDFs|paperwork on record/i.test(l.text)) || row.sentAt || row.steps.sent.done ? <SentPaperwork omo={row.omo} /> : null}
-              <p className="fc-found-next" data-hpd-smoke="fc-found-next">👉 {f.advice.text}</p>
-              {f.advice.action === "resend" ? <a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>📤 Open the paperwork and send it</a>
+              {/* Its PDF already went out (in her thread or another): tell them the date, don't send it again. */}
+              <p className="fc-found-next" data-hpd-smoke="fc-found-next">👉 {row.filed ? `Already emailed ${day(row.filed.at)}${row.filed.here ? "" : " (in another email)"}: reply with that date. No need to send it again.` : f.advice.text}</p>
+              {row.filed ? <button type="button" className="fc-found-go" data-hpd-smoke="fc-found-go" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, `Our affidavit and invoice for ${row.omo} were emailed on ${day(row.filed!.at)} (${row.filed!.name}). Tell them that date; don't attach it again.`); }}>✨ Tell them it went {day(row.filed.at)}</button>
+              : f.advice.action === "resend" ?<a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>📤 Open the paperwork and send it</a>
                 : f.advice.action === "make" ? <a className="fc-found-go" data-hpd-smoke="fc-found-go" href={paperHref(row, f.advice.outcome || "")} onClick={() => rememberSend(row)}>📄 Make it ({f.advice.outcome?.replace(/_/g, " ")})</a>
                 : <button type="button" className="fc-found-go" data-hpd-smoke="fc-found-go" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, ""); }}>✨ Write the update</button>}
             </div>
@@ -285,6 +301,17 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
             <button key={k} type="button" role="tab" aria-selected={show === k} className={show === k ? "is-on" : ""} data-hpd-smoke={`fc-board-show-${k}`} onClick={() => setShow(k)}>{label} <b>{n}</b></button>
           ))}
         </div>
+        <div className="fc-board-sides" role="tablist" data-hpd-smoke="fc-board-sides">
+          {([["tosend", "📝 To send"], ["waiting", "📤 Sent · waiting"], ["replied", "💬 They replied"]] as const).map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={side === k} className={`is-${k}${side === k ? " is-on" : ""}`} data-hpd-smoke={`fc-board-side-${k}`} onClick={() => { setSide(k); setMoved(null); }}>{label} <b>{open.filter((r) => boardSide(r) === k).length}</b></button>
+          ))}
+        </div>
+        {moved ? (
+          <p className="fc-board-moved" role="status" data-hpd-smoke="fc-board-moved">
+            ✓ Sent to {moved.to}. <b>{moved.omo}</b> moved to 📤 Sent · waiting.
+            {side !== "waiting" ? <button type="button" data-hpd-smoke="fc-board-moved-go" onClick={() => { setSide("waiting"); setMoved(null); }}>See it</button> : null}
+          </p>
+        ) : null}
         <div className="fc-board-sum" data-hpd-smoke="fc-board-sum">
           <span><b>{open.length}</b> open</span>
           <span className={overdue ? "is-late" : ""}><b>{overdue}</b> overdue</span>
@@ -329,7 +356,7 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
             {show === "docs" ? lists.map((list) => (
               <div key={list[0].threadId} className="fc-list-reply" data-hpd-smoke="fc-list-reply">
                 <b>📋 {list[0].who}&apos;s list · {list.length} job{list.length === 1 ? "" : "s"} · asked {new Date(list[0].noticeAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}{list[0].followUpAt ? ` · followed up ${new Date(list[0].followUpAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}` : ""}</b>
-                <small>{list.filter((r) => r.steps.replied.done).length} answered · {list.filter((r) => r.sentAt || r.steps.sent.done).length} with paperwork on record · {list.filter((r) => !r.sentAt && !r.steps.sent.done && !r.steps.made.done).length} with nothing sent</small>
+                <small data-hpd-smoke="fc-list-reply-sum">{list.filter((r) => r.filed || r.steps.sent.done).length} already emailed · {list.filter((r) => boardSide(r) === "tosend").length} to send{list.filter((r) => !r.next).length ? ` · ${list.filter((r) => !r.next).length} confirmed` : ""}</small>
                 {listReply?.threadId === list[0].threadId ? (
                   <div className="fc-ack" data-hpd-smoke="fc-list-reply-box">
                     <b>One email answering the whole list, to {listReply.who} &lt;{listReply.to}&gt;</b>
@@ -348,7 +375,8 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
             )) : null}
             {noAnswer.length ? <button type="button" className="fc-batch-open is-nudge" data-hpd-smoke="fc-nudge-open" onClick={() => startBatch("nudge")}>⏰ Ask {noAnswer.length} to confirm (no answer {NUDGE_AFTER_DAYS}+ days)</button> : null}
             {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}
-            <ol className="fc-board-list">{open.map(card)}</ol>
+            {!onSide.length ? <p className="fc-follow-note" data-hpd-smoke="fc-board-side-empty">{side === "tosend" ? "Nothing left to send. 🎉" : side === "waiting" ? "Nothing waiting on them." : "No new answers from them."}</p> : null}
+            <ol className="fc-board-list">{onSide.map(card)}</ol>
           </>
         )}
         {done.length && !batch ? (
