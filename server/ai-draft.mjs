@@ -70,3 +70,49 @@ export async function aiDraft(env, facts, fetcher = fetch) {
   }
   return { ai: false, reason: "not-set-up" };
 }
+
+// Questions to the app's voice helper (owner, 22 Oct: "be my personal agent, I'm able to talk to you"): a short spoken
+// answer from the facts the phone sends (jobs, notices, bids, money; no tenant names). Never changes anything.
+const ASK_SYSTEM = [
+  "You are the voice helper inside HPD Field, the app of United Angel Construction Corp (an NYC HPD emergency repair contractor).",
+  "The owner asks you a question out loud; you answer out loud.",
+  "Rules:",
+  "- Use only the facts given (JSON). If the answer isn't in them, say you don't have that in the app yet.",
+  "- Never invent jobs, dates, amounts, people or documents. Say job numbers exactly as given.",
+  "- Short: 1 to 4 sentences, plain spoken English, no lists, no markdown, no emojis.",
+  "- You can't change, send or save anything: if asked to, say to use the app's buttons or say 'I finished <job>'.",
+].join("\n");
+
+export function askFacts(body) {
+  const q = clip(body?.question, 300).trim();
+  if (q.length < 3) return null;
+  let facts = body?.facts && typeof body.facts === "object" ? body.facts : {};
+  let json = JSON.stringify(facts);
+  if (json.length > 12000) { json = json.slice(0, 12000); facts = { note: "facts cut to fit", partial: json }; }
+  return { question: q, facts };
+}
+
+export async function aiAnswer(env, ask, fetcher = fetch) {
+  const user = `Facts from the app (JSON):\n${JSON.stringify(ask.facts)}\n\nQuestion: ${ask.question}`;
+  const clean = (t) => String(t || "").replace(/[*#`_]/g, "").replace(/\s+/g, " ").trim().slice(0, 700);
+  if (env?.AI) {
+    const model = env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+    const result = await env.AI.run(model, { messages: [{ role: "system", content: ASK_SYSTEM }, { role: "user", content: user }], max_tokens: 250 });
+    const text = clean(typeof result?.response === "string" ? result.response : "");
+    return text ? { ai: true, model, text } : { ai: false, reason: "The AI gave no answer." };
+  }
+  if (env?.ANTHROPIC_API_KEY) {
+    const model = env.ANTHROPIC_MODEL || "claude-haiku-5-5";
+    const r = await fetcher("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model, max_tokens: 250, system: ASK_SYSTEM, messages: [{ role: "user", content: user }] }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!r.ok) return { ai: false, reason: `The AI didn't answer (HTTP ${r.status}).` };
+    const d = await r.json().catch(() => ({}));
+    const text = clean((d.content || []).filter((c) => c.type === "text").map((c) => c.text).join(" "));
+    return text ? { ai: true, model, text } : { ai: false, reason: "The AI gave no answer." };
+  }
+  return { ai: false, reason: "not-set-up" };
+}

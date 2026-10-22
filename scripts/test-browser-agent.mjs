@@ -14,6 +14,9 @@ try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(c);
   const saved = [];
+  // The AI (stand-in): answers from the facts it gets.
+  let asked = null;
+  await c.route(/\/api\/drive\/hpd-ask/, (r) => { asked = JSON.parse(r.request().postData() || "{}"); return r.fulfill({ json: { ai: true, text: `You have ${asked.facts.openBids.length} open bids; the door closers are the easiest.` } }); });
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => {
     if (r.request().method() === "POST") { try { saved.push(JSON.parse(r.request().postData() || "{}")); } catch { /* not json */ } return r.fulfill({ json: { ok: true } }); }
     return r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });
@@ -72,6 +75,16 @@ try {
   await page.waitForFunction(() => /^Saved\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 10000 });
   const done = await page.evaluate((o) => JSON.stringify(JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[o] || {}), omo);
   assert.ok(/WORK_COMPLETED/.test(done) || saved.length > before, `saved for ${omo}`);
+
+  // A free question: the AI gets the app's facts (no tenant details) and the answer is said and shown.
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await box.fill("Which bid is the easiest to win today?");
+  await box.press("Enter");
+  await page.waitForFunction(() => /open bids/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  assert.equal(asked.question, "Which bid is the easiest to win today?");
+  assert.ok(Array.isArray(asked.facts.openBids) && Array.isArray(asked.facts.notices) && typeof asked.facts.jobs.toDo === "number", "the app's facts go with it");
+  assert.doesNotMatch(JSON.stringify(asked.facts), /TenantName|TenantPhone|tenant contact/i, "no tenant details");
+  await page.waitForFunction(() => /open bids/.test(window.__said.at(-1) || ""), null, { timeout: 5000 });
 
   // With a job card open: "read me this job".
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();

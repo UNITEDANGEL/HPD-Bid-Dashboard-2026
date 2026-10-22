@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Ask the helper anything · your wins",
+      "items": [
+        "🏆 \"Which jobs have I won today?\" / \"What did I win this week?\" / \"Any awards yesterday?\": the helper reads HPD's Confirmation of award emails (same day) and HPD's award list and tells you the jobs and addresses.",
+        "💬 Any other question (\"which bid is the easiest to win today?\", \"what does Gafur still need from me?\") goes to the AI with what the app knows (notices, open bids, money held, jobs, today's route; never tenant details). It answers in a few spoken sentences and can't change or send anything.",
+        "Saying \"yes\" works from the search mic too (within 2 minutes of the question).",
+        "The search results list now opens below the All / MN / BK / QN… buttons instead of under them."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Sign in works from the Home Screen app",
       "items": [
         "🔑 On the iPhone Home Screen app, Google's sign-in opens in a separate sheet that kept the sign-in to itself, so the app couldn't open your HPD emails (the board showed 0). Now the app hands Google a one-time code and picks the sign-in up when you come back: sign in once from the board's Sign in with Google (or Storage) and you're in."

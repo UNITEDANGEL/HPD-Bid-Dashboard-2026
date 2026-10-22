@@ -2,7 +2,7 @@
 // and an email of the PDF and photos sent from the owner's own Gmail.
 // Only reachable through handleDriveAuth, after the owner/session/Google identity checks.
 
-import { aiDraft, draftFacts } from "./ai-draft.mjs";
+import { aiAnswer, aiDraft, askFacts, draftFacts } from "./ai-draft.mjs";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -305,6 +305,17 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       const bytes = new Uint8Array(bin.length);
       for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
       return new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
+    }
+
+    if (action === "hpd-ask") {
+      // A question to the voice helper: a short answer from the facts the phone sends. Never changes anything.
+      const ask = askFacts(await request.json().catch(() => null));
+      if (!ask) fail("Invalid question.", 400);
+      try {
+        return reply(await aiAnswer(env, ask, fetcher));
+      } catch (e) {
+        return reply({ ai: false, reason: `The AI didn’t answer (${e instanceof Error ? e.message.slice(0, 120) : "error"}).` });
+      }
     }
 
     if (action === "hpd-draft") {

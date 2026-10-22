@@ -3330,7 +3330,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-push-voice.is-on { border-color: #22c55e; background: #052e16; color: #dcfce7; }
 
 /* Find any job (22 Oct): results under the search box. */
-.fc-find { position: absolute; z-index: 1500; top: calc(max(12px, env(safe-area-inset-top)) + 62px); left: 12px; right: 12px; max-height: 62dvh; display: flex; flex-direction: column; border-radius: 16px; background: #0b1220f7; border: 1px solid #334155; box-shadow: 0 12px 30px #000a; color: #e2e8f0; overflow: hidden; }
+.fc-find { position: absolute; z-index: 2100; top: calc(max(12px, env(safe-area-inset-top)) + 118px); left: 12px; right: 12px; max-height: 58dvh; display: flex; flex-direction: column; border-radius: 16px; background: #0b1220f7; border: 1px solid #334155; box-shadow: 0 12px 30px #000a; color: #e2e8f0; overflow: hidden; }
 .fc-find header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #1e293b; font: 800 15px system-ui, sans-serif; }
 .fc-find header button { min-width: 40px; min-height: 40px; border-radius: 10px; border: 0; background: #1e293b; color: #fff; font: 900 16px system-ui; }
 .fc-find ol { list-style: none; margin: 0; padding: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: grid; gap: 6px; }

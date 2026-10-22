@@ -212,3 +212,26 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(findJobRef("707 east 189", jobs, (j) => j.id, (j) => j.a), "many", "two jobs at one address: ask for the number");
   console.log("PASS voice helper words: finished / no access / refused / partial with the job number, an address or 'this job'; bids / today / notices / read the job; yes / no; plain words stay a search");
 }
+
+// 🗣 Free questions go to the AI with the app's facts; commands and plain words don't (22 Oct).
+{
+  const { parseCommand } = await loadLib("voice-agent");
+  assert.deepEqual(parseCommand("Which bid is the easiest to win today?"), { intent: "ask", question: "Which bid is the easiest to win today?" });
+  assert.equal(parseCommand("how much money is HPD holding").intent, "ask");
+  assert.equal(parseCommand("what does Gafur still need from me").intent, "ask");
+  assert.equal(parseCommand("what do I have today").intent, "today", "commands first");
+  assert.equal(parseCommand("read me the new bids").intent, "bids");
+  assert.equal(parseCommand("mini split").intent, "search");
+  const { aiAnswer, askFacts } = await import("../server/ai-draft.mjs");
+  assert.equal(askFacts({ question: "" }), null);
+  const ask = askFacts({ question: "Which bid is easiest?", facts: { openBids: [{ job: "ER1", work: "Door closer · 1 door" }] } });
+  let sent = null;
+  const env = { AI: { run: async (model, input) => { sent = input; return { response: "**ER1**, the door closer, is your easiest one." }; } } };
+  const a = await aiAnswer(env, ask);
+  assert.equal(a.ai, true);
+  assert.equal(a.text, "ER1, the door closer, is your easiest one.", "no markdown in what's spoken");
+  assert.match(sent.messages[0].content, /Use only the facts given/);
+  assert.match(sent.messages[1].content, /Door closer/);
+  assert.deepEqual(await aiAnswer({}, ask), { ai: false, reason: "not-set-up" });
+  console.log("PASS free questions: questions -> AI with the app's facts (facts only, short, no markdown), commands and plain words stay; not set up -> says so");
+}

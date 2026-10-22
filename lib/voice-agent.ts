@@ -12,6 +12,8 @@ export type AgentCommand =
   | { intent: "notices" }
   | { intent: "yes" }
   | { intent: "no" }
+  | { intent: "awards"; days: number; label: string }
+  | { intent: "ask"; question: string }
   | { intent: "search"; text: string };
 
 const OUTCOMES: [RegExp, AgentCommand extends infer C ? C extends { intent: "outcome"; outcome: infer O } ? O : never : never][] = [
@@ -36,12 +38,19 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // "Which jobs have I won today / been awarded this week" (owner, 22 Oct).
+  if (/\b(won|win|awards?|awarded|confirmation of award)\b/.test(t) && !/\beasiest|chance|price\b/.test(t)) {
+    const days = /\byesterday\b/.test(t) ? -1 : /\b(this|the|past|last) week\b|\b7 days\b/.test(t) ? 7 : /\b(this|the|past|last) month\b|\b30 days\b/.test(t) ? 30 : 0;
+    return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today" };
+  }
   if (/\b(bids?|invitations?)\b/.test(t) && /\b(read|new|what|any|tell|how many|list)\b/.test(t)) return { intent: "bids" };
   if (/\b(what('?s| is| do i have)?|my|tell me).{0,20}\b(today|day|schedule|plan)\b/.test(t) || /^today\b/.test(t)) return { intent: "today" };
   if (/\bnotices?\b/.test(t) && /\b(open|which|what|any|read|tell|overdue)\b/.test(t)) return { intent: "notices" };
   if (/\b(read|describe|description|what('?s| is) (the|this) job|tell me about|scope)\b/.test(t)) return { intent: "read-job", ref: refOf(t) };
   // A job outcome needs "I / we / job / work order / this", so a search like "completed jobs" stays a search.
   if (/\b(i|we|i'?ve|we'?ve|job|work ?order|this|tenant|nobody|no one|someone|it)\b/.test(t) || /\bno access\b/.test(t) || /[a-z]{2}\s*\d{5}/.test(t)) for (const [re, outcome] of OUTCOMES) if (re.test(t)) return { intent: "outcome", outcome, ref: refOf(t) };
+  // Any other question goes to the AI with the app's facts (owner, 22 Oct: "talk it out with me").
+  if (/\?$/.test(String(heard).trim()) || /^(what|which|how|when|why|who|where|can|could|should|would|is|are|do|does|did|will|tell me|give me|explain)\b/.test(t)) return { intent: "ask", question: String(heard).trim() };
   return { intent: "search", text: spokenSearch(heard) };
 }
 

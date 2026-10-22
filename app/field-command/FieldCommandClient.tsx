@@ -45,7 +45,7 @@ import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
 import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
-import { buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
+import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
@@ -1295,6 +1295,8 @@ export default function FieldCommandClient() {
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string } } | null>(null);
   const agentRef = useRef<(heard: string) => void>(() => {});
+  // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
+  const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
   useEffect(() => {
     const load = () => fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
       const day = (offset: number) => new Date(Date.now() + offset * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -3250,12 +3252,63 @@ export default function FieldCommandClient() {
 
   agentRef.current = (heard: string) => {
     const cmd = parseCommand(heard);
-    const answer = (reply: string, confirm?: { id: string; outcome: string }) => { setAgent({ heard, reply, confirm }); speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 200); };
+    const answer = (reply: string, confirm?: { id: string; outcome: string }) => { setAgent({ heard, reply, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 200); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    if (cmd.intent === "awards") {
+      // Wins: HPD's "Confirmation of award" emails (same day) plus HPD's award list (a day or two behind).
+      void (async () => {
+        const nyDay = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
+        const today = nyDay(new Date());
+        const from = cmd.days === -1 ? nyDay(new Date(Date.now() - 86400000)) : nyDay(new Date(Date.now() - Math.max(0, cmd.days - 1) * 86400000));
+        const to = cmd.days === -1 ? from : today;
+        const inRange = (day: string) => day >= from && day <= to;
+        const won = new Map<string, { day: string; address: string }>();
+        for (const t of threads || []) for (const m of t.messages) {
+          if (!m.hpd || m.mine || !/confirmation of award|awarding omo|you have been awarded/i.test(`${t.subject} ${m.text}`)) continue;
+          const day = nyDay(new Date(m.at));
+          if (!inRange(day)) continue;
+          for (const o of new Set([...(m.text.match(/[A-Z]{2}\d{5}/g) || []), ...(t.omos.length === 1 ? t.omos : [])])) won.set(o, { day, address: addressOf(o) });
+        }
+        const awards = await fetch("/data/market_awards.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => ({}));
+        for (const a of Array.isArray(awards?.jobs) ? awards.jobs : []) if (a.won && inRange(String(a.awardDate || "")) && !won.has(a.omo)) won.set(a.omo, { day: a.awardDate, address: a.address || addressOf(a.omo) });
+        const list = [...won.entries()].sort((a, b) => b[1].day.localeCompare(a[1].day));
+        const say = (o: string, w: { day: string; address: string }) => `${o}${w.address ? ` at ${w.address.replace(/,\s*\d{5}$/, "")}` : ""}${cmd.days > 1 ? ` on ${new Date(`${w.day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" })}` : ""}`;
+        if (list.length) { answer(`You won ${list.length} job${list.length === 1 ? "" : "s"} ${cmd.label}: ${list.slice(0, 6).map(([o, w]) => say(o, w)).join("; ")}${list.length > 6 ? `, and ${list.length - 6} more` : ""}.`); return; }
+        // None: the last one on record.
+        let last: { omo: string; day: string } | null = null;
+        for (const a of Array.isArray(awards?.jobs) ? awards.jobs : []) if (a.won && (!last || String(a.awardDate) > last.day)) last = { omo: a.omo, day: String(a.awardDate) };
+        answer(`No awards ${cmd.label} yet.${last ? ` Your last one was ${last.omo}, ${new Date(`${last.day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "numeric", day: "numeric" })}.` : ""}`);
+      })();
+      return;
+    }
+    if (cmd.intent === "ask") {
+      // A free question: the AI answers from what the app knows (no tenant names), it can't change anything.
+      setAgent({ heard, reply: "Thinking…" });
+      void (async () => {
+        const nyDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+        const bidsData = await fetch("/data/upcoming_bids.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => ({}));
+        const facts = {
+          now: new Date().toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }),
+          notices: boardOpenRows.slice(0, 40).map((r) => ({ job: r.omo, address: addressOf(r.omo), kind: r.kind === "docs" ? "missing documents" : `${r.hours}-hour notice`, from: r.who, hoursLeft: r.dueAt ? Math.round(hoursLeft(r, Date.now())) : null, want: r.want, status: boardSide(r), pdfAlreadyEmailed: r.filed ? r.filed.at.slice(0, 10) : null })),
+          openBids: (Array.isArray(bidsData?.bids) ? bidsData.bids : []).filter((b: { bidDue?: string }) => (b.bidDue || "") >= nyDay).slice(0, 40).map((b: { omo: string; borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => ({ job: b.omo, borough: b.borough, work: jobSummary(b.description || "").lines.map(lineText).join("; ").slice(0, 160), due: `${b.bidDue} ${b.bidDueTime || ""}`.trim() })),
+          money: { heldByRejections: payTrack.summary.held, rejectionsToFix: payTrack.summary.toFix },
+          jobs: { toDo: jobRows.filter((r) => r.group === "todo").length, closeOut: jobRows.filter((r) => r.group === "closeout").length, secondTry: jobRows.filter((r) => r.group === "secondtry").length, waitingOnHpd: jobRows.filter((r) => r.group === "waiting").length, oldestToDo: jobRows.filter((r) => r.group === "todo").sort((a, b) => String(a.due).localeCompare(String(b.due))).slice(0, 8).map((r) => ({ job: r.id, address: r.address, due: r.due })) },
+          todaysRoute: todayRouteIds(),
+          jobOnScreen: selectedJob ? { job: jobId(selectedJob), address: jobAddress(selectedJob), work: jobSummary(jobScope(selectedJob)).lines.map(lineText).join("; "), status: jobStatus(selectedJob) } : null,
+        };
+        try {
+          const r = await fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
+          const d = await r.json().catch(() => ({}));
+          if (r.ok && d.ai && d.text) { answer(d.text); return; }
+          answer(r.status === 401 ? "Sign in with Google on this phone and I can answer that." : d.reason === "not-set-up" ? "Free questions need the AI switched on for the app. I can do: I finished this job, read me this job, read me the new bids, what do I have today, which notices are open." : `I couldn't answer that right now. ${d.reason || ""}`.trim());
+        } catch { answer("No connection right now. Try again in a minute."); }
+      })();
+      return;
+    }
     if (cmd.intent === "yes") {
-      const c = agent?.confirm;
+      const p = pendingRef.current; const c = agent?.confirm || (p && Date.now() - p.at < 120000 ? p : null);
       const job = c ? jobs.find((j) => jobId(j) === c.id) : null;
       if (!c || !job) { answer("There's nothing waiting for a yes."); return; }
       setJobOutcome(job, c.outcome, "Said to the voice helper");
