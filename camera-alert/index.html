@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<link rel="manifest" href="manifest.webmanifest">
+<title>NYC Camera Alert</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#14181f; --mute:#5b6573; --line:#dde1e7; --ok:#1f7a4d; --warn:#b26a00; --bad:#c0262d; --btn:#1a56db; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1b2027; --ink:#eef1f5; --mute:#9aa4b2; --line:#2c333d; --ok:#4cc38a; --warn:#f0a93b; --bad:#ff6b70; --btn:#5b8def; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 -apple-system, system-ui, Segoe UI, Roboto, sans-serif; padding:16px; padding-bottom:40px; }
+  main { max-width:520px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--mute); font-size:14px; margin:0 0 14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .status { border-radius:12px; padding:18px 14px; font-size:22px; font-weight:600; min-height:84px; display:flex; align-items:center; border:2px solid var(--line); background:var(--card); }
+  .status.l1 { border-color:var(--warn); }
+  .status.l2 { border-color:var(--bad); background:var(--bad); color:#fff; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .big { font-size:44px; font-weight:700; line-height:1; }
+  .unit { color:var(--mute); font-size:13px; }
+  button { font:inherit; font-weight:600; padding:12px 18px; border-radius:10px; border:0; background:var(--btn); color:#fff; }
+  button.sec { background:transparent; color:var(--btn); border:1px solid var(--line); }
+  button:disabled { opacity:.5; }
+  #toggle { flex:1; font-size:20px; padding:16px; }
+  label { display:flex; align-items:center; gap:8px; margin:8px 0; }
+  select, input[type=number] { font:inherit; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
+  ul { margin:6px 0 0; padding-left:18px; } li { margin:3px 0; font-size:14px; }
+  li.error { color:var(--bad); } li.no-coords { color:var(--warn); }
+  small { color:var(--mute); } .note { font-size:13px; color:var(--mute); }
+  #simnote { color:var(--warn); font-weight:700; font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NYC Camera Alert</h1>
+  <p class="sub">Warns you as you approach speed and red-light cameras, based on your speed. Audio only — set it up before you drive.</p>
+
+  <div id="status" class="status l0">Tap Start. Allow location when asked.</div>
+
+  <div class="card row" style="margin-top:12px">
+    <div><div class="big" id="speed">0</div><div class="unit">mph</div></div>
+    <div><div class="big" id="limitShown" style="font-size:30px">25</div><div class="unit">limit</div></div>
+    <div><div class="big" id="hdg" style="font-size:30px">–</div><div class="unit">heading</div></div>
+    <button id="toggle">Start</button>
+  </div>
+  <div id="simnote"></div>
+
+  <div class="card">
+    <b>Cameras ahead</b>
+    <ul id="ahead"><li>–</li></ul>
+  </div>
+
+  <div class="card">
+    <label>Speed limit
+      <select id="limit"><option>15</option><option>20</option><option selected>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option></select> mph
+    </label>
+    <label><input type="checkbox" id="voice" checked> Spoken alerts</label>
+    <label><input type="checkbox" id="alpr"> Also announce license-plate (Flock) cameras</label>
+    <p class="note">NYC's default limit is 25 mph. Set this to match the street you're on.</p>
+  </div>
+
+  <div class="card">
+    <b>Data</b>
+    <div id="count" class="note">Loading…</div>
+    <ul id="report"></ul>
+    <div class="row" style="margin-top:10px"><button id="reload" class="sec">Reload data</button></div>
+  </div>
+
+  <div class="card">
+    <b>Test without driving</b>
+    <div class="row" style="margin-top:8px">
+      <select id="simSpeed"><option>20</option><option>25</option><option selected>35</option><option>45</option></select> mph
+      <button id="sim" class="sec">Simulate approach</button>
+    </div>
+    <p class="note">Plays a fake drive toward a red-light camera so you can hear the alerts.</p>
+  </div>
+
+  <p class="note">Camera data comes from OpenStreetMap and NYC Open Data and can be incomplete or out of date. This app can't see the signal color. It only warns you early enough to slow down smoothly. It never tells you to run a light. Obey all signs and signals, and don't handle your phone while driving.</p>
+</main>
+<script src="logic.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

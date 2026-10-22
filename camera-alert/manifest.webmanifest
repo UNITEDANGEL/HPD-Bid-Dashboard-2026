@@ -1,0 +1,8 @@
+{
+  "name": "NYC Camera Alert",
+  "short_name": "Cam Alert",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#111418",
+  "theme_color": "#111418"
+}
