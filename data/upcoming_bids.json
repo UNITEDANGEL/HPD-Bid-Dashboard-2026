@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T16:40:53.212465+00:00",
+  "generatedAt": "2026-10-22T16:53:16.959086+00:00",
   "days": 14,
   "bids": [
     {
@@ -3382,6 +3382,136 @@
       },
       "lat": 40.664862,
       "lng": -73.920584
+    },
+    {
+      "omo": "ER08776",
+      "bidDue": "2026-10-23",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-23",
+      "workCompletion": "2026-11-20",
+      "address": "305 JEROME STREET",
+      "borough": "BK",
+      "itbFile": "ER08776_102226123812.pdf",
+      "description": "AT 1ST STORY PH REAR YARD DOOR **NYC HPD EMERGENCY OPERATIONS DIVISION - \"ESSENTIALS SERVICE WORK\" ***AT 1ST STORY REAR YARD DOOR: AT 1ST STORY REAR YARD DOOR INSTALL HINGES MAKE ALL NECESSARY REAPIRS TO MAKE DOOR SELF CLOSING AND LATCHING. AS PER NYC GUIDELINES. RESTORE DOOR(S) TO PROPER AND SAFE WORKING ORDER. TOTAL DOORS = (1) REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD D. SUTCHEN@ 212 863 6046; S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; D. SAUL @ 212 863 5527; R. JAGDEO @ 212 863 5893 WITH START DATE.¿ IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792687096000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.674349,
+      "lng": -73.886822
     }
   ],
   "unread": []
