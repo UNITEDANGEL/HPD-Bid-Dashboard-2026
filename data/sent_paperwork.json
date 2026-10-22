@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-22T12:03:18.801898+00:00",
+"generatedAt": "2026-10-22T12:13:42.619686+00:00",
 "since": "2026/10/08",
 "jobs": {
 "EN04541": [
@@ -120,6 +120,16 @@
 "file": "EO04289_101123032634 614, WEST 152 STREET PAGE 1 AFF.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: Rejections",
+"via": "hpd-staff"
+}
+],
+"EO07047": [
+{
+"date": "2026-10-22",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EO07047 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Missing Documents",
 "via": "hpd-staff"
 }
 ],
