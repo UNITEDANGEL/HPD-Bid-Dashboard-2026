@@ -1,4 +1,4 @@
-var CACHE = 'camalert-shell-v2';
+var CACHE = 'camalert-shell-v3';
 var SHELL = ['./', 'index.html', 'logic.js', 'data.js', 'app.js', 'manifest.webmanifest', 'apple-touch-icon.png', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css'];
 
 self.addEventListener('install', function (e) {

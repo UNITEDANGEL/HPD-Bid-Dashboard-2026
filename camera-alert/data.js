@@ -24,22 +24,26 @@
     return null;
   }
 
+  function overpass(q, ms) {
+    var body = 'data=' + encodeURIComponent(q);
+    var opts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body };
+    var i = 0;
+    function attempt() {
+      return fetchJson(OVERPASS[i], opts, ms || 60000).catch(function (e) {
+        if (++i < OVERPASS.length) return attempt();
+        throw e;
+      });
+    }
+    return attempt();
+  }
+
   function loadOsm() {
     var q = '[out:json][timeout:60];(' +
       'node["highway"="speed_camera"](' + BBOX + ');' +
       'node["enforcement"](' + BBOX + ');' +
       'node["surveillance:type"~"ALPR|anpr|red.?light|speed",i](' + BBOX + ');' +
       ');out body;';
-    var body = 'data=' + encodeURIComponent(q);
-    var opts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body };
-    var i = 0;
-    function attempt() {
-      return fetchJson(OVERPASS[i], opts, 60000).catch(function (e) {
-        if (++i < OVERPASS.length) return attempt();
-        throw e;
-      });
-    }
-    return attempt().then(function (j) {
+    return overpass(q, 60000).then(function (j) {
       var cams = [];
       (j.elements || []).forEach(function (el) {
         if (el.type !== 'node' || el.lat == null) return;
@@ -139,6 +143,70 @@
     });
   }
 
+
+  // ---- Schools: school-zone speed cameras sit near schools, so schools mark where cameras are likely.
+  function loadSchoolsOsm() {
+    var q = '[out:json][timeout:90];(nwr["amenity"="school"](' + BBOX + '););out center;';
+    return overpass(q, 90000).then(function (j) {
+      var out = [];
+      (j.elements || []).forEach(function (el) {
+        var lat = el.lat != null ? el.lat : (el.center && el.center.lat);
+        var lon = el.lon != null ? el.lon : (el.center && el.center.lon);
+        if (lat == null || lon == null) return;
+        out.push({ lat: lat, lon: lon, name: (el.tags && el.tags.name) || '', src: 'osm' });
+      });
+      return out;
+    });
+  }
+
+  function loadSchoolsNyc(report) {
+    var queries = ['school locations', 'school point locations'];
+    var seen = {};
+    return Promise.all(queries.map(function (q) {
+      var url = SOCRATA_CATALOG + '?domains=data.cityofnewyork.us&limit=20&q=' + encodeURIComponent(q);
+      return fetchJson(url, {}, 30000).then(function (j) {
+        var all = j.results || [];
+        report.push({ source: 'NYC search "' + q + '"', status: all.length ? 'ok' : 'no-coords',
+          note: all.length + ' result(s): ' + all.slice(0, 6).map(function (r) { return r.resource.name + ' [' + r.resource.id + ']'; }).join('; ') });
+        return all.filter(function (r) {
+          var n = r.resource.name || '';
+          if (r.resource.type !== 'dataset') return false;
+          if (!/school/i.test(n) || !/(location|point|site)/i.test(n)) return false;
+          if (/(zone|district|attendance|boundary|enrollment|demographic|survey|report|safety|bus|lunch|meal|construction|capital)/i.test(n)) return false;
+          if (seen[r.resource.id]) return false;
+          seen[r.resource.id] = true;
+          return true;
+        });
+      }).catch(function (e) {
+        report.push({ source: 'NYC search "' + q + '"', status: 'error', note: String(e.message || e) });
+        return [];
+      });
+    })).then(function (groups) {
+      var picks = [];
+      groups.forEach(function (g) { picks = picks.concat(g); });
+      return Promise.all(picks.slice(0, 3).map(function (p) {
+        return fetchJson(NYC_HOST + '/resource/' + p.resource.id + '.json?$limit=5000', {}, 45000).then(function (rows) {
+          var out = [];
+          rows.forEach(function (row) {
+            var c = pickCoords(row);
+            if (c) out.push({ lat: c.lat, lon: c.lon, name: row.location_name || row.school_name || row.name || row.loc_name || '', src: 'nyc:' + p.resource.id });
+          });
+          report.push({ source: p.resource.name + ' [' + p.resource.id + ']', status: out.length ? 'ok' : 'no-coords',
+            note: rows.length + ' rows, ' + out.length + ' usable schools' +
+              (!out.length && rows[0] ? '. Columns: ' + Object.keys(rows[0]).join(', ') : '') });
+          return out;
+        }).catch(function (e) {
+          report.push({ source: p.resource.name, status: 'error', note: String(e.message || e) });
+          return [];
+        });
+      })).then(function (arrs) {
+        var flat = [];
+        arrs.forEach(function (a) { flat = flat.concat(a); });
+        return flat;
+      });
+    });
+  }
+
   function loadAll() {
     var report = [];
     var osm = loadOsm().then(function (c) {
@@ -155,9 +223,22 @@
       report.push({ source: 'NYC Open Data', status: 'error', note: String(e.message || e) });
       return [];
     });
-    return Promise.all([osm, nyc]).then(function (r) {
+    // Run after the camera query so we don't hit Overpass with two requests at once.
+    var schoolsOsm = osm.then(function () { return loadSchoolsOsm(); }).then(function (s) {
+      report.push({ source: 'OpenStreetMap schools', status: s.length ? 'ok' : 'no-coords', note: s.length + ' schools' });
+      return s;
+    }).catch(function (e) {
+      report.push({ source: 'OpenStreetMap schools', status: 'error', note: String(e.message || e) });
+      return [];
+    });
+    var schoolsNyc = loadSchoolsNyc(report).catch(function (e) {
+      report.push({ source: 'NYC schools', status: 'error', note: String(e.message || e) });
+      return [];
+    });
+    return Promise.all([osm, nyc, schoolsOsm, schoolsNyc]).then(function (r) {
       var all = CamLogic.dedupe(r[0].concat(r[1]), 20);
-      return { cameras: all, report: report };
+      var schools = CamLogic.dedupe(r[2].concat(r[3]), 60);
+      return { cameras: all, schools: schools, report: report };
     });
   }
 
