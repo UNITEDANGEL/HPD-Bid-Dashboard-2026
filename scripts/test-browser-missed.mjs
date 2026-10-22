@@ -35,8 +35,9 @@ try {
   await card.locator('[data-hpd-smoke="fc-missed-play"]').click();
   await page.waitForFunction(() => window.__said.some((t) => /new alerts/.test(t)), null, { timeout: 5000 });
   const said = await page.evaluate(() => window.__said.find((t) => /new alerts/.test(t)));
-  assert.match(said, /^2 new alerts\. 1\. Request from Gafur, requesting documents\. Missing documents for 3 work orders: E P 2 7 4 8 9/);
-  assert.match(said, /2\. New invitation to bid\. work order E R 0 7 7 4 9/);
+  // Invitations first, counted, no work order (22 Oct); then the rest.
+  assert.match(said, /^2 new alerts\. 1\. New invitation to bid\. 2\. Request from Gafur, requesting documents\. Missing documents for 3 work orders: E P 2 7 4 8 9/);
+  assert.doesNotMatch(said, /E R 0 7 7 4 9/);
   assert.equal(await card.count(), 0, "gone after playing");
   assert.equal(await page.evaluate(async () => !!(await (await caches.open("hpd-badge")).match("/missed"))), false, "the list is cleared");
   const logged = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-notifications-v1") || "[]").map((n) => n.title));

@@ -56,6 +56,7 @@ import SentPaperworkLink from "./SentPaperwork";
 import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow } from "./JobsList";
 import FindJob from "./FindJob";
+import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
@@ -1769,7 +1770,11 @@ export default function FieldCommandClient() {
     unlockChime();
     const n = missed.length;
     const list = missed.slice(-6);
-    speak(`${n === 1 ? "One new alert" : `${n} new alerts`}. ${list.map((m, i) => `${list.length > 1 ? `${i + 1}. ` : ""}${spokenAlert({ kind: kindOf(m.kind), title: m.title, text: m.body })}`).join(" ")}`, 150);
+    // Invitations to bid are counted together ("You have 3 new invitations to bid"), the rest one by one.
+    const bids = missed.filter((m) => kindOf(m.kind) === "bid").reduce((sum, m) => sum + (Number((/(\d+) new invitations/.exec(m.title) || [])[1]) || 1), 0);
+    const others = list.filter((m) => kindOf(m.kind) !== "bid");
+    const parts = [...(bids ? [bids > 1 ? `You have ${bids} new invitations to bid.` : "New invitation to bid."] : []), ...others.map((m) => spokenAlert({ kind: kindOf(m.kind), title: m.title, text: m.body }))];
+    speak(`${n === 1 ? "One new alert" : `${n} new alerts`}. ${parts.map((p, i) => `${parts.length > 1 ? `${i + 1}. ` : ""}${p}`).join(" ")}`, 150);
     clearMissed();
   };
   useEffect(() => {
@@ -2592,6 +2597,7 @@ export default function FieldCommandClient() {
         lastPositionRef.current = { lat: latitude, lng: longitude };
         lastFixRef.current = { lat: latitude, lng: longitude, accuracy: position.coords.accuracy || 0, at: Date.now() };
         autoArriveRef.current(latitude, longitude, position.coords.accuracy || 0);
+        nearJobRef.current(latitude, longitude, position.coords.accuracy || 0);
         if (!mapRef.current) return;
         if (!centeredOnMeRef.current) {
           // Opening the app: go straight to where you are.
@@ -2633,6 +2639,43 @@ export default function FieldCommandClient() {
     mergeWorkflowPatchIntoScreen(id, patch);
     setOutcomeMessage(`📍 You're at the job (${Math.round(meters * 3.28)} ft away): arrival saved automatically.`);
   };
+
+  // "Have you arrived?" (owner, 22 Oct: "even if I use Google or Waze it should know I arrived, or ask me, then we start
+  // the job"): with the app open and no job card up, being within ~120 m of a stop on Today's route or a job you
+  // navigated to today asks once per job; Yes opens the job and saves the arrival (time + GPS). Never saved silently.
+  const [arrivePrompt, setArrivePrompt] = useState<{ id: string; address: string; feet: number } | null>(null);
+  const askedArriveRef = useRef<Set<string>>(new Set());
+  const nearJobRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
+  nearJobRef.current = (lat, lng, accuracy) => {
+    if (selectedJob || arrivePrompt || accuracy > 150) return;
+    const today = new Date().toDateString();
+    const route = new Set(todayRouteIds());
+    let best: { job: JobRecord; meters: number } | null = null;
+    for (const job of jobs) {
+      const id = jobId(job);
+      if (askedArriveRef.current.has(id) || workflowStamps[id]?.arrived || value(job, ["FieldArrivedAt"]) || !["pending", "followup"].includes(jobQueue(job))) continue; // to do or a 2nd try
+      const travel = value(job, ["TravelStartedAt"]);
+      if (!route.has(id) && !(travel && new Date(travel).toDateString() === today)) continue;
+      const at = jobLatLng(job);
+      if (!at) continue;
+      const meters = distanceMiles({ lat, lng }, at) * 1609.34;
+      if (meters <= 120 && (!best || meters < best.meters)) best = { job, meters };
+    }
+    if (!best) return;
+    askedArriveRef.current.add(jobId(best.job));
+    setArrivePrompt({ id: jobId(best.job), address: jobAddress(best.job), feet: Math.round(best.meters * 3.28) });
+    ring({ kind: "message", title: `📍 You're at ${jobAddress(best.job)}`, text: "Have you arrived? Tap Yes to start the job." }); // tone + voice only: the green card is the one place it shows
+  };
+
+  // Check again when the jobs arrive, a card closes, or you come back to the app from Waze / Google (the phone may not
+  // report a new position when you're standing still).
+  useEffect(() => {
+    const again = () => { const f = lastFixRef.current; if (f && Date.now() - f.at < 600000 && document.visibilityState === "visible") nearJobRef.current(f.lat, f.lng, f.accuracy); };
+    again();
+    const t = window.setInterval(again, 20000);
+    document.addEventListener("visibilitychange", again);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", again); };
+  }, [jobs.length, selectedJob]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The job's visit history plus one entry (no outcome), carrying where the phone was.
   function visitHistoryWith(job: JobRecord, note: string, fix: GpsFix | null) {
@@ -3451,7 +3494,7 @@ export default function FieldCommandClient() {
           >
             <RouteIcon /><span className="fc-fab-label">Route</span>
           </button>
-          <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
+          <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" data-hpd-smoke="fc-appts-open" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Appts</span></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
           <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
@@ -3672,15 +3715,28 @@ export default function FieldCommandClient() {
                 </div>
               ) : null}
               <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
+                {/* The job first, in plain words (owner, 22 Oct: "the job description very nice and clear right there on top,
+                    and a summary"): what to do, how much, where in the building; HPD's own text below. */}
+                {hasScope ? (() => {
+                  const sum = jobSummary(scope);
+                  const where = [...sum.where, ...sum.rooms];
+                  return (
+                    <div className="jc-job-sum" data-hpd-smoke="jc-job-sum">
+                      <b>📋 The job</b>
+                      <ul>{sum.lines.length ? sum.lines.map((l) => <li key={l.key}>{lineText(l)}</li>) : <li>{scope.replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 140)}</li>}</ul>
+                      {where.length ? <p data-hpd-smoke="jc-job-where">📍 {where.join(" · ")}</p> : null}
+                    </div>
+                  );
+                })() : null}
                 <div className="jc-section-head">
-                  <strong>Job Description</strong>
+                  <strong>HPD&apos;s full text</strong>
                   {hasScope && scope.length > 260 ? <button type="button" className="jc-description-more" onClick={() => setScopeOpen((open) => !open)}>{scopeOpen ? "Less" : "All"}</button> : null}
                 </div>
                 <p className={`jc-description-text ${scopeOpen ? "is-open" : ""} ${hasScope ? "" : "is-missing"}`} data-hpd-smoke="jc-description-text">{scope}</p>
                 {(hasScope && speechOk) || itbFileName(selectedJob) ? (
                   <div className="jc-description-actions">
                     {hasScope && speechOk ? <>
-                      <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => setReading(readAloud(`Job ${id}. ${jobAddress(selectedJob)}. ${scope}`, () => setReading(false)))}>
+                      <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => { const sum = jobSummary(scope); const plain = [...sum.lines.map(lineText), ...(sum.where.length || sum.rooms.length ? [`Where: ${[...sum.where, ...sum.rooms].join(", ")}`] : [])].join(". "); setReading(readAloud(`${jobAddress(selectedJob)}. ${plain ? `The job: ${plain}. HPD says: ` : ""}${scope}`, () => setReading(false))); }}>
                         {reading ? "🔊 Reading..." : "🔊 Read aloud"}
                       </button>
                       <button type="button" data-hpd-smoke="jc-description-stop" onClick={() => { stopReading(); setReading(false); }} disabled={!reading}>Stop</button>
@@ -3920,9 +3976,7 @@ export default function FieldCommandClient() {
                         <strong>➡ Next on your route · stop {onRoute.stop} of {onRoute.of} · {onRoute.id}</strong>
                         <span>{jobAddress(routeTarget)} · {onRoute.left === 1 ? "last stop left" : `${onRoute.left} stops left`}</span>
                         <span className="jc-next-actions">
-                          <a className="jc-next-waze" data-hpd-smoke="jc-next-waze" href={wazeHref(routeTarget)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(onRoute.id)}>Waze</a>
-                          <a href={directionsHref(routeTarget)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(onRoute.id)}>Google</a>
-                          <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(routeTarget)}>Open job</button>
+                          <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(routeTarget)}>Open next job →</button>
                         </span>
                       </div>
                     );
@@ -3939,9 +3993,7 @@ export default function FieldCommandClient() {
                       <strong>➡ Next closest job · {best.id}</strong>
                       <span>{jobAddress(target)} · {milesLabel(best.miles)}</span>
                       <span className="jc-next-actions">
-                        <a className="jc-next-waze" data-hpd-smoke="jc-next-waze" href={wazeHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Waze</a>
-                        <a href={directionsHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Google</a>
-                        <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(target)}>Open job</button>
+                        <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(target)}>Open next job →</button>
                       </span>
                     </div>
                   );
@@ -4726,7 +4778,7 @@ export default function FieldCommandClient() {
       {(() => {
         // The one thing to look at first (overdue / under 6 h), instead of the map flashing.
         const top = [...boardUrgent].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
-        if (!top || selectedJob || boardOpen || bidsOpen || noticesOpen || followFilter === "notices" || jobsOpen || notifOpen) return null;
+        if (!top || selectedJob || boardOpen || bidsOpen || noticesOpen || followFilter === "notices" || jobsOpen || notifOpen || critical || (ping && ping.omo === top.omo)) return null;
         const h = Math.round(hoursLeft(top, Date.now()));
         return (
           <button type="button" className={`fc-focus-chip${h < 0 ? " is-late" : ""}`} data-hpd-smoke="fc-focus-chip" onClick={() => goTo("board", top.omo)}>
@@ -4734,6 +4786,16 @@ export default function FieldCommandClient() {
           </button>
         );
       })()}
+      {arrivePrompt && !selectedJob ? (
+        <div className="fc-arrive" role="dialog" aria-label="Have you arrived?" data-hpd-smoke="fc-arrive">
+          <b>📍 You&apos;re at {arrivePrompt.address}</b>
+          <span>{arrivePrompt.id} · {arrivePrompt.feet} ft away. Have you arrived?</span>
+          <div>
+            <button type="button" className="is-yes" data-hpd-smoke="fc-arrive-yes" onClick={() => { const job = jobs.find((j) => jobId(j) === arrivePrompt.id); setArrivePrompt(null); if (job) { openIssueJob(job); markArrived(job); } }}>✅ Yes, start the job</button>
+            <button type="button" data-hpd-smoke="fc-arrive-no" onClick={() => setArrivePrompt(null)}>Not yet</button>
+          </div>
+        </div>
+      ) : null}
       {missed.length && !voiceOff() ? (
         <div className="fc-missed" role="status" data-hpd-smoke="fc-missed">
           <button type="button" className="fc-missed-play" data-hpd-smoke="fc-missed-play" onClick={playMissed}>🔊 Play {missed.length} new alert{missed.length === 1 ? "" : "s"}</button>
@@ -4757,6 +4819,17 @@ export default function FieldCommandClient() {
             <b>{critical.title.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "")}</b>
             {critical.text ? <p>{critical.text}</p> : null}
             <button type="button" className="is-go" data-hpd-smoke="fc-critical-go" onClick={() => { const c = critical; setCritical(null); goTo(c.go, c.omo || ""); }}>{critical.kind === "fax-bad" ? "Open the bid" : "Answer now"}</button>
+            {critical.kind === "urgent" && critical.omo ? (
+              <button type="button" className={armedTap === `handled:${critical.omo}` ? "is-armed" : ""} data-hpd-smoke="fc-critical-handled" onClick={() => {
+                const c = critical;
+                if (armedTap !== `handled:${c.omo}`) { setArmedTap(`handled:${c.omo}`); return; }
+                setArmedTap("");
+                const at = new Date().toISOString();
+                for (const r of boardRows.filter((x) => x.omo === c.omo && x.next && !x.steps.sent.done)) markBoard(r.key, "sent", true);
+                void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `HANDLED-${c.omo}`, patch: { at, how: "owner tapped I handled it" } }) }).catch(() => {});
+                setCritical(null);
+              }}>{armedTap === `handled:${critical.omo}` ? "✅ Tap again: it's handled (stops the reminders)" : "✓ I handled it"}</button>
+            ) : null}
             <button type="button" data-hpd-smoke="fc-critical-snooze" onClick={() => { try { localStorage.setItem(snoozeKey(critical), String(Date.now() + 30 * 60000)); } catch { /* private mode */ } setCritical(null); }}>Snooze 30 min</button>
             <small>{critical.rings < 5 ? "Rings again every 30 seconds until you choose." : "Still waiting for you."}</small>
           </div>

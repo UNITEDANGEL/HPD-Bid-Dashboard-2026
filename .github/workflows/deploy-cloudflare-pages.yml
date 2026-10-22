@@ -218,6 +218,8 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-find.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-missed.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-no-418.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-no-dupes.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-arrive.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-calm.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs

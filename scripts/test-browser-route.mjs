@@ -64,9 +64,10 @@ try {
   assert.match(nextWaze, /^https:\/\/waze\.com\/ul\?ll=40\.\d+,-7[34]\.\d+&navigate=yes$/);
   assert.match(await page.locator('[data-hpd-smoke="fc-route-next-google"]').getAttribute("href"), /google\.com\/maps\/dir\/.*destination=/);
   const stopWaze = await page.locator(".fc-route-stop-actions a", { hasText: "Waze" }).evaluateAll((links) => links.map((a) => a.getAttribute("href")));
-  assert.equal(stopWaze.length, stopCount, "a Waze button on every stop");
-  assert.equal(stopWaze[0], nextWaze, "the first stop's Waze matches the next-stop button");
-  assert.equal(new Set(stopWaze).size, stopCount, "each Waze button goes to its own stop");
+  // The next stop's Waze / Google are in "Next stop" only (22 Oct: no duplicate buttons); every later stop has its own.
+  assert.equal(stopWaze.length, stopCount - 1, "a Waze button on every later stop");
+  assert.ok(!stopWaze.includes(nextWaze), "the next stop isn't repeated in the list");
+  assert.equal(new Set(stopWaze).size, stopCount - 1, "each Waze button goes to its own stop");
 
   // Close the panel, zoom far in somewhere else, tap the route button again: the whole route is back
   // in view (every numbered stop on screen), without fetching the street route again.

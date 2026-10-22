@@ -86,7 +86,8 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       const { buildBoard, urgentRows, hoursLeft } = await loadLib("notice-board");
       const threads = conversations.threads.map((t) => ({ ...t, omos: t.omos || [], people: t.people || [], subject: t.subject || "", messages: (t.messages || []).map((m) => ({ ...m, text: m.text || "", files: m.files || [] })) }));
       const rows = buildBoard({ threads, sent: sent || {}, marks: {}, now });
-      for (const r of urgentRows(rows, now)) {
+      const handled = (r) => { const h = records[`HANDLED-${r.omo}`]; return !!h?.at && Date.parse(h.at) > Date.parse(r.noticeAt); };
+      for (const r of urgentRows(rows, now).filter((x) => !handled(x))) {
         const left = Math.round(hoursLeft(r, now));
         out.push({ key: `u:${h(r.key)}`, kind: "urgent", title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `u-${r.omo}` });
         // Overdue: again every 2 hours, weekdays 8 AM - 8 PM New York, until it's answered (owner, 21 Oct: ER01987 went
@@ -256,7 +257,10 @@ async function main() {
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
-  const fresh = alerts.filter((a) => !seen.has(a.key));
+  const fresh0 = alerts.filter((a) => !seen.has(a.key));
+  // Several new invitations at once: one alert with the count (owner, 22 Oct: "you have three new invitations to bid").
+  const newBids = fresh0.filter((a) => a.kind === "bid");
+  const fresh = newBids.length > 1 ? [...fresh0.filter((a) => a.kind !== "bid"), { key: `bids:${newBids.map((a) => a.key).join(",")}`, kind: "bid", title: `🧾 ${newBids.length} new invitations to bid`, body: newBids.slice(0, 4).map((a) => a.body.split(" · ").slice(-1)[0]).join(" · "), url: "/map/?bids=1", tag: "bids" }] : fresh0;
   const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
   if (!TEST && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
   if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
