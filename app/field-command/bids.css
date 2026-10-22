@@ -773,3 +773,9 @@ i.is-won { background: #16a34a; }
 @keyframes fc-burst { 0% { transform: rotate(var(--a)) translateY(0) scale(0.6); opacity: 1; } 100% { transform: rotate(var(--a)) translateY(-70px) scale(1); opacity: 0; } }
 .fc-burst b { position: absolute; left: -22px; top: -22px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #16a34a; color: #fff; font: 900 24px system-ui; box-shadow: 0 0 0 6px #22c55e44; animation: hpd-pop 0.5s cubic-bezier(.2,1.6,.4,1); }
 @media (prefers-reduced-motion: reduce) { .fc-faxtrack-bar.is-flow, .fc-burst i { animation: none; } }
+
+/* Calm bid pins (21 Oct): no pulsing; a steady red ring for a failed fax / due-soon alert, blue for one going through
+   (its small corner badge still spins so you know it's moving). */
+.fc-bid-pin.is-alert, .fc-bid-pin.is-alert .fc-bid-in, .fc-bid-pin.is-fax-failed .fc-bid-in, .fc-bid-pin.is-pending .fc-bid-in { animation: none !important; }
+.fc-bid-pin.is-alert .fc-bid-in, .fc-bid-pin.is-fax-failed .fc-bid-in { box-shadow: 0 0 0 4px #ef4444, 0 5px 12px #0f172a77 !important; }
+.fc-bid-pin.is-pending .fc-bid-in { box-shadow: 0 0 0 4px #3b82f6, 0 5px 12px #0f172a77 !important; }

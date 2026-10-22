@@ -52,11 +52,13 @@ try {
   assert.ok(box && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 844, "stats button must be on screen");
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
   // The map's close-out list (the test job is listed there for practice; stats leave it out).
-  await page.locator('[data-hpd-smoke="fc-close-out"]').click();
-  const closeOut = page.locator('[data-hpd-smoke="fc-close-out-sheet"]');
+  // Close out is a tab in the Jobs list (21 Oct).
+  await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
+  const closeOut = page.locator('[data-hpd-smoke="fc-jobs"]');
   await closeOut.waitFor({ timeout: 10000 });
-  const closeOutIds = (await closeOut.locator("li b").allInnerTexts()).map((t) => t.trim());
-  await closeOut.locator('header button[aria-label="Close"]').click();
+  await closeOut.locator('[data-hpd-smoke="fc-jobs-tab-closeout"]').click();
+  const closeOutIds = await closeOut.locator('[data-hpd-smoke="fc-jobs-row"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
+  await closeOut.locator('[data-hpd-smoke="fc-jobs-close"]').click();
   const realCloseOut = closeOutIds.filter((id) => id !== "TEST-0001");
   assert.ok(["EQ21462", "EQ14157", "EQ13990"].every((id) => realCloseOut.includes(id)), `close-out list ${closeOutIds}`);
   await button.click();

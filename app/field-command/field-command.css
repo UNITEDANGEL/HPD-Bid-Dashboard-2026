@@ -3272,3 +3272,33 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-critical-box button.is-go { background: #dc2626; }
 .fc-critical-box small { color: #fca5a5; font: 700 12.5px system-ui, sans-serif; }
 @media (prefers-reduced-motion: reduce) { .fc-critical-box, .fc-critical-icon { animation: none; } }
+
+/* Calm map (owner, 21 Oct: "everything glowing at once is annoying, hard to concentrate; prioritize the overdue, not
+   blinking"): pins and buttons stand still with a steady colored ring; only the single most urgent notice job breathes
+   slowly. Urgency reads from color: red = overdue / 24 h, orange = soon. */
+.fc-label-marker.is-glow .fc-pin { animation: none !important; transform: scale(1.06); filter: drop-shadow(0 0 2px var(--glow, #f97316)) drop-shadow(0 0 5px var(--glow, #f97316)); }
+.fc-label-marker.is-glow-top { z-index: 2600 !important; }
+.fc-label-marker.is-glow-top .fc-pin { animation: fc-breathe 3.2s ease-in-out infinite !important; }
+@keyframes fc-breathe { 0%, 100% { filter: drop-shadow(0 0 3px var(--glow, #ef4444)) drop-shadow(0 0 6px var(--glow, #ef4444)); transform: scale(1.12); } 50% { filter: drop-shadow(0 0 6px var(--glow, #ef4444)) drop-shadow(0 0 12px var(--glow, #ef4444)); transform: scale(1.2); } }
+.fc-pin.is-soon .fc-pin-head { animation: none !important; box-shadow: 0 0 0 3px #f59e0b; }
+.fc-appointment-pill.is-soon > button { animation: none !important; }
+.fc-app .fc-map-controls .fc-map-fab.is-urgent > svg { animation: none !important; box-shadow: 0 0 0 4px #ef4444, 0 4px 12px #0006 !important; }
+.fc-board-open.is-hot, .fc-today-line.is-hot { animation: none !important; }
+/* The focus chip: the one thing to look at first. */
+.fc-focus-chip { position: absolute; z-index: 1400; top: calc(max(12px, env(safe-area-inset-top)) + 136px); left: 12px; max-width: calc(100% - 100px); display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 20px; border: 2px solid #f97316; background: #0b1220ee; color: #fff; font: 800 14px system-ui, sans-serif; box-shadow: 0 6px 16px #0007; white-space: nowrap; overflow: hidden; }
+.fc-focus-chip.is-late { border-color: #ef4444; background: #3b0a0aee; }
+.fc-focus-chip small { color: #fca5a5; font-weight: 700; }
+.fc-focus-chip em { font-style: normal; color: #fbbf24; }
+@media (prefers-reduced-motion: reduce) { .fc-label-marker.is-glow-top .fc-pin { animation: none !important; } }
+
+/* The focus chip sits at the bottom, between the Jobs button and the map buttons (not over the top messages). */
+.fc-focus-chip { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 84px) !important; left: 84px !important; right: auto; max-width: calc(100% - 172px) !important; }
+@media (orientation: landscape) and (max-height: 540px) { .fc-focus-chip { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important; } }
+
+/* Jobs is a round button like the others (21 Oct): undo the square background. */
+.fc-work-fab.is-jobs { --fab: #0f766e; background: transparent !important; }
+.fc-jobs-list li { position: relative; }
+.fc-jobs-package { display: inline-flex; align-items: center; margin: 6px 0 0 24px; min-height: 38px; padding: 0 14px; border-radius: 10px; background: #2563eb; color: #fff; font: 900 14px system-ui, sans-serif; text-decoration: none; }
+/* A smaller focus chip. */
+.fc-focus-chip { min-height: 32px !important; padding: 0 10px !important; font-size: 13px !important; gap: 4px !important; }
+.fc-focus-chip em { display: none; }

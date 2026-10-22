@@ -14,8 +14,7 @@ const BUTTONS = {
   notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]', close: '[data-hpd-smoke="fc-notice-chooser-close"]' },
   follow: { tap: '[data-hpd-smoke="fc-follow-open"]', open: '[data-hpd-smoke="fc-follow-sheet"]', close: '[data-hpd-smoke="fc-follow-sheet"] header button' },
   bids: { tap: '[data-hpd-smoke="fc-bids-open"]', open: '[data-hpd-smoke="fc-bids-list"]' },
-  closeout: { tap: '[data-hpd-smoke="fc-close-out"]', open: '[data-hpd-smoke="fc-close-out-sheet"]', close: '[data-hpd-smoke="fc-close-out-sheet"] header button' },
-  secondtry: { tap: '[data-hpd-smoke="fc-second-try"]', open: '[data-hpd-smoke="fc-second-try-sheet"]', close: '[data-hpd-smoke="fc-second-try-sheet"] header button' },
+  jobs: { tap: '[data-hpd-smoke="fc-jobs-open"]', open: '[data-hpd-smoke="fc-jobs"]', close: '[data-hpd-smoke="fc-jobs-close"]' },
 };
 // 3 jobs with a visit result saved (ready to close out) and 2 waiting for the 2nd try (one due), on this phone.
 const jobsFile = await (await fetch(`${baseUrl}/data/COA_Fetcher_2026.json`)).json();
@@ -81,23 +80,23 @@ try {
         await backToMap();
       }
     }
-    // The two round buttons: counts, and the lists show the jobs.
+    // One round Jobs button (21 Oct): Close out and 2nd try are tabs in its list.
     await backToMap();
-    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-count"]').innerText(), "3");
-    assert.equal(await page.locator('[data-hpd-smoke="fc-second-try-count"]').innerText(), "2");
+    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out"], [data-hpd-smoke="fc-second-try"]').count(), 0, "no separate Close out / 2nd try buttons");
     assert.equal(await page.locator(".fc-map-hints .fc-close-out, .fc-map-hints .fc-second-try").count(), 0, "no more bars across the map");
-    await page.locator(BUTTONS.closeout.tap).click();
-    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-sheet"] .fc-close-out-row').count(), 3);
-    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-package"]').count(), 3, "Package link on each");
-    // The list isn't a small box with its own scroll (it showed ~3 jobs): it uses the whole sheet.
-    assert.ok(await page.locator('[data-hpd-smoke="fc-close-out-sheet"] .fc-work-list').evaluate((ul) => ul.scrollHeight <= ul.clientHeight + 2 && getComputedStyle(ul).maxHeight === "none"), "no inner scroll box");
-    await page.locator(BUTTONS.closeout.close).click();
-    await page.locator(BUTTONS.secondtry.tap).click();
-    assert.match(await page.locator('[data-hpd-smoke="fc-second-try-sheet"] header').innerText(), /2 2nd tries · 1 due now/);
+    await page.locator(BUTTONS.jobs.tap).click();
+    const jobsSheet = page.locator('[data-hpd-smoke="fc-jobs"]');
+    await jobsSheet.locator('[data-hpd-smoke="fc-jobs-tab-closeout"]').click();
+    assert.match(await jobsSheet.locator('[data-hpd-smoke="fc-jobs-tab-closeout"]').innerText(), /Close out 3/);
+    assert.equal(await jobsSheet.locator('[data-hpd-smoke="fc-jobs-row"]').count(), 3);
+    assert.equal(await jobsSheet.locator('[data-hpd-smoke="fc-close-out-package"]').count(), 3, "Package link on each");
+    await jobsSheet.locator('[data-hpd-smoke="fc-jobs-tab-secondtry"]').click();
+    assert.match(await jobsSheet.locator('[data-hpd-smoke="fc-jobs-tab-secondtry"]').innerText(), /2nd try 2/);
+    assert.equal(await jobsSheet.locator('[data-hpd-smoke="fc-jobs-row"].is-late').count(), 1, "1 due now");
     // A job from the list opens its card (and the list closes).
-    await page.locator('[data-hpd-smoke="fc-second-try-sheet"] li button').first().click();
+    await jobsSheet.locator('[data-hpd-smoke="fc-jobs-row"] button').first().click();
     await page.locator("#fc-job-card").waitFor({ timeout: 8000 });
-    assert.equal(await isOpen("secondtry"), false);
+    assert.equal(await isOpen("jobs"), false);
     assert.equal(await page.locator(".fc-work-fabs").count(), 0, "the round buttons hide behind a job card");
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
     await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });

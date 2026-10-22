@@ -3,6 +3,23 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "Jobs is a round button like the others",
+      "items": [
+        "🧰 Jobs (bottom left) is round with its count, like Route, Bids and Notices. Close out and 2nd try are tabs inside it now (with the 📄 Package link on each close-out job), so the map has one button there instead of three.",
+        "The focus chip (⏰ the most urgent notice) is smaller."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
+      "title": "Calm map: only the most urgent moves",
+      "items": [
+        "No more glowing and blinking everywhere: notice pins, bid pins, appointments and the Notices button stand still with a steady colored ring (red = overdue / 24 h, orange = soon, blue = fax going through).",
+        "Only the single most urgent notice job breathes slowly on the map (overdue first).",
+        "A chip at the bottom names it — \"⏰ ER01987 overdue 5 h →\" — tap it and the board opens on that job."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "🔨 Jobs button + alerts you can't miss",
       "items": [
         "🔨 Jobs (bottom left, with Close out / 2nd try): every open job — To do (late ones first, \"Nd late\" / \"due M/D\"), Close out, 2nd try, Waiting on HPD, All — with a search. Tap a job: the map goes there and its card opens. Jobs HPD closed or PIP paid are left out.",

@@ -5,7 +5,7 @@
 // search. Tap a job: the map goes to it and its card opens.
 import { useMemo, useState } from "react";
 
-export type JobRow = { id: string; address: string; borough: string; status: string; color: string; due: string; award: string; group: "todo" | "closeout" | "secondtry" | "waiting"; note?: string };
+export type JobRow = { id: string; address: string; borough: string; status: string; color: string; due: string; award: string; group: "todo" | "closeout" | "secondtry" | "waiting"; note?: string; packageHref?: string; due2nd?: boolean };
 type Tab = "todo" | "closeout" | "secondtry" | "waiting" | "all";
 
 // "1/15/26", "01/15/2026", "2026-01-15" -> a day number (NaN if unreadable).
@@ -19,8 +19,8 @@ const dayNum = (v: string) => {
 const todayNum = () => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); return dayNum(p); };
 const short = (v: string) => { const n = dayNum(v); if (!Number.isFinite(n)) return ""; const d = new Date(n * 86400000); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
 
-export default function JobsList({ rows, onOpen, onClose }: { rows: JobRow[]; onOpen: (id: string) => void; onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>("todo");
+export default function JobsList({ rows, onOpen, onClose, initialTab }: { rows: JobRow[]; onOpen: (id: string) => void; onClose: () => void; initialTab?: string }) {
+  const [tab, setTab] = useState<Tab>(() => (initialTab as Tab) || "todo");
   const [q, setQ] = useState("");
   const today = todayNum();
   const shown = useMemo(() => {
@@ -49,7 +49,7 @@ export default function JobsList({ rows, onOpen, onClose }: { rows: JobRow[]; on
             const due = dayNum(r.due);
             const late = Number.isFinite(due) && due < today && r.group === "todo" ? Math.round(today - due) : 0;
             return (
-              <li key={r.id} data-hpd-smoke="fc-jobs-row" data-omo={r.id} className={late ? "is-late" : ""}>
+              <li key={r.id} data-hpd-smoke="fc-jobs-row" data-omo={r.id} className={late || r.due2nd ? "is-late" : ""}>
                 <button type="button" onClick={() => onOpen(r.id)}>
                   <span className="fc-jobs-dot" style={{ background: r.color }} aria-hidden="true" />
                   <span className="fc-jobs-main">
@@ -57,8 +57,9 @@ export default function JobsList({ rows, onOpen, onClose }: { rows: JobRow[]; on
                     <span>{r.address}</span>
                     <em>{r.note || r.status}{r.award ? ` · awarded ${short(r.award)}` : ""}</em>
                   </span>
-                  <span className={`fc-jobs-due${late ? " is-late" : ""}`}>{late ? `${late}d late` : r.due && r.group === "todo" ? `due ${short(r.due)}` : ""}</span>
+                  <span className={`fc-jobs-due${late || r.due2nd ? " is-late" : ""}`}>{late ? `${late}d late` : r.due2nd ? "due now" : r.due && r.group === "todo" ? `due ${short(r.due)}` : ""}</span>
                 </button>
+                {r.packageHref ? <a className="fc-jobs-package" data-hpd-smoke="fc-close-out-package" href={r.packageHref}>📄 Package</a> : null}
               </li>
             );
           })}

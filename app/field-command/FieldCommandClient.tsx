@@ -617,6 +617,14 @@ const CORRECTION_KINDS = ["correction"] as const;
 const REQUEST_KINDS = ["paperwork", "past due"] as const;
 const MESSAGE_KINDS = ["AEP", "work order", "message"] as const;
 
+function JobsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="8" width="18" height="12" rx="2" /><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M3 13h18" /><path d="M10 13v2h4v-2" />
+    </svg>
+  );
+}
+
 function CloseOutIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1850,8 +1858,12 @@ export default function FieldCommandClient() {
       glow.set(omo, { tag, cls: `is-glow is-glow-${kind}${kind === "priority" && it?.kind === "24h" ? " is-glow-24h" : ""}${kind === "priority" && /overdue/.test(due) ? " is-glow-late" : ""}` });
     }
   }
+  // Calm map (owner, 21 Oct: "everything glowing at once is hard to concentrate"): the others stay still; only the
+  // most urgent one -- overdue first, then the earliest deadline -- breathes slowly.
+  const topGlow = [...glow.keys()].map((omo) => ({ omo, it: prioByOmo.get(omo) })).filter((x) => x.it?.dueAt).sort((a, b) => Date.parse(a.it!.dueAt) - Date.parse(b.it!.dueAt))[0]?.omo;
+  if (topGlow) { const g = glow.get(topGlow)!; glow.set(topGlow, { ...g, cls: `${g.cls} is-glow-top` }); }
   glowRef.current = glow;
-  const glowKey = [...glow].map(([o, g]) => `${o}:${g.tag}`).join("|");
+  const glowKey = [...glow].map(([o, g]) => `${o}:${g.tag}:${g.cls}`).join("|");
   // Narrow the map to one kind; the picker stays so you can switch like the other filters.
   const pickNotices = (kind: NoticeKind) => {
     setSelectedJob(null);
@@ -2025,15 +2037,17 @@ export default function FieldCommandClient() {
   const jobRows = useMemo<JobRow[]>(() => {
     const closeIds = new Set(closeOutJobs.map((j) => jobId(j)));
     const secondIds = new Map(secondTryJobs.map((r) => [jobId(r.job), r.second]));
-    // Jobs HPD closed or PIP paid are finished, whatever the app last saw (they were 295 days "late").
-    return jobs.filter((job) => !isTestJob(jobId(job)) && jobQueue(job) !== "archived" && !closedJobs.has(jobId(job)) && (closeIds.has(jobId(job)) || secondIds.has(jobId(job)) || !["done", "others", "noaccess", "refused"].includes(pinStyle(job).key))).map((job) => {
+    // Close out / 2nd try always count (HPD can close a job before the paperwork goes in); for To do / Waiting, jobs HPD
+    // closed or PIP paid are left out.
+    return jobs.filter((job) => !isTestJob(jobId(job)) && jobQueue(job) !== "archived" && (closeIds.has(jobId(job)) || secondIds.has(jobId(job)) || (!closedJobs.has(jobId(job)) && !["done", "others", "noaccess", "refused"].includes(pinStyle(job).key)))).map((job) => {
       const id = jobId(job);
       const st = pinStyle(job);
       const second = secondIds.get(id);
       const sentAt = (followRef.current?.sent?.[id] as { sentAt?: string } | undefined)?.sentAt || "";
       const group: JobRow["group"] = closeIds.has(id) ? "closeout" : second ? "secondtry" : sentAt ? "waiting" : "todo";
       return { id, address: jobAddress(job), borough: String(jobBorough(job)), status: st.label, color: st.color, due: String(value(job, ["WorkCompletionDate", "MaturityDate"]) || ""), award: String(value(job, ["AwardDate"]) || ""), group,
-        note: group === "waiting" ? `Paperwork sent ${sentAt} · waiting on HPD` : group === "closeout" ? `${FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome"])] || "Visit saved"} · package not sent` : second ? `2nd try ${second.due ? "due now" : `from ${second.dueDay}`}` : undefined };
+        note: group === "waiting" ? `Paperwork sent ${sentAt} · waiting on HPD` : group === "closeout" ? `${FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome"])] || "Visit saved"} · package not sent` : second ? `2nd try ${second.due ? "due now" : `from ${second.dueLabel}`} · 1st try ${second.firstLabel}` : undefined,
+        packageHref: group === "closeout" ? paperworkGenerateHref(id, value(job, ["FieldOutcome", "fieldOutcome"])) : undefined, due2nd: !!second?.due };
     });
   }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
@@ -3323,23 +3337,13 @@ export default function FieldCommandClient() {
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         {/* onTouchStart lets iPhone Safari show the pressed (zoomed) state with its callout before the tap lands. */}
         {/* Jobs ready to close out and 2nd tries: two round buttons (bottom left) instead of bars across the map. */}
-        {(jobRows.length || closeOutJobs.length || secondTryJobs.length) && !selectedJob ? (
+        {/* One round Jobs button (bottom left); Close out and 2nd try are tabs inside it (owner, 21 Oct: "make it like the
+            others, it takes too much space"). */}
+        {jobRows.length && !selectedJob ? (
           <div className="fc-work-fabs" onTouchStart={() => undefined}>
-            {jobRows.length ? (
-              <button type="button" className="fc-work-fab is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
-                <span className="fc-jobs-ico" aria-hidden="true">🔨</span><span className="fc-fab-label">Jobs</span><span key={jobsTodo} className="fc-follow-badge hpd-pop" data-hpd-smoke="fc-jobs-count">{jobsTodo}</span>
-              </button>
-            ) : null}
-            {closeOutJobs.length ? (
-              <button type="button" className="fc-work-fab is-closeout" data-hpd-smoke="fc-close-out" aria-label="Ready to close out" aria-pressed={closeOutOpen} onClick={() => { if (closeOutOpen) { setCloseOutOpen(false); return; } closeScreens("closeout"); setCloseOutOpen(true); }}>
-                <CloseOutIcon /><span className="fc-fab-label">Close out</span><span className="fc-follow-badge" data-hpd-smoke="fc-close-out-count">{closeOutJobs.length}</span>
-              </button>
-            ) : null}
-            {secondTryJobs.length ? (
-              <button type="button" className="fc-work-fab is-secondtry" data-hpd-smoke="fc-second-try" aria-label="2nd tries" aria-pressed={secondTryOpen} onClick={() => { if (secondTryOpen) { setSecondTryOpen(false); return; } closeScreens("secondtry"); setSecondTryOpen(true); }}>
-                <LockIcon /><span className="fc-fab-label">2nd try</span><span className={`fc-follow-badge${secondTryJobs.some((row) => row.second.due) ? " is-rejected" : ""}`} data-hpd-smoke="fc-second-try-count">{secondTryJobs.length}</span>
-              </button>
-            ) : null}
+            <button type="button" className="fc-work-fab is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
+              <JobsIcon /><span className="fc-fab-label">Jobs</span><span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span>
+            </button>
           </div>
         ) : null}
         <div className="fc-map-controls" onTouchStart={() => undefined}>
@@ -4626,6 +4630,17 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {(() => {
+        // The one thing to look at first (overdue / under 6 h), instead of the map flashing.
+        const top = [...boardUrgent].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
+        if (!top || selectedJob || boardOpen || bidsOpen || noticesOpen || followFilter === "notices" || jobsOpen || notifOpen) return null;
+        const h = Math.round(hoursLeft(top, Date.now()));
+        return (
+          <button type="button" className={`fc-focus-chip${h < 0 ? " is-late" : ""}`} data-hpd-smoke="fc-focus-chip" onClick={() => goTo("board", top.omo)}>
+            <span aria-hidden="true">⏰</span> <b>{top.omo}</b> {h < 0 ? `overdue ${-h} h` : `${h} h left`}{boardUrgent.length > 1 ? <small> +{boardUrgent.length - 1} more</small> : null} <em>→</em>
+          </button>
+        );
+      })()}
       {allowAlerts ? (
         <div className="fc-allow-alerts" role="dialog" aria-label="Allow alerts" data-hpd-smoke="fc-allow-alerts">
           <b>🔔 Get alerts on this phone</b>
