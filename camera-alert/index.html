@@ -52,7 +52,7 @@
   <div id="status" class="status l0">Tap Start. Allow location when asked.</div>
 
   <div style="position:relative"><div id="map"></div><button id="recenter" hidden>Recenter</button></div>
-  <div class="legend"><span><i class="dot" style="background:#d62839"></i>Red-light</span><span><i class="dot" style="background:#e0a100"></i>Speed</span><span><i class="dot" style="background:#7b3fe4"></i>License-plate</span><span><b style="color:#1a56db">▲</b> You</span></div>
+  <div class="legend"><span><i class="dot" style="background:#d62839"></i>Red-light</span><span><i class="dot" style="background:#e0a100"></i>Speed</span><span><i class="dot" style="background:#7b3fe4"></i>License-plate</span><span><i class="dot" style="background:#0f9d8a"></i>School zone</span><span><b style="color:#1a56db">▲</b> You</span></div>
 
   <div class="card row" style="margin-top:12px">
     <div><div class="big" id="speed">0</div><div class="unit">mph</div></div>
@@ -73,6 +73,7 @@
     </label>
     <label><input type="checkbox" id="voice" checked> Spoken alerts</label>
     <label><input type="checkbox" id="alpr"> Also announce license-plate (Flock) cameras</label>
+    <label><input type="checkbox" id="school" checked> School-zone alerts (speed cameras likely nearby)</label>
     <p class="note">NYC's default limit is 25 mph. Set this to match the street you're on.</p>
   </div>
 
@@ -81,6 +82,16 @@
     <div id="count" class="note">Loading…</div>
     <ul id="report"></ul>
     <div class="row" style="margin-top:10px"><button id="reload" class="sec">Reload data</button><button id="copyReport" class="sec">Copy report</button></div>
+  </div>
+
+  <div class="card">
+    <b>Report a camera</b>
+    <div class="row" style="margin-top:8px">
+      <select id="reportType"><option value="speed">Speed camera</option><option value="redlight">Red-light camera</option><option value="alpr">License-plate camera</option></select>
+      <button id="reportBtn">Mark camera here</button>
+      <button id="undoBtn" class="sec">Undo last</button>
+    </div>
+    <p class="note" id="reportMsg">Saves a camera at your current spot, on this phone only. Use it as a passenger or when parked, not while driving.</p>
   </div>
 
   <div class="card">

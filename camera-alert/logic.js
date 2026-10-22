@@ -119,20 +119,51 @@
   }
 
   function dedupe(cams, meters) {
-    var out = [];
+    var out = [], deg = meters / 90000 + 0.0001; // cheap lat/lon prefilter before haversine
     cams.forEach(function (c) {
       for (var i = 0; i < out.length; i++) {
-        if (out[i].type === c.type && distance(out[i], c) < meters) return;
+        var o = out[i];
+        if (Math.abs(o.lat - c.lat) > deg || Math.abs(o.lon - c.lon) > deg * 1.4) continue;
+        if (o.type === c.type && distance(o, c) < meters) return;
       }
       out.push(c);
     });
     return out;
   }
 
+  var SCHOOL_RADIUS_M = 300;    // NYC school speed cameras sit within about a quarter mile of the school
+  var SCHOOL_LIMIT_MPH = 25;
+
+  /* Schools within radiusM of the driver, nearest first (a school zone surrounds the school, so no heading cone). */
+  function nearSchools(schools, pos, radiusM) {
+    var out = [];
+    for (var i = 0; i < schools.length; i++) {
+      var s = schools[i];
+      if (Math.abs(s.lat - pos.lat) > 0.006 || Math.abs(s.lon - pos.lon) > 0.008) continue;
+      var d = distance(pos, s);
+      if (d <= radiusM) out.push({ school: s, dist: d });
+    }
+    out.sort(function (a, b) { return a.dist - b.dist; });
+    return out;
+  }
+
+  /* Level 1 is on-screen only (silent); level 2 means over the school-zone limit. */
+  function assessSchool(distM, opts) {
+    var limit = Math.min(opts.limitMph, SCHOOL_LIMIT_MPH);
+    var vMph = opts.speedMps / MPH;
+    if (opts.speedMps < 2.2) return { level: 0 };
+    if (vMph > limit + 2) {
+      return { level: 2, text: 'School zone. Speed cameras possible. You are doing ' + Math.round(vMph) +
+        ', limit ' + limit + '. Ease off.' };
+    }
+    return { level: 1, silent: true, text: 'School zone nearby. Speed cameras possible. Limit ' + limit + '.' };
+  }
+
   return {
     MPH: MPH, distance: distance, bearing: bearing, angleDiff: angleDiff, destination: destination,
     yellowSeconds: yellowSeconds, stopDistance: stopDistance, dilemmaZone: dilemmaZone,
     assess: assess, camerasAhead: camerasAhead, dedupe: dedupe, fmtDist: fmtDist,
+    nearSchools: nearSchools, assessSchool: assessSchool, SCHOOL_RADIUS_M: SCHOOL_RADIUS_M,
     INFO_RANGE_M: INFO_RANGE_M
   };
 });

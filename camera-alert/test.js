@@ -54,4 +54,18 @@ assert.strictEqual(L.camerasAhead([facingAway], pos, 90, 600).length, 0, 'camera
 
 // dedupe
 assert.strictEqual(L.dedupe([cam, { lat: cam.lat + 0.00005, lon: cam.lon, type: 'redlight' }], 20).length, 1);
+// schools: zone surrounds the school, no heading cone; silent unless speeding
+var school = { lat: 40.75, lon: -73.99, name: 'PS 1' };
+var spos = L.destination(school, 0, 200);
+var ns = L.nearSchools([school, { lat: 40.8, lon: -73.9 }], spos, L.SCHOOL_RADIUS_M);
+assert.strictEqual(ns.length, 1, 'finds the nearby school only');
+assert(Math.abs(ns[0].dist - 200) < 2);
+assert.strictEqual(L.nearSchools([school], L.destination(school, 0, 500), L.SCHOOL_RADIUS_M).length, 0, 'outside 300 m');
+var calm = L.assessSchool(200, { speedMps: 24 * MPH, limitMph: 25 });
+assert.strictEqual(calm.level, 1); assert(calm.silent, 'calm pass is silent');
+var fast = L.assessSchool(200, { speedMps: 34 * MPH, limitMph: 30 });
+assert.strictEqual(fast.level, 2); assert(/limit 25/.test(fast.text), 'school limit capped at 25');
+assert.strictEqual(L.assessSchool(200, { speedMps: 1, limitMph: 25 }).level, 0);
+// dedupe prefilter still merges near duplicates and keeps far ones
+assert.strictEqual(L.dedupe([school, { lat: school.lat + 0.0002, lon: school.lon }, { lat: 40.76, lon: -73.99 }], 60).length, 2);
 console.log('all tests passed');
