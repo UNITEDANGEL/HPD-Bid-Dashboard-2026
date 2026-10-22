@@ -1,6 +1,6 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var L = CamLogic;
+  var CL = CamLogic;
   var CACHE_KEY = 'camalert.cameras.v1';
   var cameras = [];
   var watchId = null, simTimer = null, wakeLock = null;
@@ -10,15 +10,52 @@
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
 
+  // ---------- map ----------
+  var map = null, camLayer = null, meMarker = null, follow = true, reportText = '';
+  var COLORS = { speed: '#e0a100', redlight: '#d62839', alpr: '#7b3fe4' };
+  var NAMES = { speed: 'Speed camera', redlight: 'Red-light camera', alpr: 'License-plate camera' };
+
+  function initMap() {
+    if (!window.L || !$('map')) return;
+    try {
+      map = L.map('map', { preferCanvas: true }).setView([40.73, -73.98], 12);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+      camLayer = L.layerGroup().addTo(map);
+      map.on('dragstart', function () { follow = false; $('recenter').hidden = false; });
+    } catch (e) { map = null; }
+  }
+
+  function drawCameras() {
+    if (!map) return;
+    camLayer.clearLayers();
+    cameras.forEach(function (c) {
+      if (c.type === 'alpr' && !settings.alpr) return;
+      L.circleMarker([c.lat, c.lon], { radius: 6, color: '#fff', weight: 1.5, fillColor: COLORS[c.type], fillOpacity: 0.95 })
+        .bindPopup('<b>' + NAMES[c.type] + '</b><br>Source: ' + esc(c.src || '') + (c.dir != null ? '<br>Faces: ' + Math.round(c.dir) + '°' : ''))
+        .addTo(camLayer);
+    });
+  }
+
+  function updateMap(here, heading) {
+    if (!map) return;
+    var html = '<div class="me" style="transform:rotate(' + (heading == null ? 0 : Math.round(heading)) + 'deg)">' + (heading == null ? '●' : '▲') + '</div>';
+    var icon = L.divIcon({ className: 'me-wrap', html: html, iconSize: [28, 28], iconAnchor: [14, 14] });
+    if (!meMarker) { meMarker = L.marker([here.lat, here.lon], { icon: icon, interactive: false, keyboard: false }).addTo(map); map.setView([here.lat, here.lon], 16); }
+    else { meMarker.setLatLng([here.lat, here.lon]); meMarker.setIcon(icon); }
+    if (follow) map.panTo([here.lat, here.lon], { animate: true });
+  }
+
   // ---------- data ----------
   function setCameras(list, note) {
     cameras = list;
     var n = { speed: 0, redlight: 0, alpr: 0 };
     list.forEach(function (c) { n[c.type]++; });
     $('count').textContent = list.length + ' cameras loaded (' + n.speed + ' speed, ' + n.redlight + ' red-light, ' + n.alpr + ' plate)' + (note ? ' ' + note : '');
+    drawCameras();
   }
 
   function renderReport(report) {
+    reportText = report.map(function (r) { return r.source + ' [' + r.status + ']: ' + r.note; }).join('\n');
     $('report').innerHTML = report.map(function (r) {
       return '<li class="' + r.status + '"><b>' + esc(r.source) + '</b>: ' + esc(r.note) + '</li>';
     }).join('');
@@ -64,18 +101,19 @@
     var here = { lat: c.latitude, lon: c.longitude };
     var v = c.speed != null && !isNaN(c.speed) ? c.speed : 0;
     var heading = (c.heading != null && !isNaN(c.heading) && v > 1.5) ? c.heading : null;
-    if (heading == null && lastPos && L.distance(lastPos, here) > 10) heading = L.bearing(lastPos, here);
+    if (heading == null && lastPos && CL.distance(lastPos, here) > 10) heading = CL.bearing(lastPos, here);
     if (heading != null) lastHeading = heading;
-    if (lastPos == null || L.distance(lastPos, here) > 10) lastPos = here;
+    if (lastPos == null || CL.distance(lastPos, here) > 10) lastPos = here;
 
-    $('speed').textContent = Math.round(v / L.MPH);
+    updateMap(here, lastHeading);
+    $('speed').textContent = Math.round(v / CL.MPH);
     $('limitShown').textContent = settings.limit;
     $('hdg').textContent = lastHeading == null ? '–' : Math.round(lastHeading) + '°';
 
-    var ahead = L.camerasAhead(cameras, here, lastHeading, 700);
-    var best = { level: 0, text: ahead.length ? 'Nearest camera ahead: ' + L.fmtDist(ahead[0].dist) : 'No cameras ahead.' };
+    var ahead = CL.camerasAhead(cameras, here, lastHeading, 700);
+    var best = { level: 0, text: ahead.length ? 'Nearest camera ahead: ' + CL.fmtDist(ahead[0].dist) : 'No cameras ahead.' };
     ahead.forEach(function (a) {
-      var r = L.assess(a.cam, a.dist, { speedMps: v, limitMph: settings.limit, showAlpr: settings.alpr });
+      var r = CL.assess(a.cam, a.dist, { speedMps: v, limitMph: settings.limit, showAlpr: settings.alpr });
       if (!r.level) return;
       var key = a.cam.lat.toFixed(5) + ',' + a.cam.lon.toFixed(5) + a.cam.type;
       if ((lastSpoken[key] || 0) < r.level) { lastSpoken[key] = r.level; speak(r.text); }
@@ -84,7 +122,7 @@
     showStatus(best.level, best.text);
     $('ahead').innerHTML = ahead.slice(0, 5).map(function (a) {
       var name = { speed: 'Speed', redlight: 'Red-light', alpr: 'Plate reader' }[a.cam.type];
-      return '<li>' + name + ' — ' + L.fmtDist(a.dist) + '</li>';
+      return '<li>' + name + ' — ' + CL.fmtDist(a.dist) + '</li>';
     }).join('');
     if (simulated) $('simnote').textContent = 'SIMULATION';
   }
@@ -121,14 +159,14 @@
     var target = cameras.filter(function (c) { return c.type === 'redlight'; })[0] || cameras[0] ||
       { lat: 40.7527, lon: -73.9772, type: 'redlight', dir: null }; // Grand Central area fallback
     var mph = parseInt($('simSpeed').value, 10) || 35;
-    var v = mph * L.MPH;
+    var v = mph * CL.MPH;
     var brg = 90;
-    var start = L.destination(target, (brg + 180) % 360, 800);
+    var start = CL.destination(target, (brg + 180) % 360, 800);
     var traveled = 0;
     speak('Simulation started.');
     simTimer = setInterval(function () {
       traveled += v;
-      var p = L.destination(start, brg, traveled);
+      var p = CL.destination(start, brg, traveled);
       onFix({ coords: { latitude: p.lat, longitude: p.lon, speed: v, heading: brg } }, true);
       if (traveled > 900) { clearInterval(simTimer); simTimer = null; $('simnote').textContent = 'Simulation finished'; }
     }, 1000);
@@ -144,7 +182,15 @@
   $('alpr').checked = settings.alpr;
   $('limit').onchange = function () { settings.limit = parseInt($('limit').value, 10) || 25; save('camalert.settings', settings); };
   $('voice').onchange = function () { settings.voice = $('voice').checked; save('camalert.settings', settings); };
-  $('alpr').onchange = function () { settings.alpr = $('alpr').checked; save('camalert.settings', settings); };
+  $('alpr').onchange = function () { settings.alpr = $('alpr').checked; save('camalert.settings', settings); drawCameras(); };
+  $('recenter').onclick = function () { follow = true; $('recenter').hidden = true; if (meMarker) map.panTo(meMarker.getLatLng()); };
+  $('copyReport').onclick = function () {
+    var txt = $('count').textContent + '\n' + reportText;
+    var done = function () { $('copyReport').textContent = 'Copied!'; setTimeout(function () { $('copyReport').textContent = 'Copy report'; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { window.prompt('Copy this:', txt); });
+    else window.prompt('Copy this:', txt);
+  };
+  initMap();
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && watchId != null) requestWake(); });
 
   var cached = load(CACHE_KEY, null);
