@@ -17,8 +17,9 @@
   }
 
   function osmType(tags) {
-    if (tags.enforcement === 'traffic_signals' || tags['enforcement'] === 'red_light') return 'redlight';
-    if (tags.highway === 'speed_camera' || tags.enforcement === 'maxspeed') return 'speed';
+    var enf = tags.enforcement || '', st = tags['surveillance:type'] || '', ct = tags['camera:type'] || '';
+    if (/traffic_signals|red.?light/i.test(enf) || /red.?light/i.test(st + ' ' + ct)) return 'redlight';
+    if (tags.highway === 'speed_camera' || /maxspeed|speed/i.test(enf) || /speed/i.test(st + ' ' + ct)) return 'speed';
     if (/ALPR|anpr/i.test(tags['surveillance:type'] || '') || /ALPR|anpr/i.test(tags['camera:type'] || '')) return 'alpr';
     return null;
   }
@@ -26,8 +27,8 @@
   function loadOsm() {
     var q = '[out:json][timeout:60];(' +
       'node["highway"="speed_camera"](' + BBOX + ');' +
-      'node["enforcement"~"maxspeed|traffic_signals|red_light"](' + BBOX + ');' +
-      'node["surveillance:type"~"ALPR|anpr",i](' + BBOX + ');' +
+      'node["enforcement"](' + BBOX + ');' +
+      'node["surveillance:type"~"ALPR|anpr|red.?light|speed",i](' + BBOX + ');' +
       ');out body;';
     var body = 'data=' + encodeURIComponent(q);
     var opts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body };
@@ -54,68 +55,87 @@
   }
 
   // ---- NYC Open Data: look for camera *location* datasets, parse whatever coordinate columns they have.
+  function wkt(v) {
+    var m = /POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/i.exec(v);
+    return m ? { lon: parseFloat(m[1]), lat: parseFloat(m[2]) } : null;
+  }
+
   function pickCoords(row) {
     var lat = null, lon = null;
     Object.keys(row).forEach(function (k) {
       var kl = k.toLowerCase(), v = row[k];
-      if (/^(lat|latitude|y_coord.*)$/.test(kl) && !isNaN(parseFloat(v))) lat = parseFloat(v);
-      if (/^(lon|lng|long|longitude)$/.test(kl) && !isNaN(parseFloat(v))) lon = parseFloat(v);
-      if (v && typeof v === 'object' && Array.isArray(v.coordinates) && v.coordinates.length === 2 &&
-        /^(point|location|the_geom|geocoded_column|georeference)/.test(kl)) {
+      if (typeof v === 'string') {
+        var w = wkt(v);
+        if (w) { lat = w.lat; lon = w.lon; return; }
+      }
+      if (/^lat/.test(kl) || /_lat/.test(kl)) { if (!isNaN(parseFloat(v))) lat = parseFloat(v); }
+      if (/^(lon|lng|long)/.test(kl) || /_(lon|lng|long)/.test(kl)) { if (!isNaN(parseFloat(v))) lon = parseFloat(v); }
+      if (v && typeof v === 'object' && Array.isArray(v.coordinates) && v.coordinates.length === 2 && typeof v.coordinates[0] === 'number') {
         lon = v.coordinates[0]; lat = v.coordinates[1];
       }
       if (v && typeof v === 'object' && v.latitude != null && v.longitude != null) {
         lat = parseFloat(v.latitude); lon = parseFloat(v.longitude);
       }
     });
-    if (lat == null || lon == null) return null;
+    if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return null;
     if (lat < 40.4 || lat > 41.0 || lon < -74.4 || lon > -73.5) return null; // outside NYC
     return { lat: lat, lon: lon };
   }
 
   function discoverNyc(report) {
-    var queries = [['speed camera', 'speed'], ['red light camera', 'redlight']];
+    var queries = ['speed camera', 'red light camera', 'school zone speed camera', 'automated enforcement camera', 'speed camera locations'];
     var seen = {};
-    return Promise.all(queries.map(function (qq) {
-      var url = SOCRATA_CATALOG + '?domains=data.cityofnewyork.us&only=dataset&limit=15&q=' + encodeURIComponent(qq[0]);
+    return Promise.all(queries.map(function (q) {
+      var url = SOCRATA_CATALOG + '?domains=data.cityofnewyork.us&limit=20&q=' + encodeURIComponent(q);
       return fetchJson(url, {}, 30000).then(function (j) {
-        var picks = (j.results || []).filter(function (r) {
+        var all = j.results || [];
+        report.push({ source: 'NYC search "' + q + '"', status: all.length ? 'ok' : 'no-coords',
+          note: all.length + ' result(s): ' + all.slice(0, 8).map(function (r) {
+            return r.resource.name + ' [' + r.resource.id + ', ' + r.resource.type + ']';
+          }).join('; ') });
+        return all.filter(function (r) {
           var n = r.resource.name || '';
-          return /camera/i.test(n) && /(location|site|zone|intersection)/i.test(n) && !/violation|ticket|summons/i.test(n);
-        }).filter(function (r) {
-          // Classify by the dataset's own name, and only take each dataset once across both searches.
-          var n = r.resource.name || '';
-          r.camType = /red.?light/i.test(n) ? 'redlight' : /speed/i.test(n) ? 'speed' : null;
-          if (!r.camType || seen[r.resource.id]) return false;
+          if (r.resource.type !== 'dataset' && r.resource.type !== 'map' && r.resource.type !== 'filter' ) return false;
+          if (!/(speed|red.?light|camera)/i.test(n)) return false;
+          if (/(violation|ticket|summons|parking|complaint|311|crash|collision|injur)/i.test(n)) return false;
+          if (seen[r.resource.id]) return false;
           seen[r.resource.id] = true;
           return true;
         });
-        report.push({ source: 'NYC catalog "' + qq[0] + '"', status: 'ok', note: picks.length + ' candidate dataset(s): ' +
-          picks.map(function (p) { return p.resource.name + ' [' + p.resource.id + ']'; }).join('; ') });
-        return Promise.all(picks.slice(0, 3).map(function (p) {
-          var u = NYC_HOST + '/resource/' + p.resource.id + '.json?$limit=5000';
-          return fetchJson(u, {}, 45000).then(function (rows) {
-            var cams = [];
-            rows.forEach(function (row) {
-              var c = pickCoords(row);
-              if (c) cams.push({ lat: c.lat, lon: c.lon, type: p.camType, dir: null, src: 'nyc:' + p.resource.id, limit: null });
-            });
-            report.push({ source: p.resource.name, status: cams.length ? 'ok' : 'no-coords',
-              note: rows.length + ' rows, ' + cams.length + ' with usable coordinates' });
-            return cams;
-          }).catch(function (e) {
-            report.push({ source: p.resource.name, status: 'error', note: String(e.message || e) });
-            return [];
-          });
-        }));
       }).catch(function (e) {
-        report.push({ source: 'NYC catalog "' + qq[0] + '"', status: 'error', note: String(e.message || e) });
+        report.push({ source: 'NYC search "' + q + '"', status: 'error', note: String(e.message || e) });
         return [];
       });
     })).then(function (groups) {
-      var flat = [];
-      groups.forEach(function (g) { g.forEach(function (arr) { flat = flat.concat(arr); }); });
-      return flat;
+      var picks = [];
+      groups.forEach(function (g) { picks = picks.concat(g); });
+      picks = picks.slice(0, 8);
+      return Promise.all(picks.map(function (p) {
+        var n = p.resource.name || '';
+        var type = /red.?light/i.test(n) ? 'redlight' : /(speed|school)/i.test(n) ? 'speed' : null;
+        if (!type) {
+          report.push({ source: n, status: 'no-coords', note: 'skipped: cannot tell if speed or red-light' });
+          return [];
+        }
+        return fetchJson(NYC_HOST + '/resource/' + p.resource.id + '.json?$limit=5000', {}, 45000).then(function (rows) {
+          var cams = [];
+          rows.forEach(function (row) {
+            var c = pickCoords(row);
+            if (c) cams.push({ lat: c.lat, lon: c.lon, type: type, dir: null, src: 'nyc:' + p.resource.id, limit: null });
+          });
+          report.push({ source: n + ' [' + p.resource.id + ']', status: cams.length ? 'ok' : 'no-coords',
+            note: rows.length + ' rows, ' + cams.length + ' usable as ' + type +
+              (!cams.length && rows[0] ? '. Columns: ' + Object.keys(rows[0]).join(', ') : '') });
+          return cams;
+        }).catch(function (e) {
+          report.push({ source: n, status: 'error', note: String(e.message || e) });
+          return [];
+        });
+      })).then(function (arrs) {
+        var flat = [];
+        arrs.forEach(function (a) { flat = flat.concat(a); });
+        return flat;
+      });
     });
   }
 
