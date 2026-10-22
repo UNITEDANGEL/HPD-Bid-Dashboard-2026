@@ -150,3 +150,28 @@ assert.equal((await revoked.json()).reconnectRequired, true);
 assert.equal(records.size, 0);
 console.log("PASS renewal: refresh-token reuse, live Drive identity check, no token exposure, sliding cookie, transient preservation, revoked access.");
 console.log("PASS Drive auth: fail-closed config, methods/origin, PKCE, state/tamper/expiry, denied/wrong account/scope, encrypted session, expiry and disconnect. No real accounts or files changed.");
+
+// The iPhone Home Screen app (22 Oct, "why 0 all"): sign in with a one-time code, then the app claims the sign-in.
+{
+  records.clear();
+  const handoff = "h".repeat(43);
+  const start = await handleDriveAuth(new Request(`${origin}/api/drive/start?back=%2Fmap%2F&handoff=${handoff}`, { method: "POST", headers: { Origin: origin } }), env, noNetwork);
+  const auth = new URL(start.headers.get("Location"));
+  const flowCookie = start.headers.getSetCookie()[0].split(";")[0];
+  const back = await callback({ state: auth.searchParams.get("state"), cookie: flowCookie }, googleMock());
+  assert.equal(back.status, 303);
+  assert.ok(records.has(`handoff:${handoff}`), "kept for the app to claim");
+  assert.ok(!String(records.get(`handoff:${handoff}`)).includes("private-refresh"), "kept encrypted");
+  const claimReq = (code, from = origin) => new Request(`${origin}/api/drive/claim`, { method: "POST", headers: { Origin: from, "Content-Type": "application/json" }, body: JSON.stringify({ handoff: code }) });
+  assert.equal((await handleDriveAuth(claimReq(handoff, "https://evil.test"), env, noNetwork)).status, 403, "only from the app");
+  const claimed = await handleDriveAuth(claimReq(handoff), env, noNetwork);
+  assert.deepEqual(await claimed.json(), { claimed: true, connected: true });
+  const appCookie = claimed.headers.getSetCookie()[0];
+  assert.match(appCookie, /HttpOnly; Secure; SameSite=Lax/);
+  const session = await (await handleDriveAuth(request("session", "GET", appCookie.split(";")[0]), env, noNetwork)).json();
+  assert.equal(session.connected, true, "the app is signed in");
+  assert.deepEqual(await (await handleDriveAuth(claimReq(handoff), env, noNetwork)).json(), { claimed: false }, "one use");
+  assert.deepEqual(await (await handleDriveAuth(claimReq("x".repeat(43)), env, noNetwork)).json(), { claimed: false }, "unknown code");
+  assert.equal((await handleDriveAuth(claimReq("bad"), env, noNetwork)).status, 400);
+  console.log("PASS sign-in handoff: Home Screen app code kept encrypted for 10 min at the callback, claimed once from the app's own origin into its cookie; wrong / reused codes get nothing");
+}

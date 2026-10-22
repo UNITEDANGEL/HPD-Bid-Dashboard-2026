@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { claimSignin, installSigninHandoff } from "../lib/signin-handoff";
 
 // Renew while the app is in use; never open consent or upload records silently.
 export default function DriveSessionKeeper() {
@@ -22,6 +23,12 @@ export default function DriveSessionKeeper() {
       finally { checking = false; }
     }
     void check();
+    // Home Screen app: sign-ins made in Google's sheet are claimed here (lib/signin-handoff.ts).
+    const uninstall = installSigninHandoff();
+    const claim = () => { if (document.visibilityState === "visible") void claimSignin().then((ok) => { if (ok) window.location.reload(); }); };
+    claim();
+    document.addEventListener("visibilitychange", claim);
+    window.addEventListener("focus", claim);
     window.addEventListener("focus", check);
     window.addEventListener("online", check);
     document.addEventListener("visibilitychange", check);
@@ -29,6 +36,9 @@ export default function DriveSessionKeeper() {
     return () => {
       controller.abort();
       clearInterval(timer);
+      uninstall();
+      document.removeEventListener("visibilitychange", claim);
+      window.removeEventListener("focus", claim);
       window.removeEventListener("focus", check);
       window.removeEventListener("online", check);
       document.removeEventListener("visibilitychange", check);

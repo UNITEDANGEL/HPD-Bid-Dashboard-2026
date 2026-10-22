@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Sign in works from the Home Screen app",
+      "items": [
+        "🔑 On the iPhone Home Screen app, Google's sign-in opens in a separate sheet that kept the sign-in to itself, so the app couldn't open your HPD emails (the board showed 0). Now the app hands Google a one-time code and picks the sign-in up when you come back: sign in once from the board's Sign in with Google (or Storage) and you're in."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Board says when you are signed out",
       "items": [
         "🔒 When the Google sign-in on the phone runs out, the vendor tracking board says \"Your HPD emails didn't open\" with a Sign in with Google button (it brings you back to the board), instead of showing 0 everywhere."

@@ -86,8 +86,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect", "check", "push-subscribe", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
-  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", "push-subscribe", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action) ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check", "push-subscribe", "claim", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", "push-subscribe", "claim", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
@@ -95,6 +95,23 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     if (action === "push-subscribe") {
       const saved = await session(request, env, cfg).catch(() => null);
       return await handlePushSubscribe(request, env, fetcher, Boolean(saved));
+    }
+    // The iPhone Home Screen app signs in with Google in a separate browser sheet, whose cookies the app never sees
+    // (owner, 22 Oct: "why 0 all"). The app sends a one-time code with the sign-in; the callback keeps the sign-in
+    // under that code for 10 minutes (encrypted); back in the app, "claim" moves it into the app's own cookie, once.
+    if (action === "claim") {
+      const body = await request.json().catch(() => ({}));
+      const handoff = String(body?.handoff || "");
+      if (!/^[A-Za-z0-9_-]{32,64}$/.test(handoff)) return json({ claimed: false, error: "Bad code." }, 400);
+      let value = null;
+      try {
+        const stored = await env.HPD_DRIVE_SESSIONS.get(`handoff:${handoff}`);
+        if (stored) { await env.HPD_DRIVE_SESSIONS.delete(`handoff:${handoff}`); value = await unseal(env, stored, `handoff:${handoff}`); }
+      } catch { value = null; }
+      if (!value || value.email !== cfg.email) return json({ claimed: false });
+      const response = json({ claimed: true, connected: true });
+      response.headers.append("Set-Cookie", await sessionCookie(env, value));
+      return response;
     }
     if (action === "session") {
       const saved = await session(request, env, cfg);
@@ -164,7 +181,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const verifier = random();
       const asked = url.searchParams.get("back") || "";
       const back = /^\/(map|paperwork|storage)\/[A-Za-z0-9/?=&_.-]*$/.test(asked) ? asked : "/storage/";
-      const flow = await seal(env, { state, verifier, back, expires: Date.now() + 600000 }, "oauth-flow");
+      const handoff = /^[A-Za-z0-9_-]{32,64}$/.test(url.searchParams.get("handoff") || "") ? url.searchParams.get("handoff") : "";
+      const flow = await seal(env, { state, verifier, back, handoff, expires: Date.now() + 600000 }, "oauth-flow");
       const challenge = encode(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(verifier))));
       const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       auth.search = new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, redirect_uri: cfg.callback,
@@ -196,6 +214,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     if (!identity.sub || identity.email_verified !== true || identity.email?.toLowerCase() !== cfg.email) return fail("wrong_account");
     const canEmail = String(token.scope || "").split(" ").includes(GMAIL_SCOPE);
     const value = { email: cfg.email, sub: identity.sub, refreshToken: token.refresh_token, canEmail, expires: Date.now() + TTL * 1000 };
+    // Started from the Home Screen app: keep it for the app to claim (10 minutes, encrypted, one use).
+    if (flow.handoff) { try { await env.HPD_DRIVE_SESSIONS.put(`handoff:${flow.handoff}`, await seal(env, value, `handoff:${flow.handoff}`), { expirationTtl: 600 }); } catch (e) { console.error(`drive callback: handoff not kept (${e?.name})`); } }
     return redirect(`${cfg.origin}${flow.back || "/storage/"}`, [cookie(FLOW, "", 0), await sessionCookie(env, value)]);
   } catch (error) {
     console.error(`drive ${action} failed in the Google connection: ${error?.name}: ${String(error?.message || "").slice(0, 120)}`);
