@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T14:37:02.136255+00:00",
+  "generatedAt": "2026-10-22T14:53:27.566648+00:00",
   "days": 14,
   "bids": [
     {
@@ -2081,6 +2081,136 @@
       },
       "lat": 40.857513,
       "lng": -73.904883
+    },
+    {
+      "omo": "ER06037",
+      "bidDue": "2026-10-23",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-24",
+      "workCompletion": "2026-11-04",
+      "address": "141 ST MARKS PLACE",
+      "borough": "SI",
+      "itbFile": "ER06037_102226104242.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT THE BATHROOM LOCATED AT APT 1C, 1ST STORY 1) REPLACE THE BATHTUB FAUCETS 2) SCURE LOOSE WASHBASIN PROPERLY SECURE AND REANCHOR THE LOOSE WASH BASIN TO PROVIDE A STABLE AND SECURE INSTALLATION. REPAIR OR REPLACE DEFECTIVE MOUNTING HARDWARE AND BRACKETS AS NECESSARY. PROPERLY REMOVE AND REPLACE THE DEFECTIVE BATHTUB FAUCET ASSEMBLY WITH A NEW SINGLE-LEVER ANTI-SCALD TUB/SHOWER VALVE, TUB SPOUT, SHOWER HEAD AND ALL NECESSARY FITTINGS, CONNECTIONS AND ACCESSORIES. TRACE THE HOT AND COLD WATER SUPPLY LINES SERVING THE BATHTUB. REPAIR OR REPLACE ALL DEFECTIVE PIPING, VALVES AND CONNECTIONS AS NECESSARY TO RESTORE PROPER HOT AND COLD WATER SUPPLY. RESTORE ALL WALLS AND FINISHES AFFECTED BY THE PLUMBING REPAIRS. PROPERLY TEST ALL PLUMBING CONNECTIONS TO ENSURE ADEQUATE WATER FLOW, PROPER OPERATION AND NO LEAKS. REMOVE ALL WORK-RELATED DEBRIS AND BROOM SWEEP AFFECTED AREAS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD WITH START DATE: 212-863-6161; 212-863-6135; 212-863-6231; 212-863-6175; 212-863-6046. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF THE LANDLORD REFUSES ACCESS OR THE WORK IS COMPLETED BY THE CONTRACTOR OR OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212-863-6009.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792680164000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.646323,
+      "lng": -74.081556
     },
     {
       "omo": "ER07663",
