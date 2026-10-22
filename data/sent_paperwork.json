@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-22T19:54:05.732459+00:00",
+"generatedAt": "2026-10-22T20:13:25.275362+00:00",
 "since": "2026/10/08",
 "jobs": {
 "EN04541": [
@@ -20646,6 +20646,16 @@
 "file": "EQ13366 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: 24 HR POOR PERFORMANCE NOTICE - EQ31176",
+"via": "hpd-staff"
+}
+],
+"EQ31220": [
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-ohwsd11j.png",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE- OMO#EQ31220",
 "via": "hpd-staff"
 }
 ],
