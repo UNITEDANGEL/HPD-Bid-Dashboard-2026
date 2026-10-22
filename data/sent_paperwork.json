@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-22T14:53:54.553323+00:00",
+"generatedAt": "2026-10-22T15:06:16.176460+00:00",
 "since": "2026/10/08",
 "jobs": {
 "EN04541": [
@@ -812,6 +812,14 @@
 "file": "image001.jpg",
 "outcome": "",
 "subject": "Re: EP02517",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-22",
+"to": "\"Basdeo, Bheesham (HPD)\" <BasdeoB@hpd.nyc.gov>",
+"file": "EP02517 INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: EP02517",
 "via": "hpd-staff"
 }
 ],
@@ -20093,6 +20101,24 @@
 "via": "hpd-staff"
 }
 ],
+"EQ29830": [
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-tqloe0gp.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ29830 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
+}
+],
 "EQ29849": [
 {
 "date": "2026-09-17",
@@ -21464,6 +21490,42 @@
 "file": "SIGNED - ER05733 - Work Completed.pdf",
 "outcome": "work_completed",
 "subject": "SIGNED - ER05733 - Work Completed - 25 SHERMAN AVENUE, 10040"
+}
+],
+"ER05941": [
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-tqloe0gp.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ29830 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
+}
+],
+"ER06362": [
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-tqloe0gp.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-22",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ29830 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
 }
 ],
 "ER07755": [
