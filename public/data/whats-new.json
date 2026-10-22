@@ -3,6 +3,17 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Talk to the app",
+      "items": [
+        "🎤 The mic in the search box is your helper now. Say a search (\"mini split\") and it searches; say what happened and it answers out loud:",
+        "\"I finished ER01987\" / \"I finished this job\" (the card on screen) / \"no access at 707 East 189\" / \"the tenant refused\" / \"we did part of the job\": it reads the job back and asks. Nothing is saved until you say yes or tap ✅ Yes, save it.",
+        "\"Read me this job\": the job in plain words, then HPD's text. \"Read me the new bids\": how many are open, and the first few in a few words (borough, what, when due). \"What do I have today?\": overdue notices, bids due today, route stops, jobs to do. \"Which notices are open?\"",
+        "Typing works too: type the sentence in the search box and press Go.",
+        "⏰ Urgent alerts ring once, then stay on screen quietly until you choose (no more ringing every 30 seconds). Phone alerts for an overdue notice come once, not every 2 hours."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Have you arrived? · The job first",
       "items": [
         "📍 With the app open, when you're within about 120 m of a stop on Today's route (or a job you started driving to today), it asks \"You're at <address>. Have you arrived?\" Tap ✅ Yes, start the job: the job opens with your arrival saved (time + GPS). It asks once per job, and checks again when you come back from Waze / Google.",

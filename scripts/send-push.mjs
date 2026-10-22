@@ -90,13 +90,8 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       for (const r of urgentRows(rows, now).filter((x) => !handled(x))) {
         const left = Math.round(hoursLeft(r, now));
         out.push({ key: `u:${h(r.key)}`, kind: "urgent", title: `⏰ ${r.omo}: ${left <= 0 ? "notice overdue" : `${left} h left on the notice`}`, body: "Nothing sent yet: answer it now.", url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `u-${r.omo}` });
-        // Overdue: again every 2 hours, weekdays 8 AM - 8 PM New York, until it's answered (owner, 21 Oct: ER01987 went
-        // overdue after one alert). Each 2-hour slot is its own alert.
-        if (left <= 0 && workingHours(now)) {
-          const slot = Math.floor(now / (2 * 3600000));
-          const late = Math.max(1, Math.round(-hoursLeft(r, now)));
-          out.push({ key: `o:${h(`${r.key}|${slot}`)}`, kind: "urgent", title: `⏰ ${r.omo}: notice overdue ${late} h — answer now`, body: `${r.hours}-hour notice from ${r.who || "vendor tracking"}. Nothing sent yet.`, url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `u-${r.omo}` });
-        }
+        // No repeats (owner, 22 Oct: "the urgent alert I want to hear once, then it says on screen; ER01987 keeps
+        // repeating"): one alert per notice; after that it stays on the board, in 🔔 and in the morning briefing.
       }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }

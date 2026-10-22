@@ -66,7 +66,7 @@ try {
 
   await wait(/EQ99997: \d+ h left on the notice|24-hour notice · EQ99997/);
   // The new 24-hour notice alerts as a ⏱ notice, then (under 6 h) as a ⏰ deadline.
-  // Under 6 hours: the critical box in the middle (21 Oct), ringing again every 30 s until Answer now / Snooze.
+  // Under 6 hours: the critical box in the middle (21 Oct); it rings once and stays on screen quietly (22 Oct).
   const crit = page.locator('[data-hpd-smoke="fc-critical"]');
   for (let i = 0; i < 90 && !(await crit.count()); i++) await page.clock.runFor(5000);
   await crit.waitFor({ timeout: 5000 });
@@ -75,7 +75,8 @@ try {
   assert.ok((await vib()).includes("[120,60,120,60,120]"), "urgent ring");
   const v0 = (await vib()).length;
   await page.clock.runFor(31000);
-  assert.ok((await vib()).length > v0, "rings again after 30 s");
+  assert.equal((await vib()).length, v0, "rings once: no ring again after 30 s");
+  assert.equal(await crit.count(), 1, "still on screen");
   if (shots) await page.screenshot({ path: `${shots}/ring-3-urgent.png` });
   await crit.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   assert.equal(await crit.count(), 0);

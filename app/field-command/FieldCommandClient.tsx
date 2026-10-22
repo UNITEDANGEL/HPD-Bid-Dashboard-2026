@@ -58,6 +58,8 @@ import JobsList, { type JobRow } from "./JobsList";
 import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
+import { findJobRef, parseCommand } from "../../lib/voice-agent";
+import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
@@ -1189,7 +1191,13 @@ export default function FieldCommandClient() {
     try {
       const rec = new Ctor();
       rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
-      rec.onresult = (e) => { const said = Array.from(e.results).map((r) => r[0].transcript).join(" "); setFindHidden(""); setSearch(spokenSearch(said)); };
+      rec.onresult = (e) => {
+        const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
+        const final = Array.from(e.results).every((r) => r.isFinal);
+        const cmd = parseCommand(said);
+        if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); return; }
+        if (final) { setSearch(""); agentRef.current(said); }
+      };
       rec.onend = () => { setListening(false); listenRef.current = null; };
       rec.onerror = () => { setListening(false); listenRef.current = null; };
       listenRef.current = rec;
@@ -1283,6 +1291,10 @@ export default function FieldCommandClient() {
   const [bidsOpen, setBidsOpen] = useState(false);
   // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number }>({ today: 0, tomorrow: 0, open: 0 });
+  // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
+  // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
+  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string } } | null>(null);
+  const agentRef = useRef<(heard: string) => void>(() => {});
   useEffect(() => {
     const load = () => fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
       const day = (offset: number) => new Date(Date.now() + offset * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -1687,11 +1699,8 @@ export default function FieldCommandClient() {
   const [critical, setCritical] = useState<(AppNotice & { at: number; rings: number }) | null>(null);
   const snoozeKey = (n: AppNotice) => `hpd-snooze-${n.omo || n.title}`;
   const snoozed = (n: AppNotice) => { try { return Date.now() < Number(localStorage.getItem(snoozeKey(n)) || 0); } catch { return false; } };
-  useEffect(() => {
-    if (!critical || critical.rings >= 5) return;
-    const t = window.setTimeout(() => { ring(critical); setCritical((c) => (c && c.at === critical.at ? { ...c, rings: c.rings + 1 } : c)); }, 30000);
-    return () => window.clearTimeout(t);
-  }, [critical]);
+  // The urgent box rings once and then stays on screen quietly until you choose (owner, 22 Oct: "I want to hear it
+  // once, then it says on screen; right now it keeps repeating").
   // The Home Screen icon shows the unread count (like Gmail); the phone keeps counting alerts while the app is closed.
   const syncBadge = (n: number) => {
     try {
@@ -3238,6 +3247,68 @@ export default function FieldCommandClient() {
     setOutcomeMessage("");
   }
 
+  agentRef.current = (heard: string) => {
+    const cmd = parseCommand(heard);
+    const answer = (reply: string, confirm?: { id: string; outcome: string }) => { setAgent({ heard, reply, confirm }); speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 200); };
+    const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
+    const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
+    if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    if (cmd.intent === "yes") {
+      const c = agent?.confirm;
+      const job = c ? jobs.find((j) => jobId(j) === c.id) : null;
+      if (!c || !job) { answer("There's nothing waiting for a yes."); return; }
+      setJobOutcome(job, c.outcome, "Said to the voice helper");
+      answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.`);
+      return;
+    }
+    if (cmd.intent === "no") { answer("OK, nothing saved."); return; }
+    if (cmd.intent === "outcome" || cmd.intent === "read-job") {
+      const job = pick(cmd.ref);
+      if (job === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!job) { answer(cmd.ref ? `I can't find ${cmd.ref} in your jobs. Say the job number, letter by letter.` : "Which job? Open its card, or say the job number."); return; }
+      if (cmd.intent === "read-job") {
+        const scope = jobScope(job);
+        const sum = jobSummary(scope);
+        const plain = sum.lines.map(lineText).join(". ");
+        const where = [...sum.where, ...sum.rooms].join(", ");
+        answer(`${jobAddress(job)}. ${plain ? `The job: ${plain}.` : ""}${where ? ` Where: ${where}.` : ""} HPD says: ${scope.replace(/\s+/g, " ").slice(0, 400)}`);
+        return;
+      }
+      answer(`Mark ${jobAddress(job)}, job ${jobId(job)}, as ${FIELD_OUTCOMES[cmd.outcome].toLowerCase()}? Say yes, or tap Yes.`, { id: jobId(job), outcome: cmd.outcome });
+      return;
+    }
+    if (cmd.intent === "bids") {
+      void fetch("/data/upcoming_bids.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => {
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+        // Still open: due later today (time not passed) or a later day.
+        const nowMin = (() => { const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map((x) => [x.type, x.value])); return Number(p.hour) * 60 + Number(p.minute); })();
+        const minOf = (t = "") => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
+        const open = (Array.isArray(d?.bids) ? d.bids : []).filter((b: { bidDue?: string; bidDueTime?: string }) => (b.bidDue || "") > today || (b.bidDue === today && minOf(b.bidDueTime) > nowMin)).sort((a: { bidDue: string }, b: { bidDue: string }) => a.bidDue.localeCompare(b.bidDue));
+        if (!open.length) { answer("No open invitations to bid right now."); return; }
+        const lines = open.slice(0, 5).map((b: { borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => { const first = jobSummary(b.description || "").lines.map(lineText)[0] || "general repair"; return `${({ MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" } as Record<string, string>)[String(b.borough || "").toUpperCase()] || b.borough || "New York"}: ${first}, due ${b.bidDue === today ? "today" : dayWord(b.bidDue)} ${b.bidDueTime || ""}`.trim(); });
+        answer(`${open.length === 1 ? "You have 1 open invitation to bid." : `You have ${open.length} open invitations to bid.`} ${lines.join(". ")}.${open.length > 5 ? ` And ${open.length - 5} more in Bids.` : ""}`);
+      }).catch(() => answer("I couldn't load the bids right now."));
+      return;
+    }
+    if (cmd.intent === "notices") {
+      const open = boardOpenRows.filter((r) => !r.steps.sent.done);
+      if (!open.length) { answer("No notices waiting on you. Nice."); return; }
+      const late = open.filter((r) => r.kind === "ppn" && hoursLeft(r, Date.now()) < 0);
+      answer(`${open.length} notice${open.length === 1 ? "" : "s"} waiting on you${late.length ? `, ${late.length} overdue: ${late.slice(0, 3).map((r) => addressOf(r.omo) || r.omo).join("; ")}` : ""}. Open Notices to answer them.`);
+      return;
+    }
+    // Today.
+    const parts: string[] = [];
+    const late = boardOpenRows.filter((r) => r.kind === "ppn" && !r.steps.sent.done && hoursLeft(r, Date.now()) < 0);
+    if (late.length) parts.push(`${late.length} notice${late.length === 1 ? " is" : "s are"} overdue`);
+    if (bidsDue.today) parts.push(`${bidsDue.today} bid${bidsDue.today === 1 ? "" : "s"} due today`);
+    const stops = todayRouteIds().length;
+    if (stops) parts.push(`${stops} stop${stops === 1 ? "" : "s"} on today's route`);
+    const lateJobs = jobRows.filter((r) => r.group === "todo").length;
+    if (lateJobs) parts.push(`${lateJobs} job${lateJobs === 1 ? "" : "s"} to do`);
+    answer(parts.length ? `Today: ${parts.join(", ")}.` : "Nothing urgent today.");
+  };
+  const addressOf = (omo: string) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; };
 
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
@@ -3245,7 +3316,7 @@ export default function FieldCommandClient() {
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} onFocus={() => setSearchFocus(true)} onBlur={() => window.setTimeout(() => setSearchFocus(false), 250)} placeholder={listening ? "Listening… say the job" : "Job #, address or a few words"} aria-label="Search jobs" data-hpd-smoke="fc-search" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} onFocus={() => setSearchFocus(true)} onBlur={() => window.setTimeout(() => setSearchFocus(false), 250)} onKeyDown={(event) => { if (event.key === "Enter" && parseCommand(search).intent !== "search") { event.preventDefault(); const said = search; setSearch(""); agentRef.current(said); } }} placeholder={listening ? "Listening… say the job" : "Job #, address or a few words"} aria-label="Search jobs" data-hpd-smoke="fc-search" />
           {search ? <button type="button" className="fc-search-clear" aria-label="Clear search" data-hpd-smoke="fc-search-clear" onClick={() => { setSearch(""); setFindHidden(""); }}>✕</button> : null}
           {canListen ? <button type="button" className={`fc-search-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Search by voice"} aria-pressed={listening} data-hpd-smoke="fc-search-mic" onClick={listen}>🎤</button> : null}
         </div>
@@ -4786,6 +4857,20 @@ export default function FieldCommandClient() {
           </button>
         );
       })()}
+      {agent ? (
+        <div className="fc-agent" role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
+          <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>
+          <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
+          <div>
+            {agent.confirm ? <>
+              <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>✅ Yes, save it</button>
+              <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
+            </> : null}
+            {canListen ? <button type="button" data-hpd-smoke="fc-agent-talk" onClick={listen}>{listening ? "Listening…" : "🎤 Talk"}</button> : null}
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => setAgent(null)}>✕</button>
+          </div>
+        </div>
+      ) : null}
       {arrivePrompt && !selectedJob ? (
         <div className="fc-arrive" role="dialog" aria-label="Have you arrived?" data-hpd-smoke="fc-arrive">
           <b>📍 You&apos;re at {arrivePrompt.address}</b>
@@ -4831,7 +4916,7 @@ export default function FieldCommandClient() {
               }}>{armedTap === `handled:${critical.omo}` ? "✅ Tap again: it's handled (stops the reminders)" : "✓ I handled it"}</button>
             ) : null}
             <button type="button" data-hpd-smoke="fc-critical-snooze" onClick={() => { try { localStorage.setItem(snoozeKey(critical), String(Date.now() + 30 * 60000)); } catch { /* private mode */ } setCritical(null); }}>Snooze 30 min</button>
-            <small>{critical.rings < 5 ? "Rings again every 30 seconds until you choose." : "Still waiting for you."}</small>
+            <small>Stays here until you choose.</small>
           </div>
         </div>
       ) : null}

@@ -47,7 +47,7 @@ export function snippet(desc: string, query: string, len = 140) {
 // "three six one nine bedford" stays words (the phone writes numbers as digits itself).
 export function spokenSearch(heard: string) {
   let t = String(heard || "").trim().replace(/[.?!]+$/, "");
-  t = t.replace(/\b([a-z])\s*([a-z])\s*[- ]?\s*((?:\d\s*){5})\b/gi, (_, a: string, b: string, d: string) => `${a}${b}${d.replace(/\s/g, "")}`.toUpperCase());
+  t = t.replace(/\b([a-z])\s*([a-z])\s*[- ]?\s*((?:\d\s*){4}\d)\b/gi, (_, a: string, b: string, d: string) => `${a}${b}${d.replace(/\s/g, "")}`.toUpperCase());
   t = t.replace(/^(find|search( for)?|look( for)?|show( me)?)\s+(the\s+)?(job\s+)?(with\s+)?(the\s+)?/i, "");
   return t.trim();
 }

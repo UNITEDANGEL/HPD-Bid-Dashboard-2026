@@ -1,0 +1,58 @@
+// The app's voice helper (owner, 22 Oct: "I want you to be my personal agent for this app, I'm able to talk to you:
+// 'I finished this job' and you note it; give me the description, talk it out with me"). What was said -> what to
+// do. Anything that changes a job is only read back here; the app asks for a yes before saving it.
+
+import { spokenSearch } from "./job-search";
+
+export type AgentCommand =
+  | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string }
+  | { intent: "read-job"; ref: string }
+  | { intent: "bids" }
+  | { intent: "today" }
+  | { intent: "notices" }
+  | { intent: "yes" }
+  | { intent: "no" }
+  | { intent: "search"; text: string };
+
+const OUTCOMES: [RegExp, AgentCommand extends infer C ? C extends { intent: "outcome"; outcome: infer O } ? O : never : never][] = [
+  [/\b(completed by (others|someone else|another contractor)|someone else (did|fixed|finished) it|already (done|fixed) by)\b/i, "WORK_COMPLETED_BY_OTHERS"],
+  [/\b(partial(ly)?|part of (the|it)|half (done|finished))\b/i, "PARTIAL_WORK"],
+  [/\b(refus(ed|al|e)|wouldn'?t let (me|us) in|denied (access|entry)|turned (me|us) away)\b/i, "REFUSED_ACCESS"],
+  [/\b(no access|nobody (was )?(home|there)|no one (was )?(home|there)|couldn'?t get in|can'?t get in|no answer at the door)\b/i, "NO_ACCESS_1_WAITING_72H"],
+  [/\b(finish(ed)?|complete(d)?|done( with)?|wrapped up|all done)\b/i, "WORK_COMPLETED"],
+];
+
+// What's left after the command words: the job ("ER01987", "707 east 189", "this job" / "" for the one on screen).
+function refOf(text: string) {
+  const left = spokenSearch(text)
+    .replace(/\b(i|we|i'?ve|we'?ve|i'?m|just|have|has|the|a|an|at|on|for|of|with|job|work ?order|omo|number|is|was|it|this|that|one|please|mark|as|me|read|tell|about|what'?s|what is|describe|description|scope|finished|finish|completed|complete|done|wrapped|up|all|no|access|nobody|home|there|tenant|refused|refusal|wouldn'?t|let|in|denied|entry|partial(ly)?|part|half|couldn'?t|can'?t|get|by|others|someone|else|answer|door|today|now)\b/gi, " ")
+    .replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
+  // A job is named by its number or its address (addresses have numbers); anything else means the job on screen.
+  return /\d/.test(left) ? left : "";
+}
+
+export function parseCommand(heard: string): AgentCommand {
+  const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
+  const short = t.split(/\s+/).length <= 3;
+  if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
+  if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  if (/\b(bids?|invitations?)\b/.test(t) && /\b(read|new|what|any|tell|how many|list)\b/.test(t)) return { intent: "bids" };
+  if (/\b(what('?s| is| do i have)?|my|tell me).{0,20}\b(today|day|schedule|plan)\b/.test(t) || /^today\b/.test(t)) return { intent: "today" };
+  if (/\bnotices?\b/.test(t) && /\b(open|which|what|any|read|tell|overdue)\b/.test(t)) return { intent: "notices" };
+  if (/\b(read|describe|description|what('?s| is) (the|this) job|tell me about|scope)\b/.test(t)) return { intent: "read-job", ref: refOf(t) };
+  // A job outcome needs "I / we / job / work order / this", so a search like "completed jobs" stays a search.
+  if (/\b(i|we|i'?ve|we'?ve|job|work ?order|this|tenant|nobody|no one|someone|it)\b/.test(t) || /\bno access\b/.test(t) || /[a-z]{2}\s*\d{5}/.test(t)) for (const [re, outcome] of OUTCOMES) if (re.test(t)) return { intent: "outcome", outcome, ref: refOf(t) };
+  return { intent: "search", text: spokenSearch(heard) };
+}
+
+// Which of your jobs was meant: the job number, else every word in the address; "" = the job on screen.
+export function findJobRef<T>(ref: string, jobs: T[], idOf: (j: T) => string, addressOf: (j: T) => string): T | null | "many" {
+  const r = ref.trim();
+  if (!r) return null;
+  const omo = (r.toUpperCase().replace(/\s/g, "").match(/[A-Z]{2}\d{5}/) || [])[0];
+  if (omo) return jobs.find((j) => idOf(j).toUpperCase() === omo) || null;
+  const words = r.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+  if (!words.length) return null;
+  const hits = jobs.filter((j) => { const a = addressOf(j).toLowerCase().replace(/[^\w\s]/g, " "); return words.every((w) => a.includes(w)); });
+  return hits.length === 1 ? hits[0] : hits.length > 1 ? "many" : null;
+}

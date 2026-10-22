@@ -73,21 +73,17 @@ assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=
 assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1&omo=EQ12345", "a rejection opens that job");
 console.log("PASS phone alert finder: a different alert per kind: 💰 award (cha-ching), ⏱ notice, 📋 request (Gafur replied, Lewis status update), 💵 rejection (email + HPD notices), 📩 message, 🧾 invitation, ⏰ under 6 h; old ones left out; short hashes; rejections open the rejections");
 
-// Overdue notices remind again every 2 hours in working hours (21 Oct, ER01987).
+// An overdue notice alerts once, never again (owner, 22 Oct: "hear it once, then it says on screen; ER01987 keeps
+// repeating"): the same alert key at every hour, so the sender's memory stops a second one; no "o:" repeats.
 {
   const threads = [{ id: "od", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#ER01987", omos: ["ER01987"], kind: "past due", people: ["Joy-Ann Lewis"], messages: [{ at: "2026-10-16T19:58:35Z", mine: false, hpd: true, from: "Lewis, Joy-Ann (HPD)", subject: "72 HR", text: "Notice lewisj@hpd.nyc.gov" }] }];
   const at = (iso) => findAlerts({ conversations: { threads }, bids: [], sent: {}, requests: {}, now: Date.parse(iso), loadLib });
-  const tue6pm = await at("2026-10-21T22:00:00Z"); // Wed 6 PM NY, 2 h overdue
-  const over = tue6pm.filter((a) => a.key.startsWith("o:"));
-  assert.equal(over.length, 1);
-  assert.match(over[0].title, /^⏰ ER01987: notice overdue 2 h — answer now$/);
-  const later = (await at("2026-10-22T00:30:00Z")).filter((a) => a.key.startsWith("o:")); // 8:30 PM NY: no repeat at night
-  assert.equal(later.length, 0, "no reminders after 8 PM");
-  const nextDay = (await at("2026-10-22T13:00:00Z")).filter((a) => a.key.startsWith("o:")); // Thu 9 AM
-  assert.equal(nextDay.length, 1);
-  assert.notEqual(nextDay[0].key, over[0].key, "a new 2-hour slot is a new reminder");
+  const keys = [];
+  for (const iso of ["2026-10-21T22:00:00Z", "2026-10-22T13:00:00Z", "2026-10-22T17:00:00Z"]) keys.push((await at(iso)).filter((a) => /ER01987/.test(a.title) && a.kind === "urgent").map((a) => a.key));
+  assert.ok(keys.every((k) => k.length === 1 && !k[0].startsWith("o:")), `one urgent alert each time, no repeat reminders: ${JSON.stringify(keys)}`);
+  assert.equal(new Set(keys.map((k) => k[0])).size, 1, "the same key every time: sent once");
   assert.equal(workingHours(Date.parse("2026-10-24T15:00:00Z")), false, "Saturday");
-  console.log("PASS overdue reminders: ER01987 (72 h, due 10/21 3:58 PM) -> '⏰ notice overdue 2 h — answer now' every 2 hours, weekdays 8 AM-8 PM only, each slot its own alert");
+  console.log("PASS overdue notice: ER01987 alerts once (same key every hour, no 2-hour repeats)");
 }
 
 // ☀️ Morning briefing: once a weekday from 8 AM, the day in one alert.
@@ -190,4 +186,29 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(spokenSearch("Find the job with mini split"), "mini split");
   assert.equal(spokenSearch("search for 3619 Bedford Avenue"), "3619 Bedford Avenue");
   console.log("PASS voice search words: spelled job numbers join up (E R 0 8 2 8 3 -> ER08283), 'find the job with' is dropped");
+}
+
+// 🗣 The voice helper: what was said -> what to do (22 Oct).
+{
+  const { parseCommand, findJobRef } = await loadLib("voice-agent");
+  const p = (s) => parseCommand(s);
+  assert.deepEqual(p("I finished ER01987"), { intent: "outcome", outcome: "WORK_COMPLETED", ref: "ER01987" });
+  assert.deepEqual(p("Hey, I finished this job"), { intent: "outcome", outcome: "WORK_COMPLETED", ref: "" }, "this job = the one on screen");
+  assert.deepEqual(p("job E R 0 1 9 8 7 is done"), { intent: "outcome", outcome: "WORK_COMPLETED", ref: "ER01987" });
+  assert.deepEqual(p("no access at 707 east 189"), { intent: "outcome", outcome: "NO_ACCESS_1_WAITING_72H", ref: "707 east 189" });
+  assert.equal(p("the tenant refused").outcome, "REFUSED_ACCESS");
+  assert.equal(p("we did part of the job").outcome, "PARTIAL_WORK");
+  assert.equal(p("read me the new bids").intent, "bids");
+  assert.equal(p("what do I have today").intent, "today");
+  assert.equal(p("which notices are open").intent, "notices");
+  assert.deepEqual(p("read me this job"), { intent: "read-job", ref: "" });
+  assert.equal(p("yes").intent, "yes");
+  assert.equal(p("no").intent, "no");
+  assert.deepEqual(p("mini split"), { intent: "search", text: "mini split" }, "plain words stay a search");
+  assert.deepEqual(p("completed jobs"), { intent: "search", text: "completed jobs" });
+  const jobs = [{ id: "ER01987", a: "707 EAST 189 STREET, 10458" }, { id: "EQ1", a: "707 EAST 189 STREET, 10458" }, { id: "EQ2", a: "12 MAPLE ST" }];
+  assert.equal(findJobRef("ER01987", jobs, (j) => j.id, (j) => j.a).id, "ER01987");
+  assert.equal(findJobRef("12 maple", jobs, (j) => j.id, (j) => j.a).id, "EQ2");
+  assert.equal(findJobRef("707 east 189", jobs, (j) => j.id, (j) => j.a), "many", "two jobs at one address: ask for the number");
+  console.log("PASS voice helper words: finished / no access / refused / partial with the job number, an address or 'this job'; bids / today / notices / read the job; yes / no; plain words stay a search");
 }
