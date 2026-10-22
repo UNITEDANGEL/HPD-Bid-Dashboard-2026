@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cam Alert">
 <title>NYC Camera Alert</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <style>
   :root { --bg:#f6f7f9; --card:#fff; --ink:#14181f; --mute:#5b6573; --line:#dde1e7; --ok:#1f7a4d; --warn:#b26a00; --bad:#c0262d; --btn:#1a56db; }
   @media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1b2027; --ink:#eef1f5; --mute:#9aa4b2; --line:#2c333d; --ok:#4cc38a; --warn:#f0a93b; --bad:#ff6b70; --btn:#5b8def; } }
@@ -35,6 +36,11 @@
   ul { margin:6px 0 0; padding-left:18px; } li { margin:3px 0; font-size:14px; }
   li.error { color:var(--bad); } li.no-coords { color:var(--warn); }
   small { color:var(--mute); } .note { font-size:13px; color:var(--mute); }
+  #map { height:42vh; min-height:260px; border-radius:12px; border:1px solid var(--line); margin-top:12px; position:relative; z-index:0; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; color:var(--mute); margin:8px 2px 0; align-items:center; }
+  .dot { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:5px; vertical-align:-1px; border:1.5px solid #fff; box-shadow:0 0 0 1px var(--line); }
+  .me-wrap { background:none; border:0; } .me { width:28px; height:28px; line-height:28px; text-align:center; font-size:26px; color:#1a56db; text-shadow:0 0 3px #fff, 0 0 3px #fff; }
+  #recenter { position:absolute; right:10px; bottom:10px; z-index:1000; padding:8px 12px; font-size:14px; }
   #simnote { color:var(--warn); font-weight:700; font-size:13px; }
 </style>
 </head>
@@ -44,6 +50,9 @@
   <p class="sub">Warns you as you approach speed and red-light cameras, based on your speed. Audio only — set it up before you drive.</p>
 
   <div id="status" class="status l0">Tap Start. Allow location when asked.</div>
+
+  <div style="position:relative"><div id="map"></div><button id="recenter" hidden>Recenter</button></div>
+  <div class="legend"><span><i class="dot" style="background:#d62839"></i>Red-light</span><span><i class="dot" style="background:#e0a100"></i>Speed</span><span><i class="dot" style="background:#7b3fe4"></i>License-plate</span><span><b style="color:#1a56db">▲</b> You</span></div>
 
   <div class="card row" style="margin-top:12px">
     <div><div class="big" id="speed">0</div><div class="unit">mph</div></div>
@@ -71,7 +80,7 @@
     <b>Data</b>
     <div id="count" class="note">Loading…</div>
     <ul id="report"></ul>
-    <div class="row" style="margin-top:10px"><button id="reload" class="sec">Reload data</button></div>
+    <div class="row" style="margin-top:10px"><button id="reload" class="sec">Reload data</button><button id="copyReport" class="sec">Copy report</button></div>
   </div>
 
   <div class="card">
@@ -85,6 +94,7 @@
 
   <p class="note">Camera data comes from OpenStreetMap and NYC Open Data and can be incomplete or out of date. This app can't see the signal color. It only warns you early enough to slow down smoothly. It never tells you to run a light. Obey all signs and signals, and don't handle your phone while driving.</p>
 </main>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="logic.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
