@@ -1,4 +1,5 @@
 "use client";
+import { nowMs, useNow } from "../lib/use-now";
 
 // Payments from the City (PIP, NYC Payee Information Portal exports): checks never cashed (stale-dated,
 // the City still owes them), payments sent but not yet marked paid, and what was paid by month.
@@ -13,9 +14,10 @@ type Data = {
 
 const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const day = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(2, 4)}` : "");
-const daysAgo = (d: string) => Math.round((Date.now() - Date.parse(`${d}T12:00:00`)) / 86400000);
+const daysAgo = (d: string) => Math.round((nowMs() - Date.parse(`${d}T12:00:00`)) / 86400000);
 
 export default function PaymentsView() {
+  useNow();
   const [data, setData] = useState<Data | null>(null);
   useEffect(() => { fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then(setData).catch(() => setData(null)); }, []);
   if (!data) return <main className="home"><p>Loading payments…</p></main>;

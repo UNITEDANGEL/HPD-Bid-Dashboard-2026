@@ -56,6 +56,7 @@ import SentPaperworkLink from "./SentPaperwork";
 import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow } from "./JobsList";
 import FindJob from "./FindJob";
+import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
@@ -1170,6 +1171,31 @@ export default function FieldCommandClient() {
   const [search, setSearch] = useState("");
   // Find any job by a few words (22 Oct): the list under the search box; ✕ hides it until the words change.
   const [findHidden, setFindHidden] = useState("");
+  // 🎤 Say it instead of typing (22 Oct): "mini split", "Bedford Avenue", "E R 0 8 2 8 3". Recent searches as chips.
+  const [canListen, setCanListen] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [searchFocus, setSearchFocus] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
+  const listenRef = useRef<{ stop: () => void } | null>(null);
+  useEffect(() => { setCanListen(typeof window !== "undefined" && !!((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)); setRecent(recentSearches()); }, []);
+  useEffect(() => { if (search.trim().length < 3) return; const t = window.setTimeout(() => { rememberSearch(search); setRecent(recentSearches()); }, 2500); return () => window.clearTimeout(t); }, [search]);
+  const listen = () => {
+    if (listening) { listenRef.current?.stop(); return; }
+    type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
+    const W = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
+    const Ctor = W.SpeechRecognition || W.webkitSpeechRecognition;
+    if (!Ctor) return;
+    try {
+      const rec = new Ctor();
+      rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
+      rec.onresult = (e) => { const said = Array.from(e.results).map((r) => r[0].transcript).join(" "); setFindHidden(""); setSearch(spokenSearch(said)); };
+      rec.onend = () => { setListening(false); listenRef.current = null; };
+      rec.onerror = () => { setListening(false); listenRef.current = null; };
+      listenRef.current = rec;
+      setListening(true);
+      rec.start();
+    } catch { setListening(false); }
+  };
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [currentJob,setCurrentJob] = useState<CurrentJob|null>(null);
   const currentJobRef=useRef<CurrentJob|null>(null);
@@ -3176,7 +3202,9 @@ export default function FieldCommandClient() {
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Job #, address or a few words" aria-label="Search jobs" data-hpd-smoke="fc-search" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} onFocus={() => setSearchFocus(true)} onBlur={() => window.setTimeout(() => setSearchFocus(false), 250)} placeholder={listening ? "Listening… say the job" : "Job #, address or a few words"} aria-label="Search jobs" data-hpd-smoke="fc-search" />
+          {search ? <button type="button" className="fc-search-clear" aria-label="Clear search" data-hpd-smoke="fc-search-clear" onClick={() => { setSearch(""); setFindHidden(""); }}>✕</button> : null}
+          {canListen ? <button type="button" className={`fc-search-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Search by voice"} aria-pressed={listening} data-hpd-smoke="fc-search-mic" onClick={listen}>🎤</button> : null}
         </div>
         <button type="button" className={`fc-filter-btn ${filtersOpen ? "is-open" : ""}`} data-hpd-smoke="fc-filter-button" aria-label="Filters" aria-expanded={filtersOpen} aria-controls="fc-quick-filters" onClick={() => { setFiltersOpen((open) => !open); setChromeOpen(false); }}>
           <FilterIcon />
@@ -3188,6 +3216,12 @@ export default function FieldCommandClient() {
           {notifUnread ? <span key={notifUnread} className="fc-filter-badge fc-notif-badge hpd-pop" data-hpd-smoke="fc-notif-count">{notifUnread}</span> : null}
         </button>
       </div>
+      {searchFocus && !search && recent.length && !selectedJob ? (
+        <div className="fc-recent" data-hpd-smoke="fc-recent">
+          <small>Recent</small>
+          {recent.map((r) => <button key={r} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFindHidden(""); setSearch(r); }}>{r}</button>)}
+        </div>
+      ) : null}
       {search.trim().length >= 3 && findHidden !== search && !selectedJob ? (
         <FindJob query={search.trim()} onClose={() => setFindHidden(search)} onOpen={(item) => {
           const job = findAnyJob(item.omo);

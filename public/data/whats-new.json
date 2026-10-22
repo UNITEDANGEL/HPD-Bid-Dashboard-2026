@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Say it to search",
+      "items": [
+        "🎤 Tap the mic in the search box and say the job: \"mini split\", \"Bedford Avenue\", or the job number letter by letter (\"E R 0 8 2 8 3\"). The matching jobs show right away.",
+        "Your last searches show as chips when you tap the empty search box; ✕ clears the search.",
+        "Fixed: the Jobs, Alerts, Invoice and Payments pages no longer flash / redraw when the day changes after an update."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Find any job · Save and Send by the price · voice catch-up",
       "items": [
         "🔍 Type a job number, part of an address, or a few words from the job (\"mini split\", \"fire escape ladder\", \"boiler\") in the map's search box: every matching job shows (yours, open bids, past invitations, HPD's awards) with the words that matched. Tap one of yours to open its card; an open bid opens the bid; anything else shows HPD's description, the 📍 map and the 📄 invitation.",

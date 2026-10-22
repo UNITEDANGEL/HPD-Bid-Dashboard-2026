@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { nowMs, useNow } from "../lib/use-now";
 import { useEffect, useMemo, useState } from "react";
 import FieldTabBar from "./FieldTabBar";
 import PhoneAlerts from "./PhoneAlerts";
@@ -42,7 +43,7 @@ function jobAgeDays(job: JobRecord) {
   if (!job.awardDate) return null;
   const date = parseUsDate(job.awardDate);
   if (!date) return null;
-  const diffMs = Date.now() - date.getTime();
+  const diffMs = nowMs() - date.getTime(); // the build's time on the first draw (no #418), then the real time
   return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
@@ -62,6 +63,7 @@ export function overdueJobs(jobs: JobRecord[]) {
 }
 
 export function MobileAlertsBoard({ jobs: sourceJobs }: { jobs: JobRecord[] }) {
+  useNow();
   const [jobs, setJobs] = useState(sourceJobs);
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
 

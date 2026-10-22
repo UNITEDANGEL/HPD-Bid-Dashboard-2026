@@ -179,3 +179,13 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(say({ kind: "message", title: "📩 Joy-Ann Lewis wrote · ER06498", omo: "ER06498", who: "Joy-Ann Lewis", text: "Kindly provide a status update on OMO#ER06498" }), /^Email from Lewis, work order E R 0 6 4 9 8\. Kindly provide a status update on work order E R 0 6 4 9 8$/);
   console.log(`PASS voice + summary: Gafur's list -> "Missing documents for 3 work orders: EP27489 affidavit and invoice…"; "Received." / status update / incomplete invoice / 24-hour notice summarized; spoken: award, invitation, urgent notice, request, message with work orders read letter by letter`);
 }
+
+// 🎤 What the phone heard -> the search (22 Oct).
+{
+  const { spokenSearch } = await loadLib("job-search");
+  assert.equal(spokenSearch("E R 0 8 2 8 3"), "ER08283");
+  assert.equal(spokenSearch("er 08283."), "ER08283");
+  assert.equal(spokenSearch("Find the job with mini split"), "mini split");
+  assert.equal(spokenSearch("search for 3619 Bedford Avenue"), "3619 Bedford Avenue");
+  console.log("PASS voice search words: spelled job numbers join up (E R 0 8 2 8 3 -> ER08283), 'find the job with' is dropped");
+}

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { nowMs, useNow } from "../../lib/use-now";
 import {
   PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
@@ -34,13 +35,14 @@ function asArray(value: unknown): JobRecord[] {
 }
 
 export default function InvoiceGeneratorPage() {
+  useNow();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [queryJobId, setQueryJobId] = useState("");
   const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [form, setForm] = useState({
-    invoiceNo: defaultPaperworkInvoiceNo(),
+    invoiceNo: defaultPaperworkInvoiceNo("", nowMs()), // build day on the first draw (no #418), today right after
     customer: "HPD / OMO",
     jobId: "",
     address: "",
@@ -48,6 +50,8 @@ export default function InvoiceGeneratorPage() {
     amount: "",
     sourceStatus: "",
   });
+
+  useEffect(() => { setForm((f) => (f.invoiceNo === defaultPaperworkInvoiceNo("", nowMs()) || /^INV-\d{8}$/.test(f.invoiceNo) ? { ...f, invoiceNo: defaultPaperworkInvoiceNo() } : f)); }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -450,7 +454,7 @@ export default function InvoiceGeneratorPage() {
               </div>
               <div style={{ textAlign: "right" }}>
                 <strong>{form.invoiceNo}</strong>
-                <p>{new Date().toLocaleDateString()}</p>
+                <p>{new Date(nowMs()).toLocaleDateString("en-US", { timeZone: "America/New_York" })}</p>
               </div>
             </div>
 

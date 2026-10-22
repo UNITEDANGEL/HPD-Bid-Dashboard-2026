@@ -320,10 +320,10 @@ export function isNoWorkOutcome(outcome: PaperworkOutcome) {
   return outcome === "no_access" || outcome === "refused_access" || outcome === "completed_by_others";
 }
 
-export function defaultPaperworkInvoiceNo(jobId = "") {
+export function defaultPaperworkInvoiceNo(jobId = "", at = Date.now()) {
   const trimmed = String(jobId || "").trim();
   if (trimmed) return trimmed;
-  const now = new Date();
+  const now = new Date(at);
   return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
 }
 

@@ -42,3 +42,23 @@ export function snippet(desc: string, query: string, len = 140) {
   const start = Math.max(0, at - 40);
   return (start ? "…" : "") + t.slice(start, start + len) + (start + len < t.length ? "…" : "");
 }
+
+// What the phone heard -> what to search (22 Oct, 🎤 voice search): "E R 0 8 2 8 3" / "er 08283" -> "ER08283",
+// "three six one nine bedford" stays words (the phone writes numbers as digits itself).
+export function spokenSearch(heard: string) {
+  let t = String(heard || "").trim().replace(/[.?!]+$/, "");
+  t = t.replace(/\b([a-z])\s*([a-z])\s*[- ]?\s*((?:\d\s*){5})\b/gi, (_, a: string, b: string, d: string) => `${a}${b}${d.replace(/\s/g, "")}`.toUpperCase());
+  t = t.replace(/^(find|search( for)?|look( for)?|show( me)?)\s+(the\s+)?(job\s+)?(with\s+)?(the\s+)?/i, "");
+  return t.trim();
+}
+
+// The last searches on this phone (chips under the search box).
+const RECENT = "hpd-recent-searches";
+export function recentSearches(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(RECENT) || "[]"); return Array.isArray(v) ? v.slice(0, 6) : []; } catch { return []; }
+}
+export function rememberSearch(q: string) {
+  const t = q.trim();
+  if (t.length < 3) return;
+  try { localStorage.setItem(RECENT, JSON.stringify([t, ...recentSearches().filter((x) => x.toLowerCase() !== t.toLowerCase())].slice(0, 6))); } catch { /* private mode */ }
+}

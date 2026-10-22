@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { nowMs, useNow } from "../lib/use-now";
 import { useState } from "react";
 import FieldTabBar from "./FieldTabBar";
 import "../app/field-command/field-command.css";
@@ -54,7 +55,7 @@ function jobAgeDays(job: JobRecord) {
   if (!job.awardDate) return null;
   const date = parseUsDate(job.awardDate);
   if (!date) return null;
-  const diffMs = Date.now() - date.getTime();
+  const diffMs = nowMs() - date.getTime(); // the build's time on the first draw (no #418), then the real time
   return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
@@ -70,6 +71,7 @@ function wazeHref(job: JobRecord) {
 }
 
 export function MobileJobDetail({ job }: { job: JobRecord }) {
+  useNow();
   const [rawOpen, setRawOpen] = useState(false);
   const meta = jobStatusMeta(job);
   const days = jobAgeDays(job);

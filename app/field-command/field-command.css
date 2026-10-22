@@ -3354,3 +3354,12 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-missed { position: absolute; z-index: 1450; left: 12px; right: 84px; bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); display: flex; gap: 6px; }
 .fc-missed-play { flex: 1 1 auto; min-height: 54px; border-radius: 16px; border: 2px solid #22c55e; background: #052e16f2; color: #fff; font: 900 17px system-ui, sans-serif; box-shadow: 0 8px 20px #0008; }
 .fc-missed-x { min-width: 54px; border-radius: 16px; border: 0; background: #1e293bf2; color: #fff; font: 900 18px system-ui; }
+
+/* 🎤 voice search, clear, recent searches (22 Oct). */
+.fc-search-field { position: relative; }
+.fc-search-clear, .fc-search-mic { flex: 0 0 auto; min-width: 38px; min-height: 38px; margin-left: 2px; border: 0; border-radius: 50%; background: transparent; color: #475569; font: 800 16px system-ui; }
+.fc-search-mic { background: #e2e8f0; font-size: 18px; }
+.fc-search-mic.is-on { background: #ef4444; color: #fff; box-shadow: 0 0 0 4px #fecaca; }
+.fc-recent { position: absolute; z-index: 2100; top: calc(max(12px, env(safe-area-inset-top)) + 118px); left: 12px; right: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px; border-radius: 14px; background: #0b1220f2; box-shadow: 0 10px 24px #0009; }
+.fc-recent small { width: 100%; color: #94a3b8; font: 800 12px system-ui, sans-serif; }
+.fc-recent button { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 14px system-ui, sans-serif; }

@@ -12,6 +12,13 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(c);
+  // A stand-in for the phone's speech recognition: it "hears" one sentence.
+  await c.addInitScript(() => {
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() { setTimeout(() => { this.onresult?.({ results: [Object.assign([{ transcript: "find the job with mini split" }], { isFinal: true })] }); this.onend?.(); }, 200); }
+      stop() { this.onend?.(); }
+    };
+  });
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const page = await c.newPage();
   const errors = [];
@@ -57,6 +64,22 @@ try {
   assert.match(await page.locator("#fc-job-card").innerText(), new RegExp(mine.omo));
   assert.equal(await find.count(), 0, "the list steps aside for the card");
   await page.locator(".fc-job-sheet-close").click();
+
+  // 🎤 Say it: the phone's speech recognition (faked here) hears "find the job with mini split".
+  await box.fill("");
+  await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-search"]')?.value === "mini split", null, { timeout: 5000 });
+  await rows.filter({ hasText: "ER08283" }).first().waitFor({ timeout: 20000 });
+  // Recent searches: tap the empty box -> chips; a chip searches again.
+  await page.waitForTimeout(2700);
+  await page.locator('[data-hpd-smoke="fc-search-clear"]').click();
+  await box.focus();
+  const recent = page.locator('[data-hpd-smoke="fc-recent"]');
+  await recent.waitFor({ timeout: 5000 });
+  assert.match(await recent.innerText(), /mini split/);
+  if (shots) await page.screenshot({ path: `${shots}/find-recent.png` });
+  await recent.locator("button", { hasText: "mini split" }).first().click();
+  assert.equal(await box.inputValue(), "mini split");
 
   // ✕ hides it until the words change.
   await box.fill("boiler");
