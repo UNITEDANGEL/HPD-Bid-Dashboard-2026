@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Board says when you are signed out",
+      "items": [
+        "🔒 When the Google sign-in on the phone runs out, the vendor tracking board says \"Your HPD emails didn't open\" with a Sign in with Google button (it brings you back to the board), instead of showing 0 everywhere."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Talk to the app",
       "items": [
         "🎤 The mic in the search box is your helper now. Say a search (\"mini split\") and it searches; say what happened and it answers out loud:",

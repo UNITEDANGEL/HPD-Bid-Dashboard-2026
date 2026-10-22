@@ -22,6 +22,7 @@ type Props = {
   findingsOf?: (row: BoardRow) => NoticeFindings; // what the app already has for the job (a head start)
   onScan?: () => void;                              // "Check my emails now"
   scanStatus?: string;
+  locked?: boolean; // your HPD emails couldn't be opened (signed out): say so instead of showing zeros
   scanChanged?: { omo: string; now: string }[];     // notices the check just updated
 };
 
@@ -39,7 +40,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -319,7 +320,13 @@ export default function NoticeBoard({ focusOmo = "", rows, addressOf, hasJob, on
           <span className={shown.some((r) => noAnswer.includes(r)) ? "is-quiet" : ""}><b>{waiting}</b> waiting on them{shown.some((r) => noAnswer.includes(r)) ? <small data-hpd-smoke="fc-board-quiet-count">⏰ {shown.filter((r) => noAnswer.includes(r)).length} no answer</small> : null}</span>
         </div>
         <p className="fc-follow-note">Each notice and missing-documents request from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p>
-        {!rows.length ? <p className="fc-follow-note">Nothing from vendor tracking here right now. 🎉</p> : null}
+        {locked ? (
+          <form className="fc-board-locked" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1%26board%3D1" data-hpd-smoke="fc-board-locked">
+            <b>🔒 Your HPD emails didn&apos;t open on this phone</b>
+            <span>The Google sign-in ran out. Sign in again and the notices, Gafur&apos;s lists and your replies come back here.</span>
+            <button type="submit">Sign in with Google</button>
+          </form>
+        ) : !rows.length ? <p className="fc-follow-note">Nothing from vendor tracking here right now. 🎉</p> : null}
         {batch ? (
           <section className="fc-batch" data-hpd-smoke="fc-batch">
             <div className="fc-batch-head">

@@ -1836,7 +1836,8 @@ export default function FieldCommandClient() {
         const fresh = await reloadConversations();
         if (fresh) { setThreads(fresh.threads); setThreadsAt((fresh as { generatedAt?: string }).generatedAt || ""); }
         const at = (fresh as { generatedAt?: string } | null)?.generatedAt;
-        setScanStatus(`✓ Up to date with your email${at ? ` as of ${new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""} (the app reads it every 10 minutes).`);
+        // Nothing came back: signed out, not "up to date" (owner, 22 Oct: "why 0 all").
+        setScanStatus(fresh ? `✓ Up to date with your email${at ? ` as of ${new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""} (the app reads it every 10 minutes).` : "🔒 Couldn't open your HPD emails: sign in with Google again (below).");
         return;
       }
       setScan(d);
@@ -4934,6 +4935,7 @@ export default function FieldCommandClient() {
       ) : null}
       {boardOpen ? (
         <NoticeBoard
+          locked={threads === null}
           focusOmo={boardFocus}
           rows={boardRows}
           initialShow={boardShow}

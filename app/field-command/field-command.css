@@ -3389,3 +3389,9 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-agent div { display: flex; flex-wrap: wrap; gap: 8px; }
 .fc-agent button { min-height: 46px; padding: 0 14px; border-radius: 12px; border: 0; background: #1f2937; color: #fff; font: 900 15px system-ui, sans-serif; }
 .fc-agent button.is-yes { background: #16a34a; flex: 1 1 auto; }
+
+/* Signed out: the board says so (22 Oct). */
+.fc-board-locked { display: grid; gap: 8px; margin: 10px 0; padding: 14px; border-radius: 14px; background: #451a03; border: 2px solid #f59e0b; color: #fef3c7; }
+.fc-board-locked b { font: 900 16px system-ui, sans-serif; }
+.fc-board-locked span { font: 700 14px/1.4 system-ui, sans-serif; }
+.fc-board-locked button { min-height: 50px; border-radius: 12px; border: 0; background: #f59e0b; color: #111827; font: 900 16px system-ui, sans-serif; }
