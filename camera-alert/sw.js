@@ -1,5 +1,5 @@
 var CACHE = 'camalert-shell-v1';
-var SHELL = ['./', 'index.html', 'logic.js', 'data.js', 'app.js', 'manifest.webmanifest'];
+var SHELL = ['./', 'index.html', 'logic.js', 'data.js', 'app.js', 'manifest.webmanifest', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }));
