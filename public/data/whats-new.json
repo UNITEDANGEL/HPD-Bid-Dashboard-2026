@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Find any job · Save and Send by the price · voice catch-up",
+      "items": [
+        "🔍 Type a job number, part of an address, or a few words from the job (\"mini split\", \"fire escape ladder\", \"boiler\") in the map's search box: every matching job shows (yours, open bids, past invitations, HPD's awards) with the words that matched. Tap one of yours to open its card; an open bid opens the bid; anything else shows HPD's description, the 📍 map and the 📄 invitation.",
+        "🧾 Bids: the price, 💾 Save and 📠 Send sit together at the bottom of the bid screen, always in reach. Send still takes two taps; the package fills itself after Save.",
+        "🔊 Alerts that came while the phone was locked: open the app and tap \"Play N new alerts\" to hear them (iPhone only speaks after a tap)."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Alerts that talk",
       "items": [
         "🗣 While the app is open, every alert plays its tone and then says what it is: \"Urgent email. 24-hour notice from Lewis, work order E Q 3 1 3 6 4. They want the affidavit and invoice.\", \"New invitation to bid…\", \"Confirmation of award! You won…\", \"Request from Gafur, requesting documents…\".",

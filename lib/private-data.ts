@@ -71,3 +71,16 @@ export function loadConversations(fetcher: typeof fetch = fetch) {
   }
   return convPending;
 }
+
+// Find any job (22 Oct): every job, invitation and award with its address and HPD's description (signed in only).
+let searchPending: Promise<{ items: import("./job-search").SearchItem[] } | null> | null = null;
+export function loadSearchIndex(fetcher: typeof fetch = fetch) {
+  if (!searchPending) {
+    searchPending = fetcher("/api/private/search", { cache: "no-store", credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => (d && Array.isArray(d.items) ? { items: d.items } : null))
+      .catch(() => null);
+    void searchPending.then((d) => { if (!d) searchPending = null; }); // not signed in yet: try again next time
+  }
+  return searchPending;
+}

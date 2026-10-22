@@ -3328,3 +3328,29 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* Voice alerts switch (22 Oct). */
 .fc-push-voice { display: block; width: 100%; min-height: 48px; margin: 4px 0 6px; border-radius: 12px; border: 2px solid #475569; background: #0f172a; color: #e2e8f0; font: 900 15px system-ui, sans-serif; }
 .fc-push-voice.is-on { border-color: #22c55e; background: #052e16; color: #dcfce7; }
+
+/* Find any job (22 Oct): results under the search box. */
+.fc-find { position: absolute; z-index: 1500; top: calc(max(12px, env(safe-area-inset-top)) + 62px); left: 12px; right: 12px; max-height: 62dvh; display: flex; flex-direction: column; border-radius: 16px; background: #0b1220f7; border: 1px solid #334155; box-shadow: 0 12px 30px #000a; color: #e2e8f0; overflow: hidden; }
+.fc-find header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #1e293b; font: 800 15px system-ui, sans-serif; }
+.fc-find header button { min-width: 40px; min-height: 40px; border-radius: 10px; border: 0; background: #1e293b; color: #fff; font: 900 16px system-ui; }
+.fc-find ol { list-style: none; margin: 0; padding: 6px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: grid; gap: 6px; }
+.fc-find li > button { width: 100%; display: grid; gap: 3px; padding: 10px 12px; border-radius: 12px; border: 1px solid #1e293b; background: #0f172a; color: inherit; text-align: left; }
+.fc-find li.is-open > button { border-color: #3b82f6; }
+.fc-find-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fc-find-top b { font: 900 16px system-ui, sans-serif; color: #fff; }
+.fc-find-top em { font: 800 11px system-ui, sans-serif; font-style: normal; padding: 2px 7px; border-radius: 999px; background: #334155; }
+.fc-find-top em.is-yours { background: #166534; } .fc-find-top em.is-bid { background: #b45309; } .fc-find-top em.is-award { background: #475569; } .fc-find-top em.is-inv { background: #1e3a8a; }
+.fc-find-top small { margin-left: auto; color: #94a3b8; font: 700 12px system-ui, sans-serif; }
+.fc-find-addr { font: 800 14px system-ui, sans-serif; color: #e2e8f0; }
+.fc-find-desc { font: 600 12.5px/1.35 system-ui, sans-serif; color: #94a3b8; }
+.fc-find-none { margin: 0; padding: 12px; color: #cbd5e1; font: 600 14px system-ui, sans-serif; }
+.fc-find-more { padding: 8px 12px 10px; font: 600 13px/1.4 system-ui, sans-serif; }
+.fc-find-more p { margin: 0 0 6px; }
+.fc-find-full { color: #cbd5e1; max-height: 160px; overflow-y: auto; }
+.fc-find-links { display: flex; gap: 8px; }
+.fc-find-links a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 10px; background: #2563eb; color: #fff; font: 900 14px system-ui, sans-serif; text-decoration: none; }
+
+/* Alerts that came while the app was closed: read them out (22 Oct). */
+.fc-missed { position: absolute; z-index: 1450; left: 12px; right: 84px; bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); display: flex; gap: 6px; }
+.fc-missed-play { flex: 1 1 auto; min-height: 54px; border-radius: 16px; border: 2px solid #22c55e; background: #052e16f2; color: #fff; font: 900 17px system-ui, sans-serif; box-shadow: 0 8px 20px #0008; }
+.fc-missed-x { min-width: 54px; border-radius: 16px; border: 0; background: #1e293bf2; color: #fff; font: 900 18px system-ui; }

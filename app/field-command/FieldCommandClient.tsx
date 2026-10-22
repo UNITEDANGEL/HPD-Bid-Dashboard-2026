@@ -49,13 +49,15 @@ import { buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardStep } fr
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
-import { summarizeHpd } from "../../lib/alert-summary";
+import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
+import { speak, voiceOff } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow } from "./JobsList";
+import FindJob from "./FindJob";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
-import { ALERT_KINDS, emailKind, emailTitle, type AlertKind } from "../../lib/alert-kinds";
+import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
@@ -1166,6 +1168,8 @@ export default function FieldCommandClient() {
     try { localStorage.setItem("hpd-map-date-range-v2", JSON.stringify(dateRange)); } catch { /* Filtering still works without storage. */ }
   }, [dateRange, dateFilterLoaded]);
   const [search, setSearch] = useState("");
+  // Find any job by a few words (22 Oct): the list under the search box; ✕ hides it until the words change.
+  const [findHidden, setFindHidden] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [currentJob,setCurrentJob] = useState<CurrentJob|null>(null);
   const currentJobRef=useRef<CurrentJob|null>(null);
@@ -1716,6 +1720,32 @@ export default function FieldCommandClient() {
   const [bidsFocus, setBidsFocus] = useState("");
   // Phone alerts by themselves (21 Oct): registered on every open; "Allow alerts" only if the iPhone never allowed them.
   const [allowAlerts, setAllowAlerts] = useState("");
+  // Alerts that came while the app was closed (22 Oct, voice alerts): a locked iPhone can't speak, so the app offers to
+  // read them out on one tap when it opens (the phone keeps them: public/sw.js "/missed"). They go in 🔔 too.
+  type Missed = { title: string; body: string; kind: string; url: string; at: string };
+  const [missed, setMissed] = useState<Missed[]>([]);
+  const missedLogged = useRef(new Set<string>());
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState !== "visible" || typeof caches === "undefined") return;
+      void caches.open("hpd-badge").then((c) => c.match("/missed")).then((r) => (r ? r.json() : [])).then((list: Missed[]) => {
+        if (!Array.isArray(list) || !list.length) return;
+        for (const m of list) if (!missedLogged.current.has(m.at)) { missedLogged.current.add(m.at); addToLog({ kind: kindOf(m.kind), title: m.title, text: m.body }); }
+        setMissed(list);
+      }).catch(() => {});
+    };
+    check();
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, []);
+  const clearMissed = () => { setMissed([]); void caches.open("hpd-badge").then((c) => c.delete("/missed")).catch(() => {}); };
+  const playMissed = () => {
+    unlockChime();
+    const n = missed.length;
+    const list = missed.slice(-6);
+    speak(`${n === 1 ? "One new alert" : `${n} new alerts`}. ${list.map((m, i) => `${list.length > 1 ? `${i + 1}. ` : ""}${spokenAlert({ kind: kindOf(m.kind), title: m.title, text: m.body })}`).join(" ")}`, 150);
+    clearMissed();
+  };
   useEffect(() => {
     if (navigator.webdriver) return; // test browsers: the Alerts page tests this
     void import("../../lib/push").then(async ({ autoRegisterPush, isHomeScreenApp }) => {
@@ -2415,6 +2445,8 @@ export default function FieldCommandClient() {
           // Back to All: return to you, never to a fixed point in the city.
           const me = lastPositionRef.current;
           if (me) { followMeRef.current = true; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 15)); }
+          // No location (not allowed / no signal): show all the jobs instead of staying zoomed on the last one.
+          else map.fitBounds(points.map((p) => [p.lat, p.lng]) as [number, number][], { padding: [40, 40], maxZoom: 15 });
         } else if (points.length > 1) {
           const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
           if (followFilter === "notices") map.fitBounds(bounds, { paddingTopLeft: [16, 150], paddingBottomRight: [84, noticeMiniRef.current ? 110 : 360], maxZoom: 15 });
@@ -3144,7 +3176,7 @@ export default function FieldCommandClient() {
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Job #, address or a few words" aria-label="Search jobs" data-hpd-smoke="fc-search" />
         </div>
         <button type="button" className={`fc-filter-btn ${filtersOpen ? "is-open" : ""}`} data-hpd-smoke="fc-filter-button" aria-label="Filters" aria-expanded={filtersOpen} aria-controls="fc-quick-filters" onClick={() => { setFiltersOpen((open) => !open); setChromeOpen(false); }}>
           <FilterIcon />
@@ -3156,6 +3188,14 @@ export default function FieldCommandClient() {
           {notifUnread ? <span key={notifUnread} className="fc-filter-badge fc-notif-badge hpd-pop" data-hpd-smoke="fc-notif-count">{notifUnread}</span> : null}
         </button>
       </div>
+      {search.trim().length >= 3 && findHidden !== search && !selectedJob ? (
+        <FindJob query={search.trim()} onClose={() => setFindHidden(search)} onOpen={(item) => {
+          const job = findAnyJob(item.omo);
+          if (job) { setFindHidden(search); openIssueJob(job); return true; }
+          if (item.kinds.includes("bid")) { setFindHidden(search); goTo("bids", item.omo); return true; }
+          return false; // not one of yours: the list shows its details
+        }} />
+      ) : null}
       {!selectedJob && !filtersOpen ? (
         <nav className="fc-borough-bar" data-hpd-smoke="fc-borough-bar" aria-label="Borough and date">
           <div className="fc-bar-boroughs">
@@ -3321,7 +3361,7 @@ export default function FieldCommandClient() {
             if (!raw) setDaysBack(null);
             else if (event.target.validity.valid) setDaysBack(Number(raw));
           }} /> : null}
-          <output aria-live="polite">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
+          <output aria-live="polite" data-hpd-smoke="fc-job-count">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
           </div>
           <div className="fc-date-picker">
             <label>Date type<select aria-label="Date type" value={dateRange.field} onChange={(e) => setDateRange({ ...dateRange, preset: false, field: e.target.value as JobDateField })}>
@@ -4660,6 +4700,12 @@ export default function FieldCommandClient() {
           </button>
         );
       })()}
+      {missed.length && !voiceOff() ? (
+        <div className="fc-missed" role="status" data-hpd-smoke="fc-missed">
+          <button type="button" className="fc-missed-play" data-hpd-smoke="fc-missed-play" onClick={playMissed}>🔊 Play {missed.length} new alert{missed.length === 1 ? "" : "s"}</button>
+          <button type="button" className="fc-missed-x" aria-label="Not now" data-hpd-smoke="fc-missed-dismiss" onClick={clearMissed}>✕</button>
+        </div>
+      ) : null}
       {allowAlerts ? (
         <div className="fc-allow-alerts" role="dialog" aria-label="Allow alerts" data-hpd-smoke="fc-allow-alerts">
           <b>🔔 Get alerts on this phone</b>

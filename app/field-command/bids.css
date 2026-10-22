@@ -779,3 +779,20 @@ i.is-won { background: #16a34a; }
 .fc-bid-pin.is-alert, .fc-bid-pin.is-alert .fc-bid-in, .fc-bid-pin.is-fax-failed .fc-bid-in, .fc-bid-pin.is-pending .fc-bid-in { animation: none !important; }
 .fc-bid-pin.is-alert .fc-bid-in, .fc-bid-pin.is-fax-failed .fc-bid-in { box-shadow: 0 0 0 4px #ef4444, 0 5px 12px #0f172a77 !important; }
 .fc-bid-pin.is-pending .fc-bid-in { box-shadow: 0 0 0 4px #3b82f6, 0 5px 12px #0f172a77 !important; }
+
+/* Price, Save and Send pinned to the bottom of the bid sheet (owner, 22 Oct: "too many scrolls"). */
+.fc-bid-quick { flex: 0 0 auto; display: grid; grid-template-columns: minmax(112px, 1fr) auto minmax(96px, 1.2fr); gap: 8px; align-items: center; padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px); border-top: 1px solid #334155; background: #0b1220; box-shadow: 0 -6px 16px #0007; }
+.fc-bid-quick-price { display: flex; align-items: center; gap: 4px; min-height: 52px; padding: 0 10px; border-radius: 12px; border: 2px solid #f59e0b; background: #0f172a; }
+.fc-bid-quick-price span { color: #fbbf24; font: 900 20px system-ui; }
+.fc-bid-quick-price input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #fff; font: 900 22px system-ui; }
+.fc-bid-quick button { min-height: 52px; padding: 4px 12px; border-radius: 12px; border: 0; color: #fff; font: 900 15px/1.15 system-ui; white-space: normal; }
+.fc-bid-quick-save { background: #2563eb; }
+.fc-bid-quick-save.is-done { background: #166534; }
+.fc-bid-quick-send { background: #ea580c; }
+.fc-bid-quick button:disabled { opacity: 0.45; }
+.fc-bid-quick button.is-armed { background: #16a34a; box-shadow: 0 0 0 3px #bbf7d0; }
+.fc-bid-quick-status { grid-column: 1 / -1; margin: 0; padding: 12px; border-radius: 12px; background: #172554; color: #e0f2fe; font: 800 15px system-ui; display: flex; align-items: center; gap: 8px; }
+.fc-bid-quick-status.is-confirmed { background: #052e16; color: #dcfce7; }
+.fc-bid-quick-status.is-failed { background: #450a0a; color: #fecaca; }
+.fc-bid-quick-warn { grid-column: 1 / -1; color: #fca5a5; font: 700 13px system-ui; }
+.fc-bid-body { padding-bottom: 16px; }

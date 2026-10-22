@@ -1,0 +1,45 @@
+// Price, Save and Send pinned at the bottom of the bid sheet (owner, 22 Oct: "too many scrolls; when I enter the bid
+// price, Save and Send should be right next to it"), at iPhone size on real bids: the bar sits at the bottom, its
+// price is the same as the main box, Save then the package fills by itself, Send takes two taps and faxes once.
+import assert from "node:assert/strict";
+import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
+const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+const out = process.env.SHOTS || "";
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+await routePrivate(c);
+await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
+let faxed = 0;
+await c.route(/\/api\/drive\/fax-bid/, (r) => { faxed++; return r.fulfill({ json: { sent: true, to: "x@humblefax.com", messageId: "m1", sentAt: new Date().toISOString() } }); });
+await c.route(/\/api\/drive\/fax-status/, (r) => r.fulfill({ json: { status: "waiting" } }));
+const page = await c.newPage();
+const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load", timeout: 180000 });
+await openBidList(page);
+await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child').first().click();
+const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
+const bar = sheet.locator('[data-hpd-smoke="fc-bid-quick"]');
+await bar.waitFor();
+const vb = await bar.boundingBox(); assert.ok(vb.y + vb.height >= 840 && vb.y > 600, "bar pinned at the bottom");
+if (out) await page.screenshot({ path: `${out}/bidbar-1.png` });
+await bar.locator('[data-hpd-smoke="fc-bid-quick-price"]').fill("500");
+assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').inputValue(), "500", "same price as the main box");
+await bar.locator('[data-hpd-smoke="fc-bid-quick-save"]').click();
+if (await bar.locator('[data-hpd-smoke="fc-bid-quick-warn"]').count()) await bar.locator('[data-hpd-smoke="fc-bid-quick-save"]').click();
+await page.waitForFunction(() => /Send/.test(document.querySelector('[data-hpd-smoke="fc-bid-quick-send"]')?.textContent || "") && !document.querySelector('[data-hpd-smoke="fc-bid-quick-send"]').disabled, null, { timeout: 60000 });
+assert.match(await bar.innerText(), /✓ Saved/);
+await bar.locator('[data-hpd-smoke="fc-bid-quick-send"]').click();
+assert.match(await bar.locator('[data-hpd-smoke="fc-bid-quick-send"]').innerText(), /Tap again: send \$500\.00/);
+assert.equal(faxed, 0, "first tap only asks");
+const pb = await bar.locator('[data-hpd-smoke="fc-bid-quick-price"]').boundingBox(); assert.ok(pb.width >= 60, "price box keeps its room");
+if (out) await page.screenshot({ path: `${out}/bidbar-2.png` });
+await bar.locator('[data-hpd-smoke="fc-bid-quick-send"]').click();
+await bar.locator('[data-hpd-smoke="fc-bid-quick-status"]').waitFor({ timeout: 30000 });
+assert.equal(faxed, 1, "second tap faxes once");
+assert.match(await bar.innerText(), /Sent \$500\.00/);
+if (out) await page.screenshot({ path: `${out}/bidbar-3.png` });
+assert.deepEqual(errors, []);
+console.log("PASS bid bar: price + Save + Send pinned at the bottom; same price as the main box; Save fills the package; Send asks once, faxes once, then shows the fax status");
+await browser.close();

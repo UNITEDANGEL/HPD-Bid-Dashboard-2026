@@ -60,8 +60,12 @@ const firstName = (who = "") => (who.replace(/\(.*?\)/g, "").trim().split(/\s+/)
 
 // The words said out loud for an alert.
 export function spokenAlert(n: { kind: string; title: string; text?: string; omo?: string; who?: string }) {
-  const omo = n.omo ? `work order ${n.omo}` : "";
-  const who = firstName(n.who) || ((/(from|·)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z-]+)*)\)?$/.exec(n.title) || [])[2] || "").split(" ").slice(-1)[0] || "";
+  // A phone alert has only its title: the work order and who sent it come from there ("📋 Deoranie Gafur asked for
+  // documents", "🧾 New invitation to bid · ER07749").
+  const omoId = n.omo || (/\b([A-Z]{2}\d{5})\b/.exec(n.title) || [])[1] || "";
+  const omo = omoId ? `work order ${omoId}` : "";
+  const named = (/(from|·)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z-]+)*)\)?$/.exec(n.title) || [])[2] || (/^[^A-Za-z]*([A-Z][a-z]+(?:[ -][A-Z][a-z-]+)+)\s+(asked|sent|replied|wrote|says)\b/.exec(n.title) || [])[1] || "";
+  const who = firstName(n.who) || named.split(" ").slice(-1)[0] || "";
   const text = n.text ? strip(n.text) : "";
   const title = strip(n.title);
   let words: string;

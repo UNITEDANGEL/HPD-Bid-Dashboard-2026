@@ -1262,6 +1262,35 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </section>
             ) : null}
           </div>
+          {/* Price, Save and Send always at hand at the bottom (owner, 22 Oct: "too many scrolls; when I enter the bid
+              price, Save and Send should be right next to it"). Same steps and the same two-tap send as below. */}
+          <div className="fc-bid-quick" data-hpd-smoke="fc-bid-quick">
+            {sentLocked ? (
+              <p className={`fc-bid-quick-status is-${state}`} data-hpd-smoke="fc-bid-quick-status">
+                {state === "confirmed" ? "✅" : state === "failed" ? "❌" : <span className="hpd-spin" aria-hidden="true" />} Sent {money2(record!.sentPrice || record!.price)} · {state === "confirmed" ? "HPD received it" : state === "failed" ? "fax failed: resend below" : "waiting for HPD to receive it"}
+              </p>
+            ) : (
+              <>
+                <label className="fc-bid-quick-price">
+                  <span>$</span>
+                  <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-quick-price" placeholder="Price" value={draft} onChange={(e) => setDraft(e.target.value)} />
+                </label>
+                <button type="button" className={`fc-bid-quick-save${step1Done ? " is-done" : ""}${armed === "high" ? " is-armed" : ""}`} data-hpd-smoke="fc-bid-quick-save" disabled={!(draftValue > 0) || (draftValue === record?.price && (reason.trim() || undefined) === record?.reason)} onClick={() => {
+                  if (highPrice && draftValue !== record?.price && armed !== "high") { setArmed("high"); return; } // a high price takes a second tap
+                  void savePrice();
+                }}>
+                  {armed === "high" && highPrice && draftValue !== record?.price ? "Tap again: high" : step1Done ? "✓ Saved" : "💾 Save"}
+                </button>
+                <button type="button" className={`fc-bid-quick-send${armed === "send" ? " is-armed" : ""}${busy === "Sending the fax…" || busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-quick-send" disabled={!step1Done || busy === "Sending the fax…" || busy === "Filling the bid package…"} onClick={() => { if (!reviewedSaved) void review(); else void send("main"); }}>
+                  {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling</>
+                    : busy === "Sending the fax…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending</>
+                    : !step1Done ? "📠 Send" : !reviewedSaved ? "📄 Fill" : armed === "send" ? `✅ Tap again: send ${money2(record!.price)}` : "📠 Send"}
+                </button>
+              </>
+            )}
+            {!sentLocked && highPrice && draftValue !== record?.price ? <small className="fc-bid-quick-warn" data-hpd-smoke="fc-bid-quick-warn">⚠️ {money(draftValue)} will probably lose (best {money(highPrice.best)})</small> : null}
+            {!sentLocked && busy.startsWith("Not sent") ? <small className="fc-bid-quick-warn" role="alert">❌ {busy}</small> : null}
+          </div>
         </div>
       ) : (
         <>

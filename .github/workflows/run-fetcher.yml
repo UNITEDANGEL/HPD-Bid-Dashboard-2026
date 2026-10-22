@@ -123,6 +123,8 @@ jobs:
           # Tenant names / phones and HPD's invitation PDFs never go into the public repo: encrypt them first
           # (scripts/privatize_public_data.mjs). If that fails, nothing is committed.
           node scripts/privatize_public_data.mjs || { echo "Tenant data could not be privatized: nothing committed"; exit 1; }
+          # Find any job (22 Oct): every job / invitation / award with its address and description, encrypted.
+          node scripts/build-search-index.mjs || echo "Search index not rebuilt (kept the last one)"
           git add public/private
           git add -A public/documents/itb public/documents/itb-pages
 

@@ -110,11 +110,14 @@ try {
     await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
     await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
     // Show all jobs: list closes, every job is back on the map.
-    const before = await page.locator(".fc-pin, .leaflet-marker-icon").count();
+    // (The app's own job count: pins on screen depend on where the map is looking, and Show all goes back to you.)
+    const jobCount = async () => Number(((await page.locator('[data-hpd-smoke="fc-job-count"]').first().textContent()) || "").replace(/\D/g, "")) || 0;
+    const before = await jobCount();
     await page.locator('[data-hpd-smoke="fc-notices-show-all"]').click();
     await page.waitForTimeout(800);
     assert.equal(await isOpen("notices"), false);
-    assert.ok((await page.locator(".fc-pin, .leaflet-marker-icon").count()) > before, `${where}: all jobs back on the map`);
+    const afterCount = await jobCount();
+    assert.ok(afterCount > before, `${where}: all jobs back on the map (${before} -> ${afterCount} jobs)`);
     // A job card, then a map button: the card closes.
     await page.locator(".fc-pin").first().click({ force: true });
     await page.waitForTimeout(500);

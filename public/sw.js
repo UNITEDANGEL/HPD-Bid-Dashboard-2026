@@ -74,6 +74,13 @@ self.addEventListener("push", (event) => {
     return c.put("/badge", new Response(String(n))).then(() => (self.navigator.setAppBadge ? self.navigator.setAppBadge(n) : undefined));
   })).catch(() => {});
   event.waitUntil(bump);
+  // Kept for the app (22 Oct, voice alerts): a locked phone can't speak, so the app offers to read these out the next
+  // time it opens ("🔊 Play 3 new alerts"). The last 20 only.
+  const keep = caches.open("hpd-badge").then((c) => c.match("/missed").then((r) => (r ? r.json() : [])).catch(() => []).then((list) => {
+    const next = [...(Array.isArray(list) ? list : []), { title, body: data.body || "", kind: data.kind || "message", url: data.url || "", at: new Date().toISOString() }].slice(-20);
+    return c.put("/missed", new Response(JSON.stringify(next), { headers: { "Content-Type": "application/json" } }));
+  })).catch(() => {});
+  event.waitUntil(keep);
   event.waitUntil(self.registration.showNotification(title, {
     body: data.body || "",
     tag: data.tag || undefined,

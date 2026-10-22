@@ -35,6 +35,7 @@ export async function handlePrivate(request, env, signedIn = signedInOwner) {
   else if (name === "tenants") { asset = "/private/tenants.json.enc"; type = "application/json"; }
   else if (name === "notices") { asset = "/private/notices.json.enc"; type = "application/json"; }
   else if (name === "conversations") { asset = "/private/conversations.json.enc"; type = "application/json"; }
+  else if (name === "search") { asset = "/private/search.json.enc"; type = "application/json"; } // find any job (scripts/build-search-index.mjs)
   else if (/^notice\/[A-Za-z0-9_.-]+\.pdf$/.test(name) && !name.includes("..")) { asset = `/private/notices/${name.slice(7)}.enc`; type = "application/pdf"; }
   else return new Response("Not found", { status: 404, headers: NO_STORE });
   if (!env.HPD_PRIVATE_DATA_KEY) return new Response(JSON.stringify({ error: "Private data is not set up on the server." }), { status: 503, headers: { ...NO_STORE, "Content-Type": "application/json" } });
