@@ -32,6 +32,8 @@ try {
   const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("980");
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  // A price far above what wins this kind of job asks for a second tap (real bids change daily).
+  if (await sheet.locator('[data-hpd-smoke="fc-bid-high"]').count()) await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 60000 });
   const track = sheet.locator('[data-hpd-smoke="fc-faxtrack"]');
   await track.waitFor();

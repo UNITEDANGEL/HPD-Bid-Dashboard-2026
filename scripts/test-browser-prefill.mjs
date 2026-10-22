@@ -38,6 +38,8 @@ try {
   // Type a price, Save once: the final document is made.
   await price.fill("1234");
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  // A price far above what wins this kind of job asks for a second tap (real bids change daily).
+  if (await sheet.locator('[data-hpd-smoke="fc-bid-high"]').count()) await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-open"]').waitFor({ timeout: 60000 });
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-open"]').getAttribute("href"), /^blob:/);
   assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isEnabled(), "ready to send (two taps, not tapped here)");

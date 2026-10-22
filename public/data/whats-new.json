@@ -2,6 +2,24 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 22, 2026",
+      "title": "Jobs: the list and the map together",
+      "items": [
+        "🧰 Jobs opens in the lower half; the map above shows only the jobs of the tab you are on (To do, Close out, 2nd try, Waiting, All) and zooms to fit them.",
+        "🗺 Map folds the list down to its tabs so you see the whole map; ☰ List brings it back.",
+        "Tap a pin or a job: its card opens. Close the card and the list comes back on the same tab."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
+      "title": "Friday money report",
+      "items": [
+        "💵 Every Friday from 2 PM your phone gets one alert: what HPD owes you in PIP, what got paid this week, how many rejections are holding money up (the same numbers as 💰 To get paid), and the job owed the longest.",
+        "Tap it to open 💰 To get paid.",
+        "If the PIP numbers are more than a week old, it reminds you to download the new summaries so the totals stay right."
+      ]
+    },
+    {
       "date": "Oct 21, 2026",
       "title": "Jobs is a round button like the others",
       "items": [

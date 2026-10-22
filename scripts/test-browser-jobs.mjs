@@ -35,12 +35,32 @@ try {
     const firstOnTime = dues.findIndex((d) => !/late/.test(d));
     assert.ok(firstOnTime === -1 || dues.slice(firstOnTime).every((d) => !/late/.test(d)), `late jobs on top: ${dues.slice(0, 6)}`);
     if (shots && w === 390) await page.screenshot({ path: `${shots}/jobs-list.png` });
-    // Other tabs.
+    // The map stays visible above the list (owner, 22 Oct: "I need to see the jobs on the map, also the list").
+    const top = (await sheet.boundingBox()).y;
+    assert.ok(top >= h * 0.4, `${w}x${h}: list in the lower half (top ${Math.round(top)})`);
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-jobs-title"]').innerText(), new RegExp(`${todo} on the map`));
+    // Other tabs: the map shows that tab's jobs.
     for (const t of ["closeout", "secondtry", "waiting", "all"]) {
       await sheet.locator(`[data-hpd-smoke="fc-jobs-tab-${t}"]`).click();
       const n = Number((/(\d+)$/.exec((await sheet.locator(`[data-hpd-smoke="fc-jobs-tab-${t}"]`).innerText()).trim()) || [])[1]);
       assert.equal(await rows.count(), n, `${t} count`);
+      assert.match(await sheet.locator('[data-hpd-smoke="fc-jobs-title"]').innerText(), new RegExp(`${n} on the map`), `${t}: map shows them`);
     }
+    // 🗺 Map folds the list to a bar; a pin opens its card; closing the card brings the list back, same tab.
+    await sheet.locator('[data-hpd-smoke="fc-jobs-tab-closeout"]').click();
+    await sheet.locator('[data-hpd-smoke="fc-jobs-fold"]').click();
+    assert.ok((await sheet.boundingBox()).height < 200, "folded to a bar");
+    if (shots && w === 390) { await page.waitForTimeout(800); await page.screenshot({ path: `${shots}/jobs-map.png` }); }
+    const pin = page.locator(".leaflet-marker-icon:has(.fc-pin)").first();
+    if (await pin.count()) {
+      await pin.dispatchEvent("click");
+      await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
+      await page.locator(".fc-job-sheet-close").click();
+      await sheet.waitFor({ timeout: 8000 });
+      assert.equal(await sheet.locator('[data-hpd-smoke="fc-jobs-tab-closeout"]').getAttribute("aria-selected"), "true", "back on the same tab");
+    }
+    await sheet.locator('[data-hpd-smoke="fc-jobs-fold"]').click();
+    await sheet.locator('[data-hpd-smoke="fc-jobs-tab-all"]').click();
     // Search, then open a job.
     const omo = await rows.first().getAttribute("data-omo");
     await sheet.locator('[data-hpd-smoke="fc-jobs-search"]').fill(omo.slice(-4));

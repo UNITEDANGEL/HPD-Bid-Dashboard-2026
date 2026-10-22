@@ -3,7 +3,7 @@
 // list, the most urgent first -- to do (by complete-by date, late ones on top), ready to close out, 2nd tries, paperwork
 // sent and waiting on HPD -- with a
 // search. Tap a job: the map goes to it and its card opens.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type JobRow = { id: string; address: string; borough: string; status: string; color: string; due: string; award: string; group: "todo" | "closeout" | "secondtry" | "waiting"; note?: string; packageHref?: string; due2nd?: boolean };
 type Tab = "todo" | "closeout" | "secondtry" | "waiting" | "all";
@@ -19,8 +19,12 @@ const dayNum = (v: string) => {
 const todayNum = () => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); return dayNum(p); };
 const short = (v: string) => { const n = dayNum(v); if (!Number.isFinite(n)) return ""; const d = new Date(n * 86400000); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
 
-export default function JobsList({ rows, onOpen, onClose, initialTab }: { rows: JobRow[]; onOpen: (id: string) => void; onClose: () => void; initialTab?: string }) {
-  const [tab, setTab] = useState<Tab>(() => (initialTab as Tab) || "todo");
+export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onShown, mini = false, onMini }: {
+  rows: JobRow[]; onOpen: (id: string) => void; onClose: () => void; initialTab?: string;
+  onTab?: (tab: string) => void; onShown?: (key: string, ids: string[]) => void; mini?: boolean; onMini?: (mini: boolean) => void;
+}) {
+  const [tab, setTabState] = useState<Tab>(() => (initialTab as Tab) || "todo");
+  const setTab = (t: Tab) => { setTabState(t); onTab?.(t); onMini?.(false); };
   const [q, setQ] = useState("");
   const today = todayNum();
   const shown = useMemo(() => {
@@ -30,12 +34,16 @@ export default function JobsList({ rows, onOpen, onClose, initialTab }: { rows: 
       .filter((r) => !term || r.id.includes(term) || r.address.toUpperCase().includes(term))
       .sort((a, b) => (dayNum(a.due) || 1e9) - (dayNum(b.due) || 1e9));
   }, [rows, tab, q]);
+  // The map above shows these jobs.
+  const shownKey = shown.map((r) => r.id).join(",");
+  useEffect(() => { onShown?.(`${tab}|${q.trim()}`, shownKey ? shownKey.split(",") : []); }, [tab, q, shownKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const count = (t: Tab) => (t === "all" ? rows.length : rows.filter((r) => r.group === t).length);
   const tabs: [Tab, string][] = [["todo", "🔨 To do"], ["closeout", "📋 Close out"], ["secondtry", "🔒 2nd try"], ["waiting", "⏳ Waiting on HPD"], ["all", "All open"]];
   return (
-    <div className="fc-package-sheet fc-summary-sheet fc-jobs-sheet" role="dialog" aria-label="Jobs" data-hpd-smoke="fc-jobs">
+    <div className={`fc-package-sheet fc-summary-sheet fc-jobs-sheet${mini ? " is-mini" : ""}`} role="dialog" aria-label="Jobs" data-hpd-smoke="fc-jobs">
       <header>
-        <strong>🔨 Jobs · {rows.length} open</strong>
+        <strong data-hpd-smoke="fc-jobs-title">🔨 Jobs · {shown.length} on the map</strong>
+        <button type="button" className="fc-jobs-fold" data-hpd-smoke="fc-jobs-fold" aria-pressed={mini} onClick={() => onMini?.(!mini)}>{mini ? "☰ List" : "🗺 Map"}</button>
         <button type="button" aria-label="Close" data-hpd-smoke="fc-jobs-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-summary-body">

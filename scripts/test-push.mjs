@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { handlePushSubscribe } from "../server/drive-packages.mjs";
-import { eveningWrapup, findAlerts, morningBriefing, openSealed, workingHours } from "./send-push.mjs";
+import { eveningWrapup, findAlerts, moneyReport, morningBriefing, openSealed, workingHours } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const key = crypto.randomBytes(32);
@@ -131,4 +131,30 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(w.body, /🧾 tomorrow: 2 bids to send \(first 11:30 AM\)/, "ER2 already sent for tomorrow");
   assert.equal(await eveningWrapup({ conversations: { threads }, bids, sent: {}, records, now: Date.parse("2026-10-22T20:30:00Z"), loadLib }), null, "not before 6 PM");
   console.log(`PASS evening wrap-up: weekdays from 6 PM, once a day: "${w.body}"`);
+}
+
+// 💵 Friday money report: Fridays from 2 PM, what HPD owes and what holds it up.
+{
+  const pip = { generatedAt: "2026-10-15T01:00:00Z", jobs: {
+    EQ1: { status: "not paid yet", outstanding: 400, closed: false, lastDate: "2026-07-01" },
+    EQ2: { status: "not paid yet", outstanding: 1000, closed: false, lastDate: "2026-10-01" },
+    EQ3: { outstanding: 500, closed: true, lastDate: "2026-06-01" }, // closed: not owed
+    EQ4: { outstanding: 0, closed: false, lastDate: "2026-10-01" },
+  } };
+  const payments = { generatedAt: "2026-10-22T01:00:00Z", recent: [{ date: "2026-10-20", status: "Paid", amount: 590 }, { date: "2026-10-21", status: "Paid", amount: 410 }, { date: "2026-10-01", status: "Paid", amount: 9999 }] };
+  const requests = { jobs: { EQ1: { rejectedAt: "2026-10-10", rejectedTs: Date.parse("2026-10-10") }, EQ2: { rejectedAt: "2026-10-01", rejectedTs: Date.parse("2026-10-01") } } };
+  const sent = { EQ2: { sentAt: "2026-10-05" } }; // EQ2 fixed and sent (still held until paid, but not "to fix")
+  const fri = Date.parse("2026-10-23T19:00:00Z"); // Fri 3 PM NY
+  const f = await moneyReport({ pip, payments, requests, sent, now: fri, loadLib });
+  assert.equal(f.key, "f:2026-10-23", "once a Friday");
+  assert.equal(f.title, "💵 Friday money: $1,400 owed");
+  assert.match(f.body, /💰 HPD owes \$1,400 on 2 jobs/);
+  assert.match(f.body, /✅ paid this week: \$1,000 \(2 payments\)/);
+  assert.match(f.body, /💵 1 rejection to fix · \$1,400 held up/, "same numbers as the app (💰 To get paid)");
+  assert.match(f.body, /⌛ oldest: EQ1 \$400 since 07\/01/);
+  assert.doesNotMatch(f.body, /download/, "PIP numbers fresh");
+  assert.match((await moneyReport({ pip, payments: null, requests, sent, now: fri })).body, /📥 PIP numbers from 10\/15: download the new summaries/, "old numbers: asks for new ones");
+  assert.equal(await moneyReport({ pip, payments, requests, sent, now: Date.parse("2026-10-22T19:00:00Z") }), null, "not Thursday");
+  assert.equal(await moneyReport({ pip, payments, requests, sent, now: Date.parse("2026-10-23T15:00:00Z") }), null, "not before 2 PM");
+  console.log(`PASS Friday money report: Fridays from 2 PM: "${f.body}"`);
 }

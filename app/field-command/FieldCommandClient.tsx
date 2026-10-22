@@ -1021,7 +1021,16 @@ export default function FieldCommandClient() {
   const [noticeChooser, setNoticeChooser] = useState(false);
   // After a pick the picker shrinks to a thin bar so the map is in view (owner, 17 Oct: "take me to the map").
   const [noticeMini, setNoticeMini] = useState(false);
+  // Jobs (owner, 22 Oct: "I need to see the jobs on the map, also the list"): the list sits in the lower half, the map
+  // above shows only the jobs of the tab you're on (and frames them); 🗺 Map folds the list down to a bar.
+  const [jobsOpen, setJobsOpen] = useState(false);
+  const [jobsTab, setJobsTab] = useState("todo");
+  const [jobsShown, setJobsShown] = useState<{ key: string; ids: string[] } | null>(null);
+  const [jobsMini, setJobsMini] = useState(false);
   const noticeMiniRef = useRef(false);
+  const jobsOpenRef = useRef(false);
+  const jobsShownRef = useRef<{ key: string; ids: string[] } | null>(null);
+  const jobsMiniRef = useRef(false);
   noticeMiniRef.current = noticeMini;
   const [noticeKind, setNoticeKind] = useState<NoticeKind>("");
   // The 24 / 72-hour board (17 Oct) and the steps ticked by hand on this phone.
@@ -1283,6 +1292,8 @@ export default function FieldCommandClient() {
     const omo = (q.get("omo") || "").toUpperCase();
     // A rejection / a win with its job: the job card opens (the ?omo= link below does it once the jobs are loaded).
     if (q.get("money") === "1" && omo) return;
+    // The Friday money report opens the whole picture (💰 To get paid), not just the rejections.
+    if (q.get("money") === "all") { setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("money"); setNoticesOpen(true); try { window.history.replaceState(null, "", window.location.pathname); } catch {} return; }
     if (q.get("money") === "1") { setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("rejected"); setNoticesOpen(true); try { window.history.replaceState(null, "", window.location.pathname); } catch {} return; }
     if (q.get("board") !== "1") return;
     setBoardShow("all");
@@ -1886,6 +1897,7 @@ export default function FieldCommandClient() {
   };
 
   const filteredJobs = useMemo(() => {
+    if (jobsOpen && jobsShown) { const ids = new Set(jobsShown.ids); return jobs.filter((job) => ids.has(jobId(job))); }
     const q = search.trim().toLowerCase();
     const olderOnNotices = followFilter !== "notices" ? []
       : noticeKind ? olderJobs.filter((j) => noticeSets[noticeKind].has(jobId(j)))
@@ -1921,7 +1933,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey, jobsOpen, jobsShown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The open job card has priority over "follow me": stop following and show the job's pin in
   // the open strip of map between the search bar and the top of the card. The locate button
@@ -2013,6 +2025,9 @@ export default function FieldCommandClient() {
   }, []);
 
   // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
+  jobsOpenRef.current = jobsOpen;
+  jobsShownRef.current = jobsShown;
+  jobsMiniRef.current = jobsMini;
   const dataIssues = useMemo(() => filteredJobs
     .filter((job) => !isTestJob(jobId(job)) && !["done", "others"].includes(pinStyle(job).key))
     .map((job) => ({ job, issues: jobDataIssues(job) }))
@@ -2032,8 +2047,7 @@ export default function FieldCommandClient() {
     .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
     .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
   const [secondTryOpen, setSecondTryOpen] = useState(false);
-  // Jobs button (owner, 21 Oct): every open job -- to do, ready to close out, 2nd tries.
-  const [jobsOpen, setJobsOpen] = useState(false);
+  // Jobs button (owner, 21 Oct): every open job -- to do, ready to close out, 2nd tries. (State is up top: the map uses it.)
   const jobRows = useMemo<JobRow[]>(() => {
     const closeIds = new Set(closeOutJobs.map((j) => jobId(j)));
     const secondIds = new Map(secondTryJobs.map((r) => [jobId(r.job), r.second]));
@@ -2380,7 +2394,7 @@ export default function FieldCommandClient() {
       // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
       // filters just change which pins show; the map stays on you.
       // The HPD notices layer frames its jobs too (they're spread over the city).
-      const framing = `${borough}|${search}|${followFilter === "notices" ? `notices-${noticeKind}` : ""}|${showOlderLayer ? "older" : ""}`;
+      const framing = `${borough}|${search}|${followFilter === "notices" ? `notices-${noticeKind}` : ""}|${showOlderLayer ? "older" : ""}|${jobsOpenRef.current && jobsShownRef.current ? `jobs-${jobsShownRef.current.key}-${jobsMiniRef.current ? "mini" : ""}` : ""}`;
       if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
         // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
@@ -2392,6 +2406,9 @@ export default function FieldCommandClient() {
           showJobAboveCard(openJob.lat, openJob.lng);
         } else if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
+        } else if (points.length > 1 && jobsOpenRef.current && jobsShownRef.current) {
+          // The Jobs list covers the lower half (or a bar when folded): frame the jobs in the map above it.
+          map.fitBounds(points.map((p) => [p.lat, p.lng]) as [number, number][], { paddingTopLeft: [20, 120], paddingBottomRight: [70, jobsMiniRef.current ? 170 : Math.round(window.innerHeight * 0.52) + 30], maxZoom: 15 });
         } else if (points.length > 1 && borough === "ALL" && !search.trim() && followFilter !== "notices" && !showOlderLayer) {
           // Back to All: return to you, never to a fixed point in the city.
           const me = lastPositionRef.current;
@@ -2409,7 +2426,7 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter, showOlderLayer]);
+  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter, showOlderLayer, jobsMini]);
 
   useEffect(() => {
     darkTilesRef.current = darkTiles;
@@ -3406,7 +3423,7 @@ export default function FieldCommandClient() {
 
           {!jobs.length ? (
             <p className={`fc-map-hint ${jobsLoadFailed ? "fc-map-hint-warn" : ""}`} role="status">{jobsLoadFailed ? "Couldn't load jobs. Check the connection; retrying." : "Loading jobs..."}</p>
-          ) : !filteredJobs.length ? (
+          ) : !filteredJobs.length && !jobsOpen ? (
             <p className="fc-map-hint">No jobs match these filters</p>
           ) : null}
 
@@ -4649,7 +4666,8 @@ export default function FieldCommandClient() {
           <button type="button" className="is-later" onClick={() => { try { localStorage.setItem("hpd-allow-alerts-later", String(Date.now())); } catch { /* private mode */ } setAllowAlerts(""); }}>Later</button>
         </div>
       ) : null}
-      {jobsOpen ? <JobsList rows={jobRows} onClose={() => setJobsOpen(false)} onOpen={(id) => { const job = jobs.find((j) => jobId(j) === id); setJobsOpen(false); if (job) openIssueJob(job); }} /> : null}
+      {/* The list stays open behind a job card (closing the card brings it back, same tab). */}
+      {jobsOpen && !selectedJob ? <JobsList rows={jobRows} initialTab={jobsTab} onTab={setJobsTab} mini={jobsMini} onMini={setJobsMini} onShown={(key, ids) => setJobsShown((prev) => (prev && prev.key === key && prev.ids.join() === ids.join() ? prev : { key, ids }))} onClose={() => { setJobsOpen(false); setJobsShown(null); setJobsMini(false); }} onOpen={(id) => { const job = jobs.find((j) => jobId(j) === id); if (job) openIssueJob(job); }} /> : null}
       {critical ? (
         <div className="fc-critical" role="alertdialog" aria-label="Urgent" data-hpd-smoke="fc-critical" data-kind={critical.kind}>
           <div className="fc-critical-box">

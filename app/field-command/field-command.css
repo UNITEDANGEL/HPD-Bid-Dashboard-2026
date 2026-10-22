@@ -3302,3 +3302,13 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* A smaller focus chip. */
 .fc-focus-chip { min-height: 32px !important; padding: 0 10px !important; font-size: 13px !important; gap: 4px !important; }
 .fc-focus-chip em { display: none; }
+
+/* Jobs list + map (owner, 22 Oct: "I need to see the jobs on the map, also the list"): the list is the lower half, the
+   map stays visible (and live) above it; 🗺 Map folds it down to its header and tabs. */
+.fc-app .fc-jobs-sheet { top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: 52dvh !important; max-height: 52dvh !important; border-radius: 20px 20px 0 0 !important; box-shadow: 0 -10px 30px #0009 !important; display: flex; flex-direction: column; }
+.fc-app .fc-jobs-sheet .fc-summary-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.fc-app .fc-jobs-sheet header { display: flex; align-items: center; gap: 8px; }
+.fc-app .fc-jobs-sheet header strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-jobs-fold { min-height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid #0f766e; background: #134e4a; color: #fff; font: 900 14px system-ui, sans-serif; white-space: nowrap; }
+.fc-app .fc-jobs-sheet.is-mini { height: auto !important; max-height: none !important; }
+.fc-app .fc-jobs-sheet.is-mini .fc-jobs-search, .fc-app .fc-jobs-sheet.is-mini .fc-jobs-list, .fc-app .fc-jobs-sheet.is-mini .fc-follow-note { display: none; }

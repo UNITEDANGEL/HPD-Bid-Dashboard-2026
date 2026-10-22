@@ -16,7 +16,8 @@ const ROOT = process.cwd();
 const DRY = process.argv.includes("--dry-run");
 const TEST = process.argv.includes("--test");
 const BRIEF_NOW = process.argv.includes("--briefing"); // the morning briefing right now (owner asked to see it)
-const WRAP_NOW = process.argv.includes("--wrapup"); // the evening wrap-up right now // one test alert to every phone, nothing else (owner asked to try it)
+const WRAP_NOW = process.argv.includes("--wrapup");
+const MONEY_NOW = process.argv.includes("--money"); // the Friday money report right now // the evening wrap-up right now // one test alert to every phone, nothing else (owner asked to try it)
 const STATE = path.join(ROOT, "data", "push_state.json");
 const WORKER = (process.env.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
 const SITE = "https://hpd-bid-dashboard-2026.pages.dev";
@@ -49,7 +50,7 @@ export function workingHours(now = Date.now()) {
 }
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {} }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null }) {
   const out = [];
   const kinds = loadLib ? await loadLib("alert-kinds") : null;
   // HPD wrote or replied (last 2 days): a notice, a documents request, a rejection or a message.
@@ -102,6 +103,9 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   // 🌆 Evening wrap-up (owner, 21 Oct "next upgrade"): once each weekday from 6 PM, what got done and what's left.
   const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib });
   if (wrap) out.push(wrap);
+  // 💵 Friday money report (owner, 22 Oct "next upgrade"): once each Friday from 2 PM, what HPD owes and what holds it up.
+  const cash = await moneyReport({ pip, payments, requests, sent, now, loadLib });
+  if (cash) out.push(cash);
   return out;
 }
 
@@ -147,6 +151,47 @@ export async function eveningWrapup({ conversations, bids, sent, records = {}, n
     title: "🌆 Today's wrap-up",
     body: lines.length ? lines.join(" · ") : "A quiet day: nothing sent, nothing waiting. See you tomorrow.",
     url: "/map/?view=all&map=1&today=1", tag: "wrapup",
+  };
+}
+
+// From PIP (pip_paid.json: owed per job; pip_payments.json: payments by date) and the rejections. PIP comes in when
+// the owner downloads the summaries, so the report says how old the numbers are and asks for new ones after a week.
+export async function moneyReport({ pip, payments, requests, sent, now = Date.now(), loadLib, force = false }) {
+  const p = nyParts(now);
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(new Date(now));
+  const hour = Number(p.hour);
+  if (!force && (weekday !== "Fri" || hour < 14 || hour >= 20)) return null; // Fridays 2-8 PM
+  if (!pip?.jobs) return null;
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const usd = (n) => "$" + `${Math.round(n).toLocaleString("en-US")}`;
+  const lines = [];
+  const owed = Object.entries(pip.jobs).filter(([, j]) => !j.closed && j.outstanding > 0);
+  const owedSum = owed.reduce((a, [, j]) => a + j.outstanding, 0);
+  if (owed.length) lines.push(`💰 HPD owes ${usd(owedSum)} on ${owed.length} job${owed.length === 1 ? "" : "s"}`);
+  // Paid in the last 7 days (as far as PIP's numbers go).
+  const weekAgo = new Date(now - 7 * 86400000).toISOString().slice(0, 10);
+  const paid = (payments?.recent || []).filter((x) => x.date > weekAgo && x.date <= today && /paid|disbursed/i.test(x.status || ""));
+  if (paid.length) lines.push(`✅ paid this week: ${usd(paid.reduce((a, x) => a + (Number(x.amount) || 0), 0))} (${paid.length} payment${paid.length === 1 ? "" : "s"})`);
+  // Rejections until HPD pays: the same numbers as the app (💰 To get paid).
+  if (loadLib) {
+    try {
+      const { paperworkRejections } = await loadLib("job-followup");
+      const { trackPayments } = await loadLib("payment-track");
+      const t = trackPayments({ rejections: paperworkRejections(requests?.jobs || {}, [], pip.jobs), corrections: [], sent: sent || {}, now }).summary;
+      if (t.heldCount) lines.push(`💵 ${t.toFix} rejection${t.toFix === 1 ? "" : "s"} to fix · ${usd(t.held)} held up`);
+    } catch (e) { console.log(`money report rejections skipped: ${e.message}`); }
+  }
+  // The oldest money: owed the longest.
+  const oldest = owed.filter(([, j]) => j.lastDate).sort((a, b) => a[1].lastDate.localeCompare(b[1].lastDate))[0];
+  if (oldest && now - Date.parse(oldest[1].lastDate) > 60 * 86400000) lines.push(`⌛ oldest: ${oldest[0]} ${usd(oldest[1].outstanding)} since ${oldest[1].lastDate.slice(5).replace("-", "/")}`);
+  const asOf = String(payments?.generatedAt || pip.generatedAt || "").slice(0, 10);
+  const stale = asOf && now - Date.parse(asOf) > 7 * 86400000;
+  if (stale) lines.push(`📥 PIP numbers from ${asOf.slice(5).replace("-", "/")}: download the new summaries`);
+  return {
+    key: `f:${today}`, kind: "message",
+    title: `💵 Friday money${owed.length ? `: ${usd(owedSum)} owed` : ""}`,
+    body: lines.join(" · ") || "Nothing owed in PIP.",
+    url: "/map/?view=all&map=1&money=all", tag: "money",
   };
 }
 
@@ -201,14 +246,17 @@ async function main() {
   // The bid records (faxes, NO BIDs) for the evening wrap-up.
   let records = {};
   try { const r = await fetch(`${WORKER}/overrides`, { cache: "no-store" }); if (r.ok) records = (await r.json()).overrides || {}; } catch { /* no records: the wrap-up leaves faxes out */ }
-  const alerts = TEST || BRIEF_NOW || WRAP_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records });
+  const pip = JSON.parse(read(path.join(ROOT, "public/data/pip_paid.json")) || "null");
+  const payments = JSON.parse(read(path.join(ROOT, "public/data/pip_payments.json")) || "null");
+  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments });
+  if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
   if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
   const fresh = alerts.filter((a) => !seen.has(a.key));
   const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
-  if (!TEST && !BRIEF_NOW && !WRAP_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
+  if (!TEST && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
   if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).
@@ -236,8 +284,8 @@ async function main() {
       }
     }
   }
-  if (!TEST && !BRIEF_NOW && !WRAP_NOW) fs.writeFileSync(STATE, JSON.stringify(nextState));
-  else console.log(`${BRIEF_NOW ? "Morning briefing" : WRAP_NOW ? "Evening wrap-up" : "Test alert"} sent to ${subs.length} phone(s).`);
+  if (!TEST && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW) fs.writeFileSync(STATE, JSON.stringify(nextState));
+  else console.log(`${BRIEF_NOW ? "Morning briefing" : WRAP_NOW ? "Evening wrap-up" : MONEY_NOW ? "Friday money report" : "Test alert"} sent to ${subs.length} phone(s).`);
 }
 
 if (/send-push\.mjs$/.test(process.argv[1] || "")) {

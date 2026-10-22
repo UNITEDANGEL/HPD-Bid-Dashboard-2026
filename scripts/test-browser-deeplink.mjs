@@ -86,8 +86,15 @@ try {
     const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
     await sheet.waitFor({ timeout: 60000 });
     assert.equal((await sheet.locator("header strong").innerText()).trim(), bidOmo);
+    // The Friday money report opens 💰 To get paid.
+    await page.goto(`${baseUrl}/map/?view=all&map=1&money=all`, { waitUntil: "load" });
+    const sum = page.locator('[data-hpd-smoke="fc-money-sum"]');
+    await sum.waitFor({ timeout: 60000 });
+    const cash = (await sum.innerText()).replace(/\s+/g, " ");
+    assert.match(cash, /\$[\d,]+ ?held by/);
+    if (shots) await page.screenshot({ path: `${shots}/deeplink-money.png` });
     await c.close();
-    console.log(`  🔔 rejection -> job card ${jobOmo}; 🔔 invitation -> bid ${bidOmo}`);
+    console.log(`  🔔 rejection -> job card ${jobOmo}; 🔔 invitation -> bid ${bidOmo}; 💵 Friday money -> To get paid (${cash.slice(0, 40)})`);
   }
   assert.deepEqual(errors, []);
   console.log("PASS alerts open their job: board link scrolls to and highlights the job, invitation link opens the bid, 🔔 items open the job card / the bid");
