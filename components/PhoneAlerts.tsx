@@ -13,7 +13,7 @@ const SAMPLES: Record<AlertKind, AppNotice> = {
   request: { kind: "request", title: "📋 Deoranie Gafur asked for documents", who: "Deoranie Gafur", text: "Missing documents for 15 work orders: EP27489 affidavit and invoice, EP27382 affidavit and invoice and 13 more" },
   rejection: { kind: "rejection", title: "💵 Payment rejected · EL25850", omo: "EL25850", text: "The work dates on the invoice and affidavit don't match" },
   message: { kind: "message", title: "📩 Joy-Ann Lewis wrote · ER06498", omo: "ER06498", who: "Joy-Ann Lewis", text: "They want a status update on ER06498: the completion date has passed" },
-  bid: { kind: "bid", title: "🧾 New invitation to bid · ER07749", omo: "ER07749", text: "Brooklyn, due Friday 11:00 AM" },
+  bid: { kind: "bid", title: "🧾 3 new invitations to bid" },
   "fax-ok": { kind: "fax-ok", title: "✅ Fax went through · ER07749: HPD received your bid" },
   "fax-bad": { kind: "fax-bad", title: "❌ Fax failed · ER07749", text: "The line was busy. Send it again." },
   urgent: { kind: "urgent", title: "⏰ ER01987: notice overdue 2 h", text: "Nothing sent yet: answer it now" },

@@ -172,7 +172,9 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.ok(!/wrote:|earlier/.test(cleanEmailText("Thanks for the update.\n\nOn Mon, Oct 20, 2026 at 9:00 AM Lewis wrote:\n> earlier text")), "quoted email left out");
   const say = (n) => spokenAlert(n);
   assert.equal(say({ kind: "award", title: "💰 You won · ER07640!", omo: "ER07640" }), "Confirmation of award! You won work order E R 0 7 6 4 0.");
-  assert.equal(say({ kind: "bid", title: "🧾 New invitation to bid · ER07749", omo: "ER07749", text: "1234 Main St · due 10/24 11:00 AM" }), "New invitation to bid. work order E R 0 7 7 4 9. 1234 Main St, due 10/24 11:00 AM");
+  // Bids: no work order, just how many (22 Oct).
+  assert.equal(say({ kind: "bid", title: "🧾 New invitation to bid · ER07749", omo: "ER07749", text: "1234 Main St · due 10/24 11:00 AM" }), "New invitation to bid.");
+  assert.equal(say({ kind: "bid", title: "🧾 3 new invitations to bid" }), "You have 3 new invitations to bid.");
   assert.match(say({ kind: "notice", title: "⏱ 24-hour notice · EQ31364 from Joy-Ann Lewis", omo: "EQ31364", who: "Joy-Ann Lewis", text: "24-hour notice: they want the affidavit and invoice for EQ31364" }), /^Urgent email\. 24-hour notice from Lewis, work order E Q 3 1 3 6 4\. 24-hour notice: they want the affidavit and invoice for E Q 3 1 3 6 4$/);
   assert.match(say({ kind: "request", title: "📋 Deoranie Gafur asked for documents", who: "Deoranie Gafur", text: "Missing documents for 3 work orders: EP27489 affidavit and invoice" }), /^Request from Gafur, requesting documents\. Missing documents for 3 work orders: E P 2 7 4 8 9 affidavit and invoice$/);
   assert.equal(say({ kind: "request", title: "📋 Deoranie Gafur replied", who: "Deoranie Gafur", text: "They received it" }), "Gafur replied: received.");

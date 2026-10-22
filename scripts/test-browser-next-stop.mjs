@@ -35,7 +35,7 @@ async function cardFor(job, { withRoute }) {
   const next = page.locator('[data-hpd-smoke="jc-next-job"]');
   const keyDates = await page.locator('[data-hpd-smoke="jc-key-dates"]').innerText().catch(() => "");
   const result = (await next.count())
-    ? { source: await next.getAttribute("data-next-source"), text: (await next.innerText()).replace(/\s+/g, " "), waze: await next.locator('[data-hpd-smoke="jc-next-waze"]').getAttribute("href").catch(() => null), keyDates }
+    ? { source: await next.getAttribute("data-next-source"), text: (await next.innerText()).replace(/\s+/g, " "), open: await next.locator('[data-hpd-smoke="jc-next-open"]').count(), waze: await next.locator('[data-hpd-smoke="jc-next-waze"]').count(), keyDates }
     : { keyDates };
   await context.close();
   assert.deepEqual(errors, [], `${job}: page errors`);
@@ -51,7 +51,8 @@ try {
   assert.equal(onRoute?.source, "route");
   assert.match(onRoute.text, new RegExp(`Next on your route · stop 1 of 3 · ${route[0]}`));
   assert.match(onRoute.text, /3 stops left/);
-  assert.equal(onRoute.waze, `https://waze.com/ul?ll=${Number(first.Latitude)},${Number(first.Longitude)}&navigate=yes`);
+  assert.equal(onRoute.open, 1, "Open next job");
+  assert.equal(onRoute.waze, 0, "no second Waze / Google on this card: they are on the next job's card (22 Oct)");
 
   // The job card's key dates, always visible: award, start and complete-by from the job file.
   const md = (v) => { const [m, d, y] = String(v).split("/"); return `${Number(m)}/${Number(d)}/${y.slice(-2)}`; };
@@ -65,16 +66,15 @@ try {
   assert.match(realJob.keyDates, /work completed · HPD: still open/, "finished in the app (no overdue count), and HPD hasn't closed it yet");
   assert.match(realJob.text, new RegExp(`Next on your route · stop 3 of 3 · ${route[2]}`));
   assert.match(realJob.text, /2 stops left/, "stop 1 wasn't done here, so it still counts");
-  const third = data.find((j) => j.OMO === route[2]);
-  assert.equal(realJob.waze, `https://waze.com/ul?ll=${Number(third.Latitude)},${Number(third.Longitude)}&navigate=yes`);
+  assert.equal(realJob.open, 1);
 
   const noRoute = await cardFor("TEST-0001", { withRoute: false });
   console.log("TEST-0001 without a route:", JSON.stringify(noRoute));
   assert.equal(noRoute?.source, "closest");
   assert.match(noRoute.text, /Next closest job · E[QR]\d+/);
-  assert.match(noRoute.waze || "", /^https:\/\/waze\.com\/ul\?ll=/);
+  assert.equal(noRoute.open, 1);
 
-  console.log("PASS next stop: route's next stop with Waze for the test job (stop 1) and a real job (stop 2 -> 3); no route falls back to the closest job");
+  console.log("PASS next stop: route's next stop (Open next job, no second Waze / Google) for the test job (stop 1) and a real job (stop 2 -> 3); no route falls back to the closest job");
 } finally {
   await browser.close();
 }

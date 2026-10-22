@@ -3,6 +3,25 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Have you arrived? · The job first",
+      "items": [
+        "📍 With the app open, when you're within about 120 m of a stop on Today's route (or a job you started driving to today), it asks \"You're at <address>. Have you arrived?\" Tap ✅ Yes, start the job: the job opens with your arrival saved (time + GPS). It asks once per job, and checks again when you come back from Waze / Google.",
+        "📋 The job card starts with the job in plain words (what, how much, where in the building), HPD's full text below. 🔊 Read aloud reads the summary first."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
+      "title": "No duplicate buttons",
+      "items": [
+        "One way to Today's route: the round Route button (the bar at the bottom is gone). The appointments button is now called Appts.",
+        "Job card: Waze and Google once. The \"next job\" box has Open next job → (its own Waze / Google are on its card). The route list doesn't repeat the next stop's Waze / Google either.",
+        "The overdue chip steps aside while the red alert box shows the same notice.",
+        "Urgent box: ✓ I handled it (two taps) for a notice you took care of another way (a call…): it stops ringing here and the phone reminders stop.",
+        "Voice: invitations to bid are just counted, no work order: \"New invitation to bid\" or \"You have 3 new invitations to bid\". Several at once come as one phone alert."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Say it to search",
       "items": [
         "🎤 Tap the mic in the search box and say the job: \"mini split\", \"Bedford Avenue\", or the job number letter by letter (\"E R 0 8 2 8 3\"). The matching jobs show right away.",

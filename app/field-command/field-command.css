@@ -3363,3 +3363,21 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-recent { position: absolute; z-index: 2100; top: calc(max(12px, env(safe-area-inset-top)) + 118px); left: 12px; right: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px; border-radius: 14px; background: #0b1220f2; box-shadow: 0 10px 24px #0009; }
 .fc-recent small { width: 100%; color: #94a3b8; font: 800 12px system-ui, sans-serif; }
 .fc-recent button { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 14px system-ui, sans-serif; }
+
+/* No duplicate buttons (owner, 22 Oct): the round Route button opens Today's route; the bar at the bottom is gone
+   (the panel still shows when opened, with its header to close it). */
+.fc-today-route:not(.is-open) { display: none !important; }
+
+/* The job first on the job card (22 Oct). */
+.jc-job-sum { margin: 0 0 10px; padding: 12px 14px; border-radius: 14px; background: #0c4a6e; border: 1px solid #38bdf8; color: #f0f9ff; }
+.jc-job-sum > b { display: block; margin-bottom: 4px; font: 900 16px system-ui, sans-serif; }
+.jc-job-sum ul { margin: 0; padding-left: 20px; display: grid; gap: 3px; font: 800 17px/1.3 system-ui, sans-serif; }
+.jc-job-sum p { margin: 6px 0 0; font: 700 14px system-ui, sans-serif; color: #bae6fd; }
+
+/* "Have you arrived?" near a route stop / a job you're driving to (22 Oct). */
+.fc-arrive { position: absolute; z-index: 1600; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); display: grid; gap: 6px; padding: 14px; border-radius: 18px; background: #052e16f5; border: 2px solid #22c55e; color: #f0fdf4; box-shadow: 0 12px 28px #000a; }
+.fc-arrive b { font: 900 17px system-ui, sans-serif; }
+.fc-arrive span { font: 700 14px system-ui, sans-serif; color: #bbf7d0; }
+.fc-arrive div { display: flex; gap: 8px; }
+.fc-arrive button { flex: 1 1 auto; min-height: 50px; border-radius: 14px; border: 0; background: #1e293b; color: #fff; font: 900 15px system-ui, sans-serif; }
+.fc-arrive button.is-yes { flex: 2 1 auto; background: #16a34a; }

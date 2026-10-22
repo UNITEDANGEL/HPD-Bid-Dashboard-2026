@@ -123,7 +123,7 @@ try {
     await visit(`/map/?omo=${id}&view=all`, () => !!document.querySelector("#fc-job-card"));
     current = `${id} card`;
     const card = await page.locator("#fc-job-card").innerText();
-    for (const want of [id, "Job Description"]) if (!card.includes(want)) problems.push(`${id} card: missing "${want}"`);
+    for (const want of [id, "full text"]) if (!card.includes(want)) problems.push(`${id} card: missing "${want}"`);
     const itb = page.locator('[data-hpd-smoke="jc-itb-page"]').first();
     if (await itb.count()) { await tap(`${id}: ITB page`, itb, 1500); await scanText(`${id} ITB page`); await page.keyboard.press("Escape").catch(() => {}); }
     else problems.push(`${id} card: no ITB page button`);

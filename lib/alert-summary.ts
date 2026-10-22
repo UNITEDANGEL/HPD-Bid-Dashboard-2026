@@ -71,7 +71,8 @@ export function spokenAlert(n: { kind: string; title: string; text?: string; omo
   let words: string;
   switch (n.kind) {
     case "award": words = `Confirmation of award! You won ${omo || "a job"}.`; break;
-    case "bid": words = `New invitation to bid. ${omo}. ${text}`; break;
+    // No work order number for bids, just how many (owner, 22 Oct: "just tell me invitation to bid; if three, you have three new invitations to bid").
+    case "bid": { const many = Number((/(\d+) new invitations/.exec(n.title) || [])[1] || 0); words = many > 1 ? `You have ${many} new invitations to bid.` : "New invitation to bid."; break; }
     case "notice": words = `Urgent email. ${/72/.test(n.title + text) ? "72" : "24"}-hour notice${who ? ` from ${who}` : ""}, ${omo}. ${text}`; break;
     case "request": words = /^they received it/i.test(text) ? `${who || "H P D"} replied: received.` : `Request from ${who || "H P D"}${/document/i.test(n.title + text) ? ", requesting documents" : ""}. ${text || omo}`; break;
     case "rejection": words = `Payment rejected, ${omo}. ${text}`; break;
