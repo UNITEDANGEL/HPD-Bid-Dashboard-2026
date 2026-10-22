@@ -213,6 +213,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-push.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-deeplink.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-faxtrack.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-jobs.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs

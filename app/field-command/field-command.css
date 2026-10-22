@@ -3243,3 +3243,32 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-map-fab:active, .fc-work-fab:active { transform: scale(0.9); }
 .fc-map-fab { background-image: linear-gradient(150deg, #ffffff40 0%, #ffffff00 45%, #00000026 100%) !important; }
 .fc-filter-btn:active, .fc-notif-btn:active { transform: scale(0.92); }
+
+/* Jobs button and list (21 Oct). */
+.fc-work-fab.is-jobs { background: #0f766e; }
+.fc-jobs-ico { font-size: 22px; line-height: 1; }
+.fc-jobs-sheet { z-index: 200300 !important; }
+.fc-jobs-search { width: 100%; min-height: 46px; margin: 8px 0; padding: 0 14px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font: 600 16px system-ui, sans-serif; box-sizing: border-box; }
+.fc-jobs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-jobs-list li button { width: 100%; display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 10px; padding: 12px; border-radius: 14px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; text-align: left; }
+.fc-jobs-list li.is-late button { border-color: #ef4444; }
+.fc-jobs-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; }
+.fc-jobs-main b { font: 900 16px system-ui, sans-serif; }
+.fc-jobs-main small { color: #94a3b8; font: 800 12px system-ui, sans-serif; }
+.fc-jobs-main span { display: block; color: #cbd5e1; font: 600 13.5px system-ui, sans-serif; }
+.fc-jobs-main em { display: block; color: #94a3b8; font: 700 12px system-ui, sans-serif; font-style: normal; }
+.fc-jobs-due { font: 900 13px system-ui, sans-serif; color: #93c5fd; white-space: nowrap; }
+.fc-jobs-due.is-late { color: #fca5a5; }
+
+/* Critical alerts in the middle (21 Oct): overdue notice / failed fax. */
+.fc-critical { position: fixed; inset: 0; z-index: 200600; display: grid; place-items: center; padding: 20px; background: #000a; animation: fc-critical-in 0.2s ease-out; }
+@keyframes fc-critical-in { from { opacity: 0; } }
+.fc-critical-box { width: min(420px, 100%); display: grid; gap: 10px; justify-items: center; text-align: center; padding: 22px 18px; border-radius: 22px; background: #1c0a0a; border: 3px solid #ef4444; box-shadow: 0 0 0 6px #ef444433, 0 20px 50px #000c; animation: fc-critical-glow 1.2s ease-in-out infinite; color: #fff; }
+@keyframes fc-critical-glow { 50% { box-shadow: 0 0 0 12px #ef444422, 0 20px 50px #000c; } }
+.fc-critical-icon { font-size: 52px; line-height: 1; animation: fc-shake 0.9s ease-in-out infinite; }
+.fc-critical-box b { font: 900 21px/1.25 system-ui, sans-serif; }
+.fc-critical-box p { margin: 0; color: #fecaca; font: 700 15px system-ui, sans-serif; }
+.fc-critical-box button { width: 100%; min-height: 54px; border: 0; border-radius: 14px; background: #334155; color: #fff; font: 900 17px system-ui, sans-serif; }
+.fc-critical-box button.is-go { background: #dc2626; }
+.fc-critical-box small { color: #fca5a5; font: 700 12.5px system-ui, sans-serif; }
+@media (prefers-reduced-motion: reduce) { .fc-critical-box, .fc-critical-icon { animation: none; } }

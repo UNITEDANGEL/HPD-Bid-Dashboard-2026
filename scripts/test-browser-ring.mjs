@@ -25,7 +25,7 @@ try {
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const tomorrow = "2026-10-21";
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids: [...fetched.bids, ...(stage >= 2 ? [{ ...fetched.bids[0], omo: "EX99999", address: "1 TEST PLACE", bidDue: tomorrow, bidDueTime: "11:00 AM" }] : [])] } }));
-  await context.addInitScript(() => { window.__vib = []; navigator.vibrate = (p) => { window.__vib.push(JSON.stringify(p)); return true; }; });
+  await context.addInitScript(() => { localStorage.setItem("hpd-test-critical", "1"); window.__vib = []; navigator.vibrate = (p) => { window.__vib.push(JSON.stringify(p)); return true; }; });
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
   const errors = [];
@@ -66,11 +66,19 @@ try {
 
   await wait(/EQ99997: \d+ h left on the notice|24-hour notice · EQ99997/);
   // The new 24-hour notice alerts as a ⏱ notice, then (under 6 h) as a ⏰ deadline.
-  await wait(/EQ99997: \d+ h left on the notice/);
-  assert.equal(await ping.getAttribute("data-kind"), "urgent");
+  // Under 6 hours: the critical box in the middle (21 Oct), ringing again every 30 s until Answer now / Snooze.
+  const crit = page.locator('[data-hpd-smoke="fc-critical"]');
+  for (let i = 0; i < 90 && !(await crit.count()); i++) await page.clock.runFor(5000);
+  await crit.waitFor({ timeout: 5000 });
+  assert.match(await crit.innerText(), /EQ99997: \d+ h left on the notice[\s\S]*Answer now[\s\S]*Snooze 30 min/);
+  assert.equal(await crit.getAttribute("data-kind"), "urgent");
   assert.ok((await vib()).includes("[120,60,120,60,120]"), "urgent ring");
+  const v0 = (await vib()).length;
+  await page.clock.runFor(31000);
+  assert.ok((await vib()).length > v0, "rings again after 30 s");
   if (shots) await page.screenshot({ path: `${shots}/ring-3-urgent.png` });
-  await ping.locator('button[aria-label="Close"]').click();
+  await crit.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
+  assert.equal(await crit.count(), 0);
   // Each rings once: nothing new -> no banner again.
   const n = (await vib()).length;
   await page.clock.runFor(6 * 60 * 1000);

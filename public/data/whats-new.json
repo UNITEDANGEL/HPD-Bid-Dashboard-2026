@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 21, 2026",
+      "title": "🔨 Jobs button + alerts you can't miss",
+      "items": [
+        "🔨 Jobs (bottom left, with Close out / 2nd try): every open job — To do (late ones first, \"Nd late\" / \"due M/D\"), Close out, 2nd try, Waiting on HPD, All — with a search. Tap a job: the map goes there and its card opens. Jobs HPD closed or PIP paid are left out.",
+        "An overdue notice or a failed fax now opens a red box in the middle of the screen (Answer now / Snooze 30 min) that rings again every 30 seconds until you choose.",
+        "The HPD Field icon on your Home Screen shows the number of unread alerts, like Gmail."
+      ]
+    },
+    {
+      "date": "Oct 21, 2026",
       "title": "🌆 Evening wrap-up on your phone",
       "items": [
         "Every weekday from about 6 PM, one alert closing out the day: bids faxed (confirmed / waiting / failed), NO BIDs, notices and requests you answered, what's still open, and tomorrow's bids still to send (with the first deadline).",

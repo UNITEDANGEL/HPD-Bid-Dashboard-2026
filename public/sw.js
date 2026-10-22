@@ -68,6 +68,12 @@ self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { title: event.data ? event.data.text() : "HPD Field" }; }
   const title = data.title || "HPD Field";
+  // The Home Screen icon counts alerts like Gmail (the app sets the exact number when it opens).
+  const bump = caches.open("hpd-badge").then((c) => c.match("/badge").then((r) => (r ? r.text() : "0")).then((t) => {
+    const n = (Number(t) || 0) + 1;
+    return c.put("/badge", new Response(String(n))).then(() => (self.navigator.setAppBadge ? self.navigator.setAppBadge(n) : undefined));
+  })).catch(() => {});
+  event.waitUntil(bump);
   event.waitUntil(self.registration.showNotification(title, {
     body: data.body || "",
     tag: data.tag || undefined,

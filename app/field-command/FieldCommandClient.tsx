@@ -52,6 +52,7 @@ import { chimeMuted, notify, playChime, setChimeMuted, unlockChime, type AppNoti
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import NotificationsPanel from "./NotificationsPanel";
+import JobsList, { type JobRow } from "./JobsList";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
@@ -1632,6 +1633,22 @@ export default function FieldCommandClient() {
   // The banner for every notification (new / reply email from HPD, fax confirmed or failed, new invitation, a notice
   // running out of time), with its ring (owner, 20 Oct: "ring for all notifications").
   const [ping, setPing] = useState<(AppNotice & { at: number }) | null>(null);
+  const [critical, setCritical] = useState<(AppNotice & { at: number; rings: number }) | null>(null);
+  const snoozeKey = (n: AppNotice) => `hpd-snooze-${n.omo || n.title}`;
+  const snoozed = (n: AppNotice) => { try { return Date.now() < Number(localStorage.getItem(snoozeKey(n)) || 0); } catch { return false; } };
+  useEffect(() => {
+    if (!critical || critical.rings >= 5) return;
+    const t = window.setTimeout(() => { playChime(critical.kind); setCritical((c) => (c && c.at === critical.at ? { ...c, rings: c.rings + 1 } : c)); }, 30000);
+    return () => window.clearTimeout(t);
+  }, [critical]);
+  // The Home Screen icon shows the unread count (like Gmail); the phone keeps counting alerts while the app is closed.
+  const syncBadge = (n: number) => {
+    try {
+      const nav = navigator as unknown as { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+      if (n > 0) void nav.setAppBadge?.(n).catch(() => {}); else void nav.clearAppBadge?.().catch(() => {});
+      void caches.open("hpd-badge").then((c) => c.put("/badge", new Response(String(n)))).catch(() => {});
+    } catch { /* no badges on this browser */ }
+  };
   useEffect(() => {
     // Every banner steps aside by itself (it sat over other screens' Close buttons, 21 Oct); all of them stay in 🔔.
     if (!ping) return;
@@ -1653,7 +1670,17 @@ export default function FieldCommandClient() {
   };
   const setHpdPing = (p: null) => { if (!p) setPing(null); };
   useEffect(() => {
-    const on = (e: Event) => { const n = (e as CustomEvent<AppNotice>).detail; if (!n?.title) return; addToLog(n); setPing({ ...n, at: Date.now() }); playChime(n.kind); };
+    const on = (e: Event) => {
+      const n = (e as CustomEvent<AppNotice>).detail;
+      if (!n?.title) return;
+      addToLog(n);
+      playChime(n.kind);
+      // Overdue notices and failed faxes can't be missed (owner, 21 Oct: "better visual and sound alerts").
+      // (Test browsers get it only when a test asks: real overdue notices would cover every other test.)
+      const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-critical") !== "1"; } catch { return true; } })();
+      if ((n.kind === "urgent" || n.kind === "fax-bad") && !snoozed(n) && !testing) { setCritical({ ...n, at: Date.now(), rings: 1 }); return; }
+      setPing({ ...n, at: Date.now() });
+    };
     window.addEventListener("hpd-notify", on);
     // iPhone mutes sound after the app was in the background: every touch unlocks it again.
     const unlock = () => unlockChime();
@@ -1681,7 +1708,7 @@ export default function FieldCommandClient() {
   }, []);
   const [notifUnread, setNotifUnread] = useState(0);
   useEffect(() => {
-    const count = () => setNotifUnread(unreadCount(readLog()));
+    const count = () => { const n = unreadCount(readLog()); setNotifUnread(n); syncBadge(n); };
     count();
     window.addEventListener("hpd-notify-log", count);
     return () => window.removeEventListener("hpd-notify-log", count);
@@ -1993,6 +2020,23 @@ export default function FieldCommandClient() {
     .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
     .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
   const [secondTryOpen, setSecondTryOpen] = useState(false);
+  // Jobs button (owner, 21 Oct): every open job -- to do, ready to close out, 2nd tries.
+  const [jobsOpen, setJobsOpen] = useState(false);
+  const jobRows = useMemo<JobRow[]>(() => {
+    const closeIds = new Set(closeOutJobs.map((j) => jobId(j)));
+    const secondIds = new Map(secondTryJobs.map((r) => [jobId(r.job), r.second]));
+    // Jobs HPD closed or PIP paid are finished, whatever the app last saw (they were 295 days "late").
+    return jobs.filter((job) => !isTestJob(jobId(job)) && jobQueue(job) !== "archived" && !closedJobs.has(jobId(job)) && (closeIds.has(jobId(job)) || secondIds.has(jobId(job)) || !["done", "others", "noaccess", "refused"].includes(pinStyle(job).key))).map((job) => {
+      const id = jobId(job);
+      const st = pinStyle(job);
+      const second = secondIds.get(id);
+      const sentAt = (followRef.current?.sent?.[id] as { sentAt?: string } | undefined)?.sentAt || "";
+      const group: JobRow["group"] = closeIds.has(id) ? "closeout" : second ? "secondtry" : sentAt ? "waiting" : "todo";
+      return { id, address: jobAddress(job), borough: String(jobBorough(job)), status: st.label, color: st.color, due: String(value(job, ["WorkCompletionDate", "MaturityDate"]) || ""), award: String(value(job, ["AwardDate"]) || ""), group,
+        note: group === "waiting" ? `Paperwork sent ${sentAt} · waiting on HPD` : group === "closeout" ? `${FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome"])] || "Visit saved"} · package not sent` : second ? `2nd try ${second.due ? "due now" : `from ${second.dueDay}`}` : undefined };
+    });
+  }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
   // Stats sheet (chart button on the map): visits, outcomes, packages and money for today / this
   // week / this month, plus what is still open. The test job never counts.
   const [statsOpen, setStatsOpen] = useState(false);
@@ -2025,6 +2069,7 @@ export default function FieldCommandClient() {
     if (keep !== "summary") setSummaryOpen(false);
     if (keep !== "closeout") setCloseOutOpen(false);
     if (keep !== "secondtry") setSecondTryOpen(false);
+    if (keep !== "jobs") setJobsOpen(false);
     if (keep !== "route") setRouteCloseRequest((n) => n + 1);
     setSelectedJob(null);
     setFiltersOpen(false);
@@ -3278,8 +3323,13 @@ export default function FieldCommandClient() {
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         {/* onTouchStart lets iPhone Safari show the pressed (zoomed) state with its callout before the tap lands. */}
         {/* Jobs ready to close out and 2nd tries: two round buttons (bottom left) instead of bars across the map. */}
-        {(closeOutJobs.length || secondTryJobs.length) && !selectedJob ? (
+        {(jobRows.length || closeOutJobs.length || secondTryJobs.length) && !selectedJob ? (
           <div className="fc-work-fabs" onTouchStart={() => undefined}>
+            {jobRows.length ? (
+              <button type="button" className="fc-work-fab is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
+                <span className="fc-jobs-ico" aria-hidden="true">🔨</span><span className="fc-fab-label">Jobs</span><span key={jobsTodo} className="fc-follow-badge hpd-pop" data-hpd-smoke="fc-jobs-count">{jobsTodo}</span>
+              </button>
+            ) : null}
             {closeOutJobs.length ? (
               <button type="button" className="fc-work-fab is-closeout" data-hpd-smoke="fc-close-out" aria-label="Ready to close out" aria-pressed={closeOutOpen} onClick={() => { if (closeOutOpen) { setCloseOutOpen(false); return; } closeScreens("closeout"); setCloseOutOpen(true); }}>
                 <CloseOutIcon /><span className="fc-fab-label">Close out</span><span className="fc-follow-badge" data-hpd-smoke="fc-close-out-count">{closeOutJobs.length}</span>
@@ -4582,6 +4632,19 @@ export default function FieldCommandClient() {
           <span>{allowAlerts === "ask" ? "Wins (cha-ching), notices, Gafur / Lewis requests, rejections, new bids — even with the app closed. One tap, then it's automatic." : allowAlerts}</span>
           {allowAlerts === "ask" || allowAlerts.startsWith("Alerts") || allowAlerts.startsWith("Couldn") ? <button type="button" data-hpd-smoke="fc-allow-alerts-yes" onClick={() => void import("../../lib/push").then(async ({ turnOnPush }) => { const r = await turnOnPush(); setAllowAlerts(r.ok ? "" : r.message); if (r.ok) notify({ kind: "fax-ok", title: "🔔 Phone alerts are on", text: "Automatic from now on." }); })}>Allow alerts</button> : null}
           <button type="button" className="is-later" onClick={() => { try { localStorage.setItem("hpd-allow-alerts-later", String(Date.now())); } catch { /* private mode */ } setAllowAlerts(""); }}>Later</button>
+        </div>
+      ) : null}
+      {jobsOpen ? <JobsList rows={jobRows} onClose={() => setJobsOpen(false)} onOpen={(id) => { const job = jobs.find((j) => jobId(j) === id); setJobsOpen(false); if (job) openIssueJob(job); }} /> : null}
+      {critical ? (
+        <div className="fc-critical" role="alertdialog" aria-label="Urgent" data-hpd-smoke="fc-critical" data-kind={critical.kind}>
+          <div className="fc-critical-box">
+            <span className="fc-critical-icon" aria-hidden="true">{critical.kind === "fax-bad" ? "❌" : "⏰"}</span>
+            <b>{critical.title.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "")}</b>
+            {critical.text ? <p>{critical.text}</p> : null}
+            <button type="button" className="is-go" data-hpd-smoke="fc-critical-go" onClick={() => { const c = critical; setCritical(null); goTo(c.go, c.omo || ""); }}>{critical.kind === "fax-bad" ? "Open the bid" : "Answer now"}</button>
+            <button type="button" data-hpd-smoke="fc-critical-snooze" onClick={() => { try { localStorage.setItem(snoozeKey(critical), String(Date.now() + 30 * 60000)); } catch { /* private mode */ } setCritical(null); }}>Snooze 30 min</button>
+            <small>{critical.rings < 5 ? "Rings again every 30 seconds until you choose." : "Still waiting for you."}</small>
+          </div>
         </div>
       ) : null}
       {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go, n.omo || ""); }} /> : null}
