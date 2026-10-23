@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-23T14:17:53.313906+00:00",
+"generatedAt": "2026-10-23T14:31:20.748319+00:00",
 "since": "2026/10/09",
 "jobs": {
 "EN04541": [
@@ -21159,6 +21159,23 @@
 "outcome": "",
 "subject": "OMO No: ER02390 Issuer: DHANYA RAJAN Boro: Brooklyn Bldg Address: 902, DE KALB AVENUE",
 "via": "hpd-staff"
+}
+],
+"ER02654": [
+{
+"date": "2026-10-23",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "SIGNED - ER02654 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - ER02654 - No Access - 1555 GRAND CONCOURSE, 10452",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-23",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER02654 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - ER02654 - No Access - 1555 GRAND CONCOURSE, 10452"
 }
 ],
 "ER03009": [
