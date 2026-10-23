@@ -27,8 +27,14 @@ try {
   await board.locator('[data-hpd-smoke="fc-scan-btn"]').click();
   await page.waitForFunction(() => /Couldn't open your HPD emails/.test(document.querySelector('[data-hpd-smoke="fc-scan-status"]')?.textContent || ""), null, { timeout: 15000 });
   if (shots) await page.screenshot({ path: `${shots}/signed-out.png` });
-  // Search still works signed out (the public copy, contacts masked).
+  // On the map: one clear Sign in button while signed out (22 Oct "where do I sign in").
   await board.locator('[data-hpd-smoke="fc-board-close"]').click();
+  const bar = page.locator('[data-hpd-smoke="fc-signin-bar"]');
+  await bar.waitFor({ timeout: 10000 });
+  assert.match(await bar.innerText(), /Sign in with Google/);
+  assert.match(await bar.locator("form").getAttribute("action"), /^\/api\/drive\/start\?back=/);
+  if (shots) await page.screenshot({ path: `${shots}/signin-bar.png` });
+  // Search still works signed out (the public copy, contacts masked).
   await page.locator('[data-hpd-smoke="fc-search"]').fill("mini split");
   const find = page.locator('[data-hpd-smoke="fc-find"]');
   await find.locator('[data-hpd-smoke="fc-find-row"][data-omo="ER08283"]').waitFor({ timeout: 30000 });

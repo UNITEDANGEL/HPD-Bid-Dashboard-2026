@@ -3476,6 +3476,12 @@ export default function FieldCommandClient() {
           {recent.map((r) => <button key={r} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFindHidden(""); setSearch(r); }}>{r}</button>)}
         </div>
       ) : null}
+      {(privateOk === false || threads === null) && !selectedJob && !search.trim() ? (
+        <div className="fc-signin-bar" data-hpd-smoke="fc-signin-bar">
+          <span>🔑 Signed out: your HPD emails, tenant contacts and the AI need your Google sign-in (once, it lasts a year).</span>
+          <form className="fc-signin-form" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-signin-bar-go"><button type="submit">Sign in with Google</button></form>
+        </div>
+      ) : null}
       {search.trim().length >= 3 && findHidden !== search && !selectedJob ? (
         <FindJob query={search.trim()} onClose={() => setFindHidden(search)} onOpen={(item) => {
           const job = findAnyJob(item.omo);
@@ -4326,7 +4332,8 @@ export default function FieldCommandClient() {
                         </div>
                       );
                     })() : null}
-                    <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in with Google (Storage page) to see" : "Not listed")}</strong>
+                    <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in to see" : "Not listed")}</strong>
+                    {!tenant.phone && privateOk === false ? <form className="fc-signin-form" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="jc-tenant-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
                     {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
                   </div>
                 </div>

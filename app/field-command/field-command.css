@@ -3413,3 +3413,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-agent-signin button { width: 100%; min-height: 48px; border-radius: 12px; border: 0; background: #f59e0b; color: #111827; font: 900 16px system-ui, sans-serif; }
 
 .fc-agent a.fc-agent-action { flex: 1 1 auto; min-height: 46px; padding: 0 14px; border-radius: 12px; background: #2563eb; color: #fff; font: 900 15px system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+
+/* Signed out: one clear Sign in on the map (22 Oct "where do I sign in"). */
+.fc-signin-bar { position: absolute; z-index: 1450; top: calc(max(12px, env(safe-area-inset-top)) + 118px); left: 12px; right: 84px; display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: #451a03f5; border: 2px solid #f59e0b; color: #fef3c7; box-shadow: 0 10px 24px #0008; font: 700 13.5px/1.35 system-ui, sans-serif; }
+.fc-signin-form button { width: 100%; min-height: 46px; border-radius: 12px; border: 0; background: #f59e0b; color: #111827; font: 900 16px system-ui, sans-serif; }

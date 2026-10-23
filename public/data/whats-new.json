@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Sign in right from the map",
+      "items": [
+        "🔑 When the phone is signed out, a Sign in with Google bar shows at the top of the map (it goes away once you're signed in). The job card's tenant line has the same button."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Do more by voice",
       "items": [
         "🎤 \"Text the tenant\" (the job on screen, or \"…for EQ15239\"): the AI writes the text on the job card; you open it in Messages and press Send.",
