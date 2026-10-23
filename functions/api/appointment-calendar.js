@@ -1,4 +1,4 @@
-import { appointmentCalendar } from "../../lib/appointments.ts";
+import { appointmentCalendar, reminderCalendar } from "../../lib/appointments.ts";
 
 // GET /api/appointment-calendar?id=&address=&date=&start=&end=&state=&contact=&phone=&note=&reminder=
 // Answers with the appointment as a calendar entry, so the iPhone shows "Add to Calendar" and the
@@ -7,6 +7,14 @@ export async function onRequestGet({ request }) {
   const url = new URL(request.url);
   const get = (name) => (url.searchParams.get(name) || "").slice(0, 500);
   const id = get("id").replace(/[^A-Za-z0-9 _-]/g, "").slice(0, 40);
+  // A reminder said to the helper: ?kind=reminder&what=&date=&time= (alerts at that time).
+  if (get("kind") === "reminder") {
+    try {
+      return new Response(reminderCalendar(get("what"), get("date"), get("time"), `${url.origin}/map/`), { headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": 'inline; filename="HPD-reminder.ics"', "Cache-Control": "no-store" } });
+    } catch (error) {
+      return new Response(`Could not make the reminder: ${error instanceof Error ? error.message : "check the time"}`, { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+    }
+  }
   const appointment = {
     date: get("date"),
     start: get("start"),

@@ -326,3 +326,22 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.deepEqual(parseCommand("read me this job"), { intent: "read-job", ref: "" });
   console.log("PASS memory words: the descriptions / the first one / number two pick from what was just listed");
 }
+
+// 💰 Award alert with where and what, and 💵 paid alerts (owner, 23 Oct: "build award alert and paid alert").
+{
+  const now = Date.parse("2026-10-23T15:00:00Z");
+  const threads = [{ id: "aw1", subject: "Confirmation of Award - OMO# ER05729", omos: ["ER05729"], kind: "award", messages: [{ at: "2026-10-23T14:00:00Z", hpd: true, mine: false, from: "HPD ERP <erp@hpd.nyc.gov>", subject: "Confirmation of Award - OMO# ER05729", text: "You have been awarded OMO ER05729." }] }];
+  const a = await findAlerts({ conversations: { threads }, bids: [], sent: {}, requests: {}, now, loadLib,
+    addresses: { ER05729: "500 FT WASHINGTON AVENUE, 10033", EQ11111: "1 TEST STREET, 11111" },
+    descriptions: { ER05729: "Remove and replace defective door lock at apartment entrance door." },
+    payments: { recent: [{ date: "2026-10-21", status: "Paid", id: "EFT DSB 1", amount: 10629 }, { date: "2026-09-01", status: "Paid", id: "EFT DSB 0", amount: 500 }] },
+    pip: { jobs: { EQ11111: { status: "paid", paid: 1250, outstanding: 0, lastDate: "2026-10-20" }, EQ22222: { status: "paid", paid: 900, outstanding: 0, lastDate: "2026-08-01" }, EQ33333: { status: "not paid yet", paid: 0, outstanding: 300, lastDate: "2026-10-22" } } } });
+  const award = a.find((x) => x.tag === "a-ER05729");
+  assert.ok(award, "award alert");
+  assert.equal(award.title, "💰 You won ER05729 · 500 FT WASHINGTON AVENUE");
+  assert.match(award.body, /lock/i, "the work in plain words");
+  const paid = a.filter((x) => /^💵/.test(x.title));
+  assert.deepEqual(paid.map((x) => x.title).sort(), ["💵 HPD paid you $10,629", "💵 Paid · EQ11111"], "recent payments only, not old ones or unpaid jobs");
+  assert.match(paid.find((x) => x.title.includes("EQ11111")).body, /\$1,250 · 1 TEST STREET/);
+  console.log("PASS award + paid alerts: 'You won ER05729 · 500 FT WASHINGTON AVENUE' with the work; 'HPD paid you $10,629' and 'Paid · EQ11111 $1,250'; old payments and unpaid jobs stay quiet");
+}

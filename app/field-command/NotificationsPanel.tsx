@@ -1,10 +1,18 @@
 "use client";
 // The notifications list (owner, 20 Oct): every alert the app showed, newest first. Tap one to go there (it's marked
 // read); ✓ marks it handled; filters by kind. Phone alerts are switched on from here too.
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { clearHandled, filterLog, markAllRead, markLog, readLog, unreadCount, type LogFilter, type LoggedNotice } from "../../lib/notify-log";
 import { ALERT_KINDS, kindOf } from "../../lib/alert-kinds";
+import { speak } from "../../lib/speak";
+import { sayOmo } from "../../lib/alert-summary";
+// Which day an alert came (23 Oct, better alerts): "Today", "Yesterday" or the date, New York time.
+const dayOf = (iso: string) => {
+  const ny = (t: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(t));
+  const d = ny(Date.parse(iso));
+  return d === ny(Date.now()) ? "Today" : d === ny(Date.now() - 86400000) ? "Yesterday" : new Date(Date.parse(iso)).toLocaleDateString("en-US", { weekday: "long", month: "numeric", day: "numeric" });
+};
 const ago = (iso: string) => {
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
   if (m < 1) return "just now";
@@ -37,20 +45,29 @@ export default function NotificationsPanel({ onGo, onClose }: { onGo: (n: Logged
           {tabs.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={filter === k} className={filter === k ? "is-on" : ""} data-hpd-smoke={`fc-notif-tab-${k}`} onClick={() => setFilter(k)}>{label} <b>{count(k)}</b></button>)}
         </div>
         <div className="fc-notif-actions">
+          {/* Read the new ones out loud, newest first (23 Oct, better alerts). */}
+          <button type="button" data-hpd-smoke="fc-notif-read-aloud" disabled={!unreadCount(all)} onClick={() => {
+            const fresh = all.filter((n) => !n.read && !n.done).slice(0, 6);
+            const words = fresh.map((n, i) => `${i + 1}. ${n.title.replace(/^\p{Extended_Pictographic}️?\s*/u, "")}${n.text ? `. ${n.text}` : ""}`).join(". ");
+            speak(sayOmo(`You have ${fresh.length} new alert${fresh.length === 1 ? "" : "s"}. ${words}`).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 100);
+          }}>🔊 Read them to me</button>
           <button type="button" data-hpd-smoke="fc-notif-all-read" disabled={!unreadCount(all)} onClick={() => setAll(markAllRead())}>Mark all read</button>
           {filter === "done" && shown.length ? <button type="button" data-hpd-smoke="fc-notif-clear" onClick={() => setAll(clearHandled())}>Clear handled</button> : null}
           <Link href="/alerts/" data-hpd-smoke="fc-notif-phone">📱 Phone alerts</Link>
         </div>
         {!shown.length ? <p className="fc-follow-note" data-hpd-smoke="fc-notif-empty">{filter === "all" ? "No notifications yet. Notices, documents requests, payment rejections, messages from HPD, new invitations, fax results and deadlines show here." : "Nothing here."}</p> : null}
         <ul className="fc-notif-list">
-          {shown.map((n) => (
-            <li key={n.id} className={`is-${kindOf(n.kind)}${n.read ? "" : " is-unread"}${n.done ? " is-done" : ""}`} style={{ borderLeftColor: ALERT_KINDS[kindOf(n.kind)]?.color }} data-hpd-smoke="fc-notif-row" data-kind={kindOf(n.kind)}>
+          {shown.map((n, i) => (
+            <Fragment key={n.id}>
+            {i === 0 || dayOf(shown[i - 1].at) !== dayOf(n.at) ? <li className="fc-notif-day" data-hpd-smoke="fc-notif-day">{dayOf(n.at)}</li> : null}
+            <li className={`is-${kindOf(n.kind)}${n.read ? "" : " is-unread"}${n.done ? " is-done" : ""}`} style={{ borderLeftColor: ALERT_KINDS[kindOf(n.kind)]?.color }} data-hpd-smoke="fc-notif-row" data-kind={kindOf(n.kind)}>
               <button type="button" className="fc-notif-main" onClick={() => { setAll(markLog(n.id, { read: true })); onGo(n); }}>
                 <span aria-hidden="true">{ALERT_KINDS[kindOf(n.kind)]?.icon || "🔔"}</span>
                 <span><small className="fc-notif-kind" style={{ color: ALERT_KINDS[kindOf(n.kind)]?.color }}>{ALERT_KINDS[kindOf(n.kind)]?.name}</small><b>{n.title.replace(/^\p{Extended_Pictographic}️?\s*/u, "")}</b>{n.text ? <small>{n.text}</small> : null}<em>{ago(n.at)}</em></span>
               </button>
               <button type="button" className="fc-notif-done" aria-label={n.done ? "Not handled" : "Handled"} data-hpd-smoke="fc-notif-done" onClick={() => setAll(markLog(n.id, { done: !n.done, read: true }))}>{n.done ? "↩" : "✓"}</button>
             </li>
+            </Fragment>
           ))}
         </ul>
       </div>

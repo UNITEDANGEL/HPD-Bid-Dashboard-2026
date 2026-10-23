@@ -109,6 +109,12 @@ jobs:
         env:
           HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          # The text service (23 Oct): the first text to the tenant on a new award. Without these secrets nothing is texted.
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM: ${{ secrets.TWILIO_FROM }}
+          TWILIO_MESSAGING_SERVICE_SID: ${{ secrets.TWILIO_MESSAGING_SERVICE_SID }}
+          AUTO_TENANT_TEXT: ${{ vars.AUTO_TENANT_TEXT }}
         run: node scripts/send-push.mjs
 
       - name: Commit fetcher output

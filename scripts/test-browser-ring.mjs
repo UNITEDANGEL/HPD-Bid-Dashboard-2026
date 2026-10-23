@@ -96,6 +96,11 @@ try {
   const rows = panel.locator('[data-hpd-smoke="fc-notif-row"]');
   const kinds = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
   for (const k of ["urgent", "notice", "bid", "request"]) assert.ok(kinds.includes(k), `${k} kept: ${kinds}`);
+  // Better alerts (23 Oct): grouped by day, and the new ones read out loud on one tap.
+  assert.match(await panel.locator('[data-hpd-smoke="fc-notif-day"]').first().textContent(), /^Today$/, "a day heading");
+  await page.evaluate(() => { window.__spoken = []; if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__spoken.push(u.text); }; });
+  await panel.locator('[data-hpd-smoke="fc-notif-read-aloud"]').click();
+  await page.waitForFunction(() => (window.__spoken || []).some((t) => /new alerts?\./.test(t)), null, { timeout: 5000 });
   assert.ok(kinds.indexOf("urgent") < kinds.indexOf("bid") && kinds.indexOf("bid") < kinds.indexOf("request"), "newest first");
   assert.match(await rows.filter({ hasText: "EP27382" }).first().innerText(), /Documents request[\s\S]*Deoranie Gafur sent a request · EP27382/);
   assert.match(await panel.locator('[data-hpd-smoke="fc-notif-tab-request"]').innerText(), /Requests \d/);

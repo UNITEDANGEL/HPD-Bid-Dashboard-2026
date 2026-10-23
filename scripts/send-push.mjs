@@ -11,6 +11,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { sendSms, smsReady, usPhone } from "../server/tenant-sms.mjs";
 
 const ROOT = process.cwd();
 const DRY = process.argv.includes("--dry-run");
@@ -24,6 +25,7 @@ const SITE = "https://hpd-bid-dashboard-2026.pages.dev";
 export const PUSH_PUBLIC_KEY = "BBmtmIohi2rinq4pj68d--uCtbicYU9SraMID56vmadykHCEtF0kuoEBQshq0N81V7BhHK-ovdLmvLrutzdv1M0";
 
 const h = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
+const money = (n) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 function keyBuf() {
   const file = path.join(ROOT, "data/private/HPD_PRIVATE_DATA_KEY.txt");
   const text = process.env.HPD_PRIVATE_DATA_KEY || (fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "");
@@ -50,8 +52,16 @@ export function workingHours(now = Date.now()) {
 }
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {} }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {}, descriptions = {} }) {
   const out = [];
+  // The work in plain words, from the job file (for the award alert).
+  const jobWords = await (async () => {
+    if (!loadLib) return () => "";
+    try {
+      const { jobSummary, lineText } = await loadLib("job-summary");
+      return (omo) => { const d = String(descriptions[omo] || ""); if (!d) return ""; const s = jobSummary(d); return (s.lines.length ? s.lines.map(lineText).join(", ") : d.replace(/\s+/g, " ").split(/(?<=\.)\s/)[0]).slice(0, 120); };
+    } catch { return () => ""; }
+  })();
   const kinds = loadLib ? await loadLib("alert-kinds") : null;
   // What they want in plain words (22 Oct): the alert text on a locked phone, instead of the email subject.
   const summary = loadLib ? await loadLib("alert-summary") : null;
@@ -65,6 +75,15 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       const subject = String(t.subject || m.subject || "");
       const kind = kinds ? kinds.emailKind(subject, t.kind || "", m.from || "") : "message";
       const title = kinds ? kinds.emailTitle(kind, who, omo, replied, subject) : `📩 ${who || "HPD"} ${replied ? "replied" : "wrote"}${omo ? ` · ${omo}` : ""}`;
+      // A new award (owner, 23 Oct: "the AI should let me know the location and work description"): where and what.
+      if (kind === "award" && omo) {
+        const address = String(addresses[omo] || "").replace(/,\s*\d{5}$/, "");
+        const work = jobWords(omo);
+        if (address || work) {
+          out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title: `💰 You won ${omo}${address ? ` · ${address}` : ""}`, body: (work || "Open the job to see the work.").slice(0, 160), url: `/map/?view=all&map=1&omo=${omo}`, tag: `a-${omo}` });
+          continue;
+        }
+      }
       out.push({ key: `e:${h(`${t.id}|${m.at}`)}`, kind, title, body: (summary ? summary.summarizeHpd({ kind, subject, text: m.text || "", omo }) : String(m.subject || t.subject || "")).slice(0, 160), url: kind === "rejection" ? `/map/?view=all&map=1&money=1&omo=${omo}` : kind === "award" ? `/map/?view=all&map=1&omo=${omo}` : `/map/?view=all&map=1&board=1&omo=${omo}`, tag: `t-${h(t.id)}` });
     }
   }
@@ -114,6 +133,18 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
         out.push({ key: `c:${h(`${omo}|${step.textedAt}|${step.repliedAt}`)}`, kind: "message", title: `📞 Call the tenant${address ? ` at ${address}` : ""}`, body: `${omo}: ${step.why}`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `c-${omo}` });
       }
     } catch (e) { console.log(`tenant call reminders skipped: ${e.message}`); }
+  }
+  // 💵 Paid (owner, 23 Oct "build the paid alert"): a payment from HPD in PIP, and each job PIP now shows as paid. Only
+  // the last 7 days, so turning this on doesn't ring for old payments.
+  const recentDay = (d) => d && now - Date.parse(`${d}T12:00:00Z`) <= 7 * 86400000;
+  for (const p of payments?.recent || []) {
+    if (!/paid/i.test(p.status || "") || !recentDay(p.date) || !(p.amount > 0)) continue;
+    out.push({ key: `pay:${h(`${p.id}|${p.amount}`)}`, kind: "award", title: `💵 HPD paid you ${money(p.amount)}`, body: `${/eft/i.test(p.id || "") ? "Direct deposit" : "Check"} dated ${p.date.slice(5).replace("-", "/")} (PIP).`, url: "/map/?view=all&map=1&money=1", tag: `pay-${h(p.id || p.date)}` });
+  }
+  for (const [omo, j] of Object.entries(pip?.jobs || {})) {
+    if (!(j?.paid > 0) || !/paid/i.test(j.status || "") || /not paid/i.test(j.status || "") || !recentDay(j.lastDate)) continue;
+    const address = String(addresses[omo] || "").replace(/,\s*\d{5}$/, "");
+    out.push({ key: `pj:${h(`${omo}|${j.paid}`)}`, kind: "award", title: `💵 Paid · ${omo}`, body: `${money(j.paid)}${address ? ` · ${address}` : ""}${j.outstanding > 0 ? ` · ${money(j.outstanding)} still owed` : ""}`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `pj-${omo}` });
   }
   // 💵 Friday money report (owner, 22 Oct "next upgrade"): once each Friday from 2 PM, what HPD owes and what holds it up.
   const cash = await moneyReport({ pip, payments, requests, sent, now, loadLib });
@@ -244,6 +275,34 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
   };
 }
 
+// 📱 The first text to the tenant on a new award, by itself (owner, 23 Oct: "the AI can send texts for me; I'm the
+// contractor awarded, I can reach the tenant"). Runs when the text service is set up (TWILIO_* secrets) and
+// AUTO_TENANT_TEXT isn't "off": every award of the last 2 days whose tenant wasn't texted yet, in working hours, once per
+// job (TenantTextedAt on the job's record). The no-answer clock and the "call the tenant" reminder start from it.
+export async function autoTextAwards({ awards, tenants, records, addresses, descriptions, loadLib, env = process.env, now = Date.now(), fetcher = fetch, save }) {
+  const done = [];
+  if (!smsReady(env) || env.AUTO_TENANT_TEXT === "off" || !workingHours(now)) return done;
+  const { tenantTextDraft } = await loadLib("tenant-text");
+  const { jobSummary, lineText } = await loadLib("job-summary");
+  for (const a of awards) {
+    const omo = String(a.tag || "").replace(/^a-/, "");
+    const rec = records[omo] || {};
+    if (!/^[A-Z]{2}\d{5}$/.test(omo) || rec.TenantTextedAt || rec.AutoTextTried) continue;
+    const t = tenants?.jobs?.[omo] || {};
+    const phone = usPhone(t.TenantPhone || t.ItbTenantPhone);
+    if (!phone) continue;
+    const d = String(descriptions[omo] || "");
+    const s = d ? jobSummary(d) : { lines: [] };
+    const job = s.lines.length ? s.lines.map(lineText).join(", ") : d.replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120) || "the repair";
+    const text = tenantTextDraft({ name: t.TenantName || t.ItbTenantName || "", address: String(addresses[omo] || ""), apt: t.ApartmentUnit || t.ItbTenantApartment || "", job });
+    const r = await sendSms(env, phone, text, fetcher);
+    const at = new Date(now).toISOString();
+    await save(omo, r.sent ? { ...rec, TenantTextedAt: at, TenantRepliedAt: "", TenantTextedBy: "auto" } : { ...rec, AutoTextTried: at, AutoTextError: String(r.reason || "").slice(0, 160) });
+    if (r.sent) done.push({ key: `t:${h(`${omo}|${at}`)}`, kind: "message", title: `📱 Texted the tenant · ${omo}`, body: `${String(addresses[omo] || "").replace(/,\s*\d{5}$/, "")}: asked when they can let us in. Their answer comes to the app.`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `t-${omo}` });
+  }
+  return done;
+}
+
 async function main() {
   const k = keyBuf();
   const priv = vapidPrivate();
@@ -263,7 +322,8 @@ async function main() {
   // Job addresses (for the call-the-tenant reminder).
   const coa = JSON.parse(read(path.join(ROOT, "public/data/COA_Fetcher_2026.json")) || "[]");
   const addresses = Object.fromEntries((Array.isArray(coa) ? coa : coa.jobs || []).map((j) => [String(j.OMO || "").toUpperCase(), j.BuildingAddress || ""]));
-  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses });
+  const descriptions = Object.fromEntries((Array.isArray(coa) ? coa : coa.jobs || []).map((j) => [String(j.OMO || "").toUpperCase(), j.ItbPage3Description || j.JobDescription || j.description || ""]));
+  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions });
   if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
   if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
@@ -275,6 +335,14 @@ async function main() {
   const fresh = newBids.length > 1 ? [...fresh0.filter((a) => a.kind !== "bid"), { key: `bids:${newBids.map((a) => a.key).join(",")}`, kind: "bid", title: `🧾 ${newBids.length} new invitations to bid`, body: newBids.slice(0, 4).map((a) => a.body.split(" · ").slice(-1)[0]).join(" · "), url: "/map/?bids=1", tag: "bids" }] : fresh0;
   const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
   if (!TEST && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
+  if (!TEST && !DRY && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW && smsReady(process.env)) {
+    try {
+      const tenBuf = read(path.join(ROOT, "public/private/tenants.json.enc"));
+      const tenants = tenBuf ? JSON.parse(openSealed(tenBuf, k).toString("utf8")) : null;
+      const save = async (omo, record) => { await fetch(`${WORKER}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: omo, patch: record }) }); };
+      fresh.push(...await autoTextAwards({ awards: alerts.filter((a) => String(a.tag || "").startsWith("a-")), tenants, records, addresses, descriptions, loadLib, save }));
+    } catch (e) { console.log(`automatic tenant texts skipped: ${e.message}`); }
+  }
   if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).

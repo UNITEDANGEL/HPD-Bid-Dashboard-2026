@@ -1,8 +1,9 @@
+import { smsReady } from "./tenant-sms.mjs";
 import { handleDriveBackups } from "./drive-backups.mjs";
 import { handleDrivePackages, handlePushSubscribe } from "./drive-packages.mjs";
 import { handleDriveVideos } from "./drive-videos.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
-const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply", "hpd-draft", "hpd-ask", "hpd-scan", "hpd-sent", "hpd-sent-pdf", "signatures"];
+const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply", "hpd-draft", "hpd-ask", "hpd-scan", "hpd-sent", "hpd-sent-pdf", "signatures", "tenant-sms", "tenant-sms-inbox"];
 const VIDEO_ACTIONS = ["video-start", "video-piece", "video-to-package"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 // Sends approved packages from the owner's Gmail. Optional: Drive works if it is not granted.
@@ -118,7 +119,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     if (action === "session") {
       const saved = await session(request, env, cfg);
       // aiReady: the helper's AI is connected (Workers AI binding or Anthropic key); just yes / no, the AI isn't called.
-      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false, aiReady: Boolean(env.AI || env.ANTHROPIC_API_KEY) });
+      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false, smsReady: smsReady(env), aiReady: Boolean(env.AI || env.ANTHROPIC_API_KEY) });
     }
     if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);

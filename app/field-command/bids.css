@@ -822,3 +822,4 @@ i.is-won { background: #16a34a; }
 .fc-bids-banner.is-compact > button { padding: 0 7px; }
 .fc-bids-banner.is-compact .fc-bids-back { min-width: 34px; padding: 0; font-size: 16px; }
 @media (max-width: 400px) { .fc-bids-banner.is-compact .fc-bids-daypick { font-size: 12px; } .fc-bids-banner.is-compact > strong em { font-size: 11px; } }
+.fc-bid-mic { flex: 0 0 auto; min-width: 44px; min-height: 44px; margin-left: 6px; border: 0; border-radius: 12px; background: #1d4ed8; color: #fff; font-size: 20px; }

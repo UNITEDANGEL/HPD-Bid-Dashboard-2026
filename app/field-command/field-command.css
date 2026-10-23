@@ -3446,3 +3446,12 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-convo-file { font-weight: 800; word-break: break-word; }
 .fc-convo-proof { font: 700 11.5px system-ui, sans-serif; opacity: 0.8; }
 .fc-convo-msg .fc-sent-open { margin-top: 4px; }
+
+/* Job counts in the 📅 menu and on its button (23 Oct). */
+.fc-days-menu button { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fc-days-count { padding: 1px 8px; border-radius: 999px; background: #1e3a8a; color: #dbeafe; font: 800 12px system-ui, sans-serif; white-space: nowrap; }
+.fc-days-menu button.is-active .fc-days-count { background: #fff; color: #1e3a8a; }
+.fc-days-btn { position: relative; }
+.fc-days-btn-count { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #2563eb; color: #fff; font: 900 11px/20px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px #fff; }
+/* Alerts by day (23 Oct, better alerts). */
+.fc-notif-day { margin: 6px 0 -2px; padding: 0 2px; color: #94a3b8; font: 900 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.05em; list-style: none; }

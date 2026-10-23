@@ -3,8 +3,34 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "Award and paid alerts · texts from the app · glide to the job",
+      "items": [
+        "💰 New award alert says where and what: \"You won ER… · <address>\" and the work in plain words.",
+        "💵 Paid alerts: \"HPD paid you $…\" and \"Paid · ER… $…\" when PIP shows the money.",
+        "📱 Text service ready: once your Twilio number is set up, \"📤 Send it now\" texts the tenant from the business number, their replies come into the app, and new awards get the first text by themselves.",
+        "🗺 Tap a job: the map glides in to the building. Close it: it glides back out to where you were.",
+        "💵 Ask \"how much does HPD owe me?\": the total in PIP, the biggest jobs, what rejections hold up and the last payment.",
+        "🧠 The AI remembers the last few things you said, so you can follow up with \"that one\" or \"text them\".",
+        "🧭 Ask \"what's left on ER05729?\": everything done on the job from award to payment, and what's left, in one answer.",
+        "🔔 Alerts list grouped by day (Today, Yesterday…), and \"🔊 Read them to me\" reads your new alerts out loud."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
+      "title": "Talk to it: appointments, reminders, actions",
+      "items": [
+        "📅 Say \"make an appointment for EQ15239 Thursday at 10\". After your yes it's saved on the job, with a ready text to the tenant (you press Send) and Add to Calendar.",
+        "⏰ Say \"remind me to call Lewis at 3\". The app rings and says it at 3, and Add to Calendar reminds you even with the app closed.",
+        "🧠 Say it your way: the AI understands free sentences and does the app's actions for you (route, text the tenant, open a job, paperwork, notices), always asking before saving or sending.",
+        "🗺 Your award-to-payment autopilot idea (texts, AI calls, booking, payment alerts) is written up in the plan with costs and what's needed."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "Your route flows on by itself",
       "items": [
+        "🎤 Bid by voice: open a bid, tap the 🎤 next to the price and say \"bid 500\". The price is filled and saved; you still tap Send twice.",
+        "📅 The days menu shows how many jobs each choice has (Last 15 days, 30 days… This year), and the 📅 button shows how many jobs are on the map now.",
         "➡️ Finished a job on today's route and the paperwork is approved? \"Going to the next stop… in 8s\": the map glides to the next stop and opens it. Tap \"Stay here\" to stay, or \"Go now\".",
         "🗺 \"Open next job\" glides there too, so you see where it is.",
         "📨 The slim bids bar fits small phones: the count and \"today\" always show."

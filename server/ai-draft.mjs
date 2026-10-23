@@ -80,7 +80,14 @@ const ASK_SYSTEM = [
   "- Use only the facts given (JSON). If the answer isn't in them, say you don't have that in the app yet.",
   "- Never invent jobs, dates, amounts, people or documents. Say job numbers exactly as given.",
   "- Short: 1 to 4 sentences, plain spoken English, no lists, no markdown, no emojis.",
-  "- You can't change, send or save anything: if asked to, say to use the app's buttons or say 'I finished <job>'.",
+  "- recentConversation (in the facts) is what the owner and you just said: use it for follow-ups like 'that one', 'text them' or 'and the other job'.",
+  "- You never send, save or change anything yourself. When the owner wants the app to do something, add one line per",
+  "  action that starts with 'DO: ' followed by exactly one of these commands (the app runs it and asks for a yes or a tap",
+  "  where needed): 'text the tenant for <job>', 'call the tenant for <job>', 'take me to <job>', 'take me to the next stop',",
+  "  'open <job>', 'read me <job>', 'plan my day', 'answer the notice for <job>', 'do the paperwork for <job>',",
+  "  'make an appointment for <job> <day> at <time>', 'remind me to <what> <day> at <time>', 'read me the new bids', \"what's left on <job>\", 'how much does HPD owe me',",
+  "  'what do I have today'. <job> is a job number from the facts, e.g. EQ15239; <day> is today, tomorrow, a weekday or",
+  "  10/27; <time> is like 10am or 2:30pm. Put the spoken answer first, then the DO lines. At most 3 DO lines.",
 ].join("\n");
 
 export function askFacts(body) {
@@ -94,10 +101,16 @@ export function askFacts(body) {
 
 export async function aiAnswer(env, ask, fetcher = fetch) {
   const user = `Facts from the app (JSON):\n${JSON.stringify(ask.facts)}\n\nQuestion: ${ask.question}`;
-  const clean = (t) => String(t || "").replace(/[*#`_]/g, "").replace(/\s+/g, " ").trim().slice(0, 700);
+  // DO lines (app actions the AI chose) stay on their own lines; the rest is one spoken paragraph.
+  const clean = (t) => {
+    const lines = String(t || "").replace(/[*#`_]/g, "").split(/\r?\n/);
+    const dos = lines.map((l) => l.trim()).filter((l) => /^DO:\s*\S/i.test(l)).slice(0, 3).map((l) => `DO: ${l.replace(/^DO:\s*/i, "").slice(0, 160)}`);
+    const said = lines.filter((l) => !/^\s*DO:/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 700);
+    return [said, ...dos].filter(Boolean).join("\n");
+  };
   if (env?.AI) {
     const model = env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-    const result = await env.AI.run(model, { messages: [{ role: "system", content: ASK_SYSTEM }, { role: "user", content: user }], max_tokens: 250 });
+    const result = await env.AI.run(model, { messages: [{ role: "system", content: ASK_SYSTEM }, { role: "user", content: user }], max_tokens: 350 });
     const text = clean(typeof result?.response === "string" ? result.response : "");
     return text ? { ai: true, model, text } : { ai: false, reason: "The AI gave no answer." };
   }
@@ -106,7 +119,7 @@ export async function aiAnswer(env, ask, fetcher = fetch) {
     const r = await fetcher("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model, max_tokens: 250, system: ASK_SYSTEM, messages: [{ role: "user", content: user }] }),
+      body: JSON.stringify({ model, max_tokens: 350, system: ASK_SYSTEM, messages: [{ role: "user", content: user }] }),
       signal: AbortSignal.timeout(30000),
     });
     if (!r.ok) return { ai: false, reason: `The AI didn't answer (HTTP ${r.status}).` };

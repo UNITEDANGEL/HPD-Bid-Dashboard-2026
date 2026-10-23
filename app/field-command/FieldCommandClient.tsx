@@ -11,7 +11,8 @@ import VideoBackupLine from "./VideoBackupLine";
 import JobSafeLine from "./JobSafeLine";
 import { nextRouteStop, type RouteJob, type RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
-import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
+import { activeAppointment, appointmentCalendarHref, appointmentConflicts, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, validateAppointment, type Appointment } from "../../lib/appointments";
+import { hourAfter } from "../../lib/voice-when";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
@@ -1207,6 +1208,14 @@ export default function FieldCommandClient() {
   useEffect(() => { setCanListen(typeof window !== "undefined" && !!((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)); setRecent(recentSearches()); }, []);
   useEffect(() => { if (search.trim().length < 3) return; const t = window.setTimeout(() => { rememberSearch(search); setRecent(recentSearches()); }, 2500); return () => window.clearTimeout(t); }, [search]);
   const listen = () => { if (listening) { listenRef.current?.stop(); return; } startListening(); };
+  // Other screens start the helper's 🎤 too (the bid sheet's "Say the price").
+  const startListeningRef = useRef(startListening);
+  startListeningRef.current = startListening;
+  useEffect(() => {
+    const on = () => startListeningRef.current();
+    window.addEventListener("hpd-listen", on);
+    return () => window.removeEventListener("hpd-listen", on);
+  }, []);
   function startListening() {
     type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
     const W = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
@@ -1344,10 +1353,33 @@ export default function FieldCommandClient() {
   const convoMissRef = useRef(0);
   // Several questions in one sentence (23 Oct): the parts still to answer and the answers so far.
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
+  // The last things said to the AI and its answers (this session), for follow-up questions.
+  const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
   const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
+  // An appointment said to the helper, waiting for your yes.
+  const pendingApptRef = useRef<{ id: string; appt: Appointment } | null>(null);
+  // Reminders said to the helper ("remind me to call Lewis at 3"): kept on this phone; at the time the app rings and
+  // says it (while it's open). Add to Calendar covers the app being closed.
+  type Reminder = { id: string; what: string; date: string; time: string };
+  const readReminders = (): Reminder[] => { try { const v = JSON.parse(localStorage.getItem("hpd-reminders-v1") || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } };
+  const saveReminders = (list: Reminder[]) => { try { localStorage.setItem("hpd-reminders-v1", JSON.stringify(list.slice(-50))); } catch { /* private mode */ } };
+  useEffect(() => {
+    const check = () => {
+      const list = readReminders();
+      if (!list.length) return;
+      const now = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()).replace(", ", "T");
+      const due = list.filter((r) => `${r.date}T${r.time}` <= now);
+      if (!due.length) return;
+      saveReminders(list.filter((r) => !due.includes(r)));
+      for (const r of due) window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", title: `⏰ Reminder: ${r.what}`, text: `You asked me to remind you to ${r.what}.` } }));
+    };
+    check();
+    const id = window.setInterval(check, 20000);
+    return () => window.clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const load = () => fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
       const day = (offset: number) => new Date(Date.now() + offset * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -1778,6 +1810,8 @@ export default function FieldCommandClient() {
       const kind: AlertKind = emailKind(m.subject, m.threadKind || "", m.from || "");
       // What they want, in plain words (22 Oct): "Missing documents for 15 work orders: EP27489 affidavit and invoice…".
       const n: AppNotice = { kind, go: kind === "rejection" ? "money" : kind === "award" ? "job" : "board", omo: m.omo, who: m.from || "", title: emailTitle(kind, m.from || "", m.omo, !!m.replied, m.subject), text: (m.text ? summarizeHpd({ kind, subject: m.subject, text: m.text, omo: m.omo }) : m.subject).slice(0, 160) };
+      // A new award says where and what (23 Oct): "You won ER… · <address>" with the work in plain words.
+      if (kind === "award" && m.omo) { const j = jobs.find((x) => jobId(x) === m.omo); if (j) { n.title = `💰 You won ${m.omo} · ${jobAddress(j).replace(/,\s*\d{5}$/, "")}`; const sum = jobSummary(jobScope(j)); n.text = (sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(j).replace(/\s+/g, " ").slice(0, 120)); } }
       addToLog(n);
       last = { ...n, at: Date.now() };
     }
@@ -2073,8 +2107,12 @@ export default function FieldCommandClient() {
     if (!map) return;
     followMeRef.current = false;
     centeredOnMeRef.current = true;
-    map.setView([lat, lng], Math.max(map.getZoom(), minZoom), { animate: false });
-    // Measure once the card is laid out, and again after its slide-up animation settles.
+    // Glide in to the job (owner, 23 Oct: "zoom into the job when I click, looks nice, and zoom back to the map").
+    const zoom = Math.max(map.getZoom(), minZoom);
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce && map.flyTo && map.getCenter().distanceTo([lat, lng]) > 5) map.flyTo([lat, lng], zoom, { duration: 0.9 });
+    else map.setView([lat, lng], zoom, { animate: false });
+    // Measure once the card is laid out, and again after its slide-up animation (and the glide) settle.
     const place = () => {
       if (!mapRef.current) return;
       const container = map.getContainer().getBoundingClientRect();
@@ -2085,10 +2123,10 @@ export default function FieldCommandClient() {
       if (Math.abs(pin.y - target) > 4) map.panBy([0, Math.round(pin.y - target)], { animate: false });
     };
     window.setTimeout(place, 200);
-    window.setTimeout(place, 800);
+    window.setTimeout(place, 1100);
   }
   // The view before a card opened: closing the card puts the map back there, so the other
-  // jobs are right where they were. A tapped pin keeps your zoom (only search/links zoom in).
+  // jobs are right where they were. Every job opens zoomed in to its building (23 Oct).
   const viewBeforeCardRef = useRef<{ center: [number, number]; zoom: number; follow: boolean } | null>(null);
   const pinTapRef = useRef(false);
   useEffect(() => {
@@ -2097,7 +2135,9 @@ export default function FieldCommandClient() {
       const before = viewBeforeCardRef.current;
       viewBeforeCardRef.current = null;
       if (before && map) {
-        map.setView(before.center, before.zoom, { animate: false });
+        // Glide back out to where you were.
+        const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        if (!reduce && map.flyTo) map.flyTo(before.center, before.zoom, { duration: 0.8 }); else map.setView(before.center, before.zoom, { animate: false });
         followMeRef.current = before.follow;
       }
       return;
@@ -2108,7 +2148,7 @@ export default function FieldCommandClient() {
     }
     const job = jobs.find((row) => jobId(row) === openJobKey);
     const at = job ? jobLatLng(job) : null;
-    if (at) showJobAboveCard(at.lat, at.lng, pinTapRef.current ? 0 : 16);
+    if (at) showJobAboveCard(at.lat, at.lng, 17);
     pinTapRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openJobKey, routeMapReady]);
@@ -2326,6 +2366,26 @@ export default function FieldCommandClient() {
       })?.key ?? null;
   const activeFilterCount = (status !== "pending" ? 1 : 0) + (borough !== "ALL" ? 1 : 0)
     + (dateRange.field !== "award" || quickDateKey !== "year" ? 1 : 0);
+
+  // How many jobs each day window has (owner, 23 Oct: "I want to see the number of jobs I have when I choose 15 days"),
+  // with the status and borough picked now, on the date type picked now. Counted only while the menu is open.
+  const dayCounts = useMemo(() => {
+    if (!daysMenuOpen) return {} as Partial<Record<QuickDateKey, number>>;
+    // The same rules as the map (filteredJobs): jobs you're working and jobs due now always show.
+    const q = search.trim().toLowerCase();
+    const out: Partial<Record<QuickDateKey, number>> = {};
+    for (const { key } of QUICK_DATE_RANGES) {
+      const b = key === "year" && dateRange.field === "award" ? currentYearRange() : { field: dateRange.field, ...quickDateBounds(key, calendarDate) };
+      out[key] = jobs.filter((job) => {
+        if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
+        const isTheTestJob = jobId(job) === TEST_JOB_ID;
+        if (!dueOnMap(job) && !isTheTestJob && (!matchesJobQueue(job, status) || !matchesJobDateRange(job, dateRange.field, b.from, b.to))) return false;
+        if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
+        return !q || [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase().includes(q);
+      }).length;
+    }
+    return out;
+  }, [daysMenuOpen, jobs, status, borough, search, dateRange.field, calendarDate, openJobKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function applyQuickDate(key: QuickDateKey) {
     setDaysBack(null);
@@ -2766,6 +2826,53 @@ export default function FieldCommandClient() {
     try { writeSharedWorkflowPatch(id, patch); } catch {}
     mergeWorkflowPatchIntoScreen(id, patch);
   }
+  // 📱 The text service (Twilio, server/tenant-sms.mjs): when it's set up, texts go from the business number right from
+  // the app (two taps) and the tenants' replies come back here. Not set up: Messages on the phone, as before.
+  const [smsReady, setSmsReady] = useState(false);
+  const [smsSend, setSmsSend] = useState<{ id: string; armed: boolean; status: string } | null>(null);
+  useEffect(() => { void fetch("/api/drive/session", { cache: "no-store" }).then((r) => r.json()).then((d) => setSmsReady(Boolean(d?.smsReady && d?.connected))).catch(() => {}); }, []);
+  async function sendTenantSms(job: JobRecord, text: string) {
+    const id = jobId(job);
+    if (!smsSend || smsSend.id !== id || !smsSend.armed) { setSmsSend({ id, armed: true, status: "" }); return; }
+    setSmsSend({ id, armed: false, status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/tenant-sms", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: tenantInfo(job).phone, text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.reason || d.error || `HTTP ${r.status}`);
+      setSmsSend({ id, armed: false, status: `✓ Sent to ${d.to}. Their answer comes back here.` });
+      markTenantTexted(job);
+    } catch (e) {
+      setSmsSend({ id, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}` });
+    }
+  }
+  const jobsRef = useRef(jobs);
+  jobsRef.current = jobs;
+  // Tenants' replies: checked every 2 minutes while the app is open; each one marks the job "replied" and rings you.
+  useEffect(() => {
+    if (!smsReady) return;
+    const check = async () => {
+      if (document.visibilityState !== "visible") return;
+      let since = "";
+      try { since = localStorage.getItem("hpd-sms-since") || ""; } catch { /* private mode */ }
+      const r = await fetch("/api/drive/tenant-sms-inbox", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ since }) }).catch(() => null);
+      const d = r && r.ok ? await r.json().catch(() => null) : null;
+      const replies: { from: string; body: string; at: string }[] = Array.isArray(d?.replies) ? d.replies : [];
+      if (!replies.length) return;
+      // First look on this phone: just remember where the inbox is (no ringing for old replies).
+      const first = !since;
+      try { localStorage.setItem("hpd-sms-since", replies[replies.length - 1].at); } catch { /* private mode */ }
+      if (first) return;
+      const last10 = (p: string) => String(p || "").replace(/\D/g, "").slice(-10);
+      for (const m of replies) {
+        const job = jobsRef.current.find((j) => { const ph = last10(tenantInfo(j).phone); return ph.length === 10 && ph === last10(m.from); });
+        if (job) markTenantReplied(job);
+        window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));
+      }
+    };
+    void check();
+    const t = window.setInterval(() => void check(), 120000);
+    return () => window.clearInterval(t);
+  }, [smsReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check again when the jobs arrive, a card closes, or you come back to the app from Waze / Google (the phone may not
   // report a new position when you're standing still).
@@ -3517,12 +3624,27 @@ export default function FieldCommandClient() {
           winsThisWeek: (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && /confirmation of award|awarding omo/i.test(`${t.subject} ${m.text}`) && Date.now() - Date.parse(m.at) < 7 * 86400000).map((m) => ({ job: (m.text.match(/[A-Z]{2}\d{5}/) || t.omos)[0] || "", day: new Date(m.at).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "numeric", day: "numeric" }) }))).slice(0, 30).map((w) => ({ ...w, address: addressOf(w.job) })),
           hpdEmailsLast3Days: (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", about: summarizeHpd({ kind: emailKind(t.subject, (t as { kind?: string }).kind || "", m.from || ""), subject: t.subject, text: m.text, omo: t.omos[0] || "" }).replace(/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/g, "(phone)") }))).sort((a, b) => b.ts - a.ts).slice(0, 25).map(({ ts, ...e }) => { void ts; return e; }),
           todaysRoute: todayRouteIds(),
+          // Your open jobs, so the AI can name the right one for an action (no tenant names or phones).
+          toDoJobs: jobRows.filter((r) => r.group === "todo").slice(0, 40).map((r) => ({ job: r.id, address: r.address })),
           jobOnScreen: selectedJob ? { job: jobId(selectedJob), address: jobAddress(selectedJob), work: jobSummary(jobScope(selectedJob)).lines.map(lineText).join("; "), status: jobStatus(selectedJob) } : null,
+          // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.
+          recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 15 * 60000).slice(-4).map(({ you, helper }) => ({ you, helper })),
         };
         try {
           const r = await fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
           const d = await r.json().catch(() => ({}));
-          if (r.ok && d.ai && d.text) { answer(d.text); return; }
+          if (r.ok && d.ai && d.text) {
+            // The AI can also pick app actions (DO: lines, 23 Oct "combine all AI"): each runs like you said it, so a
+            // save still asks for your yes and a text still opens Messages for you to send.
+            const lines = String(d.text).split(/\r?\n/);
+            const said = lines.filter((l) => !/^DO:/i.test(l)).join(" ").trim();
+            const dos = lines.filter((l) => /^DO:/i.test(l)).map((l) => l.replace(/^DO:\s*/i, "").trim())
+              .filter((x) => { const c = parseCommand(x); return c.intent !== "ask" && c.intent !== "search"; }).slice(0, 3);
+            chatRef.current = [...chatRef.current, { you: cmd.question.slice(0, 200), helper: `${said}${dos.length ? ` (did: ${dos.join("; ")})` : ""}`.slice(0, 300), at: Date.now() }].slice(-8);
+            if (dos.length) { multiRef.current = { heard, queue: dos.slice(1), replies: said ? [said] : [] }; agentRef.current(dos[0], true); return; }
+            answer(said || d.text);
+            return;
+          }
           // Signed out: the AI is on, but it answers only for your account (owner, 22 Oct: "switch on AI").
           if (r.status === 401 || d.reconnectRequired) { setAgent({ heard, reply: "The AI is on. It answers only when this phone is signed in with Google: tap Sign in below, then ask me again.", signIn: true }); speak("The AI is on. Sign in with Google on this phone, then ask me again.", 200); return; }
           answer(d.reason === "not-set-up" ? "Free questions need the AI switched on for the app. I can do: I finished this job, read me this job, read me the new bids, what do I have today, which notices are open." : `I couldn't answer that right now. ${d.reason || ""}`.trim());
@@ -3534,6 +3656,22 @@ export default function FieldCommandClient() {
       const p = pendingRef.current; const c = agent?.confirm || (p && Date.now() - p.at < 120000 ? p : null);
       const job = c ? jobs.find((j) => jobId(j) === c.id) : null;
       if (!c || !job) { answer("There's nothing waiting for a yes."); return; }
+      if (c.outcome === "APPOINTMENT") {
+        const p = pendingApptRef.current;
+        if (!p || p.id !== c.id) { answer("Say the appointment again, with the day and time."); return; }
+        pendingApptRef.current = null;
+        try { saveAppointment(job, p.appt); } catch (e) { answer(`Not saved: ${e instanceof Error ? e.message : "check the time"}.`); return; }
+        const t = tenantInfo(job);
+        const where = jobAddress(job).replace(/,\s*\d{5}$/, "");
+        const first = (t.name || "").split(/\s+/)[0];
+        const hello = first && first.length > 1 ? `Hi ${first[0].toUpperCase()}${first.slice(1).toLowerCase()}` : "Hello";
+        const text = `${hello}, this is Jot from United Angel Construction. We are scheduled to come to ${where}${t.apt ? `, apt ${t.apt.replace(/^apt\.?\s*/i, "")}` : ""} on ${appointmentLabel(p.appt).replace(" · ", " between ").replace("–", " and ")} for the HPD repair. Please reply to confirm. Thank you.`;
+        const actions: { label: string; href: string }[] = [];
+        if (t.phone && !t.commonArea) actions.push({ label: `📱 Text ${first || "the tenant"} the time`, href: smsHref(t.phone, text) });
+        actions.push({ label: "🔔 Add to Calendar", href: appointmentCalendarHref(jobId(job), jobAddress(job), { ...p.appt, phone: "" }, window.location.origin) });
+        showPanel({ heard, reply: `Saved: ${where} on ${appointmentLabel(p.appt)}. ${actions.length > 1 ? "Text the tenant the time (you press Send in Messages), and add it to your calendar so your phone reminds you." : "There's no tenant phone on file; add it to your calendar so your phone reminds you."}`, actions });
+        return;
+      }
       if (c.outcome === "ARRIVED") { openIssueJob(job); markArrived(job); answer(`Started. You're at ${jobAddress(job)}: the arrival is saved.`); return; }
       setJobOutcome(job, c.outcome, "Said to the voice helper");
       answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.`);
@@ -3575,10 +3713,102 @@ export default function FieldCommandClient() {
       answer(`Mark ${jobAddress(job)}, job ${jobId(job)}, as ${FIELD_OUTCOMES[cmd.outcome].toLowerCase()}? Say yes, or tap Yes.`, { id: jobId(job), outcome: cmd.outcome });
       return;
     }
+    if (cmd.intent === "appointment") {
+      // "Make an appointment for EQ15239 Thursday at 10" (23 Oct): saved after your yes, then a ready text to the tenant
+      // with the time (you press Send in Messages) and Add to Calendar so the phone reminds you.
+      const found = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (found === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!found) { answer(cmd.ref ? `I can't find ${cmd.ref} in your jobs.` : "Which job? Open it, or say the job number with the day and time, like: make an appointment for E Q 1 5 2 3 9 Thursday at 10."); return; }
+      const where = jobAddress(found).replace(/,\s*\d{5}$/, "");
+      if (!cmd.date || !cmd.time) { answer(`What day and time for ${where}? Say it again with both, like: appointment Thursday at 10.`); return; }
+      const t = tenantInfo(found);
+      const appt: Appointment = { date: cmd.date, start: cmd.time, end: hourAfter(cmd.time), state: "requested", contact: t.name || "Tenant", phone: t.phone || "", note: "Made by voice", reminder: 60 };
+      try { validateAppointment(appt); } catch (e) { answer(`${e instanceof Error ? e.message : "That time doesn't work."} Say another day and time.`); return; }
+      const clash = appointmentConflicts(appt, jobs, jobId(found)).map((j) => jobId(j));
+      pendingApptRef.current = { id: jobId(found), appt };
+      answer(`Appointment at ${where} (${jobId(found)}) on ${appointmentLabel(appt)}${t.name ? ` with ${t.name.split(/\s+/)[0]}` : ""}?${clash.length ? ` Careful: it overlaps ${clash.join(", ")}.` : ""} Say yes, or tap Yes.`, { id: jobId(found), outcome: "APPOINTMENT" });
+      return;
+    }
+    if (cmd.intent === "remind") {
+      // "Remind me to call Lewis at 3" (23 Oct): the app rings and says it at that time while it's open, and Add to
+      // Calendar makes the phone remind you even when the app is closed.
+      if (!cmd.time && !cmd.date) { answer(`When should I remind you to ${cmd.what}? Say it with a time, like: remind me to ${cmd.what} at 3.`); return; }
+      const today = nyToday();
+      let date = cmd.date || today;
+      const time = cmd.time || "09:00";
+      const nowNy = new Intl.DateTimeFormat("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
+      if (!cmd.date && time <= nowNy) date = new Date(Date.parse(`${today}T12:00:00Z`) + 86400000).toISOString().slice(0, 10);
+      const item = { id: `r${Date.now()}`, what: cmd.what, date, time };
+      saveReminders([...readReminders(), item]);
+      const label = appointmentLabel({ date, start: time, end: hourAfter(time) } as Appointment).replace(/–.*$/, "").replace(/ · /, " at ");
+      const cal = `${window.location.origin}/api/appointment-calendar?${new URLSearchParams({ kind: "reminder", id: "reminder", what: cmd.what, date, time })}`;
+      showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
+      return;
+    }
+    if (cmd.intent === "bid-price") {
+      const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
+      if (!bidsOpen || !omo) { answer(`Open the bid first, then say "bid ${cmd.price}".`); return; }
+      window.dispatchEvent(new CustomEvent("hpd-bid-price", { detail: cmd.price }));
+      answer(`${money(cmd.price)} on ${omo}. Saving it now; tap Send twice when you're ready.`);
+      return;
+    }
     if (cmd.intent === "come-back") {
       if (!bidsOpen) { answer("Open the bids first, then say come back after sending one."); return; }
       window.dispatchEvent(new Event("hpd-bid-come-back"));
       answer("Back to the bid you just sent.");
+      return;
+    }
+    if (cmd.intent === "job-status") {
+      // "What's left on ER05729?" (23 Oct): the job from award to payment in one answer, then what to do next.
+      const found = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (found === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!found) { answer(cmd.ref ? `I can't find ${cmd.ref} in your jobs.` : "Which job? Open it, or say the job number."); return; }
+      const id = jobId(found);
+      const where = jobAddress(found).replace(/,\s*\d{5}$/, "");
+      const fu = followUps.get(id);
+      const day = (iso: unknown) => { const s = String(iso || ""); const t = Date.parse(s.length === 10 ? `${s}T12:00:00` : s); return Number.isFinite(t) ? new Date(t).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : ""; };
+      const ts = tenantStep(found as Record<string, unknown>);
+      const appt = activeAppointment(found as Record<string, unknown>);
+      const outcome = FIELD_OUTCOMES[value(found, ["FieldOutcome", "fieldOutcome"])];
+      const approved = Boolean(value(found, ["PackageApprovedAt"])) || /approved/i.test(value(found, ["PackageReviewStatus"]));
+      const pay = pipMap[id];
+      const done: string[] = [];
+      const left: string[] = [];
+      const award = day(value(found, ["AwardDate"]));
+      if (award) done.push(`awarded ${award}`);
+      if (ts.textedAt) done.push(`tenant texted ${day(ts.textedAt)}${ts.repliedAt ? ", they replied" : ""}`);
+      if (appt) done.push(`appointment ${appointmentLabel(appt)}`);
+      if (value(found, ["FieldArrivedAt"])) done.push(`arrived ${day(value(found, ["FieldArrivedAt"]))}`);
+      if (outcome) done.push(outcome.toLowerCase());
+      if (approved) done.push("paperwork approved");
+      if (fu?.sentAt) done.push(`paperwork sent to HPD ${day(fu.sentAt)}`);
+      if (fu?.state === "hpd-closed" || fu?.state === "done") done.push(`closed${fu.hpdReason ? ` (${fu.hpdReason.toLowerCase()})` : ""}`);
+      if (pay && pay.paid > 0) done.push(`paid $${Math.round(pay.paid).toLocaleString("en-US")}`);
+      if (!outcome) left.push(ts.state === "none" && !appt ? "text the tenant for a time" : !value(found, ["FieldArrivedAt"]) ? "go do the work" : "save the outcome");
+      else if (!approved && !fu?.sentAt) left.push("make and send the paperwork");
+      else if (fu?.state === "sent") left.push("wait for HPD to close it");
+      if (pay && pay.outstanding > 0) left.push(`get paid: $${Math.round(pay.outstanding).toLocaleString("en-US")} still owed`);
+      else if (!pay && (fu?.sentAt || approved)) left.push("wait for it to show in PIP");
+      openIssueJob(found, true);
+      answer(`${id} at ${where}. Done: ${done.length ? done.join(", ") : "nothing yet"}. ${left.length ? `Left: ${left.join(", then ")}.` : "Nothing left: it's finished and paid."}`);
+      return;
+    }
+    if (cmd.intent === "money") {
+      // "How much does HPD owe me?" (23 Oct): what PIP shows still owed, the biggest ones, what rejections hold up, and
+      // the last payment. "Read me the first one" then works on those jobs.
+      const owed = Object.entries(pipMap).filter(([, p]) => p.outstanding > 0 && !p.closed).sort((a, b) => b[1].outstanding - a[1].outstanding);
+      const total = owed.reduce((n, [, p]) => n + p.outstanding, 0);
+      const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+      if (owed.length) lastJobsRef.current = { ids: owed.slice(0, 5).map(([o]) => o), at: Date.now() };
+      const top = owed.slice(0, 3).map(([o, p]) => { const j = jobs.find((x) => jobId(x) === o); return `${o}${j ? ` at ${jobAddress(j).replace(/,\s*\d{5}$/, "")}` : ""}, ${usd(p.outstanding)}`; });
+      const held = payTrack.summary.heldCount ? ` ${usd(payTrack.summary.held)} of it is held by ${payTrack.summary.heldCount} rejection${payTrack.summary.heldCount === 1 ? "" : "s"} to fix.` : "";
+      void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
+        const last = (pay?.recent || []).find((p: { status?: string; amount?: number }) => /paid/i.test(p.status || "") && (p.amount || 0) > 0);
+        const lastText = last ? ` Last payment: ${usd(last.amount)} on ${new Date(`${last.date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.` : "";
+        answer(owed.length
+          ? `HPD owes you ${usd(total)} on ${owed.length} job${owed.length === 1 ? "" : "s"} in PIP. The biggest: ${top.join("; ")}.${held}${lastText}`
+          : `PIP shows nothing owed right now.${lastText}`);
+      });
       return;
     }
     if (cmd.intent === "bids") {
@@ -3670,13 +3900,14 @@ export default function FieldCommandClient() {
           </div>
           <div className="fc-bar-days">
             <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
-              <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small>
+              <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
             </button>
             {daysMenuOpen ? (
               <div className="fc-days-menu" role="menu" data-hpd-smoke="fc-days-menu">
                 {(["last15", "last30", "last45", "last60", "last90", "year", "all"] as const).map((key) => (
                   <button key={key} type="button" role="menuitemradio" aria-checked={quickDateKey === key && !showOlderLayer} className={quickDateKey === key && !showOlderLayer ? "is-active" : ""} data-hpd-smoke={`fc-days-${key}`} onClick={() => { applyQuickDate(key); setShowOlderLayer(false); setDaysMenuOpen(false); }}>
                     {QUICK_DATE_RANGES.find((r) => r.key === key)?.label}
+                    {dayCounts[key] !== undefined ? <b className="fc-days-count" data-hpd-smoke={`fc-days-count-${key}`}>{dayCounts[key]} {dayCounts[key] === 1 ? "job" : "jobs"}</b> : null}
                   </button>
                 ))}
                 <button type="button" role="menuitem" data-hpd-smoke="fc-days-custom" onClick={() => { setDaysMenuOpen(false); setFiltersOpen(true); }}>Custom dates…</button>
@@ -4492,9 +4723,11 @@ export default function FieldCommandClient() {
                               <small>{tenantText.ai || "Read it, change anything, then open it in Messages and press Send there."}</small>
                               <textarea rows={6} data-hpd-smoke="jc-tenant-draft-text" value={tenantText.text} onChange={(e) => setTenantText({ ...tenantText, text: e.target.value })} />
                               <div>
-                                <a className="is-send" data-hpd-smoke="jc-tenant-open-sms" href={smsHref(tenant.phone, tenantText.text)} onClick={() => markTenantTexted(selectedJob)}>📱 Open in Messages</a>
+                                {smsReady ? <button type="button" className={`is-send${smsSend?.id === jobId(selectedJob) && smsSend.armed ? " is-armed" : ""}`} data-hpd-smoke="jc-tenant-send-sms" disabled={smsSend?.id === jobId(selectedJob) && smsSend.status === "Sending…"} onClick={() => void sendTenantSms(selectedJob, tenantText.text)}>{smsSend?.id === jobId(selectedJob) && smsSend.armed ? "✅ Tap again: send the text" : "📤 Send it now"}</button> : null}
+                                <a className={smsReady ? undefined : "is-send"} data-hpd-smoke="jc-tenant-open-sms" href={smsHref(tenant.phone, tenantText.text)} onClick={() => markTenantTexted(selectedJob)}>📱 {smsReady ? "From my phone" : "Open in Messages"}</a>
                                 <button type="button" onClick={() => setTenantText(null)}>Cancel</button>
                               </div>
+                              {smsSend?.id === jobId(selectedJob) && smsSend.status ? <p className="jc-tenant-sms-status" role="status" data-hpd-smoke="jc-tenant-sms-status">{smsSend.status}</p> : null}
                             </div>
                           ) : null}
                         </div>

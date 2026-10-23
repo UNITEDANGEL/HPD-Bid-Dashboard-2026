@@ -2,6 +2,7 @@
 // and an email of the PDF and photos sent from the owner's own Gmail.
 // Only reachable through handleDriveAuth, after the owner/session/Google identity checks.
 
+import { readReplies, sendSms, smsReady } from "./tenant-sms.mjs";
 import { aiAnswer, aiDraft, askFacts, draftFacts } from "./ai-draft.mjs";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
@@ -342,6 +343,17 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       return new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
     }
 
+    // 📱 Text a tenant from the business number (Twilio), and the tenants' replies (signed in only).
+    if (action === "tenant-sms") {
+      const b = await request.json().catch(() => null);
+      if (!b || typeof b !== "object") fail("Invalid request.", 400);
+      return reply(await sendSms(env, b.to, b.text, fetcher));
+    }
+    if (action === "tenant-sms-inbox") {
+      const b = await request.json().catch(() => ({}));
+      if (!smsReady(env)) return reply({ ready: false, replies: [] });
+      return reply({ ready: true, replies: env.HPD_DRIVE_SESSIONS ? await readReplies(env.HPD_DRIVE_SESSIONS, String(b?.since || "")) : [] });
+    }
     if (action === "hpd-ask") {
       // A question to the voice helper: a short answer from the facts the phone sends. Never changes anything.
       const ask = askFacts(await request.json().catch(() => null));

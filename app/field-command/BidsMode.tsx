@@ -610,6 +610,20 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     setReason(currentRecord(bid, records)?.reason || records[bid.omo]?.reason || "");
   }
 
+  // Bid by voice: the helper's "bid 500" fills the open bid's price, then the Save button is tapped for you (so a
+  // price far above what wins still asks for its second tap).
+  const [voiceSave, setVoiceSave] = useState(0);
+  useEffect(() => {
+    const on = (e: Event) => { const price = Number((e as CustomEvent<number>).detail); if (!(price > 0)) return; setDraft(String(price)); setVoiceSave(price); };
+    window.addEventListener("hpd-bid-price", on);
+    return () => window.removeEventListener("hpd-bid-price", on);
+  }, []);
+  useEffect(() => {
+    if (!voiceSave || draftValue !== voiceSave) return;
+    setVoiceSave(0);
+    window.setTimeout(() => (document.querySelector('[data-hpd-smoke="fc-bid-save"]') as HTMLButtonElement | null)?.click(), 50);
+  }, [voiceSave, draftValue]);
+
   async function savePrice() {
     if (!selected || !(draftValue > 0)) return;
     const now = new Date().toISOString();
@@ -1058,6 +1072,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               <label>
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} disabled={sentLocked} onChange={(e) => setDraft(e.target.value)} />
+                {/* Say the price ("bid 500"): the helper fills it in and saves it. */}
+                {!sentLocked ? <button type="button" className="fc-bid-mic" aria-label="Say the price" data-hpd-smoke="fc-bid-mic" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event("hpd-listen")); }}>🎤</button> : null}
               </label>
               {!sentLocked && help && help.prices.length >= 5 ? (() => {
                 const best = bestWithFloor(help, selFloor);

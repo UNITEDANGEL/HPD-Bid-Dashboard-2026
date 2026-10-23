@@ -62,6 +62,23 @@ export function appointmentCalendar(id: string, address: string, a: Appointment,
     'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
 }
 
+// A reminder said to the helper ("remind me to call Lewis at 3"), as a calendar entry that alerts at that time even
+// when the app is closed (23 Oct).
+export function reminderCalendar(what: string, date: string, time: string, link = '') {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Pick a day and time for the reminder.');
+  const text = String(what || 'Reminder').replace(/[\r\n]+/g, ' ').slice(0, 200);
+  const escape = (s: string) => s.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const stamp = `${date.replaceAll('-', '')}T${time.replace(':', '')}00`;
+  const [h, m] = time.split(':').map(Number);
+  const endMin = Math.min(23 * 60 + 59, h * 60 + m + 15);
+  const end = `${date.replaceAll('-', '')}T${String(Math.floor(endMin / 60)).padStart(2, '0')}${String(endMin % 60).padStart(2, '0')}00`;
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//United Angel//HPD App//EN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    `UID:reminder-${stamp}-${encodeURIComponent(text).slice(0, 40)}@hpd-field`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z/, 'Z')}`,
+    `DTSTART;TZID=America/New_York:${stamp}`, `DTEND;TZID=America/New_York:${end}`, `SUMMARY:${escape(`⏰ ${text}`)}`,
+    ...(link ? [`URL:${link}`] : []), 'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', `DESCRIPTION:${escape(text)}`, 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
+}
+
 // Where the "Add to Calendar" button points: the app's server builds the calendar entry, so the
 // iPhone opens its own "Add to Calendar" screen (a file download doesn't work in a home-screen app).
 export function appointmentCalendarHref(id: string, address: string, a: Appointment, origin: string) {

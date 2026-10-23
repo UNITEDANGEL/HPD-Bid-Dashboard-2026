@@ -466,6 +466,19 @@ folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer qu
    Done 23 Oct ("next upgrade"): notices flow too: after a reply goes out (two taps), the board moves on to the next notice still to answer (due soonest), scrolls to it and starts its AI reply (it is not sent: two taps as always), with '✓ Sent to … · Next: ER… · ↩ Back to ER…'. A follow-up asking them to confirm stays on its card. The bid 'sent · Come back' bar now rides inside the next bid's card, so an alert at the top can't cover it. Test: test-browser-board-next.
    Done 23 Oct ("next upgrade"): the day's route flows too: a job on Today's route finished with its paperwork approved shows '➡ Going to the next stop, ER…, in 8s…' (Go now / Stay here), then the map glides (zooms out and in) to the next stop and opens its card; 'Open next job' glides too; nothing moves before the paperwork is approved. The slim bids bar fits narrow phones (count + today always shown; ✕ and 📅 as icons). Test: test-browser-auto-next.
 82. **Fewer 'deploy failed' emails** (owner, 23 Oct: "I keep getting notifications deploy failed Cloudflare, I don't want them"): the emails are GitHub's own for a failed check (account setting: github.com/settings/notifications -> Actions, owner turns them off; we never change account settings). On our side every push now runs all browser tests on the computer first, so a push should not fail the deploy.
+83. **Job counts for each day window** (owner, 23 Oct: "I want to be able to see the number of jobs I have when I choose 15 days etc"; done: the 📅 menu shows how many jobs each window has (Last 15 / 30 / 45 / 60 / 90 days, This year, All dates) with the status, borough, date type and search picked now, counted with the same rules as the map (jobs you're working and jobs due now always count), and the 📅 button carries a blue badge with the jobs on the map now; picking a window puts exactly that many on the map. Test: test-browser-day-counts (real job file: 15 d 21, 30 d 24, 90 d 68, year 125 on 23 Oct).)
+84. **Bid by voice** (from the recommendations; owner: "next upgrade", 23 Oct; done: a 🎤 next to each bid's price (the search 🎤 is under the bids bar); saying "bid 500", "bid $1,250 on this one", "price it at 900" or "put 750 on it" fills the open bid's price and taps Save for you (so a price far above what wins still asks for its second tap), the bid document is made, and the helper answers out loud; sending is still your two taps. Test: test-browser-bid-voice.)
+85. **One smarter AI: appointments, reminders and actions by talking** (owner, 23 Oct: "AI needs to be smarter, combine all AI, communicate with tenants, create appointments, remind me, route me, all by talking"; done: "make an appointment for EQ15239 Thursday at 10" (lib/voice-when.ts reads today / tomorrow / weekdays / 10/27 / Oct 30, 10am / 2:30 pm / noon / in 30 minutes) -> checks the time and overlaps -> after your yes it is saved on the job (appointment requested, 1 hour) with "📱 Text <tenant> the time" (Messages, you press Send) and "🔔 Add to Calendar"; "remind me to call Lewis at 3" -> the app rings and says it at that time while open, and Add to Calendar (/api/appointment-calendar?kind=reminder) alerts at that time with the app closed; any sentence the helper doesn't know goes to the AI, which answers and can pick up to 3 of the app's own commands (DO: lines: text / call the tenant, take me to, open, read me, plan my day, answer the notice, do the paperwork, make an appointment, remind me, new bids, today), each run as if you said it (saves still ask for your yes, texts still open Messages); the AI also gets your open jobs (numbers and addresses, never tenant phones). Test: test-browser-voice-appt.)
+86. **Award alert, paid alert, text service, glide to the job** (owner, 23 Oct: "yes build award alert and paid alert; just build the text service; the AI can send texts for me, I'm the contractor awarded"; "zoom into the job when I click and zoom back to the map"; done:
+   - 💰 award alert (phone + in the app): "You won ER… · <address>" with the work in plain words from the job file;
+   - 💵 paid alerts from PIP: "HPD paid you $10,629" (each payment, last 7 days) and "Paid · ER… $1,250 · <address>" (each job PIP shows paid, last 7 days), so turning it on doesn't ring for old ones;
+   - 📱 text service (server/tenant-sms.mjs, Twilio): "📤 Send it now" on the tenant text (two taps) sends from the business number; tenants' replies come to /api/sms-inbound (Twilio-signed only), wait in a private inbox, and every 2 minutes the app marks the job "replied" and rings "💬 <name> replied · ER…" with their words; not set up -> Messages on the phone as before;
+   - 🤖 automatic first text on a new award (scripts/send-push.mjs autoTextAwards): working hours, once per job, tenant name / address / apartment / work; marks TenantTextedAt so the no-answer clock and the call reminder start; Twilio errors (e.g. STOP) are remembered, not retried; AUTO_TENANT_TEXT=off (GitHub variable) stops it; the owner gets "📱 Texted the tenant · ER…";
+   - 🗺 tapping a job glides the map in to its building (zoom 17) and closing the card glides back out to where you were.
+   Owner setup for texts (owner does it; keys never in the code): a Twilio account and phone number; US business-text registration (A2P 10DLC) in Twilio; Cloudflare Pages secrets TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM (and the same as GitHub secrets for the award text); in Twilio, the number's "A message comes in" webhook = https://hpd-bid-dashboard-2026.pages.dev/api/sms-inbound (POST). Tests: test-tenant-sms, test-push.)
+87. **Money by voice, and an AI that remembers the conversation** (owner, 23 Oct: "next upgrade"; done: "how much does HPD owe me" / "what's outstanding" / "did I get paid" / "money report" -> what PIP shows still owed (total, number of jobs, the 3 biggest with addresses), how much rejections hold up, and the last payment; "read me the first one" then works on those jobs; the AI now gets the last 4 turns of the conversation (15 minutes) so follow-ups like "that one", "text them" or "and the other job" make sense. Test: test-browser-voice-appt.)
+88. **A job start to finish by voice** (from the award-to-payment plan; owner: "next upgrade", 23 Oct; done: "what's left on ER05729" / "where are we with this job" / "status of EQ15239" / "track ER05729" opens the job (the map glides there) and answers in one go: Done (awarded, tenant texted / replied, appointment, arrived, outcome, paperwork approved, sent to HPD, closed, paid $) and Left (text the tenant / go do the work / save the outcome / make and send the paperwork / wait for HPD to close it / get paid: $… still owed / wait for it to show in PIP); the AI can use it too. Test: test-browser-voice-appt.)
+89. **Better alerts list** (owner, 23 Oct: "I need alerts to be better"; done so far: the 🔔 list is grouped under Today / Yesterday / the date, and "🔊 Read them to me" reads the new ones out loud (up to 6, newest first); earlier today: bigger, clearer pop-up alerts with the kind, the full message, Open and OK; award and paid alerts. Waiting on the owner: which alerts bother most (too many, too quiet, hard to read, missing, gone too fast). Test: test-browser-ring.)
 79. **Recommended next (flow)**: (a) after sending a bid, offer the next bid due soonest ("Next: ER… due 11 AM, open it?") so bidding runs back to back; (b) bid by voice: "bid 500 on this one" sets the price, saves, fills, and asks yes before the two-tap send; (c) a morning hands-free start: the first open of the day reads the briefing and stays in 💬; (d) new alerts read out while 💬 is on.
 60. **Auto-arrival on the route** (done 22 Oct: "Have you arrived?" card near a route stop / a job navigated to today, Yes opens the job + markArrived, asks once per job, rechecks on jobs load / every 20 s / back from Waze-Google; to-do and 2nd-try jobs; tone + voice, no repeating banner; test-browser-arrive). Original ask (owner, 22 Oct: "even if I use Google or Waze, it should know I arrived and start the job, or ask me 'have you arrived?'"). Plan: while a route / navigation to a job is on, watch the phone's location (when the app is open or comes back from Waze / Google); within ~100 m of the job for a minute -> "You're at <address>. Start the job?" (one tap, or yes by voice) -> I have arrived + timer; no silent changes. iPhone limits location in the background for web apps, so it asks when the app is opened at the site.
 61. **Job description first on the job card** (done 22 Oct: "📋 The job" from lib/job-summary at the top of the card, HPD's full text below, Read aloud reads the summary first). Original ask (owner, 22 Oct: "the job description, very nice and clear, right there on the top, and a summary"): a short plain summary (what, where in the building, size) at the top of the card, HPD's full text one tap below; read aloud.
@@ -635,6 +648,48 @@ Collected from the owner's requests; every change is checked against these.
 - **Invitation pages in the bid card**: HPD's pages 2-3 (job description) drawn from the invitation PDF;
   tap for full screen with zoom (1x/2x/3x); "All pages" for the whole invitation.
 - Tests: scripts/test-browser-correction.mjs (+ both form versions in test-complete-package.cjs).
+
+## Autopilot: from award to payment (owner's idea, 23 Oct 2026)
+
+Owner: "Say we get an award today: the AI lets me know the location and the work description, texts the tenant first to
+get a response; no response within 24 hours, it makes a phone call and talks to the tenant (that it is the AI assistant
+for United Angel Construction reaching out about the emergency repair, the description, and when the tenant is available
+for an appointment), and tracks the job all the way to close and payment received. I can pay for some AI if needed. It
+has to sound realistic. Let's make a list of upgrades like this idea."
+
+Each step below says what is built, what it needs, and what it would cost. Steps marked **needs the owner** wait for the
+owner's sign-up or decision; nothing is sent to tenants by itself until the owner says yes to that step.
+
+1. **Award alert with location and work** (built 23 Oct, item 86). When HPD's award email comes in: a phone alert and
+   spoken summary, "New award: ER… at <address>, <work in plain words>", the pin on the map, and the job card open on
+   tap. (Award emails are already read; the spoken award card is the new part.)
+2. **First text to the tenant, by itself** (built 23 Oct, item 86; owner said yes; **needs the owner's Twilio account** to switch on). Today the app writes the text and the
+   owner presses Send in Messages (an iPhone web app can't send a text silently). To send automatically the app needs a
+   texting service: Twilio (about $1.15 a month for a number + about 1 cent a text) and US carrier registration for
+   business texting (A2P 10DLC, about $20 one time, about 1 to 2 weeks). Tenant replies come back into the app and to the
+   owner's phone. Every text says who we are and "Reply STOP to stop texts"; STOP is honored right away.
+3. **No reply in 24 hours: an AI phone call** (**needs the owner**: a voice AI service + legal check). A voice AI
+   service (for example Vapi, Retell or Twilio with a realtime voice model; about 7 to 15 cents a minute, so roughly 30 to
+   50 cents a call) calls from the business number. Script: "Hi, this is the AI assistant for United Angel Construction.
+   HPD sent us to do an emergency repair at <address>: <work>. When are you available for us to come?" It always says it
+   is an AI assistant, calls only 9 AM to 7 PM, gives the owner's number for a person, and stops if asked. Before turning
+   it on: US rules (the FCC treats AI voices as artificial voices: calls and automated texts to cell phones need the
+   person's consent) mean the owner should confirm with HPD or a lawyer that contacting tenants for an HPD repair is
+   allowed this way. Until then the app reminds the owner to call (already built: "call the tenant" reminders).
+4. **Appointment from the conversation** (half built). By voice the owner can already say "make an appointment for
+   EQ15239 Thursday at 10" (saved after a yes, text to the tenant with the time, Add to Calendar). With steps 2 and 3 on,
+   the tenant's answer ("Thursday morning") becomes the appointment by itself, with a confirmation text and the owner's
+   reminder.
+5. **Route me** (built): plan my day, take me to the next stop, the map glides to the next stop after each job.
+6. **Track the job to close** (mostly built): arrival, photos, outcome, affidavit + invoice (signature automatic, notary
+   one tap), sent to HPD, vendor tracking conversation, HPD's answer; each step rings the owner when it changes.
+7. **Payment received** (built 23 Oct, item 86): PIP payments are already read (pip_paid.json); add a "💵 Paid: ER… $…" alert and
+   a "paid" step on the job, and a weekly "money still owed" summary by voice.
+8. **One AI for everything** (built 23 Oct, item 85): the helper understands free sentences and picks the app's actions.
+   It now remembers the last turns (item 87); next: whole jobs by conversation ("what's left on ER05729?" -> "make the paperwork" -> "send it").
+
+Order proposed: 1 and 7 now (no cost); then 2 (owner signs up for texting); then 3 after the legal check; then 4 joins
+them. The owner enters any payment details and API keys themselves (keys go into Cloudflare as secrets, never in the code).
 
 ## Owner decision needed
 - **Tenant names/phones are public**: 745 invitation PDFs (page 2 has the tenant's name and phone) are in the

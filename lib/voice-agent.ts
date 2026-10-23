@@ -4,11 +4,18 @@
 
 import { spokenSearch } from "./job-search";
 
+import { parseWhen } from "./voice-when";
+
 export type AgentCommand =
+  | { intent: "money" }
+  | { intent: "job-status"; ref: string }
   | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string }
   | { intent: "read-job"; ref: string; pick?: number; all?: boolean }
   | { intent: "bids" }
   | { intent: "come-back" }
+  | { intent: "bid-price"; price: number }
+  | { intent: "appointment"; ref: string; date?: string; time?: string }
+  | { intent: "remind"; what: string; date?: string; time?: string }
   | { intent: "today" }
   | { intent: "notices" }
   | { intent: "yes" }
@@ -47,6 +54,27 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // Appointments and reminders by voice (owner, 23 Oct: "create appointments, remind me, route me, all by talking"):
+  // "make an appointment for EQ15239 Thursday at 10", "book the tenant tomorrow 2 pm", "remind me to call Lewis at 3".
+  if (/\b(make|set|set up|book|schedule|create|add|put)\b.{0,25}\b(appointment|appt|visit)\b|^(appointment|book|schedule)\b/.test(t) && !/\b(how many|what|which|any|list|read)\b/.test(t)) {
+    const when = parseWhen(t);
+    const ref = (/\b([a-z]{2})\s?(\d{5})\b/i.exec(t) || []).slice(1, 3).join("").toUpperCase();
+    return { intent: "appointment", ref, ...(when.date ? { date: when.date } : {}), ...(when.time ? { time: when.time } : {}) };
+  }
+  {
+    const r = /^(?:please )?remind me (?:to |about |that )?(.+)$/.exec(t);
+    if (r) {
+      const when = parseWhen(r[1]);
+      const what = when.words.replace(/\b(on|at|by|in)\s*$/, "").replace(/^(to|about|that)\s+/, "").trim() || r[1];
+      return { intent: "remind", what, ...(when.date ? { date: when.date } : {}), ...(when.time ? { time: when.time } : {}) };
+    }
+  }
+  // Bid by voice (23 Oct): "bid 500", "bid $1,250 on this one", "price it at 900", "put 750 on it". Fills the open bid
+  // and saves it; sending is still your two taps.
+  {
+    const m = /^(?:bid|price it at|price (?:this|it) at|put|make it|our bid is)\s*\$?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:dollars?|bucks)?(?:\s+(?:on (?:this|it|this one|that one)|for (?:this|it|this one)))?$/.exec(t);
+    if (m) { const price = Number(m[1].replace(/,/g, "")); if (price >= 50 && price <= 100000) return { intent: "bid-price", price }; }
+  }
   // "Come back" after a bid was sent and the app moved on to the next one (23 Oct).
   if (/^(come|go|take me) back( to (it|that|that one|the last( one| bid)?|the (bid|one) i (just )?sent))?$/.test(t) || /^back to the last bid$/.test(t)) return { intent: "come-back" };
   // "Plan my day" / "build my route" (22 Oct): Today's route planned for you, then read out.
@@ -71,6 +99,14 @@ export function parseCommand(heard: string): AgentCommand {
     const describe = /\b(read|describe|descriptions?|scope|what (are|were|is) (they|the jobs|it)|tell me about|details?)\b/.test(t);
     return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today", describe };
   }
+  // A job start to finish (23 Oct, from the award-to-payment plan): "what's left on ER05729", "where are we with this
+  // job", "status of EQ15239", "track ER05729".
+  if (/\b(what'?s left|what is left|where are we|where do we stand|status of|how far along|track|what'?s next on|what is next on)\b/.test(t) && !/\b(bids?|notices?|today)\b/.test(t)) {
+    const job = (/\b([a-z]{2})\s?(\d{5})\b/i.exec(t) || []).slice(1, 3).join("").toUpperCase();
+    return { intent: "job-status", ref: job || refOf(t.replace(/\b(what'?s left|what is left|where are we|where do we stand|status of|how far along|track|what'?s next on|what is next on|with|on|for|the|this|job)\b/g, " ")) };
+  }
+  // Money (23 Oct): "how much does HPD owe me", "what's outstanding", "did I get paid", "money report".
+  if (/\b(owe|owes|owed|outstanding|money report|get paid|got paid|been paid|payments?)\b/.test(t) && !/\b(bid|price)\b/.test(t)) return { intent: "money" };
   if (/\b(bids?|invitations?)\b/.test(t) && /\b(read|new|what|any|tell|how many|list)\b/.test(t)) return { intent: "bids" };
   if (/\b(what('?s| is| do i have)?|my|tell me).{0,20}\b(today|day|schedule|plan)\b/.test(t) || /^today\b/.test(t)) return { intent: "today" };
   if (/\bnotices?\b/.test(t) && /\b(open|which|what|any|read|tell|overdue)\b/.test(t)) return { intent: "notices" };
