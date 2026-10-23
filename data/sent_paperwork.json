@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-23T19:29:32.077719+00:00",
+"generatedAt": "2026-10-23T19:46:32.977609+00:00",
 "since": "2026/10/09",
 "jobs": {
 "EN04541": [
@@ -20936,6 +20936,14 @@
 "outcome": "",
 "subject": "OMO No: ER00272 Issuer: AREWA AJEWOLE Boro: Brooklyn Bldg Address: 2324, PITKIN AVENUE",
 "via": "hpd-staff"
+},
+{
+"date": "2026-10-23",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER00272 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO No: ER00272 Issuer: AREWA AJEWOLE Boro: Brooklyn Bldg Address: 2324, PITKIN AVENUE",
+"via": "hpd-staff"
 }
 ],
 "ER00291": [
@@ -21203,6 +21211,29 @@
 "file": "PHOTO-2026-08-31-11-54-50.jpg",
 "outcome": "",
 "subject": "OMO No: ER03009 Issuer: JUAN ISIDRO CARVAJAL DIMAS Boro: Brooklyn Bldg Address: 351, TOMPKINS AVENUE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-23",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER03009 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "Fwd: SIGNED - ER03009 - Work Completed - 351 TOMPKINS AVENUE, 11216",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-23",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER03009 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "SIGNED - ER03009 - Work Completed - 351 TOMPKINS AVENUE, 11216"
+},
+{
+"date": "2026-10-23",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "PHOTO-2026-08-31-11-54-50.jpg",
+"outcome": "",
+"subject": "Fwd: OMO No: ER03009 Issuer: JUAN ISIDRO CARVAJAL DIMAS Boro: Brooklyn Bldg Address: 351, TOMPKINS AVENUE",
 "via": "hpd-staff"
 }
 ],
