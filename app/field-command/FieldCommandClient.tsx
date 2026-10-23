@@ -533,6 +533,29 @@ function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: n
   return 2 * 3958.8 * Math.asin(Math.sqrt(h));
 }
 
+// The day flows on by itself (owner, 23 Oct: "everything needs to flow auto ... the app zooms in and out of the map as
+// it flows"): the job is done and its paperwork approved -> a short countdown, then the map glides to the next stop
+// and opens it. "Stay here" stops it for this job.
+function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: string; onGo: () => void; onStay: () => void }) {
+  const [left, setLeft] = useState(seconds);
+  const go = useRef(onGo);
+  go.current = onGo;
+  useEffect(() => {
+    if (left <= 0) { go.current(); return; }
+    const t = window.setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [left]);
+  return (
+    <div className="jc-auto-next" role="status" data-hpd-smoke="jc-auto-next">
+      <strong>➡ Going to the next stop, {label}, in {Math.max(0, left)}s…</strong>
+      <div>
+        <button type="button" className="jc-glow" data-hpd-smoke="jc-auto-next-now" onClick={() => go.current()}>Go now</button>
+        <button type="button" data-hpd-smoke="jc-auto-next-stay" onClick={onStay}>Stay here</button>
+      </div>
+    </div>
+  );
+}
+
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1439,6 +1462,7 @@ export default function FieldCommandClient() {
   const [mediaChoiceInStep, setMediaChoiceInStep] = useState(false);
   // After a job finishes, its package opens for review by itself after a short countdown.
   const [autoPackage, setAutoPackage] = useState<{ id: string; outcome: string; seconds: number } | null>(null);
+  const [stayOn, setStayOn] = useState(""); // "Stay here" on this job: no automatic move to the next stop
   useEffect(() => {
     if (!autoPackage) return;
     if (autoPackage.seconds <= 0) { openAutoPackage(autoPackage); return; }
@@ -2244,13 +2268,18 @@ export default function FieldCommandClient() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [jobs, minuteTick]);
 
-  function openIssueJob(job: JobRecord) {
+  function openIssueJob(job: JobRecord, glide = false) {
     setCloseOutOpen(false);
     setDataCheckOpen(false);
     setSelectedJob(job);
     setSheetExpanded(false);
     const at = jobLatLng(job);
-    if (at && mapRef.current) { followMeRef.current = false; mapRef.current.setView([at.lat, at.lng], Math.max(mapRef.current.getZoom(), 16)); }
+    if (at && mapRef.current) {
+      followMeRef.current = false;
+      const zoom = Math.max(mapRef.current.getZoom(), 16);
+      // Glide: zooms out and back in, so you see where the next one is.
+      if (glide && mapRef.current.flyTo) mapRef.current.flyTo([at.lat, at.lng], zoom, { duration: 1.4 }); else mapRef.current.setView([at.lat, at.lng], zoom);
+    }
   }
 
   useEffect(() => {
@@ -4330,8 +4359,10 @@ export default function FieldCommandClient() {
                         <strong>➡ Next on your route · stop {onRoute.stop} of {onRoute.of} · {onRoute.id}</strong>
                         <span>{jobAddress(routeTarget)} · {onRoute.left === 1 ? "last stop left" : `${onRoute.left} stops left`}</span>
                         <span className="jc-next-actions">
-                          <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(routeTarget)}>Open next job →</button>
+                          <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(routeTarget, true)}>Open next job →</button>
                         </span>
+                        {(Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"]))) && !(autoPackage && autoPackage.id === id) && stayOn !== id
+                          ? <AutoNext key={id} seconds={8} label={onRoute.id} onGo={() => openIssueJob(routeTarget, true)} onStay={() => setStayOn(id)} /> : null}
                       </div>
                     );
                   }

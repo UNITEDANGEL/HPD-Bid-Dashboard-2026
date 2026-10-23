@@ -817,3 +817,8 @@ i.is-won { background: #16a34a; }
 .fc-bids-banner.is-compact .fc-bids-days { grid-row: auto; }
 .fc-bid-sent-note button { justify-self: start; margin-top: 4px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 12px; background: #f0fdf4; color: #14532d; font: 900 14px system-ui, sans-serif; }
 .fc-bid-sent-note.is-in-sheet { position: static; margin: 8px 10px 0; box-shadow: none; }
+/* Narrow phones (23 Oct): the count and "today" always fit; buttons shrink to icons. */
+.fc-bids-banner.is-compact > strong { overflow: visible; text-overflow: clip; font-size: 13.5px; }
+.fc-bids-banner.is-compact > button { padding: 0 7px; }
+.fc-bids-banner.is-compact .fc-bids-back { min-width: 34px; padding: 0; font-size: 16px; }
+@media (max-width: 400px) { .fc-bids-banner.is-compact .fc-bids-daypick { font-size: 12px; } .fc-bids-banner.is-compact > strong em { font-size: 11px; } }

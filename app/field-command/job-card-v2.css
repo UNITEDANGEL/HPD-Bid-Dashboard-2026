@@ -1005,3 +1005,7 @@
 /* Emails with HPD about this job (opens the conversation). */
 .jc-threads { display: block; width: 100%; margin-top: 8px; min-height: 42px; border-radius: 10px; border: 1px solid #60a5fa; background: #1e3a8a; color: #fff; font: 800 13.5px system-ui; }
 .jc-threads.is-waiting { border-color: #f87171; background: #7f1d1d; }
+.jc-auto-next { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; border: 2px solid #34d399; background: rgba(16, 185, 129, 0.16); color: #ecfdf5; }
+.jc-auto-next div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#fc-job-card .jc-auto-next button { min-height: 46px; margin: 0; border-radius: 12px; border: 1px solid #34d399; background: transparent; color: #ecfdf5; font: 800 15px system-ui, sans-serif; }
+#fc-job-card .jc-auto-next button.jc-glow { background: #10b981; color: #052e1f; }

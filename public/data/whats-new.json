@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "Your route flows on by itself",
+      "items": [
+        "➡️ Finished a job on today's route and the paperwork is approved? \"Going to the next stop… in 8s\": the map glides to the next stop and opens it. Tap \"Stay here\" to stay, or \"Go now\".",
+        "🗺 \"Open next job\" glides there too, so you see where it is.",
+        "📨 The slim bids bar fits small phones: the count and \"today\" always show."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "Vendor board as a conversation · more map · next bid by itself",
       "items": [
         "💬 Vendor tracking board: every notice reads like a conversation: their notice on the left, your reply, paperwork and send on the right, their answer below.",
