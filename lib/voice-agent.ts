@@ -18,6 +18,7 @@ export type AgentCommand =
   | { intent: "navigate"; ref: string; next: boolean }
   | { intent: "arrived"; ref: string }
   | { intent: "open"; ref: string }
+  | { intent: "plan" }
   | { intent: "ask"; question: string }
   | { intent: "search"; text: string };
 
@@ -43,6 +44,8 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // "Plan my day" / "build my route" (22 Oct): Today's route planned for you, then read out.
+  if (/\b(plan|build|make|set up|map out)\b.{0,20}\b(my |the |today'?s? )?(day|route|stops)\b/.test(t) || /^where (should|do) i go( first| today)?\b/.test(t)) return { intent: "plan" };
   // Doing things by voice (in-app request 22 Oct: "I should be able to talk and get everything done").
   if (/\b(text|message|sms)\b.*\b(tenant|them|her|him|resident)\b|\bsend (a |the )?(text|message|sms)\b/.test(t)) return { intent: "text-tenant", ref: refOf(t) };
   if (/\bcall\b.*\b(tenant|them|her|him|resident)\b|\b(tenant'?s?|resident'?s?) (phone|number)\b/.test(t)) return { intent: "call-tenant", ref: refOf(t) };

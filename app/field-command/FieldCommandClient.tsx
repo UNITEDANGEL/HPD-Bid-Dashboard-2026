@@ -1288,6 +1288,7 @@ export default function FieldCommandClient() {
   const [routeOpenRequest, setRouteOpenRequest] = useState(0);
   const [routeCloseRequest, setRouteCloseRequest] = useState(0);
   const [routeOpen, setRouteOpen] = useState(false);
+  const [routeBuildRequest, setRouteBuildRequest] = useState(0);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
   // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
@@ -3289,6 +3290,26 @@ export default function FieldCommandClient() {
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    if (cmd.intent === "plan") {
+      // The route panel plans it (overdue / appointments / 2nd tries first, close together), then the plan is read out.
+      closeScreens("route");
+      setRouteBuildRequest((n) => n + 1);
+      setAgent({ heard, reply: "Planning your day…" });
+      // Read it back once the new plan is saved (up to 8 s; the map and your location may still be loading).
+      const before = JSON.stringify((() => { try { return JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null"); } catch { return null; } })());
+      let tries = 0;
+      const readBack = () => {
+        const now = (() => { try { return localStorage.getItem("hpd-today-route-v1") || "null"; } catch { return "null"; } })();
+        if (JSON.stringify(JSON.parse(now)) === before && tries++ < 16) { window.setTimeout(readBack, 500); return; }
+        const ids = todayRouteIds();
+        const stops = ids.map((id) => jobs.find((j) => jobId(j) === id)).filter(Boolean) as JobRecord[];
+        if (!stops.length) { answer("I couldn't plan a route: no open jobs with a location in the area set on the route panel."); return; }
+        const short = (j: JobRecord) => jobAddress(j).replace(/,\s*\d{5}$/, "");
+        answer(`Your day: ${stops.length} stop${stops.length === 1 ? "" : "s"}. First ${short(stops[0])}${stops[1] ? `, then ${short(stops[1])}` : ""}${stops[2] ? `, then ${short(stops[2])}` : ""}${stops.length > 3 ? `, and ${stops.length - 3} more` : ""}. Say "take me to the next stop" when you're ready.`);
+      };
+      window.setTimeout(readBack, 600);
+      return;
+    }
     if (cmd.intent === "text-tenant" || cmd.intent === "call-tenant" || cmd.intent === "navigate" || cmd.intent === "arrived" || cmd.intent === "open") {
       // Which job: the one named, else the one on screen; "next stop": Today's route, else the closest open job.
       let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
@@ -3837,7 +3858,7 @@ export default function FieldCommandClient() {
             const center = mapRef.current?.getCenter();
             if (center && center.lat > 40.49 && center.lat < 40.92 && center.lng > -74.26 && center.lng < -73.7) return {point:{lat:center.lat,lng:center.lng},label:'map center (location not set)'};
             return {point:OFFICE_LOCATION,label:'the office, 120-17 91st Ave (location not set)'};
-          }} openRequest={routeOpenRequest} closeRequest={routeCloseRequest} onOpenChange={setRouteOpen} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
+          }} openRequest={routeOpenRequest} buildRequest={routeBuildRequest} closeRequest={routeCloseRequest} onOpenChange={setRouteOpen} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
         </div>
         {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
           <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>

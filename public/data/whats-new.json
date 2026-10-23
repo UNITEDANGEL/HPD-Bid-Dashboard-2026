@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Plan my day by voice",
+      "items": [
+        "🎤 \"Plan my day\" (or \"build my route\", \"where should I go first\"): the app plans Today's route (overdue jobs, appointments and 2nd tries first, close together) and reads it out: \"Your day: 8 stops. First 1207 1st Avenue, then 2090 1st Avenue…\". Then say \"take me to the next stop\" for Waze / Google."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Sign in right from the map",
       "items": [
         "🔑 When the phone is signed out, a Sign in with Google bar shows at the top of the map (it goes away once you're signed in). The job card's tenant line has the same button."

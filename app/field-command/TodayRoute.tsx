@@ -6,7 +6,7 @@ import type { RoadRoute } from '../../lib/road-route';
 import { eligibleRouteJobs, planDay, routeTime, scheduleStops, validRouteSettings, type RouteJob, type RoutePoint, type RouteSettings } from '../../lib/day-route';
 
 const KEY='hpd-today-route-v1';
-export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,onNavigate,openRequest=0,closeRequest=0,onOpenChange}: {jobs:RouteJob[];mapReady:boolean;getOrigin:()=>{point:RoutePoint;label:string};onPreview:(jobs:RouteJob[],origin:RoutePoint,numbers?:number[],done?:RouteJob[])=>Promise<RoadRoute|null>|void;onSelect:(id:string)=>void;onNavigate:(id:string)=>void;openRequest?:number;closeRequest?:number;onOpenChange?:(open:boolean)=>void}) {
+export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,onNavigate,openRequest=0,closeRequest=0,buildRequest=0,onOpenChange}: {buildRequest?:number;jobs:RouteJob[];mapReady:boolean;getOrigin:()=>{point:RoutePoint;label:string};onPreview:(jobs:RouteJob[],origin:RoutePoint,numbers?:number[],done?:RouteJob[])=>Promise<RoadRoute|null>|void;onSelect:(id:string)=>void;onNavigate:(id:string)=>void;openRequest?:number;closeRequest?:number;onOpenChange?:(open:boolean)=>void}) {
   const [open,setOpen]=useState(false);
   // Another map button opened its own screen: close the route panel. The map knows whether it's open.
   useEffect(()=>{if(closeRequest)setOpen(false);},[closeRequest]);
@@ -34,6 +34,9 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
   // The route button on the map: open the panel and plan the day if nothing is planned yet.
   const builtFor=useRef(0);
   useEffect(()=>{if(!openRequest||!ready||builtFor.current===openRequest)return;builtFor.current=openRequest;setOpen(true);if(!origin)setOrigin(getOrigin());if(!ids.length&&mapReady)build();else showRoute();},[openRequest,ready,mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  // "Plan my day" by voice (22 Oct): open the panel and plan it fresh (finished stops stay).
+  const builtByVoice=useRef(0);
+  useEffect(()=>{if(!buildRequest||!ready||!mapReady||builtByVoice.current===buildRequest)return;builtByVoice.current=buildRequest;setOpen(true);build();},[buildRequest,ready,mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
   // Re-draw the saved route, which also zooms the map to show all of it (the street line is remembered).
   function showRoute(){if(origin&&mapReady&&(selected.length||done.length))Promise.resolve(preview.current(selected,origin.point,numbers,done)).then(r=>setRoad(r||null));}
   function build(){if(!validRouteSettings(settings))return;const start=getOrigin();setOrigin(start);const kept=done.map(j=>j.id);setIds([...kept,...planDay(jobs,settings,start.point).map(j=>j.id).filter(id=>!kept.includes(id))]);requestAnimationFrame(()=>bodyRef.current?.scrollTo({top:0}));}

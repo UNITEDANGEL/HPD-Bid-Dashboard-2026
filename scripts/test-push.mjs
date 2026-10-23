@@ -285,3 +285,11 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(p("mini split").intent, "search");
   console.log("PASS voice actions: text / call the tenant, navigate (a job or the next stop), I'm here, open a job; earlier commands unchanged");
 }
+
+// 🗣 "Plan my day" (22 Oct).
+{
+  const { parseCommand } = await loadLib("voice-agent");
+  for (const s of ["plan my day", "build my route", "where should I go first", "make today's route"]) assert.equal(parseCommand(s).intent, "plan", s);
+  assert.equal(parseCommand("take me to the next stop").intent, "navigate");
+  console.log("PASS plan my day: 'plan my day' / 'build my route' / 'where should I go first' plan Today's route");
+}
