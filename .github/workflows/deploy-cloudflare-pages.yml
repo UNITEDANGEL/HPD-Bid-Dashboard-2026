@@ -191,6 +191,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-flow.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-day-counts.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-job-tracker.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-morning.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-my-price.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-all-buttons.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-buttons-visible.mjs

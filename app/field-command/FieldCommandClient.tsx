@@ -2803,6 +2803,26 @@ export default function FieldCommandClient() {
   // the job"): with the app open and no job card up, being within ~120 m of a stop on Today's route or a job you
   // navigated to today asks once per job; Yes opens the job and saves the arrival (time + GPS). Never saved silently.
   const [arrivePrompt, setArrivePrompt] = useState<{ id: string; address: string; feet: number } | null>(null);
+  // ☀️ Start my day (23 Oct): the first open of the morning (5 to 11 AM, New York) offers one tap that reads the day out
+  // loud and plans the route. Once a day; "Not today" hides it. (Test browsers only when a test asks.)
+  const [morning, setMorning] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState !== "visible") return;
+      const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-morning") !== "1"; } catch { return true; } })();
+      if (testing) return;
+      const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+      const today = `${p.year}-${p.month}-${p.day}`;
+      const hour = Number(p.hour);
+      let shown = "";
+      try { shown = localStorage.getItem("hpd-morning-shown") || ""; } catch { /* private mode */ }
+      if (hour >= 5 && hour < 11 && shown !== today) setMorning(true);
+    };
+    check();
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, []);
+  const doneMorning = () => { setMorning(false); try { localStorage.setItem("hpd-morning-shown", new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date())); } catch { /* private mode */ } };
   const askedArriveRef = useRef<Set<string>>(new Set());
   const nearJobRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
   nearJobRef.current = (lat, lng, accuracy) => {
@@ -5478,6 +5498,16 @@ export default function FieldCommandClient() {
             </> : null}
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
             <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
+          </div>
+        </div>
+      ) : null}
+      {morning && jobs.length && !selectedJob && !arrivePrompt && !critical && !agent ? (
+        <div className="fc-arrive fc-morning" role="dialog" aria-label="Start my day" data-hpd-smoke="fc-morning">
+          <b>☀️ Good morning</b>
+          <span>One tap: I&apos;ll read your day (notices, bids, jobs) and plan your route.</span>
+          <div>
+            <button type="button" className="is-yes" data-hpd-smoke="fc-morning-go" onClick={() => { doneMorning(); unlockChime(); agentRef.current("what do I have today and plan my day"); }}>☀️ Start my day</button>
+            <button type="button" data-hpd-smoke="fc-morning-no" onClick={doneMorning}>Not today</button>
           </div>
         </div>
       ) : null}

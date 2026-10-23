@@ -3471,3 +3471,6 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-tracker-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .fc-tracker-list li button { width: 100%; display: grid; grid-template-columns: auto 1fr; gap: 0 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid #1e293b; background: #111827; color: #e2e8f0; text-align: left; font: 650 13.5px system-ui, sans-serif; }
 .fc-tracker-list li button small { grid-column: 2; color: #93c5fd; font: 700 12px system-ui, sans-serif; }
+/* ☀️ Start my day (23 Oct). */
+.fc-morning { border-color: #f59e0b !important; }
+.fc-morning b { color: #fde68a; }
