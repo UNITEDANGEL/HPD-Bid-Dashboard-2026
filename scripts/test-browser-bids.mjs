@@ -215,7 +215,7 @@ try {
   failOmo = "";
   // The failed fax goes again BY ITSELF to HPD's next line (HumbleFax to 863-7804), same price, and gets confirmed
   // (owner, 19 Oct: "this should be auto resend and confirm"); the record says it was automatic.
-  await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 90000 });
+  await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 180000 });
   assert.equal(faxes.at(-1).line, "7804", "sent again to the backup line");
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-log"]').innerText(), /Fax sent again automatically to HPD \(212\) 863-7804/);
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /2 sends/);

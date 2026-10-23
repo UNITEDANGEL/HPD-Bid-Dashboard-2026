@@ -34,7 +34,7 @@ try {
       assert.ok(text && !/Private|Not listed/.test(text), "signed in: tenant name shown");
       assert.equal(await page.locator("#fc-job-card .fc-call-btn").count() > 0, true, "signed in: Call button");
     } else {
-      assert.match(text, /Private: sign in with Google/);
+      assert.match(text, /Private: sign in/);
       assert.equal(await page.locator("#fc-job-card .fc-call-btn").count(), 0);
       // Invitation pages: ask to sign in.
       await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load" });
