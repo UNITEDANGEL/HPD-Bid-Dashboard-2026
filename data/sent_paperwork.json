@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-23T14:31:20.748319+00:00",
+"generatedAt": "2026-10-23T14:44:32.839813+00:00",
 "since": "2026/10/09",
 "jobs": {
 "EN04541": [
@@ -391,6 +391,14 @@
 "file": "EO18305 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: Missing Documents",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-23",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EO18305 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Missing Documents",
 "via": "hpd-staff"
 }
 ],
