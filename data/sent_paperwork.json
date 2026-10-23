@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-23T13:21:20.873550+00:00",
+"generatedAt": "2026-10-23T13:36:44.952369+00:00",
 "since": "2026/10/09",
 "jobs": {
 "EN04541": [
@@ -21101,6 +21101,16 @@
 "file": "ER01924_072826031046_3525_ROCHAMBEAU_AVENUE_Bronx_NY.pdf",
 "outcome": "",
 "subject": "ER01924_072826031046_3525_ROCHAMBEAU_AVENUE_Bronx_NY",
+"via": "hpd-staff"
+}
+],
+"ER01987": [
+{
+"date": "2026-10-23",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER01987 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: 72 HOUR PERFORMANCE NOTICE- OMO#ER01987",
 "via": "hpd-staff"
 }
 ],
