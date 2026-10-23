@@ -13,7 +13,8 @@ try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(c);
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } })));
-  await c.route(/\/api\/drive\/hpd-ask/, (r) => { const q = JSON.parse(r.request().postData() || "{}"); return r.fulfill({ json: { ai: true, text: `About "${q.question}": you have ${q.facts.notices.length} notices open.` } }); });
+  let lastFacts = null;
+  await c.route(/\/api\/drive\/hpd-ask/, (r) => { const q = JSON.parse(r.request().postData() || "{}"); lastFacts = q.facts; return r.fulfill({ json: { ai: true, text: `About "${q.question}": you have ${q.facts.notices.length} notices open.` } }); });
   await c.addInitScript(() => {
     window.__said = [];
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); };
@@ -44,6 +45,13 @@ try {
   results.push(["which jobs have I won today", await say("which jobs have I won today", /^(You won \d+ jobs? today|No awards today yet)/)]);
   // The phone heard "won" as "want" (owner, 22 Oct) and asked for the descriptions too.
   results.push(["which jobs I want today read me the description", await say("which jobs I want today read me the description", /^(You won \d+ jobs? today\. .+, .+\.|No awards today yet)/)]);
+  // Two questions in one sentence (23 Oct): both answered, one after the other.
+  const both = await say("how many jobs did I win today and what bids are due tomorrow", /^(You won \d+ jobs? today|No awards today yet)[\s\S]*\n\n(You have \d+ open invitations? to bid|No open invitations)/);
+  results.push(["how many jobs did I win today and what bids are due tomorrow", both.replace(/\n+/g, " / ")]);
+  // Said like a sentence: the AI answers, with HPD's recent emails to go on.
+  results.push(["anything new from Gafur", await say("anything new from Gafur", /^About "anything new from Gafur"/)]);
+  assert.ok(Array.isArray(lastFacts?.hpdEmailsLast3Days) && Array.isArray(lastFacts?.winsThisWeek), "the AI gets HPD's recent emails and the wins");
+  assert.doesNotMatch(JSON.stringify(lastFacts.hpdEmailsLast3Days), /\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/, "no phone numbers in what the AI gets");
   results.push(["what did I win this week",await say("what did I win this week", /^(You won \d+ jobs? this week|No awards this week yet)/)]);
   // Plan the day, then go to the first stop.
   results.push(["plan my day", await say("plan my day", /^Your day: \d+ stops?\. First .+\. Say "take me to the next stop"/)]);

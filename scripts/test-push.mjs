@@ -242,7 +242,7 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.deepEqual(parseCommand("which jobs I want today"), { intent: "awards", days: 0, label: "today", describe: false });
   assert.equal(parseCommand("which jobs I want today read me the description").describe, true);
   assert.equal(parseCommand("read me the description of the jobs I won today").intent, "awards");
-  assert.equal(parseCommand("I want to see the map").intent, "search", "'want' alone isn't won");
+  assert.notEqual(parseCommand("I want to see the map").intent, "awards", "'want' alone isn't won");
   console.log("PASS won misheard as want: with 'jobs' and a day it's the wins; 'read me the description' reads each one");
 }
 
@@ -302,4 +302,17 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.deepEqual(parseCommand("send the package for EQ17776"), { intent: "paperwork", ref: "EQ17776" });
   assert.equal(parseCommand("do the paperwork for this job").intent, "paperwork");
   console.log("PASS notices / paperwork by voice: answer the notice for a job / reply to Lewis or Gafur; do the paperwork / send the package");
+}
+
+// 🗣 Several questions in one sentence, and sentences that aren't commands (23 Oct "make AI much better").
+{
+  const { parseCommand, splitCommands } = await loadLib("voice-agent");
+  assert.deepEqual(splitCommands("how many jobs did I win today and what bids are due tomorrow"), ["how many jobs did I win today", "what bids are due tomorrow"]);
+  assert.deepEqual(splitCommands("read me the new bids then plan my day"), ["read me the new bids", "plan my day"]);
+  assert.deepEqual(splitCommands("what do I have today? which notices are open?"), ["what do I have today", "which notices are open"]);
+  assert.deepEqual(splitCommands("HOW MAY JOBS I WON TODAY READ ME DESCRIPTION"), ["HOW MAY JOBS I WON TODAY READ ME DESCRIPTION"], "the wins, read out: one thing");
+  assert.deepEqual(splitCommands("fire escape ladder"), ["fire escape ladder"]);
+  assert.equal(parseCommand("anything new from Gafur").intent, "ask", "said like a sentence: the AI");
+  for (const s of ["mini split", "fire escape ladder", "jobs in brooklyn", "707 east 189"]) assert.equal(parseCommand(s).intent, "search", s);
+  console.log("PASS many questions at once: split only when every part is understood; sentences go to the AI; searches stay searches");
 }

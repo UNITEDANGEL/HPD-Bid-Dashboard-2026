@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "A smarter helper",
+      "items": [
+        "🎤 Ask several things at once: \"How many jobs did I win today and what bids are due tomorrow?\" — both answered, one after the other (up to 4).",
+        "🎤 Say it your way: sentences that aren't a command (\"anything new from Gafur\", \"did HPD give me any work\") go to the AI, which now also knows your wins this week and HPD's emails of the last 3 days.",
+        "\"How many jobs did I win today, read me the description\" reads each win. If none yet today, it tells you the last one, including wins that only came by email so far."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "Answer notices and do paperwork by voice",
       "items": [
         "🎤 \"Answer the notice for E R 0 1 9 8 7\" / \"Reply to Lewis\" / \"Reply to Gafur\": the vendor tracking board opens on that notice with the AI writing the reply. Read it, then Send (two taps, as always).",

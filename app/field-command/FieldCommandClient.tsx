@@ -58,7 +58,7 @@ import JobsList, { type JobRow } from "./JobsList";
 import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
-import { findJobRef, parseCommand } from "../../lib/voice-agent";
+import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
 import { smsHref, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
@@ -1296,7 +1296,9 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] } | null>(null);
-  const agentRef = useRef<(heard: string) => void>(() => {});
+  const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
+  // Several questions in one sentence (23 Oct): the parts still to answer and the answers so far.
+  const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
@@ -3285,12 +3287,37 @@ export default function FieldCommandClient() {
     setOutcomeMessage("");
   }
 
-  agentRef.current = (heard: string) => {
+  agentRef.current = (heard: string, inner = false) => {
+    if (!inner) {
+      multiRef.current = null;
+      const parts = splitCommands(heard);
+      if (parts.length > 1) { multiRef.current = { heard, queue: parts.slice(1), replies: [] }; setAgent({ heard, reply: "Working on it…" }); agentRef.current(parts[0], true); return; }
+    }
     const cmd = parseCommand(heard);
-    const answer = (reply: string, confirm?: { id: string; outcome: string }) => { setAgent({ heard, reply, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200); };
+    const answer = (reply: string, confirm?: { id: string; outcome: string }) => {
+      const m = multiRef.current;
+      if (m) {
+        // Collect; a part that needs a yes stops the chain there (the rest is listed to ask after).
+        m.replies.push(reply);
+        const next = confirm ? undefined : m.queue.shift();
+        if (next !== undefined) { agentRef.current(next, true); return; }
+        multiRef.current = null;
+        const rest = confirm && m.queue.length ? `\n\nAfter that, ask me: ${m.queue.join("; ")}.` : "";
+        const all = `${m.replies.join("\n\n")}${rest}`;
+        setAgent({ heard: m.heard, reply: all, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
+        speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200);
+        return;
+      }
+      setAgent({ heard, reply, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    // A panel with buttons ends a chain: what was answered before goes on top.
+    function showPanel(p: { heard: string; reply: string; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] }) {
+      const m = multiRef.current;
+      multiRef.current = null;
+      setAgent(m ? { ...p, heard: m.heard, reply: [...m.replies, p.reply].join("\n\n") } : p);
+    }
     if (cmd.intent === "reply-notice") {
       // Which notice: the job named, else the one on screen, else the only one waiting (or the most urgent from Lewis / Gafur).
       const waiting = boardOpenRows.filter((r) => !r.steps.sent.done || boardSide(r) === "replied");
@@ -3311,7 +3338,7 @@ export default function FieldCommandClient() {
       if (!job) { answer("Which job? Open its card, or say the job number."); return; }
       const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
       const href = outcome ? paperworkGenerateHref(jobId(job), outcome) : paperworkNextHref(jobId(job), outcome);
-      setAgent({ heard, reply: `${jobAddress(job).replace(/,\s*\d{5}$/, "")}: ${outcome ? `${FIELD_OUTCOMES[outcome] || "outcome saved"}, the affidavit and invoice are ready to make.` : "no outcome saved yet: the paperwork page asks what happened."} Tap Open the paperwork.`, actions: [{ label: "📄 Open the paperwork", href }] });
+      showPanel({ heard, reply: `${jobAddress(job).replace(/,\s*\d{5}$/, "")}: ${outcome ? `${FIELD_OUTCOMES[outcome] || "outcome saved"}, the affidavit and invoice are ready to make.` : "no outcome saved yet: the paperwork page asks what happened."} Tap Open the paperwork.`, actions: [{ label: "📄 Open the paperwork", href }] });
       speak(`${jobAddress(job).replace(/,\s*\d{5}$/, "")}. Tap open the paperwork.`, 200);
       return;
     }
@@ -3319,7 +3346,7 @@ export default function FieldCommandClient() {
       // The route panel plans it (overdue / appointments / 2nd tries first, close together), then the plan is read out.
       closeScreens("route");
       setRouteBuildRequest((n) => n + 1);
-      setAgent({ heard, reply: "Planning your day…" });
+      if (!multiRef.current) setAgent({ heard, reply: "Planning your day…" });
       // Read it back once the new plan is saved (up to 8 s; the map and your location may still be loading).
       const before = JSON.stringify((() => { try { return JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null"); } catch { return null; } })());
       let tries = 0;
@@ -3365,12 +3392,12 @@ export default function FieldCommandClient() {
       }
       if (cmd.intent === "call-tenant") {
         if (!t.phone) { answer(`There's no tenant phone on file for ${where}.`); return; }
-        setAgent({ heard, reply: `${t.name || "The tenant"} at ${where}: ${t.phone}. Tap Call.`, actions: [{ label: `📞 Call ${t.name ? t.name.split(/\s+/)[0] : "the tenant"}`, href: `tel:${t.phone.replace(/[^\d+]/g, "")}` }] });
+        showPanel({ heard, reply: `${t.name || "The tenant"} at ${where}: ${t.phone}. Tap Call.`, actions: [{ label: `📞 Call ${t.name ? t.name.split(/\s+/)[0] : "the tenant"}`, href: `tel:${t.phone.replace(/[^\d+]/g, "")}` }] });
         speak(`${t.name || "The tenant"} at ${where}. Tap call.`, 200);
         return;
       }
       if (cmd.intent === "navigate") {
-        setAgent({ heard, reply: `${where} (${jobId(j)}). Pick Waze or Google.`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }] });
+        showPanel({ heard, reply: `${where} (${jobId(j)}). Pick Waze or Google.`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }] });
         speak(sayOmo(`${where}. Pick Waze or Google.`), 200);
         return;
       }
@@ -3408,13 +3435,20 @@ export default function FieldCommandClient() {
         // None: the last one on record.
         let last: { omo: string; day: string } | null = null;
         for (const a of Array.isArray(awards?.jobs) ? awards.jobs : []) if (a.won && (!last || String(a.awardDate) > last.day)) last = { omo: a.omo, day: String(a.awardDate) };
+        // The award emails are a day or two ahead of HPD's list.
+        for (const t of threads || []) for (const m of t.messages) {
+          if (!m.hpd || m.mine || !/confirmation of award|awarding omo|you have been awarded/i.test(`${t.subject} ${m.text}`)) continue;
+          const day = nyDay(new Date(m.at));
+          const o = (m.text.match(/[A-Z]{2}\d{5}/) || t.omos)[0];
+          if (o && (!last || day > last.day)) last = { omo: o, day };
+        }
         answer(`No awards ${cmd.label} yet.${last ? ` Your last one was ${last.omo}, ${new Date(`${last.day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "numeric", day: "numeric" })}.` : ""}`);
       })();
       return;
     }
     if (cmd.intent === "ask") {
       // A free question: the AI answers from what the app knows (no tenant names), it can't change anything.
-      setAgent({ heard, reply: "Thinking…" });
+      if (!multiRef.current) setAgent({ heard, reply: "Thinking…" });
       void (async () => {
         const nyDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
         const bidsData = await fetch("/data/upcoming_bids.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => ({}));
@@ -3424,6 +3458,9 @@ export default function FieldCommandClient() {
           openBids: (Array.isArray(bidsData?.bids) ? bidsData.bids : []).filter((b: { bidDue?: string }) => (b.bidDue || "") >= nyDay).slice(0, 40).map((b: { omo: string; borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => ({ job: b.omo, borough: b.borough, work: jobSummary(b.description || "").lines.map(lineText).join("; ").slice(0, 160), due: `${b.bidDue} ${b.bidDueTime || ""}`.trim() })),
           money: { heldByRejections: payTrack.summary.held, rejectionsToFix: payTrack.summary.toFix },
           jobs: { toDo: jobRows.filter((r) => r.group === "todo").length, closeOut: jobRows.filter((r) => r.group === "closeout").length, secondTry: jobRows.filter((r) => r.group === "secondtry").length, waitingOnHpd: jobRows.filter((r) => r.group === "waiting").length, oldestToDo: jobRows.filter((r) => r.group === "todo").sort((a, b) => String(a.due).localeCompare(String(b.due))).slice(0, 8).map((r) => ({ job: r.id, address: r.address, due: r.due })) },
+          // More to answer from (23 Oct "make AI much better"): wins this week and HPD's emails of the last 3 days.
+          winsThisWeek: (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && /confirmation of award|awarding omo/i.test(`${t.subject} ${m.text}`) && Date.now() - Date.parse(m.at) < 7 * 86400000).map((m) => ({ job: (m.text.match(/[A-Z]{2}\d{5}/) || t.omos)[0] || "", day: new Date(m.at).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "numeric", day: "numeric" }) }))).slice(0, 30).map((w) => ({ ...w, address: addressOf(w.job) })),
+          hpdEmailsLast3Days: (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", about: summarizeHpd({ kind: emailKind(t.subject, (t as { kind?: string }).kind || "", m.from || ""), subject: t.subject, text: m.text, omo: t.omos[0] || "" }).replace(/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/g, "(phone)") }))).sort((a, b) => b.ts - a.ts).slice(0, 25).map(({ ts, ...e }) => { void ts; return e; }),
           todaysRoute: todayRouteIds(),
           jobOnScreen: selectedJob ? { job: jobId(selectedJob), address: jobAddress(selectedJob), work: jobSummary(jobScope(selectedJob)).lines.map(lineText).join("; "), status: jobStatus(selectedJob) } : null,
         };

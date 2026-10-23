@@ -76,7 +76,26 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(i|we|i'?ve|we'?ve|job|work ?order|this|tenant|nobody|no one|someone|it)\b/.test(t) || /\bno access\b/.test(t) || /[a-z]{2}\s*\d{5}/.test(t)) for (const [re, outcome] of OUTCOMES) if (re.test(t)) return { intent: "outcome", outcome, ref: refOf(t) };
   // Any other question goes to the AI with the app's facts (owner, 22 Oct: "talk it out with me").
   if (/\?$/.test(String(heard).trim()) || /^(what|which|how|when|why|who|where|can|could|should|would|is|are|do|does|did|will|tell me|give me|explain)\b/.test(t)) return { intent: "ask", question: String(heard).trim() };
+  // Said like a sentence, not a search ("anything new from Gafur", "HPD gave me work today?"): the AI answers it
+  // (owner, 23 Oct: "make AI much better, ask in different ways"). Searches are job numbers, addresses and job words.
+  if (!/\d/.test(t) && t.split(/\s+/).length >= 3 && /\b(i|me|my|we|us|you|anything|any|new|did|do|does|have|has|got|get|need|needs|should|can|could|would|will|from|today|tonight|tomorrow|yesterday|this week|money|owe|owed|paid|pay)\b/.test(t)) return { intent: "ask", question: String(heard).trim() };
   return { intent: "search", text: spokenSearch(heard) };
+}
+
+// Several things in one sentence (owner, 23 Oct: "ask multiple questions in different ways"): "how many jobs did I
+// win today and what bids are due tomorrow" -> each part on its own, answered one after the other. Only split when
+// every part is understood; "…won today, read me the description" stays one (the wins, read out).
+export function splitCommands(heard: string): string[] {
+  const whole = parseCommand(heard);
+  if (whole.intent === "awards" && whole.describe) return [heard];
+  const pieces = String(heard || "")
+    .split(/\s*(?:\?|;|\band also\b|\balso\b|\band then\b|\bthen\b|,?\s+and\s+(?=(?:what|which|how|when|where|who|read|tell|give|show|any|do|did|does|is|are|text|call|plan|take|navigate|open|reply|answer|i)\b))\s*/i)
+    .map((p) => p.trim().replace(/^(and|also|then)\s+/i, ""))
+    .filter((p) => p.split(/\s+/).length >= 2);
+  if (pieces.length < 2) return [heard];
+  const kinds = pieces.map(parseCommand);
+  if (kinds.some((k) => k.intent === "search" || k.intent === "yes" || k.intent === "no")) return [heard];
+  return pieces.slice(0, 4);
 }
 
 // Which of your jobs was meant: the job number, else every word in the address; "" = the job on screen.
