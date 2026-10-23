@@ -119,7 +119,9 @@ try {
     const afterCount = await jobCount();
     assert.ok(afterCount > before, `${where}: all jobs back on the map (${before} -> ${afterCount} jobs)`);
     // A job card, then a map button: the card closes.
-    await page.locator(".fc-pin").first().click({ force: true });
+    // A pin on screen (the first one in the page can be off the edge of the map).
+    const pin = page.locator(".fc-pin:visible").first();
+    if (await pin.count()) await pin.click({ force: true }).catch(() => {});
     await page.waitForTimeout(500);
     if (await page.locator("#fc-job-card").count() && await reachable(BUTTONS.bids.tap)) {
       await page.locator(BUTTONS.bids.tap).click();
