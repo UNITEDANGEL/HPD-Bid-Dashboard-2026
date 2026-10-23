@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "tracker" }
   | { intent: "money" }
   | { intent: "job-status"; ref: string }
   | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string }
@@ -99,6 +100,8 @@ export function parseCommand(heard: string): AgentCommand {
     const describe = /\b(read|describe|descriptions?|scope|what (are|were|is) (they|the jobs|it)|tell me about|details?)\b/.test(t);
     return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today", describe };
   }
+  // 🧭 The job tracker (23 Oct): "show my job tracker", "my pipeline", "where are all my jobs".
+  if (/\b(job tracker|tracker|pipeline|where are (all )?my jobs|all my jobs by stage)\b/.test(t)) return { intent: "tracker" };
   // A job start to finish (23 Oct, from the award-to-payment plan): "what's left on ER05729", "where are we with this
   // job", "status of EQ15239", "track ER05729".
   if (/\b(what'?s left|what is left|where are we|where do we stand|status of|how far along|track|what'?s next on|what is next on)\b/.test(t) && !/\b(bids?|notices?|today)\b/.test(t)) {

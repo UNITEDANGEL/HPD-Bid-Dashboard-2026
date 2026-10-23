@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "🧭 Job tracker",
+      "items": [
+        "🧭 Job tracker (Map menu, or say \"show my job tracker\"): every job by stage from the award to the money (text the tenant, waiting, appointment, paperwork, sent, waiting for payment, paid), with counts. Tap a stage to see its jobs, tap a job to open it."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "Award and paid alerts · texts from the app · glide to the job",
       "items": [
         "💰 New award alert says where and what: \"You won ER… · <address>\" and the work in plain words.",

@@ -54,6 +54,8 @@ import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
 import { speak, voiceOff } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
+import JobTracker, { type TrackerRow } from "./JobTracker";
+import { trackerStage } from "../../lib/job-tracker";
 import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow } from "./JobsList";
 import FindJob from "./FindJob";
@@ -2252,6 +2254,33 @@ export default function FieldCommandClient() {
   const bidHistory = useMemo(() => jobs.filter((job) => !isTestJob(jobId(job))).map((job) => ({ id: jobId(job), description: value(job, ["ItbPage3Description", "JobDescription", "description"]), amount: jobAwardAmount(job), address: jobAddress(job) })), [jobs]);
   // End-of-day summary sheet (map menu): today's work, close-outs and what's due tomorrow.
   const [summaryOpen, setSummaryOpen] = useState(false);
+  // 🧭 Job tracker: every job's stage from award to payment (lib/job-tracker.ts), worked out while it's open.
+  const [trackerOpen, setTrackerOpen] = useState(false);
+  const trackerRows = useMemo<TrackerRow[]>(() => {
+    if (!trackerOpen) return [];
+    const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+    const md = (iso: string) => { const t = Date.parse(iso.length === 10 ? `${iso}T12:00:00` : iso); return Number.isFinite(t) ? new Date(t).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : ""; };
+    return jobs.filter((j) => !isTestJob(jobId(j)) && jobQueue(j) !== "archived").map((j) => {
+      const id = jobId(j);
+      const fu = followUps.get(id);
+      const pay = pipMap[id];
+      const ts = tenantStep(j as Record<string, unknown>);
+      const appt = activeAppointment(j as Record<string, unknown>);
+      const input = { id, outcome: value(j, ["FieldOutcome", "fieldOutcome"]), arrived: Boolean(value(j, ["FieldArrivedAt"])), appointment: Boolean(appt), tenantStep: ts.state,
+        approved: Boolean(value(j, ["PackageApprovedAt"])) || /approved/i.test(value(j, ["PackageReviewStatus"])), followState: fu?.state || "", sentAt: fu?.sentAt || "",
+        paid: pay?.paid || 0, outstanding: pay?.outstanding || 0, inPip: Boolean(pay),
+        awardAgeDays: (() => { const t = Date.parse(String(value(j, ["AwardDate"]) || "")); return Number.isFinite(t) ? Math.floor((Date.now() - t) / 86400000) : 0; })() };
+      const stage = trackerStage(input);
+      const note = stage === "waiting" || stage === "book" ? (ts.textedAt ? `texted ${md(ts.textedAt)}${ts.repliedAt ? ", replied" : ""}` : "")
+        : stage === "appointment" && appt ? appointmentLabel(appt)
+        : stage === "sent" && fu?.sentAt ? `sent ${md(fu.sentAt)}`
+        : stage === "payment" ? (pay?.outstanding ? `${usd(pay.outstanding)} owed` : "not in PIP yet")
+        : stage === "paid" && pay ? usd(pay.paid)
+        : stage === "closed" ? (fu?.hpdReason ? fu.hpdReason.toLowerCase() : "closed")
+        : stage === "text" ? (value(j, ["AwardDate"]) ? `awarded ${md(value(j, ["AwardDate"]))}` : "") : "";
+      return { id, address: jobAddress(j).replace(/,\s*\d{5}$/, ""), stage, note };
+    });
+  }, [trackerOpen, jobs, followUps, pipMap]); // eslint-disable-line react-hooks/exhaustive-deps
   // One screen at a time: a map button closes whatever else is open (bids, notices, stats, today, follow-up,
   // summary, route, the job card, menus) before opening its own. Tapping it again closes it (back to the map).
   const closeScreens = (keep = "") => {
@@ -3758,6 +3787,12 @@ export default function FieldCommandClient() {
       answer("Back to the bid you just sent.");
       return;
     }
+    if (cmd.intent === "tracker") {
+      setTrackerOpen(true);
+      setAgent(null);
+      speak("Here's your job tracker: every job from the award to the money.", 150);
+      return;
+    }
     if (cmd.intent === "job-status") {
       // "What's left on ER05729?" (23 Oct): the job from award to payment in one answer, then what to do next.
       const found = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
@@ -3973,6 +4008,7 @@ export default function FieldCommandClient() {
         <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
         <button type="button" data-hpd-smoke="fc-test-job-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); const test = jobs.find((row) => jobId(row) === TEST_JOB_ID); if (test) openIssueJob(test); }}>🧪 Test job ({TEST_JOB_ID})</button>
         <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
+        <button type="button" data-hpd-smoke="fc-tracker-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setTrackerOpen(true); }}><ListIcon />🧭 Job tracker</button>
         <button type="button" data-hpd-smoke="fc-stats-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setStatsOpen(true); setSelectedJob(null); }}><StatsIcon />My stats</button>
         <button type="button" data-hpd-smoke="fc-bids-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSelectedJob(null); setBidsOpen(true); }}><BidsIcon />Invitations to bid</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
@@ -5495,6 +5531,7 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {trackerOpen ? <JobTracker rows={trackerRows} onClose={() => setTrackerOpen(false)} onOpen={(id) => { const j = jobs.find((x) => jobId(x) === id); setTrackerOpen(false); if (j) openIssueJob(j, true); }} /> : null}
       {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go, n.omo || ""); }} /> : null}
       {ping ? (
         <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind} style={{ borderColor: ALERT_KINDS[ping.kind]?.color }}>
