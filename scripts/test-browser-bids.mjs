@@ -75,6 +75,9 @@ try {
   await openBidList(page);
   const list = page.locator('[data-hpd-smoke="fc-bids-list"]');
   await list.locator("li").first().waitFor({ timeout: 20000 });
+  // One slim line (23 Oct, max map); the 📅 pill opens the days and the details.
+  assert.match(await page.locator('[data-hpd-smoke="fc-bids-banner"] strong').innerText(), new RegExp(`${open.length} bids · \\d+ today`));
+  await page.locator('[data-hpd-smoke="fc-bids-day-pick"]').click();
   assert.match(await page.locator('[data-hpd-smoke="fc-bids-banner"]').innerText(), new RegExp(`${open.length} open to bid · due today or later`));
   // How many arrived today (to compare with the inbox), and an invitation the reader couldn't read is shown, not dropped.
   assert.match(await page.locator('[data-hpd-smoke="fc-bids-today"]').innerText(), /\d+ received today/);

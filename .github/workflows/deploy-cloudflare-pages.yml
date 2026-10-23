@@ -135,6 +135,7 @@ jobs:
           node scripts/test-costs.mjs
           node scripts/test-priorities.mjs
           node scripts/test-notice-board.mjs
+          node scripts/test-notice-convo.mjs
           node scripts/test-push.mjs
           node scripts/test-old-job-dates.mjs
           node scripts/test-ai-draft.mjs

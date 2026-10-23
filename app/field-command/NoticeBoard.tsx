@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { holidaysBetween } from "../../lib/business-days";
 import SentPaperwork from "./SentPaperwork";
 import type { NoticeFindings } from "../../lib/notice-findings";
+import { isNewSince, noticeConvo, type ConvoItem } from "../../lib/notice-convo";
 import { BOARD_STEPS, NUDGE_AFTER_DAYS, boardSide, sentTime, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
@@ -56,6 +57,45 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
   }, [focusOmo, rows.length]);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
+  // When you last looked at each notice (this phone): what came in since is highlighted NEW. Saved a few seconds after
+  // the board opens, so the highlight stays while you read.
+  const [seen, setSeen] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let before: Record<string, string> = {};
+    try { before = JSON.parse(localStorage.getItem("hpd-board-seen") || "{}"); } catch { /* private mode */ }
+    setSeen(before);
+    const t = window.setTimeout(() => {
+      const at = new Date().toISOString();
+      const next = { ...before, ...Object.fromEntries(rows.map((r) => [r.key, at])) };
+      try { localStorage.setItem("hpd-board-seen", JSON.stringify(next)); } catch { /* private mode */ }
+    }, 5000);
+    return () => window.clearTimeout(t);
+  }, [rows.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const proofText = (it: ConvoItem) => {
+    const when = it.at ? new Date(it.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+    if (it.side === "theirs") return when ? `in your email ${when}` : "";
+    return it.proof === "email" ? `✔ Verified: found in your sent email${when ? ` ${when}` : ""}` : it.proof === "app" ? `✔ Made in the app${when ? ` ${when}` : ""}` : it.proof === "you" ? `Marked by you${when ? ` ${when}` : ""}` : when;
+  };
+  const convo = (row: BoardRow) => {
+    const items = noticeConvo(row);
+    const seenAt = seen[row.key] || "";
+    return (
+      <ol className="fc-convo" data-hpd-smoke="fc-convo" aria-label={`Conversation with ${row.who}`}>
+        {items.map((it) => {
+          const fresh = isNewSince(it, seenAt);
+          return (
+            <li key={it.id} className={`fc-convo-msg is-${it.side}${fresh ? " is-new" : ""}${it.proof === "you" ? " is-unverified" : ""}`} data-hpd-smoke={`fc-convo-${it.id}`} data-proof={it.proof}>
+              <b><span aria-hidden="true">{it.icon}</span> {it.title}{fresh ? <em className="fc-convo-new" data-hpd-smoke="fc-convo-new">NEW</em> : null}</b>
+              {it.detail ? <small className="fc-convo-detail">{it.detail}</small> : null}
+              {it.file ? <small className="fc-convo-file" data-hpd-smoke="fc-convo-file">📎 {it.file}</small> : null}
+              {proofText(it) ? <small className="fc-convo-proof">{proofText(it)}</small> : null}
+              {it.id === "sent" && it.proof === "email" ? <SentPaperwork omo={row.omo} /> : null}
+            </li>
+          );
+        })}
+      </ol>
+    );
+  };
   // Reply to many (17 Oct): every reply written on one screen; each one still goes out with its own two taps.
   type BatchItem = { key: string; subject: string; text: string; armed: boolean; status: string; sent: boolean };
   const [batch, setBatch] = useState<{ pick: "record" | "none" | "all" | "nudge"; items: BatchItem[]; selfStatus: string } | null>(null);
@@ -221,6 +261,7 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
           <span className="fc-board-kind">{row.kind === "docs" ? "MISSING DOCS" : `${row.hours}-HOUR`}</span>
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
+        {convo(row)}
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
         {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
           const hol = holidaysBetween(row.noticeAt, row.dueAt);
@@ -234,7 +275,8 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
             <div className="fc-found" data-hpd-smoke="fc-found">
               <b>🔎 Found on record</b>
               <ul>{f.lines.map((l, i) => <li key={i} className={`is-${l.tone}`}><span aria-hidden="true">{l.icon}</span> {l.text}</li>)}</ul>
-              {f.lines.some((l) => /sent to HPD on|emailed them PDFs|paperwork on record/i.test(l.text)) || row.sentAt || row.steps.sent.done ? <SentPaperwork omo={row.omo} /> : null}
+              {/* The file you sent opens from the 📤 message above when it is in your sent email; otherwise here. */}
+              {!(row.filed || row.steps.sent.how === "email") && (f.lines.some((l) => /sent to HPD on|emailed them PDFs|paperwork on record/i.test(l.text)) || row.sentAt || row.steps.sent.done) ? <SentPaperwork omo={row.omo} /> : null}
               {/* Its PDF already went out (in her thread or another): tell them the date, don't send it again. */}
               <p className="fc-found-next" data-hpd-smoke="fc-found-next">👉 {row.filed ? `Already emailed ${day(row.filed.at)}${row.filed.here ? "" : " (in another email)"}: reply with that date. No need to send it again.` : f.advice.text}</p>
               {row.filed ? <button type="button" className="fc-found-go" data-hpd-smoke="fc-found-go" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, `Our affidavit and invoice for ${row.omo} were emailed on ${day(row.filed!.at)} (${row.filed!.name}). Tell them that date; don't attach it again.`); }}>✨ Tell them it went {day(row.filed.at)}</button>

@@ -8,6 +8,7 @@ export type AgentCommand =
   | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string }
   | { intent: "read-job"; ref: string; pick?: number; all?: boolean }
   | { intent: "bids" }
+  | { intent: "come-back" }
   | { intent: "today" }
   | { intent: "notices" }
   | { intent: "yes" }
@@ -46,6 +47,8 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // "Come back" after a bid was sent and the app moved on to the next one (23 Oct).
+  if (/^(come|go|take me) back( to (it|that|that one|the last( one| bid)?|the (bid|one) i (just )?sent))?$/.test(t) || /^back to the last bid$/.test(t)) return { intent: "come-back" };
   // "Plan my day" / "build my route" (22 Oct): Today's route planned for you, then read out.
   if (/\b(plan|build|make|set up|map out)\b.{0,20}\b(my |the |today'?s? )?(day|route|stops)\b/.test(t) || /^where (should|do) i go( first| today)?\b/.test(t)) return { intent: "plan" };
   // "Answer the notice for ER01987" / "reply to Lewis" / "reply to Gafur" (22 Oct).

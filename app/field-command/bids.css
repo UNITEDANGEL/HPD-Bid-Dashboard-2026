@@ -800,3 +800,19 @@ i.is-won { background: #16a34a; }
 /* Sent: back on the bids map with a note (23 Oct). */
 .fc-bid-sent-note { position: absolute; z-index: 1700; left: 12px; right: 12px; top: calc(max(12px, env(safe-area-inset-top)) + 70px); display: grid; gap: 3px; padding: 12px 14px; border-radius: 16px; background: #052e16f5; border: 2px solid #22c55e; color: #f0fdf4; box-shadow: 0 10px 24px #0009; font: 700 13.5px system-ui, sans-serif; animation: hpd-pop 0.4s ease-out; }
 .fc-bid-sent-note b { font: 900 16px system-ui, sans-serif; }
+
+/* Max map (23 Oct): the bids header is one slim line. The day buttons and the details open from the 📅 pill. */
+.fc-app .fc-bids-banner.is-compact { grid-template-columns: 1fr auto auto auto; gap: 4px 6px; padding: 5px 6px 5px 10px; border-radius: 14px; }
+.fc-bids-banner.is-compact > strong { grid-column: 1; grid-row: 1; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-bids-banner.is-compact > strong em { font-style: normal; font-weight: 700; color: #fed7aa; font-size: 12px; }
+.fc-bids-banner.is-compact .fc-bids-back { padding: 0 8px; }
+.fc-bids-banner.is-compact > span { display: none; grid-column: 1 / -1; }
+.fc-bids-banner.is-compact.days-open > span { display: block; }
+.fc-bids-banner.is-compact > button { grid-row: 1; min-height: 34px; padding: 0 9px; font-size: 13px; }
+.fc-bids-banner.is-compact .fc-bids-daypick { grid-column: 2; background: #ffffff26; color: #fff; border: 1px solid #fed7aa55; }
+.fc-bids-banner.is-compact .fc-bids-daypick.is-set { background: #fff7ed; color: #7c2d12; }
+.fc-bids-banner.is-compact .fc-bids-notif { grid-column: 3; grid-row: 1; min-width: 34px; min-height: 34px; padding: 0 4px; font-size: 15px; }
+.fc-bids-banner.is-compact .fc-bids-notif b { top: -5px; right: -5px; min-width: 16px; height: 16px; font-size: 10px; line-height: 16px; }
+.fc-bids-banner.is-compact [data-hpd-smoke="fc-bids-close"] { grid-column: 4; }
+.fc-bids-banner.is-compact .fc-bids-days { grid-row: auto; }
+.fc-bid-sent-note button { justify-self: start; margin-top: 4px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 12px; background: #f0fdf4; color: #14532d; font: 900 14px system-ui, sans-serif; }

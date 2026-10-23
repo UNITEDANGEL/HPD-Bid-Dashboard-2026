@@ -50,14 +50,16 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/faxtrack-1-sending.png` });
   const omo = (await sheet.locator("header strong").innerText()).trim();
   await page.clock.runFor(3000);
-  // Sent: back to the bids map with a note (23 Oct); the bid opens again to follow the fax.
+  // Sent: the app moves on to the next bid by itself (23 Oct), with "Come back" to this one.
   const note = page.locator('[data-hpd-smoke="fc-bid-sent-note"]');
   await note.waitFor({ timeout: 15000 });
   assert.match(await note.innerText(), new RegExp(`${omo} sent to HPD`));
-  assert.equal(await sheet.count(), 0, "the bid sheet closed by itself");
-  if (shots) await page.screenshot({ path: `${shots}/faxtrack-back-to-map.png` });
-  await openBidList(page);
-  await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child', { hasText: omo }).first().click();
+  await page.waitForFunction((o) => { const h = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong'); return h && h.textContent.trim() !== o; }, omo, { timeout: 15000 });
+  const nextOmo = (await sheet.locator("header strong").innerText()).trim();
+  assert.match(await note.innerText(), new RegExp(`Next bid: ${nextOmo}`));
+  if (shots) await page.screenshot({ path: `${shots}/faxtrack-next-bid.png` });
+  await page.locator('[data-hpd-smoke="fc-bid-come-back"]').click();
+  await page.waitForFunction((o) => document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent.trim() === o, omo, { timeout: 15000 });
   await track.waitFor({ timeout: 15000 });
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-faxtrack-faxing"]')?.getAttribute("data-status") === "now", null, { timeout: 15000 });
   assert.equal(await status("humblefax"), "done");
@@ -72,7 +74,7 @@ try {
   assert.equal(await status("received"), "done");
   if (shots) await page.screenshot({ path: `${shots}/faxtrack-3-received.png` });
   assert.deepEqual(errors, []);
-  console.log("PASS fax tracker: package ready ✓ -> Send (2nd tap pulses) -> 'Sent to HumbleFax' spins then ✓ -> 'Faxing HPD (212) 863-8655' spins -> HumbleFax confirms -> 'HPD received' ✓ with check + confetti");
+  console.log("PASS fax tracker: package ready ✓ -> Send (2nd tap pulses) -> 'Sent to HumbleFax' spins then ✓ -> 'Faxing HPD (212) 863-8655' spins -> HumbleFax confirms -> 'HPD received' ✓ with check + confetti; after Send it moves on to the next bid and Come back returns");
   await c.close();
 } finally {
   await browser.close();

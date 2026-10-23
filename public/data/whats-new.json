@@ -3,6 +3,19 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "Vendor board as a conversation · more map · next bid by itself",
+      "items": [
+        "💬 Vendor tracking board: every notice reads like a conversation: their notice on the left, your reply, paperwork and send on the right, their answer below.",
+        "✔ Each step says how the app knows: \"Verified: found in your sent email\" with the date and time, \"Made in the app\", or \"Marked by you\" (not found in email yet).",
+        "📎 The PDF you sent is named in the 📤 message; tap \"See what you sent\" to open the actual file from your email.",
+        "🟡 Anything new since you last looked is ringed in yellow with NEW.",
+        "🗺 More map: the bids header is one slim line. All / Today / Tomorrow open from the 📅 button and hide by themselves.",
+        "🔔 Alerts are bigger and clearer: what kind, the whole message, a blue Open and a big OK.",
+        "➡️ After you send a bid, the map glides to the next bid due and opens it. Tap \"↩ Come back\" or say \"come back\" to return to the one you just sent."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "Affidavits: sign once, notary one tap, right form every time",
       "items": [
         "✍️ Your signature is saved in your own Google Drive (private), so the Home Screen app, Chrome and a new phone all put it on by themselves. No more \"sign again\".",

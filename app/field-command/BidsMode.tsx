@@ -135,8 +135,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   }, [open]);
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
   // Sent: back to the bids map by itself, with a note (owner, 23 Oct: "once I send, it should go back to the bids map").
-  const [sentNote, setSentNote] = useState<{ omo: string; price: number } | null>(null);
-  useEffect(() => { if (!sentNote) return; const t = window.setTimeout(() => setSentNote(null), 8000); return () => window.clearTimeout(t); }, [sentNote]);
+  // next: the bid the app moved on to by itself; "Come back" returns to the one just sent.
+  const [sentNote, setSentNote] = useState<{ omo: string; price: number; next?: string } | null>(null);
+  useEffect(() => { if (!sentNote) return; const t = window.setTimeout(() => setSentNote(null), sentNote.next ? 15000 : 8000); return () => window.clearTimeout(t); }, [sentNote]);
+  // Glide the map to a building (zooms out and back in, so you see where it is).
+  const flyTo = (b: UpcomingBid) => {
+    if (!Number.isFinite(b.lat) || !Number.isFinite(b.lng)) return;
+    try { if (map?.flyTo) map.flyTo([b.lat, b.lng], 16, { duration: 1.2 }); else map?.setView?.([b.lat, b.lng], 16); } catch { /* map not ready */ }
+  };
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
   const [draft, setDraft] = useState("");
   const [reason, setReason] = useState("");
@@ -186,6 +192,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     try { const v = localStorage.getItem("hpd-bids-day"); return v === "0" || v === "1" || v === "2" ? v : "all"; } catch { return "all"; }
   });
   useEffect(() => { try { localStorage.setItem("hpd-bids-day", dayPick); } catch { /* private mode */ } }, [dayPick]);
+  // Max map (owner, 23 Oct: "I need max space on the map, auto hide all / today / tomorrow"): the day buttons fold into
+  // one 📅 pill; tapping it opens them, picking a day (or 6 s without a tap) folds them away again.
+  const [daysOpen, setDaysOpen] = useState(false);
+  useEffect(() => {
+    if (!daysOpen) return;
+    const t = window.setTimeout(() => setDaysOpen(false), 6000);
+    return () => window.clearTimeout(t);
+  }, [daysOpen, dayPick]);
   // The list fills the screen below the header (the header's height changes with the warnings in it).
   const bannerRef = useRef<HTMLDivElement | null>(null);
   // Room for the list: the map area's height minus the header (both measured inside the map area).
@@ -560,6 +574,27 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     onFocused?.();
   }, [open, focusOmo, bids]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function nextToBid(after: string) {
+    return [...shownBids]
+      .filter((b) => b.omo !== after && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || ""))
+      .sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime)).localeCompare(b.bidDue + minutesOf(b.bidDueTime)))[0];
+  }
+  // "Come back" (button or the helper): the bid just sent, opened again with the map on it.
+  function comeBack() {
+    const b = sentNote && (bids || []).find((x) => x.omo === sentNote.omo);
+    if (!b) return;
+    setSentNote(null);
+    flyTo(b);
+    openBid(b);
+  }
+  const comeBackRef = useRef(comeBack);
+  comeBackRef.current = comeBack;
+  useEffect(() => {
+    const on = () => comeBackRef.current();
+    window.addEventListener("hpd-bid-come-back", on);
+    return () => window.removeEventListener("hpd-bid-come-back", on);
+  }, []);
+
   function openBid(bid: UpcomingBid) {
     setFullText(false);
     setShowSimilar(false);
@@ -717,10 +752,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     // A moment to see "Sent", then back to the map (the fax keeps being tracked; tap the bid to see it).
     const sentOmo = selected.omo;
     const price = record.price;
+    // Then on to the next bid by itself (owner, 23 Oct: "I sent a bid, it should auto zoom me to the next bid; I might
+    // want to come back to it"): due soonest, not sent, not a no-bid. None left: back to the bids map.
     window.setTimeout(() => {
-      setSelected((cur) => (cur && cur.omo === sentOmo ? null : cur));
+      const next = nextToBid(sentOmo);
       setListSize("peek");
-      setSentNote({ omo: sentOmo, price });
+      setSentNote({ omo: sentOmo, price, next: next?.omo });
+      setSelected((cur) => (cur && cur.omo === sentOmo ? null : cur));
+      if (next) { flyTo(next); openBid(next); }
     }, 2200);
   }
 
@@ -844,26 +883,36 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
 
   return (
     <>
-      <div className="fc-bids-banner" ref={bannerRef} data-hpd-smoke="fc-bids-banner">
-        <strong>📨 Invitations to bid</strong>
+      <div className={`fc-bids-banner is-compact${daysOpen ? " days-open" : ""}`} ref={bannerRef} data-hpd-smoke="fc-bids-banner">
+        <strong>📨 {bids === null ? "Bids" : `${list.length} bids`}<em data-hpd-smoke="fc-bids-due-today">{bids ? ` · ${list.filter((b) => b.bidDue === dayKeys[0]).length} today` : ""}</em></strong>
         {autoNote ? <small className="fc-bids-autonote" data-hpd-smoke="fc-bids-autonote">{autoNote}</small> : null}
         <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bids ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-today"> · {bids.filter((b) => b.receivedAt && new Date(b.receivedAt).toLocaleDateString("en-US", { timeZone: "America/New_York" }) === new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })).length} received today</small> : null}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
         {unread.length ? <p className="fc-bids-unread" role="alert" data-hpd-smoke="fc-bids-unread">⚠️ {unread.length} invitation{unread.length > 1 ? "s" : ""} couldn&apos;t be read, open in your email: {unread.map((u) => `${u.omo || u.file} (${u.why})`).join(", ")}</p> : null}
+        <button type="button" className={`fc-bids-daypick${dayPick !== "all" ? " is-set" : ""}`} aria-expanded={daysOpen} data-hpd-smoke="fc-bids-day-pick" onClick={() => setDaysOpen((o) => !o)}>
+          📅 {dayPick === "all" ? "All" : dayPick === "0" ? "Today" : dayPick === "1" ? "Tomorrow" : new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" })} ▾
+        </button>
         {onNotifications ? <button type="button" className={`fc-bids-notif${notifUnread ? " has-new" : ""}`} aria-label="Notifications" data-hpd-smoke="fc-bids-notif" onClick={onNotifications}>🔔{notifUnread ? <b>{notifUnread}</b> : null}</button> : null}
-        <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
+        <button type="button" className="fc-bids-back" aria-label="Back to jobs" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>✕ Jobs</button>
         {google && (!google.connected || !google.canEmail) ? <ReconnectGoogle text={google.connected ? "Google is connected but can't send email: reconnect and allow sending email." : "Google isn't connected: bids can't be faxed until you reconnect."} /> : null}
-        <div className="fc-bids-days" role="group" aria-label="Which day" data-hpd-smoke="fc-bids-days">
+        {daysOpen ? <div className="fc-bids-days" role="group" aria-label="Which day" data-hpd-smoke="fc-bids-days">
           {([["all", "All"], ["0", "Today"], ["1", "Tomorrow"], ["2", new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" })]] as const).map(([key, label]) => {
             const dayList = key === "all" ? list : list.filter((b) => b.bidDue === dayKeys[Number(key)]);
             const first = [...dayList].sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime)).localeCompare(b.bidDue + minutesOf(b.bidDueTime)))[0];
             return (
-              <button key={key} type="button" className={dayPick === key ? "is-active" : ""} aria-pressed={dayPick === key} data-hpd-smoke={`fc-bids-day-${key}`} onClick={() => setDayPick(key)}>
+              <button key={key} type="button" className={dayPick === key ? "is-active" : ""} aria-pressed={dayPick === key} data-hpd-smoke={`fc-bids-day-${key}`} onClick={() => { setDayPick(key); setDaysOpen(false); }}>
                 <b>{label}</b> <span>{dayList.length}</span>{key !== "all" && first ? <small>first due {first.bidDueTime}</small> : null}
               </button>
             );
           })}
-        </div>
+        </div> : null}
       </div>
+      {sentNote && (!selected || selected.omo === sentNote.next) ? (
+        <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
+          <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
+          <span>{sentNote.next ? `Next bid: ${sentNote.next}. The fax is being tracked.` : "All bids done. The fax is being tracked: tap the bid to see when HPD receives it."}</span>
+          {sentNote.next ? <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button> : null}
+        </div>
+      ) : null}
       {selected ? (
         <div className="fc-bid-sheet" role="dialog" aria-label={`Invitation ${selected.omo}`} data-hpd-smoke="fc-bid-sheet">
           <header>
@@ -1320,12 +1369,6 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             <div className="fc-bid-pages-body">
               <ItbPages pdfUrl={itbPdfUrl(pagesFor.itbFile)} pageCount={pagesFor.pages || 3} descPages={pagesFor.descPages} />
             </div>
-          </div>
-        ) : null}
-        {sentNote && !selected ? (
-          <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
-            <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
-            <span>The fax is being tracked: tap the bid to see when HPD receives it.</span>
           </div>
         ) : null}
         <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.min(listRoom - 60, Math.max(Math.min(340, listRoom * 0.8), listRoom * 0.6)))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">

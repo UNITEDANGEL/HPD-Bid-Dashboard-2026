@@ -3546,6 +3546,12 @@ export default function FieldCommandClient() {
       answer(`Mark ${jobAddress(job)}, job ${jobId(job)}, as ${FIELD_OUTCOMES[cmd.outcome].toLowerCase()}? Say yes, or tap Yes.`, { id: jobId(job), outcome: cmd.outcome });
       return;
     }
+    if (cmd.intent === "come-back") {
+      if (!bidsOpen) { answer("Open the bids first, then say come back after sending one."); return; }
+      window.dispatchEvent(new Event("hpd-bid-come-back"));
+      answer("Back to the bid you just sent.");
+      return;
+    }
     if (cmd.intent === "bids") {
       void fetch("/data/upcoming_bids.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => {
         const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
@@ -5228,13 +5234,16 @@ export default function FieldCommandClient() {
       {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go, n.omo || ""); }} /> : null}
       {ping ? (
         <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind} style={{ borderColor: ALERT_KINDS[ping.kind]?.color }}>
+          {/* Big and clear, like the "fax not sent" box (owner, 23 Oct): what kind, what happened, and one Open button. */}
           <button type="button" className="fc-hpd-ping-main" onClick={() => { setPing(null); goTo(ping.go, ping.omo || ""); }}>
             <span aria-hidden="true">{ALERT_KINDS[ping.kind]?.icon || "🔔"}</span>
+            <i className="fc-hpd-ping-kind" style={{ color: ALERT_KINDS[ping.kind]?.color }}>{ALERT_KINDS[ping.kind]?.name || "Alert"}</i>
             <b>{ping.title}</b>
-            {ping.text ? <small>{ping.text.slice(0, 110)}</small> : null}
+            {ping.text ? <small>{ping.text.slice(0, 160)}</small> : null}
+            <em className="fc-hpd-ping-open" data-hpd-smoke="fc-hpd-ping-open">Open ›</em>
           </button>
           <button type="button" aria-label={chimeOff ? "Turn the sound on" : "Turn the sound off"} data-hpd-smoke="fc-chime-toggle" onClick={() => { const off = !chimeOff; setChimeOff(off); setChimeMuted(off); if (!off) playChime(ping.kind); }}>{chimeOff ? "🔕" : "🔔"}</button>
-          <button type="button" aria-label="Close" onClick={() => setPing(null)}>✕</button>
+          <button type="button" aria-label="Close" data-hpd-smoke="fc-hpd-ping-ok" onClick={() => setPing(null)}>OK</button>
         </div>
       ) : null}
       {boardOpen ? (

@@ -68,9 +68,11 @@ try {
   if (Number.isFinite(unsentBid.lat)) await page.waitForFunction(() => document.querySelectorAll('.fc-bid-pin.is-alert[title^="ER77780 "]').length === 1, null, { timeout: 10000 });
 
   // Day buttons: Today shows only today's invitations (and pins); All brings everything back.
+  await page.locator('[data-hpd-smoke="fc-bids-day-pick"]').click();
   await page.locator('[data-hpd-smoke="fc-bids-day-0"]').click();
   const todayRows = await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').allInnerTexts();
   assert.deepEqual(todayRows.map((t) => t.match(/E[QR]\d{5}/)[0]).sort(), ["ER77779", "ER77780"], "Today: only today's bids");
+  await page.locator('[data-hpd-smoke="fc-bids-day-pick"]').click();
   assert.match(await page.locator('[data-hpd-smoke="fc-bids-day-0"]').innerText(), /Today\s*2[\s\S]*first due/);
   await page.locator('[data-hpd-smoke="fc-bids-day-all"]').click();
   assert.ok(await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').count() >= 4, "All: everything again");
