@@ -144,7 +144,10 @@ try {
       await page.waitForFunction(`!!document.querySelector('[data-hpd-smoke="paperwork-package-review"]') || (${genVisible.toString()})()`, null, { timeout: 90000 });
       if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) {
         await page.waitForTimeout(1500);
-        if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count()) && await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').isVisible().catch(() => false)) await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+        if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count()) && await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').isVisible().catch(() => false)) {
+          // It may have started building by itself a moment ago (the button turns disabled): then just wait.
+          await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click({ timeout: 5000 }).catch(() => {});
+        }
       }
     }
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
