@@ -3,7 +3,7 @@
 // The 24 / 72-hour board (owner, 17 Oct 2026): each poor performance notice from vendor tracking with its countdown
 // and four steps (reply sent -> paperwork made -> sent to vendor tracking -> confirmed). Steps tick by themselves
 // from the emails / paperwork on record, or with a tap. Replies are drafted here; nothing is sent without two taps.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { holidaysBetween } from "../../lib/business-days";
 import SentPaperwork from "./SentPaperwork";
 import type { NoticeFindings } from "../../lib/notice-findings";
@@ -24,6 +24,7 @@ type Props = {
   scanStatus?: string;
   locked?: boolean; // your HPD emails couldn't be opened (signed out): say so instead of showing zeros
   scanChanged?: { omo: string; now: string }[];     // notices the check just updated
+  autoReplyOmo?: string;                            // "answer the notice for …" by voice: open its AI reply right away
 };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
@@ -40,7 +41,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -97,6 +98,22 @@ export default function NoticeBoard({ locked = false, focusOmo = "", rows, addre
   const under6 = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 6 && hoursLeft(r, now) >= 0).length;
   const overdue = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 0).length;
   const waiting = open.filter((r) => r.next === "confirmed").length;
+
+  // By voice (22 Oct "answer the notice for ER01987"): that row on screen, its AI reply being written. Sending still
+  // takes the two taps.
+  const autoDone = useRef("");
+  useEffect(() => {
+    if (!autoReplyOmo || autoDone.current === autoReplyOmo) return;
+    const row = rows.find((r) => r.omo === autoReplyOmo && r.next);
+    if (!row) return;
+    autoDone.current = autoReplyOmo;
+    const sideOf = boardSide(row);
+    if (sideOf !== "done") setSide(sideOf);
+    setShow("all");
+    const d = draftReply(row, addressOf(row.omo));
+    setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" });
+    void writeWithAi(row, "");
+  }, [autoReplyOmo, rows.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async (row: BoardRow, toSelf: boolean) => {
     if (!reply) return;

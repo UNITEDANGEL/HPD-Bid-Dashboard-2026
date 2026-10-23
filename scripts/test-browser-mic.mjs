@@ -86,7 +86,9 @@ try {
   results.push([`navigate to ${todo[1]}`, await say(`navigate to ${todo[1].split("").join(" ")}`, /Pick Waze or Google\.$/)]);
   const nav = await page.locator('[data-hpd-smoke="fc-agent-action"]').evaluateAll((els) => els.map((e) => e.getAttribute("href")));
   assert.ok(/waze\.com/.test(nav[0]) && /google\.com\/maps/.test(nav[1]), "Waze and Google for that job");
-  results.push(["I'm here", await say("I'm here", new RegExp(`^Start .+, job ${todo[1]}\\? Say yes`))]);
+  results.push(["do the paperwork for this job", await say("do the paperwork for this job", /Tap Open the paperwork\.$/)]);
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^\/paperwork\/?\?job=/);
+  results.push(["I'm here",await say("I'm here", new RegExp(`^Start .+, job ${todo[1]}\\? Say yes`))]);
   results.push(["yes", await say("yes", /^Started\. You're at /)]);
   // (Finishing EQ… earlier opened its package sheet, as it should: close it, then the card.)
   await page.waitForTimeout(7000); // its countdown
@@ -95,6 +97,16 @@ try {
     await page.waitForTimeout(500);
     if (!(await page.locator('[data-hpd-smoke="fc-package-sheet"], #fc-job-card').count())) break;
   }
+
+  // "Reply to Lewis": the board opens on her notice with the reply being written (sending still takes two taps).
+  const lewis = await say("reply to Lewis", /^(Here's .+\. The AI is writing the reply|Which one\?|No notice from vendor tracking)/);
+  results.push(["reply to Lewis", lewis]);
+  if (/^Here's/.test(lewis)) {
+    await page.locator('[data-hpd-smoke="fc-board-reply-box"]').waitFor({ timeout: 15000 });
+    assert.match(await page.locator('[data-hpd-smoke="fc-board-reply-send"]').innerText(), /^✉ Send$/, "not sent: the first tap only arms");
+    await page.locator('[data-hpd-smoke="fc-board-close"]').click();
+  }
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
 
   // A search: the list shows and nothing in it is covered by the borough buttons.
   await page.evaluate(() => { window.__hear = "mini split"; });

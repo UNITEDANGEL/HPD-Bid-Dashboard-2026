@@ -1759,6 +1759,7 @@ export default function FieldCommandClient() {
   const [notifOpen, setNotifOpen] = useState(false);
   // An alert opens its own job (owner, 21 Oct "next upgrade"): the board scrolled to it, that bid, or the job card.
   const [boardFocus, setBoardFocus] = useState("");
+  const [boardAutoReply, setBoardAutoReply] = useState("");
   const [bidsFocus, setBidsFocus] = useState("");
   // Phone alerts by themselves (21 Oct): registered on every open; "Allow alerts" only if the iPhone never allowed them.
   const [allowAlerts, setAllowAlerts] = useState("");
@@ -3290,6 +3291,30 @@ export default function FieldCommandClient() {
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    if (cmd.intent === "reply-notice") {
+      // Which notice: the job named, else the one on screen, else the only one waiting (or the most urgent from Lewis / Gafur).
+      const waiting = boardOpenRows.filter((r) => !r.steps.sent.done || boardSide(r) === "replied");
+      const byWho = cmd.who ? waiting.filter((r) => new RegExp(cmd.who, "i").test(r.who)) : waiting;
+      const named = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : null;
+      const omo = named && named !== "many" ? jobId(named) : (/^[A-Z]{2}\d{5}$/.test(cmd.ref.toUpperCase().replace(/\s/g, "")) ? cmd.ref.toUpperCase().replace(/\s/g, "") : "") || (selectedJob && waiting.some((r) => r.omo === jobId(selectedJob)) ? jobId(selectedJob) : "") || (byWho.length === 1 || cmd.who ? [...byWho].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0]?.omo || "" : "");
+      const row = omo ? boardOpenRows.find((r) => r.omo === omo) : null;
+      if (!row) { answer(waiting.length ? `Which one? ${waiting.length} notices are waiting: say the job number, or "reply to Lewis" / "reply to Gafur".` : "No notice from vendor tracking is waiting for an answer."); return; }
+      setBoardAutoReply("");
+      window.setTimeout(() => setBoardAutoReply(row.omo), 0);
+      goTo("board", row.omo);
+      answer(`Here's ${row.who}'s ${row.kind === "docs" ? "documents request" : `${row.hours}-hour notice`} for ${addressOf(row.omo) || row.omo}. The AI is writing the reply: read it, then tap Send twice.`);
+      return;
+    }
+    if (cmd.intent === "paperwork") {
+      const job = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (job === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!job) { answer("Which job? Open its card, or say the job number."); return; }
+      const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
+      const href = outcome ? paperworkGenerateHref(jobId(job), outcome) : paperworkNextHref(jobId(job), outcome);
+      setAgent({ heard, reply: `${jobAddress(job).replace(/,\s*\d{5}$/, "")}: ${outcome ? `${FIELD_OUTCOMES[outcome] || "outcome saved"}, the affidavit and invoice are ready to make.` : "no outcome saved yet: the paperwork page asks what happened."} Tap Open the paperwork.`, actions: [{ label: "📄 Open the paperwork", href }] });
+      speak(`${jobAddress(job).replace(/,\s*\d{5}$/, "")}. Tap open the paperwork.`, 200);
+      return;
+    }
     if (cmd.intent === "plan") {
       // The route panel plans it (overdue / appointments / 2nd tries first, close together), then the plan is read out.
       closeScreens("route");
@@ -5130,6 +5155,7 @@ export default function FieldCommandClient() {
         <NoticeBoard
           locked={threads === null}
           focusOmo={boardFocus}
+          autoReplyOmo={boardAutoReply}
           rows={boardRows}
           initialShow={boardShow}
           onScan={() => void runScan()}

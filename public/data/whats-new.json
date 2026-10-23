@@ -2,6 +2,14 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 23, 2026",
+      "title": "Answer notices and do paperwork by voice",
+      "items": [
+        "🎤 \"Answer the notice for E R 0 1 9 8 7\" / \"Reply to Lewis\" / \"Reply to Gafur\": the vendor tracking board opens on that notice with the AI writing the reply. Read it, then Send (two taps, as always).",
+        "🎤 \"Do the paperwork for this job\" / \"Send the package for EQ17776\": a button opens that job's affidavit and invoice page."
+      ]
+    },
+    {
       "date": "Oct 22, 2026",
       "title": "Plan my day by voice",
       "items": [

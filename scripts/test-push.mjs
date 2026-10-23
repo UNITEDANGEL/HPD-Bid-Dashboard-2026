@@ -293,3 +293,13 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(parseCommand("take me to the next stop").intent, "navigate");
   console.log("PASS plan my day: 'plan my day' / 'build my route' / 'where should I go first' plan Today's route");
 }
+
+// 🗣 Notices and paperwork by voice (22 Oct).
+{
+  const { parseCommand } = await loadLib("voice-agent");
+  assert.deepEqual(parseCommand("answer the notice for E R 0 1 9 8 7"), { intent: "reply-notice", ref: "ER01987", who: "" });
+  assert.deepEqual(parseCommand("reply to Lewis"), { intent: "reply-notice", ref: "", who: "lewis" });
+  assert.deepEqual(parseCommand("send the package for EQ17776"), { intent: "paperwork", ref: "EQ17776" });
+  assert.equal(parseCommand("do the paperwork for this job").intent, "paperwork");
+  console.log("PASS notices / paperwork by voice: answer the notice for a job / reply to Lewis or Gafur; do the paperwork / send the package");
+}

@@ -19,6 +19,8 @@ export type AgentCommand =
   | { intent: "arrived"; ref: string }
   | { intent: "open"; ref: string }
   | { intent: "plan" }
+  | { intent: "reply-notice"; ref: string; who: string }
+  | { intent: "paperwork"; ref: string }
   | { intent: "ask"; question: string }
   | { intent: "search"; text: string };
 
@@ -33,7 +35,7 @@ const OUTCOMES: [RegExp, AgentCommand extends infer C ? C extends { intent: "out
 // What's left after the command words: the job ("ER01987", "707 east 189", "this job" / "" for the one on screen).
 function refOf(text: string) {
   const left = spokenSearch(text)
-    .replace(/\b(i|we|i'?ve|we'?ve|i'?m|just|have|has|the|a|an|at|on|for|of|with|job|work ?order|omo|number|is|was|it|this|that|one|please|mark|as|me|read|tell|about|what'?s|what is|describe|description|scope|finished|finish|completed|complete|done|wrapped|up|all|no|access|nobody|home|there|tenant|refused|refusal|wouldn'?t|let|in|denied|entry|partial(ly)?|part|half|couldn'?t|can'?t|get|by|others|someone|else|answer|door|today|now|text|message|sms|send|call|phone|navigate|directions|take|drive|go|to|route|start|started|arrived|here|open|show|them|her|him|my|next|stop|please)\b/gi, " ")
+    .replace(/\b(i|we|i'?ve|we'?ve|i'?m|just|have|has|the|a|an|at|on|for|of|with|job|work ?order|omo|number|is|was|it|this|that|one|please|mark|as|me|read|tell|about|what'?s|what is|describe|description|scope|finished|finish|completed|complete|done|wrapped|up|all|no|access|nobody|home|there|tenant|refused|refusal|wouldn'?t|let|in|denied|entry|partial(ly)?|part|half|couldn'?t|can'?t|get|by|others|someone|else|answer|door|today|now|text|message|sms|send|call|phone|navigate|directions|take|drive|go|to|route|start|started|arrived|here|open|show|them|her|him|my|next|stop|please|answer|reply|respond|write|back|notice|lewis|gafur|vendor|tracking|hpd|email|request|paperwork|package|affidavit|invoice|do|make|fill|prepare|generate|finish)\b/gi, " ")
     .replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
   // A job is named by its number or its address (addresses have numbers); anything else means the job on screen.
   return /\d/.test(left) ? left : "";
@@ -46,6 +48,10 @@ export function parseCommand(heard: string): AgentCommand {
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
   // "Plan my day" / "build my route" (22 Oct): Today's route planned for you, then read out.
   if (/\b(plan|build|make|set up|map out)\b.{0,20}\b(my |the |today'?s? )?(day|route|stops)\b/.test(t) || /^where (should|do) i go( first| today)?\b/.test(t)) return { intent: "plan" };
+  // "Answer the notice for ER01987" / "reply to Lewis" / "reply to Gafur" (22 Oct).
+  if (/\b(answer|reply|respond|write back)\b/.test(t) && /\b(notice|lewis|gafur|vendor tracking|hpd|email|request)\b/.test(t)) return { intent: "reply-notice", ref: refOf(t), who: (/\b(lewis|gafur)\b/.exec(t) || [])[1] || "" };
+  // "Do the paperwork for this job" / "send the package" (22 Oct).
+  if (/\b(paperwork|package|affidavit|invoice)\b/.test(t) && /\b(do|make|send|open|start|fill|prepare|generate|finish)\b/.test(t)) return { intent: "paperwork", ref: refOf(t) };
   // Doing things by voice (in-app request 22 Oct: "I should be able to talk and get everything done").
   if (/\b(text|message|sms)\b.*\b(tenant|them|her|him|resident)\b|\bsend (a |the )?(text|message|sms)\b/.test(t)) return { intent: "text-tenant", ref: refOf(t) };
   if (/\bcall\b.*\b(tenant|them|her|him|resident)\b|\b(tenant'?s?|resident'?s?) (phone|number)\b/.test(t)) return { intent: "call-tenant", ref: refOf(t) };
