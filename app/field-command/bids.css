@@ -816,3 +816,4 @@ i.is-won { background: #16a34a; }
 .fc-bids-banner.is-compact [data-hpd-smoke="fc-bids-close"] { grid-column: 4; }
 .fc-bids-banner.is-compact .fc-bids-days { grid-row: auto; }
 .fc-bid-sent-note button { justify-self: start; margin-top: 4px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 12px; background: #f0fdf4; color: #14532d; font: 900 14px system-ui, sans-serif; }
+.fc-bid-sent-note.is-in-sheet { position: static; margin: 8px 10px 0; box-shadow: none; }

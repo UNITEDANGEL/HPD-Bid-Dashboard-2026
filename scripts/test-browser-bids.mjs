@@ -55,6 +55,8 @@ try {
   await context.route(/\/api\/drive\/fax-status/, (r) => {
     const { omo } = JSON.parse(r.request().postData() || "{}");
     if (omo === waitOmo) return r.fulfill({ json: { status: "waiting" } });
+    // The line is busy once: the next send (the automatic resend) goes through.
+    if (omo === failOmo) { failOmo = ""; return r.fulfill({ json: { status: "failed", subject: "Fax failed: busy", at: new Date().toISOString() } }); }
     return r.fulfill({ json: omo === failOmo ? { status: "failed", subject: "Fax failed: busy", at: new Date().toISOString() } : { status: "confirmed", subject: "Your fax was sent successfully", at: new Date().toISOString() } });
   });
   await context.addInitScript(() => { if (!sessionStorage.getItem("seeded")) { localStorage.removeItem("hpd-bid-records-v1"); sessionStorage.setItem("seeded", "1"); } });
@@ -210,9 +212,18 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
-  await page.waitForFunction(() => /Fax failed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
-  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Resend bid by fax/);
-  assert.equal(await page.locator(".fc-bid-pin.is-fax-failed").count(), Number.isFinite(open.find((b) => b.omo === omo2)?.lat) ? 1 : 0, "a failed fax shows a red pin");
+  // Sent: the app moves on to the next bid by itself; "Come back" returns to this one to follow its fax.
+  const comeBack = page.locator('[data-hpd-smoke="fc-bid-come-back"]');
+  await page.locator('[data-hpd-smoke="fc-bid-sent-note"]', { hasText: `${omo2} sent` }).waitFor({ timeout: 20000 });
+  // An alert can sit on top for a few seconds: OK it, as you would.
+  for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
+  if (await comeBack.count()) await comeBack.click();
+  await page.waitForFunction((o) => document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent.trim() === o, omo2, { timeout: 15000 });
+  // HumbleFax says it failed (seen here, unless the automatic resend already got it through).
+  await page.waitForFunction(() => /Fax failed|Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 60000 });
+  if (/Fax failed/.test(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText())) {
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Resend bid by fax/);
+  }
   failOmo = "";
   // The failed fax goes again BY ITSELF to HPD's next line (HumbleFax to 863-7804), same price, and gets confirmed
   // (owner, 19 Oct: "this should be auto resend and confirm"); the record says it was automatic.

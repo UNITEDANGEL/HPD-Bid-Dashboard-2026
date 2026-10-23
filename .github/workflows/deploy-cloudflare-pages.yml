@@ -200,6 +200,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-notice-depts.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-priority-map.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-notice-board.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-board-next.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-scan.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bid-icons.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-auto-resend.mjs

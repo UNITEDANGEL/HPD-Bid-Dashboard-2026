@@ -906,7 +906,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           })}
         </div> : null}
       </div>
-      {sentNote && (!selected || selected.omo === sentNote.next) ? (
+      {sentNote && !selected ? (
         <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
           <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
           <span>{sentNote.next ? `Next bid: ${sentNote.next}. The fax is being tracked.` : "All bids done. The fax is being tracked: tap the bid to see when HPD receives it."}</span>
@@ -926,6 +926,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               if (Number.isFinite(b.lat) && Number.isFinite(b.lng)) map?.setView?.([b.lat, b.lng], 16);
             }}>🗺 Map</button>
           </header>
+          {/* Moved on after a send: the note rides in this card, so an alert at the top can't cover "Come back". */}
+          {sentNote && sentNote.next === selected.omo ? (
+            <div className="fc-bid-sent-note is-in-sheet" role="status" data-hpd-smoke="fc-bid-sent-note">
+              <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
+              <span>Next bid: {sentNote.next}. The fax is being tracked.</span>
+              <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button>
+            </div>
+          ) : null}
           {sitting && !sitting.done && sitting.omos[sitting.at] === selected.omo ? (() => {
             const st = record ? faxState(record) : "";
             const sentNow = st === "waiting" || st === "confirmed" || st === "unconfirmed";

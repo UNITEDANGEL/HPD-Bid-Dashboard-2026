@@ -130,8 +130,17 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
     const f = focusOmo ? rows.find((r) => r.omo === focusOmo && r.next) : undefined;
     return f ? (boardSide(f) as "tosend" | "waiting" | "replied") : "tosend";
   });
-  const [moved, setMoved] = useState<{ omo: string; to: string } | null>(null);
+  // next: the notice the board moved on to by itself after a reply went out (owner, 23 Oct: "everything needs to flow
+  // auto"); "Back to" scrolls to the one just answered.
+  const [moved, setMoved] = useState<{ omo: string; to: string; next?: string } | null>(null);
   const movedToSent = (omo: string, to: string) => setMoved({ omo, to });
+  const scrollToRow = (omo: string) => window.setTimeout(() => {
+    const el = document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${omo}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: "start", behavior: "smooth" });
+    el.classList.add("is-focus");
+    window.setTimeout(() => el.classList.remove("is-focus"), 4000);
+  }, 250);
   const open = shown.filter((r) => r.next);
   const onSide = open.filter((r) => boardSide(r) === side);
   const done = shown.filter((r) => !r.next);
@@ -168,6 +177,23 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
       movedToSent(row.omo, d.to);
       if (reply.nudge) markNudged(row.key);
       setReply({ ...reply, armed: false, status: reply.nudge ? `✓ Sent to ${d.to}. The card waits ${NUDGE_AFTER_DAYS} more days before asking again.` : `✓ Sent to ${d.to}.` });
+      // A moment to see "Sent", then on to the next notice still to answer (due soonest), its reply being written.
+      // Nothing goes out without its own two taps.
+      const sentTo = d.to;
+      if (reply.nudge) return; // a follow-up on a sent one: stay on it
+      window.setTimeout(() => {
+        const next = rows
+          .filter((r) => r.key !== row.key && r.next && boardSide(r) === "tosend" && r.to)
+          .sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
+        setMoved({ omo: row.omo, to: sentTo, next: next?.omo });
+        if (!next) return;
+        setSide("tosend");
+        const a = addressOf(next.omo);
+        const dr = draftReply(next, a);
+        setReply({ key: next.key, to: next.to, subject: dr.subject, text: dr.text, armed: false, status: "" });
+        void writeWithAi(next, "");
+        scrollToRow(next.omo);
+      }, 2000);
     } catch (e) {
       setReply({ ...reply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
     }
@@ -368,8 +394,9 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
         </div>
         {moved ? (
           <p className="fc-board-moved" role="status" data-hpd-smoke="fc-board-moved">
-            ✓ Sent to {moved.to}. <b>{moved.omo}</b> moved to 📤 Sent · waiting.
-            {side !== "waiting" ? <button type="button" data-hpd-smoke="fc-board-moved-go" onClick={() => { setSide("waiting"); setMoved(null); }}>See it</button> : null}
+            ✓ Sent to {moved.to}. <b>{moved.omo}</b> moved to 📤 Sent · waiting.{moved.next ? <> Next: <b data-hpd-smoke="fc-board-next">{moved.next}</b>, its reply is being written.</> : null}
+            {moved.next ? <button type="button" data-hpd-smoke="fc-board-come-back" onClick={() => { const o = moved.omo; setReply(null); setSide("waiting"); setMoved(null); scrollToRow(o); }}>↩ Back to {moved.omo}</button>
+              : side !== "waiting" ? <button type="button" data-hpd-smoke="fc-board-moved-go" onClick={() => { setSide("waiting"); setMoved(null); }}>See it</button> : null}
           </p>
         ) : null}
         <div className="fc-board-sum" data-hpd-smoke="fc-board-sum">

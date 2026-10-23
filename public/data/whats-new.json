@@ -11,7 +11,9 @@
         "🟡 Anything new since you last looked is ringed in yellow with NEW.",
         "🗺 More map: the bids header is one slim line. All / Today / Tomorrow open from the 📅 button and hide by themselves.",
         "🔔 Alerts are bigger and clearer: what kind, the whole message, a blue Open and a big OK.",
-        "➡️ After you send a bid, the map glides to the next bid due and opens it. Tap \"↩ Come back\" or say \"come back\" to return to the one you just sent."
+        "➡️ After you send a bid, the map glides to the next bid due and opens it. Tap \"↩ Come back\" or say \"come back\" to return to the one you just sent.",
+        "➡️ Notices flow too: after you send a reply, the board moves to the next notice to answer and starts its reply (you still tap Send twice). \"↩ Back to\" returns to the one you just answered.",
+        "📠 After a bid is sent, the \"sent · Come back\" bar now sits inside the next bid's card, so an alert can't cover it."
       ]
     },
     {
