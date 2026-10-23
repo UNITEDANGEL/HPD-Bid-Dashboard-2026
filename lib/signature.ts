@@ -135,3 +135,72 @@ export function trimCanvas(canvas: HTMLCanvasElement, minX: number, minY: number
   out.getContext("2d")!.drawImage(canvas, x, y, width, height, 0, 0, width, height);
   return out.toDataURL("image/png");
 }
+
+// Whose saved notary signature this is, so a different notary never gets someone else's.
+export const NOTARY_NAME_KEY = "hpd-notary-signature-name-v1";
+
+type SavedSignatures = { signer: string; notary: string; notaryName: string };
+
+function localSignatures(): SavedSignatures {
+  let notaryName = "";
+  try { notaryName = localStorage.getItem(NOTARY_NAME_KEY) || ""; } catch {}
+  return { signer: loadSignature(), notary: loadSignature(NOTARY_SIGNATURE_KEY), notaryName };
+}
+
+function fingerprint(value: SavedSignatures) {
+  return [value.signer.length, value.signer.slice(-24), value.notary.length, value.notary.slice(-24), value.notaryName].join("|");
+}
+
+async function signaturesApi(body: Record<string, string>): Promise<SavedSignatures | null> {
+  try {
+    const response = await fetch("/api/drive/signatures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+    if (!response.ok) return null;
+    const value = (await response.json()) as Partial<SavedSignatures> | null;
+    const text = (v: unknown) => (typeof v === "string" ? v : "");
+    return { signer: text(value?.signer), notary: text(value?.notary), notaryName: text(value?.notaryName) };
+  } catch {
+    return null;
+  }
+}
+
+// The Home Screen app and Chrome keep separate storage on an iPhone, so a signature made in one
+// was missing in the other and the app asked to sign again. A private copy in the owner's own
+// Drive fills in whatever this copy of the app is missing; anything saved here is copied up.
+// Signed out: nothing happens and the phone's own copy is used.
+export async function syncSignatures(): Promise<SavedSignatures> {
+  const local = localSignatures();
+  const remote = await signaturesApi({ op: "load" });
+  if (!remote) return local;
+  const merged: SavedSignatures = {
+    signer: local.signer || remote.signer || "",
+    notary: local.notary || remote.notary || "",
+    notaryName: local.notary ? local.notaryName : remote.notaryName || "",
+  };
+  try {
+    if (!local.signer && merged.signer) saveSignature(merged.signer);
+    if (!local.notary && merged.notary) {
+      saveSignature(merged.notary, NOTARY_SIGNATURE_KEY);
+      localStorage.setItem(NOTARY_NAME_KEY, merged.notaryName);
+    }
+  } catch {}
+  if (fingerprint(merged) !== fingerprint(remote)) {
+    const up: Record<string, string> = { op: "save" };
+    if (local.signer && local.signer !== remote.signer) up.signer = local.signer;
+    if (local.notary && local.notary !== remote.notary) { up.notary = local.notary; up.notaryName = local.notaryName; }
+    if (Object.keys(up).length > 1) await signaturesApi(up);
+  }
+  return merged;
+}
+
+// One sync per page load, shared by the signer's card and the notary's card.
+let syncing: Promise<SavedSignatures> | null = null;
+export function syncSignaturesOnce() {
+  syncing ??= syncSignatures();
+  return syncing;
+}
+
+// A new or removed signature, copied to Drive right away ("" removes it there too).
+export function shareSignatureChange(fields: Partial<SavedSignatures>) {
+  syncing = null;
+  void signaturesApi({ op: "save", ...fields } as Record<string, string>);
+}

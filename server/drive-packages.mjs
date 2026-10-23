@@ -83,6 +83,12 @@ export function packageRecipients(env, ownerEmail) {
   return list;
 }
 
+const SIGNATURES_KIND = "hpd-signatures-v1";
+// Only PNG signature pictures and a short notary name are kept.
+function signatureFields(value) {
+  const png = (v) => typeof v === "string" && v.startsWith("data:image/png;base64,") && v.length <= 600_000 ? v : "";
+  return { signer: png(value?.signer), notary: png(value?.notary), notaryName: typeof value?.notaryName === "string" ? value.notaryName.trim().slice(0, 120) : "" };
+}
 async function bodyBytes(request, limit, label) {
   if (Number(request.headers.get("Content-Length")) > limit) fail(`${label} is too large.`, 413);
   const bytes = new Uint8Array(await request.arrayBuffer());
@@ -117,6 +123,35 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
   };
 
   try {
+    // Saved signatures (yours, and the notary's saved signature + name), kept in one private file in
+    // the owner's own Drive so the Home Screen app, Chrome and a new phone all have them without
+    // signing again. The notary still approves each affidavit in the app: this only saves the picture.
+    if (action === "signatures") {
+      if (!request.headers.get("Content-Type")?.startsWith("application/json")) fail("JSON request required.", 415);
+      let body;
+      try { body = JSON.parse(new TextDecoder().decode(await bodyBytes(request, 2_000_000, "Signatures"))); } catch (e) { if (e.status) throw e; fail("Invalid request.", 400); }
+      const query = new URLSearchParams({ q: `trashed = false and 'me' in owners and appProperties has { key='hpdKind' and value='${SIGNATURES_KIND}' }`, fields: "files(id)", pageSize: "1" });
+      const found = (await getJson(`${DRIVE}/files?${query}`, "Could not read Google Drive")).files?.[0]?.id || "";
+      let saved = signatureFields({});
+      if (validId(found)) {
+        const response = await call(`${DRIVE}/files/${found}?alt=media`);
+        if (!response.ok) fail(`Could not read the saved signatures (HTTP ${response.status}).`);
+        try { saved = signatureFields(JSON.parse(await response.text())); } catch {}
+      }
+      if (body.op !== "save") return reply(saved);
+      // Only the fields sent are changed ("" clears one); the rest stay as saved.
+      const sent = signatureFields(body);
+      const next = Object.fromEntries(Object.keys(saved).map((key) => [key, key in body ? sent[key] : saved[key]]));
+      const text = JSON.stringify({ ...next, savedAt: new Date().toISOString() });
+      const boundary = `hpd_${crypto.randomUUID()}`;
+      const meta = found ? {} : { name: "HPD saved signatures (private).json", mimeType: "application/json", appProperties: { hpdKind: SIGNATURES_KIND } };
+      const upload = await call(`https://www.googleapis.com/upload/drive/v3/files${found ? `/${found}` : ""}?uploadType=multipart&fields=id`, {
+        method: found ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+        body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${boundary}--`,
+      });
+      if (!upload.ok) fail(`Could not save the signatures to Drive (HTTP ${upload.status}). They are still saved on this phone.`);
+      return reply({ saved: true });
+    }
     if (action === "package-folder") {
       if (!request.headers.get("Content-Type")?.startsWith("application/json")) fail("JSON request required.", 415);
       let body;

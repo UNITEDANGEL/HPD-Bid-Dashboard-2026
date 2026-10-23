@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { clearSignature, loadSignature, saveSignature, signatureFromPhoto, signatureFromTypedName } from "../../lib/signature";
+import { clearSignature, loadSignature, saveSignature, shareSignatureChange, signatureFromPhoto, signatureFromTypedName, syncSignaturesOnce } from "../../lib/signature";
 import { displayName, useSignaturePad } from "./useSignaturePad";
 
-// Signer's signature for the affidavit and invoice, saved on this phone so it is made once.
-// The notary signs in their own card below.
+// Signer's signature for the affidavit and invoice, made once: saved on this phone and in a
+// private file in the owner's Drive, so every copy of the app (Home Screen, Chrome, a new
+// phone) puts it on by itself. The notary signs in their own card below.
 
 export default function SignatureCard({ signer, onChange }: { signer: string; onChange: (dataUrl: string) => void }) {
   const [saved, setSaved] = useState("");
@@ -13,6 +14,7 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
   const [typing, setTyping] = useState(false);
   const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
+  const [changing, setChanging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const pad = useSignaturePad();
   const name = displayName(signer);
@@ -21,12 +23,20 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
     const value = loadSignature();
     setSaved(value);
     onChange(value);
+    // Missing in this copy of the app: take the one saved in Drive.
+    let live = true;
+    void syncSignaturesOnce().then((all) => {
+      if (live && !value && all.signer) { setSaved(all.signer); onChange(all.signer); }
+    });
+    return () => { live = false; };
   }, [onChange]);
 
   function store(dataUrl: string) {
     try {
       saveSignature(dataUrl);
+      shareSignatureChange({ signer: dataUrl });
       setSaved(dataUrl);
+      setChanging(false);
       onChange(dataUrl);
       setError("");
       setDrawing(false);
@@ -69,8 +79,10 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
     <div className="refused-access-required sig-card ready" data-hpd-smoke="paperwork-signature-card">
       <div>
         <span>Your Signature</span>
-        <strong>{saved ? `Saved on this phone: ${name || "signer"}` : "Make your signature once"}</strong>
-        <small>Goes on the affidavit Signature line and the invoice Signature of Principal. It stays saved on this phone for every package.</small>
+        <strong>{saved ? `✓ ${name || "Your"} signature goes on by itself` : "Make your signature once"}</strong>
+        <small>{saved
+          ? "Already on the affidavit Signature line and the invoice Signature of Principal. Nothing to do here."
+          : "Goes on the affidavit Signature line and the invoice Signature of Principal. Saved for every package, on this phone and in your Drive."}</small>
       </div>
       {saved && !drawing && !typing ? <img className="sig-preview" src={saved} alt="Saved signature" data-hpd-smoke="paperwork-signature-preview" /> : null}
       {typing ? (
@@ -104,6 +116,8 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
             <button type="button" className="sig-primary" data-hpd-smoke="paperwork-signature-type-save" onClick={() => void fromTypedName(typedName.trim() || signer)}>Save typed signature</button>
             <button type="button" onClick={() => setTyping(false)}>Cancel</button>
           </>
+        ) : saved && !changing ? (
+          <button type="button" data-hpd-smoke="paperwork-signature-change" onClick={() => setChanging(true)}>Change signature</button>
         ) : (
           <>
             {!saved && name ? (
@@ -116,7 +130,7 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
             </button>
             <button type="button" data-hpd-smoke="paperwork-signature-type" onClick={() => { setError(""); setTypedName(typedName || name); setTyping(true); }}>Type to sign</button>
             <button type="button" onClick={() => fileRef.current?.click()}>Upload signature photo</button>
-            {saved ? <button type="button" onClick={() => { clearSignature(); setSaved(""); onChange(""); }}>Remove</button> : null}
+            {saved ? <button type="button" onClick={() => { clearSignature(); shareSignatureChange({ signer: "" }); setSaved(""); setChanging(false); onChange(""); }}>Remove</button> : null}
           </>
         )}
       </div>

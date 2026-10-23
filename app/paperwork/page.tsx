@@ -94,6 +94,14 @@ const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
 const LEGACY_WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit-2025.pdf";
 const LEGACY_NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit-2025.pdf";
 const NEW_AFFIDAVIT_FROM = "2026-08-28";
+// Which affidavit form a job needs, from its award date only (never work dates). null: no award
+// date, so nothing is made until it is checked.
+function affidavitForm(job: Parameters<typeof getJobDate>[0] | null | undefined): { legacy: boolean; label: string } | null {
+  const awardDay = job ? calendarDay(getJobDate(job, "award")) : null;
+  if (awardDay === null) return null;
+  const legacy = awardDay < calendarDay(NEW_AFFIDAVIT_FROM)!;
+  return { legacy, label: legacy ? "Earlier HPD affidavit (Rev. 01.21.2025): awarded before Aug 28, 2026" : "New HPD affidavit: awarded Aug 28, 2026 or later" };
+}
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
 // Default notary name for the notary card. The notary's signature may be saved on the phone,
@@ -1842,12 +1850,12 @@ export default function PaperworkPage() {
       : options.notary || null;
     const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
-    const awardDay = calendarDay(getJobDate(selectedJob, "award"));
-    if (awardDay === null) {
+    const formVersion = affidavitForm(selectedJob);
+    if (!formVersion) {
       setPdfStatus("Verify the job award date before generating an affidavit. Work dates cannot select the affidavit version.");
       return null;
     }
-    const legacyForm = awardDay < calendarDay(NEW_AFFIDAVIT_FROM)!;
+    const legacyForm = formVersion.legacy;
     const templateUrl = legacyForm
       ? (useWorkTemplate ? LEGACY_WORK_AFFIDAVIT_TEMPLATE : LEGACY_NO_WORK_AFFIDAVIT_TEMPLATE)
       : (useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE);
@@ -4002,6 +4010,19 @@ export default function PaperworkPage() {
           line-height: 1.15;
         }
 
+        .paperwork-affidavit-version {
+          margin: 0;
+          padding: 8px 12px;
+          border-radius: 10px;
+          background: #eef4ff;
+          color: #1d3a6e;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .paperwork-affidavit-version[data-legacy="1"] {
+          background: #fff4e0;
+          color: #6b4300;
+        }
         .sig-card {
           gap: 10px;
         }
@@ -5658,6 +5679,12 @@ export default function PaperworkPage() {
                 Update package
               </button>
             </div>
+          ) : null}
+
+          {selectedJob && !packagePreview ? (
+            <p className="paperwork-affidavit-version" data-hpd-smoke="paperwork-affidavit-version" data-legacy={affidavitForm(selectedJob)?.legacy ? "1" : "0"}>
+              📄 {affidavitForm(selectedJob)?.label || "Award date missing: check it before the affidavit is made"}
+            </p>
           ) : null}
 
           {/* Corrections are signed by hand (you and the notary): no signature pad, no notary approval here. */}

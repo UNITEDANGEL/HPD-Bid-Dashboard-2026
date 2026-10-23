@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "Affidavits: sign once, notary one tap, right form every time",
+      "items": [
+        "✍️ Your signature is saved in your own Google Drive (private), so the Home Screen app, Chrome and a new phone all put it on by themselves. No more \"sign again\".",
+        "🧾 A saved notary is one tap: \"✓ Notary …: I witnessed the signing · approve\". The package builds and goes out right after. Change the notary, name or date under one button.",
+        "📄 Every job shows which affidavit it needs: \"Earlier HPD affidavit (Rev. 01.21.2025)\" if awarded before Aug 28, 2026, otherwise \"New HPD affidavit\". It is picked from the award date only.",
+        "🖋️ Corrections are still signed by hand in ink, with the notary's real stamp."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "Keep talking · back to the bids map · fax resends by itself",
       "items": [
         "💬 Keep talking: tap it in the helper's panel and just talk. It answers out loud, then listens again by itself. Say \"stop\" (or tap ✕) to end.",

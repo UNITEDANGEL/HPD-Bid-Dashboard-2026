@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { clearSignature, loadSignature, NOTARY_SIGNATURE_KEY, saveSignature, signatureFromTypedName } from "../../lib/signature";
+import { clearSignature, loadSignature, NOTARY_NAME_KEY, NOTARY_SIGNATURE_KEY, saveSignature, shareSignatureChange, signatureFromTypedName, syncSignaturesOnce } from "../../lib/signature";
 import { displayName, useSignaturePad } from "./useSignaturePad";
 
 // The notary's approval for each affidavit. The notary's signature can be saved on this phone
@@ -10,9 +10,6 @@ import { displayName, useSignaturePad } from "./useSignaturePad";
 // printed stamp text is added automatically; a printed copy still needs the real ink stamp.
 
 export type NotaryApproval = { signature: string; name: string; date: string };
-
-// Whose saved notary signature this is, so a different notary never gets someone else's.
-const NOTARY_NAME_KEY = "hpd-notary-signature-name-v1";
 
 function loadSavedNotary(): { signature: string; name: string } {
   const signature = loadSignature(NOTARY_SIGNATURE_KEY);
@@ -33,6 +30,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
   const [typing, setTyping] = useState(false);
   const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
+  const [details, setDetails] = useState(false);
   const pad = useSignaturePad();
   const shownName = displayName(name);
 
@@ -43,6 +41,15 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
       setSignature(value.signature);
       if (value.name) setName(value.name);
     }
+    // Missing in this copy of the app (Home Screen vs Chrome): take the one saved in Drive.
+    let live = true;
+    if (!value.signature) void syncSignaturesOnce().then((all) => {
+      if (!live || !all.notary) return;
+      setSaved({ signature: all.notary, name: all.notaryName });
+      setSignature(all.notary);
+      if (all.notaryName) setName(all.notaryName);
+    });
+    return () => { live = false; };
   }, []);
 
   // The saved signature only belongs to the notary it was made for.
@@ -60,6 +67,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
       saveSignature(dataUrl, NOTARY_SIGNATURE_KEY);
       localStorage.setItem(NOTARY_NAME_KEY, name.trim());
       setSaved({ signature: dataUrl, name: name.trim() });
+      shareSignatureChange({ notary: dataUrl, notaryName: name.trim() });
     } catch {
       // Still usable for this affidavit even if the phone won't store it.
     }
@@ -85,6 +93,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
   function forgetSaved() {
     clearSignature(NOTARY_SIGNATURE_KEY);
     try { localStorage.removeItem(NOTARY_NAME_KEY); } catch {}
+    shareSignatureChange({ notary: "", notaryName: "" });
     setSaved({ signature: "", name: "" });
     setSignature("");
   }
@@ -121,6 +130,28 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
   }
 
   const usingSaved = Boolean(signature && signature === saved.signature);
+  const shownDate = date ? new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+  // Saved notary: one tap. The notary checks the name and date on the button and approves; the
+  // signature, name and date are already filled. "Change" opens the full card.
+  if (usingSaved && name.trim() && !details) {
+    return (
+      <div className="refused-access-required sig-card needs-description" data-hpd-smoke="paperwork-notary-card">
+        <div>
+          <span>Notary</span>
+          <strong>Last step: {shownName} approves</strong>
+          <small>Everything else is filled in. The notary&apos;s tap confirms they watched you sign; then the package builds and goes out by itself.</small>
+        </div>
+        <img className="sig-preview" src={signature} alt="Notary signature" data-hpd-smoke="paperwork-notary-preview" />
+        <div className="sig-actions">
+          <button type="button" className="sig-primary" data-hpd-smoke="paperwork-notary-approve" onClick={approve}>
+            ✓ Notary {shownName}: I witnessed the signing · approve {shownDate}
+          </button>
+          <button type="button" data-hpd-smoke="paperwork-notary-details" onClick={() => setDetails(true)}>Change notary, name or date</button>
+        </div>
+        {error ? <small role="alert">{error}</small> : null}
+      </div>
+    );
+  }
   return (
     <div className="refused-access-required sig-card needs-description" data-hpd-smoke="paperwork-notary-card">
       <div>
