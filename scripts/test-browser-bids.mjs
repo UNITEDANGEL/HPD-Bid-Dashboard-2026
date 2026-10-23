@@ -123,7 +123,8 @@ try {
   await list.locator("ol > li > button:first-child").first().click();
   const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
   // After a send the sheet goes back to the bids map by itself (23 Oct): wait for that, close it otherwise.
-  const closeSheet = async () => { for (let i = 0; i < 12 && (await sheet.count()); i++) await page.waitForTimeout(250); if (await sheet.count()) await sheet.locator("header button").first().click({ timeout: 3000 }).catch(() => {}); };
+  // After a send the app moves on to the next bid by itself (2.2 s): wait for that, then close whatever bid is open.
+  const closeSheet = async () => { await page.waitForTimeout(2600); for (let k = 0; k < 3 && (await sheet.count()); k++) { await sheet.locator("header button").first().click({ timeout: 3000 }).catch(() => {}); await page.waitForTimeout(400); } };
   await sheet.waitFor();
   const omo = (await sheet.locator("header strong").innerText()).trim();
   const bid = open.find((b) => b.omo === omo);
