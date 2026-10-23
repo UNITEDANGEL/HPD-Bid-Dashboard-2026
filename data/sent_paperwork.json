@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-23T15:07:14.172676+00:00",
+"generatedAt": "2026-10-23T15:19:14.735126+00:00",
 "since": "2026/10/09",
 "jobs": {
 "EN04541": [
@@ -15498,6 +15498,16 @@
 "file": "EQ22069 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: FW 72/24 Hr Poor Performance : Xerox Scan",
+"via": "hpd-staff"
+}
+],
+"EQ22129": [
+{
+"date": "2026-10-23",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EQ22129 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Missing Documents",
 "via": "hpd-staff"
 }
 ],
