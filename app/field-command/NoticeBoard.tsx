@@ -49,7 +49,7 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
     const t = window.setTimeout(() => {
       const el = document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${focusOmo}"]`);
       if (!el) return;
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.scrollIntoView({ block: "start", behavior: "smooth" }); // the top of the card (cards are tall with the conversation)
       el.classList.add("is-focus");
       window.setTimeout(() => el.classList.remove("is-focus"), 4000);
     }, 350);
