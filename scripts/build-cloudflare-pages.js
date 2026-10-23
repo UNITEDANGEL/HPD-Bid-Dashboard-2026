@@ -219,7 +219,6 @@ const requiredFiles = [
   path.join(outDir, "paperwork", "index.html"),
   path.join(outDir, "fetcher", "index.html"),
   path.join(outDir, "data", "COA_Fetcher_2026.json"),
-  path.join(outDir, "data", "hpd_jobs_2026.txt"),
   path.join(outDir, "data", "fetcher_latest_status.json"),
   path.join(outDir, "templates", "work-performed-affidavit.pdf"),
   path.join(outDir, "templates", "no-work-performed-affidavit.pdf"),

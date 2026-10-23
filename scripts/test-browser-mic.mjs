@@ -42,7 +42,9 @@ try {
   };
   const results = [];
   results.push(["which jobs have I won today", await say("which jobs have I won today", /^(You won \d+ jobs? today|No awards today yet)/)]);
-  results.push(["what did I win this week", await say("what did I win this week", /^(You won \d+ jobs? this week|No awards this week yet)/)]);
+  // The phone heard "won" as "want" (owner, 22 Oct) and asked for the descriptions too.
+  results.push(["which jobs I want today read me the description", await say("which jobs I want today read me the description", /^(You won \d+ jobs? today\. .+, .+\.|No awards today yet)/)]);
+  results.push(["what did I win this week",await say("what did I win this week", /^(You won \d+ jobs? this week|No awards this week yet)/)]);
   results.push(["read me the new bids", await say("read me the new bids", /^(You have \d+ open invitations? to bid|No open invitations)/)]);
   results.push(["what do I have today", await say("what do I have today", /^(Today: |Nothing urgent today)/)]);
   results.push(["which notices are open", await say("which notices are open", /notice|No notices/)]);

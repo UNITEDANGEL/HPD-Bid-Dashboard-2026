@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Search without signing in · your wins read out · privacy fix",
+      "items": [
+        "🔍 The search box works before you sign in (job #, address, a few words). Signed in, results also show tenant names and phones.",
+        "🏆 \"Which jobs did I win today, read me the description\" (even when the phone hears \"want\" instead of \"won\"): \"You won 3 jobs today. 1: 108-62 45 Avenue, hinges, 1 door…\".",
+        "🔒 Tenant names and phones are kept only in the app (signed in). A few had slipped into public files (HPD's award list and an old job backup): those are masked or removed now, and a check runs on every update so it can't happen again."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Ask the helper anything · your wins",
       "items": [
         "🏆 \"Which jobs have I won today?\" / \"What did I win this week?\" / \"Any awards yesterday?\": the helper reads HPD's Confirmation of award emails (same day) and HPD's award list and tells you the jobs and addresses.",

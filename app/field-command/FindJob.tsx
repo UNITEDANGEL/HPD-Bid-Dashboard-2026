@@ -13,17 +13,29 @@ const day = (s?: string) => (s ? new Date(`${s.slice(0, 10)}T12:00:00`).toLocale
 
 export default function FindJob({ query, onOpen, onClose }: { query: string; onOpen: (item: SearchItem) => boolean; onClose: () => void }) {
   const [items, setItems] = useState<SearchItem[] | null | "loading">("loading");
+  const [signedIn, setSignedIn] = useState(true);
   const [open, setOpen] = useState<SearchItem | null>(null);
-  useEffect(() => { let live = true; void loadSearchIndex().then((d) => { if (live) setItems(d ? d.items : null); }); return () => { live = false; }; }, []);
+  // Signed in: the full index (tenant contacts too). Not signed in: the public copy (contacts masked), so the search
+  // always works (owner, 22 Oct: "it says sign in to search, why").
+  useEffect(() => {
+    let live = true;
+    void loadSearchIndex().then(async (d) => {
+      if (d) { if (live) { setItems(d.items); setSignedIn(true); } return; }
+      const pub = await fetch("/data/search-index.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      if (live) { setItems(Array.isArray(pub?.items) ? pub.items : null); setSignedIn(false); }
+    });
+    return () => { live = false; };
+  }, []);
   useEffect(() => setOpen(null), [query]);
   const found = useMemo(() => (Array.isArray(items) ? searchJobs(items, query, 25) : []), [items, query]);
   return (
     <section className="fc-find" data-hpd-smoke="fc-find" aria-label="Find any job">
       <header>
-        <b data-hpd-smoke="fc-find-count">{items === "loading" ? "🔍 Looking…" : items === null ? "🔍 Sign in to search every job" : `🔍 ${found.length}${found.length === 25 ? "+" : ""} job${found.length === 1 ? "" : "s"} found`}</b>
+        <b data-hpd-smoke="fc-find-count">{items === "loading" ? "🔍 Looking…" : items === null ? "🔍 Search isn’t available right now" : `🔍 ${found.length}${found.length === 25 ? "+" : ""} job${found.length === 1 ? "" : "s"} found`}</b>
         <button type="button" aria-label="Close" data-hpd-smoke="fc-find-close" onClick={onClose}>✕</button>
       </header>
-      {Array.isArray(items) && !found.length ? <p className="fc-find-none">No job with &quot;{query}&quot;. Try fewer words, part of the address, or the job number.</p> : null}
+      {Array.isArray(items) && !signedIn ? <p className="fc-find-none" data-hpd-smoke="fc-find-public">Tenant names and phones show once you&apos;re signed in with Google.</p> : null}
+      {Array.isArray(items) && !found.length ?<p className="fc-find-none">No job with &quot;{query}&quot;. Try fewer words, part of the address, or the job number.</p> : null}
       <ol>
         {found.map(({ item, where }) => (
           <li key={item.omo} data-hpd-smoke="fc-find-row" data-omo={item.omo} className={open?.omo === item.omo ? "is-open" : ""}>

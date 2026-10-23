@@ -12,7 +12,7 @@ export type AgentCommand =
   | { intent: "notices" }
   | { intent: "yes" }
   | { intent: "no" }
-  | { intent: "awards"; days: number; label: string }
+  | { intent: "awards"; days: number; label: string; describe?: boolean }
   | { intent: "ask"; question: string }
   | { intent: "search"; text: string };
 
@@ -39,9 +39,14 @@ export function parseCommand(heard: string): AgentCommand {
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
   // "Which jobs have I won today / been awarded this week" (owner, 22 Oct).
-  if (/\b(won|win|awards?|awarded|confirmation of award)\b/.test(t) && !/\beasiest|chance|price\b/.test(t)) {
+  // The phone often hears "won" as "want" / "one" ("which jobs I want today", owner 22 Oct): with "jobs" and a day,
+  // those mean won too.
+  const wonWords = /\b(won|win|awards?|awarded|confirmation of award)\b/.test(t) || (/\bjobs?\b/.test(t) && /\b(today|yesterday|this week|this month)\b/.test(t) && /\b(want|one|wan|wanna)\b/.test(t));
+  if (wonWords && !/\beasiest|chance|price\b/.test(t)) {
     const days = /\byesterday\b/.test(t) ? -1 : /\b(this|the|past|last) week\b|\b7 days\b/.test(t) ? 7 : /\b(this|the|past|last) month\b|\b30 days\b/.test(t) ? 30 : 0;
-    return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today" };
+    // "...and read me the description(s)": each job in plain words too.
+    const describe = /\b(read|describe|descriptions?|scope|what (are|were|is) (they|the jobs|it)|tell me about|details?)\b/.test(t);
+    return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today", describe };
   }
   if (/\b(bids?|invitations?)\b/.test(t) && /\b(read|new|what|any|tell|how many|list)\b/.test(t)) return { intent: "bids" };
   if (/\b(what('?s| is| do i have)?|my|tell me).{0,20}\b(today|day|schedule|plan)\b/.test(t) || /^today\b/.test(t)) return { intent: "today" };

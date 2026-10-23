@@ -16,7 +16,8 @@ import path from "node:path";
 const ROOT = process.cwd();
 const keyText = process.env.HPD_PRIVATE_DATA_KEY || (fs.existsSync(path.join(ROOT, "data/private/HPD_PRIVATE_DATA_KEY.txt")) ? fs.readFileSync(path.join(ROOT, "data/private/HPD_PRIVATE_DATA_KEY.txt"), "utf8") : "");
 const KEY = Buffer.from(keyText.trim(), "base64");
-if (KEY.length !== 32) { console.error("HPD_PRIVATE_DATA_KEY missing: tenant data NOT privatized"); process.exit(1); }
+// Checked when run (main); the masking helpers (maskText / scrubPublic) work without the key for other scripts.
+const keyMissing = () => { if (KEY.length !== 32) { console.error("HPD_PRIVATE_DATA_KEY missing: tenant data NOT privatized"); process.exit(1); } };
 
 const PRIVATE_DIR = path.join(ROOT, "public", "private");
 const BUNDLE = path.join(PRIVATE_DIR, "tenants.json.enc");
@@ -36,16 +37,16 @@ export function decrypt(buf, key = KEY) {
 // Fields that hold a tenant's name / phone / apartment contact (access type, appointment flags stay public).
 export const PRIVATE_FIELDS = new Set(["TenantName", "TenantPhone", "ItbTenantName", "ItbTenantPhone", "ItbTenantApartment",
   "tenantName", "tenantPhone", "itbTenantName", "itbTenantPhone", "itbTenantApartment", "tenant"]);
-const PHONE = /\(?\d{3}\)?[\s.-]{0,2}\d{3}[\s.-]\d{4}/;
+const PHONE = /\(?\d{3}\)?[\s.-]{0,3}\d{3}[\s.-]{0,3}\d{4}/; // any spacing ("(347) 737- 6305", 22 Oct)
 // "TENANT:- (FERNANDEZ, ESTER 718-490-9430)", "TENANT CONTACT: 347 526 1673": the contact part is masked.
-const TENANT_TEXT = /\b((?:TENANT|OCCUPANT|RESIDENT)S?(?:\s+(?:CONTACT|NAME|PHONE|INFO))?\s*[:\-–]*\s*)([^\n]{0,90}?\(?\d{3}\)?[\s.-]{0,2}\d{3}[\s.-]\d{4}\)?)/gi;
+const TENANT_TEXT = /\b((?:TENANT|OCCUPANT|RESIDENT)S?(?:\s+(?:CONTACT|NAME|PHONE|INFO))?\s*[:\-–]*\s*)([^\n]{0,90}?\(?\d{3}\)?[\s.-]{0,3}\d{3}[\s.-]{0,3}\d{4}\)?)/gi;
 export const MASK = "(tenant contact: sign in to see)";
 
 // Any other person's phone in HPD's text (tenant, super, owner: "TENANT: AVENIA PHONE # 6462865786", "MARK FLYNN
 // (212) 555-0100") is masked too; HPD's office lines (212-863-xxxx) stay. NYC-area codes only, so building /
 // violation numbers aren't touched.
 const AREA = "(?:212|332|347|516|631|646|718|845|914|917|929|201|551|732|862|973|908|203|475|860|215|267|610|484)";
-const ANY_PHONE = new RegExp("(?<!\\d)\\(?" + AREA + "\\)?[\\s.-]{0,2}\\d{3}[\\s.-]?\\d{4}(?!\\d)", "g");
+const ANY_PHONE = new RegExp("(?<!\\d)\\(?" + AREA + "\\)?[\\s.-]{0,3}\\d{3}[\\s.-]{0,3}\\d{4}(?!\\d)", "g");
 export const PHONE_MASK = "(phone: sign in to see)";
 function maskPhones(value) {
   return value.replace(ANY_PHONE, (p) => (/^\(?212\)?[\s.-]{0,2}863/.test(p) ? p : PHONE_MASK));
@@ -60,6 +61,21 @@ export function maskText(value) {
     out = out.replace(TENANT_TEXT, (all, label, contact) => (/\(?212\)?[\s.-]{0,2}863[\s.-]\d{4}/.test(contact) && !/\(?(?!212)\d{3}\)?[\s.-]{0,2}\d{3}[\s.-]\d{4}/.test(contact.replace(/\(?212\)?[\s.-]{0,2}863[\s.-]\d{4}/g, "")) ? all : `${label}${MASK}`));
   }
   return maskPhones(out);
+}
+
+// Stricter, for text that goes on the public site / repo as is (HPD's descriptions in the awards list and the search
+// index; 22 Oct: "TENANT CONTACT: ROSERIO, NELLY (347) 737- 6305" got past maskText because of the odd spacing):
+// any phone-shaped number (any spacing) and the name after "TENANT / OCCUPANT / RESIDENT (CONTACT|NAME):" are masked.
+// HPD's office lines (212-863-xxxx) stay.
+const LOOSE_PHONE = /(?<![\d-])\(?\d{3}\)?[\s.-]{0,3}\d{3}[\s.-]{0,3}\d{4}(?![\d-])/g;
+const CONTACT_NAME = /\b((?:TENANT|OCCUPANT|RESIDENT)S?\s*(?:CONTACT|NAME|INFO)?\s*(?:IS|#)?\s*[:\-–]+\s*)\(?[A-Z][A-Za-z'.-]+(?:[ ,]+[A-Z][A-Za-z'.-]+){0,3}\)?(?=\s|[.,;)]|$)/g;
+export function scrubPublic(value) {
+  if (typeof value !== "string") return value;
+  return maskText(value)
+    // Whatever follows TEL / PHONE / CELL, however it's typed ("TEL: (347) 951-731 7").
+    .replace(/\b(TEL|PHONE|PH|CELL|MOBILE)\s*(?:NO\.?|#)?\s*[:.]?\s*(?!\(phone)(\(?\d[\d()\s.-]{6,18}\d)/gi, (all, label, num) => (/^\(?212\)?[\s.-]{0,3}863/.test(num) ? all : `${label}: ${PHONE_MASK}`))
+    .replace(LOOSE_PHONE, (p) => (/^\(?212\)?[\s.-]{0,3}863/.test(p) ? p : PHONE_MASK))
+    .replace(CONTACT_NAME, (all, label) => (/sign in to see/.test(all) ? all : `${label}${MASK}`));
 }
 
 // One record: the private values out (only what changed), the public record back.
@@ -93,6 +109,7 @@ function readJson(p) { return JSON.parse(fs.readFileSync(p, "utf8")); }
 function writeJson(p, v, pretty) { fs.writeFileSync(p, pretty ? JSON.stringify(v, null, 2) : JSON.stringify(v)); }
 
 function main() {
+  keyMissing();
   fs.mkdirSync(PRIVATE_DIR, { recursive: true });
   const bundle = fs.existsSync(BUNDLE) ? JSON.parse(decrypt(fs.readFileSync(BUNDLE)).toString("utf8")) : { jobs: {}, bids: {} };
   bundle.jobs ||= {}; bundle.bids ||= {};
@@ -122,16 +139,16 @@ function main() {
   for (const saved of Object.values(bundle.jobs)) for (const k of Object.keys(saved)) if (FILE_FIELD.test(k)) delete saved[k];
   // The CSV copy: tenant columns blanked, tenant text masked.
   const csvPath = path.join(ROOT, "public/data/COA_Fetcher_2026.csv");
-  if (fs.existsSync(csvPath)) {
-    const lines = fs.readFileSync(csvPath, "utf8").split(/\r?\n/);
-    const head = parseCsvLine(lines[0] || "");
-    const drop = head.map((h, i) => (PRIVATE_FIELDS.has(h) ? i : -1)).filter((i) => i >= 0);
-    const fixed = [lines[0], ...lines.slice(1).map((l) => {
-      if (!l) return l;
-      const cells = parseCsvLine(l).map((c, i) => (drop.includes(i) ? "" : maskText(c)));
-      return cells.map(csvCell).join(",");
-    })];
-    fs.writeFileSync(csvPath, fixed.join("\n"));
+  // The CSV is rebuilt from the masked public JSON (22 Oct: HPD's commas split descriptions across CSV cells, so
+  // masking cell by cell left pieces of tenant contacts). Every value scrubbed, private fields empty, quoted properly.
+  const pubJobsPath = path.join(ROOT, "public/data/COA_Fetcher_2026.json");
+  if (fs.existsSync(csvPath) && fs.existsSync(pubJobsPath)) {
+    const jobs = JSON.parse(fs.readFileSync(pubJobsPath, "utf8"));
+    const rows = Array.isArray(jobs) ? jobs : jobs.jobs || [];
+    const head = parseCsvLine((fs.readFileSync(csvPath, "utf8").split(/\r?\n/)[0] || "")).filter(Boolean);
+    const cols = head.length ? head : [...new Set(rows.flatMap((r) => Object.keys(r)))];
+    const cell = (r, h) => { const v = r[h]; if (PRIVATE_FIELDS.has(h) || v == null || typeof v === "object") return ""; return /file/i.test(h) ? String(v) : String(scrubPublic(String(v))); };
+    fs.writeFileSync(csvPath, [cols.map(csvCell).join(","), ...rows.map((r) => cols.map((h) => csvCell(cell(r, h))).join(","))].join("\n"));
   }
   // Invitations: notes / description.
   for (const file of ["data/upcoming_bids.json", "public/data/upcoming_bids.json"]) {
@@ -147,8 +164,8 @@ function main() {
   }
   // Files only used for pricing / the notices list: tenant text and personal phone numbers masked in place
   // (nothing to restore; the full notices stay in data/hpd_requests.json, which isn't in git).
-  const maskDeep = (v) => (typeof v === "string" ? maskText(v) : Array.isArray(v) ? v.map(maskDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, maskDeep(x)])) : v);
-  for (const file of ["public/data/market_awards.json", "data/market_awards.json", "data/market_descriptions.json", "public/data/hpd_requests.json"]) {
+  const maskDeep = (v) => (typeof v === "string" ? scrubPublic(v) : Array.isArray(v) ? v.map(maskDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, maskDeep(x)])) : v);
+  for (const file of ["public/data/market_awards.json", "data/market_awards.json", "data/market_descriptions.json", "public/data/hpd_requests.json", "public/data/COA_older.json", "public/data/search-index.json"]) {
     const p = path.join(ROOT, file);
     if (!fs.existsSync(p)) continue;
     const raw = fs.readFileSync(p, "utf8");

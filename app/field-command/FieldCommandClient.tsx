@@ -16,7 +16,7 @@ import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDa
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
-import { loadConversations, reloadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
+import { loadConversations, reloadConversations, loadNotices, loadPrivate, loadSearchIndex, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
 import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
@@ -3252,7 +3252,7 @@ export default function FieldCommandClient() {
 
   agentRef.current = (heard: string) => {
     const cmd = parseCommand(heard);
-    const answer = (reply: string, confirm?: { id: string; outcome: string }) => { setAgent({ heard, reply, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 200); };
+    const answer = (reply: string, confirm?: { id: string; outcome: string }) => { setAgent({ heard, reply, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
@@ -3275,7 +3275,14 @@ export default function FieldCommandClient() {
         for (const a of Array.isArray(awards?.jobs) ? awards.jobs : []) if (a.won && inRange(String(a.awardDate || "")) && !won.has(a.omo)) won.set(a.omo, { day: a.awardDate, address: a.address || addressOf(a.omo) });
         const list = [...won.entries()].sort((a, b) => b[1].day.localeCompare(a[1].day));
         const say = (o: string, w: { day: string; address: string }) => `${o}${w.address ? ` at ${w.address.replace(/,\s*\d{5}$/, "")}` : ""}${cmd.days > 1 ? ` on ${new Date(`${w.day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" })}` : ""}`;
-        if (list.length) { answer(`You won ${list.length} job${list.length === 1 ? "" : "s"} ${cmd.label}: ${list.slice(0, 6).map(([o, w]) => say(o, w)).join("; ")}${list.length > 6 ? `, and ${list.length - 6} more` : ""}.`); return; }
+        if (list.length && cmd.describe) {
+          // Each won job in plain words (owner, 22 Oct: "read me the description"): the job file, else the job index.
+          const idx = await loadSearchIndex().then((d) => d?.items || null).catch(() => null) || await fetch("/data/search-index.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => d.items || []).catch(() => []);
+          const descOf = (o: string) => { const j = findAnyJob(o); const text = j ? jobScope(j) : (idx.find((i: { omo: string }) => i.omo === o)?.desc || ""); const sum = jobSummary(text); return sum.lines.length ? sum.lines.map(lineText).join(", ") : text.replace(/\s+/g, " ").slice(0, 140); };
+          answer(`You won ${list.length} job${list.length === 1 ? "" : "s"} ${cmd.label}. ${list.slice(0, 5).map(([o, w], i) => `${list.length > 1 ? `${i + 1}: ` : ""}${w.address ? w.address.replace(/,\s*\d{5}$/, "") : o}, ${descOf(o) || "no description on file yet"}.`).join(" ")}${list.length > 5 ? ` And ${list.length - 5} more.` : ""}`);
+          return;
+        }
+        if (list.length) { answer(`You won ${list.length} job${list.length === 1 ? "" : "s"} ${cmd.label}: ${list.slice(0, 6).map(([o, w]) => say(o, w)).join("; ")}${list.length > 6 ? `, and ${list.length - 6} more` : ""}. Say "read me the jobs I won ${cmd.label}" to hear what they are.`); return; }
         // None: the last one on record.
         let last: { omo: string; day: string } | null = null;
         for (const a of Array.isArray(awards?.jobs) ? awards.jobs : []) if (a.won && (!last || String(a.awardDate) > last.day)) last = { omo: a.omo, day: String(a.awardDate) };

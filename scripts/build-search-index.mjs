@@ -8,14 +8,16 @@
 //   node scripts/build-search-index.mjs
 import fs from "node:fs";
 import path from "node:path";
-import { decrypt, encrypt, maskText } from "./privatize_public_data.mjs";
+import { decrypt, encrypt, scrubPublic } from "./privatize_public_data.mjs";
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "public", "private", "search.json.enc");
 const ITB = path.join(ROOT, "public", "private", "itb");
 const read = (p, fallback) => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8")); } catch { return fallback; } };
 const list = (v) => (Array.isArray(v) ? v : v?.jobs || v?.rows || v?.bids || []);
-const clean = (s) => maskText(String(s || "").replace(/\s+/g, " ").trim()).slice(0, 700);
+// The private index keeps HPD's text as is (tenant contacts included: it's encrypted, signed in only); the public copy
+// below goes through scrubPublic.
+const clean = (s) => String(s || "").replace(/\s+/g, " ").trim().slice(0, 700);
 const BORO = { MN: "Manhattan", MAN: "Manhattan", BX: "Bronx", BK: "Brooklyn", BKLYN: "Brooklyn", QN: "Queens", QNS: "Queens", SI: "Staten Island" };
 // "1/22/26", "01/22/2026", "2026-01-22T…" -> "2026-01-22".
 const iso = (v) => { const t = String(v || "").trim(); let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t); if (m) return m[0]; m = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})/.exec(t); return m ? `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : ""; };
@@ -28,7 +30,9 @@ const put = (omo, patch) => {
   const cur = items.get(omo) || { omo, kinds: [] };
   for (const [k, v] of Object.entries(patch)) {
     if (k === "kind") { if (v && !cur.kinds.includes(v)) cur.kinds.push(v); continue; }
-    if (v && (!cur[k] || (k === "desc" && String(v).length > String(cur[k]).length))) cur[k] = v;
+    // HPD's own words beat a masked copy ("(tenant contact: sign in to see)"), then the longer text.
+    const masked = (x) => /sign in to see/.test(String(x || ""));
+    if (v && (!cur[k] || (k === "desc" && ((masked(cur[k]) && !masked(v)) || (masked(cur[k]) === masked(v) && String(v).length > String(cur[k]).length))))) cur[k] = v;
   }
   items.set(omo, cur);
 };
@@ -41,7 +45,7 @@ for (const b of list(read("public/data/upcoming_bids.json", {}))) put(String(b.o
 // HPD's awards (who won, for how much).
 for (const a of list(read("data/market_awards.json", {}))) put(String(a.omo || "").toUpperCase(), { kind: a.won ? "yours" : "award", address: a.address, boro: boro(a.boro), desc: clean(a.description), date: iso(a.awardDate), amount: Number(a.amount) || 0, won: a.won ? "yes" : "no" });
 // Every invitation's description.
-const descs = read("data/market_descriptions.json", {});
+const descs = (() => { try { return JSON.parse(decrypt(fs.readFileSync(path.join(ROOT, "public", "private", "market-descriptions.json.enc"))).toString("utf8")); } catch { return read("data/market_descriptions.json", {}); } })();
 for (const [omo, d] of Object.entries(descs)) put(omo.toUpperCase(), { kind: "invitation", desc: clean(d.description), file: d.source || "" });
 
 // Invitation PDFs: page 3 "OMO No: ER08283 ... Boro: Brooklyn Bldg Address: 3619, BEDFORD AVENUE Job Description: ...".
@@ -72,4 +76,11 @@ fs.mkdirSync(path.dirname(OUT), { recursive: true });
 // Nothing new (most 10-minute runs): leave the file alone, so git doesn't get a new 4 MB copy every run.
 const same = JSON.stringify({ ...old, generatedAt: "" }) === JSON.stringify({ ...out, generatedAt: "" });
 if (!same) fs.writeFileSync(OUT, encrypt(Buffer.from(JSON.stringify(out))));
+// A public copy so the search works before signing in (owner, 22 Oct: "it says sign in to search, why"): the same
+// masking as the other public job files (tenant names / phones already masked by maskText above), shorter text, no
+// PDF names. Only rewritten when it changes.
+const PUBLIC = path.join(ROOT, "public", "data", "search-index.json");
+const pub = JSON.stringify({ note: "Find any job: job #, address, borough, HPD's description (tenant contacts masked). scripts/build-search-index.mjs", items: out.items.map(({ omo, kinds, address, boro, desc, date, due, amount, won }) => ({ omo, kinds, address, boro, desc: scrubPublic(String(desc || "")).slice(0, 320), address: scrubPublic(address), date, due, amount, won })) });
+const oldPub = fs.existsSync(PUBLIC) ? fs.readFileSync(PUBLIC, "utf8") : "";
+if (oldPub !== pub) fs.writeFileSync(PUBLIC, pub);
 console.log(`Search index${same ? " (unchanged)" : ""}: ${out.items.length} jobs (${out.items.filter((i) => i.address).length} with an address, ${out.items.filter((i) => i.desc).length} with a description), ${Object.keys(pdfs).length} invitation PDFs read.`);

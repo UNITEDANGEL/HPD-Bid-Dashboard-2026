@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { decrypt, encrypt, scrubPublic } from "./privatize_public_data.mjs";
 
 const ROOT = process.cwd();
 const DESCRIPTIONS = path.join(ROOT, "data", "market_descriptions.json");
@@ -60,10 +61,31 @@ async function fetchAwards(fetcher = fetch) {
   return response.json();
 }
 
+// The full descriptions (with tenant contacts, for the owner) live encrypted in public/private/market-descriptions.json.enc;
+// data/market_descriptions.json and the awards lists are public (the repo and the site), so contacts are masked there
+// (owner, 22 Oct: "I need all tenant contact info all the time": in the app, signed in, not on the internet).
+export const RAW_DESCRIPTIONS = path.join(ROOT, "public", "private", "market-descriptions.json.enc");
+export function readRawDescriptions() {
+  const plain = readJson(DESCRIPTIONS, {});
+  let raw = {};
+  try { raw = JSON.parse(decrypt(fs.readFileSync(RAW_DESCRIPTIONS)).toString("utf8")); } catch { raw = {}; }
+  // Anything only in the public copy (older runs) is kept too.
+  for (const [omo, d] of Object.entries(plain)) if (!raw[omo]) raw[omo] = d;
+  return raw;
+}
+export function writeDescriptions(raw) {
+  const sorted = Object.fromEntries(Object.entries(raw).sort());
+  const next = JSON.stringify(sorted);
+  let same = false;
+  try { same = decrypt(fs.readFileSync(RAW_DESCRIPTIONS)).toString("utf8") === next; } catch { same = false; }
+  if (!same) { fs.mkdirSync(path.dirname(RAW_DESCRIPTIONS), { recursive: true }); fs.writeFileSync(RAW_DESCRIPTIONS, encrypt(Buffer.from(next))); }
+  fs.writeFileSync(DESCRIPTIONS, JSON.stringify(Object.fromEntries(Object.entries(sorted).map(([omo, d]) => [omo, { ...d, description: scrubPublic(d.description) }])), null, 0));
+}
+
 async function main() {
-  const descriptions = readJson(DESCRIPTIONS, {});
+  const descriptions = readRawDescriptions();
   const added = addUpcoming(descriptions, readJson(path.join(ROOT, "data", "upcoming_bids.json"), {}));
-  fs.writeFileSync(DESCRIPTIONS, JSON.stringify(Object.fromEntries(Object.entries(descriptions).sort()), null, 0));
+  writeDescriptions(descriptions);
   // Yours: the job database plus every "CONFIRMATION OF AWARD" email since 2025 (data/your_awards.json,
   // scripts/fetch_award_history.py); the job database alone starts in December 2025.
   const won = new Set([
@@ -71,7 +93,7 @@ async function main() {
     ...Object.keys(readJson(path.join(ROOT, "data", "your_awards.json"), {})),
   ]);
   const awards = await fetchAwards();
-  const jobs = joinAwards(descriptions, awards, won);
+  const jobs = joinAwards(descriptions, awards, won).map((j) => ({ ...j, description: scrubPublic(j.description) }));
   const result = { generatedAt: new Date().toISOString(), source: "NYC Open Data: Open Market Order (OMO) Charges", jobs };
   for (const file of OUT) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(result)); }
   console.log(`Market awards: ${jobs.length} awarded jobs with full descriptions (${jobs.filter((j) => j.won).length} yours, ${jobs.filter((j) => !j.won).length} other contractors) from ${Object.keys(descriptions).length} invitations; ${added} new descriptions kept tonight; ${awards.length} awards in Open Data since ${SINCE}`);

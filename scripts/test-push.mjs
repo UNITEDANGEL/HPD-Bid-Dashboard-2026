@@ -235,3 +235,13 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.deepEqual(await aiAnswer({}, ask), { ai: false, reason: "not-set-up" });
   console.log("PASS free questions: questions -> AI with the app's facts (facts only, short, no markdown), commands and plain words stay; not set up -> says so");
 }
+
+// "which jobs I want today" (won, misheard) + "read me the description" (22 Oct).
+{
+  const { parseCommand } = await loadLib("voice-agent");
+  assert.deepEqual(parseCommand("which jobs I want today"), { intent: "awards", days: 0, label: "today", describe: false });
+  assert.equal(parseCommand("which jobs I want today read me the description").describe, true);
+  assert.equal(parseCommand("read me the description of the jobs I won today").intent, "awards");
+  assert.equal(parseCommand("I want to see the map").intent, "search", "'want' alone isn't won");
+  console.log("PASS won misheard as want: with 'jobs' and a day it's the wins; 'read me the description' reads each one");
+}

@@ -26,6 +26,12 @@ try {
   await board.locator('[data-hpd-smoke="fc-scan-btn"]').click();
   await page.waitForFunction(() => /Couldn't open your HPD emails/.test(document.querySelector('[data-hpd-smoke="fc-scan-status"]')?.textContent || ""), null, { timeout: 15000 });
   if (shots) await page.screenshot({ path: `${shots}/signed-out.png` });
+  // Search still works signed out (the public copy, contacts masked).
+  await board.locator('[data-hpd-smoke="fc-board-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-search"]').fill("mini split");
+  const find = page.locator('[data-hpd-smoke="fc-find"]');
+  await find.locator('[data-hpd-smoke="fc-find-row"][data-omo="ER08283"]').waitFor({ timeout: 30000 });
+  assert.match(await find.locator('[data-hpd-smoke="fc-find-public"]').innerText(), /signed in/);
   assert.deepEqual(errors, []);
   console.log("PASS signed out: the board shows 'Your HPD emails didn't open' + Sign in with Google (back to the board), Check my emails says it couldn't open them; no zeros pretending all is done");
   await c.close();

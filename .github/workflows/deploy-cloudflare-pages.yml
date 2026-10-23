@@ -224,6 +224,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-signed-out.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-handoff.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-mic.mjs
+          node scripts/test-public-privacy.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-calm.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
