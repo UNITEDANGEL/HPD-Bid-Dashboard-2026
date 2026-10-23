@@ -6,7 +6,7 @@ import { spokenSearch } from "./job-search";
 
 export type AgentCommand =
   | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string }
-  | { intent: "read-job"; ref: string }
+  | { intent: "read-job"; ref: string; pick?: number; all?: boolean }
   | { intent: "bids" }
   | { intent: "today" }
   | { intent: "notices" }
@@ -71,7 +71,11 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(bids?|invitations?)\b/.test(t) && /\b(read|new|what|any|tell|how many|list)\b/.test(t)) return { intent: "bids" };
   if (/\b(what('?s| is| do i have)?|my|tell me).{0,20}\b(today|day|schedule|plan)\b/.test(t) || /^today\b/.test(t)) return { intent: "today" };
   if (/\bnotices?\b/.test(t) && /\b(open|which|what|any|read|tell|overdue)\b/.test(t)) return { intent: "notices" };
-  if (/\b(read|describe|description|what('?s| is) (the|this) job|tell me about|scope)\b/.test(t)) return { intent: "read-job", ref: refOf(t) };
+  // "Read me the descriptions" / "the first one" / "number two" right after a list: those jobs (23 Oct, the owner:
+  // "it asked me which job, I already told it the jobs I received yesterday").
+  const ORD: [RegExp, number][] = [[/\b(first|1st|number one)\b/, 1], [/\b(second|2nd|number two)\b/, 2], [/\b(third|3rd|number three)\b/, 3], [/\b(fourth|4th|number four)\b/, 4], [/\b(fifth|5th|number five)\b/, 5]];
+  const pick = (ORD.find(([re]) => re.test(t)) || [null, 0])[1] as number;
+  if (/\b(read|describe|descriptions?|what('?s| is| are) (the|this|those|these) jobs?|tell me (about|more)|scope|details?)\b/.test(t) || (pick && /\b(one|job|it|number|about)\b/.test(t))) return { intent: "read-job", ref: refOf(t), ...(pick ? { pick } : {}), ...(/\b(descriptions|all|them|those|these|each|jobs)\b/.test(t) ? { all: true } : {}) };
   // A job outcome needs "I / we / job / work order / this", so a search like "completed jobs" stays a search.
   if (/\b(i|we|i'?ve|we'?ve|job|work ?order|this|tenant|nobody|no one|someone|it)\b/.test(t) || /\bno access\b/.test(t) || /[a-z]{2}\s*\d{5}/.test(t)) for (const [re, outcome] of OUTCOMES) if (re.test(t)) return { intent: "outcome", outcome, ref: refOf(t) };
   // Any other question goes to the AI with the app's facts (owner, 22 Oct: "talk it out with me").

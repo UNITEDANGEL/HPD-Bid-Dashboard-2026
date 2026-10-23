@@ -3,6 +3,18 @@
   "versions": [
     {
       "date": "Oct 23, 2026",
+      "title": "Keep talking · back to the bids map · fax resends by itself",
+      "items": [
+        "💬 Keep talking: tap it in the helper's panel and just talk. It answers out loud, then listens again by itself. Say \"stop\" (or tap ✕) to end.",
+        "🧠 It remembers the list it just gave: after \"what did I win this week\", say \"read me the descriptions\", \"the first one\" or \"number two\".",
+        "📠 Bids: after Send, the app goes back to the bids map by itself with \"📠 ER… sent to HPD · $…\". Tap the bid any time to follow the fax.",
+        "🔁 A bid fax that doesn't go through is sent again by itself (same price, next HPD line, up to 3 times before the deadline) and you're just told: no Snooze box. The red box shows only when it can't resend by itself.",
+        "🔊 Sounds and the voice play even with the iPhone's silent switch on.",
+        "🎤 If the iPhone blocks listening, the helper says how to allow it; you can also use the keyboard's 🎙 in the search box and tap Go."
+      ]
+    },
+    {
+      "date": "Oct 23, 2026",
       "title": "A smarter helper",
       "items": [
         "🎤 Ask several things at once: \"How many jobs did I win today and what bids are due tomorrow?\" — both answered, one after the other (up to 4).",

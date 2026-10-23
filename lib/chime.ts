@@ -6,7 +6,7 @@
 
 import { kindOf, type AlertKind } from "./alert-kinds";
 import { spokenAlert } from "./alert-summary";
-import { primeVoice, speak } from "./speak";
+import { playThroughSilent, primeVoice, speak } from "./speak";
 
 let ctx: AudioContext | null = null;
 const KEY = "hpd-chime-off";
@@ -42,6 +42,7 @@ export function unlockChime() {
     }
     if (ctx.state !== "running") void ctx.resume();
     primeVoice();
+    playThroughSilent();
     // A silent blip so iOS lets later sounds play.
     const o = ctx.createOscillator(); const g = ctx.createGain(); g.gain.value = 0; o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.01);
   } catch { /* no sound on this browser */ }

@@ -31,8 +31,15 @@ export function primeVoice() {
 }
 
 // Say it after the tone (delay ms); a newer alert replaces one still being said.
-export function speak(text: string, delay = 900) {
-  if (!text || !voiceSupported() || voiceOff()) return false;
+// The iPhone's silent switch mutes web sounds unless the page says it plays audio like a music app (Safari 16.4+;
+// owner, 23 Oct: "I don't hear the sound alert or the voice").
+export function playThroughSilent() {
+  try { const nav = navigator as unknown as { audioSession?: { type: string } }; if (nav.audioSession && nav.audioSession.type !== "playback") nav.audioSession.type = "playback"; } catch { /* older iPhone */ }
+}
+
+export function speak(text: string, delay = 900, onEnd?: () => void) {
+  if (!text || !voiceSupported() || voiceOff()) { if (onEnd) window.setTimeout(onEnd, 300); return false; }
+  playThroughSilent();
   try {
     window.setTimeout(() => {
       const synth = window.speechSynthesis;
@@ -43,6 +50,7 @@ export function speak(text: string, delay = 900) {
       u.rate = 0.98;
       u.pitch = 1;
       u.volume = 1;
+      if (onEnd) { let done = false; const fin = () => { if (!done) { done = true; onEnd(); } }; u.onend = fin; u.onerror = fin; window.setTimeout(fin, Math.min(60000, 2500 + text.length * 80)); }
       synth.speak(u);
     }, delay);
     return true;

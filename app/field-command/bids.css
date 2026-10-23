@@ -796,3 +796,7 @@ i.is-won { background: #16a34a; }
 .fc-bid-quick-status.is-failed { background: #450a0a; color: #fecaca; }
 .fc-bid-quick-warn { grid-column: 1 / -1; color: #fca5a5; font: 700 13px system-ui; }
 .fc-bid-body { padding-bottom: 16px; }
+
+/* Sent: back on the bids map with a note (23 Oct). */
+.fc-bid-sent-note { position: absolute; z-index: 1700; left: 12px; right: 12px; top: calc(max(12px, env(safe-area-inset-top)) + 70px); display: grid; gap: 3px; padding: 12px 14px; border-radius: 16px; background: #052e16f5; border: 2px solid #22c55e; color: #f0fdf4; box-shadow: 0 10px 24px #0009; font: 700 13.5px system-ui, sans-serif; animation: hpd-pop 0.4s ease-out; }
+.fc-bid-sent-note b { font: 900 16px system-ui, sans-serif; }

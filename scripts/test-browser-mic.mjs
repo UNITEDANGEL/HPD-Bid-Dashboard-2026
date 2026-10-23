@@ -17,9 +17,10 @@ try {
   await c.route(/\/api\/drive\/hpd-ask/, (r) => { const q = JSON.parse(r.request().postData() || "{}"); lastFacts = q.facts; return r.fulfill({ json: { ai: true, text: `About "${q.question}": you have ${q.facts.notices.length} notices open.` } }); });
   await c.addInitScript(() => {
     window.__said = [];
-    if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); };
+    if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 60); };
     window.SpeechRecognition = window.webkitSpeechRecognition = class {
-      start() { setTimeout(() => { this.onresult?.({ results: [Object.assign([{ transcript: window.__hear || "" }], { isFinal: true })] }); this.onend?.(); }, 150); }
+      // Hears window.__hear, or the next of window.__queue (conversation mode); nothing -> just ends.
+      start() { window.__starts = (window.__starts || 0) + 1; setTimeout(() => { const text = Array.isArray(window.__queue) ? (window.__queue.shift() || "") : (window.__hear || ""); if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 150); }
       stop() { this.onend?.(); }
     };
   });
@@ -34,6 +35,8 @@ try {
   const reply = page.locator('[data-hpd-smoke="fc-agent-reply"]');
   const boroughBottom = async () => { const b = await page.locator('[data-hpd-smoke="fc-borough-bar"]').boundingBox(); return b ? b.y + b.height : 0; };
   const say = async (sentence, expect) => {
+    // A package sheet that opened by itself (a job finished earlier in this test) steps back first.
+    await page.evaluate(() => document.querySelector('[data-hpd-smoke="fc-package-sheet-back"]')?.click());
     if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
     await page.evaluate((s) => { window.__hear = s; window.__said = []; }, sentence);
     await mic.click();
@@ -52,7 +55,22 @@ try {
   results.push(["anything new from Gafur", await say("anything new from Gafur", /^About "anything new from Gafur"/)]);
   assert.ok(Array.isArray(lastFacts?.hpdEmailsLast3Days) && Array.isArray(lastFacts?.winsThisWeek), "the AI gets HPD's recent emails and the wins");
   assert.doesNotMatch(JSON.stringify(lastFacts.hpdEmailsLast3Days), /\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/, "no phone numbers in what the AI gets");
-  results.push(["what did I win this week",await say("what did I win this week", /^(You won \d+ jobs? this week|No awards this week yet)/)]);
+  const week = await say("what did I win this week", /^(You won \d+ jobs? this week|No awards this week yet)/);
+  results.push(["what did I win this week", week]);
+  // It remembers the list it just gave (owner, 23 Oct: "it asked which job, I already told it the jobs").
+  if (/^You won/.test(week)) {
+    results.push(["read me the descriptions", await say("read me the descriptions", /^1: .+\. 2: /)]);
+    results.push(["the second one", await say("the second one", /^[^:]+: .+\.$/)]);
+  }
+  // 💬 Conversation mode: one tap, then it listens again after each answer, until "stop".
+  await page.evaluate(() => { window.__queue = ["what do I have today", "which notices are open", "stop"]; window.__starts = 0; });
+  await page.locator('[data-hpd-smoke="fc-agent-talk"]').click();
+  await page.waitForFunction(() => /OK\. Tap 💬 when you want to talk again\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 30000 });
+  const conv = await page.evaluate(() => ({ starts: window.__starts, said: window.__said.slice(-4) }));
+  assert.ok(conv.starts >= 3, `listened again by itself (${conv.starts} times)`);
+  assert.ok(conv.said.some((t) => /^Today: /.test(t)) && conv.said.some((t) => /notices? waiting/.test(t)), `both answered out loud: ${conv.said.join(" | ").slice(0, 200)}`);
+  results.push(["💬 what do I have today → which notices are open → stop", "answered both, stopped"]);
+  await page.evaluate(() => { delete window.__queue; });
   // Plan the day, then go to the first stop.
   results.push(["plan my day", await say("plan my day", /^Your day: \d+ stops?\. First .+\. Say "take me to the next stop"/)]);
   const firstStop = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-today-route-v1") || "{}").ids?.[0] || "");

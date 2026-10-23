@@ -134,6 +134,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (asked === "stats" || asked === "history" || asked === "mine") setTab(asked);
   }, [open]);
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
+  // Sent: back to the bids map by itself, with a note (owner, 23 Oct: "once I send, it should go back to the bids map").
+  const [sentNote, setSentNote] = useState<{ omo: string; price: number } | null>(null);
+  useEffect(() => { if (!sentNote) return; const t = window.setTimeout(() => setSentNote(null), 8000); return () => window.clearTimeout(t); }, [sentNote]);
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
   const [draft, setDraft] = useState("");
   const [reason, setReason] = useState("");
@@ -402,7 +405,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             await update(withLog({ ...latest, status: result.status, confirmedAt: result.at, faxNote: result.subject, updatedAt: new Date().toISOString() }, result.status === "confirmed" ? "HumbleFax: Successful Transmission" : `HumbleFax: FAX FAILED (${result.subject})`, result.at || new Date().toISOString()));
             notify(result.status === "confirmed"
               ? { kind: "fax-ok", go: "bids", omo: rec.omo, title: `Bid fax went through · ${rec.omo}`, text: `${money2(latest.sentPrice || latest.price)} · confirmed by HumbleFax` }
-              : { kind: "fax-bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `${result.subject || "HumbleFax"} · the app sends it again to the next HPD line` });
+              // Resent by itself when it can (owner, 23 Oct: "it should auto resend and just tell me", no snooze);
+              // the red box only when it can't (3 tries used / too close to the deadline).
+              : autoResendPlan({ ...latest, status: "failed", confirmedAt: result.at })
+                ? { kind: "message", go: "bids", omo: rec.omo, title: `🔁 Bid fax didn't go through · ${rec.omo}`, text: `Sending it again by itself to the next HPD line at ${money2(latest.sentPrice || latest.price)}. I'll tell you when HPD receives it.` }
+                : { kind: "fax-bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `${result.subject || "HumbleFax"} · it can't be resent by itself any more: open it and send it to a backup line.` });
           }
           setFaxCheckNote("");
         } else if (result.status === "unknown") {
@@ -625,6 +632,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       if (!result.ok) {
         await update(withLog({ ...base, updatedAt: new Date().toISOString() }, `${auto ? "Automatic resend" : "Resend"} NOT sent to ${label}: ${result.error}`));
         setAutoNote(`❌ ${rec.omo}: couldn't send it again (${result.error}). Open the bid and send it.`);
+        if (auto) notify({ kind: "fax-bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `The automatic resend didn't go out (${result.error}): open it and send it.` });
         return;
       }
       await update(withLog({ ...base, status: "sent", sentAt: result.sentAt, sentPrice: price, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts: (base.attempts || 0) + 1, updatedAt: new Date().toISOString() },
@@ -706,6 +714,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       previous ? `Revised fax sent to HPD ${lineLabel}: ${money2(previous)} → ${money2(record.price)}` : `Fax sent to HPD ${lineLabel} at ${money2(record.price)}${attempts > 1 ? ` (send ${attempts})` : ""}`, result.sentAt));
     setRevising(false);
     setBusy("");
+    // A moment to see "Sent", then back to the map (the fax keeps being tracked; tap the bid to see it).
+    const sentOmo = selected.omo;
+    const price = record.price;
+    window.setTimeout(() => {
+      setSelected((cur) => (cur && cur.omo === sentOmo ? null : cur));
+      setListSize("peek");
+      setSentNote({ omo: sentOmo, price });
+    }, 2200);
   }
 
   async function markConfirmed() {
@@ -1304,6 +1320,12 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             <div className="fc-bid-pages-body">
               <ItbPages pdfUrl={itbPdfUrl(pagesFor.itbFile)} pageCount={pagesFor.pages || 3} descPages={pagesFor.descPages} />
             </div>
+          </div>
+        ) : null}
+        {sentNote && !selected ? (
+          <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
+            <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
+            <span>The fax is being tracked: tap the bid to see when HPD receives it.</span>
           </div>
         ) : null}
         <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.min(listRoom - 60, Math.max(Math.min(340, listRoom * 0.8), listRoom * 0.6)))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">

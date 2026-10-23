@@ -1183,29 +1183,44 @@ export default function FieldCommandClient() {
   const listenRef = useRef<{ stop: () => void } | null>(null);
   useEffect(() => { setCanListen(typeof window !== "undefined" && !!((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)); setRecent(recentSearches()); }, []);
   useEffect(() => { if (search.trim().length < 3) return; const t = window.setTimeout(() => { rememberSearch(search); setRecent(recentSearches()); }, 2500); return () => window.clearTimeout(t); }, [search]);
-  const listen = () => {
-    if (listening) { listenRef.current?.stop(); return; }
-    type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
+  const listen = () => { if (listening) { listenRef.current?.stop(); return; } startListening(); };
+  function startListening() {
+    type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
     const W = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const Ctor = W.SpeechRecognition || W.webkitSpeechRecognition;
-    if (!Ctor) return;
+    // No speech recognition here (some iPhone Home Screen apps): the keyboard's own 🎙 works (owner, 23 Oct "mic not working").
+    if (!Ctor) { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "This phone doesn't let the app listen by itself. Tap the search box, tap the 🎙 on the keyboard, say it, then tap Go: I answer the same way." }); return; }
+    let heardSomething = false;
     try {
       const rec = new Ctor();
       rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
       rec.onresult = (e) => {
         const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
         const final = Array.from(e.results).every((r) => r.isFinal);
+        heardSomething = true;
+        if (final && convoRef.current && /^(stop|bye|goodbye|thanks|thank you|that'?s all|i'?m done|done|end)\b/i.test(said.trim())) { convoRef.current = false; setConvo(false); setAgent({ heard: said, reply: "OK. Tap 💬 when you want to talk again." }); speak("OK, talk later.", 100); return; }
         const cmd = parseCommand(said);
-        if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); return; }
-        if (final) { setSearch(""); agentRef.current(said); }
+        if (cmd.intent === "search" && !convoRef.current) { setFindHidden(""); setSearch(cmd.text); return; }
+        if (final) { setSearch(""); convoMissRef.current = 0; agentRef.current(said); }
       };
-      rec.onend = () => { setListening(false); listenRef.current = null; };
-      rec.onerror = () => { setListening(false); listenRef.current = null; };
+      rec.onend = () => {
+        setListening(false); listenRef.current = null;
+        // Conversation mode, nothing said: one more try, then it rests (tap 💬 to go on).
+        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < 1) window.setTimeout(() => { if (convoRef.current) startListening(); }, 400); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
+      };
+      rec.onerror = (e) => {
+        setListening(false); listenRef.current = null;
+        const why = e?.error || "";
+        // Say what's wrong instead of nothing (owner, 23 Oct: "mic not working on my iPhone").
+        if (why === "not-allowed" || why === "service-not-allowed") { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "The iPhone blocked listening for HPD Field. On the iPhone: Settings → Privacy & Security → Microphone and Speech Recognition: allow it; and Settings → General → Keyboard → Enable Dictation: on. Or tap the search box and use the keyboard's 🎙, then Go." }); }
+        else if (why === "network") setAgent({ heard: "🎤", reply: "Listening needs internet: check the signal and tap 🎤 again." });
+        else if (why === "audio-capture") setAgent({ heard: "🎤", reply: "No microphone found (another app may be using it). Close it and tap 🎤 again." });
+      };
       listenRef.current = rec;
       setListening(true);
       rec.start();
-    } catch { setListening(false); }
-  };
+    } catch { setListening(false); if (convoRef.current) { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Tap 💬 to answer.)` } : a)); } }
+  }
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [currentJob,setCurrentJob] = useState<CurrentJob|null>(null);
   const currentJobRef=useRef<CurrentJob|null>(null);
@@ -1297,6 +1312,13 @@ export default function FieldCommandClient() {
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
+  // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
+  const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
+  // 💬 Conversation mode (23 Oct "a continue-conversation button, I don't want to keep clicking the mic"): after each
+  // answer is said, it listens again by itself, until "stop" or ✕.
+  const [convo, setConvo] = useState(false);
+  const convoRef = useRef(false);
+  const convoMissRef = useRef(0);
   // Several questions in one sentence (23 Oct): the parts still to answer and the answers so far.
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
@@ -3305,10 +3327,12 @@ export default function FieldCommandClient() {
         const rest = confirm && m.queue.length ? `\n\nAfter that, ask me: ${m.queue.join("; ")}.` : "";
         const all = `${m.replies.join("\n\n")}${rest}`;
         setAgent({ heard: m.heard, reply: all, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
-        speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200);
+        speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200, () => { if (convoRef.current) startListening(); });
         return;
       }
-      setAgent({ heard, reply, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200); };
+      setAgent({ heard, reply, confirm });
+      // 💬 Conversation mode: listen again once the answer has been said.
+      const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200, again); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
@@ -3355,6 +3379,7 @@ export default function FieldCommandClient() {
         if (JSON.stringify(JSON.parse(now)) === before && tries++ < 16) { window.setTimeout(readBack, 500); return; }
         const ids = todayRouteIds();
         const stops = ids.map((id) => jobs.find((j) => jobId(j) === id)).filter(Boolean) as JobRecord[];
+        if (stops.length) lastJobsRef.current = { ids: stops.map((j) => jobId(j)), at: Date.now() };
         if (!stops.length) { answer("I couldn't plan a route: no open jobs with a location in the area set on the route panel."); return; }
         const short = (j: JobRecord) => jobAddress(j).replace(/,\s*\d{5}$/, "");
         answer(`Your day: ${stops.length} stop${stops.length === 1 ? "" : "s"}. First ${short(stops[0])}${stops[1] ? `, then ${short(stops[1])}` : ""}${stops[2] ? `, then ${short(stops[2])}` : ""}${stops.length > 3 ? `, and ${stops.length - 3} more` : ""}. Say "take me to the next stop" when you're ready.`);
@@ -3423,6 +3448,7 @@ export default function FieldCommandClient() {
         const awards = await fetch("/data/market_awards.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => ({}));
         for (const a of Array.isArray(awards?.jobs) ? awards.jobs : []) if (a.won && inRange(String(a.awardDate || "")) && !won.has(a.omo)) won.set(a.omo, { day: a.awardDate, address: a.address || addressOf(a.omo) });
         const list = [...won.entries()].sort((a, b) => b[1].day.localeCompare(a[1].day));
+        if (list.length) lastJobsRef.current = { ids: list.map(([o]) => o), at: Date.now() };
         const say = (o: string, w: { day: string; address: string }) => `${o}${w.address ? ` at ${w.address.replace(/,\s*\d{5}$/, "")}` : ""}${cmd.days > 1 ? ` on ${new Date(`${w.day}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" })}` : ""}`;
         if (list.length && cmd.describe) {
           // Each won job in plain words (owner, 22 Oct: "read me the description"): the job file, else the job index.
@@ -3485,6 +3511,26 @@ export default function FieldCommandClient() {
       return;
     }
     if (cmd.intent === "no") { answer("OK, nothing saved."); return; }
+    if (cmd.intent === "read-job" && !cmd.ref && lastJobsRef.current && Date.now() - lastJobsRef.current.at < 15 * 60000 && (cmd.pick || cmd.all || !selectedJob)) {
+      const ids = cmd.pick ? lastJobsRef.current.ids.slice(cmd.pick - 1, cmd.pick) : lastJobsRef.current.ids.slice(0, 5);
+      if (!ids.length) { answer(`I only listed ${lastJobsRef.current.ids.length}.`); return; }
+      void (async () => {
+        const idx = await loadSearchIndex().then((d) => d?.items || null).catch(() => null) || await fetch("/data/search-index.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => d.items || []).catch(() => []);
+        const bidsData = await fetch("/data/upcoming_bids.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => ({}));
+        const one = (o: string) => {
+          const j = findAnyJob(o);
+          const item = idx.find((i: { omo: string }) => i.omo === o);
+          const bid = (Array.isArray(bidsData?.bids) ? bidsData.bids : []).find((b: { omo: string }) => b.omo === o);
+          const text = j ? jobScope(j) : bid?.description || item?.desc || "";
+          const sum = jobSummary(text);
+          const where = (j ? jobAddress(j) : bid?.address || item?.address || o).replace(/,\s*\d{5}$/, "");
+          const loc = [...sum.where, ...sum.rooms].join(", ");
+          return `${where}: ${sum.lines.length ? sum.lines.map(lineText).join(", ") : text.replace(/\s+/g, " ").slice(0, 160) || "no description on file yet"}${loc ? `, ${loc}` : ""}.`;
+        };
+        answer(ids.length === 1 ? one(ids[0]) : ids.map((o, i) => `${i + 1}: ${one(o)}`).join(" "));
+      })();
+      return;
+    }
     if (cmd.intent === "outcome" || cmd.intent === "read-job") {
       const job = pick(cmd.ref);
       if (job === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
@@ -3508,6 +3554,7 @@ export default function FieldCommandClient() {
         const minOf = (t = "") => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
         const open = (Array.isArray(d?.bids) ? d.bids : []).filter((b: { bidDue?: string; bidDueTime?: string }) => (b.bidDue || "") > today || (b.bidDue === today && minOf(b.bidDueTime) > nowMin)).sort((a: { bidDue: string }, b: { bidDue: string }) => a.bidDue.localeCompare(b.bidDue));
         if (!open.length) { answer("No open invitations to bid right now."); return; }
+        lastJobsRef.current = { ids: open.slice(0, 5).map((b: { omo: string }) => b.omo), at: Date.now() };
         const lines = open.slice(0, 5).map((b: { borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => { const first = jobSummary(b.description || "").lines.map(lineText)[0] || "general repair"; return `${({ MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" } as Record<string, string>)[String(b.borough || "").toUpperCase()] || b.borough || "New York"}: ${first}, due ${b.bidDue === today ? "today" : dayWord(b.bidDue)} ${b.bidDueTime || ""}`.trim(); });
         answer(`${open.length === 1 ? "You have 1 open invitation to bid." : `You have ${open.length} open invitations to bid.`} ${lines.join(". ")}.${open.length > 5 ? ` And ${open.length - 5} more in Bids.` : ""}`);
       }).catch(() => answer("I couldn't load the bids right now."));
@@ -3515,6 +3562,7 @@ export default function FieldCommandClient() {
     }
     if (cmd.intent === "notices") {
       const open = boardOpenRows.filter((r) => !r.steps.sent.done);
+      if (open.length) lastJobsRef.current = { ids: [...open].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now())).map((r) => r.omo), at: Date.now() };
       if (!open.length) { answer("No notices waiting on you. Nice."); return; }
       const late = open.filter((r) => r.kind === "ppn" && hoursLeft(r, Date.now()) < 0);
       answer(`${open.length} notice${open.length === 1 ? "" : "s"} waiting on you${late.length ? `, ${late.length} overdue: ${late.slice(0, 3).map((r) => addressOf(r.omo) || r.omo).join("; ")}` : ""}. Open Notices to answer them.`);
@@ -3541,7 +3589,7 @@ export default function FieldCommandClient() {
           <SearchIcon />
           <input value={search} onChange={(event) => setSearch(event.target.value)} onFocus={() => setSearchFocus(true)} onBlur={() => window.setTimeout(() => setSearchFocus(false), 250)} onKeyDown={(event) => { if (event.key === "Enter" && parseCommand(search).intent !== "search") { event.preventDefault(); const said = search; setSearch(""); agentRef.current(said); } }} placeholder={listening ? "Listening… say the job" : "Job #, address or a few words"} aria-label="Search jobs" data-hpd-smoke="fc-search" />
           {search ? <button type="button" className="fc-search-clear" aria-label="Clear search" data-hpd-smoke="fc-search-clear" onClick={() => { setSearch(""); setFindHidden(""); }}>✕</button> : null}
-          {canListen ? <button type="button" className={`fc-search-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Search by voice"} aria-pressed={listening} data-hpd-smoke="fc-search-mic" onClick={listen}>🎤</button> : null}
+          {true ? <button type="button" className={`fc-search-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Search by voice"} aria-pressed={listening} data-hpd-smoke="fc-search-mic" onClick={listen}>🎤</button> : null}
         </div>
         <button type="button" className={`fc-filter-btn ${filtersOpen ? "is-open" : ""}`} data-hpd-smoke="fc-filter-button" aria-label="Filters" aria-expanded={filtersOpen} aria-controls="fc-quick-filters" onClick={() => { setFiltersOpen((open) => !open); setChromeOpen(false); }}>
           <FilterIcon />
@@ -5122,8 +5170,8 @@ export default function FieldCommandClient() {
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>✅ Yes, save it</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
             </> : null}
-            {canListen ? <button type="button" data-hpd-smoke="fc-agent-talk" onClick={listen}>{listening ? "Listening…" : "🎤 Talk"}</button> : null}
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => setAgent(null)}>✕</button>
+            <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>
         </div>
       ) : null}
@@ -5171,7 +5219,8 @@ export default function FieldCommandClient() {
                 setCritical(null);
               }}>{armedTap === `handled:${critical.omo}` ? "✅ Tap again: it's handled (stops the reminders)" : "✓ I handled it"}</button>
             ) : null}
-            <button type="button" data-hpd-smoke="fc-critical-snooze" onClick={() => { try { localStorage.setItem(snoozeKey(critical), String(Date.now() + 30 * 60000)); } catch { /* private mode */ } setCritical(null); }}>Snooze 30 min</button>
+            {critical.kind === "fax-bad" ? <button type="button" data-hpd-smoke="fc-critical-ok" onClick={() => setCritical(null)}>OK</button> : null}
+            {critical.kind === "fax-bad" ? null : <button type="button" data-hpd-smoke="fc-critical-snooze" onClick={() => { try { localStorage.setItem(snoozeKey(critical), String(Date.now() + 30 * 60000)); } catch { /* private mode */ } setCritical(null); }}>Snooze 30 min</button>}
             <small>Stays here until you choose.</small>
           </div>
         </div>

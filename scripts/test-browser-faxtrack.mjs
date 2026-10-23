@@ -48,7 +48,17 @@ try {
   assert.match(await send.getAttribute("class"), /hpd-sending/);
   await track.scrollIntoViewIfNeeded();
   if (shots) await page.screenshot({ path: `${shots}/faxtrack-1-sending.png` });
+  const omo = (await sheet.locator("header strong").innerText()).trim();
   await page.clock.runFor(3000);
+  // Sent: back to the bids map with a note (23 Oct); the bid opens again to follow the fax.
+  const note = page.locator('[data-hpd-smoke="fc-bid-sent-note"]');
+  await note.waitFor({ timeout: 15000 });
+  assert.match(await note.innerText(), new RegExp(`${omo} sent to HPD`));
+  assert.equal(await sheet.count(), 0, "the bid sheet closed by itself");
+  if (shots) await page.screenshot({ path: `${shots}/faxtrack-back-to-map.png` });
+  await openBidList(page);
+  await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child', { hasText: omo }).first().click();
+  await track.waitFor({ timeout: 15000 });
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-faxtrack-faxing"]')?.getAttribute("data-status") === "now", null, { timeout: 15000 });
   assert.equal(await status("humblefax"), "done");
   assert.match(await track.locator('[data-hpd-smoke="fc-faxtrack-faxing"]').innerText(), /\(212\) 863-8655/);

@@ -3417,3 +3417,5 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* Signed out: one clear Sign in on the map (22 Oct "where do I sign in"). */
 .fc-signin-bar { position: absolute; z-index: 1450; top: calc(max(12px, env(safe-area-inset-top)) + 118px); left: 12px; right: 84px; display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: #451a03f5; border: 2px solid #f59e0b; color: #fef3c7; box-shadow: 0 10px 24px #0008; font: 700 13.5px/1.35 system-ui, sans-serif; }
 .fc-signin-form button { width: 100%; min-height: 46px; border-radius: 12px; border: 0; background: #f59e0b; color: #111827; font: 900 16px system-ui, sans-serif; }
+
+.fc-agent button.is-on { background: #7c3aed; box-shadow: 0 0 0 3px #c4b5fd; }

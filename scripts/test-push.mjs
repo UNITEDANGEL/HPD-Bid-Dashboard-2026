@@ -316,3 +316,13 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   for (const s of ["mini split", "fire escape ladder", "jobs in brooklyn", "707 east 189"]) assert.equal(parseCommand(s).intent, "search", s);
   console.log("PASS many questions at once: split only when every part is understood; sentences go to the AI; searches stay searches");
 }
+
+// 🧠 Memory of the last list: "read me the descriptions" / "the first one" / "number two" (23 Oct).
+{
+  const { parseCommand } = await loadLib("voice-agent");
+  assert.deepEqual(parseCommand("read me the descriptions"), { intent: "read-job", ref: "", all: true });
+  assert.deepEqual(parseCommand("the second one"), { intent: "read-job", ref: "", pick: 2 });
+  assert.deepEqual(parseCommand("what about number two"), { intent: "read-job", ref: "", pick: 2 });
+  assert.deepEqual(parseCommand("read me this job"), { intent: "read-job", ref: "" });
+  console.log("PASS memory words: the descriptions / the first one / number two pick from what was just listed");
+}
