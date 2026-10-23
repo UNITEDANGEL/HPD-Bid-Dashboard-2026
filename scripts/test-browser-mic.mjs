@@ -62,6 +62,35 @@ try {
   await page.locator('[data-hpd-smoke="fc-jobs-row"] button').nth(1).click();
   await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
   await page.locator(".fc-job-sheet-close").click();
+  // Doing things by voice (in-app request 22 Oct: "I should be able to talk and get everything done").
+  // A job from the To do list (the list may still be open from the step above).
+  if (!(await page.locator('[data-hpd-smoke="fc-jobs"]').count())) await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-jobs-tab-todo"]').click();
+  const todo = await page.locator('[data-hpd-smoke="fc-jobs-row"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
+  await page.locator('[data-hpd-smoke="fc-jobs-close"]').click();
+  results.push([`open job ${todo[1]}`, await say(`open job ${todo[1].split("").join(" ")}`, /^Here's /)]);
+  await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
+  assert.match(await page.locator("#fc-job-card").innerText(), new RegExp(todo[1]));
+  const hasPhone = (await page.locator('[data-hpd-smoke="jc-text-tenant"]').count()) > 0;
+  if (hasPhone) {
+    results.push(["call the tenant", await say("call the tenant", / Tap Call\.$/)]);
+    assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^tel:/);
+    results.push(["text the tenant", await say("text the tenant", /^I wrote a text for /)]);
+    await page.locator('[data-hpd-smoke="jc-tenant-draft"]').waitFor({ timeout: 10000 });
+  }
+  results.push([`navigate to ${todo[1]}`, await say(`navigate to ${todo[1].split("").join(" ")}`, /Pick Waze or Google\.$/)]);
+  const nav = await page.locator('[data-hpd-smoke="fc-agent-action"]').evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+  assert.ok(/waze\.com/.test(nav[0]) && /google\.com\/maps/.test(nav[1]), "Waze and Google for that job");
+  results.push(["I'm here", await say("I'm here", new RegExp(`^Start .+, job ${todo[1]}\\? Say yes`))]);
+  results.push(["yes", await say("yes", /^Started\. You're at /)]);
+  // (Finishing EQ… earlier opened its package sheet, as it should: close it, then the card.)
+  await page.waitForTimeout(7000); // its countdown
+  for (let i = 0; i < 6; i++) {
+    await page.evaluate(() => { for (const sel of ['[data-hpd-smoke="fc-package-sheet-back"]', ".fc-job-sheet-close", '[data-hpd-smoke="fc-agent-close"]']) document.querySelector(sel)?.click(); });
+    await page.waitForTimeout(500);
+    if (!(await page.locator('[data-hpd-smoke="fc-package-sheet"], #fc-job-card').count())) break;
+  }
+
   // A search: the list shows and nothing in it is covered by the borough buttons.
   await page.evaluate(() => { window.__hear = "mini split"; });
   await mic.click();

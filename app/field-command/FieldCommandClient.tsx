@@ -1294,7 +1294,7 @@ export default function FieldCommandClient() {
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number }>({ today: 0, tomorrow: 0, open: 0 });
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
-  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] } | null>(null);
   const agentRef = useRef<(heard: string) => void>(() => {});
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string } | null>(null);
@@ -3289,6 +3289,49 @@ export default function FieldCommandClient() {
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    if (cmd.intent === "text-tenant" || cmd.intent === "call-tenant" || cmd.intent === "navigate" || cmd.intent === "arrived" || cmd.intent === "open") {
+      // Which job: the one named, else the one on screen; "next stop": Today's route, else the closest open job.
+      let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (cmd.intent === "navigate" && (cmd.next || !job) && !cmd.ref) {
+        const open = (j: JobRecord) => jobQueue(j) === "pending" && !value(j, ["FieldArrivedAt"]) && !isTestJob(jobId(j));
+        const onRoute = todayRouteIds().map((id) => jobs.find((j) => jobId(j) === id)).find((j) => j && open(j)) || null;
+        const fix = lastFixRef.current;
+        const near = !onRoute && fix ? (() => { const best = nextJob(jobs.map((j) => { const at = jobLatLng(j); return { id: jobId(j), lat: at ? at.lat : NaN, lng: at ? at.lng : NaN, open: open(j) }; }), "", { lat: fix.lat, lng: fix.lng }); return best ? jobs.find((j) => jobId(j) === best.id) || null : null; })() : null;
+        job = onRoute || near;
+      }
+      if (cmd.intent === "arrived" && !job) {
+        // "I'm here" with no card open: the job you're standing at.
+        const fix = lastFixRef.current;
+        if (fix) job = jobs.filter((j) => jobQueue(j) !== "archived").map((j) => ({ j, at: jobLatLng(j) })).filter((x) => x.at).map((x) => ({ j: x.j, m: distanceMiles({ lat: fix.lat, lng: fix.lng }, x.at!) * 1609.34 })).filter((x) => x.m < 200).sort((a, b) => a.m - b.m)[0]?.j || null;
+      }
+      if (job === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!job) { answer(cmd.intent === "navigate" ? "Which job? Say the job number or the address, or plan Today's route." : cmd.ref ? `I can't find ${cmd.ref} in your jobs. Say the job number, letter by letter.` : "Which job? Open its card, or say the job number."); return; }
+      const j = job;
+      const t = tenantInfo(j);
+      const where = jobAddress(j).replace(/,\s*\d{5}$/, "");
+      if (cmd.intent === "open") { openIssueJob(j); setFindHidden(search); answer(`Here's ${where}.`); return; }
+      if (cmd.intent === "text-tenant") {
+        if (!t.phone || t.commonArea) { answer(`There's no tenant phone on file for ${where}.`); return; }
+        openIssueJob(j);
+        window.setTimeout(() => openTenantText(j), 300);
+        answer(`I wrote a text for ${t.name || "the tenant"} at ${where}. Read it on the job card, then tap Open in Messages and press Send.`);
+        return;
+      }
+      if (cmd.intent === "call-tenant") {
+        if (!t.phone) { answer(`There's no tenant phone on file for ${where}.`); return; }
+        setAgent({ heard, reply: `${t.name || "The tenant"} at ${where}: ${t.phone}. Tap Call.`, actions: [{ label: `📞 Call ${t.name ? t.name.split(/\s+/)[0] : "the tenant"}`, href: `tel:${t.phone.replace(/[^\d+]/g, "")}` }] });
+        speak(`${t.name || "The tenant"} at ${where}. Tap call.`, 200);
+        return;
+      }
+      if (cmd.intent === "navigate") {
+        setAgent({ heard, reply: `${where} (${jobId(j)}). Pick Waze or Google.`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }] });
+        speak(sayOmo(`${where}. Pick Waze or Google.`), 200);
+        return;
+      }
+      // Arrived: read back, then yes.
+      answer(`Start ${where}, job ${jobId(j)}? Say yes, or tap Yes.`, { id: jobId(j), outcome: "ARRIVED" });
+      return;
+    }
     if (cmd.intent === "awards") {
       // Wins: HPD's "Confirmation of award" emails (same day) plus HPD's award list (a day or two behind).
       void (async () => {
@@ -3353,6 +3396,7 @@ export default function FieldCommandClient() {
       const p = pendingRef.current; const c = agent?.confirm || (p && Date.now() - p.at < 120000 ? p : null);
       const job = c ? jobs.find((j) => jobId(j) === c.id) : null;
       if (!c || !job) { answer("There's nothing waiting for a yes."); return; }
+      if (c.outcome === "ARRIVED") { openIssueJob(job); markArrived(job); answer(`Started. You're at ${jobAddress(job)}: the arrival is saved.`); return; }
       setJobOutcome(job, c.outcome, "Said to the voice helper");
       answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.`);
       return;
@@ -4983,6 +5027,7 @@ export default function FieldCommandClient() {
           <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>✅ Yes, save it</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>

@@ -13,6 +13,11 @@ export type AgentCommand =
   | { intent: "yes" }
   | { intent: "no" }
   | { intent: "awards"; days: number; label: string; describe?: boolean }
+  | { intent: "text-tenant"; ref: string }
+  | { intent: "call-tenant"; ref: string }
+  | { intent: "navigate"; ref: string; next: boolean }
+  | { intent: "arrived"; ref: string }
+  | { intent: "open"; ref: string }
   | { intent: "ask"; question: string }
   | { intent: "search"; text: string };
 
@@ -27,7 +32,7 @@ const OUTCOMES: [RegExp, AgentCommand extends infer C ? C extends { intent: "out
 // What's left after the command words: the job ("ER01987", "707 east 189", "this job" / "" for the one on screen).
 function refOf(text: string) {
   const left = spokenSearch(text)
-    .replace(/\b(i|we|i'?ve|we'?ve|i'?m|just|have|has|the|a|an|at|on|for|of|with|job|work ?order|omo|number|is|was|it|this|that|one|please|mark|as|me|read|tell|about|what'?s|what is|describe|description|scope|finished|finish|completed|complete|done|wrapped|up|all|no|access|nobody|home|there|tenant|refused|refusal|wouldn'?t|let|in|denied|entry|partial(ly)?|part|half|couldn'?t|can'?t|get|by|others|someone|else|answer|door|today|now)\b/gi, " ")
+    .replace(/\b(i|we|i'?ve|we'?ve|i'?m|just|have|has|the|a|an|at|on|for|of|with|job|work ?order|omo|number|is|was|it|this|that|one|please|mark|as|me|read|tell|about|what'?s|what is|describe|description|scope|finished|finish|completed|complete|done|wrapped|up|all|no|access|nobody|home|there|tenant|refused|refusal|wouldn'?t|let|in|denied|entry|partial(ly)?|part|half|couldn'?t|can'?t|get|by|others|someone|else|answer|door|today|now|text|message|sms|send|call|phone|navigate|directions|take|drive|go|to|route|start|started|arrived|here|open|show|them|her|him|my|next|stop|please)\b/gi, " ")
     .replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
   // A job is named by its number or its address (addresses have numbers); anything else means the job on screen.
   return /\d/.test(left) ? left : "";
@@ -38,6 +43,12 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // Doing things by voice (in-app request 22 Oct: "I should be able to talk and get everything done").
+  if (/\b(text|message|sms)\b.*\b(tenant|them|her|him|resident)\b|\bsend (a |the )?(text|message|sms)\b/.test(t)) return { intent: "text-tenant", ref: refOf(t) };
+  if (/\bcall\b.*\b(tenant|them|her|him|resident)\b|\b(tenant'?s?|resident'?s?) (phone|number)\b/.test(t)) return { intent: "call-tenant", ref: refOf(t) };
+  if (/\b(navigate|directions|take me|drive me|get me to|route me|go to|how do i get to)\b/.test(t)) return { intent: "navigate", ref: refOf(t), next: /\bnext\b/.test(t) };
+  if (/\b(i'?m here|i am here|i'?ve arrived|i arrived|i'?m at the (job|site|building|address)|start (the |this )?job|starting (the |this )?job)\b/.test(t)) return { intent: "arrived", ref: refOf(t) };
+  if (/^(open|show( me)?|pull up)\b.*\b([a-z]{2}\s*\d{5}|job)\b/.test(t) && refOf(t)) return { intent: "open", ref: refOf(t) };
   // "Which jobs have I won today / been awarded this week" (owner, 22 Oct).
   // The phone often hears "won" as "want" / "one" ("which jobs I want today", owner 22 Oct): with "jobs" and a day,
   // those mean won too.

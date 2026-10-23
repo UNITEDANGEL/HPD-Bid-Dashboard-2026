@@ -58,6 +58,18 @@ try {
   await page.waitForFunction(() => /call them back/.test(document.querySelector('[data-hpd-smoke="jc-tenant-step"]')?.textContent || ""), null, { timeout: 5000 });
   assert.match(await page.locator('[data-hpd-smoke="jc-tenant-call"]').getAttribute("class"), /is-due/, "the Call button lights up");
   assert.equal(await page.locator('#fc-job-card a', { hasText: /^Call$/ }).count(), 1, "one Call button (no duplicate)");
+  // By voice (typed here): "call the tenant" offers a Call button; "text the tenant" opens the text on the card.
+  const box = page.locator('[data-hpd-smoke="fc-search"]');
+  await page.evaluate(() => document.querySelector('[data-hpd-smoke="fc-search"]')?.scrollIntoView());
+  await box.fill("call the tenant");
+  await box.press("Enter");
+  await page.locator('[data-hpd-smoke="fc-agent-action"]').first().waitFor({ timeout: 10000 });
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^tel:\+?\d{10,11}$/);
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await box.fill("text the tenant");
+  await box.press("Enter");
+  await page.waitForFunction(() => /^I wrote a text for /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 10000 });
+  await page.locator('[data-hpd-smoke="jc-tenant-draft"]').waitFor({ timeout: 10000 });
   assert.deepEqual(errors, []);
   console.log(`PASS tenant text: ${omo} -> AI text (no phone sent to the AI) -> Messages link with number + text -> Texted, waiting -> They replied -> Call lights up`);
   await c.close();

@@ -3,6 +3,17 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Do more by voice",
+      "items": [
+        "🎤 \"Text the tenant\" (the job on screen, or \"…for EQ15239\"): the AI writes the text on the job card; you open it in Messages and press Send.",
+        "🎤 \"Call the tenant\": shows their name, number and a 📞 Call button.",
+        "🎤 \"Take me to the next stop\" (Today's route, else the closest open job) / \"Navigate to 707 East 189\": Waze and Google Maps buttons for that job.",
+        "🎤 \"I'm here\" / \"Start the job\": the job on screen, or the one you're standing at; it asks, and yes saves your arrival.",
+        "🎤 \"Open job E R 0 8 2 8 3\": opens its card."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Stay signed in for a year",
       "items": [
         "🔑 One Google sign-in now lasts a year on the phone and renews by itself while you use the app (it was 30 days). Sign in once from the Home Screen app and you stay in.",

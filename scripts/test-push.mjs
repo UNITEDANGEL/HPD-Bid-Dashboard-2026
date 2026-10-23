@@ -269,3 +269,19 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal((await findAlerts({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse("2026-10-23T13:30:00Z"), loadLib, records: recs, addresses: {} })).find((x) => /Call the tenant/.test(x.title)).key, call[0].key, "same key: sent once");
   console.log(`PASS tenant text: "${text.slice(0, 60)}…", Messages link (iPhone / Android), wait same day, call next morning / after a reply, nothing after a visit; phone reminder once`);
 }
+
+// 🗣 Doing things by voice (in-app request 22 Oct: "talk and get everything done").
+{
+  const { parseCommand } = await loadLib("voice-agent");
+  const p = (s) => parseCommand(s);
+  assert.deepEqual(p("text the tenant"), { intent: "text-tenant", ref: "" });
+  assert.deepEqual(p("send a text to the tenant for EQ15239"), { intent: "text-tenant", ref: "EQ15239" });
+  assert.deepEqual(p("call the tenant"), { intent: "call-tenant", ref: "" });
+  assert.deepEqual(p("take me to the next stop"), { intent: "navigate", ref: "", next: true });
+  assert.deepEqual(p("navigate to 707 east 189"), { intent: "navigate", ref: "707 east 189", next: false });
+  assert.deepEqual(p("I'm here"), { intent: "arrived", ref: "" });
+  assert.deepEqual(p("open job E R 0 8 2 8 3"), { intent: "open", ref: "ER08283" });
+  assert.equal(p("I finished this job").intent, "outcome", "the earlier commands still work");
+  assert.equal(p("mini split").intent, "search");
+  console.log("PASS voice actions: text / call the tenant, navigate (a job or the next stop), I'm here, open a job; earlier commands unchanged");
+}
