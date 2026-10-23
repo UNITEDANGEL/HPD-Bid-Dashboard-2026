@@ -98,7 +98,7 @@ const refreshMock = async (url, options) => {
 };
 const renew = await handleDriveAuth(request("check", "POST", sessionCookie), env, refreshMock);
 assert.equal(renew.status, 200);
-assert.match(renew.headers.get("Set-Cookie"), /Max-Age=2592000/);
+assert.match(renew.headers.get("Set-Cookie"), /Max-Age=31536000/);
 sessionCookie = renew.headers.get("Set-Cookie").split(";")[0]; // the phone keeps the renewed sign-in cookie
 const renewedBody = await renew.text();
 assert.ok(!renewedBody.includes("renewed-access"));
@@ -127,7 +127,7 @@ const wrongRenewedAccount = await handleDriveAuth(request("check", "POST", sessi
   url.includes("/userinfo") ? Response.json({ ...identity, sub: "someone-else" }) : refreshMock(url, options));
 assert.equal(wrongRenewedAccount.status, 403);
 assert.equal(wrongRenewedAccount.headers.get("Set-Cookie"), null);
-Date.now = () => now() + 31 * 86400000;
+Date.now = () => now() + 366 * 86400000; // past the one-year sign-in (22 Oct)
 assert.equal((await (await handleDriveAuth(request("session", "GET", sessionCookie), env)).json()).connected, false);
 Date.now = now;
 assert.equal((await handleDriveAuth(request("disconnect", "POST", sessionCookie, "https://evil.test"), env)).status, 403);

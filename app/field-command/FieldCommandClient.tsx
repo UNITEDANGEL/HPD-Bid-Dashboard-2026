@@ -1294,7 +1294,7 @@ export default function FieldCommandClient() {
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number }>({ today: 0, tomorrow: 0, open: 0 });
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
-  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string } } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean } | null>(null);
   const agentRef = useRef<(heard: string) => void>(() => {});
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string } | null>(null);
@@ -2693,9 +2693,9 @@ export default function FieldCommandClient() {
     void fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
       question: "Write one short, friendly text message (SMS, under 300 characters, no emojis, no markdown) from Jot at United Angel Construction to the tenant: HPD sent us to do the repair described; say the job in plain words; ask for a good day and time to come; ask them to text or call back. Use their first name if given. Return only the message.",
       facts: { tenantFirstName: (t.name || "").split(/\s+/)[0] || null, address: jobAddress(job).replace(/,\s*\d{5}$/, ""), apartment: t.apt || null, job: jobWords, company: "United Angel Construction" },
-    }) }).then((r) => r.json()).then((d) => {
+    }) }).then(async (r) => ({ status: r.status, d: await r.json().catch(() => ({})) })).then(({ status, d }) => {
       const text = String(d?.text || "").replace(/^"|"$/g, "").trim();
-      setTenantText((cur) => (cur && cur.id === id ? (d?.ai && text && text.length <= 480 ? { ...cur, text, ai: "✨ Written by AI. Read it, change anything, then open it in Messages and press Send there." } : { ...cur, ai: "" }) : cur));
+      setTenantText((cur) => (cur && cur.id === id ? (d?.ai && text && text.length <= 480 ? { ...cur, text, ai: "✨ Written by AI. Read it, change anything, then open it in Messages and press Send there." } : { ...cur, ai: status === 401 ? "Ready text below. Sign in with Google on this phone and the AI writes it next time." : "" }) : cur));
     }).catch(() => setTenantText((cur) => (cur && cur.id === id ? { ...cur, ai: "" } : cur)));
   }
   function markTenantTexted(job: JobRecord) {
@@ -3342,7 +3342,9 @@ export default function FieldCommandClient() {
           const r = await fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
           const d = await r.json().catch(() => ({}));
           if (r.ok && d.ai && d.text) { answer(d.text); return; }
-          answer(r.status === 401 ? "Sign in with Google on this phone and I can answer that." : d.reason === "not-set-up" ? "Free questions need the AI switched on for the app. I can do: I finished this job, read me this job, read me the new bids, what do I have today, which notices are open." : `I couldn't answer that right now. ${d.reason || ""}`.trim());
+          // Signed out: the AI is on, but it answers only for your account (owner, 22 Oct: "switch on AI").
+          if (r.status === 401 || d.reconnectRequired) { setAgent({ heard, reply: "The AI is on. It answers only when this phone is signed in with Google: tap Sign in below, then ask me again.", signIn: true }); speak("The AI is on. Sign in with Google on this phone, then ask me again.", 200); return; }
+          answer(d.reason === "not-set-up" ? "Free questions need the AI switched on for the app. I can do: I finished this job, read me this job, read me the new bids, what do I have today, which notices are open." : `I couldn't answer that right now. ${d.reason || ""}`.trim());
         } catch { answer("No connection right now. Try again in a minute."); }
       })();
       return;
@@ -4979,6 +4981,7 @@ export default function FieldCommandClient() {
         <div className="fc-agent" role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
           <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>
           <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
+          {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>✅ Yes, save it</button>

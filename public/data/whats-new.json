@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Stay signed in for a year",
+      "items": [
+        "🔑 One Google sign-in now lasts a year on the phone and renews by itself while you use the app (it was 30 days). Sign in once from the Home Screen app and you stay in.",
+        "🤖 If you ask the 🎤 a question while signed out, it says the AI is on and shows Sign in with Google right there; the tenant text says so too."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Text the tenant",
       "items": [
         "📱 Job card → Tenant → Text tenant: the AI writes a short, friendly text (who you are, the job in plain words, asking for a good time). Read it, change anything, tap Open in Messages and press Send there. The app never sends it by itself.",

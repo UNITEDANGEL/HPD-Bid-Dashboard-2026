@@ -3410,3 +3410,4 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* The tenant's name and phone first, then texting. */
 .jc-fact-wide:has(.jc-tenant-text) { display: flex; flex-direction: column; }
 .jc-fact-wide .jc-tenant-text { order: 3; }
+.fc-agent-signin button { width: 100%; min-height: 48px; border-radius: 12px; border: 0; background: #f59e0b; color: #111827; font: 900 16px system-ui, sans-serif; }

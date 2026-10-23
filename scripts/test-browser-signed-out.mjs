@@ -11,6 +11,7 @@ try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await c.route(/\/api\/private\//, (r) => r.fulfill({ status: 401, json: { error: "Sign in with Google" } }));
   await c.route(/\/api\/drive\/hpd-scan/, (r) => r.fulfill({ status: 401, json: { error: "Sign in" } }));
+  await c.route(/\/api\/drive\/hpd-ask/, (r) => r.fulfill({ status: 401, json: { reconnectRequired: true, error: "Sign in to Google Drive again." } }));
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const page = await c.newPage();
   const errors = [];
@@ -32,6 +33,12 @@ try {
   const find = page.locator('[data-hpd-smoke="fc-find"]');
   await find.locator('[data-hpd-smoke="fc-find-row"][data-omo="ER08283"]').waitFor({ timeout: 30000 });
   assert.match(await find.locator('[data-hpd-smoke="fc-find-public"]').innerText(), /signed in/);
+  // A free question signed out: the helper says the AI is on and offers Sign in right there (22 Oct "switch on AI").
+  await page.locator('[data-hpd-smoke="fc-search"]').fill("which bid is the easiest to win today?");
+  await page.locator('[data-hpd-smoke="fc-search"]').press("Enter");
+  const agent = page.locator('[data-hpd-smoke="fc-agent"]');
+  await agent.locator('[data-hpd-smoke="fc-agent-signin"]').waitFor({ timeout: 15000 });
+  assert.match(await agent.locator('[data-hpd-smoke="fc-agent-reply"]').innerText(), /The AI is on\. It answers only when this phone is signed in/);
   assert.deepEqual(errors, []);
   console.log("PASS signed out: the board shows 'Your HPD emails didn't open' + Sign in with Google (back to the board), Check my emails says it couldn't open them; no zeros pretending all is done");
   await c.close();

@@ -11,7 +11,9 @@ const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const GMAIL_READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const SESSION = "__Host-hpd-drive-session";
 const FLOW = "__Host-hpd-drive-flow";
-const TTL = 30 * 24 * 60 * 60;
+// A year, renewed whenever the app checks in (owner, 22 Oct: "auto sign me in all the time"): one sign-in keeps the
+// phone signed in while it is used. Google can still end it (password change, access removed); Disconnect ends it too.
+const TTL = 365 * 24 * 60 * 60;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const headers = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" };
