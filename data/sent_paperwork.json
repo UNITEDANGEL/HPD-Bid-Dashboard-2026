@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-23T13:59:38.261774+00:00",
+"generatedAt": "2026-10-23T14:17:53.313906+00:00",
 "since": "2026/10/09",
 "jobs": {
 "EN04541": [
@@ -20917,6 +20917,16 @@
 "file": "VIDEO-2026-08-06-11-35-34.mp4",
 "outcome": "",
 "subject": "OMO No: ER00272 Issuer: AREWA AJEWOLE Boro: Brooklyn Bldg Address: 2324, PITKIN AVENUE",
+"via": "hpd-staff"
+}
+],
+"ER00291": [
+{
+"date": "2026-10-23",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-rcc3lgld.png",
+"outcome": "",
+"subject": "Re: 24 HR POOR PERFORMANCE NOTICE - ER00291",
 "via": "hpd-staff"
 }
 ],
