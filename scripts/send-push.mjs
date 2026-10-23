@@ -50,7 +50,7 @@ export function workingHours(now = Date.now()) {
 }
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {} }) {
   const out = [];
   const kinds = loadLib ? await loadLib("alert-kinds") : null;
   // What they want in plain words (22 Oct): the alert text on a locked phone, instead of the email subject.
@@ -101,6 +101,20 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   // 🌆 Evening wrap-up (owner, 21 Oct "next upgrade"): once each weekday from 6 PM, what got done and what's left.
   const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib });
   if (wrap) out.push(wrap);
+  // 📞 Call the tenant (owner, 22 Oct: "if they follow up, remind me to give them a call"): texted from the job card and
+  // no visit / appointment by the next morning, or they replied. Once per text, working hours only.
+  if (loadLib && workingHours(now)) {
+    try {
+      const { tenantStep } = await loadLib("tenant-text");
+      for (const [omo, rec] of Object.entries(records || {})) {
+        if (!/^[A-Z]{2}\d{5}$/.test(omo) || !rec?.TenantTextedAt) continue;
+        const step = tenantStep(rec, now);
+        if (step.state !== "call") continue;
+        const address = String(addresses?.[omo] || rec.BuildingAddress || "").replace(/,\s*\d{5}$/, "");
+        out.push({ key: `c:${h(`${omo}|${step.textedAt}|${step.repliedAt}`)}`, kind: "message", title: `📞 Call the tenant${address ? ` at ${address}` : ""}`, body: `${omo}: ${step.why}`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `c-${omo}` });
+      }
+    } catch (e) { console.log(`tenant call reminders skipped: ${e.message}`); }
+  }
   // 💵 Friday money report (owner, 22 Oct "next upgrade"): once each Friday from 2 PM, what HPD owes and what holds it up.
   const cash = await moneyReport({ pip, payments, requests, sent, now, loadLib });
   if (cash) out.push(cash);
@@ -246,7 +260,10 @@ async function main() {
   try { const r = await fetch(`${WORKER}/overrides`, { cache: "no-store" }); if (r.ok) records = (await r.json()).overrides || {}; } catch { /* no records: the wrap-up leaves faxes out */ }
   const pip = JSON.parse(read(path.join(ROOT, "public/data/pip_paid.json")) || "null");
   const payments = JSON.parse(read(path.join(ROOT, "public/data/pip_payments.json")) || "null");
-  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments });
+  // Job addresses (for the call-the-tenant reminder).
+  const coa = JSON.parse(read(path.join(ROOT, "public/data/COA_Fetcher_2026.json")) || "[]");
+  const addresses = Object.fromEntries((Array.isArray(coa) ? coa : coa.jobs || []).map((j) => [String(j.OMO || "").toUpperCase(), j.BuildingAddress || ""]));
+  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses });
   if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
   if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }

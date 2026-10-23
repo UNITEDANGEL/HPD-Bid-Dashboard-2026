@@ -3395,3 +3395,18 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-board-locked b { font: 900 16px system-ui, sans-serif; }
 .fc-board-locked span { font: 700 14px/1.4 system-ui, sans-serif; }
 .fc-board-locked button { min-height: 50px; border-radius: 12px; border: 0; background: #f59e0b; color: #111827; font: 900 16px system-ui, sans-serif; }
+
+/* 📱 Text the tenant (22 Oct). */
+.jc-tenant-text { display: grid; gap: 6px; margin: 6px 0 2px; }
+.jc-tenant-text > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.jc-tenant-text button, .jc-tenant-draft a, .jc-tenant-draft button { min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 14px system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; }
+.jc-tenant-step { margin: 0; font: 700 13px system-ui, sans-serif; color: #93c5fd; }
+.jc-tenant-step.is-call { color: #fbbf24; }
+.jc-tenant-draft { display: grid; gap: 6px; padding: 10px; border-radius: 12px; background: #0f172a; border: 1px solid #22c55e; }
+.jc-tenant-draft small { color: #bbf7d0; font: 700 12.5px system-ui, sans-serif; }
+.jc-tenant-draft textarea { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid #334155; background: #020617; color: #f8fafc; font: 600 15px/1.4 system-ui, sans-serif; padding: 8px; }
+.jc-tenant-draft a.is-send { background: #16a34a; border-color: #16a34a; }
+.fc-call-btn.is-due { background: #f59e0b !important; color: #111827 !important; box-shadow: 0 0 0 3px #fde68a; }
+/* The tenant's name and phone first, then texting. */
+.jc-fact-wide:has(.jc-tenant-text) { display: flex; flex-direction: column; }
+.jc-fact-wide .jc-tenant-text { order: 3; }

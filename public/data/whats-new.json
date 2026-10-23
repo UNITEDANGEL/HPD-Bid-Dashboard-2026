@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 22, 2026",
+      "title": "Text the tenant",
+      "items": [
+        "📱 Job card → Tenant → Text tenant: the AI writes a short, friendly text (who you are, the job in plain words, asking for a good time). Read it, change anything, tap Open in Messages and press Send there. The app never sends it by itself.",
+        "The card then shows \"Texted <time> · Waiting for their answer\" and a They replied button. If they replied, or there's no visit / appointment by the next morning, the Call button lights up and your phone reminds you: \"📞 Call the tenant at <address>\".",
+        "🤖 The AI is switched on for the app (Cloudflare Workers AI), for free questions to the 🎤 helper and for the tenant texts."
+      ]
+    },
+    {
+      "date": "Oct 22, 2026",
       "title": "Search without signing in · your wins read out · privacy fix",
       "items": [
         "🔍 The search box works before you sign in (job #, address, a few words). Signed in, results also show tenant names and phones.",

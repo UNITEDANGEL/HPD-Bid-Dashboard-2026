@@ -68,7 +68,7 @@ assert.ok(!sessionCookie.includes("private-refresh"));
 assert.match(sessionCookie, /^__Host-hpd-drive-session=s2\./, "encrypted sign-in cookie");
 const status = await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork);
 assert.equal(status.headers.get("Cache-Control"), "no-store");
-assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, canEmail: false, syncEnabled: false });
+assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, canEmail: false, syncEnabled: false, aiReady: false });
 assert.equal((await handleDriveAuth(request("check", "POST", ""), env, noNetwork)).status, 401);
 assert.equal((await handleDriveAuth(request("check", "GET", sessionCookie), env, noNetwork)).status, 405);
 assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);

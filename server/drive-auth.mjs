@@ -115,7 +115,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     }
     if (action === "session") {
       const saved = await session(request, env, cfg);
-      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false });
+      // aiReady: the helper's AI is connected (Workers AI binding or Anthropic key); just yes / no, the AI isn't called.
+      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false, aiReady: Boolean(env.AI || env.ANTHROPIC_API_KEY) });
     }
     if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);

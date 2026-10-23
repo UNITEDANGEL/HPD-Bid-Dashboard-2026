@@ -59,6 +59,7 @@ import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand } from "../../lib/voice-agent";
+import { smsHref, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
@@ -1295,6 +1296,8 @@ export default function FieldCommandClient() {
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string } } | null>(null);
   const agentRef = useRef<(heard: string) => void>(() => {});
+  // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
+  const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
   const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
   useEffect(() => {
@@ -2678,6 +2681,36 @@ export default function FieldCommandClient() {
     setArrivePrompt({ id: jobId(best.job), address: jobAddress(best.job), feet: Math.round(best.meters * 3.28) });
     ring({ kind: "message", title: `📍 You're at ${jobAddress(best.job)}`, text: "Have you arrived? Tap Yes to start the job." }); // tone + voice only: the green card is the one place it shows
   };
+
+  // 📱 Text the tenant: a ready text at once, the AI's version when it answers (the owner sends it from Messages).
+  function openTenantText(job: JobRecord) {
+    const t = tenantInfo(job);
+    const sum = jobSummary(jobScope(job));
+    const jobWords = sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(job).replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120);
+    const ready = tenantTextDraft({ name: t.name, address: jobAddress(job), apt: t.apt, job: jobWords });
+    const id = jobId(job);
+    setTenantText({ id, text: ready, ai: "✨ Writing it with AI…" });
+    void fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      question: "Write one short, friendly text message (SMS, under 300 characters, no emojis, no markdown) from Jot at United Angel Construction to the tenant: HPD sent us to do the repair described; say the job in plain words; ask for a good day and time to come; ask them to text or call back. Use their first name if given. Return only the message.",
+      facts: { tenantFirstName: (t.name || "").split(/\s+/)[0] || null, address: jobAddress(job).replace(/,\s*\d{5}$/, ""), apartment: t.apt || null, job: jobWords, company: "United Angel Construction" },
+    }) }).then((r) => r.json()).then((d) => {
+      const text = String(d?.text || "").replace(/^"|"$/g, "").trim();
+      setTenantText((cur) => (cur && cur.id === id ? (d?.ai && text && text.length <= 480 ? { ...cur, text, ai: "✨ Written by AI. Read it, change anything, then open it in Messages and press Send there." } : { ...cur, ai: "" }) : cur));
+    }).catch(() => setTenantText((cur) => (cur && cur.id === id ? { ...cur, ai: "" } : cur)));
+  }
+  function markTenantTexted(job: JobRecord) {
+    const id = jobId(job);
+    const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, "Texted the tenant", null) };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    window.setTimeout(() => setTenantText(null), 800);
+  }
+  function markTenantReplied(job: JobRecord) {
+    const id = jobId(job);
+    const patch = { TenantRepliedAt: new Date().toISOString(), FieldVisitHistory: visitHistoryWith(job, "The tenant replied", null) };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+  }
 
   // Check again when the jobs arrive, a card closes, or you come back to the app from Waze / Google (the phone may not
   // report a new position when you're standing still).
@@ -4223,8 +4256,32 @@ export default function FieldCommandClient() {
                   </div>
                   <div className="jc-fact jc-fact-wide">
                     <small>Tenant</small>
+                    {/* Text the tenant: what was done, then the one button (owner, 22 Oct). */}
+                    {tenant.phone && !tenant.commonArea ? (() => {
+                      const step = tenantStep(selectedJob as Record<string, unknown>);
+                      const t = (iso: string) => new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
+                      return (
+                        <div className="jc-tenant-text" data-hpd-smoke="jc-tenant-text">
+                          {step.state !== "none" ? <p className={`jc-tenant-step is-${step.state}`} data-hpd-smoke="jc-tenant-step">📱 Texted {t(step.textedAt)}{step.repliedAt ? ` · replied ${t(step.repliedAt)}` : ""} · {step.why}</p> : null}
+                          <div>
+                            <button type="button" data-hpd-smoke="jc-text-tenant" onClick={() => openTenantText(selectedJob)}>📱 {step.textedAt ? "Text again" : "Text tenant"}</button>
+                            {step.state === "waiting" ? <button type="button" data-hpd-smoke="jc-tenant-replied" onClick={() => markTenantReplied(selectedJob)}>They replied</button> : null}
+                          </div>
+                          {tenantText?.id === jobId(selectedJob) ? (
+                            <div className="jc-tenant-draft" data-hpd-smoke="jc-tenant-draft">
+                              <small>{tenantText.ai || "Read it, change anything, then open it in Messages and press Send there."}</small>
+                              <textarea rows={6} data-hpd-smoke="jc-tenant-draft-text" value={tenantText.text} onChange={(e) => setTenantText({ ...tenantText, text: e.target.value })} />
+                              <div>
+                                <a className="is-send" data-hpd-smoke="jc-tenant-open-sms" href={smsHref(tenant.phone, tenantText.text)} onClick={() => markTenantTexted(selectedJob)}>📱 Open in Messages</a>
+                                <button type="button" onClick={() => setTenantText(null)}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })() : null}
                     <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in with Google (Storage page) to see" : "Not listed")}</strong>
-                    {tenant.phone ? <span>{tenant.phone} <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
+                    {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
                   </div>
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}

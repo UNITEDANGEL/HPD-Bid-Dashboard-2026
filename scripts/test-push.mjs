@@ -245,3 +245,27 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(parseCommand("I want to see the map").intent, "search", "'want' alone isn't won");
   console.log("PASS won misheard as want: with 'jobs' and a day it's the wins; 'read me the description' reads each one");
 }
+
+// 📱 Text the tenant: the ready text, the Messages link, and when to call (22 Oct).
+{
+  const { tenantTextDraft, smsHref, tenantStep } = await loadLib("tenant-text");
+  const text = tenantTextDraft({ name: "NELLY ROSERIO", address: "707 EAST 189 STREET, 10458", apt: "3B", job: "Door closer · 1 door" });
+  assert.equal(text, "Hi Nelly, this is Jot from United Angel Construction. HPD sent us to do a repair at 707 EAST 189 STREET, apt 3B: Door closer, 1 door. When is a good day and time for us to come? Please text or call back at this number. Thank you!");
+  assert.equal(smsHref("(347) 555-0100", "Hi there", "iPhone"), "sms:3475550100&body=Hi%20there");
+  assert.equal(smsHref("347-555-0100", "Hi", "Android"), "sms:3475550100?body=Hi");
+  const texted = "2026-10-22T19:40:00Z"; // Thu 3:40 PM NY
+  assert.equal(tenantStep({}).state, "none");
+  assert.equal(tenantStep({ TenantTextedAt: texted }, Date.parse("2026-10-22T22:00:00Z")).state, "waiting", "same day: wait");
+  assert.equal(tenantStep({ TenantTextedAt: texted }, Date.parse("2026-10-23T12:30:00Z")).state, "call", "next morning 8:30: call");
+  assert.equal(tenantStep({ TenantTextedAt: texted }, Date.parse("2026-10-23T11:00:00Z")).state, "waiting", "next day before 8 AM: not yet");
+  assert.equal(tenantStep({ TenantTextedAt: texted, TenantRepliedAt: "2026-10-22T20:00:00Z" }, Date.parse("2026-10-22T20:05:00Z")).state, "call", "they replied: call back");
+  assert.equal(tenantStep({ TenantTextedAt: texted, FieldArrivedAt: "2026-10-23T14:00:00Z" }, Date.parse("2026-10-23T15:00:00Z")).state, "none", "visited: nothing to do");
+  // The phone reminder: once per text, working hours.
+  const recs = { EQ17776: { TenantTextedAt: texted } };
+  const a = await findAlerts({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse("2026-10-23T13:30:00Z"), loadLib, records: recs, addresses: { EQ17776: "707 EAST 189 STREET, 10458" } });
+  const call = a.filter((x) => /Call the tenant/.test(x.title));
+  assert.equal(call.length, 1);
+  assert.equal(call[0].title, "📞 Call the tenant at 707 EAST 189 STREET");
+  assert.equal((await findAlerts({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse("2026-10-23T13:30:00Z"), loadLib, records: recs, addresses: {} })).find((x) => /Call the tenant/.test(x.title)).key, call[0].key, "same key: sent once");
+  console.log(`PASS tenant text: "${text.slice(0, 60)}…", Messages link (iPhone / Android), wait same day, call next morning / after a reply, nothing after a visit; phone reminder once`);
+}
