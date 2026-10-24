@@ -2488,10 +2488,10 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 
 /* Job status line: Awarded -> Work done -> Paperwork sent -> HPD closed -> Paid. */
 .jc-journey { grid-column: 1 / -1; margin: 0 0 8px; }
-.jc-journey ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+.jc-journey ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
 .jc-journey li { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 6px 2px 5px; border-radius: 8px; background: #1e293b; color: #94a3b8; min-width: 0; }
 .jc-journey li i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 900 13px/1 system-ui; font-style: normal; border: 2px solid #475569; background: #0f172a; }
-.jc-journey li b { font: 800 11px/1.15 system-ui; color: #cbd5e1; overflow-wrap: anywhere; }
+.jc-journey li b { font: 800 10px/1.15 system-ui; color: #cbd5e1; overflow-wrap: normal; word-break: keep-all; hyphens: auto; }
 .jc-journey li small { font: 600 10px/1.2 system-ui; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .jc-journey li.is-done { background: #052e16; }
 .jc-journey li.is-done i { background: #16a34a; border-color: #16a34a; color: #fff; }

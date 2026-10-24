@@ -1,9 +1,9 @@
-// Where a job stands, in one line of five steps: Awarded -> Work done -> Paperwork sent -> HPD closed ->
-// Paid. From the job (award, field outcome and dates, package approved / emailed, paperwork found in Sent
+// Where a job stands, in one line of six steps: Awarded -> Tenant -> Work done -> Paperwork sent -> HPD closed ->
+// Paid. (Tenant added 23 Oct: texted / replied / appointment set.) From the job (award, field outcome and dates, package approved / emailed, paperwork found in Sent
 // mail, HPD's closing reason), HPD's rejection notices and PIP's paid / not paid.
 
 export type StageTone = "done" | "now" | "todo" | "bad";
-export type Stage = { key: "awarded" | "work" | "paperwork" | "closed" | "paid"; label: string; detail: string; tone: StageTone };
+export type Stage = { key: "awarded" | "tenant" | "work" | "paperwork" | "closed" | "paid"; label: string; detail: string; tone: StageTone };
 export type StagePip = { status: string; paid: number; outstanding: number; closed: boolean };
 export type StageRejection = { at: string; reason: string; answered: boolean; pay: string };
 
@@ -58,7 +58,17 @@ export function jobStages(job: Record<string, unknown>, pip?: StagePip | null, r
   else if (pip && pip.closed) paid = { key: "paid", label: "Not paid", detail: "closed with $0", tone: "bad" };
   else paid = { key: "paid", label: "Paid", detail: "not in PIP yet", tone: "todo" };
 
-  return [awarded, work, paperwork, closed, paid];
+  // The tenant: a time to come (texted -> replied -> appointment). Done once there's an appointment or the work is done.
+  const appt = job.Appointment as { date?: string; start?: string; state?: string } | undefined;
+  const hasAppt = Boolean(appt && ["requested", "confirmed"].includes(String(appt.state)) && appt.date);
+  let tenant: Stage;
+  if (work.tone === "done" || work.tone === "now") tenant = { key: "tenant", label: "Tenant", detail: hasAppt ? `appt ${shortDay(appt!.date)}` : "reached", tone: "done" };
+  else if (hasAppt) tenant = { key: "tenant", label: "Appointment", detail: `${shortDay(appt!.date)} ${s(appt!.start)}`.trim(), tone: "done" };
+  else if (s(job.TenantRepliedAt)) tenant = { key: "tenant", label: "Tenant replied", detail: `${shortDay(job.TenantRepliedAt)}: book a time`, tone: "now" };
+  else if (s(job.TenantTextedAt)) tenant = { key: "tenant", label: "Tenant texted", detail: `${shortDay(job.TenantTextedAt)}, waiting`, tone: "now" };
+  else tenant = { key: "tenant", label: "Tenant", detail: "text for a time", tone: "todo" };
+
+  return [awarded, tenant, work, paperwork, closed, paid];
 }
 
 // The one thing to do next (the first step that isn't done).
@@ -67,5 +77,6 @@ export function nextStep(stages: Stage[]) {
   if (!st) return "All done: paid.";
   if (st.tone === "bad" && st.key === "paperwork") return "Fix and resend the rejected paperwork.";
   if (st.tone === "bad" && st.key === "paid") return "HPD closed it with $0 paid: dispute it with HPD.";
+  if (st.key === "tenant") return st.tone === "now" && /replied/i.test(st.label) ? "Call the tenant and set the appointment." : st.tone === "now" ? "Waiting for the tenant to answer (call after a day)." : "Text the tenant for a day and time.";
   return ({ awarded: "Check the award.", work: "Do the work (or record the visit).", paperwork: "Send the paperwork to HPD.", closed: "Waiting for HPD to close it.", paid: "Waiting for payment (check PIP)." } as const)[st.key];
 }
