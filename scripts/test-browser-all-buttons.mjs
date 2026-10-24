@@ -113,7 +113,10 @@ try {
   const menuButton = page.locator('[aria-label="Show map controls"], [aria-label*="menu" i]').first();
   const menuItems = ["fc-summary-open", "fc-stats-menu-open", "fc-tracker-open", "fc-autopilot-open", "fc-test-job-open"];
   for (const item of menuItems) {
-    if (await menuButton.count()) { await menuButton.click().catch(() => {}); await page.waitForTimeout(500); }
+    // Open the menu until the item shows (a tap on the menu button toggles it, so a menu left open would close).
+    const entry = page.locator(`[data-hpd-smoke="${item}"]`);
+    for (let k = 0; k < 3 && !(await entry.isVisible().catch(() => false)); k++) { if (await menuButton.count()) await menuButton.click().catch(() => {}); await page.waitForTimeout(500); }
+    await entry.scrollIntoViewIfNeeded().catch(() => {});
     await tap(`menu: ${item}`, `[data-hpd-smoke="${item}"]`, 1200);
     if (item === "fc-test-job-open") { await checkLinks("TEST-0001 card"); } else await close();
   }
