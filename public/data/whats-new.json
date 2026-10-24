@@ -15,7 +15,8 @@
         "🎤📱 With the text service on, say \"text the tenant for EQ15239\": it reads you the text, and \"yes\" sends it.",
         "💬📅 When a tenant texts back a day and time, the app offers it as the appointment; one Yes saves it and texts them the confirmation.",
         "🗣📱 Say \"tell the tenant we'll be there at 10\": your words go to the tenant (the one who texted last, or the job you name), after your yes.",
-        "❓ Not sure what to say? Tap ❓ in the helper (or ask \"what can you do?\") for examples you can tap."
+        "❓ Not sure what to say? Tap ❓ in the helper (or ask \"what can you do?\") for examples you can tap.",
+        "📞 Ask \"which tenants haven't answered?\": the tenants you texted who didn't reply, oldest first, with Call buttons."
       ]
     },
     {

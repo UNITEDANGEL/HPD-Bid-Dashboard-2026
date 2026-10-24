@@ -40,6 +40,8 @@ try {
     if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
     await page.evaluate((s) => { window.__hear = s; window.__said = []; }, sentence);
     for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {}); // an alert can sit over the 🎤
+    // The package screen opens by itself a few seconds after "I finished … yes": step back from it before the 🎤.
+    for (let i = 0; i < 3 && (await page.locator('[data-hpd-smoke="fc-package-sheet"]').count()); i++) { await page.evaluate(() => document.querySelector('[data-hpd-smoke="fc-package-sheet-back"]')?.click()); await page.waitForTimeout(300); }
     await mic.click();
     try { await page.waitForFunction((re) => new RegExp(re).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), expect.source, { timeout: 20000 }); } catch (e) { throw new Error(`"${sentence}": got "${await reply.innerText().catch(() => "(no answer panel)")}" / search box "${await page.locator('[data-hpd-smoke="fc-search"]').inputValue()}"`); }
     await page.waitForFunction(() => window.__said.length > 0, null, { timeout: 5000 });

@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "tell-tenant"; ref: string; message: string }
   | { intent: "week" }
@@ -58,6 +59,8 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".
+  if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // ❓ "What can you do?" / "help" (23 Oct): the examples list.
   if (/^(help|what can (you|i) (do|say|ask)|what do you do|how do i use (you|this)|what are you able to do)\b/.test(t)) return { intent: "help" };
   // Your own words to the tenant (23 Oct): "tell the tenant we'll be there at 10", "reply to the tenant for EQ15239:

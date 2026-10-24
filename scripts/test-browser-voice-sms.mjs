@@ -41,7 +41,10 @@ try {
     if (has) { JOB = id; break; }
   }
   assert.ok(JOB, "a to-do job with a tenant phone");
+  // Alerts and the helper's panel can sit over buttons on a slow machine: OK / close them first, as the owner would.
+  const clear = async () => { for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {}); };
   const say = async (s, re) => {
+    await clear();
     if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
     await page.evaluate((x) => { window.__hear = x; }, s);
     await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
@@ -56,14 +59,21 @@ try {
   assert.match(sent[0].text, /HPD sent us to do a repair at/);
   const rec = await page.evaluate((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j], JOB);
   assert.ok(rec?.TenantTextedAt, "the job is marked texted");
+  // Who hasn't answered: that tenant, with a Call button.
+  const waiting = await say("which tenants haven't answered", /hasn't answered|haven't answered/);
+  assert.match(waiting, /^1 tenant hasn't answered/);
+  assert.ok(await page.locator('[data-hpd-smoke="fc-agent-action"][href^="tel:"]').count() >= 1, "a Call button");
   // On the card: "Send it now" asks for a second tap.
   if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   await page.locator('[data-hpd-smoke="jc-text-tenant"]').scrollIntoViewIfNeeded();
+  await clear();
   await page.locator('[data-hpd-smoke="jc-text-tenant"]').click();
   const btn = page.locator('[data-hpd-smoke="jc-tenant-send-sms"]');
+  await clear();
   await btn.click();
   assert.match(await btn.innerText(), /Tap again/);
   assert.equal(sent.length, 1, "first tap only arms");
+  await clear();
   await btn.click();
   await page.locator('[data-hpd-smoke="jc-tenant-sms-status"]', { hasText: "Sent to ***1234" }).waitFor({ timeout: 10000 });
   assert.equal(sent.length, 2);

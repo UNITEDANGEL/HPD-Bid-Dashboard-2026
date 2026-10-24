@@ -563,7 +563,7 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
 const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
-  ["Tenants", ["text the tenant", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
+  ["Tenants", ["text the tenant", "which tenants haven't answered", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "read me the new bids", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
 ];
@@ -1368,7 +1368,7 @@ export default function FieldCommandClient() {
   // The last things said to the AI and its answers (this session), for follow-up questions.
   const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
-  const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string } | null>(null);
+  const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
   const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
   // An appointment said to the helper, waiting for your yes.
@@ -2863,7 +2863,7 @@ export default function FieldCommandClient() {
     const jobWords = sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(job).replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120);
     const ready = tenantTextDraft({ name: t.name, address: jobAddress(job), apt: t.apt, job: jobWords });
     const id = jobId(job);
-    setTenantText({ id, text: ready, ai: "✨ Writing it with AI…" });
+    setTenantText({ id, text: ready, ai: "✨ Writing it with AI…", at: Date.now() });
     void fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
       question: "Write one short, friendly text message (SMS, under 300 characters, no emojis, no markdown) from Jot at United Angel Construction to the tenant: HPD sent us to do the repair described; say the job in plain words; ask for a good day and time to come; ask them to text or call back. Use their first name if given. Return only the message.",
       facts: { tenantFirstName: (t.name || "").split(/\s+/)[0] || null, address: jobAddress(job).replace(/,\s*\d{5}$/, ""), apartment: t.apt || null, job: jobWords, company: "United Angel Construction" },
@@ -2877,7 +2877,9 @@ export default function FieldCommandClient() {
     const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, "Texted the tenant", null) };
     try { writeSharedWorkflowPatch(id, patch); } catch {}
     mergeWorkflowPatchIntoScreen(id, patch);
-    window.setTimeout(() => setTenantText(null), 800);
+    // Close the text box that was open when it went (not one opened in the meantime).
+    const sentAt = Date.now();
+    window.setTimeout(() => setTenantText((cur) => (cur && (cur.at || 0) <= sentAt ? null : cur)), 800);
   }
   function markTenantReplied(job: JobRecord) {
     const id = jobId(job);
@@ -3859,6 +3861,19 @@ export default function FieldCommandClient() {
       if (!bidsOpen) { answer("Open the bids first, then say come back after sending one."); return; }
       window.dispatchEvent(new Event("hpd-bid-come-back"));
       answer("Back to the bid you just sent.");
+      return;
+    }
+    if (cmd.intent === "tenants-waiting") {
+      // Tenants texted with no answer (23 Oct): oldest text first, with Call buttons; "the first one" then works on them.
+      const rows = jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ j, st: tenantStep(j as Record<string, unknown>) }))
+        .filter((x) => (x.st.state === "waiting" || x.st.state === "call") && !x.st.repliedAt && !activeAppointment(x.j as Record<string, unknown>))
+        .sort((a, b) => Date.parse(a.st.textedAt) - Date.parse(b.st.textedAt));
+      if (!rows.length) { answer("No tenants waiting: everyone you texted has answered, or nobody was texted yet."); return; }
+      lastJobsRef.current = { ids: rows.slice(0, 5).map((x) => jobId(x.j)), at: Date.now() };
+      const md = (iso: string) => new Date(iso).toLocaleDateString("en-US", { weekday: "short", timeZone: "America/New_York" });
+      const list = rows.slice(0, 3).map((x) => `${jobAddress(x.j).replace(/,\s*\d{5}$/, "")} (texted ${md(x.st.textedAt)})`);
+      showPanel({ heard, reply: `${rows.length} tenant${rows.length === 1 ? " hasn't" : "s haven't"} answered${rows.some((x) => x.st.state === "call") ? ": time to call" : ""}. ${list.join("; ")}${rows.length > 3 ? `, and ${rows.length - 3} more` : ""}.`,
+        actions: rows.slice(0, 3).filter((x) => tenantInfo(x.j).phone).map((x) => ({ label: `📞 ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: `tel:${tenantInfo(x.j).phone.replace(/[^\d+]/g, "")}` })) });
       return;
     }
     if (cmd.intent === "help") {

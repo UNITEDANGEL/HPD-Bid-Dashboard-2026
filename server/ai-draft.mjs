@@ -85,7 +85,7 @@ const ASK_SYSTEM = [
   "  action that starts with 'DO: ' followed by exactly one of these commands (the app runs it and asks for a yes or a tap",
   "  where needed): 'text the tenant for <job>', 'call the tenant for <job>', 'take me to <job>', 'take me to the next stop',",
   "  'open <job>', 'read me <job>', 'plan my day', 'answer the notice for <job>', 'do the paperwork for <job>',",
-  "  'make an appointment for <job> <day> at <time>', 'remind me to <what> <day> at <time>', 'read me the new bids', \"what's left on <job>\", 'how much does HPD owe me', 'how did I do this week', 'show my job tracker',",
+  "  'make an appointment for <job> <day> at <time>', 'remind me to <what> <day> at <time>', 'read me the new bids', \"what's left on <job>\", 'how much does HPD owe me', 'how did I do this week', 'show my job tracker', \"which tenants haven't answered\",",
   "  'what do I have today'. <job> is a job number from the facts, e.g. EQ15239; <day> is today, tomorrow, a weekday or",
   "  10/27; <time> is like 10am or 2:30pm. Put the spoken answer first, then the DO lines. At most 3 DO lines.",
 ].join("\n");
