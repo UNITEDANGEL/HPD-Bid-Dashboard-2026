@@ -88,6 +88,10 @@ try {
   // 5. Money: what PIP shows HPD still owes.
   const owed = await say("how much does HPD owe me", /HPD owes you \$[\d,]+ on \d+ jobs? in PIP|PIP shows nothing owed/);
   console.log(`  money: ${owed.slice(0, 160)}`);
+  // Rejections holding money, the ones to fix first, with Fix buttons.
+  const rej = await say("which rejections do I have", /rejections? hold \$[\d,]+|No payment rejections/);
+  console.log(`  rejections: ${rej.slice(0, 160)}`);
+  if (/to fix/.test(rej)) assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^\/paperwork\/\?job=[A-Z]{2}\d{5}&fix=.*&auto=1$/);
 
   // 6. A job start to finish: the appointment made above shows as done, and what's left comes next.
   const status = await say(`what's left on ${JOB}`, new RegExp(`${JOB} at .*Done:`));

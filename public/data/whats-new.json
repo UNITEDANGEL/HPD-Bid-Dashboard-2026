@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 24, 2026",
+      "title": "Rejections by voice",
+      "items": [
+        "🔧 Ask \"which rejections do I have?\": what HPD's rejections are holding, the biggest to fix first, with Fix buttons that open each correction."
+      ]
+    },
+    {
       "date": "Oct 23, 2026",
       "title": "🧭 Job tracker",
       "items": [

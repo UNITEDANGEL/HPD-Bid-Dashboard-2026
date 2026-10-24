@@ -565,7 +565,7 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
-  ["Money and bids", ["how much does HPD owe me", "read me the new bids", "what should I bid", "how did I do this week"]],
+  ["Money and bids", ["how much does HPD owe me", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
 ];
 
@@ -4080,6 +4080,19 @@ export default function FieldCommandClient() {
       else if (!pay && (fu?.sentAt || approved)) left.push("wait for it to show in PIP");
       openIssueJob(found, true);
       answer(`${id} at ${where}. Done: ${done.length ? done.join(", ") : "nothing yet"}. ${left.length ? `Left: ${left.join(", then ")}.` : "Nothing left: it's finished and paid."}`);
+      return;
+    }
+    if (cmd.intent === "rejections") {
+      // "Which rejections do I have?" (24 Oct): HPD's payment rejections still holding money, the ones to fix first,
+      // biggest amounts first, each with a Fix button (the correction opens ready to preview).
+      const held = payTrack.rows.filter((r) => r.status === "held");
+      if (!held.length) { answer("No payment rejections holding money right now."); return; }
+      const toFix = held.filter((r) => r.next === "fixed").sort((a, b) => b.held - a.held);
+      const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+      const list = (toFix.length ? toFix : held).slice(0, 3);
+      lastJobsRef.current = { ids: list.map((r) => r.omo), at: Date.now() };
+      showPanel({ heard, reply: `${held.length} rejection${held.length === 1 ? "" : "s"} hold ${usd(payTrack.summary.held)}${toFix.length ? `; ${toFix.length} to fix` : ""}. ${list.map((r) => `${r.omo}${r.held ? `, ${usd(r.held)}` : ""}: ${((c) => (c.length >= 12 ? c : "reason not clear, see HPD's notice"))(r.reason.replace(/\b(?:[A-Z0-9#.,:/-]+\s+){2,}/g, " ").replace(/\b[A-Z0-9#.,:/-]+$/, "").replace(/\s+/g, " ").trim()).slice(0, 70)}`).join("; ")}.`,
+        actions: list.filter((r) => toFix.includes(r)).map((r) => ({ label: `🔧 Fix ${r.omo}`, href: `/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1` })) });
       return;
     }
     if (cmd.intent === "money") {

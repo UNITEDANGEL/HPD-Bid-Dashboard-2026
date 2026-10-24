@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "rejections" }
   | { intent: "tenant-texts" }
   | { intent: "appointments"; when: "today" | "tomorrow" | "all" }
   | { intent: "no-bid"; reason: string }
@@ -149,6 +150,8 @@ export function parseCommand(heard: string): AgentCommand {
     const job = (/\b([a-z]{2})\s?(\d{5})\b/i.exec(t) || []).slice(1, 3).join("").toUpperCase();
     return { intent: "job-status", ref: job || refOf(t.replace(/\b(what'?s left|what is left|where are we|where do we stand|status of|how far along|track|what'?s next on|what is next on|with|on|for|the|this|job)\b/g, " ")) };
   }
+  // Payment rejections (24 Oct): "which rejections do I have", "what's rejected", "rejections to fix".
+  if (/\b(rejections?|rejected)\b/.test(t) && !/\bfix (the )?rejection for\b/.test(t)) return { intent: "rejections" };
   // Money (23 Oct): "how much does HPD owe me", "what's outstanding", "did I get paid", "money report".
   if (/\b(owe|owes|owed|outstanding|money report|get paid|got paid|been paid|payments?)\b/.test(t) && !/\b(bid|price)\b/.test(t)) return { intent: "money" };
   if (/\b(bids?|invitations?)\b/.test(t) && /\b(read|new|what|any|tell|how many|list)\b/.test(t)) return { intent: "bids" };
