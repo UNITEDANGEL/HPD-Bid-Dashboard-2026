@@ -12,7 +12,7 @@ import JobSafeLine from "./JobSafeLine";
 import { nextRouteStop, type RouteJob, type RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { activeAppointment, appointmentCalendarHref, appointmentConflicts, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, validateAppointment, type Appointment } from "../../lib/appointments";
-import { hourAfter } from "../../lib/voice-when";
+import { hourAfter, parseWhen } from "../../lib/voice-when";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
@@ -2881,12 +2881,14 @@ export default function FieldCommandClient() {
   const [smsSend, setSmsSend] = useState<{ id: string; armed: boolean; status: string } | null>(null);
   useEffect(() => { void fetch("/api/drive/session", { cache: "no-store" }).then((r) => r.json()).then((d) => setSmsReady(Boolean(d?.smsReady && d?.connected))).catch(() => {}); }, []);
   // One text from the business number; marks the job texted when it goes. Returns what to show / say.
-  async function smsNow(job: JobRecord, text: string): Promise<{ sent: boolean; message: string }> {
+  // confirm: the appointment confirmation (it doesn't restart the "waiting for an answer" clock).
+  async function smsNow(job: JobRecord, text: string, confirm = false): Promise<{ sent: boolean; message: string }> {
     try {
       const r = await fetch("/api/drive/tenant-sms", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: tenantInfo(job).phone, text }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.reason || d.error || `HTTP ${r.status}`);
-      markTenantTexted(job);
+      if (confirm) { const id = jobId(job); const patch = { TenantConfirmedAt: new Date().toISOString(), FieldVisitHistory: visitHistoryWith(job, "Texted the tenant the appointment", null) }; try { writeSharedWorkflowPatch(id, patch); } catch {} mergeWorkflowPatchIntoScreen(id, patch); }
+      else markTenantTexted(job);
       return { sent: true, message: `✓ Sent to ${d.to}. Their answer comes back here.` };
     } catch (e) {
       return { sent: false, message: `Not sent: ${e instanceof Error ? e.message : "error"}` };
@@ -2922,6 +2924,18 @@ export default function FieldCommandClient() {
       for (const m of replies) {
         const job = jobsRef.current.find((j) => { const ph = last10(tenantInfo(j).phone); return ph.length === 10 && ph === last10(m.from); });
         if (job) markTenantReplied(job);
+        // Their answer names a day and time ("Thursday at 10 works"): offer it as the appointment (23 Oct, plan step 4).
+        const when = job ? parseWhen(m.body) : null;
+        if (job && when?.date && when.time) {
+          const t = tenantInfo(job);
+          const appt: Appointment = { date: when.date, start: when.time, end: hourAfter(when.time), state: "confirmed", contact: t.name || "Tenant", phone: t.phone || "", note: `Tenant texted: ${m.body.slice(0, 120)}`, reminder: 60 };
+          try {
+            validateAppointment(appt);
+            pendingApptRef.current = { id: jobId(job), appt };
+            pendingRef.current = { id: jobId(job), outcome: "APPOINTMENT", at: Date.now() };
+            setAgent({ heard: `💬 ${t.name?.split(/\s+/)[0] || "The tenant"}: "${m.body.slice(0, 160)}"`, reply: `Make the appointment at ${jobAddress(job).replace(/,\s*\d{5}$/, "")} on ${appointmentLabel(appt)}? Say yes, or tap Yes.`, confirm: { id: jobId(job), outcome: "APPOINTMENT" } });
+          } catch { /* a time that doesn't work: the reply alert is enough */ }
+        }
         window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));
       }
     };
@@ -3740,6 +3754,12 @@ export default function FieldCommandClient() {
         const hello = first && first.length > 1 ? `Hi ${first[0].toUpperCase()}${first.slice(1).toLowerCase()}` : "Hello";
         const text = `${hello}, this is Jot from United Angel Construction. We are scheduled to come to ${where}${t.apt ? `, apt ${t.apt.replace(/^apt\.?\s*/i, "")}` : ""} on ${appointmentLabel(p.appt).replace(" · ", " between ").replace("–", " and ")} for the HPD repair. Please reply to confirm. Thank you.`;
         const actions: { label: string; href: string }[] = [];
+        // Text service on: the confirmation goes to the tenant by itself (owner, 23 Oct: the AI can text for me).
+        if (smsReady && t.phone && !t.commonArea) {
+          actions.push({ label: "🔔 Add to Calendar", href: appointmentCalendarHref(jobId(job), jobAddress(job), { ...p.appt, phone: "" }, window.location.origin) });
+          void smsNow(job, text, true).then((r) => showPanel({ heard, reply: `Saved: ${where} on ${appointmentLabel(p.appt)}. ${r.sent ? `I texted ${first || "the tenant"} the time.` : `The text didn't go (${r.message.replace(/^Not sent: /, "")}).`} Add it to your calendar so your phone reminds you.`, actions }));
+          return;
+        }
         if (t.phone && !t.commonArea) actions.push({ label: `📱 Text ${first || "the tenant"} the time`, href: smsHref(t.phone, text) });
         actions.push({ label: "🔔 Add to Calendar", href: appointmentCalendarHref(jobId(job), jobAddress(job), { ...p.appt, phone: "" }, window.location.origin) });
         showPanel({ heard, reply: `Saved: ${where} on ${appointmentLabel(p.appt)}. ${actions.length > 1 ? "Text the tenant the time (you press Send in Messages), and add it to your calendar so your phone reminds you." : "There's no tenant phone on file; add it to your calendar so your phone reminds you."}`, actions });
@@ -5536,7 +5556,7 @@ export default function FieldCommandClient() {
           <div>
             {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); }}>{a.label}</a>)}
             {agent.confirm ? <>
-              <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>✅ Yes, save it</button>
+              <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
             </> : null}
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>

@@ -12,7 +12,8 @@
         "👤 Job cards show the tenant step: texted, replied or appointment set, and what to do next.",
         "📱 In the job tracker, tap 📱 next to a job to text its tenant right away.",
         "⚡ Upgrades reach your phone faster (the checks before each update run three at a time).",
-        "🎤📱 With the text service on, say \"text the tenant for EQ15239\": it reads you the text, and \"yes\" sends it."
+        "🎤📱 With the text service on, say \"text the tenant for EQ15239\": it reads you the text, and \"yes\" sends it.",
+        "💬📅 When a tenant texts back a day and time, the app offers it as the appointment; one Yes saves it and texts them the confirmation."
       ]
     },
     {
