@@ -559,6 +559,15 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
   );
 }
 
+// What the helper understands, as examples to tap (23 Oct "what can I say").
+const AGENT_EXAMPLES: [string, string[]][] = [
+  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "show my job tracker"]],
+  ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
+  ["Tenants", ["text the tenant", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
+  ["Money and bids", ["how much does HPD owe me", "read me the new bids", "how did I do this week"]],
+  ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
+];
+
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1344,6 +1353,7 @@ export default function FieldCommandClient() {
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number }>({ today: 0, tomorrow: 0, open: 0 });
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
+  const [helpOpen, setHelpOpen] = useState(false);
   const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
@@ -3851,6 +3861,11 @@ export default function FieldCommandClient() {
       answer("Back to the bid you just sent.");
       return;
     }
+    if (cmd.intent === "help") {
+      setHelpOpen(true);
+      answer("Here's what you can say. Tap one to try it, or just say it your own way.");
+      return;
+    }
     if (cmd.intent === "tell-tenant") {
       // Your own words to the tenant (23 Oct). Which job: the one named, else the tenant who texted last (2 days), else
       // the job on screen. Text service on: read back, sent after your yes; otherwise Messages opens with it.
@@ -5577,6 +5592,17 @@ export default function FieldCommandClient() {
         <div className="fc-agent" role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
           <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>
           <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
+          {/* ❓ What can I say (23 Oct): example sentences by topic; tap one to run it. */}
+          {helpOpen ? (
+            <div className="fc-agent-help" data-hpd-smoke="fc-agent-help">
+              {AGENT_EXAMPLES.map(([topic, list]) => (
+                <div key={topic}>
+                  <b>{topic}</b>
+                  <div>{list.map((ex) => <button key={ex} type="button" data-hpd-smoke="fc-agent-example" onClick={() => { setHelpOpen(false); agentRef.current(ex); }}>{ex}</button>)}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
             {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); }}>{a.label}</a>)}
@@ -5585,7 +5611,8 @@ export default function FieldCommandClient() {
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
             </> : null}
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
+            <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>
         </div>
       ) : null}

@@ -3476,3 +3476,8 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-morning b { color: #fde68a; }
 .fc-tracker-list li.has-text { display: grid; grid-template-columns: 1fr 48px; gap: 4px; }
 .fc-tracker-text { border-radius: 10px; border: 1px solid #1d4ed8; background: #1e3a8a; color: #fff; font-size: 20px; }
+/* ❓ What can I say (23 Oct). */
+.fc-agent-help { display: grid; gap: 8px; margin: 6px 0; max-height: 42vh; overflow-y: auto; }
+.fc-agent-help b { display: block; margin-bottom: 4px; color: #93c5fd; font: 900 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+.fc-agent-help > div > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-agent-help button { min-height: 36px; padding: 4px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font: 700 13px system-ui, sans-serif; text-align: left; }
