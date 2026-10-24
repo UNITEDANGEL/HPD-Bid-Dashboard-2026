@@ -296,7 +296,8 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
 // job (TenantTextedAt on the job's record). The no-answer clock and the "call the tenant" reminder start from it.
 export async function autoTextAwards({ awards, tenants, records, addresses, descriptions, loadLib, env = process.env, now = Date.now(), fetcher = fetch, save }) {
   const done = [];
-  if (!smsReady(env) || env.AUTO_TENANT_TEXT === "off" || !workingHours(now)) return done;
+  // Off from the app's 🤖 Autopilot switch (saved on the status server), or by the AUTO_TENANT_TEXT=off variable.
+  if (!smsReady(env) || env.AUTO_TENANT_TEXT === "off" || records?.["SETTINGS-AUTOPILOT"]?.autoTenantText === false || !workingHours(now)) return done;
   const { tenantTextDraft } = await loadLib("tenant-text");
   const { jobSummary, lineText } = await loadLib("job-summary");
   for (const a of awards) {

@@ -240,6 +240,7 @@ jobs:
             scripts/test-browser-voice-appt.mjs \
             scripts/test-browser-voice-sms.mjs \
             scripts/test-browser-reply-appt.mjs \
+            scripts/test-browser-autopilot.mjs \
             scripts/test-browser-tenant-text.mjs \
             scripts/test-browser-calm.mjs \
             scripts/test-browser-today.mjs \

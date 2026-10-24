@@ -54,6 +54,7 @@ import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
 import { speak, voiceOff } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
+import AutopilotPanel from "./AutopilotPanel";
 import JobTracker, { type TrackerRow } from "./JobTracker";
 import { trackerStage } from "../../lib/job-tracker";
 import NotificationsPanel from "./NotificationsPanel";
@@ -2891,7 +2892,9 @@ export default function FieldCommandClient() {
   // the app (two taps) and the tenants' replies come back here. Not set up: Messages on the phone, as before.
   const [smsReady, setSmsReady] = useState(false);
   const [smsSend, setSmsSend] = useState<{ id: string; armed: boolean; status: string } | null>(null);
-  useEffect(() => { void fetch("/api/drive/session", { cache: "no-store" }).then((r) => r.json()).then((d) => setSmsReady(Boolean(d?.smsReady && d?.connected))).catch(() => {}); }, []);
+  const [aiReady, setAiReady] = useState(false);
+  useEffect(() => { void fetch("/api/drive/session", { cache: "no-store" }).then((r) => r.json()).then((d) => { setSmsReady(Boolean(d?.smsReady && d?.connected)); setAiReady(Boolean(d?.aiReady && d?.connected)); }).catch(() => {}); }, []);
+  const [autopilotOpen, setAutopilotOpen] = useState(false);
   // One text from the business number; marks the job texted when it goes. Returns what to show / say.
   // confirm: the appointment confirmation (it doesn't restart the "waiting for an answer" clock).
   async function smsNow(job: JobRecord, text: string, confirm = false): Promise<{ sent: boolean; message: string }> {
@@ -4147,6 +4150,7 @@ export default function FieldCommandClient() {
         <button type="button" data-hpd-smoke="fc-test-job-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); const test = jobs.find((row) => jobId(row) === TEST_JOB_ID); if (test) openIssueJob(test); }}>🧪 Test job ({TEST_JOB_ID})</button>
         <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
         <button type="button" data-hpd-smoke="fc-tracker-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setTrackerOpen(true); }}><ListIcon />🧭 Job tracker</button>
+        <button type="button" data-hpd-smoke="fc-autopilot-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setAutopilotOpen(true); }}><ListIcon />🤖 Autopilot</button>
         <button type="button" data-hpd-smoke="fc-stats-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setStatsOpen(true); setSelectedJob(null); }}><StatsIcon />My stats</button>
         <button type="button" data-hpd-smoke="fc-bids-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSelectedJob(null); setBidsOpen(true); }}><BidsIcon />Invitations to bid</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
@@ -5691,6 +5695,7 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {autopilotOpen ? <AutopilotPanel smsReady={smsReady} aiReady={aiReady} workerUrl={HPD_STATUS_WORKER_URL} onClose={() => setAutopilotOpen(false)} /> : null}
       {trackerOpen ? <JobTracker rows={trackerRows} onClose={() => setTrackerOpen(false)} onOpen={(id) => { const j = jobs.find((x) => jobId(x) === id); setTrackerOpen(false); if (j) openIssueJob(j, true); }} onText={(id) => { const j = jobs.find((x) => jobId(x) === id); setTrackerOpen(false); if (j) { openIssueJob(j, true); window.setTimeout(() => openTenantText(j), 300); } }} /> : null}
       {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go, n.omo || ""); }} /> : null}
       {ping ? (

@@ -3481,3 +3481,11 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-agent-help b { display: block; margin-bottom: 4px; color: #93c5fd; font: 900 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
 .fc-agent-help > div > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .fc-agent-help button { min-height: 36px; padding: 4px 10px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font: 700 13px system-ui, sans-serif; text-align: left; }
+/* 🤖 Autopilot (23 Oct). */
+.fc-autopilot-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-autopilot-list li { display: grid; gap: 4px; padding: 10px 12px; border-radius: 14px; background: #0f172a; border: 1px solid #1e293b; }
+.fc-autopilot-list li.is-on { border-color: #166534; }
+.fc-autopilot-list b { font: 800 15px system-ui, sans-serif; color: #f8fafc; }
+.fc-autopilot-list small { color: #cbd5e1; font: 600 13px/1.35 system-ui, sans-serif; }
+.fc-autopilot-list button { justify-self: start; min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 14px system-ui, sans-serif; }
+.fc-autopilot-list button.is-on { background: #166534; border-color: #16a34a; }

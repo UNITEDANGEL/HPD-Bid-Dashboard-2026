@@ -111,7 +111,7 @@ try {
     if (await page.locator(pill).first().count()) { await tap(`map pill ${pill}`, pill); await checkLinks(`map pill ${pill}`); await tap(`map pill close ${pill}`, pill, 300); }
   }
   const menuButton = page.locator('[aria-label="Show map controls"], [aria-label*="menu" i]').first();
-  const menuItems = ["fc-summary-open", "fc-stats-menu-open", "fc-test-job-open"];
+  const menuItems = ["fc-summary-open", "fc-stats-menu-open", "fc-tracker-open", "fc-autopilot-open", "fc-test-job-open"];
   for (const item of menuItems) {
     if (await menuButton.count()) { await menuButton.click().catch(() => {}); await page.waitForTimeout(500); }
     await tap(`menu: ${item}`, `[data-hpd-smoke="${item}"]`, 1200);
