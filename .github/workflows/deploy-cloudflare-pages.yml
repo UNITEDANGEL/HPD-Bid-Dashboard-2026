@@ -238,6 +238,7 @@ jobs:
             scripts/test-browser-handoff.mjs \
             scripts/test-browser-mic.mjs \
             scripts/test-browser-voice-appt.mjs \
+            scripts/test-browser-voice-sms.mjs \
             scripts/test-browser-tenant-text.mjs \
             scripts/test-browser-calm.mjs \
             scripts/test-browser-today.mjs \

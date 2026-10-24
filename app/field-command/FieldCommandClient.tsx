@@ -2880,20 +2880,27 @@ export default function FieldCommandClient() {
   const [smsReady, setSmsReady] = useState(false);
   const [smsSend, setSmsSend] = useState<{ id: string; armed: boolean; status: string } | null>(null);
   useEffect(() => { void fetch("/api/drive/session", { cache: "no-store" }).then((r) => r.json()).then((d) => setSmsReady(Boolean(d?.smsReady && d?.connected))).catch(() => {}); }, []);
-  async function sendTenantSms(job: JobRecord, text: string) {
-    const id = jobId(job);
-    if (!smsSend || smsSend.id !== id || !smsSend.armed) { setSmsSend({ id, armed: true, status: "" }); return; }
-    setSmsSend({ id, armed: false, status: "Sending…" });
+  // One text from the business number; marks the job texted when it goes. Returns what to show / say.
+  async function smsNow(job: JobRecord, text: string): Promise<{ sent: boolean; message: string }> {
     try {
       const r = await fetch("/api/drive/tenant-sms", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: tenantInfo(job).phone, text }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.reason || d.error || `HTTP ${r.status}`);
-      setSmsSend({ id, armed: false, status: `✓ Sent to ${d.to}. Their answer comes back here.` });
       markTenantTexted(job);
+      return { sent: true, message: `✓ Sent to ${d.to}. Their answer comes back here.` };
     } catch (e) {
-      setSmsSend({ id, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}` });
+      return { sent: false, message: `Not sent: ${e instanceof Error ? e.message : "error"}` };
     }
   }
+  async function sendTenantSms(job: JobRecord, text: string) {
+    const id = jobId(job);
+    if (!smsSend || smsSend.id !== id || !smsSend.armed) { setSmsSend({ id, armed: true, status: "" }); return; }
+    setSmsSend({ id, armed: false, status: "Sending…" });
+    const r = await smsNow(job, text);
+    setSmsSend({ id, armed: false, status: r.message });
+  }
+  // A text the helper read out, waiting for your yes (text the tenant by voice with the text service on).
+  const pendingSmsRef = useRef<{ id: string; text: string } | null>(null);
   const jobsRef = useRef(jobs);
   jobsRef.current = jobs;
   // Tenants' replies: checked every 2 minutes while the app is open; each one marks the job "replied" and rings you.
@@ -3595,6 +3602,16 @@ export default function FieldCommandClient() {
       if (cmd.intent === "open") { openIssueJob(j); setFindHidden(search); answer(`Here's ${where}.`); return; }
       if (cmd.intent === "text-tenant") {
         if (!t.phone || t.commonArea) { answer(`There's no tenant phone on file for ${where}.`); return; }
+        // Hands-free (23 Oct): with the text service on, the ready text is read out and goes after your yes.
+        if (smsReady) {
+          const sum = jobSummary(jobScope(j));
+          const words = sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(j).replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120);
+          const text = tenantTextDraft({ name: t.name, address: jobAddress(j), apt: t.apt, job: words });
+          pendingSmsRef.current = { id: jobId(j), text };
+          openIssueJob(j);
+          answer(`I'll text ${t.name ? t.name.split(/\s+/)[0] : "the tenant"} at ${where}: "${text}" Say yes to send it.`, { id: jobId(j), outcome: "SMS" });
+          return;
+        }
         openIssueJob(j);
         window.setTimeout(() => openTenantText(j), 300);
         answer(`I wrote a text for ${t.name || "the tenant"} at ${where}. Read it on the job card, then tap Open in Messages and press Send.`);
@@ -3705,6 +3722,13 @@ export default function FieldCommandClient() {
       const p = pendingRef.current; const c = agent?.confirm || (p && Date.now() - p.at < 120000 ? p : null);
       const job = c ? jobs.find((j) => jobId(j) === c.id) : null;
       if (!c || !job) { answer("There's nothing waiting for a yes."); return; }
+      if (c.outcome === "SMS") {
+        const p = pendingSmsRef.current;
+        if (!p || p.id !== c.id) { answer("Say the text again."); return; }
+        pendingSmsRef.current = null;
+        void smsNow(job, p.text).then((r) => answer(r.sent ? `Sent. ${r.message.replace(/^✓ /, "")}` : r.message));
+        return;
+      }
       if (c.outcome === "APPOINTMENT") {
         const p = pendingApptRef.current;
         if (!p || p.id !== c.id) { answer("Say the appointment again, with the day and time."); return; }
