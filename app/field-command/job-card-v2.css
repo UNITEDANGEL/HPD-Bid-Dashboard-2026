@@ -1009,3 +1009,7 @@
 .jc-auto-next div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 #fc-job-card .jc-auto-next button { min-height: 46px; margin: 0; border-radius: 12px; border: 1px solid #34d399; background: transparent; color: #ecfdf5; font: 800 15px system-ui, sans-serif; }
 #fc-job-card .jc-auto-next button.jc-glow { background: #10b981; color: #052e1f; }
+/* 👤 Tenant contact history (23 Oct). */
+.jc-tenant-history { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 3px; }
+.jc-tenant-history li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px; border-radius: 8px; background: #0f172a; font: 650 12.5px/1.3 system-ui, sans-serif; color: #e2e8f0; }
+.jc-tenant-history small { flex: 0 0 auto; color: #94a3b8; font-weight: 700; }

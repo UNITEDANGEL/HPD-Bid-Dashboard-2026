@@ -4961,6 +4961,20 @@ export default function FieldCommandClient() {
                       const t = (iso: string) => new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
                       return (
                         <div className="jc-tenant-text" data-hpd-smoke="jc-tenant-text">
+                          {(() => {
+                            // 👤 Every contact with the tenant (23 Oct): texts, replies, calls, appointments, newest first.
+                            const hist = (Array.isArray(selectedJob.FieldVisitHistory) ? selectedJob.FieldVisitHistory as { recordedAt?: string; outcome?: string | null; note?: string }[] : [])
+                              .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || "")))
+                              .slice(-5).reverse();
+                            if (!hist.length) return null;
+                            const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
+                            const label = (v: { outcome?: string | null; note?: string }) => /^APPOINTMENT_/.test(String(v.outcome || "")) ? `📅 Appointment ${String(v.outcome).replace("APPOINTMENT_", "").toLowerCase()}: ${String(v.note || "").split(" America/")[0]}` : `${/called|talked/i.test(String(v.note)) ? "📞" : /replied/i.test(String(v.note)) ? "💬" : "📱"} ${String(v.note || "").replace(/\.$/, "")}`;
+                            return (
+                              <ul className="jc-tenant-history" data-hpd-smoke="jc-tenant-history">
+                                {hist.map((v, i) => <li key={i}><span>{label(v)}</span><small>{when(v.recordedAt)}</small></li>)}
+                              </ul>
+                            );
+                          })()}
                           {step.state !== "none" ? <p className={`jc-tenant-step is-${step.state}`} data-hpd-smoke="jc-tenant-step">📱 Texted {t(step.textedAt)}{step.repliedAt ? ` · replied ${t(step.repliedAt)}` : ""} · {step.why}</p> : null}
                           <div>
                             <button type="button" data-hpd-smoke="jc-text-tenant" onClick={() => openTenantText(selectedJob)}>📱 {step.textedAt ? "Text again" : "Text tenant"}</button>

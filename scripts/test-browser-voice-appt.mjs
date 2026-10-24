@@ -103,6 +103,15 @@ try {
   assert.equal(callRec?.TenantCallResult, "no-answer");
   await say(`I called the tenant for ${JOB}, they said Friday at 2pm`, /Make the appointment at .* on Fri \d\d\/\d\d · 2–3 PM\?/);
   await say("no", /nothing saved/i);
+  // The job card lists every contact with the tenant, newest first.
+  await say(`open ${JOB}`, /Here's/);
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  const history = page.locator('[data-hpd-smoke="jc-tenant-history"]');
+  await history.waitFor({ timeout: 10000 });
+  const lines = await history.locator("li").allInnerTexts();
+  assert.match(lines[0], /Talked to the tenant: Friday at 2pm/, "newest first");
+  assert.ok(lines.some((l) => /Called the tenant: no answer/.test(l)), "the no-answer call");
+  assert.ok(lines.some((l) => /Appointment requested/.test(l)), "the appointment");
 
   // 8. "What can you do" -> examples by topic; tapping one runs it.
   await say("what can you do", /Here's what you can say/);
