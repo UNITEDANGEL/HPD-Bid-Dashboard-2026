@@ -11,7 +11,7 @@ const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json()
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 const bids = fetched.bids.filter((b) => b.itbFile).slice(0, 2).map((b) => ({ ...b, bidDue: today, bidDueTime: "11:59 PM" }));
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-async function page({ notices, noBids = false, texted = "" }) {
+async function page({ notices, noBids = false, texted = "", midday = false }) {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   // No HPD emails at all: no urgent notice on the board.
   await routePrivate(c, notices ? {} : { conversations: (d) => ({ ...d, threads: [] }) });
@@ -20,6 +20,8 @@ async function page({ notices, noBids = false, texted = "" }) {
   // A tenant texted two days ago with no answer.
   if (texted) await c.addInitScript((j) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({ [j]: { TenantTextedAt: new Date(Date.now() - 2 * 86400000).toISOString(), TenantRepliedAt: "" } })); sessionStorage.setItem("seeded", "1"); } }, texted);
   const p = await c.newPage();
+  // "Call the tenant" only shows from 8 AM (no calls at night): run that case at noon New York today.
+  if (midday) { const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); await p.clock.install({ time: new Date(`${d}T16:00:00Z`) }); }
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
   await p.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
@@ -48,7 +50,7 @@ try {
     await c.close();
   }
   {
-    const { c, p, errors } = await page({ notices: false, noBids: true, texted: "EQ15239" });
+    const { c, p, errors } = await page({ notices: false, noBids: true, texted: "EQ15239", midday: true });
     const chip = p.locator('[data-hpd-smoke="fc-next-chip"]');
     await chip.waitFor({ timeout: 30000 });
     assert.equal(await chip.getAttribute("data-kind"), "call");
