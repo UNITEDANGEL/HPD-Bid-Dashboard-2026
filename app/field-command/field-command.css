@@ -3489,3 +3489,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-autopilot-list small { color: #cbd5e1; font: 600 13px/1.35 system-ui, sans-serif; }
 .fc-autopilot-list button { justify-self: start; min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 14px system-ui, sans-serif; }
 .fc-autopilot-list button.is-on { background: #166534; border-color: #16a34a; }
+/* "Next" pill (23 Oct): the next thing to do when nothing on the board is urgent. */
+.fc-focus-chip.is-next { background: #1e3a8a; border-color: #3b82f6; }
+.fc-focus-chip.is-next b { margin-right: 2px; }
+.fc-focus-chip.is-next { white-space: normal; text-align: left; line-height: 1.2; padding: 6px 12px !important; border-radius: 16px; max-width: calc(100% - 180px) !important; }

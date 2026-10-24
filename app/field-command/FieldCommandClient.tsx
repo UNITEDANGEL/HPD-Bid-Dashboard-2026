@@ -1351,7 +1351,7 @@ export default function FieldCommandClient() {
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
   // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
-  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number }>({ today: 0, tomorrow: 0, open: 0 });
+  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number; unsentToday?: number; firstTime?: string }>({ today: 0, tomorrow: 0, open: 0 });
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
@@ -1408,7 +1408,13 @@ export default function FieldCommandClient() {
         localStorage.setItem("hpd-seen-invites", JSON.stringify([...seen].slice(-600)));
         if (raw && fresh.length) notify({ kind: "bid", go: "bids", omo: fresh[0].b.omo, title: fresh.length === 1 ? `New invitation to bid · ${fresh[0].b.omo}` : `${fresh.length} new invitations to bid`, text: fresh.length === 1 ? `${fresh[0].b.address || ""} · due ${fresh[0].b.bidDue.slice(5).replace("-", "/")} ${fresh[0].b.bidDueTime}` : fresh.slice(0, 4).map((k) => k.b.omo).join(", ") });
       } catch { /* private mode */ }
+      // Today's still-open bids not faxed yet (for the "Next" pill), soonest first.
+      let recs: Record<string, { status?: string; bidDue?: string }> = {};
+      try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+      const unsent = bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin && !(b.omo && ["sent", "confirmed"].includes(String(recs[b.omo]?.status)) && recs[b.omo]?.bidDue === b.bidDue))
+        .sort((a, b) => minutes(a.bidDueTime) - minutes(b.bidDueTime));
       setBidsDue({
+        unsentToday: unsent.length, firstTime: unsent[0]?.bidDueTime || "",
         today: bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin).length,
         tomorrow: bids.filter((b) => b.bidDue === day(1)).length,
         open: bids.filter((b) => b.bidDue > day(0) || (b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin)).length,
@@ -5607,7 +5613,27 @@ export default function FieldCommandClient() {
       {(() => {
         // The one thing to look at first (overdue / under 6 h), instead of the map flashing.
         const top = [...boardUrgent].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
-        if (!top || selectedJob || boardOpen || bidsOpen || noticesOpen || followFilter === "notices" || jobsOpen || notifOpen || critical || (ping && ping.omo === top.omo)) return null;
+        if (selectedJob || boardOpen || bidsOpen || noticesOpen || followFilter === "notices" || jobsOpen || notifOpen || critical || trackerOpen || autopilotOpen || agent) return null;
+        // Nothing urgent on the board: the next thing to do (23 Oct "complete flow"), most pressing first: bids due today
+        // not faxed, a tenant who replied (book a time), paperwork to make for a job finished this week.
+        if (!top) {
+          const recent = (iso: unknown, days: number) => { const t = Date.parse(String(iso || "")); return Number.isFinite(t) && Date.now() - t < days * 86400000; };
+          const replied = jobs.find((j) => recent(value(j, ["TenantRepliedAt"]), 2) && !activeAppointment(j as Record<string, unknown>) && !FIELD_OUTCOMES[value(j, ["FieldOutcome", "fieldOutcome"])]);
+          const finished = /WORK_COMPLETED|PARTIAL_WORK|REFUSED_ACCESS|NO_ACCESS_2|COMPLETED_BY_OTHERS/;
+          const papers = jobs.find((j) => !isTestJob(jobId(j)) && finished.test(value(j, ["FieldOutcome", "fieldOutcome"])) && !value(j, ["PackageApprovedAt"]) && !followUps.get(jobId(j))?.sentAt
+            && (Array.isArray(j.FieldVisitHistory) ? j.FieldVisitHistory as { recordedAt?: string }[] : []).some((v) => recent(v?.recordedAt, 7)));
+          const next = bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
+            : replied ? { kind: "tenant", icon: "💬", text: `${jobAddress(replied).replace(/,\s*\d{5}$/, "")}: tenant replied, book a time`, go: () => openIssueJob(replied, true) }
+            : papers ? { kind: "paperwork", icon: "📄", text: `Paperwork: ${jobAddress(papers).replace(/,\s*\d{5}$/, "")}`, go: () => openIssueJob(papers, true) }
+            : null;
+          if (!next) return null;
+          return (
+            <button type="button" className={`fc-focus-chip is-next is-${next.kind}`} data-hpd-smoke="fc-next-chip" data-kind={next.kind} onClick={next.go}>
+              <span aria-hidden="true">{next.icon}</span> <b>Next:</b> {next.text} <em>→</em>
+            </button>
+          );
+        }
+        if (ping && ping.omo === top.omo) return null;
         const h = Math.round(hoursLeft(top, Date.now()));
         return (
           <button type="button" className={`fc-focus-chip${h < 0 ? " is-late" : ""}`} data-hpd-smoke="fc-focus-chip" onClick={() => goTo("board", top.omo)}>
