@@ -169,79 +169,81 @@ jobs:
         run: |
           python3 -m http.server 3000 --directory out > /tmp/static-server.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:3000/paperwork/ > /dev/null && break; sleep 1; done
-          BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-affidavit-flow.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-stats.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-route.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-next-stop.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-auto-next.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-route-progress.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bids.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bid-voice.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bid-sync.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-building-facts.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-update-recovery.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-correction.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-landscape.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-checklist.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-privacy.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-notice-view.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bid-pages.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-price-check.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-flow.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-day-counts.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-job-tracker.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-morning.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-my-price.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-all-buttons.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-buttons-visible.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bids-panel.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-no-bid.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-conversations.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-autofix.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-calculator.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-costs.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bids-badge.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-prefill.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-priorities.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-notice-depts.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-priority-map.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-notice-board.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-board-next.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-scan.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bid-icons.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-auto-resend.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-vt-send.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-money.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-fix-queue.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-nudge.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-no-flash.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-page-zoom.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-sent-pdf.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-ring.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-old-dates.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-push.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-deeplink.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-faxtrack.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-jobs.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-bidbar.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-find.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-missed.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-no-418.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-no-dupes.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-arrive.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-agent.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-signed-out.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-handoff.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-mic.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-voice-appt.mjs
           node scripts/test-public-privacy.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-tenant-text.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-calm.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-today.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
-          BASE_URL=http://localhost:3000 node scripts/test-browser-two-tap.mjs
+          # Three at a time (23 Oct: about 50 minutes one by one); a failure is retried once on its own.
+          BASE_URL=http://localhost:3000 node scripts/run-browser-tests.mjs --jobs 3 \
+            scripts/test-browser-paperwork.mjs \
+            scripts/test-browser-affidavit-flow.mjs \
+            scripts/test-browser-stats.mjs \
+            scripts/test-browser-route.mjs \
+            scripts/test-browser-next-stop.mjs \
+            scripts/test-browser-auto-next.mjs \
+            scripts/test-browser-route-progress.mjs \
+            scripts/test-browser-bids.mjs \
+            scripts/test-browser-bid-voice.mjs \
+            scripts/test-browser-bid-sync.mjs \
+            scripts/test-browser-building-facts.mjs \
+            scripts/test-browser-update-recovery.mjs \
+            scripts/test-browser-correction.mjs \
+            scripts/test-browser-landscape.mjs \
+            scripts/test-browser-checklist.mjs \
+            scripts/test-browser-privacy.mjs \
+            scripts/test-browser-notice-view.mjs \
+            scripts/test-browser-bid-pages.mjs \
+            scripts/test-browser-price-check.mjs \
+            scripts/test-browser-flow.mjs \
+            scripts/test-browser-day-counts.mjs \
+            scripts/test-browser-job-tracker.mjs \
+            scripts/test-browser-morning.mjs \
+            scripts/test-browser-my-price.mjs \
+            scripts/test-browser-all-buttons.mjs \
+            scripts/test-browser-buttons-visible.mjs \
+            scripts/test-browser-bids-panel.mjs \
+            scripts/test-browser-no-bid.mjs \
+            scripts/test-browser-conversations.mjs \
+            scripts/test-browser-autofix.mjs \
+            scripts/test-browser-calculator.mjs \
+            scripts/test-browser-costs.mjs \
+            scripts/test-browser-bids-badge.mjs \
+            scripts/test-browser-prefill.mjs \
+            scripts/test-browser-priorities.mjs \
+            scripts/test-browser-notice-depts.mjs \
+            scripts/test-browser-priority-map.mjs \
+            scripts/test-browser-notice-board.mjs \
+            scripts/test-browser-board-next.mjs \
+            scripts/test-browser-scan.mjs \
+            scripts/test-browser-bid-icons.mjs \
+            scripts/test-browser-auto-resend.mjs \
+            scripts/test-browser-vt-send.mjs \
+            scripts/test-browser-money.mjs \
+            scripts/test-browser-fix-queue.mjs \
+            scripts/test-browser-nudge.mjs \
+            scripts/test-browser-no-flash.mjs \
+            scripts/test-browser-page-zoom.mjs \
+            scripts/test-browser-sent-pdf.mjs \
+            scripts/test-browser-ring.mjs \
+            scripts/test-browser-old-dates.mjs \
+            scripts/test-browser-push.mjs \
+            scripts/test-browser-deeplink.mjs \
+            scripts/test-browser-faxtrack.mjs \
+            scripts/test-browser-jobs.mjs \
+            scripts/test-browser-bidbar.mjs \
+            scripts/test-browser-find.mjs \
+            scripts/test-browser-missed.mjs \
+            scripts/test-browser-no-418.mjs \
+            scripts/test-browser-no-dupes.mjs \
+            scripts/test-browser-arrive.mjs \
+            scripts/test-browser-agent.mjs \
+            scripts/test-browser-signed-out.mjs \
+            scripts/test-browser-handoff.mjs \
+            scripts/test-browser-mic.mjs \
+            scripts/test-browser-voice-appt.mjs \
+            scripts/test-browser-tenant-text.mjs \
+            scripts/test-browser-calm.mjs \
+            scripts/test-browser-today.mjs \
+            scripts/test-browser-followup.mjs \
+            scripts/test-browser-paperwork-lock.mjs \
+            scripts/test-browser-two-tap.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project

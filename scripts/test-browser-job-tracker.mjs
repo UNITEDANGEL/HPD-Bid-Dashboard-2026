@@ -45,6 +45,15 @@ try {
   await page.locator("#fc-job-card").waitFor({ timeout: 15000 });
   assert.match(await page.locator("#fc-job-card").innerText(), new RegExp(omo), "the job's card opens");
   assert.equal(await sheet.count(), 0, "the tracker steps aside");
+  // 📱 next to a job to text: the job opens with the tenant text written (when there's a tenant phone).
+  await page.locator('[data-hpd-smoke="fc-tracker-open"]').evaluate((b) => b.click()).catch(() => {});
+  if (!(await sheet.count())) { await page.evaluate(() => { window.__hear = "show my job tracker"; }); await page.locator('[data-hpd-smoke="fc-search-mic"]').click(); }
+  await sheet.waitFor({ timeout: 20000 });
+  const textBtns = sheet.locator('[data-hpd-smoke="fc-tracker-text"]');
+  assert.ok(await textBtns.count() > 0, "📱 on the jobs to text");
+  await textBtns.first().click();
+  await page.locator("#fc-job-card").waitFor({ timeout: 15000 });
+  if (await page.locator('[data-hpd-smoke="jc-text-tenant"]').count()) await page.locator('[data-hpd-smoke="jc-tenant-draft"]').waitFor({ timeout: 10000 });
   assert.deepEqual(errors, []);
   console.log(`PASS job tracker: "show my job tracker" -> ${total} jobs in 10 stages (${counts.join(" / ")}), first stage with work open, ${omo} opens its card`);
   await c.close();

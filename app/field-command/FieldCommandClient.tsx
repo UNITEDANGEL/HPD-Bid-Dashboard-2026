@@ -5580,7 +5580,7 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {trackerOpen ? <JobTracker rows={trackerRows} onClose={() => setTrackerOpen(false)} onOpen={(id) => { const j = jobs.find((x) => jobId(x) === id); setTrackerOpen(false); if (j) openIssueJob(j, true); }} /> : null}
+      {trackerOpen ? <JobTracker rows={trackerRows} onClose={() => setTrackerOpen(false)} onOpen={(id) => { const j = jobs.find((x) => jobId(x) === id); setTrackerOpen(false); if (j) openIssueJob(j, true); }} onText={(id) => { const j = jobs.find((x) => jobId(x) === id); setTrackerOpen(false); if (j) { openIssueJob(j, true); window.setTimeout(() => openTenantText(j), 300); } }} /> : null}
       {notifOpen ? <NotificationsPanel onClose={() => setNotifOpen(false)} onGo={(n) => { setNotifOpen(false); goTo(n.go, n.omo || ""); }} /> : null}
       {ping ? (
         <div className={`fc-hpd-ping is-${ping.kind}`} role="status" data-hpd-smoke="fc-hpd-ping" data-kind={ping.kind} style={{ borderColor: ALERT_KINDS[ping.kind]?.color }}>

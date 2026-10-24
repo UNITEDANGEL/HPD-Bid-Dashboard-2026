@@ -6,7 +6,7 @@ import { TRACKER_STAGES, type TrackerStage } from "../../lib/job-tracker";
 
 export type TrackerRow = { id: string; address: string; stage: TrackerStage; note: string };
 
-export default function JobTracker({ rows, onOpen, onClose }: { rows: TrackerRow[]; onOpen: (id: string) => void; onClose: () => void }) {
+export default function JobTracker({ rows, onOpen, onText, onClose }: { rows: TrackerRow[]; onOpen: (id: string) => void; onText?: (id: string) => void; onClose: () => void }) {
   const count = (k: TrackerStage) => rows.filter((r) => r.stage === k).length;
   const firstToDo = (["text", "book", "paperwork", "appointment", "waiting", "work", "sent", "payment", "closed", "paid"] as TrackerStage[]).find((k) => count(k) > 0) || "text";
   const [open, setOpen] = useState<TrackerStage | null>(firstToDo);
@@ -34,10 +34,12 @@ export default function JobTracker({ rows, onOpen, onClose }: { rows: TrackerRow
                     <small>{s.todo}</small>
                     <ul>
                       {list.slice(0, 60).map((r) => (
-                        <li key={r.id}>
+                        <li key={r.id} className={onText && (s.key === "text" || s.key === "book") ? "has-text" : undefined}>
                           <button type="button" data-hpd-smoke="fc-tracker-job" onClick={() => onOpen(r.id)}>
                             <b>{r.id}</b> <span>{r.address}</span>{r.note ? <small>{r.note}</small> : null}
                           </button>
+                          {/* Text the tenant right from here: the job opens with the text written (23 Oct). */}
+                          {onText && (s.key === "text" || s.key === "book") ? <button type="button" className="fc-tracker-text" aria-label={`Text the tenant for ${r.id}`} data-hpd-smoke="fc-tracker-text" onClick={() => onText(r.id)}>📱</button> : null}
                         </li>
                       ))}
                     </ul>
