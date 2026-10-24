@@ -5718,11 +5718,15 @@ export default function FieldCommandClient() {
         if (!top) {
           const recent = (iso: unknown, days: number) => { const t = Date.parse(String(iso || "")); return Number.isFinite(t) && Date.now() - t < days * 86400000; };
           const replied = jobs.find((j) => recent(value(j, ["TenantRepliedAt"]), 2) && !activeAppointment(j as Record<string, unknown>) && !FIELD_OUTCOMES[value(j, ["FieldOutcome", "fieldOutcome"])]);
+          // A tenant texted a day ago with no answer and no call logged since: call them.
+          const toCall = jobs.find((j) => tenantStep(j as Record<string, unknown>).state === "call" && !tenantStep(j as Record<string, unknown>).repliedAt && !activeAppointment(j as Record<string, unknown>) && !FIELD_OUTCOMES[value(j, ["FieldOutcome", "fieldOutcome"])]
+            && !(Date.parse(String(value(j, ["TenantCalledAt"]) || "")) > Date.now() - 20 * 3600000));
           const finished = /WORK_COMPLETED|PARTIAL_WORK|REFUSED_ACCESS|NO_ACCESS_2|COMPLETED_BY_OTHERS/;
           const papers = jobs.find((j) => !isTestJob(jobId(j)) && finished.test(value(j, ["FieldOutcome", "fieldOutcome"])) && !value(j, ["PackageApprovedAt"]) && !followUps.get(jobId(j))?.sentAt
             && (Array.isArray(j.FieldVisitHistory) ? j.FieldVisitHistory as { recordedAt?: string }[] : []).some((v) => recent(v?.recordedAt, 7)));
           const next = bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
             : replied ? { kind: "tenant", icon: "💬", text: `${jobAddress(replied).replace(/,\s*\d{5}$/, "")}: tenant replied, book a time`, go: () => openIssueJob(replied, true) }
+            : toCall ? { kind: "call", icon: "📞", text: `Call the tenant at ${jobAddress(toCall).replace(/,\s*\d{5}$/, "")} (no answer to the text)`, go: () => openIssueJob(toCall, true) }
             : papers ? { kind: "paperwork", icon: "📄", text: `Paperwork: ${jobAddress(papers).replace(/,\s*\d{5}$/, "")}`, go: () => openIssueJob(papers, true) }
             : null;
           if (!next) return null;
