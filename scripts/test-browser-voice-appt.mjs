@@ -94,6 +94,16 @@ try {
   const week = await say("how did I do this week", /This week you won \d+ jobs?, sent \d+ bids?, finished \d+ jobs?, sent paperwork for \d+/);
   console.log(`  week: ${week.slice(0, 200)}`);
 
+  // 7b. A call to the tenant, said after it: no answer -> noted + a reminder for tomorrow 10 AM; they gave a time ->
+  // offered as the appointment.
+  await say(`I called the tenant for ${JOB}, no answer`, /Noted: no answer at .* call again tomorrow at 10/);
+  const rems = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-reminders-v1") || "[]"));
+  assert.ok(rems.some((r) => r.time === "10:00" && new RegExp(`call the tenant at .* again \\(${"EQ15239"}\\)`).test(r.what)), "reminder to call again");
+  const callRec = await page.evaluate((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j], JOB);
+  assert.equal(callRec?.TenantCallResult, "no-answer");
+  await say(`I called the tenant for ${JOB}, they said Friday at 2pm`, /Make the appointment at .* on Fri \d\d\/\d\d · 2–3 PM\?/);
+  await say("no", /nothing saved/i);
+
   // 8. "What can you do" -> examples by topic; tapping one runs it.
   await say("what can you do", /Here's what you can say/);
   const examples = page.locator('[data-hpd-smoke="fc-agent-example"]');

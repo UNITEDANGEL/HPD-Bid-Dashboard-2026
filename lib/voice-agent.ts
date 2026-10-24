@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "called"; ref: string; result: "no-answer" | "voicemail" | "talked"; said: string }
   | { intent: "bid-advice" }
   | { intent: "tenants-waiting" }
   | { intent: "help" }
@@ -60,6 +61,16 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // A call to the tenant, said after it (23 Oct): "I called the tenant, no answer", "called EQ15239 left a voicemail",
+  // "I called the tenant, they said Thursday at 10". Noted on the job; no answer -> a reminder to call again tomorrow.
+  {
+    const m = /^(?:i |we )?(?:just )?(?:called|call(?:ed)? back|phoned|spoke (?:to|with)|talked (?:to|with)) (?:the )?(?:tenant|them|her|him)?(?: (?:for|at|on) )?([a-z]{2}\s?\d{5})?[,.]?\s*(?:and |but )?(.*)$/i.exec(String(heard || "").trim());
+    if (m && (/\b(tenant|them|her|him)\b/i.test(String(heard)) || m[1])) {
+      const rest = (m[2] || "").trim();
+      const result = /\b(no answer|didn'?t (answer|pick up)|not answer|nobody answered|no one answered|no response)\b/i.test(rest) ? "no-answer" : /\b(voice ?mail|left (a )?message)\b/i.test(rest) ? "voicemail" : "talked";
+      return { intent: "called", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), result, said: rest.replace(/^(they|she|he) said\s*/i, "") };
+    }
+  }
   // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // ❓ "What can you do?" / "help" (23 Oct): the examples list.

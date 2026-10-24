@@ -564,7 +564,7 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
 const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
-  ["Tenants", ["text the tenant", "which tenants haven't answered", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
+  ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
 ];
@@ -1374,6 +1374,8 @@ export default function FieldCommandClient() {
   const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
   // An appointment said to the helper, waiting for your yes.
   const pendingApptRef = useRef<{ id: string; appt: Appointment } | null>(null);
+  // The tenant last asked to call (by voice), for "I called the tenant, no answer" right after.
+  const lastCallRef = useRef("");
   // Reminders said to the helper ("remind me to call Lewis at 3"): kept on this phone; at the time the app rings and
   // says it (while it's open). Add to Calendar covers the app being closed.
   type Reminder = { id: string; what: string; date: string; time: string };
@@ -3672,6 +3674,7 @@ export default function FieldCommandClient() {
       }
       if (cmd.intent === "call-tenant") {
         if (!t.phone) { answer(`There's no tenant phone on file for ${where}.`); return; }
+        lastCallRef.current = jobId(j);
         showPanel({ heard, reply: `${t.name || "The tenant"} at ${where}: ${t.phone}. Tap Call.`, actions: [{ label: `📞 Call ${t.name ? t.name.split(/\s+/)[0] : "the tenant"}`, href: `tel:${t.phone.replace(/[^\d+]/g, "")}` }] });
         speak(`${t.name || "The tenant"} at ${where}. Tap call.`, 200);
         return;
@@ -3896,6 +3899,38 @@ export default function FieldCommandClient() {
       if (!bidsOpen) { answer("Open the bids first, then say come back after sending one."); return; }
       window.dispatchEvent(new Event("hpd-bid-come-back"));
       answer("Back to the bid you just sent.");
+      return;
+    }
+    if (cmd.intent === "called") {
+      // "I called the tenant, no answer" (23 Oct): noted on the job; no answer / voicemail -> a reminder to call again
+      // tomorrow at 10; they gave a day and time -> offered as the appointment.
+      const found = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob || (lastCallRef.current ? jobs.find((x) => jobId(x) === lastCallRef.current) || null : null);
+      if (found === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!found) { answer("Which job? Open it, or say: I called the tenant for E Q 1 5 2 3 9, no answer."); return; }
+      const id = jobId(found);
+      const where = jobAddress(found).replace(/,\s*\d{5}$/, "");
+      const note = cmd.result === "no-answer" ? "Called the tenant: no answer" : cmd.result === "voicemail" ? "Called the tenant: left a voicemail" : `Talked to the tenant${cmd.said ? `: ${cmd.said}` : ""}`;
+      const patch = { TenantCalledAt: new Date().toISOString(), TenantCallResult: cmd.result, ...(cmd.result === "talked" ? { TenantRepliedAt: new Date().toISOString() } : {}), FieldVisitHistory: visitHistoryWith(found, note, null) };
+      try { writeSharedWorkflowPatch(id, patch); } catch { /* still on screen */ }
+      mergeWorkflowPatchIntoScreen(id, patch);
+      if (cmd.result !== "talked") {
+        const tomorrow = new Date(Date.parse(`${nyToday()}T12:00:00Z`) + 86400000).toISOString().slice(0, 10);
+        saveReminders([...readReminders(), { id: `r${Date.now()}`, what: `call the tenant at ${where} again (${id})`, date: tomorrow, time: "10:00" }]);
+        answer(`Noted: ${cmd.result === "voicemail" ? "voicemail left" : "no answer"} at ${where}. I'll remind you to call again tomorrow at 10.`);
+        return;
+      }
+      const when = parseWhen(cmd.said || "");
+      if (when.date && when.time) {
+        const t = tenantInfo(found);
+        const appt: Appointment = { date: when.date, start: when.time, end: hourAfter(when.time), state: "confirmed", contact: t.name || "Tenant", phone: t.phone || "", note: `On the phone: ${cmd.said.slice(0, 120)}`, reminder: 60 };
+        try {
+          validateAppointment(appt);
+          pendingApptRef.current = { id, appt };
+          answer(`Noted. Make the appointment at ${where} on ${appointmentLabel(appt)}? Say yes, or tap Yes.`, { id, outcome: "APPOINTMENT" });
+          return;
+        } catch { /* falls through to the note */ }
+      }
+      answer(`Noted on ${id}: "${cmd.said || "talked to the tenant"}".`);
       return;
     }
     if (cmd.intent === "tenants-waiting") {
