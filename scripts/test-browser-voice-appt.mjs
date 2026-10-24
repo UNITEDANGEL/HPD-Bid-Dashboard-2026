@@ -57,6 +57,11 @@ try {
   assert.equal(stored?.start, "10:00");
   assert.equal(stored?.state, "requested");
   if (shots) await page.screenshot({ path: `${shots}/voice-appointment.png` });
+  // The list of appointments: tomorrow's shows, with a Waze button.
+  const appts = await say("any appointments tomorrow", /appointments? tomorrow:/);
+  assert.match(appts, /\w{3} \d\d\/\d\d · 10–11 AM at .*\(not confirmed yet\)/);
+  assert.ok((await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href")).includes("waze"), "Waze button");
+  await say("appointments today", /No appointments today|appointments? today:/);
 
   // 2. Reminder (made due right away here instead of waiting).
   const rem = await say("remind me to call Lewis at 4pm", /I'll remind you to call lewis/);

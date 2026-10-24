@@ -24,7 +24,8 @@
         "📞 After a call, say \"I called the tenant, no answer\" (or what they said): it's noted on the job, and it reminds you to call again tomorrow or offers the appointment.",
         "👤 Each job card lists every contact with the tenant (texts, replies, calls, appointments), newest first.",
         "🚫 With a bid open, say \"no bid, too far\": the reason is picked out for you; one tap confirms.",
-        "🧭 The job tracker opens on the last 30 days of awards; tap \"All\" for every job."
+        "🧭 The job tracker opens on the last 30 days of awards; tap \"All\" for every job.",
+        "📅 Ask \"what appointments do I have?\" (or today / tomorrow): times, addresses and Waze buttons."
       ]
     },
     {

@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "appointments"; when: "today" | "tomorrow" | "all" }
   | { intent: "no-bid"; reason: string }
   | { intent: "called"; ref: string; result: "no-answer" | "voicemail" | "talked"; said: string }
   | { intent: "bid-advice" }
@@ -82,6 +83,8 @@ export function parseCommand(heard: string): AgentCommand {
     const m = /^(?:tell|reply to|message|text|send) (?:the tenant|tenant|them|her|him)(?: (?:for|at|on) ([a-z]{2}\s?\d{5}))?[,:]?\s+(?:that\s+)?(.{6,})$/i.exec(String(heard || "").trim());
     if (m && !/^(for|at|on) [a-z]{2}\s?\d{5}$/i.test(m[2].trim())) return { intent: "tell-tenant", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), message: m[2].trim().replace(/[.]?$/, ".") };
   }
+  // Your appointments (23 Oct): "what appointments do I have", "appointments today / tomorrow", "my next appointment".
+  if (/\bappointments?\b/.test(t) && /\b(what|which|any|my|list|read|show|when|next|today|tomorrow|have)\b/.test(t) && !/\b(make|set|book|schedule|create|add|put|cancel)\b/.test(t)) return { intent: "appointments", when: /\btomorrow\b/.test(t) ? "tomorrow" : /\btoday\b/.test(t) ? "today" : "all" };
   // Appointments and reminders by voice (owner, 23 Oct: "create appointments, remind me, route me, all by talking"):
   // "make an appointment for EQ15239 Thursday at 10", "book the tenant tomorrow 2 pm", "remind me to call Lewis at 3".
   if (/\b(make|set|set up|book|schedule|create|add|put)\b.{0,25}\b(appointment|appt|visit)\b|^(appointment|book|schedule)\b/.test(t) && !/\b(how many|what|which|any|list|read)\b/.test(t)) {

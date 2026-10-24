@@ -562,7 +562,7 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
 
 // What the helper understands, as examples to tap (23 Oct "what can I say").
 const AGENT_EXAMPLES: [string, string[]][] = [
-  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "show my job tracker"]],
+  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "read me the new bids", "what should I bid", "how did I do this week"]],
@@ -3882,6 +3882,21 @@ export default function FieldCommandClient() {
       const label = appointmentLabel({ date, start: time, end: hourAfter(time) } as Appointment).replace(/–.*$/, "").replace(/ · /, " at ");
       const cal = `${window.location.origin}/api/appointment-calendar?${new URLSearchParams({ kind: "reminder", id: "reminder", what: cmd.what, date, time })}`;
       showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
+      return;
+    }
+    if (cmd.intent === "appointments") {
+      // "What appointments do I have?" (23 Oct): coming ones in time order (today / tomorrow / all), with Waze buttons.
+      const today = nyToday();
+      const tomorrow = new Date(Date.parse(`${today}T12:00:00Z`) + 86400000).toISOString().slice(0, 10);
+      const list = jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).filter((x) => x.a && !appointmentTiming(x.a).past)
+        .filter((x) => cmd.when === "all" || x.a!.date === (cmd.when === "today" ? today : tomorrow))
+        .sort((p, q) => `${p.a!.date}${p.a!.start}`.localeCompare(`${q.a!.date}${q.a!.start}`));
+      const span = cmd.when === "all" ? "coming up" : cmd.when;
+      if (!list.length) { answer(`No appointments ${span}.`); return; }
+      lastJobsRef.current = { ids: list.slice(0, 5).map((x) => jobId(x.j)), at: Date.now() };
+      const lines = list.slice(0, 4).map((x) => `${appointmentLabel(x.a!)} at ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}${x.a!.state === "requested" ? " (not confirmed yet)" : ""}`);
+      showPanel({ heard, reply: `${list.length} appointment${list.length === 1 ? "" : "s"} ${span}: ${lines.join("; ")}${list.length > 4 ? `, and ${list.length - 4} more` : ""}.`,
+        actions: list.slice(0, 3).map((x) => ({ label: `Waze · ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: wazeHref(x.j), id: jobId(x.j), via: "Waze" as const })) });
       return;
     }
     if (cmd.intent === "no-bid") {
