@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "bid-advice" }
   | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "tell-tenant"; ref: string; message: string }
@@ -84,6 +85,8 @@ export function parseCommand(heard: string): AgentCommand {
       return { intent: "remind", what, ...(when.date ? { date: when.date } : {}), ...(when.time ? { time: when.time } : {}) };
     }
   }
+  // "What should I bid?" (23 Oct): the open bid answers with its recommended price.
+  if (/\b(what|how much) (should|do|would) (i|we) (bid|charge|put)\b|\b(best|recommended|good) (price|bid)\b|\bwhat'?s (the|a) good price\b/.test(t)) return { intent: "bid-advice" };
   // Bid by voice (23 Oct): "bid 500", "bid $1,250 on this one", "price it at 900", "put 750 on it". Fills the open bid
   // and saves it; sending is still your two taps.
   {

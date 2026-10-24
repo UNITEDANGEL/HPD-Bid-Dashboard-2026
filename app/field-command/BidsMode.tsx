@@ -445,6 +445,19 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const draftNumber = Number(String(draft).replace(/[^0-9.]/g, ""));
   const selKind = selected ? floorKind(selected.description) : "";
   const selFloor = selKind ? floors[selKind] : undefined;
+  // "What should I bid?" by voice (23 Oct): the helper asks, the bid on screen answers with the same numbers it shows.
+  const adviceRef = useRef<() => string>(() => "");
+  adviceRef.current = () => {
+    if (!selected) return "";
+    if (!help || help.prices.length < 5) return `There aren't enough recent awards for jobs like ${selected.omo} to recommend a price. Use your own numbers.`;
+    const best = bestWithFloor(help, selFloor);
+    return `For ${selected.omo}, I'd bid about ${money(best.price)}${best.floored ? ", your minimum," : ""}: that would have won about ${Math.round(best.chance * 100)}% of ${help.prices.length} recent jobs like this.${draftValue > 0 && Math.abs(draftValue - best.price) > 1 ? ` Your price now is ${money(draftValue)}.` : ""} Say "bid ${Math.round(best.price)}" to use it.`;
+  };
+  useEffect(() => {
+    const on = () => window.dispatchEvent(new CustomEvent("hpd-bid-advice-answer", { detail: adviceRef.current() }));
+    window.addEventListener("hpd-bid-advice", on);
+    return () => window.removeEventListener("hpd-bid-advice", on);
+  }, []);
   useEffect(() => { setFloorEdit(null); }, [selected?.omo]);
   useEffect(() => { setArmed((a) => (a === "high" ? "" : a)); }, [draft]); // a new price needs its own second tap
   const highPrice = useMemo(() => {

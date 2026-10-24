@@ -565,7 +565,7 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
-  ["Money and bids", ["how much does HPD owe me", "read me the new bids", "how did I do this week"]],
+  ["Money and bids", ["how much does HPD owe me", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
 ];
 
@@ -3851,6 +3851,14 @@ export default function FieldCommandClient() {
       const label = appointmentLabel({ date, start: time, end: hourAfter(time) } as Appointment).replace(/–.*$/, "").replace(/ · /, " at ");
       const cal = `${window.location.origin}/api/appointment-calendar?${new URLSearchParams({ kind: "reminder", id: "reminder", what: cmd.what, date, time })}`;
       showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
+      return;
+    }
+    if (cmd.intent === "bid-advice") {
+      const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
+      if (!bidsOpen || !omo) { answer('Open a bid first, then ask "what should I bid".'); return; }
+      const on = (e: Event) => { window.removeEventListener("hpd-bid-advice-answer", on); answer(String((e as CustomEvent<string>).detail || "I couldn't work out a price for this one.")); };
+      window.addEventListener("hpd-bid-advice-answer", on);
+      window.dispatchEvent(new Event("hpd-bid-advice"));
       return;
     }
     if (cmd.intent === "bid-price") {

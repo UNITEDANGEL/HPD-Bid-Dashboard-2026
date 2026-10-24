@@ -36,6 +36,13 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child').first().click();
   const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
   const omo = (await sheet.locator("header strong").innerText()).trim();
+  // "What should I bid?" first: the open bid answers with its recommended price (or says there isn't enough to go on).
+  await page.evaluate(() => { window.__hear = "what should I bid"; });
+  await sheet.locator('[data-hpd-smoke="fc-bid-mic"]').click();
+  await page.waitForFunction((o) => new RegExp(`For ${o}, I'd bid about \\$[\\d,]+|enough recent awards for jobs like ${o}`).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), omo, { timeout: 20000 });
+  const advice = (await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText()).trim();
+  console.log(`  advice: ${advice}`);
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   await page.evaluate(() => { window.__hear = "bid 980 on this one"; });
   await sheet.locator('[data-hpd-smoke="fc-bid-mic"]').click();
   await page.waitForFunction((o) => new RegExp(`\\$980.*${o}`).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), omo, { timeout: 20000 });
