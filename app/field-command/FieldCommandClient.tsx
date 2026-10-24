@@ -2965,6 +2965,8 @@ export default function FieldCommandClient() {
       for (const m of replies) {
         const job = jobsRef.current.find((j) => { const ph = last10(tenantInfo(j).phone); return ph.length === 10 && ph === last10(m.from); });
         if (job) markTenantReplied(job);
+        // Their words stay on this phone only (not on the job record the status server keeps), for "any texts from tenants".
+        try { const keep = JSON.parse(localStorage.getItem("hpd-tenant-replies") || "[]"); keep.push({ omo: job ? jobId(job) : "", body: m.body.slice(0, 300), at: m.at }); localStorage.setItem("hpd-tenant-replies", JSON.stringify(keep.slice(-30))); } catch { /* private mode */ }
         // Their answer names a day and time ("Thursday at 10 works"): offer it as the appointment (23 Oct, plan step 4).
         const when = job ? parseWhen(m.body) : null;
         if (job && when?.date && when.time) {
@@ -3882,6 +3884,18 @@ export default function FieldCommandClient() {
       const label = appointmentLabel({ date, start: time, end: hourAfter(time) } as Appointment).replace(/–.*$/, "").replace(/ · /, " at ");
       const cal = `${window.location.origin}/api/appointment-calendar?${new URLSearchParams({ kind: "reminder", id: "reminder", what: cmd.what, date, time })}`;
       showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
+      return;
+    }
+    if (cmd.intent === "tenant-texts") {
+      // "Any texts from tenants?" (23 Oct): the latest replies (3 days), newest first, each with its job.
+      let list: { omo: string; body: string; at: string }[] = [];
+      try { list = JSON.parse(localStorage.getItem("hpd-tenant-replies") || "[]"); } catch { /* private mode */ }
+      list = list.filter((r) => Date.now() - Date.parse(r.at) < 3 * 86400000).reverse();
+      if (!list.length) { answer(smsReady ? "No texts from tenants in the last 3 days." : "No tenant texts here yet: they come into the app once the texting service is connected (see 🤖 Autopilot)."); return; }
+      const ids = [...new Set(list.map((r) => r.omo).filter(Boolean))];
+      if (ids.length) lastJobsRef.current = { ids: ids.slice(0, 5), at: Date.now() };
+      const lines = list.slice(0, 4).map((r) => { const j = jobs.find((x) => jobId(x) === r.omo); const who = j ? (tenantInfo(j).name || "").split(/\s+/)[0] || jobAddress(j).replace(/,\s*\d{5}$/, "") : "Someone"; return `${who}${j ? ` (${jobAddress(j).replace(/,\s*\d{5}$/, "")})` : ""}: "${r.body}"`; });
+      answer(`${list.length} text${list.length === 1 ? "" : "s"} from tenants. ${lines.join(" ")}`);
       return;
     }
     if (cmd.intent === "appointments") {

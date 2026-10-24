@@ -25,7 +25,8 @@
         "👤 Each job card lists every contact with the tenant (texts, replies, calls, appointments), newest first.",
         "🚫 With a bid open, say \"no bid, too far\": the reason is picked out for you; one tap confirms.",
         "🧭 The job tracker opens on the last 30 days of awards; tap \"All\" for every job.",
-        "📅 Ask \"what appointments do I have?\" (or today / tomorrow): times, addresses and Waze buttons."
+        "📅 Ask \"what appointments do I have?\" (or today / tomorrow): times, addresses and Waze buttons.",
+        "💬 Ask \"any texts from tenants?\": their latest replies with the job (once texting is connected)."
       ]
     },
     {

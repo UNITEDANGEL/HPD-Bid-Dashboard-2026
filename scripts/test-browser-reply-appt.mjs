@@ -71,6 +71,13 @@ try {
   await page.waitForFunction(() => /^Sent\./.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 20000 });
   assert.equal(sent.length, 2, "your words went once");
   assert.match(sent[1].text, /this is Jot from United Angel Construction about .*: We'll call when we're on the way\./);
+  // "Any texts from tenants?" reads their words with the job.
+  await page.evaluate(() => { window.__hear = "any texts from tenants"; });
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
+  await page.clock.runFor(500);
+  await page.waitForFunction(() => /texts? from tenants/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  assert.match(await reply.innerText(), /: "Thursday at 10 works for me"/);
   assert.deepEqual(errors, []);
   console.log(`PASS reply -> appointment: ${JOB}'s tenant texted "Thursday at 10 works for me" -> offered Thu 10–11 AM -> Yes saved it (confirmed) and texted the confirmation once; "tell the tenant we'll call when we're on the way" went to them after a yes`);
   await c.close();
