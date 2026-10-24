@@ -3495,3 +3495,5 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-focus-chip.is-next { white-space: normal; text-align: left; line-height: 1.2; padding: 6px 12px !important; border-radius: 16px; max-width: calc(100% - 180px) !important; }
 .fc-evening { border-color: #a855f7 !important; }
 .fc-evening b { color: #e9d5ff; }
+.fc-tracker-span { min-height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: 800 12.5px system-ui, sans-serif; }
+.fc-tracker-span.is-on { background: #1d4ed8; border-color: #3b82f6; color: #fff; }

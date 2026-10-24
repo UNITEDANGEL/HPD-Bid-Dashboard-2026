@@ -29,7 +29,14 @@ try {
   await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
   const sheet = page.locator('[data-hpd-smoke="fc-tracker"]');
   await sheet.waitFor({ timeout: 20000 });
+  // Opens on the last 30 days; "All" shows every job.
+  const span = sheet.locator('[data-hpd-smoke="fc-tracker-span"]');
+  assert.match(await span.innerText(), /Last 30 days/);
+  const recentTotal = Number((await sheet.locator("header strong").innerText()).match(/(\d+) jobs/)[1]);
+  await span.click();
+  assert.match(await span.innerText(), /^All$/);
   const total = Number((await sheet.locator("header strong").innerText()).match(/(\d+) jobs/)[1]);
+  assert.ok(recentTotal <= total, `last 30 days (${recentTotal}) is part of all (${total})`);
   const counts = await sheet.locator('[data-hpd-smoke^="fc-tracker-count-"]').allInnerTexts();
   assert.equal(counts.length, 10, "ten stages");
   assert.equal(counts.map(Number).reduce((a, b) => a + b, 0), total, "every job is in one stage");
@@ -55,7 +62,7 @@ try {
   await page.locator("#fc-job-card").waitFor({ timeout: 15000 });
   if (await page.locator('[data-hpd-smoke="jc-text-tenant"]').count()) await page.locator('[data-hpd-smoke="jc-tenant-draft"]').waitFor({ timeout: 10000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS job tracker: "show my job tracker" -> ${total} jobs in 10 stages (${counts.join(" / ")}), first stage with work open, ${omo} opens its card`);
+  console.log(`PASS job tracker: "show my job tracker" -> ${total} jobs in 10 stages (${counts.join(" / ")}; ${recentTotal} awarded in the last 30 days), first stage with work open, ${omo} opens its card`);
   await c.close();
 } finally {
   await browser.close();

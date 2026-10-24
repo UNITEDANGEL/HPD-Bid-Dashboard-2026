@@ -2297,7 +2297,7 @@ export default function FieldCommandClient() {
         : stage === "paid" && pay ? usd(pay.paid)
         : stage === "closed" ? (fu?.hpdReason ? fu.hpdReason.toLowerCase() : "closed")
         : stage === "text" ? (value(j, ["AwardDate"]) ? `awarded ${md(value(j, ["AwardDate"]))}` : "") : "";
-      return { id, address: jobAddress(j).replace(/,\s*\d{5}$/, ""), stage, note };
+      return { id, address: jobAddress(j).replace(/,\s*\d{5}$/, ""), stage, note, age: input.awardAgeDays };
     });
   }, [trackerOpen, jobs, followUps, pipMap]); // eslint-disable-line react-hooks/exhaustive-deps
   // One screen at a time: a map button closes whatever else is open (bids, notices, stats, today, follow-up,

@@ -4,9 +4,12 @@
 import { useState } from "react";
 import { TRACKER_STAGES, type TrackerStage } from "../../lib/job-tracker";
 
-export type TrackerRow = { id: string; address: string; stage: TrackerStage; note: string };
+export type TrackerRow = { id: string; address: string; stage: TrackerStage; note: string; age?: number };
 
-export default function JobTracker({ rows, onOpen, onText, onClose }: { rows: TrackerRow[]; onOpen: (id: string) => void; onText?: (id: string) => void; onClose: () => void }) {
+export default function JobTracker({ rows: allRows, onOpen, onText, onClose }: { rows: TrackerRow[]; onOpen: (id: string) => void; onText?: (id: string) => void; onClose: () => void }) {
+  // Last 30 days (awards) or every job (23 Oct): most old "to do" jobs aren't what you're working on now.
+  const [recent, setRecent] = useState(() => { try { return localStorage.getItem("hpd-tracker-recent") !== "0"; } catch { return true; } });
+  const rows = recent ? allRows.filter((r) => (r.age ?? 0) <= 30) : allRows;
   const count = (k: TrackerStage) => rows.filter((r) => r.stage === k).length;
   const firstToDo = (["text", "book", "paperwork", "appointment", "waiting", "work", "sent", "payment", "closed", "paid"] as TrackerStage[]).find((k) => count(k) > 0) || "text";
   const [open, setOpen] = useState<TrackerStage | null>(firstToDo);
@@ -14,6 +17,7 @@ export default function JobTracker({ rows, onOpen, onText, onClose }: { rows: Tr
     <div className="fc-package-sheet fc-summary-sheet fc-tracker" role="dialog" aria-label="Job tracker" data-hpd-smoke="fc-tracker">
       <header>
         <strong>🧭 Job tracker · {rows.length} jobs</strong>
+        <button type="button" className={`fc-tracker-span${recent ? " is-on" : ""}`} aria-pressed={recent} data-hpd-smoke="fc-tracker-span" onClick={() => { const v = !recent; setRecent(v); try { localStorage.setItem("hpd-tracker-recent", v ? "1" : "0"); } catch { /* private mode */ } }}>{recent ? "Last 30 days" : "All"}</button>
         <button type="button" aria-label="Close" data-hpd-smoke="fc-tracker-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-summary-body">
