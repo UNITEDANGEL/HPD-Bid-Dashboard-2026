@@ -3851,6 +3851,31 @@ export default function FieldCommandClient() {
       answer("Back to the bid you just sent.");
       return;
     }
+    if (cmd.intent === "tell-tenant") {
+      // Your own words to the tenant (23 Oct). Which job: the one named, else the tenant who texted last (2 days), else
+      // the job on screen. Text service on: read back, sent after your yes; otherwise Messages opens with it.
+      let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : null;
+      if (!job && !cmd.ref) {
+        const lastReply = jobs.map((j) => ({ j, at: Date.parse(String(value(j, ["TenantRepliedAt"]) || "")) })).filter((x) => Number.isFinite(x.at) && Date.now() - x.at < 2 * 86400000).sort((a, b) => b.at - a.at)[0];
+        job = lastReply?.j || selectedJob;
+      }
+      if (job === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!job) { answer("Which job? Open it, or say: reply to the tenant for E Q 1 5 2 3 9, then your message."); return; }
+      const t = tenantInfo(job);
+      const where = jobAddress(job).replace(/,\s*\d{5}$/, "");
+      if (!t.phone || t.commonArea) { answer(`There's no tenant phone on file for ${where}.`); return; }
+      const first = (t.name || "").split(/\s+/)[0];
+      const hello = first && first.length > 1 ? `Hi ${first[0].toUpperCase()}${first.slice(1).toLowerCase()}` : "Hello";
+      const text = `${hello}, this is Jot from United Angel Construction about ${where}: ${cmd.message[0].toUpperCase()}${cmd.message.slice(1)}`;
+      openIssueJob(job);
+      if (smsReady) {
+        pendingSmsRef.current = { id: jobId(job), text };
+        answer(`I'll text ${first || "the tenant"}: "${text}" Say yes to send it.`, { id: jobId(job), outcome: "SMS" });
+        return;
+      }
+      showPanel({ heard, reply: `Ready for ${first || "the tenant"} at ${where}: "${text}" Tap to open it in Messages, then press Send.`, actions: [{ label: `📱 Text ${first || "the tenant"}`, href: smsHref(t.phone, text) }] });
+      return;
+    }
     if (cmd.intent === "week") {
       // "How did I do this week?" (23 Oct): the last 7 days in one answer: won, bids sent, jobs finished, paperwork sent,
       // money HPD paid.

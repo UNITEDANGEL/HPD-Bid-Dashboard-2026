@@ -54,8 +54,25 @@ try {
   assert.equal(rec?.Appointment?.state, "confirmed");
   assert.equal(rec?.Appointment?.start, "10:00");
   assert.ok(rec?.TenantRepliedAt, "marked replied");
+  // Your own words back, by voice: goes to the tenant who just texted, after a yes.
+  await page.evaluate(() => {
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() { setTimeout(() => { const text = window.__hear || ""; if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 100); }
+      stop() { this.onend?.(); }
+    };
+    window.__hear = "tell the tenant we'll call when we're on the way";
+  });
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
+  await page.clock.runFor(500);
+  await page.waitForFunction(() => /Say yes to send it/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  assert.match(await reply.innerText(), /We'll call when we're on the way\./);
+  await page.locator('[data-hpd-smoke="fc-agent-yes"]').click();
+  await page.waitForFunction(() => /^Sent\./.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 20000 });
+  assert.equal(sent.length, 2, "your words went once");
+  assert.match(sent[1].text, /this is Jot from United Angel Construction about .*: We'll call when we're on the way\./);
   assert.deepEqual(errors, []);
-  console.log(`PASS reply -> appointment: ${JOB}'s tenant texted "Thursday at 10 works for me" -> offered Thu 10–11 AM -> Yes saved it (confirmed) and texted the confirmation once`);
+  console.log(`PASS reply -> appointment: ${JOB}'s tenant texted "Thursday at 10 works for me" -> offered Thu 10–11 AM -> Yes saved it (confirmed) and texted the confirmation once; "tell the tenant we'll call when we're on the way" went to them after a yes`);
   await c.close();
 } finally {
   await browser.close();

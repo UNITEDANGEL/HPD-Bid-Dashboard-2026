@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "tell-tenant"; ref: string; message: string }
   | { intent: "week" }
   | { intent: "tracker" }
   | { intent: "money" }
@@ -56,6 +57,12 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  // Your own words to the tenant (23 Oct): "tell the tenant we'll be there at 10", "reply to the tenant for EQ15239:
+  // thank you, see you Thursday", "text them that we're running late".
+  {
+    const m = /^(?:tell|reply to|message|text|send) (?:the tenant|tenant|them|her|him)(?: (?:for|at|on) ([a-z]{2}\s?\d{5}))?[,:]?\s+(?:that\s+)?(.{6,})$/i.exec(String(heard || "").trim());
+    if (m && !/^(for|at|on) [a-z]{2}\s?\d{5}$/i.test(m[2].trim())) return { intent: "tell-tenant", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), message: m[2].trim().replace(/[.]?$/, ".") };
+  }
   // Appointments and reminders by voice (owner, 23 Oct: "create appointments, remind me, route me, all by talking"):
   // "make an appointment for EQ15239 Thursday at 10", "book the tenant tomorrow 2 pm", "remind me to call Lewis at 3".
   if (/\b(make|set|set up|book|schedule|create|add|put)\b.{0,25}\b(appointment|appt|visit)\b|^(appointment|book|schedule)\b/.test(t) && !/\b(how many|what|which|any|list|read)\b/.test(t)) {
