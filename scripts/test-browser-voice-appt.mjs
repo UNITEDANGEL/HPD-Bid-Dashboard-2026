@@ -91,6 +91,7 @@ try {
   // Rejections holding money, the ones to fix first, with Fix buttons.
   const rej = await say("which rejections do I have", /rejections? hold \$[\d,]+|No payment rejections/);
   console.log(`  rejections: ${rej.slice(0, 160)}`);
+  if (/to fix/.test(rej)) assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().innerText(), /▶ Fix them one by one \(\d+\)/);
   if (/to fix/.test(rej)) assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^\/paperwork\/\?job=[A-Z]{2}\d{5}&fix=.*&auto=1$/);
 
   // 6. A job start to finish: the appointment made above shows as done, and what's left comes next.
@@ -129,6 +130,13 @@ try {
   await examples.filter({ hasText: "how much does HPD owe me" }).click();
   await page.waitForFunction(() => /HPD owes you|PIP shows nothing owed/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-help"]').count(), 0, "the list folds away after a tap");
+  // 9. "Fix them one by one" from the rejections answer: the paperwork page opens on the first, counting 1 of N.
+  const rej2 = await say("which rejections do I have", /rejections? hold|No payment rejections/);
+  if (/to fix/.test(rej2)) {
+    await page.locator('[data-hpd-smoke="fc-agent-action"]').first().click();
+    await page.locator('[data-hpd-smoke="paperwork-fix-progress"]').waitFor({ timeout: 60000 });
+    assert.match(await page.locator('[data-hpd-smoke="paperwork-fix-progress"]').innerText(), /Fixing one by one · 1 of \d+/);
+  }
   assert.deepEqual(errors, []);
   console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
   await c.close();

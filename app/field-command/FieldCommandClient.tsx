@@ -1355,7 +1355,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[] }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -3586,7 +3586,7 @@ export default function FieldCommandClient() {
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
     // A panel with buttons ends a chain: what was answered before goes on top.
-    function showPanel(p: { heard: string; reply: string; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google" }[] }) {
+    function showPanel(p: { heard: string; reply: string; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[] }[] }) {
       const m = multiRef.current;
       multiRef.current = null;
       setAgent(m ? { ...p, heard: m.heard, reply: [...m.replies, p.reply].join("\n\n") } : p);
@@ -4092,7 +4092,11 @@ export default function FieldCommandClient() {
       const list = (toFix.length ? toFix : held).slice(0, 3);
       lastJobsRef.current = { ids: list.map((r) => r.omo), at: Date.now() };
       showPanel({ heard, reply: `${held.length} rejection${held.length === 1 ? "" : "s"} hold ${usd(payTrack.summary.held)}${toFix.length ? `; ${toFix.length} to fix` : ""}. ${list.map((r) => `${r.omo}${r.held ? `, ${usd(r.held)}` : ""}: ${((c) => (c.length >= 12 ? c : "reason not clear, see HPD's notice"))(r.reason.replace(/\b(?:[A-Z0-9#.,:/-]+\s+){2,}/g, " ").replace(/\b[A-Z0-9#.,:/-]+$/, "").replace(/\s+/g, " ").trim()).slice(0, 70)}`).join("; ")}.`,
-        actions: list.filter((r) => toFix.includes(r)).map((r) => ({ label: `🔧 Fix ${r.omo}`, href: `/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1` })) });
+        // "Fix them one by one" first (the paperwork page then goes on to the next by itself), then single fixes.
+        actions: [
+          ...(toFix.length > 1 ? [{ label: `▶ Fix them one by one (${toFix.length})`, href: `/paperwork/?job=${encodeURIComponent(toFix[0].omo)}&fix=${encodeURIComponent(toFix[0].at)}&auto=1`, queue: toFix.map((r) => ({ omo: r.omo, at: r.at })) }] : []),
+          ...list.filter((r) => toFix.includes(r)).map((r) => ({ label: `🔧 Fix ${r.omo}`, href: `/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1` })),
+        ] });
       return;
     }
     if (cmd.intent === "money") {
@@ -5788,7 +5792,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
-            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); }}>{a.label}</a>)}
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
