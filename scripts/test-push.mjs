@@ -345,3 +345,19 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(paid.find((x) => x.title.includes("EQ11111")).body, /\$1,250 · 1 TEST STREET/);
   console.log("PASS award + paid alerts: 'You won ER05729 · 500 FT WASHINGTON AVENUE' with the work; 'HPD paid you $10,629' and 'Paid · EQ11111 $1,250'; old payments and unpaid jobs stay quiet");
 }
+
+// 📅 An appointment within the next hour rings once (23 Oct), even with the app closed.
+{
+  const now = Date.parse("2026-10-26T13:20:00Z"); // 9:20 AM New York
+  const recs = {
+    EQ15239: { Appointment: { date: "2026-10-26", start: "10:00", end: "11:00", state: "requested", contact: "Maria", phone: "", note: "", reminder: 60 } },
+    EQ17776: { Appointment: { date: "2026-10-26", start: "14:00", end: "15:00", state: "confirmed", contact: "Tenant", phone: "", note: "", reminder: 60 } },
+    EQ18710: { Appointment: { date: "2026-10-26", start: "09:45", end: "10:45", state: "cancelled", contact: "X", phone: "", note: "", reminder: 60 } },
+  };
+  const a = await findAlerts({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now, loadLib, records: recs, addresses: { EQ15239: "1207 1 AVENUE, 10065" } });
+  const ap = a.filter((x) => String(x.tag).startsWith("ap-"));
+  assert.deepEqual(ap.map((x) => x.tag), ["ap-EQ15239"], "only the one within the hour, not later ones or cancelled ones");
+  assert.equal(ap[0].title, "📅 Appointment in 40 min · 1207 1 AVENUE");
+  assert.match(ap[0].body, /EQ15239 · Mon 10\/26 · 10–11 AM · Maria/);
+  console.log("PASS appointment alert: 'Appointment in 40 min · 1207 1 AVENUE' once; later and cancelled ones stay quiet");
+}

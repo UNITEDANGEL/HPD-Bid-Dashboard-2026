@@ -134,6 +134,21 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       }
     } catch (e) { console.log(`tenant call reminders skipped: ${e.message}`); }
   }
+  // 📅 An appointment within the next hour (23 Oct): one alert, even with the app closed.
+  if (loadLib) {
+    try {
+      const { activeAppointment, appointmentTiming, appointmentLabel } = await loadLib("appointments");
+      for (const [omo, rec] of Object.entries(records || {})) {
+        if (!/^[A-Z]{2}\d{5}$/.test(omo)) continue;
+        const a = activeAppointment(rec || {});
+        if (!a) continue;
+        const { startsIn } = appointmentTiming(a, new Date(now));
+        if (startsIn < 0 || startsIn > 70) continue;
+        const address = String(addresses?.[omo] || rec.BuildingAddress || "").replace(/,\s*\d{5}$/, "");
+        out.push({ key: `ap:${h(`${omo}|${a.date}|${a.start}`)}`, kind: "message", title: `📅 Appointment in ${startsIn <= 5 ? "a few minutes" : `${startsIn} min`}${address ? ` · ${address}` : ""}`, body: `${omo} · ${appointmentLabel(a)}${a.contact && a.contact !== "Tenant" ? ` · ${a.contact}` : ""}`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `ap-${omo}` });
+      }
+    } catch (e) { console.log(`appointment alerts skipped: ${e.message}`); }
+  }
   // 💵 Paid (owner, 23 Oct "build the paid alert"): a payment from HPD in PIP, and each job PIP now shows as paid. Only
   // the last 7 days, so turning this on doesn't ring for old payments.
   const recentDay = (d) => d && now - Date.parse(`${d}T12:00:00Z`) <= 7 * 86400000;
