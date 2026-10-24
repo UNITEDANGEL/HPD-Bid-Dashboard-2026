@@ -17,11 +17,12 @@ export default function JobTracker({ rows: allRows, onOpen, onText, onClose }: {
     <div className="fc-package-sheet fc-summary-sheet fc-tracker" role="dialog" aria-label="Job tracker" data-hpd-smoke="fc-tracker">
       <header>
         <strong>🧭 Job tracker · {rows.length} jobs</strong>
-        <button type="button" className={`fc-tracker-span${recent ? " is-on" : ""}`} aria-pressed={recent} data-hpd-smoke="fc-tracker-span" onClick={() => { const v = !recent; setRecent(v); try { localStorage.setItem("hpd-tracker-recent", v ? "1" : "0"); } catch { /* private mode */ } }}>{recent ? "Last 30 days" : "All"}</button>
         <button type="button" aria-label="Close" data-hpd-smoke="fc-tracker-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-summary-body">
-        <p className="fc-follow-note">From the award to the money: where every job is, and what to do next.</p>
+        <p className="fc-follow-note fc-tracker-top">From the award to the money: where every job is, and what to do next.
+          <button type="button" className={`fc-tracker-span${recent ? " is-on" : ""}`} aria-pressed={recent} data-hpd-smoke="fc-tracker-span" onClick={() => { const v = !recent; setRecent(v); try { localStorage.setItem("hpd-tracker-recent", v ? "1" : "0"); } catch { /* private mode */ } }}>{recent ? "Last 30 days" : "All"}</button>
+        </p>
         <ol className="fc-tracker-stages">
           {TRACKER_STAGES.map((s) => {
             const list = rows.filter((r) => r.stage === s.key);
