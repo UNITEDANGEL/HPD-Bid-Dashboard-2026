@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "no-bid"; reason: string }
   | { intent: "called"; ref: string; result: "no-answer" | "voicemail" | "talked"; said: string }
   | { intent: "bid-advice" }
   | { intent: "tenants-waiting" }
@@ -60,7 +61,7 @@ export function parseCommand(heard: string): AgentCommand {
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
-  if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t)) return { intent: "no" };
+  if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t)) return { intent: "no" };
   // A call to the tenant, said after it (23 Oct): "I called the tenant, no answer", "called EQ15239 left a voicemail",
   // "I called the tenant, they said Thursday at 10". Noted on the job; no answer -> a reminder to call again tomorrow.
   {
@@ -96,6 +97,8 @@ export function parseCommand(heard: string): AgentCommand {
       return { intent: "remind", what, ...(when.date ? { date: when.date } : {}), ...(when.time ? { time: when.time } : {}) };
     }
   }
+  // "No bid, too far" (23 Oct): the open bid's No-bid reasons, with the one said picked out.
+  { const m = /^(?:no bid|not bidding|skip (?:this|it)|pass on (?:this|it))\b[,.]?\s*(?:on (?:this|it)( one)?)?[,.]?\s*(?:because\s*)?(.*)$/.exec(t); if (m) return { intent: "no-bid", reason: m[2] || "" }; }
   // "What should I bid?" (23 Oct): the open bid answers with its recommended price.
   if (/\b(what|how much) (should|do|would) (i|we) (bid|charge|put)\b|\b(best|recommended|good) (price|bid)\b|\bwhat'?s (the|a) good price\b/.test(t)) return { intent: "bid-advice" };
   // Bid by voice (23 Oct): "bid 500", "bid $1,250 on this one", "price it at 900", "put 750 on it". Fills the open bid

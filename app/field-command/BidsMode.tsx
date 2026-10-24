@@ -117,6 +117,20 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // No bid (lib/no-bid): decided not to bid this invitation, with a reason.
   const [noBids, setNoBids] = useState<Record<string, NoBid>>({});
   const [noBidAsk, setNoBidAsk] = useState(false);
+  // "No bid, too far" by voice (23 Oct): the reasons open with the one you said picked out; your tap confirms it.
+  const [noBidHint, setNoBidHint] = useState("");
+  useEffect(() => {
+    const on = (e: Event) => {
+      const said = String((e as CustomEvent<string>).detail || "").toLowerCase();
+      const hint = /far|distance|drive|long way/.test(said) ? "Too far" : /cheap|low|not worth|money|price/.test(said) ? "Price too low to be worth it" : /can'?t do|don'?t do|not our|no license|not my/.test(said) ? "Can't do this work" : /busy|booked|no time|schedule/.test(said) ? "Too busy that day" : /building|access|dangerous|bad/.test(said) ? "Bad building / access" : "";
+      setNoBidHint(hint);
+      setNoBidAsk(true);
+      window.setTimeout(() => document.querySelector('[data-hpd-smoke="fc-nobid-ask"]')?.scrollIntoView({ block: "center", behavior: "smooth" }), 200);
+      window.dispatchEvent(new CustomEvent("hpd-no-bid-answer", { detail: hint }));
+    };
+    window.addEventListener("hpd-no-bid", on);
+    return () => window.removeEventListener("hpd-no-bid", on);
+  }, []);
   useEffect(() => { setNoBids(readNoBids()); }, []);
   const noBidOf = (b: { omo: string; bidDue: string }) => isNoBid(noBids, b);
   const [bidsReadAt, setBidsReadAt] = useState("");
@@ -1013,7 +1027,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               return noBidAsk ? (
                 <div className="fc-nobid" data-hpd-smoke="fc-nobid-ask">
                   <b>🚫 Not bidding this one? Why:</b>
-                  <div className="fc-nobid-reasons">{NO_BID_REASONS.map((r) => <button key={r} type="button" data-hpd-smoke="fc-nobid-reason" onClick={() => void markNoBid(r)}>{r}</button>)}</div>
+                  <div className="fc-nobid-reasons">{NO_BID_REASONS.map((r) => <button key={r} type="button" className={noBidHint === r ? "is-suggested" : undefined} data-hpd-smoke="fc-nobid-reason" onClick={() => void markNoBid(r)}>{r}</button>)}</div>
                   <button type="button" className="fc-nobid-cancel" onClick={() => setNoBidAsk(false)}>Cancel</button>
                 </div>
               ) : <button type="button" className="fc-nobid-open" data-hpd-smoke="fc-nobid" onClick={() => setNoBidAsk(true)}>🚫 No bid</button>;

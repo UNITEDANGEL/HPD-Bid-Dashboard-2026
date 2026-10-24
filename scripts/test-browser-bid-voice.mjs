@@ -53,8 +53,19 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/bid-voice.png` });
   assert.equal(faxes, 0, "nothing faxed: Send is still two taps");
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Send/i);
+  // "No bid, too far" on the next bid: the reasons open with "Too far" picked out; nothing is marked until a tap.
+  await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').first().click();
+  await openBidList(page);
+  await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child').nth(1).click();
+  const omo2 = (await sheet.locator("header strong").innerText()).trim();
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.evaluate(() => { window.__hear = "no bid, too far"; });
+  await sheet.locator('[data-hpd-smoke="fc-bid-mic"]').click();
+  await page.waitForFunction((o) => new RegExp(`No bid on ${o}: tap "Too far" to confirm`).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), omo2, { timeout: 20000 });
+  assert.equal(await sheet.locator('[data-hpd-smoke="fc-nobid-reason"].is-suggested').innerText(), "Too far");
+  assert.equal(await sheet.locator('[data-hpd-smoke="fc-nobid-undo"]').count(), 0, "not marked until you tap");
   assert.deepEqual(errors, []);
-  console.log(`PASS bid by voice: ${omo} 🎤 "bid 980 on this one" -> helper answered, $980 filled and saved, bid document made, nothing faxed`);
+  console.log(`PASS bid by voice: ${omo} 🎤 "bid 980 on this one" -> helper answered, $980 filled and saved, bid document made, nothing faxed; "no bid, too far" on the next one picked out "Too far" and waited for a tap`);
   await c.close();
 } finally {
   await browser.close();

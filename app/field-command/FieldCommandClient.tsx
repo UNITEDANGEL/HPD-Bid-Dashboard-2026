@@ -3884,6 +3884,14 @@ export default function FieldCommandClient() {
       showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
       return;
     }
+    if (cmd.intent === "no-bid") {
+      const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
+      if (!bidsOpen || !omo) { answer('Open the bid first, then say "no bid" and why.'); return; }
+      const on = (e: Event) => { window.removeEventListener("hpd-no-bid-answer", on); const hint = String((e as CustomEvent<string>).detail || ""); answer(hint ? `No bid on ${omo}: tap "${hint}" to confirm.` : `No bid on ${omo}: tap the reason.`); };
+      window.addEventListener("hpd-no-bid-answer", on);
+      window.dispatchEvent(new CustomEvent("hpd-no-bid", { detail: cmd.reason }));
+      return;
+    }
     if (cmd.intent === "bid-advice") {
       const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
       if (!bidsOpen || !omo) { answer('Open a bid first, then ask "what should I bid".'); return; }
