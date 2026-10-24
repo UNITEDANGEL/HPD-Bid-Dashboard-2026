@@ -3748,7 +3748,11 @@ export default function FieldCommandClient() {
           todaysRoute: todayRouteIds(),
           // Your open jobs, so the AI can name the right one for an action (no tenant names or phones).
           toDoJobs: jobRows.filter((r) => r.group === "todo").slice(0, 40).map((r) => ({ job: r.id, address: r.address })),
-          jobOnScreen: selectedJob ? { job: jobId(selectedJob), address: jobAddress(selectedJob), work: jobSummary(jobScope(selectedJob)).lines.map(lineText).join("; "), status: jobStatus(selectedJob) } : null,
+          jobOnScreen: selectedJob ? { job: jobId(selectedJob), address: jobAddress(selectedJob), work: jobSummary(jobScope(selectedJob)).lines.map(lineText).join("; "), status: jobStatus(selectedJob),
+            // Contacts with the tenant (what was done and when; no names or phones).
+            tenantContacts: (Array.isArray(selectedJob.FieldVisitHistory) ? selectedJob.FieldVisitHistory as { recordedAt?: string; outcome?: string | null; note?: string }[] : [])
+              .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || ""))).slice(-6)
+              .map((v) => ({ at: v.recordedAt ? new Date(v.recordedAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "", what: String(v.outcome && /^APPOINTMENT_/.test(v.outcome) ? `${v.outcome} ${v.note || ""}` : v.note || "").replace(/\(?\d{3}\)?[ -]?\d{3}-\d{4}/g, "").slice(0, 140) })) } : null,
           // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.
           recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 15 * 60000).slice(-4).map(({ you, helper }) => ({ you, helper })),
         };
@@ -4023,6 +4027,8 @@ export default function FieldCommandClient() {
       const award = day(value(found, ["AwardDate"]));
       if (award) done.push(`awarded ${award}`);
       if (ts.textedAt) done.push(`tenant texted ${day(ts.textedAt)}${ts.repliedAt ? ", they replied" : ""}`);
+      const called = String(value(found, ["TenantCallResult"]) || "");
+      if (called) done.push(`tenant called ${day(value(found, ["TenantCalledAt"]))}${called === "no-answer" ? ", no answer" : called === "voicemail" ? ", voicemail left" : ", talked"}`);
       if (appt) done.push(`appointment ${appointmentLabel(appt)}`);
       if (value(found, ["FieldArrivedAt"])) done.push(`arrived ${day(value(found, ["FieldArrivedAt"]))}`);
       if (outcome) done.push(outcome.toLowerCase());
