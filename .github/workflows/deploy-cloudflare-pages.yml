@@ -195,6 +195,7 @@ jobs:
             scripts/test-browser-day-counts.mjs \
             scripts/test-browser-job-tracker.mjs \
             scripts/test-browser-morning.mjs \
+            scripts/test-browser-evening.mjs \
             scripts/test-browser-my-price.mjs \
             scripts/test-browser-all-buttons.mjs \
             scripts/test-browser-buttons-visible.mjs \

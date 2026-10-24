@@ -11,7 +11,7 @@ export type AgentCommand =
   | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "tell-tenant"; ref: string; message: string }
-  | { intent: "week" }
+  | { intent: "week"; days?: number }
   | { intent: "tracker" }
   | { intent: "money" }
   | { intent: "job-status"; ref: string }
@@ -118,6 +118,8 @@ export function parseCommand(heard: string): AgentCommand {
     return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today", describe };
   }
   // 📊 The week in one answer (23 Oct): "how did I do this week", "weekly report", "my week".
+  // The day (23 Oct, evening wrap-up): "how did I do today", "how was today", "wrap up my day".
+  if (/\b(how (did|was) (i|today|my day)( do| go)? ?(today)?|wrap (up )?(my|the) day|today'?s (report|summary)|sum up (my|the) day)\b/.test(t) && /\b(today|day)\b/.test(t) && !/\b(win|won|award|bids?)\b/.test(t)) return { intent: "week", days: 1 };
   if (/\b(how (did|was) (i|my week|we)( do| go)?( this week)?|weekly (report|summary)|this week'?s (report|summary)|my week|sum up (my|the) week)\b/.test(t) && !/\b(win|won|award)/.test(t)) return { intent: "week" };
   // 🧭 The job tracker (23 Oct): "show my job tracker", "my pipeline", "where are all my jobs".
   if (/\b(job tracker|tracker|pipeline|where are (all )?my jobs|all my jobs by stage)\b/.test(t)) return { intent: "tracker" };

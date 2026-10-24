@@ -3493,3 +3493,5 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-focus-chip.is-next { background: #1e3a8a; border-color: #3b82f6; }
 .fc-focus-chip.is-next b { margin-right: 2px; }
 .fc-focus-chip.is-next { white-space: normal; text-align: left; line-height: 1.2; padding: 6px 12px !important; border-radius: 16px; max-width: calc(100% - 180px) !important; }
+.fc-evening { border-color: #a855f7 !important; }
+.fc-evening b { color: #e9d5ff; }

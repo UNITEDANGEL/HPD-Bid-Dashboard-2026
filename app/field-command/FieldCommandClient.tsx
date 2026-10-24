@@ -2839,6 +2839,24 @@ export default function FieldCommandClient() {
     document.addEventListener("visibilitychange", check);
     return () => document.removeEventListener("visibilitychange", check);
   }, []);
+  // 🌆 Wrap up the day (23 Oct): 5 to 9 PM, once a day, one tap says how today went and the bids coming up.
+  const [evening, setEvening] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState !== "visible") return;
+      const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-evening") !== "1"; } catch { return true; } })();
+      if (testing) return;
+      const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+      const today = `${p.year}-${p.month}-${p.day}`;
+      let shown = "";
+      try { shown = localStorage.getItem("hpd-evening-shown") || ""; } catch { /* private mode */ }
+      if (Number(p.hour) >= 17 && Number(p.hour) < 21 && shown !== today) setEvening(true);
+    };
+    check();
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, []);
+  const doneEvening = () => { setEvening(false); try { localStorage.setItem("hpd-evening-shown", new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date())); } catch { /* private mode */ } };
   const doneMorning = () => { setMorning(false); try { localStorage.setItem("hpd-morning-shown", new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date())); } catch { /* private mode */ } };
   const askedArriveRef = useRef<Set<string>>(new Set());
   const nearJobRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
@@ -3926,7 +3944,10 @@ export default function FieldCommandClient() {
     if (cmd.intent === "week") {
       // "How did I do this week?" (23 Oct): the last 7 days in one answer: won, bids sent, jobs finished, paperwork sent,
       // money HPD paid.
-      const since = Date.now() - 7 * 86400000;
+      // "today" (days: 1): since midnight New York; otherwise the last 7 days.
+      const day1 = cmd.days === 1;
+      const nyMidnight = (() => { const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); const off = new Date().toLocaleString("en-US", { timeZone: "America/New_York", timeZoneName: "short" }).includes("EDT") ? "-04:00" : "-05:00"; return Date.parse(`${d}T00:00:00${off}`); })();
+      const since = day1 ? nyMidnight : Date.now() - 7 * 86400000;
       const recent = (iso: unknown) => { const t = Date.parse(String(iso || "")); return Number.isFinite(t) && t >= since; };
       const wins = new Set((threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && /confirmation of award|awarding omo/i.test(`${t.subject} ${m.text}`) && recent(m.at)).map((m) => (m.text.match(/[A-Z]{2}\d{5}/) || t.omos)[0] || "")).filter(Boolean)).size;
       let bidRecs: Record<string, { sentAt?: string; status?: string }> = {};
@@ -3938,7 +3959,7 @@ export default function FieldCommandClient() {
       void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
         const paid = (pay?.recent || []).filter((p: { date?: string; status?: string; amount?: number }) => /paid/i.test(p.status || "") && recent(`${p.date}T12:00:00`)).reduce((n: number, p: { amount?: number }) => n + (p.amount || 0), 0);
         const parts = [`won ${wins} job${wins === 1 ? "" : "s"}`, `sent ${bidsSent} bid${bidsSent === 1 ? "" : "s"}`, `finished ${finished} job${finished === 1 ? "" : "s"}`, `sent paperwork for ${papers}`, paid ? `HPD paid you $${Math.round(paid).toLocaleString("en-US")}` : "no payment from HPD yet"];
-        answer(`This week you ${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}.`);
+        answer(`${day1 ? "Today" : "This week"} you ${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}.`);
       });
       return;
     }
@@ -5676,6 +5697,16 @@ export default function FieldCommandClient() {
           <div>
             <button type="button" className="is-yes" data-hpd-smoke="fc-morning-go" onClick={() => { doneMorning(); unlockChime(); agentRef.current("what do I have today and plan my day"); }}>☀️ Start my day</button>
             <button type="button" data-hpd-smoke="fc-morning-no" onClick={doneMorning}>Not today</button>
+          </div>
+        </div>
+      ) : null}
+      {evening && !morning && jobs.length && !selectedJob && !arrivePrompt && !critical && !agent ? (
+        <div className="fc-arrive fc-evening" role="dialog" aria-label="Wrap up the day" data-hpd-smoke="fc-evening">
+          <b>🌆 Wrap up the day</b>
+          <span>One tap: how today went, and the bids coming up.</span>
+          <div>
+            <button type="button" className="is-yes" data-hpd-smoke="fc-evening-go" onClick={() => { doneEvening(); unlockChime(); agentRef.current("how did I do today and read me the new bids"); }}>🌆 How did today go?</button>
+            <button type="button" data-hpd-smoke="fc-evening-no" onClick={doneEvening}>Not now</button>
           </div>
         </div>
       ) : null}
