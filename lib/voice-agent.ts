@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "week" }
   | { intent: "tracker" }
   | { intent: "money" }
   | { intent: "job-status"; ref: string }
@@ -100,6 +101,8 @@ export function parseCommand(heard: string): AgentCommand {
     const describe = /\b(read|describe|descriptions?|scope|what (are|were|is) (they|the jobs|it)|tell me about|details?)\b/.test(t);
     return { intent: "awards", days, label: days === -1 ? "yesterday" : days === 7 ? "this week" : days === 30 ? "this month" : "today", describe };
   }
+  // 📊 The week in one answer (23 Oct): "how did I do this week", "weekly report", "my week".
+  if (/\b(how (did|was) (i|my week|we)( do| go)?( this week)?|weekly (report|summary)|this week'?s (report|summary)|my week|sum up (my|the) week)\b/.test(t) && !/\b(win|won|award)/.test(t)) return { intent: "week" };
   // 🧭 The job tracker (23 Oct): "show my job tracker", "my pipeline", "where are all my jobs".
   if (/\b(job tracker|tracker|pipeline|where are (all )?my jobs|all my jobs by stage)\b/.test(t)) return { intent: "tracker" };
   // A job start to finish (23 Oct, from the award-to-payment plan): "what's left on ER05729", "where are we with this

@@ -89,6 +89,10 @@ try {
   assert.match(status, /appointment \w{3} \d\d\/\d\d/);
   assert.match(status, /Left: /);
   console.log(`  status: ${status.slice(0, 200)}`);
+
+  // 7. The week in one answer.
+  const week = await say("how did I do this week", /This week you won \d+ jobs?, sent \d+ bids?, finished \d+ jobs?, sent paperwork for \d+/);
+  console.log(`  week: ${week.slice(0, 200)}`);
   assert.deepEqual(errors, []);
   console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
   await c.close();

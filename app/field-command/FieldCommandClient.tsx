@@ -3807,6 +3807,25 @@ export default function FieldCommandClient() {
       answer("Back to the bid you just sent.");
       return;
     }
+    if (cmd.intent === "week") {
+      // "How did I do this week?" (23 Oct): the last 7 days in one answer: won, bids sent, jobs finished, paperwork sent,
+      // money HPD paid.
+      const since = Date.now() - 7 * 86400000;
+      const recent = (iso: unknown) => { const t = Date.parse(String(iso || "")); return Number.isFinite(t) && t >= since; };
+      const wins = new Set((threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && /confirmation of award|awarding omo/i.test(`${t.subject} ${m.text}`) && recent(m.at)).map((m) => (m.text.match(/[A-Z]{2}\d{5}/) || t.omos)[0] || "")).filter(Boolean)).size;
+      let bidRecs: Record<string, { sentAt?: string; status?: string }> = {};
+      try { bidRecs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+      const bidsSent = Object.values(bidRecs).filter((r) => recent(r.sentAt)).length;
+      const finishedOutcomes = /WORK_COMPLETED|PARTIAL_WORK|REFUSED_ACCESS|NO_ACCESS|COMPLETED_BY_OTHERS/;
+      const finished = jobs.filter((j) => !isTestJob(jobId(j)) && (Array.isArray(j.FieldVisitHistory) ? j.FieldVisitHistory as { recordedAt?: string; outcome?: string }[] : []).some((v) => finishedOutcomes.test(String(v?.outcome || "")) && recent(v.recordedAt))).length;
+      const papers = [...followUps.values()].filter((f) => recent(f.sentAt)).length;
+      void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
+        const paid = (pay?.recent || []).filter((p: { date?: string; status?: string; amount?: number }) => /paid/i.test(p.status || "") && recent(`${p.date}T12:00:00`)).reduce((n: number, p: { amount?: number }) => n + (p.amount || 0), 0);
+        const parts = [`won ${wins} job${wins === 1 ? "" : "s"}`, `sent ${bidsSent} bid${bidsSent === 1 ? "" : "s"}`, `finished ${finished} job${finished === 1 ? "" : "s"}`, `sent paperwork for ${papers}`, paid ? `HPD paid you $${Math.round(paid).toLocaleString("en-US")}` : "no payment from HPD yet"];
+        answer(`This week you ${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}.`);
+      });
+      return;
+    }
     if (cmd.intent === "tracker") {
       setTrackerOpen(true);
       setAgent(null);
