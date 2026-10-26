@@ -73,7 +73,7 @@ export function parseCommand(heard: string): AgentCommand {
     if (m && (/\b(tenant|them|her|him)\b/i.test(String(heard)) || m[1])) {
       const rest = (m[2] || "").trim();
       const result = /\b(no answer|didn'?t (answer|pick up)|not answer|nobody answered|no one answered|no response)\b/i.test(rest) ? "no-answer" : /\b(voice ?mail|left (a )?message)\b/i.test(rest) ? "voicemail" : "talked";
-      return { intent: "called", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), result, said: rest.replace(/^(they|she|he) said\s*/i, "") };
+      return { intent: "called", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), result, said: rest.replace(/^(they|she|he) said\s*/i, "").replace(/^(talked|spoke)( to (them|her|him))?$/i, "") };
     }
   }
   // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".

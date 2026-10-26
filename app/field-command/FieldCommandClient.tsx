@@ -1376,6 +1376,20 @@ export default function FieldCommandClient() {
   const pendingApptRef = useRef<{ id: string; appt: Appointment } | null>(null);
   // The tenant last asked to call (by voice), for "I called the tenant, no answer" right after.
   const lastCallRef = useRef("");
+  // 📞 After a call from the app (26 Oct): back in the app, "How did the call go?" with one tap to note it.
+  const callStartRef = useRef<{ id: string; at: number } | null>(null);
+  const [callAsk, setCallAsk] = useState<string>("");
+  const noteCallStarted = (id: string) => { callStartRef.current = { id, at: Date.now() }; lastCallRef.current = id; };
+  useEffect(() => {
+    const back = () => {
+      const c = callStartRef.current;
+      if (document.visibilityState !== "visible" || !c) return;
+      callStartRef.current = null;
+      if (Date.now() - c.at > 3000 && Date.now() - c.at < 2 * 3600000) setCallAsk(c.id);
+    };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, []);
   // Reminders said to the helper ("remind me to call Lewis at 3"): kept on this phone; at the time the app rings and
   // says it (while it's open). Add to Calendar covers the app being closed.
   type Reminder = { id: string; what: string; date: string; time: string };
@@ -5086,7 +5100,7 @@ export default function FieldCommandClient() {
                     })() : null}
                     <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in to see" : "Not listed")}</strong>
                     {!tenant.phone && privateOk === false ? <form className="fc-signin-form" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="jc-tenant-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
-                    {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
+                    {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" onClick={() => noteCallStarted(jobId(selectedJob))} href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
                   </div>
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
@@ -5821,7 +5835,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
-            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
@@ -5852,6 +5866,25 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {callAsk ? (() => {
+        const j = jobs.find((x) => jobId(x) === callAsk);
+        if (!j) return null;
+        const raw = (tenantInfo(j).name || "").split(/\s+/)[0];
+        const first = raw && raw.length > 1 ? `${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "the tenant";
+        const log = (what: string) => { setCallAsk(""); agentRef.current(`I called the tenant for ${callAsk}, ${what}`); };
+        return (
+          <div className="fc-arrive fc-call-ask" role="dialog" aria-label="How did the call go?" data-hpd-smoke="fc-call-ask">
+            <b>📞 How did the call to {first} go?</b>
+            <span>{jobAddress(j).replace(/,\s*\d{5}$/, "")} · {callAsk}</span>
+            <div>
+              <button type="button" data-hpd-smoke="fc-call-noanswer" onClick={() => log("no answer")}>No answer</button>
+              <button type="button" data-hpd-smoke="fc-call-voicemail" onClick={() => log("left a voicemail")}>Voicemail</button>
+              <button type="button" className="is-yes" data-hpd-smoke="fc-call-talked" onClick={() => log("talked")}>Talked</button>
+            </div>
+            <button type="button" className="fc-call-skip" data-hpd-smoke="fc-call-skip" onClick={() => setCallAsk("")}>Skip</button>
+          </div>
+        );
+      })() : null}
       {arrivePrompt && !selectedJob ? (
         <div className="fc-arrive" role="dialog" aria-label="Have you arrived?" data-hpd-smoke="fc-arrive">
           <b>📍 You&apos;re at {arrivePrompt.address}</b>

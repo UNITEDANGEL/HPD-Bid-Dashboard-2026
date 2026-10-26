@@ -3498,3 +3498,6 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-tracker-span { min-height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: 800 12.5px system-ui, sans-serif; }
 .fc-tracker-span.is-on { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
 .fc-tracker-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* 📞 After a call (26 Oct). */
+.fc-call-ask { border-color: #22c55e !important; }
+.fc-call-ask .fc-call-skip { margin-top: 4px; background: none; border: 0; color: #94a3b8; font: 700 13px system-ui, sans-serif; text-decoration: underline; }
