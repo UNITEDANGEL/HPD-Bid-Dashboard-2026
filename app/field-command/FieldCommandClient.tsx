@@ -1126,8 +1126,12 @@ export default function FieldCommandClient() {
   }, [showOlderLayer, olderLayer]);
   // Paid / not paid per OMO, from PIP (scripts/import_pip_agreements.mjs).
   const [pipMap, setPipMap] = useState<Record<string, PipPayment>>({});
+  // When PIP's numbers were last brought in (26 Oct): PIP isn't read by itself; its exports are imported.
+  const [pipAsOf, setPipAsOf] = useState("");
+  const pipAgeDays = pipAsOf ? Math.floor((Date.now() - Date.parse(pipAsOf)) / 86400000) : 0;
+  const pipAsOfText = pipAsOf ? new Date(pipAsOf).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
   useEffect(() => {
-    fetch("/data/pip_paid.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPipMap(d?.jobs || {})).catch(() => {});
+    fetch("/data/pip_paid.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { setPipMap(d?.jobs || {}); setPipAsOf(String(d?.generatedAt || "")); }).catch(() => {});
   }, []);
   useEffect(() => {
     fetch("/data/COA_older.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : [])).then((rows) => setOlderJobs(Array.isArray(rows) ? rows : [])).catch(() => {});
@@ -4121,7 +4125,7 @@ export default function FieldCommandClient() {
           const sameTimeBefore = cmd.period === "year" ? yearTotal(yy - 1, m) : yearTotal(yy - 1);
           text = `HPD paid you ${usd(total)} in ${yy}${cmd.period === "year" ? " so far" : ""}${cmd.period === "year" ? asOf : ""}. ${cmd.period === "year" ? `By this time in ${yy - 1} it was ${usd(sameTimeBefore)}` : `${yy - 1} was ${usd(sameTimeBefore)}`}.`;
         }
-        answer(text);
+        answer(text + (pipAgeDays > 7 ? ` Note: PIP's numbers are ${pipAgeDays} days old.` : ""));
       });
       return;
     }
@@ -4154,9 +4158,9 @@ export default function FieldCommandClient() {
       void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
         const last = (pay?.recent || []).find((p: { status?: string; amount?: number }) => /paid/i.test(p.status || "") && (p.amount || 0) > 0);
         const lastText = last ? ` Last payment: ${usd(last.amount)} on ${new Date(`${last.date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.` : "";
-        answer(owed.length
+        answer((owed.length
           ? `HPD owes you ${usd(total)} on ${owed.length} job${owed.length === 1 ? "" : "s"} in PIP. The biggest: ${top.join("; ")}.${held}${lastText}`
-          : `PIP shows nothing owed right now.${lastText}`);
+          : `PIP shows nothing owed right now.${lastText}`) + (pipAgeDays > 7 ? ` Note: PIP's numbers are ${pipAgeDays} days old (from ${pipAsOfText}).` : ""));
       });
       return;
     }
@@ -5647,7 +5651,7 @@ export default function FieldCommandClient() {
                   const start = () => { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(toFix.map((r) => ({ omo: r.omo, at: r.at })))); } catch { /* private mode */ } };
                   return <a className="fc-fix-all" data-hpd-smoke="fc-fix-all" href={`/paperwork/?job=${encodeURIComponent(toFix[0].omo)}&fix=${encodeURIComponent(toFix[0].at)}&auto=1`} onClick={start}>🔧 Fix them one by one ({toFix.length}) · {money(toFix.reduce((a, r) => a + r.held, 0))}</a>;
                 })()}
-                <p className="fc-follow-note">Each rejection until the money comes in: ✏️ fix → 🖨 print &amp; sign in ink → ✉ email the copy → 📮 mail the original → 💵 paid. Paid comes from PIP (updated by the app every day).{payTrack.summary.lostCount ? ` ${payTrack.summary.lostCount} closed by HPD with $0 paid are at the bottom: dispute those with HPD.` : ""}</p>
+                <p className="fc-follow-note">Each rejection until the money comes in: ✏️ fix → 🖨 print &amp; sign in ink → ✉ email the copy → 📮 mail the original → 💵 paid. Paid comes from PIP{pipAsOfText ? `, last brought in ${pipAsOfText}` : ""}.{pipAgeDays > 7 ? <> <b className="fc-pip-stale" data-hpd-smoke="fc-pip-stale">⚠️ PIP numbers are {pipAgeDays} days old:</b> sign in to <a href="https://a127-pip.nyc.gov/webapp/PRDPCW/SelfService" target="_blank" rel="noreferrer">PIP</a>, download the Check/EFT Summary and Agreement Summary, and they&apos;ll be brought in.</> : null}{payTrack.summary.lostCount ? ` ${payTrack.summary.lostCount} closed by HPD with $0 paid are at the bottom: dispute those with HPD.` : ""}</p>
                 <ol className="fc-money-list">
                   {payTrack.rows.map((r) => {
                     const job = findAnyJob(r.omo);

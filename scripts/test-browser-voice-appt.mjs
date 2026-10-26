@@ -88,6 +88,9 @@ try {
   // 5. Money: what PIP shows HPD still owes.
   const owed = await say("how much does HPD owe me", /HPD owes you \$[\d,]+ on \d+ jobs? in PIP|PIP shows nothing owed/);
   console.log(`  money: ${owed.slice(0, 160)}`);
+  // Old PIP numbers are said so (PIP isn't read by itself; its exports are brought in).
+  const pipAge = (Date.now() - Date.parse((await (await fetch(`${baseUrl}/data/pip_paid.json`)).json()).generatedAt)) / 86400000;
+  if (pipAge > 8) assert.match(owed, /Note: PIP's numbers are \d+ days old/);
   // Rejections holding money, the ones to fix first, with Fix buttons.
   const rej = await say("which rejections do I have", /rejections? hold \$[\d,]+|No payment rejections/);
   console.log(`  rejections: ${rej.slice(0, 160)}`);
