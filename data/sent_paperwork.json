@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-26T16:02:33.221541+00:00",
+"generatedAt": "2026-10-26T16:14:10.271006+00:00",
 "since": "2026/10/12",
 "jobs": {
 "EN04541": [
@@ -20943,6 +20943,14 @@
 "file": "ER00272 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: OMO No: ER00272 Issuer: AREWA AJEWOLE Boro: Brooklyn Bldg Address: 2324, PITKIN AVENUE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-26",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-pqzdjss1.png",
+"outcome": "",
+"subject": "Re: INVOICE IS INCOMPLETE- OMO#ER00272",
 "via": "hpd-staff"
 }
 ],
