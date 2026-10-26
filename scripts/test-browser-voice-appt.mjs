@@ -93,6 +93,18 @@ try {
   console.log(`  rejections: ${rej.slice(0, 160)}`);
   if (/to fix/.test(rej)) assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().innerText(), /▶ Fix them one by one \(\d+\)/);
   if (/to fix/.test(rej)) assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^\/paperwork\/\?job=[A-Z]{2}\d{5}&fix=.*&auto=1$/);
+  // Money received by month / year, checked against PIP's own numbers.
+  const pip = await (await fetch(`${baseUrl}/data/pip_payments.json`)).json();
+  const ym = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
+  const [cy, cm] = ym.split("-").map(Number);
+  const lastKey = cm === 1 ? `${cy - 1}-12` : `${cy}-${String(cm - 1).padStart(2, "0")}`;
+  const lastName = new Date(Number(lastKey.slice(0, 4)), Number(lastKey.slice(5)) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const lastMonth = await say("how much did I get paid last month", /HPD paid you \$[\d,]+ in /);
+  assert.ok(lastMonth.includes(`HPD paid you $${Math.round(pip.byMonth[lastKey] || 0).toLocaleString("en-US")} in ${lastName}`), `last month matches PIP: ${lastMonth}`);
+  const yearSo = await say("how much did I make this year", /HPD paid you \$[\d,]+ in \d{4} so far/);
+  const yearTotal = Object.entries(pip.byMonth).filter(([k]) => k.startsWith(`${cy}-`)).reduce((n, [, v]) => n + v, 0);
+  assert.ok(yearSo.includes(`$${Math.round(yearTotal).toLocaleString("en-US")} in ${cy} so far`), `this year matches PIP: ${yearSo}`);
+  console.log(`  paid: ${lastMonth} | ${yearSo}`);
 
   // 6. A job start to finish: the appointment made above shows as done, and what's left comes next.
   const status = await say(`what's left on ${JOB}`, new RegExp(`${JOB} at .*Done:`));

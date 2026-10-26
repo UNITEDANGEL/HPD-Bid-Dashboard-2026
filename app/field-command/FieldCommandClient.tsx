@@ -565,7 +565,7 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
-  ["Money and bids", ["how much does HPD owe me", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
+  ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
 ];
 
@@ -4080,6 +4080,35 @@ export default function FieldCommandClient() {
       else if (!pay && (fu?.sentAt || approved)) left.push("wait for it to show in PIP");
       openIssueJob(found, true);
       answer(`${id} at ${where}. Done: ${done.length ? done.join(", ") : "nothing yet"}. ${left.length ? `Left: ${left.join(", then ")}.` : "Nothing left: it's finished and paid."}`);
+      return;
+    }
+    if (cmd.intent === "paid-period") {
+      // "How much did I get paid this month?" (26 Oct): what PIP shows paid by HPD in the month / year, compared with the
+      // one before. PIP is read by the app every day; the answer says how fresh it is.
+      void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
+        const months: Record<string, number> = pay?.byMonth || {};
+        if (!Object.keys(months).length) { answer("I don't have PIP's payments right now. Try again later."); return; }
+        const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+        const ym = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
+        const [y, m] = ym.split("-").map(Number);
+        const key = (yy: number, mm: number) => `${yy}-${String(mm).padStart(2, "0")}`;
+        const prev = (yy: number, mm: number) => (mm === 1 ? [yy - 1, 12] : [yy, mm - 1]);
+        const yearTotal = (yy: number, upTo = 12) => Object.entries(months).filter(([k]) => k.startsWith(`${yy}-`) && Number(k.slice(5)) <= upTo).reduce((n, [, v]) => n + v, 0);
+        const name = (yy: number, mm: number) => new Date(yy, mm - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        const asOf = pay?.totals?.to ? ` (PIP up to ${new Date(`${pay.totals.to}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })})` : "";
+        let text = "";
+        if (cmd.period === "month" || cmd.period === "last-month") {
+          const [yy, mm] = cmd.period === "month" ? [y, m] : prev(y, m);
+          const [py, pm] = prev(yy, mm);
+          text = `HPD paid you ${usd(months[key(yy, mm)] || 0)} in ${name(yy, mm)}${asOf}. ${name(py, pm).split(" ")[0]} was ${usd(months[key(py, pm)] || 0)}.`;
+        } else {
+          const yy = cmd.period === "year" ? y : y - 1;
+          const total = yearTotal(yy);
+          const sameTimeBefore = cmd.period === "year" ? yearTotal(yy - 1, m) : yearTotal(yy - 1);
+          text = `HPD paid you ${usd(total)} in ${yy}${cmd.period === "year" ? " so far" : ""}${cmd.period === "year" ? asOf : ""}. ${cmd.period === "year" ? `By this time in ${yy - 1} it was ${usd(sameTimeBefore)}` : `${yy - 1} was ${usd(sameTimeBefore)}`}.`;
+        }
+        answer(text);
+      });
       return;
     }
     if (cmd.intent === "rejections") {

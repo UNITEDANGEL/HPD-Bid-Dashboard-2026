@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "paid-period"; period: "month" | "last-month" | "year" | "last-year" }
   | { intent: "rejections" }
   | { intent: "tenant-texts" }
   | { intent: "appointments"; when: "today" | "tomorrow" | "all" }
@@ -150,6 +151,8 @@ export function parseCommand(heard: string): AgentCommand {
     const job = (/\b([a-z]{2})\s?(\d{5})\b/i.exec(t) || []).slice(1, 3).join("").toUpperCase();
     return { intent: "job-status", ref: job || refOf(t.replace(/\b(what'?s left|what is left|where are we|where do we stand|status of|how far along|track|what'?s next on|what is next on|with|on|for|the|this|job)\b/g, " ")) };
   }
+  // Money received (26 Oct): "how much did I get paid this month / last month / this year", "what did HPD pay me in 2025".
+  if (/\b(paid|pay|payments?|received|got|made|make|earn(ed)?|income)\b/.test(t) && /\b(this|last) (month|year)\b|\b20[0-9]{2}\b/.test(t) && !/\b(owe|owed|outstanding|still)\b/.test(t)) return { intent: "paid-period", period: /last month/.test(t) ? "last-month" : /last year|\b2025\b/.test(t) ? "last-year" : /this year|\b2026\b/.test(t) ? "year" : "month" };
   // Payment rejections (24 Oct): "which rejections do I have", "what's rejected", "rejections to fix".
   if (/\b(rejections?|rejected)\b/.test(t) && !/\bfix (the )?rejection for\b/.test(t)) return { intent: "rejections" };
   // Money (23 Oct): "how much does HPD owe me", "what's outstanding", "did I get paid", "money report".
