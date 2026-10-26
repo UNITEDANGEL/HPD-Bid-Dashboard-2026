@@ -12,15 +12,19 @@ const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" })
 const bids = fetched.bids.filter((b) => b.itbFile).slice(0, 2).map((b) => ({ ...b, bidDue: today, bidDueTime: "11:59 PM" }));
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 async function page({ notices, noBids = false, texted = "", midday = false }) {
+  // With notices: one 24-hour notice of our own, overdue (the real emails may have none that day), on a fixed Wednesday.
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   // No HPD emails at all: no urgent notice on the board.
-  await routePrivate(c, notices ? {} : { conversations: (d) => ({ ...d, threads: [] }) });
+  await routePrivate(c, notices
+    ? { conversations: (d) => ({ ...d, threads: [{ id: "test-24", subject: "24 HR POOR PERFORMANCE NOTICE - OMO#EQ99997", omos: ["EQ99997"], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: "2026-10-20T13:00:00Z", waiting: true, messages: [{ at: "2026-10-20T13:00:00Z", from: "test@hpd.nyc.gov", hpd: true, mine: false, subject: "24 HR", text: "Notice test@hpd.nyc.gov", files: [] }] }] }) }
+    : { conversations: (d) => ({ ...d, threads: [] }) });
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } })));
   await c.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids: noBids ? [] : bids } }));
   // A tenant texted two days ago with no answer.
   if (texted) await c.addInitScript((j) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({ [j]: { TenantTextedAt: new Date(Date.now() - 2 * 86400000).toISOString(), TenantRepliedAt: "" } })); sessionStorage.setItem("seeded", "1"); } }, texted);
   const p = await c.newPage();
   // "Call the tenant" only shows from 8 AM (no calls at night): run that case at noon New York today.
+  if (notices) await p.clock.install({ time: new Date("2026-10-21T15:00:00Z") });
   if (midday) { const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); await p.clock.install({ time: new Date(`${d}T16:00:00Z`) }); }
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
