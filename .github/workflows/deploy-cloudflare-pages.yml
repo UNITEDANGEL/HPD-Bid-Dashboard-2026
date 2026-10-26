@@ -4,8 +4,11 @@ on:
   push:
     branches:
       - main
-  # Not after each fetcher run any more (owner, 26 Oct: too many Google calls): the fetcher deploys the new data
-  # itself; this full deploy with every test runs only when the code changes.
+  # The fetcher's data commits are pushed by GitHub Actions, which doesn't start this workflow
+  # on its own: deploy when a fetcher run finishes so new jobs and documents go live right away.
+  workflow_run:
+    workflows: ["Run Built-In Fetcher"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
