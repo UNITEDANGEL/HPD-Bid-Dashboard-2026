@@ -5086,6 +5086,21 @@ export default function FieldCommandClient() {
                           {tenantText?.id === jobId(selectedJob) ? (
                             <div className="jc-tenant-draft" data-hpd-smoke="jc-tenant-draft">
                               <small>{tenantText.ai || "Read it, change anything, then open it in Messages and press Send there."}</small>
+                              {/* One-tap messages (26 Oct): fill the text with the tenant's name and the address; you still read it and send it. */}
+                              {(() => {
+                                const raw = (tenant.name || "").split(/\s+/)[0];
+                                const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello";
+                                const where = jobAddress(selectedJob).replace(/,\s*\d{5}$/, "");
+                                const me = "this is Jot from United Angel Construction";
+                                const quick: [string, string][] = [
+                                  ["🚚 On the way", `${hi}, ${me}. We are on the way to ${where} for the HPD repair. See you soon.`],
+                                  ["⏱ 15 min late", `${hi}, ${me}. We are running about 15 minutes late to ${where}. Sorry for the wait.`],
+                                  ["📅 Tomorrow?", `${hi}, ${me}. Can we come to ${where} tomorrow for the HPD repair? Please reply with a good time.`],
+                                  ["✅ Please confirm", `${hi}, ${me}. Please confirm our appointment at ${where}. Reply YES to confirm or tell us a better time.`],
+                                  ["🚪 We're outside", `${hi}, ${me}. We are outside ${where} for the HPD repair. Please let us in.`],
+                                ];
+                                return <div className="jc-tenant-quick" data-hpd-smoke="jc-tenant-quick">{quick.map(([label, text]) => <button key={label} type="button" data-hpd-smoke="jc-tenant-quick-btn" onClick={() => setTenantText({ ...tenantText, text, ai: "Ready: read it, then send it." })}>{label}</button>)}</div>;
+                              })()}
                               <textarea rows={6} data-hpd-smoke="jc-tenant-draft-text" value={tenantText.text} onChange={(e) => setTenantText({ ...tenantText, text: e.target.value })} />
                               <div>
                                 {smsReady ? <button type="button" className={`is-send${smsSend?.id === jobId(selectedJob) && smsSend.armed ? " is-armed" : ""}`} data-hpd-smoke="jc-tenant-send-sms" disabled={smsSend?.id === jobId(selectedJob) && smsSend.status === "Sending…"} onClick={() => void sendTenantSms(selectedJob, tenantText.text)}>{smsSend?.id === jobId(selectedJob) && smsSend.armed ? "✅ Tap again: send the text" : "📤 Send it now"}</button> : null}

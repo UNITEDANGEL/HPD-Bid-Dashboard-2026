@@ -48,6 +48,11 @@ try {
   assert.match(href, /^sms:\+?\d{10,11}[&?]body=/, "Messages with the number");
   assert.ok(decodeURIComponent(href.split("body=")[1]) === text, "and the text");
   if (shots) await page.screenshot({ path: `${shots}/tenant-text.png` });
+  // One-tap messages: "On the way" fills the text (name + address), and the Messages link carries it.
+  await draft.locator('[data-hpd-smoke="jc-tenant-quick-btn"]', { hasText: "On the way" }).click();
+  const onTheWay = await draft.locator("textarea").inputValue();
+  assert.match(onTheWay, /^(Hi \w+|Hello), this is Jot from United Angel Construction\. We are on the way to .+ for the HPD repair\./);
+  assert.equal(decodeURIComponent((await link.getAttribute("href")).split("body=")[1]), onTheWay);
   // Open in Messages (the test stops the phone from leaving the page): it's recorded as texted.
   await page.evaluate(() => document.addEventListener("click", (e) => { if (e.target.closest?.('[data-hpd-smoke="jc-tenant-open-sms"]')) e.preventDefault(); }, true));
   await link.click();
