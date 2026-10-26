@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-26T17:04:53.215034+00:00",
+"generatedAt": "2026-10-26T17:22:40.015165+00:00",
 "since": "2026/10/12",
 "jobs": {
 "EN04541": [
@@ -20951,6 +20951,14 @@
 "file": "Outlook-pqzdjss1.png",
 "outcome": "",
 "subject": "Re: INVOICE IS INCOMPLETE- OMO#ER00272",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-26",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER00272 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: INVOICE IS INCOMPLETE- OMO#ER00272",
 "via": "hpd-staff"
 }
 ],
