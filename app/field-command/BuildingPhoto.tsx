@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { listFieldEvidenceLite, saveFieldPhotos, type FieldMedia } from "../../lib/field-photo-store";
-import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink, streetViewPicture, type StreetViewPicture } from "../../lib/building-photo";
+import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink, type StreetViewPicture } from "../../lib/building-photo";
 import { listFieldPackets, type FieldPacket } from "../../lib/field-packet-store";
 
-// Banner at the top of the job card: your own building photo if you took one, otherwise Google's
-// Street View picture of the building. On it: the 360° Street View (Google Maps), and a button to
-// take your own building photo (it replaces Google's).
+// Banner at the top of the job card: your own building photo if you took one. On it: the 360° Street View (Google
+// Maps, free) and a button to take your own building photo. Google's Street View picture is off (owner, 26 Oct:
+// "disable the image view on screen, leave the 360 view" — it was the paid Google call).
 export function BuildingHero({ id, address, borough, point }: { id: string; address: string; borough: string; point: { lat: number; lng: number } | null }) {
   const [own, setOwn] = useState<FieldMedia | null>(null);
   const [google, setGoogle] = useState<StreetViewPicture | null>(null);
@@ -20,7 +20,6 @@ export function BuildingHero({ id, address, borough, point }: { id: string; addr
     setOwn(null); setGoogle(null); setError("");
     // Lite: the job's videos are never read just to find the building photo.
     listFieldEvidenceLite(id).then((rows) => { if (!cancelled) setOwn(buildingPhoto(rows as FieldMedia[])); }).catch(() => {});
-    if (lat !== undefined && lng !== undefined) streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGoogle(picture); }).catch(() => {});
     return () => { cancelled = true; };
   }, [id, lat, lng]);
   async function save(file?: File) {
@@ -38,7 +37,7 @@ export function BuildingHero({ id, address, borough, point }: { id: string; addr
   const link360 = point ? streetViewLink(point, google?.pano || "", google?.heading) : null;
   if (!src && !link360) return null;
   return <figure className={`jc-hero-photo ${src ? "" : "is-empty"}`} data-hpd-smoke="jc-hero-photo">
-    {src ? <img src={src} alt={`Building at ${address}`} onError={() => { if (own) setOwn(null); else setGoogle(null); }} /> : <span className="jc-hero-empty">No building picture yet</span>}
+    {src ? <img src={src} alt={`Building at ${address}`} onError={() => { if (own) setOwn(null); else setGoogle(null); }} /> : null}
     {src ? <figcaption>{own ? "Your photo" : `Google Street View${google?.date ? ` · ${google.date}` : ""}`}</figcaption> : null}
     <div className="jc-hero-actions">
       {link360 ? <a className="jc-hero-360" data-hpd-smoke="jc-hero-360" href={link360} target="_blank" rel="noreferrer">🔄 360° view</a> : null}

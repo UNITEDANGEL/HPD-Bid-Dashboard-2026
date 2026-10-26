@@ -31,7 +31,8 @@ context.own = null; context.src = 'https://maps.googleapis.com/maps/api/streetvi
 context.preview().props.onError();
 assert.equal(googleCleared, null, 'a broken Google picture is hidden');
 context.src = '';
-assert.equal(context.preview().props.children, 'No building picture yet');
+assert.equal(context.preview(), null, 'no picture: nothing in its place (26 Oct: only the 360° and 📷 buttons)');
 const hero = fs.readFileSync(file, 'utf8');
+assert.ok(!hero.includes('streetViewPicture('), 'the paid Google Street View picture is never asked for (26 Oct)');
 assert.ok(hero.includes('data-hpd-smoke="jc-hero-360"') && hero.includes('streetViewLink(point, google?.pano'), '360° view uses the panorama facing the building');
-console.log('PASS: building picture: own photo first, Google fallback, broken-image fallback, empty state, 360° view link');
+console.log('PASS: building picture: own photo only (no paid Google picture), broken-image fallback, empty state, 360° view link');

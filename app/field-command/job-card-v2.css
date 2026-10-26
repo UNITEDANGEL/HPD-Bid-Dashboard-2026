@@ -1013,3 +1013,6 @@
 .jc-tenant-history { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 3px; }
 .jc-tenant-history li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px; border-radius: 8px; background: #0f172a; font: 650 12.5px/1.3 system-ui, sans-serif; color: #e2e8f0; }
 .jc-tenant-history small { flex: 0 0 auto; color: #94a3b8; font-weight: 700; }
+/* No Google picture (26 Oct): without your own photo the banner is just the 360° and 📷 buttons. */
+.jc-hero-photo.is-empty { min-height: 0; padding: 0; border: 0; background: transparent; display: block; }
+.jc-hero-photo.is-empty .jc-hero-actions { position: static; display: flex; gap: 6px; padding: 0; transform: none; }

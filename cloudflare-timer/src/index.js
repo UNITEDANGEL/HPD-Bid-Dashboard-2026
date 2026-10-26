@@ -1,4 +1,4 @@
-// HPD invitation timer: every 10 minutes from 6:30 AM to 7:50 PM New York time, starts the fetcher on GitHub
+// HPD invitation timer: every 10 minutes, Monday to Saturday, 7 AM to 7 PM New York time, starts the fetcher on GitHub
 // (run-fetcher.yml), which reads new invitations to bid from Gmail and puts them on the live map.
 // It runs in Cloudflare, so invitations keep coming in when the laptop is off, asleep or out of battery
 // (13 Oct 2026: three invitations waited 2 hours while the laptop was off). GitHub's own schedule runs
@@ -7,9 +7,9 @@
 const REPO = "UNITEDANGEL/HPD-Bid-Dashboard-2026";
 const WORKFLOW = "run-fetcher.yml";
 // HPD's invitations and award emails arrive 7 AM - 7 PM (705 of 706 in Jun-Oct 2026; earliest 6:58 AM,
-// latest 6:5x PM): first check 6:30 AM, last 7:50 PM.
-const FIRST_MINUTE = 6 * 60 + 30;
-const LAST_MINUTE = 19 * 60 + 50;
+// latest 6:5x PM): first check 7 AM, last 7 PM, Monday to Saturday.
+const FIRST_MINUTE = 7 * 60;
+const LAST_MINUTE = 19 * 60;
 
 export function newYorkMinute(date) {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(date);
@@ -20,7 +20,11 @@ export function newYorkMinute(date) {
 export async function tick(env, now = new Date(), fetchImpl = fetch) {
   const minute = newYorkMinute(now);
   const at = `${Math.floor(minute / 60)}:${String(minute % 60).padStart(2, "0")}`;
-  if (minute < FIRST_MINUTE || minute > LAST_MINUTE) return { started: false, why: `outside 6:30 AM - 7:50 PM (${at})` };
+  // Monday to Saturday, 7 AM - 7 PM New York (owner, 26 Oct: "too many API calls from Google, reduce them to 7 AM - 7 PM
+  // Mon-Sat"). Each fetch reads Gmail and updates the site.
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(now);
+  if (weekday === "Sun") return { started: false, why: `Sunday: no fetch (${at})` };
+  if (minute < FIRST_MINUTE || minute > LAST_MINUTE) return { started: false, why: `outside 7 AM - 7 PM (${at})` };
   // A pasted token can carry a line break or spaces: they'd break the request.
   const token = String(env.GITHUB_DISPATCH_TOKEN || "").replace(/\s+/g, "");
   if (!token) return { started: false, why: "GITHUB_DISPATCH_TOKEN is not set" };
@@ -46,7 +50,7 @@ export async function tick(env, now = new Date(), fetchImpl = fetch) {
 export default {
   // A plain address so Cloudflare treats the timer as deployed; it starts nothing and shows no data.
   async fetch() {
-    return new Response("HPD invitation timer: runs every 10 minutes, 6:30 AM - 7:50 PM New York time.\n", { headers: { "content-type": "text/plain" } });
+    return new Response("HPD invitation timer: runs every 10 minutes, Monday to Saturday, 7 AM - 7 PM New York time.\n", { headers: { "content-type": "text/plain" } });
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(tick(env, new Date(event.scheduledTime)).then((r) => console.log(r.why)));

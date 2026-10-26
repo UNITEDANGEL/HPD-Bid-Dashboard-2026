@@ -6,8 +6,8 @@ name: Bid Fax Watch
 # session is on, or a fax is still going through); otherwise it stops in seconds.
 on:
   schedule:
-    - cron: "3-59/5 10-23 * * *"
-    - cron: "3-59/5 0-2 * * *"
+    # Monday to Saturday, 7 AM to 7 PM New York (owner, 26 Oct: fewer Google calls).
+    - cron: "3-59/5 11-22 * * 1-6"
   workflow_dispatch:
 
 permissions:
