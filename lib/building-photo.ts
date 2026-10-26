@@ -39,13 +39,9 @@ export type StreetViewPicture = { url: string; date: string; pano: string; headi
 const pictureCache = new Map<string, Promise<StreetViewPicture | null>>();
 
 // The picture is a paid Google call (owner, 26 Oct: "too many API calls from Google, I'm getting billed"): never from
-// the automatic tests (they open many job cards on every update), and only Monday to Saturday, 7 AM to 7 PM New York.
-// Otherwise the card keeps the free "open in Street View" link.
-export function streetViewAllowed(now = new Date(), automated = typeof navigator !== "undefined" && Boolean(navigator.webdriver)) {
-  if (automated) return false;
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(now).map((x) => [x.type, x.value]));
-  const hour = Number(p.hour);
-  return p.weekday !== "Sun" && hour >= 7 && hour < 19;
+// the automatic tests, which open many job cards on every update. You see it as before.
+export function streetViewAllowed(automated = typeof navigator !== "undefined" && Boolean(navigator.webdriver)) {
+  return !automated;
 }
 
 export function streetViewPicture(point: Point | null, key = GOOGLE_MAPS_KEY): Promise<StreetViewPicture | null> {
