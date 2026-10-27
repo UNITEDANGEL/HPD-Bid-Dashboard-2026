@@ -5841,9 +5841,21 @@ export default function FieldCommandClient() {
             const at = jobLatLng(j);
             return !fix || !at || distanceMiles({ lat: fix.lat, lng: fix.lng }, at) > 0.25;
           });
+          // From 3 PM to 9 PM (New York): an appointment tomorrow, tenant's phone on file, no reminder sent for that date yet ->
+          // text the tenant a reminder (27 Oct). Sending it is noted on the job so it isn't offered again.
+          const nyHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+          const remind = nyHour >= 15 && nyHour < 21 ? jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).find(({ j, a }) =>
+            a && appointmentTiming(a).days === 1 && tenantInfo(j).phone && value(j, ["ApptReminderSentFor"]) !== a.date && !value(j, ["FieldArrivedAt"])) : undefined;
+          const remindText = remind ? (() => { const raw = (tenantInfo(remind.j).name || "").split(/\s+/)[0]; const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello"; return `${hi}, this is Jot from United Angel Construction. Reminder: we will see you tomorrow ${appointmentLabel(remind.a!).split(" · ")[1]} at ${jobAddress(remind.j).replace(/,\s*\d{5}$/, "")} for the HPD repair. Reply YES to confirm, or tell us a better time.`; })() : "";
           const lateText = late ? (() => { const raw = (tenantInfo(late.j).name || "").split(/\s+/)[0]; const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello"; return `${hi}, this is Jot from United Angel Construction. We are running about 15 minutes late to ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}. Sorry for the wait.`; })() : "";
           const next = late ? { kind: "late", icon: "⏱", text: `Appointment ${appointmentLabel(late.a!).split(" · ")[1]} at ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}: running late? Text the tenant`, go: () => { window.location.href = smsHref(tenantInfo(late.j).phone, lateText); } }
             : bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
+            : remind ? { kind: "remind", icon: "📅", text: `Tomorrow ${appointmentLabel(remind.a!).split(" · ")[1]} at ${jobAddress(remind.j).replace(/,\s*\d{5}$/, "")}: text the tenant a reminder`, go: () => {
+              const id = jobId(remind.j), patch = { ApptReminderSentFor: remind.a!.date, FieldVisitHistory: visitHistoryWith(remind.j, "Texted the tenant a reminder for tomorrow", null) };
+              try { writeSharedWorkflowPatch(id, patch); } catch {}
+              mergeWorkflowPatchIntoScreen(id, patch);
+              window.location.href = smsHref(tenantInfo(remind.j).phone, remindText);
+            } }
             : replied ? { kind: "tenant", icon: "💬", text: `${jobAddress(replied).replace(/,\s*\d{5}$/, "")}: tenant replied, book a time`, go: () => openIssueJob(replied, true) }
             : toCall ? { kind: "call", icon: "📞", text: `Call the tenant at ${jobAddress(toCall).replace(/,\s*\d{5}$/, "")} (no answer to the text)`, go: () => openIssueJob(toCall, true) }
             : papers ? { kind: "paperwork", icon: "📄", text: `Paperwork: ${jobAddress(papers).replace(/,\s*\d{5}$/, "")}`, go: () => openIssueJob(papers, true) }

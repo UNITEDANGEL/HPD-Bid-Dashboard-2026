@@ -11,7 +11,7 @@ const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json()
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 const bids = fetched.bids.filter((b) => b.itbFile).slice(0, 2).map((b) => ({ ...b, bidDue: today, bidDueTime: "11:59 PM" }));
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-async function page({ notices, noBids = false, texted = "", midday = false, apptSoon = "" }) {
+async function page({ notices, noBids = false, texted = "", midday = false, apptSoon = "", apptTomorrow = "" }) {
   // With notices: one 24-hour notice of our own, overdue (the real emails may have none that day), on a fixed Wednesday.
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   // No HPD emails at all: no urgent notice on the board.
@@ -30,9 +30,18 @@ async function page({ notices, noBids = false, texted = "", midday = false, appt
     localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({ [j]: { Appointment: { date: `${p.year}-${p.month}-${p.day}`, start, end, state: "confirmed", contact: "Tenant", phone: "", note: "", reminder: 60 } } }));
     sessionStorage.setItem("seeded", "1");
   }, apptSoon);
+  // An appointment tomorrow 10-11 AM, no reminder sent yet.
+  if (apptTomorrow) await c.addInitScript((j) => {
+    if (sessionStorage.getItem("seeded")) return;
+    const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + 86400000));
+    localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({ [j]: { Appointment: { date: d, start: "10:00", end: "11:00", state: "confirmed", contact: "Tenant", phone: "", note: "", reminder: 60 } } }));
+    sessionStorage.setItem("seeded", "1");
+  }, apptTomorrow);
   const p = await c.newPage();
   // "Call the tenant" only shows from 8 AM (no calls at night): run that case at noon New York today.
   if (notices) await p.clock.install({ time: new Date("2026-10-21T15:00:00Z") });
+  // 5 PM New York today (reminders for tomorrow show 3-9 PM).
+  if (apptTomorrow) { const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); await p.clock.install({ time: new Date(`${d}T21:00:00Z`) }); }
   if (midday) { const d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); await p.clock.install({ time: new Date(`${d}T16:00:00Z`) }); }
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
@@ -86,7 +95,21 @@ try {
       await c.close();
     }
   }
-  console.log("PASS next chip: no urgent notice -> 'Next: 2 bids due today · first 11:59 PM' opens the bids; with an urgent notice the notice countdown shows instead; no bids and a tenant texted 2 days ago -> 'Call the tenant at …' opens the job; an appointment in 10 minutes, not there yet -> 'running late? Text the tenant'");
+  {
+    const { c, p, errors } = await page({ notices: false, noBids: true, apptTomorrow: "EQ15239" });
+    const chip = p.locator('[data-hpd-smoke="fc-next-chip"]');
+    await chip.waitFor({ timeout: 30000 });
+    assert.equal(await chip.getAttribute("data-kind"), "remind");
+    assert.match((await chip.innerText()).replace(/\s+/g, " "), /Next: Tomorrow 10–11 AM at 1207 1 AVENUE: text the tenant a reminder/);
+    if (shots) await p.screenshot({ path: `${shots}/next-remind.png` });
+    // The sms: link goes to Messages on the iPhone; here only the note on the job is checked.
+    await chip.click().catch(() => {});
+    await p.waitForFunction(() => Object.values(JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")).some((r) => r.ApptReminderSentFor), null, { timeout: 15000 });
+    await p.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-next-chip"]')?.getAttribute("data-kind") !== "remind", null, { timeout: 15000 });
+    assert.deepEqual(errors, []);
+    await c.close();
+  }
+  console.log("PASS next chip: no urgent notice -> 'Next: 2 bids due today · first 11:59 PM' opens the bids; with an urgent notice the notice countdown shows instead; no bids and a tenant texted 2 days ago -> 'Call the tenant at …' opens the job; an appointment in 10 minutes, not there yet -> 'running late? Text the tenant'; at 5 PM with an appointment tomorrow -> 'text the tenant a reminder', noted on the job so it goes away");
 } finally {
   await browser.close();
 }

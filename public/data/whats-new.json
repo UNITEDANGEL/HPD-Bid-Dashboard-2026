@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 27, 2026",
+      "title": "Reminder the evening before",
+      "items": [
+        "📅 In the evening (3-9 PM) the map's Next pill offers a one-tap reminder text to tomorrow's tenants: \"we will see you tomorrow 10-11 AM… Reply YES to confirm\"."
+      ]
+    },
+    {
       "date": "Oct 26, 2026",
       "title": "Street View picture off",
       "items": [
