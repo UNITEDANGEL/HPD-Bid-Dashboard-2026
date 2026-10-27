@@ -91,6 +91,9 @@ try {
     await chip.waitFor({ timeout: 30000 });
     assert.equal(await chip.getAttribute("data-kind"), "call");
     assert.match((await chip.innerText()).replace(/\s+/g, " "), /Next: Call the tenant at .* \(no answer to the text\)/);
+    // 👉 Its pin glows on the map with a "Next" tag.
+    await p.locator('.fc-label-marker.is-glow-next[title*="EQ15239"]').waitFor({ timeout: 15000 });
+    assert.match(await p.locator('.fc-label-marker.is-glow-next .fc-glow-tag').innerText(), /Next/);
     await chip.click();
     await p.locator("#fc-job-card").waitFor({ timeout: 15000 });
     assert.match(await p.locator("#fc-job-card").innerText(), /EQ15239/);

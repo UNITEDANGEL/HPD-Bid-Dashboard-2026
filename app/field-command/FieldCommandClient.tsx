@@ -1119,6 +1119,7 @@ export default function FieldCommandClient() {
   };
   // Jobs that glow on the map for the picked notice kind, with their tag (e.g. "24h · 5h left").
   const glowRef = useRef<Map<string, { tag: string; cls: string }>>(new Map());
+  const nextOmoRef = useRef("");
   // The days menu on the borough bar (owner, 16 Oct): one small button, the choices open under it.
   const [daysMenuOpen, setDaysMenuOpen] = useState(false);
   const [olderLayer, setOlderLayer] = useState<JobRecord[] | null>(null);
@@ -2185,6 +2186,9 @@ export default function FieldCommandClient() {
   // most urgent one -- overdue first, then the earliest deadline -- breathes slowly.
   const topGlow = [...glow.keys()].map((omo) => ({ omo, it: prioByOmo.get(omo) })).filter((x) => x.it?.dueAt).sort((a, b) => Date.parse(a.it!.dueAt) - Date.parse(b.it!.dueAt))[0]?.omo;
   if (topGlow) { const g = glow.get(topGlow)!; glow.set(topGlow, { ...g, cls: `${g.cls} is-glow-top` }); }
+  // 👉 The job that needs you now glows on the map (27 Oct, "pulse on the pin that needs you"): the one the Next pill
+  // (or the urgent notice) points at, when no notice filter is on.
+  if (!glow.size && nextOmoRef.current && !selectedJob) glow.set(nextOmoRef.current, { tag: "👉 Next", cls: "is-glow is-glow-next is-glow-top" });
   glowRef.current = glow;
   const glowKey = [...glow].map(([o, g]) => `${o}:${g.tag}:${g.cls}`).join("|");
   // Narrow the map to one kind; the picker stays so you can switch like the other filters.
@@ -6048,6 +6052,8 @@ export default function FieldCommandClient() {
             : papers ? { kind: "paperwork", icon: "📄", text: `Paperwork: ${jobAddress(papers).replace(/,\s*\d{5}$/, "")}`, go: () => openIssueJob(papers, true) }
             : null;
           nextStepRef.current = next ? { text: next.text, go: next.go } : null;
+          const nextJob = late ? late.j : bidsDue.unsentToday ? null : over ? over.j : unconfirmed ? unconfirmed.j : remind ? remind.j : replied || toCall || papers || null;
+          nextOmoRef.current = nextJob ? jobId(nextJob) : "";
           if (!next) return null;
           return (
             <button type="button" className={`fc-focus-chip is-next is-${next.kind}`} data-hpd-smoke="fc-next-chip" data-kind={next.kind} onClick={next.go}>
@@ -6055,6 +6061,7 @@ export default function FieldCommandClient() {
             </button>
           );
         }
+        nextOmoRef.current = top.omo;
         if (ping && ping.omo === top.omo) { nextStepRef.current = null; return null; }
         const h = Math.round(hoursLeft(top, Date.now()));
         nextStepRef.current = { text: `notice ${top.omo} ${h < 0 ? `overdue ${-h} hours` : `${h} hours left`}${boardUrgent.length > 1 ? `, and ${boardUrgent.length - 1} more` : ""}`, go: () => goTo("board", top.omo) };
