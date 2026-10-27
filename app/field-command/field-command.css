@@ -3528,3 +3528,17 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-map-node .leaflet-marker-pane > *, .fc-map-node .leaflet-tile-pane { transition: opacity .6s ease, filter .6s ease; }
 .fc-map-node.is-route-on .leaflet-marker-pane > :not(.fc-you-marker) { opacity: .18; filter: grayscale(.8); }
 .fc-map-node.is-route-on .leaflet-tile-pane { filter: brightness(.78) saturate(.55); }
+/* ✨ The AI on the map (27 Oct): a glowing orb above Jobs; tap to talk. */
+.fc-ai-orb { position: absolute; z-index: 1560; left: calc(12px + env(safe-area-inset-left)); bottom: calc(max(24px, env(safe-area-inset-bottom)) + 140px); width: 62px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: #fff; }
+.fc-ai-orb-core { position: relative; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; font-size: 24px; background: radial-gradient(circle at 30% 25%, #a5b4fc 0%, #6366f1 45%, #7c3aed 75%, #0e7490 100%); border: 2px solid #fff; box-shadow: 0 0 0 0 rgba(129,140,248,.55), 0 4px 16px rgba(76,29,149,.55); animation: fc-ai-breathe 3.2s ease-in-out infinite; transition: transform .15s ease-out; }
+.fc-ai-orb-core::before { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0 55%, rgba(34,211,238,.9) 75%, rgba(167,139,250,.9) 90%, transparent 100%); -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%); mask: radial-gradient(circle, transparent 60%, #000 62%); animation: fc-ai-spin 3.5s linear infinite; }
+.fc-ai-orb:active .fc-ai-orb-core { transform: scale(.92); }
+.fc-ai-orb .fc-fab-label { font: 800 12px system-ui, sans-serif; text-shadow: 0 1px 3px #000c; }
+.fc-ai-orb.is-on .fc-ai-orb-core { animation: fc-ai-listen 1s ease-in-out infinite; }
+.fc-app.fc-has-job .fc-ai-orb { display: none; }
+.fc-agent-me { color: #c4b5fd !important; font-weight: 800 !important; }
+@keyframes fc-ai-breathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(129,140,248,.5), 0 4px 16px rgba(76,29,149,.55); } 50% { box-shadow: 0 0 0 10px rgba(129,140,248,0), 0 4px 22px rgba(76,29,149,.75); } }
+@keyframes fc-ai-spin { to { transform: rotate(360deg); } }
+@keyframes fc-ai-listen { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .fc-ai-orb-core, .fc-ai-orb-core::before { animation: none; } }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) { .fc-ai-orb { bottom: calc(max(24px, env(safe-area-inset-bottom)) + 120px); } .fc-ai-orb-core { width: 46px; height: 46px; font-size: 20px; } }

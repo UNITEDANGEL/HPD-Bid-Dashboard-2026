@@ -1411,11 +1411,19 @@ export default function FieldCommandClient() {
   const [agentTypeOpen, setAgentTypeOpen] = useState(false);
   useEffect(() => {
     const prev = prevAgentRef.current;
-    if (prev && agent && prev.heard !== agent.heard && prev.heard !== "🎤" && prev.reply && !/^(Listening|Sending to Claude)/.test(prev.reply)) {
+    if (prev && agent && prev.heard !== agent.heard && prev.heard !== "🎤" && prev.heard !== "👋" && prev.reply && !/^(Listening|Sending to Claude)/.test(prev.reply)) {
       setAgentHistory((h) => [...h, { heard: prev.heard, reply: prev.reply, at: Date.now() }].slice(-6));
     }
     prevAgentRef.current = agent ? { heard: agent.heard, reply: agent.reply } : prevAgentRef.current;
   }, [agent]);
+  // ✨ The AI on the map (27 Oct, owner: "I want the AI agent on the map, click it and start a conversation"): one tap
+  // opens the helper already listening, says the most pressing thing first, and keeps the conversation going.
+  const startAgentChat = () => {
+    unlockChime();
+    const step = nextStepRef.current;
+    setAgent({ heard: "👋", reply: `${step ? `Hi! First thing: ${step.text.replace(/\.$/, "")}. ` : "Hi! "}What do you need? Talk to me, or tap ⌨️ to type.`, actions: step ? [{ label: "▶ Do it", href: "#next" }] : undefined });
+    if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true);
+  };
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
@@ -2205,7 +2213,9 @@ export default function FieldCommandClient() {
     const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     // Slower and smoother (owner, 27 Oct: "a little bit of a delay so it looks nice, the app feels premium"); with
     // Reduce Motion on, a short plain zoom instead of a jump.
-    if (!reduce && map.flyTo && map.getCenter().distanceTo([lat, lng]) > 5) map.flyTo([lat, lng], zoom, { duration: 1.4, easeLinearity: 0.15 });
+    // Even slower (owner, 27 Oct: "slow zoom so I can see the interaction"): 2.4 s in, 2.2 s back out.
+    const flying = !reduce && Boolean(map.flyTo) && map.getCenter().distanceTo([lat, lng]) > 5;
+    if (flying) map.flyTo([lat, lng], zoom, { duration: 2.4, easeLinearity: 0.1 });
     else map.setView([lat, lng], zoom, { animate: true });
     // Measure once the card is laid out, and again after its slide-up animation (and the glide) settle.
     const place = () => {
@@ -2215,10 +2225,11 @@ export default function FieldCommandClient() {
       const searchBottom = document.querySelector(".fc-search-row")?.getBoundingClientRect().bottom ?? container.top;
       const target = (Math.max(searchBottom, container.top) + Math.min(cardTop, container.bottom)) / 2 - container.top;
       const pin = map.latLngToContainerPoint([lat, lng]);
-      if (Math.abs(pin.y - target) > 4) map.panBy([0, Math.round(pin.y - target)], { animate: false });
+      if (Math.abs(pin.y - target) > 4) map.panBy([0, Math.round(pin.y - target)], { animate: flying, duration: 0.6 });
     };
-    window.setTimeout(place, 200);
-    window.setTimeout(place, 1600);
+    // While gliding, a jump in the middle would cut the glide short: the pin settles above the card once it lands.
+    if (flying) { map.once("moveend", () => window.setTimeout(place, 60)); window.setTimeout(place, 3200); }
+    else { window.setTimeout(place, 200); window.setTimeout(place, 1600); }
   }
   // The view before a card opened: closing the card puts the map back there, so the other
   // jobs are right where they were. Every job opens zoomed in to its building (23 Oct).
@@ -2232,7 +2243,7 @@ export default function FieldCommandClient() {
       if (before && map) {
         // Glide back out to where you were.
         const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-        if (!reduce && map.flyTo) map.flyTo(before.center, before.zoom, { duration: 1.3, easeLinearity: 0.15 }); else map.setView(before.center, before.zoom, { animate: true });
+        if (!reduce && map.flyTo) map.flyTo(before.center, before.zoom, { duration: 2.2, easeLinearity: 0.1 }); else map.setView(before.center, before.zoom, { animate: true });
         followMeRef.current = before.follow;
       }
       return;
@@ -2440,7 +2451,7 @@ export default function FieldCommandClient() {
       followMeRef.current = false;
       const zoom = Math.max(mapRef.current.getZoom(), 16);
       // Glide: zooms out and back in, so you see where the next one is.
-      if (glide && mapRef.current.flyTo) mapRef.current.flyTo([at.lat, at.lng], zoom, { duration: 1.4 }); else mapRef.current.setView([at.lat, at.lng], zoom);
+      if (glide && mapRef.current.flyTo) mapRef.current.flyTo([at.lat, at.lng], zoom, { duration: 2, easeLinearity: 0.1 }); else mapRef.current.setView([at.lat, at.lng], zoom);
     }
   }
 
@@ -3192,7 +3203,7 @@ export default function FieldCommandClient() {
     // Right away: just the numbered stops. No straight stop-to-stop lines; the street route follows.
     show(stopMarkers());
     // Fit the route into the part of the map above the route panel and below the pills.
-    mapRef.current.flyToBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15, duration: 1.2, easeLinearity: 0.15 });
+    mapRef.current.flyToBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15, duration: 2, easeLinearity: 0.1 });
     if (!stops.length) return null;
     const road = await fetchRoadRoute(points);
     if (!road || request !== dayRouteRequest.current || !mapRef.current) return request === dayRouteRequest.current ? road : null;
@@ -4556,6 +4567,11 @@ export default function FieldCommandClient() {
         {/* Jobs ready to close out and 2nd tries: two round buttons (bottom left) instead of bars across the map. */}
         {/* One round Jobs button (bottom left); Close out and 2nd try are tabs inside it (owner, 21 Oct: "make it like the
             others, it takes too much space"). */}
+        {!selectedJob && !agent ? (
+          <button type="button" className={`fc-ai-orb${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
+            <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
+          </button>
+        ) : null}
         {jobRows.length && !selectedJob ? (
           <div className="fc-work-fabs" onTouchStart={() => undefined}>
             <button type="button" className="fc-work-fab is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
@@ -6005,7 +6021,7 @@ export default function FieldCommandClient() {
           {(selectedJob || bidsOpen ? [] : agentHistory.filter((h) => Date.now() - h.at < 15 * 60000).slice(-3)).map((h) => (
             <div key={h.at} className="fc-agent-past" data-hpd-smoke="fc-agent-past"><small>🗣 {h.heard}</small><span>{h.reply}</span></div>
           ))}
-          <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>
+          {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ Your AI helper</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}
           {/* 💡 Before you ask (27 Oct, owner: "figure it out by itself beforehand"): the most pressing thing right now. */}
           {nextStepRef.current && !agent.reply.startsWith("Next:") && !agent.confirm ? (
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>

@@ -20,7 +20,7 @@ try {
   await c.addInitScript(() => {
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { setTimeout(() => u.onend?.(), 30); };
     window.SpeechRecognition = window.webkitSpeechRecognition = class {
-      start() { setTimeout(() => { const text = window.__hear || ""; if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 100); }
+      start() { setTimeout(() => { const text = window.__hear || ""; if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, window.__hearDelay || 100); }
       stop() { this.onend?.(); }
     };
   });
@@ -32,6 +32,23 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   const reply = page.locator('[data-hpd-smoke="fc-agent-reply"]');
   const waitReply = async (re) => page.waitForFunction((src) => new RegExp(src).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 20000 });
+
+  // 0. ✨ The AI on the map: one tap opens the helper already listening, most pressing thing first; what you say is answered.
+  const orb = page.locator('[data-hpd-smoke="fc-ai-orb"]');
+  assert.ok(await orb.isVisible(), "AI button on the map");
+  const box = await orb.boundingBox();
+  assert.ok(box && box.x >= 0 && box.y > 300 && box.y + box.height < 844, `AI button on screen: ${JSON.stringify(box)}`);
+  await page.evaluate(() => { window.__hear = "what do I have today"; window.__hearDelay = 1500; });
+  await orb.click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-heard"]').innerText(), "✨ Your AI helper");
+  assert.match(await reply.innerText(), /^Hi! /);
+  assert.equal(await orb.count(), 0, "the button hides while the helper is open");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-talk"]').getAttribute("aria-pressed"), "true", "conversation mode on");
+  await page.waitForFunction(() => /what do I have today/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
+  if (shots) await page.screenshot({ path: `${shots}/agent-orb.png` });
+  await page.evaluate(() => { window.__hear = ""; window.__hearDelay = 0; });
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  assert.ok(await orb.isVisible(), "AI button back after closing");
 
   // 1. Said: "Tell cloud to …" (how the iPhone often hears Claude).
   await page.evaluate(() => { window.__hear = "Tell cloud to make the zoom smoother when I close a job card"; });
