@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T20:21:21.949059+00:00",
+  "generatedAt": "2026-10-27T20:33:25.515683+00:00",
   "days": 14,
   "bids": [
     {
@@ -782,6 +782,137 @@
       },
       "lat": 40.803306,
       "lng": -73.938502
+    },
+    {
+      "omo": "ER07636",
+      "bidDue": "2026-10-30",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-30",
+      "workCompletion": "2026-11-29",
+      "address": "1707 TOPPING AVENUE",
+      "borough": "BX",
+      "itbFile": "ER07636_102726042057.pdf",
+      "description": "******AEP****** AT APT. 2C 1). REPLACE MORTISE DOOR LOCK AT ENTRANCE DOOR. 2). TRACE, LOCATE AND REPAIR WATER LEAK AND REPLACE DOOR AT BATROOM 1). ENTRANCE DOOR LOCK: A). REMOVE EXISTING MORTISE DOOR LOCK AT APT. ENTRANCE DOOR. B). PROVIDE AND INSTALL NEW MORTISE LOCK SET AT APT. ENTRANCE DOOR, INCLUDE PROVIDING 2 SETS OF KEYS TO THE TENANT. 2). AT BATHROOM: A). TRACE, LOCATE AND REPAIR CONCEALED WATER LEAK AT CEILING AND SOUTH WALL AT BATHROOM. THE PROBABLE SOURCE IS COMING FROM ABOVE APT. ENSURE THAT THE LEAK(S) DOES NOT RE-OCCUR. B). DEMO EXISTING DEFECTIVE WATER DAMAGE CEILING AND SOUTH WALLS (APPROX. 30 SQ. FT.) C). SUPPLY AND INSTALL NEW (APPROX. 30 SQ. FT.) GWB SHEETROCK AT CEILING AND SOUTH WALL. D). SCRAP AND PLASTER ENTIRE BATHROOM CEILING AND SOUTH WALL. APPLY 1-COAT STAIN KILLER PRIMER AND 2-COATS OF FINISH PAINT IN ENTIRE BATHROOM CEILING AND SOUTH WALL (APPROX. 85 SQ. FT.). E). REMOVE EXISTING BATHROOM WOOD DOOR AND REPLACE WITH NEW BATHROOM WOOD DOOR (APPROX. 2’ X7’) INCLUDING DOOR LOCK. PERFORM ALL NECESSARY REPAIRS TO THE DOOR FRAME. PRIME AND PAINT DOOR WITH TWO COATS OF PAINT WITH SIMILAR COLOR TO EXISTING. TOTAL DOORS = (1) *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB IS COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: ¿ FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF THEIR BID AWARDED AMOUNT. ¿ CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF THE JOB. ¿ ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION ¿ ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. ¿ VENDOR MUST FOLLOW OSHA AND DOB REGULATION. ¿ VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. ¿ REMOVE ALL WORK-RELATED DEBRIS. ¿ VENDOR MUST CALL CPM NGO BINH (RANDY) AT (212)863-8928, (phone: sign in to see) EMAIL NGOB@HPD.NYC.GOV, OR SUPERVISOR ASAAD EMAD (212)863-8346 EMAIL ASAADE@HPD.NYC.GOV TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212)863-5262, OR (212)863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212)863-6959 CONTACT TENANT: (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793132459000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.844479,
+      "lng": -73.906053
     }
   ],
   "unread": []
