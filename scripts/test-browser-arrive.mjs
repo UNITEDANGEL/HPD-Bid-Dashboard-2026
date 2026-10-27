@@ -25,7 +25,9 @@ try {
   // A job on the To do list with a location.
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
   const ids = await page.locator('[data-hpd-smoke="fc-jobs-row"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
-  const stop = ids.map((id) => rows.find((j) => j.OMO === id)).find((j) => j && Number(j.Latitude) && Number(j.Longitude) && String(j.JobDescription || j.ItbPage3Description || "").length > 60);
+  // EQ15239 first (it has a tenant phone, so the "we're outside" offer is checked too), else any to-do job with a location.
+  const good = (j) => j && Number(j.Latitude) && Number(j.Longitude) && String(j.JobDescription || j.ItbPage3Description || "").length > 60;
+  const stop = [rows.find((j) => j.OMO === "EQ15239" && ids.includes("EQ15239")), ...ids.map((id) => rows.find((j) => j.OMO === id))].find(good);
   assert.ok(stop, "a to-do job with a location");
   await page.locator('[data-hpd-smoke="fc-jobs-close"]').click();
   // It's today's route stop, and the phone is ~110 ft from it.
@@ -42,6 +44,14 @@ try {
   await card.waitFor({ timeout: 20000 });
   assert.match(await card.innerText(), new RegExp(stop.OMO));
   await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="jc-step-arrived"]'), null, { timeout: 15000 });
+  // With a tenant phone on file: "we're outside" is offered, ready for Messages.
+  if (await page.locator('[data-hpd-smoke="jc-tenant-call"]').count()) {
+    const offer = page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "we're outside" });
+    await offer.waitFor({ timeout: 10000 });
+    assert.match(decodeURIComponent((await offer.getAttribute("href")).split("body=")[1]), /We are outside .* for the HPD repair\. Please let us in\./);
+    await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+    console.log("  arrived: \"we're outside\" text offered");
+  }
   // The job first: plain lines above HPD's full text.
   const sum = card.locator('[data-hpd-smoke="jc-job-sum"]');
   await sum.waitFor();

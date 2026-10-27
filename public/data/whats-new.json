@@ -9,7 +9,8 @@
         "💵 Ask \"how much did I get paid this month?\" (or last month, this year): HPD's payments from PIP, compared with the month or year before.",
         "📞 After you call a tenant from the app, \"How did the call go?\" pops up: No answer / Voicemail / Talked. One tap notes it, and No answer reminds you to call again tomorrow.",
         "💬 One-tap messages to the tenant on the job card: On the way, 15 min late, Tomorrow?, Please confirm, We're outside.",
-        "📆 The money screen and the helper say when PIP's numbers are from, and warn when they're over a week old (PIP is brought in from its exports, not read by itself)."
+        "📆 The money screen and the helper say when PIP's numbers are from, and warn when they're over a week old (PIP is brought in from its exports, not read by itself).",
+        "🚪 When you arrive at a job, one tap texts the tenant \"we're outside, please let us in\"."
       ]
     },
     {
