@@ -7,10 +7,12 @@ import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
 import { openBidList } from "./bids-test-helpers.mjs";
 
+// Today's real list can be short: copies with made-up numbers fill it up to n.
+const padBids = (list, n) => Array.from({ length: Math.max(n, list.length) }, (_, i) => (i < list.length ? list[i] : { ...list[i % list.length], omo: `ER99${String(900 + i)}` }));
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
 const tomorrow = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + 86400000));
-const bids = fetched.bids.slice(0, 5).map((b) => ({ ...b, bidDue: tomorrow, bidDueTime: "11:00 AM" }));
+const bids = padBids(fetched.bids, 5).slice(0, 5).map((b) => ({ ...b, bidDue: tomorrow, bidDueTime: "11:00 AM" }));
 const posted = {};
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {

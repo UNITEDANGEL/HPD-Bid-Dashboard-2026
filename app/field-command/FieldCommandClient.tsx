@@ -1283,6 +1283,9 @@ export default function FieldCommandClient() {
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [whatsNew, setWhatsNew] = useState<WhatsNew | null | undefined>(undefined);
   const [justUpdated, setJustUpdated] = useState(false);
+  // "🆕 New update includes…" (owner, 27 Oct: "prompt me on every upgrade"): the What's new lines this phone hasn't seen
+  // yet, shown as a card until "Got it". Only on a phone that has opened the app before (not a fresh install).
+  const [newItems, setNewItems] = useState<string[]>([]);
   // Ask for a change from inside the app: saved on the status server (key CHANGE-REQUEST-<time>) and on this
   // phone; the next upgrade session reads them all (scripts/list-change-requests.mjs).
   const [changeText, setChangeText] = useState("");
@@ -1331,7 +1334,19 @@ export default function FieldCommandClient() {
     let seen = "";
     try { seen = localStorage.getItem("hpd-version-seen") || ""; localStorage.setItem("hpd-version-seen", id); } catch { return; }
     if (seen && seen !== id) { setJustUpdated(true); void loadWhatsNew(); window.setTimeout(() => setJustUpdated(false), 12000); }
+    if (!seen) return;
+    void loadWhatsNew().then((versions: WhatsNew | null | undefined) => {
+      const all = (versions || []).flatMap((v) => v.items).slice(0, 60);
+      let known: string[] | null = null;
+      try { known = JSON.parse(localStorage.getItem("hpd-whatsnew-seen") || "null"); } catch { /* private mode */ }
+      const fresh = Array.isArray(known) ? all.filter((x) => !known!.includes(x)) : (versions?.[0]?.items || []);
+      if (fresh.length) setNewItems(fresh.slice(0, 6));
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const seenNewItems = () => {
+    setNewItems([]);
+    try { localStorage.setItem("hpd-whatsnew-seen", JSON.stringify((whatsNew || []).flatMap((v) => v.items).slice(0, 60))); } catch { /* private mode */ }
+  };
   // A newer version is live but a job card is open: offer it instead of waiting.
   const [updateReady, setUpdateReady] = useState(false);
   const appVersionRef = useRef("");
@@ -5324,7 +5339,17 @@ export default function FieldCommandClient() {
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
       {appVersion && !selectedJob ? <button type="button" className="fc-version-tag" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
-      {justUpdated && !selectedJob && !whatsNewOpen ? (
+      {newItems.length && !selectedJob && !whatsNewOpen ? (
+        <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
+          <strong>🆕 New update includes</strong>
+          <ul>{newItems.map((x) => <li key={x}>{x}</li>)}</ul>
+          <div>
+            <button type="button" data-hpd-smoke="fc-newupdate-ok" onClick={seenNewItems}>Got it</button>
+            <button type="button" data-hpd-smoke="fc-newupdate-more" onClick={() => { seenNewItems(); setWhatsNewOpen(true); }}>All changes</button>
+          </div>
+        </div>
+      ) : null}
+      {justUpdated && !newItems.length && !selectedJob && !whatsNewOpen ? (
         <div className="fc-updated-banner" role="status" data-hpd-smoke="fc-updated-banner">
           <span>✨ App updated{whatsNew?.[0]?.items?.[0] ? `: ${whatsNew[0].items[0]}` : ""}</span>
           <button type="button" onClick={() => { setWhatsNewOpen(true); setJustUpdated(false); }}>What&apos;s new</button>

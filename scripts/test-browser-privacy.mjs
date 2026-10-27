@@ -3,7 +3,7 @@
 // private and HPD's invitation pages ask you to sign in. Prints no tenant details.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { routePrivate } from "./private-route-for-tests.mjs";
+import { markNewsSeen, routePrivate } from "./private-route-for-tests.mjs";
 import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -22,6 +22,7 @@ try {
   for (const signedIn of [true, false]) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
     await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
+    await markNewsSeen(context);
     if (signedIn) await routePrivate(context);
     else await context.route(/\/api\/private\//, (r) => r.fulfill({ status: 401, json: { error: "Sign in with Google" } }));
     const page = await context.newPage();

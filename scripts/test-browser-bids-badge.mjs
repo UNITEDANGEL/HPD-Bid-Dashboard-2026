@@ -4,10 +4,12 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
 
+// Today's real list can be short: copies with made-up numbers fill it up to n.
+const padBids = (list, n) => Array.from({ length: Math.max(n, list.length) }, (_, i) => (i < list.length ? list[i] : { ...list[i % list.length], omo: `ER99${String(900 + i)}` }));
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
 const day = (o) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + o * 86400000));
-const src = fetched.bids.slice(0, 6);
+const src = padBids(fetched.bids, 6).slice(0, 6);
 const cases = [
   { name: "2 today + 3 later + 1 past", bids: src.map((b, i) => ({ ...b, bidDue: i < 2 ? day(0) : i < 5 ? day(2) : day(-1), bidDueTime: "11:59 PM" })), count: "5", today: true },
   { name: "none today, 4 tomorrow", bids: src.slice(0, 4).map((b) => ({ ...b, bidDue: day(1), bidDueTime: "11:00 AM" })), count: "4", today: false },

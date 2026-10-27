@@ -21,8 +21,17 @@ function open(file, k) {
 }
 
 // opts.conversations: change the decrypted HPD emails before the page gets them (e.g. add a fresh notice for a test).
+// The What's new lines count as seen (no "🆕 New update" card over the screen); also for signed-out tests.
+export async function markNewsSeen(context) {
+  let news = [];
+  try { news = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/data/whats-new.json"), "utf8")).versions.flatMap((v) => v.items); } catch { /* none */ }
+  await context.addInitScript((items) => { try { if (!localStorage.getItem("hpd-whatsnew-seen")) localStorage.setItem("hpd-whatsnew-seen", JSON.stringify(items)); } catch { /* private mode */ } }, news.slice(0, 60));
+}
 export async function routePrivate(context, opts = {}) {
   const k = key();
+  // The "🆕 New update includes…" card (27 Oct) shows on a reload; the What's new lines count as seen in the tests
+  // (test-browser-newupdate sets its own).
+  await markNewsSeen(context);
   await context.route(/\/api\/private\//, (route) => {
     if (!k) return route.fulfill({ status: 401, json: { error: "not signed in (test)" } });
     const rel = decodeURIComponent(new URL(route.request().url()).pathname.replace(/^\/api\/private\//, ""));

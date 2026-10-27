@@ -5,6 +5,8 @@ import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
 import { openBidList } from "./bids-test-helpers.mjs";
 
+// Today's real list can be short: copies with made-up numbers fill it up to n.
+const padBids = (list, n) => Array.from({ length: Math.max(n, list.length) }, (_, i) => (i < list.length ? list[i] : { ...list[i % list.length], omo: `ER99${String(900 + i)}` }));
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
@@ -16,7 +18,7 @@ try {
   const ny = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
   const today = ny(new Date()), tomorrow = ny(new Date(Date.now() + 86400000)), later = ny(new Date(Date.now() + 4 * 86400000));
   // Real invitations: three due today (late in the day so they're still open), three tomorrow, the rest later.
-  const bids = fetched.bids.map((b, i) => ({ ...b, bidDue: i < 3 ? today : i < 6 ? tomorrow : later, bidDueTime: "11:59 PM" }));
+  const bids = padBids(fetched.bids, 8).map((b, i) => ({ ...b, bidDue: i < 3 ? today : i < 6 ? tomorrow : later, bidDueTime: "11:59 PM" }));
   // One of today's bids due in 30 minutes (when that's still today): it must say "Send now".
   const soon = new Date(Date.now() + 30 * 60000);
   const soonTime = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }).format(soon).replace(/ /g, " ");
