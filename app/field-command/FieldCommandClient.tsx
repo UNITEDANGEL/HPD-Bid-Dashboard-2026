@@ -562,7 +562,7 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
 
 // What the helper understands, as examples to tap (23 Oct "what can I say").
 const AGENT_EXAMPLES: [string, string[]][] = [
-  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "show my job tracker"]],
+  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "the tenant confirmed", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
@@ -4004,6 +4004,21 @@ export default function FieldCommandClient() {
       answer("Back to the bid you just sent.");
       return;
     }
+    if (cmd.intent === "appt-confirmed") {
+      // "The tenant confirmed" (27 Oct): the requested appointment becomes confirmed. Without a job number: the job on
+      // screen, else the only requested appointment coming up.
+      const requested = jobs.filter((x) => { const a = activeAppointment(x as Record<string, unknown>); return a && a.state === "requested" && !appointmentTiming(a).past; });
+      const found = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob || (requested.length === 1 ? requested[0] : null);
+      if (found === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!found) { answer(requested.length ? `Which job? ${requested.length} appointments are waiting for the tenant. Say: the tenant confirmed for E Q 1 5 2 3 9.` : "No appointment is waiting for the tenant to confirm."); return; }
+      const a = activeAppointment(found as Record<string, unknown>);
+      const where = jobAddress(found).replace(/,\s*\d{5}$/, "");
+      if (!a) { answer(`There's no appointment on ${jobId(found)} at ${where}. Make one first.`); return; }
+      if (a.state === "confirmed") { answer(`${appointmentLabel(a)} at ${where} is already confirmed.`); return; }
+      try { saveAppointment(found, { ...a, state: "confirmed" }); } catch (err) { answer(`I couldn't confirm it: ${err instanceof Error ? err.message : "check the appointment"}.`); return; }
+      answer(`Confirmed: ${appointmentLabel(a)} at ${where} (${jobId(found)}).`);
+      return;
+    }
     if (cmd.intent === "called") {
       // "I called the tenant, no answer" (23 Oct): noted on the job; no answer / voicemail -> a reminder to call again
       // tomorrow at 10; they gave a day and time -> offered as the appointment.
@@ -4956,6 +4971,7 @@ export default function FieldCommandClient() {
                       <div className={`jc-status-line is-appointment ${when.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-status-line">
                         <strong>📅 Appointment · {appointmentLabel(booked)}</strong>
                         <span>{when.past ? "The time has passed: record what happened, or change the appointment" : when.soon ? (when.startsIn > 0 ? `Starts in ${when.startsIn} min` : "Happening now") : booked.state === "confirmed" ? "Confirmed · the job waits for it" : "Requested · the job waits for it"}</span>
+                        {booked.state === "requested" && !when.past ? <button type="button" className="jc-appt-confirm" data-hpd-smoke="jc-appt-confirm" onClick={() => { try { saveAppointment(selectedJob, { ...booked, state: "confirmed" }); setOutcomeMessage(`✅ ${id}: the tenant confirmed ${appointmentLabel(booked)}.`); } catch (err) { setOutcomeMessage(err instanceof Error ? err.message : "Couldn't confirm the appointment."); } }}>✅ Tenant confirmed</button> : null}
                       </div>
                     );
                   }

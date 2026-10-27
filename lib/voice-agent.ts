@@ -12,6 +12,7 @@ export type AgentCommand =
   | { intent: "tenant-texts" }
   | { intent: "appointments"; when: "today" | "tomorrow" | "all" }
   | { intent: "no-bid"; reason: string }
+  | { intent: "appt-confirmed"; ref: string }
   | { intent: "called"; ref: string; result: "no-answer" | "voicemail" | "talked"; said: string }
   | { intent: "bid-advice" }
   | { intent: "tenants-waiting" }
@@ -66,6 +67,11 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t)) return { intent: "no" };
+  // The tenant confirmed the appointment (27 Oct): "the tenant confirmed", "tenant said yes for EQ15239".
+  if (/\btenant\b/.test(t) && /\b(confirmed|said yes|replied yes|answered yes|texted (back )?yes|wrote yes)\b/.test(t) && !/\b(did|has|have|is|was)\b.*\?|^(did|has|is|was)\b/.test(t)) {
+    const r = /\b([a-z]{2}\s?\d{5})\b/.exec(t);
+    return { intent: "appt-confirmed", ref: r ? r[1].replace(/\s/g, "").toUpperCase() : "" };
+  }
   // A call to the tenant, said after it (23 Oct): "I called the tenant, no answer", "called EQ15239 left a voicemail",
   // "I called the tenant, they said Thursday at 10". Noted on the job; no answer -> a reminder to call again tomorrow.
   {

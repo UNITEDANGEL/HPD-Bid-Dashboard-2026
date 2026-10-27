@@ -3509,3 +3509,5 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-newupdate div { display: flex; gap: 8px; justify-content: flex-end; }
 .fc-newupdate button { min-height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid #a78bfa; background: #4c1d95; color: #fff; font: 700 14px system-ui; }
 .fc-newupdate button:first-child { background: #7c3aed; }
+/* ✅ Tenant confirmed on a requested appointment (27 Oct). */
+.jc-appt-confirm { margin-top: 6px; align-self: flex-start; min-height: 38px; padding: 0 14px; border-radius: 19px; border: 1px solid #15803d; background: #16a34a; color: #fff; font: 700 14px system-ui; }

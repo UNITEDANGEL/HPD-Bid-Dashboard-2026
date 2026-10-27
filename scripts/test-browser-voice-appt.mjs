@@ -157,6 +157,19 @@ try {
   await examples.filter({ hasText: "how much does HPD owe me" }).click();
   await page.waitForFunction(() => /HPD owes you|PIP shows nothing owed/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-help"]').count(), 0, "the list folds away after a tap");
+  // 8b. The tenant confirmed: by voice, then (set back to requested) with the ✅ button on the job card.
+  const conf = await say(`the tenant said yes for ${JOB}`, /Confirmed:|already confirmed/);
+  assert.match(conf, /Confirmed: \w{3} \d\d\/\d\d · 10–11 AM at /);
+  assert.equal(await page.evaluate((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j]?.Appointment?.state, JOB), "confirmed");
+  await page.evaluate((j) => { const o = JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}"); o[j].Appointment.state = "requested"; localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify(o)); }, JOB);
+  await page.goto(`${baseUrl}/map/?job=${JOB}`, { waitUntil: "load", timeout: 180000 });
+  await page.locator('[data-hpd-smoke="jc-appt-confirm"]').click({ timeout: 60000 });
+  await page.waitForFunction((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j]?.Appointment?.state === "confirmed", JOB, { timeout: 10000 });
+  assert.equal(await page.locator('[data-hpd-smoke="jc-appt-confirm"]').count(), 0, "the button goes once confirmed");
+  if (shots) await page.screenshot({ path: `${shots}/appt-confirmed.png` });
+  await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+  while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   // 9. "Fix them one by one" from the rejections answer: the paperwork page opens on the first, counting 1 of N.
   const rej2 = await say("which rejections do I have", /rejections? hold|No payment rejections/);
   if (/to fix/.test(rej2)) {
@@ -165,7 +178,7 @@ try {
     assert.match(await page.locator('[data-hpd-smoke="paperwork-fix-progress"]').innerText(), /Fixing one by one · 1 of \d+/);
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; tomorrow's list offers 📅 Text reminder (once); "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
+  console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; tomorrow's list offers 📅 Text reminder (once); "the tenant said yes" and the ✅ Tenant confirmed button confirm it; "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
   await c.close();
 } finally {
   await browser.close();
