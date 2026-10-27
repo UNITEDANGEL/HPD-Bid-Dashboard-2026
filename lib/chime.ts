@@ -22,8 +22,9 @@ const TONES: Record<AlertKind, [number, number, number][]> = {
   "fax-ok": [[660, 0, 0.18], [880, 0.12, 0.18], [1320, 0.24, 0.36]],                  // rising
   "fax-bad": [[440, 0, 0.4], [330, 0.3, 0.55]],                                        // low
   urgent: [[988, 0, 0.16], [988, 0.22, 0.16], [988, 0.44, 0.3]],                      // three beeps
+  claude: [[660, 0, 0.16], [880, 0.12, 0.16], [1175, 0.24, 0.3]],                     // soft rise: news on your request
 };
-const VIBES: Record<AlertKind, number[]> = { award: [40, 30, 40, 30, 200], message: [60, 40, 60], notice: [200, 80, 200, 80, 200], request: [80, 60, 80], rejection: [150, 60, 150, 60, 300], bid: [40, 40, 40], "fax-ok": [60], "fax-bad": [120, 60, 120, 60, 120], urgent: [120, 60, 120, 60, 120] };
+const VIBES: Record<AlertKind, number[]> = { award: [40, 30, 40, 30, 200], message: [60, 40, 60], notice: [200, 80, 200, 80, 200], request: [80, 60, 80], rejection: [150, 60, 150, 60, 300], bid: [40, 40, 40], "fax-ok": [60], "fax-bad": [120, 60, 120, 60, 120], urgent: [120, 60, 120, 60, 120], claude: [40, 40, 40] };
 
 export function chimeMuted() {
   try { return localStorage.getItem(KEY) === "1"; } catch { return false; }
@@ -81,7 +82,7 @@ export function playChime(kindIn: RingKind | string = "message") {
 }
 
 // Any part of the app rings and shows the banner through this (the map listens for it).
-export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "board" | "bids" | "money" | "job"; omo?: string; who?: string };
+export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "board" | "bids" | "money" | "job" | "requests"; omo?: string; who?: string };
 
 // The tone, then the words (owner, 22 Oct: "an actual voice instead of beeps"): "Urgent email. 24-hour notice from
 // Lewis, work order E Q 3 1 3 6 4. They want the affidavit and invoice." Muting the sound mutes the voice too.

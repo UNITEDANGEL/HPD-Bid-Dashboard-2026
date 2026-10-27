@@ -247,6 +247,7 @@ jobs:
             scripts/test-browser-call-ask.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \
+            scripts/test-browser-claude-progress.mjs \
             scripts/test-browser-tenant-text.mjs \
             scripts/test-browser-calm.mjs \
             scripts/test-browser-today.mjs \

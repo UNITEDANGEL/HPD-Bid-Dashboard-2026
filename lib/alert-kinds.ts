@@ -2,7 +2,7 @@
 // rejections, requests"; "alerts for all messages: Gafur, Lewis, bids"): its own icon, color, name and tone, in the app
 // banner, the notifications list and the phone alert.
 
-export type AlertKind = "award" | "notice" | "request" | "rejection" | "message" | "bid" | "fax-ok" | "fax-bad" | "urgent";
+export type AlertKind = "award" | "notice" | "request" | "rejection" | "message" | "bid" | "fax-ok" | "fax-bad" | "urgent" | "claude";
 // Older names (kept in saved lists) -> the new ones.
 export const OLD_KIND: Record<string, AlertKind> = { email: "message", good: "fax-ok", bad: "fax-bad", new: "bid" };
 export const kindOf = (k: string): AlertKind => (OLD_KIND[k] || k) as AlertKind;
@@ -17,6 +17,7 @@ export const ALERT_KINDS: Record<AlertKind, { icon: string; name: string; color:
   "fax-ok": { icon: "✅", name: "Fax went through", color: "#22c55e" },
   "fax-bad": { icon: "❌", name: "Fax failed", color: "#ef4444" },
   urgent: { icon: "⏰", name: "Deadline", color: "#fb923c" },
+  claude: { icon: "🤖", name: "Claude: your request", color: "#a78bfa" }, // progress on an app change you asked for (27 Oct)
 };
 
 const PPN = /poor performance|performance notice|\bPPN\b|\b(24|72)[ -]?h(ou)?r/i;

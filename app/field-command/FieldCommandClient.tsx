@@ -2001,7 +2001,56 @@ export default function FieldCommandClient() {
     else if ((go === "money" || go === "job") && job) { closeScreens(); setSelectedJob(job); }
     else if (go === "money") { closeScreens("notices"); setFollowFilter("notices"); setNoticeKind("rejected"); setNoticesTab("rejected"); setNoticesOpen(true); }
     else if (go === "job") { closeScreens("board"); setBoardShow("all"); setBoardFocus(omo.toUpperCase()); setBoardOpen(true); }
+    else if (go === "requests") { closeScreens(); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); }
   };
+  // 🤖 Claude's progress on your requests comes to you (27 Oct, "keep upgrading"): the list is looked at every 2 minutes
+  // while the app is open (one cached read on the status server), and a new step or note pops up like any alert.
+  useEffect(() => {
+    const look = () => { if (document.visibilityState === "visible") void loadChangeThreads(); };
+    const t = window.setInterval(look, 120000);
+    document.addEventListener("visibilitychange", look);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", look); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const claudeHeardRef = useRef<string | null>(null);
+  // Another alert on screen (a notice, a fax): Claude's news waits its turn instead of being covered.
+  const claudePendingRef = useRef<(AppNotice & { at: number }) | null>(null);
+  const pingNowRef = useRef(ping);
+  pingNowRef.current = ping;
+  const claudeShownRef = useRef<(AppNotice & { at: number }) | null>(null);
+  useEffect(() => {
+    // Covered by another alert a moment after it appeared: it comes back once that one is gone.
+    const shown = claudeShownRef.current;
+    if (ping?.kind === "claude") claudeShownRef.current = ping;
+    else if (ping && shown && Date.now() - shown.at < 5000) { claudePendingRef.current = shown; claudeShownRef.current = null; }
+    else if (ping) claudeShownRef.current = null;
+    if (ping || !claudePendingRef.current) return;
+    const n = claudePendingRef.current;
+    claudePendingRef.current = null;
+    const t = window.setTimeout(() => setPing({ ...n, at: Date.now() }), 600);
+    return () => window.clearTimeout(t);
+  }, [ping]);
+  useEffect(() => {
+    if (!changeThreads) return;
+    const all = changeThreads.flatMap((t) => t.updates.map((u) => ({ t, u }))).sort((a, b) => a.u.at.localeCompare(b.u.at));
+    const newest = all.length ? all[all.length - 1].u.at : "";
+    let mark = claudeHeardRef.current;
+    if (mark === null) {
+      try { mark = localStorage.getItem("hpd-claude-heard"); } catch { mark = ""; }
+      // First time on this phone: start from now instead of replaying old news.
+      if (mark === null) mark = newest;
+    }
+    const fresh = all.filter((x) => x.u.at > (mark as string) && Date.now() - Date.parse(x.u.at) < 2 * 86400000);
+    const next = newest > (mark as string) ? newest : (mark as string);
+    claudeHeardRef.current = next;
+    try { localStorage.setItem("hpd-claude-heard", next); } catch { /* private mode */ }
+    if (!fresh.length) return;
+    const last = fresh[fresh.length - 1];
+    const n: AppNotice = { kind: "claude", go: "requests", title: `🤖 Claude: ${last.t.status}${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ""}`, text: last.u.text.slice(0, 160) };
+    addToLog(n);
+    ring(n);
+    const shownAt = { ...n, at: Date.now() };
+    if (pingNowRef.current) claudePendingRef.current = shownAt; else { claudeShownRef.current = shownAt; setPing(shownAt); }
+  }, [changeThreads]);
   useEffect(() => {
     if (!threads) return;
     try {

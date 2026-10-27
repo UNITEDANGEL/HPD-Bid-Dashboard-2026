@@ -17,6 +17,7 @@ const SAMPLES: Record<AlertKind, AppNotice> = {
   "fax-ok": { kind: "fax-ok", title: "✅ Fax went through · ER07749: HPD received your bid" },
   "fax-bad": { kind: "fax-bad", title: "❌ Fax failed · ER07749", text: "The line was busy. Send it again." },
   urgent: { kind: "urgent", title: "⏰ ER01987: notice overdue 2 h", text: "Nothing sent yet: answer it now" },
+  claude: { kind: "claude", title: "🤖 Claude: Working on it", text: "Making the map buttons bigger; you'll see it after the next update" },
 };
 
 export default function PhoneAlerts() {
