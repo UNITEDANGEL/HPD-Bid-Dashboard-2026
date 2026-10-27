@@ -23,6 +23,15 @@ function open(file, k) {
 // opts.conversations: change the decrypted HPD emails before the page gets them (e.g. add a fresh notice for a test).
 // The What's new lines count as seen (no "🆕 New update" card over the screen); also for signed-out tests.
 export async function markNewsSeen(context) {
+  // Bid invitations that are already due (the real list can be all morning bids by the afternoon) move to tomorrow, so
+  // the bid screens have open invitations at any hour. A test that routes upcoming_bids.json itself wins (routed later).
+  const tomorrow = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + 86400000));
+  await context.route(/\/data\/upcoming_bids\.json/, async (route) => {
+    const res = await route.fetch();
+    const data = await res.json().catch(() => null);
+    if (!data || !Array.isArray(data.bids)) return route.fulfill({ response: res });
+    return route.fulfill({ response: res, json: { ...data, bids: data.bids.map((b) => (String(b.bidDue || "") < tomorrow ? { ...b, bidDue: tomorrow } : b)) } });
+  });
   let news = [];
   try { news = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/data/whats-new.json"), "utf8")).versions.flatMap((v) => v.items); } catch { /* none */ }
   await context.addInitScript((items) => { try { if (!localStorage.getItem("hpd-whatsnew-seen")) localStorage.setItem("hpd-whatsnew-seen", JSON.stringify(items)); } catch { /* private mode */ } }, news.slice(0, 60));

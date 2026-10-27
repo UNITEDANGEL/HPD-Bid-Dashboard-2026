@@ -51,6 +51,15 @@ try {
   assert.ok(stopTexts.every((t) => /\d+ min drive · \d+\.\d mi/.test(t)), `every stop has a drive time:\n${stopTexts.join("\n")}`);
   const numbers = await page.locator(".fc-route-number").count();
   assert.equal(numbers, stopCount, "a numbered marker per stop");
+  // Everything else dims while the route is on the map (27 Oct): job pins faded, the route stops bright.
+  assert.ok(await page.locator(".fc-map-node.is-route-on").count(), "the map is in route mode");
+  await page.waitForTimeout(800);
+  const dim = await page.evaluate(() => ({
+    pin: Number(getComputedStyle(document.querySelector(".fc-map-node .leaflet-marker-pane > :not(.fc-you-marker)")).opacity),
+    stop: Number(getComputedStyle(document.querySelector(".fc-route-number")).opacity),
+  }));
+  assert.ok(dim.pin < 0.3 && dim.stop === 1, `pins dimmed (${dim.pin}), route stops bright (${dim.stop})`);
+  if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/route-dim.png` });
   const vertices = await page.evaluate(() => Math.max(...[...document.querySelectorAll(".leaflet-pane path.leaflet-interactive, .leaflet-pane path")].map((p) => (p.getAttribute("d") || "").split(/[LM]/).length - 1)));
   assert.ok(vertices > stopCount + 1, `route line has ${vertices} points for ${stopCount} stops: it follows streets`);
   assert.equal(await page.locator(".fc-route-direction").count(), stopCount, "a direction arrow on each leg");
@@ -82,7 +91,7 @@ try {
   assert.equal(routingCalls, 1, "reopening reuses the street route");
 
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS route: one tap plans ${stopCount} stops, street line (${vertices} points), drive time per stop, arrows, whole-route link, Waze on every stop, reopen shows the whole route; ${totalText.replace(/\s+/g, " ")}${realRouting ? " [real routing]" : ""}`);
+  console.log(`PASS route: one tap plans ${stopCount} stops (other pins dimmed), street line (${vertices} points), drive time per stop, arrows, whole-route link, Waze on every stop, reopen shows the whole route; ${totalText.replace(/\s+/g, " ")}${realRouting ? " [real routing]" : ""}`);
 } finally {
   await browser.close();
 }

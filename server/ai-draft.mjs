@@ -88,6 +88,13 @@ const ASK_SYSTEM = [
   "  'make an appointment for <job> <day> at <time>', 'remind me to <what> <day> at <time>', 'read me the new bids', \"what's left on <job>\", 'how much does HPD owe me', 'how did I do this week', 'show my job tracker', \"which tenants haven't answered\",",
   "  'what do I have today'. <job> is a job number from the facts, e.g. EQ15239; <day> is today, tomorrow, a weekday or",
   "  10/27; <time> is like 10am or 2:30pm. Put the spoken answer first, then the DO lines. At most 3 DO lines.",
+  "- When the owner wants the app itself changed or improved (a new feature, a different look, something that works badly,",
+  "  something to add to the app), say you're passing it to Claude, and add: 'DO: send to Claude: <their wish, in their words>'.",
+  "  Claude is the developer who upgrades the app; he reads these requests and builds them.",
+  "- If the owner sounds unhappy with the app (slow, confusing, can't find something, it didn't work), offer to pass it to",
+  "  Claude and add the 'DO: send to Claude: …' line with what's wrong, in their words.",
+  "- Think ahead: facts.nextStep is the most pressing thing right now. If the question doesn't already cover it, end with",
+  "  one short sentence bringing it up (e.g. 'Also, notice ER03009 has 2 hours left.').",
 ].join("\n");
 
 export function askFacts(body) {

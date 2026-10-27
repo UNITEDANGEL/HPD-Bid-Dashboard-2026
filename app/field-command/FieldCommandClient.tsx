@@ -1312,6 +1312,20 @@ export default function FieldCommandClient() {
   };
   useEffect(() => { try { setRepliesSeen(localStorage.getItem("hpd-replies-seen") || ""); } catch { /* private mode */ } void loadChangeThreads(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const newReplies = (changeThreads || []).filter((t) => t.updates.some((u) => u.at > repliesSeen)).length;
+  // Saves a change request for Claude (What's new box, or said / typed to the helper: 27 Oct). true = on the server.
+  const sendChangeRequest = async (raw: string) => {
+    const text = raw.trim();
+    if (!text) return false;
+    const at = new Date().toISOString();
+    const list = [{ at, text }, ...myRequests].slice(0, 50);
+    setMyRequests(list);
+    try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
+    try {
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      if (r.ok) void loadChangeThreads();
+      return r.ok;
+    } catch { return false; }
+  };
   const askForChange = async () => {
     const text = changeText.trim();
     if (!text) return;
@@ -1389,6 +1403,19 @@ export default function FieldCommandClient() {
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
   // The last things said to the AI and its answers (this session), for follow-up questions.
   const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
+  // The helper as a conversation (27 Oct, owner: "a better interface for the AI"): the earlier turns stay on screen
+  // for 15 minutes, and a box to type anything (questions, app actions, or a change for Claude).
+  const [agentHistory, setAgentHistory] = useState<{ heard: string; reply: string; at: number }[]>([]);
+  const prevAgentRef = useRef<{ heard: string; reply: string } | null>(null);
+  const [agentTyped, setAgentTyped] = useState("");
+  const [agentTypeOpen, setAgentTypeOpen] = useState(false);
+  useEffect(() => {
+    const prev = prevAgentRef.current;
+    if (prev && agent && prev.heard !== agent.heard && prev.heard !== "🎤" && prev.reply && !/^(Listening|Sending to Claude)/.test(prev.reply)) {
+      setAgentHistory((h) => [...h, { heard: prev.heard, reply: prev.reply, at: Date.now() }].slice(-6));
+    }
+    prevAgentRef.current = agent ? { heard: agent.heard, reply: agent.reply } : prevAgentRef.current;
+  }, [agent]);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
@@ -2176,8 +2203,10 @@ export default function FieldCommandClient() {
     // Glide in to the job (owner, 23 Oct: "zoom into the job when I click, looks nice, and zoom back to the map").
     const zoom = Math.max(map.getZoom(), minZoom);
     const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce && map.flyTo && map.getCenter().distanceTo([lat, lng]) > 5) map.flyTo([lat, lng], zoom, { duration: 0.9 });
-    else map.setView([lat, lng], zoom, { animate: false });
+    // Slower and smoother (owner, 27 Oct: "a little bit of a delay so it looks nice, the app feels premium"); with
+    // Reduce Motion on, a short plain zoom instead of a jump.
+    if (!reduce && map.flyTo && map.getCenter().distanceTo([lat, lng]) > 5) map.flyTo([lat, lng], zoom, { duration: 1.4, easeLinearity: 0.15 });
+    else map.setView([lat, lng], zoom, { animate: true });
     // Measure once the card is laid out, and again after its slide-up animation (and the glide) settle.
     const place = () => {
       if (!mapRef.current) return;
@@ -2189,7 +2218,7 @@ export default function FieldCommandClient() {
       if (Math.abs(pin.y - target) > 4) map.panBy([0, Math.round(pin.y - target)], { animate: false });
     };
     window.setTimeout(place, 200);
-    window.setTimeout(place, 1100);
+    window.setTimeout(place, 1600);
   }
   // The view before a card opened: closing the card puts the map back there, so the other
   // jobs are right where they were. Every job opens zoomed in to its building (23 Oct).
@@ -2203,7 +2232,7 @@ export default function FieldCommandClient() {
       if (before && map) {
         // Glide back out to where you were.
         const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-        if (!reduce && map.flyTo) map.flyTo(before.center, before.zoom, { duration: 0.8 }); else map.setView(before.center, before.zoom, { animate: false });
+        if (!reduce && map.flyTo) map.flyTo(before.center, before.zoom, { duration: 1.3, easeLinearity: 0.15 }); else map.setView(before.center, before.zoom, { animate: true });
         followMeRef.current = before.follow;
       }
       return;
@@ -3136,6 +3165,8 @@ export default function FieldCommandClient() {
     const L = (leafletModule as any).default || leafletModule;
     dayRouteLayerRef.current?.remove();
     dayRouteLayerRef.current = null;
+    // While a route is on the map, everything else dims (owner, 27 Oct): job pins fade, the streets go a little darker.
+    mapRef.current.getContainer().classList.remove("is-route-on");
     if (!stops.length && !done.length) return null;
     for (const [name, z] of [["fc-route-path", "610"], ["fc-route-stops", "620"]]) {
       const pane = mapRef.current.getPane(name) || mapRef.current.createPane(name);
@@ -3156,11 +3187,12 @@ export default function FieldCommandClient() {
     const show = (layers: any[]) => {
       dayRouteLayerRef.current?.remove();
       dayRouteLayerRef.current = L.featureGroup(layers).addTo(mapRef.current);
+      mapRef.current.getContainer().classList.add("is-route-on");
     };
     // Right away: just the numbered stops. No straight stop-to-stop lines; the street route follows.
     show(stopMarkers());
     // Fit the route into the part of the map above the route panel and below the pills.
-    mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15 });
+    mapRef.current.flyToBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15, duration: 1.2, easeLinearity: 0.15 });
     if (!stops.length) return null;
     const road = await fetchRoadRoute(points);
     if (!road || request !== dayRouteRequest.current || !mapRef.current) return request === dayRouteRequest.current ? road : null;
@@ -3811,6 +3843,8 @@ export default function FieldCommandClient() {
           winsThisWeek: (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && /confirmation of award|awarding omo/i.test(`${t.subject} ${m.text}`) && Date.now() - Date.parse(m.at) < 7 * 86400000).map((m) => ({ job: (m.text.match(/[A-Z]{2}\d{5}/) || t.omos)[0] || "", day: new Date(m.at).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "long", month: "numeric", day: "numeric" }) }))).slice(0, 30).map((w) => ({ ...w, address: addressOf(w.job) })),
           hpdEmailsLast3Days: (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 3 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", about: summarizeHpd({ kind: emailKind(t.subject, (t as { kind?: string }).kind || "", m.from || ""), subject: t.subject, text: m.text, omo: t.omos[0] || "" }).replace(/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/g, "(phone)") }))).sort((a, b) => b.ts - a.ts).slice(0, 25).map(({ ts, ...e }) => { void ts; return e; }),
           todaysRoute: todayRouteIds(),
+          // The most pressing thing right now (the map's pill), so the AI can bring it up without being asked (27 Oct).
+          nextStep: nextStepRef.current?.text || "",
           // Your open jobs, so the AI can name the right one for an action (no tenant names or phones).
           toDoJobs: jobRows.filter((r) => r.group === "todo").slice(0, 40).map((r) => ({ job: r.id, address: r.address })),
           jobOnScreen: selectedJob ? { job: jobId(selectedJob), address: jobAddress(selectedJob), work: jobSummary(jobScope(selectedJob)).lines.map(lineText).join("; "), status: jobStatus(selectedJob),
@@ -4064,6 +4098,15 @@ export default function FieldCommandClient() {
       const list = rows.slice(0, 3).map((x) => `${jobAddress(x.j).replace(/,\s*\d{5}$/, "")} (texted ${md(x.st.textedAt)})`);
       showPanel({ heard, reply: `${rows.length} tenant${rows.length === 1 ? " hasn't" : "s haven't"} answered${rows.some((x) => x.st.state === "call") ? ": time to call" : ""}. ${list.join("; ")}${rows.length > 3 ? `, and ${rows.length - 3} more` : ""}.`,
         actions: rows.slice(0, 3).filter((x) => tenantInfo(x.j).phone).map((x) => ({ label: `📞 ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: `tel:${tenantInfo(x.j).phone.replace(/[^\d+]/g, "")}` })) });
+      return;
+    }
+    if (cmd.intent === "app-request") {
+      // A change to the app itself (27 Oct): sent to Claude as a request; progress shows in What's new -> Your requests.
+      const text = cmd.text.replace(/^\w/, (c) => c.toUpperCase());
+      showPanel({ heard, reply: `Sending to Claude: "${text}"…` });
+      void sendChangeRequest(`(said to the helper) ${text}`).then((ok) => {
+        showPanel({ heard, reply: ok ? `📥 Sent to Claude for the next upgrade: "${text}". You'll see the progress under What's new → Your requests.` : `Saved on this phone; it goes to Claude when the internet is back: "${text}".`, actions: [{ label: "📋 My requests", href: "#requests" }] });
+      });
       return;
     }
     if (cmd.intent === "whats-next") {
@@ -5958,7 +6001,15 @@ export default function FieldCommandClient() {
       })()}
       {agent ? (
         <div className="fc-agent" role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
+          {/* Earlier turns only over the map: over a sheet (bid, job) the panel stays small so it doesn't hide its buttons. */}
+          {(selectedJob || bidsOpen ? [] : agentHistory.filter((h) => Date.now() - h.at < 15 * 60000).slice(-3)).map((h) => (
+            <div key={h.at} className="fc-agent-past" data-hpd-smoke="fc-agent-past"><small>🗣 {h.heard}</small><span>{h.reply}</span></div>
+          ))}
           <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>
+          {/* 💡 Before you ask (27 Oct, owner: "figure it out by itself beforehand"): the most pressing thing right now. */}
+          {nextStepRef.current && !agent.reply.startsWith("Next:") && !agent.confirm ? (
+            <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
+          ) : null}
           <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
           {/* ❓ What can I say (23 Oct): example sentences by topic; tap one to run it. */}
           {helpOpen ? (
@@ -5971,14 +6022,19 @@ export default function FieldCommandClient() {
               ))}
             </div>
           ) : null}
+          {agentTypeOpen ? <form className="fc-agent-type" data-hpd-smoke="fc-agent-type" onSubmit={(e) => { e.preventDefault(); const t = agentTyped.trim(); if (!t) return; setAgentTyped(""); agentRef.current(t); }}>
+            <input autoFocus value={agentTyped} onChange={(e) => setAgentTyped(e.target.value)} placeholder="Type anything, or tell Claude what to change" aria-label="Type to the helper" data-hpd-smoke="fc-agent-type-input" enterKeyHint="send" />
+            <button type="submit" disabled={!agentTyped.trim()} data-hpd-smoke="fc-agent-type-send">Send</button>
+          </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
-            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={(ev) => { if (a.href === "#next") { ev.preventDefault(); setAgent(null); nextStepRef.current?.go(); return; } const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={(ev) => { if (a.href === "#next") { ev.preventDefault(); setAgent(null); nextStepRef.current?.go(); return; } if (a.href === "#requests") { ev.preventDefault(); setAgent(null); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); return; } const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
             </> : null}
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
+            <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => setAgentTypeOpen((o) => !o)}>⌨️</button>
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
             <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>

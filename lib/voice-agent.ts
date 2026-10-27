@@ -18,6 +18,7 @@ export type AgentCommand =
   | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "whats-next" }
+  | { intent: "app-request"; text: string }
   | { intent: "tell-tenant"; ref: string; message: string }
   | { intent: "week"; days?: number }
   | { intent: "tracker" }
@@ -68,6 +69,19 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t)) return { intent: "no" };
+  // A change to the app itself, for Claude (27 Oct, owner: "say anything about the app and get it updated"):
+  // "tell Claude to make the buttons bigger", "send to Claude: …", "I want the app to dim the other pins",
+  // "can you make the map zoom smoother". The speech often hears Claude as "cloud".
+  {
+    const raw = String(heard || "").trim().replace(/[.!]+$/, "");
+    const m = /^(?:please |hey |ok |okay )?(?:tell|ask|message|send(?: this| a message)? to|note (?:for|to)|request (?:for|to)|for) (?:claude|cloud|clod|claud|the developer|developer)\b[\s,:-]*(?:to |that |please )?(.{4,})$/i.exec(raw)
+      || /^(?:upgrade|feature|change) request[\s,:-]+(.{4,})$/i.exec(raw);
+    if (m) return { intent: "app-request", text: m[1].trim() };
+    const ui = /\b(app|button|buttons|screen|page|card|cards|map|pill|icon|icons|zoom|zooming|colou?rs?|font|menu|helper|feature|upgrade|interface|layout|bigger|smaller|faster|smoother|animation|pins?|design|look|dim(med)?)\b/;
+    if (/^(?:i want the app to|the app should|make the app)\b/.test(t)
+      || (/^(?:can you |could you |please |i want (?:you )?to |i'?d like (?:you )?to |i would like (?:you )?to |let'?s |we need to |i need (?:you )?to )?(?:make|add|change|fix|remove|move|put|upgrade|improve|build|create|redesign|dim|slow down|speed up)\b/.test(t)
+        && ui.test(t) && !/\b(appointments?|reminders?|paperwork|invoice|affidavit|notice|bid for|tenant)\b/.test(t))) return { intent: "app-request", text: raw };
+  }
   // The tenant confirmed the appointment (27 Oct): "the tenant confirmed", "tenant said yes for EQ15239".
   if (/\btenant\b/.test(t) && /\b(confirmed|said yes|replied yes|answered yes|texted (back )?yes|wrote yes)\b/.test(t) && !/\b(did|has|have|is|was)\b.*\?|^(did|has|is|was)\b/.test(t)) {
     const r = /\b([a-z]{2}\s?\d{5})\b/.exec(t);
