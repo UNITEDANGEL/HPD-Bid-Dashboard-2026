@@ -5831,7 +5831,19 @@ export default function FieldCommandClient() {
           const finished = /WORK_COMPLETED|PARTIAL_WORK|REFUSED_ACCESS|NO_ACCESS_2|COMPLETED_BY_OTHERS/;
           const papers = jobs.find((j) => !isTestJob(jobId(j)) && finished.test(value(j, ["FieldOutcome", "fieldOutcome"])) && !value(j, ["PackageApprovedAt"]) && !followUps.get(jobId(j))?.sentAt
             && (Array.isArray(j.FieldVisitHistory) ? j.FieldVisitHistory as { recordedAt?: string }[] : []).some((v) => recent(v?.recordedAt, 7)));
-          const next = bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
+          // An appointment starting within 20 minutes (or under 30 minutes in), not arrived, and you're not there yet
+          // (more than a quarter mile away, or no location): offer the "running late" text first (26 Oct).
+          const fix = lastFixRef.current;
+          const late = jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).find(({ j, a }) => {
+            if (!a || value(j, ["FieldArrivedAt"]) || !tenantInfo(j).phone) return false;
+            const { startsIn } = appointmentTiming(a);
+            if (startsIn > 20 || startsIn < -30) return false;
+            const at = jobLatLng(j);
+            return !fix || !at || distanceMiles({ lat: fix.lat, lng: fix.lng }, at) > 0.25;
+          });
+          const lateText = late ? (() => { const raw = (tenantInfo(late.j).name || "").split(/\s+/)[0]; const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello"; return `${hi}, this is Jot from United Angel Construction. We are running about 15 minutes late to ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}. Sorry for the wait.`; })() : "";
+          const next = late ? { kind: "late", icon: "⏱", text: `Appointment ${appointmentLabel(late.a!).split(" · ")[1]} at ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}: running late? Text the tenant`, go: () => { window.location.href = smsHref(tenantInfo(late.j).phone, lateText); } }
+            : bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
             : replied ? { kind: "tenant", icon: "💬", text: `${jobAddress(replied).replace(/,\s*\d{5}$/, "")}: tenant replied, book a time`, go: () => openIssueJob(replied, true) }
             : toCall ? { kind: "call", icon: "📞", text: `Call the tenant at ${jobAddress(toCall).replace(/,\s*\d{5}$/, "")} (no answer to the text)`, go: () => openIssueJob(toCall, true) }
             : papers ? { kind: "paperwork", icon: "📄", text: `Paperwork: ${jobAddress(papers).replace(/,\s*\d{5}$/, "")}`, go: () => openIssueJob(papers, true) }
