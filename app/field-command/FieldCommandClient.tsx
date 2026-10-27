@@ -5906,10 +5906,17 @@ export default function FieldCommandClient() {
             const t = appointmentTiming(a);
             return t.today && t.startsIn > 20;
           }) : undefined;
+          // An appointment today that ended (up to 6 hours ago) with no result recorded -> open the job to record it (27 Oct).
+          const over = jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).find(({ j, a }) => {
+            if (!a || FIELD_OUTCOMES[value(j, ["FieldOutcome", "fieldOutcome"]).replace(/^APPOINTMENT_.*/, "")]) return false;
+            const t = appointmentTiming(a);
+            return t.today && t.endsIn < 0 && t.endsIn > -360;
+          });
           const remind = nyHour >= 15 && nyHour < 21 ? jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).find(({ j, a }) => needsReminder(j, a)) : undefined;
           const lateText = late ? (() => { const raw = (tenantInfo(late.j).name || "").split(/\s+/)[0]; const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello"; return `${hi}, this is Jot from United Angel Construction. We are running about 15 minutes late to ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}. Sorry for the wait.`; })() : "";
           const next = late ? { kind: "late", icon: "⏱", text: `Appointment ${appointmentLabel(late.a!).split(" · ")[1]} at ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}: running late? Text the tenant`, go: () => { window.location.href = smsHref(tenantInfo(late.j).phone, lateText); } }
             : bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
+            : over ? { kind: "over", icon: "📝", text: `Appointment at ${jobAddress(over.j).replace(/,\s*\d{5}$/, "")} is over: record what happened`, go: () => openIssueJob(over.j, true) }
             : unconfirmed ? { kind: "confirm", icon: "❔", text: `Today ${appointmentLabel(unconfirmed.a!).split(" · ")[1]} at ${jobAddress(unconfirmed.j).replace(/,\s*\d{5}$/, "")} isn't confirmed: text the tenant`, go: () => {
               markReminderSent(unconfirmed.j, unconfirmed.a!.date);
               window.location.href = smsHref(tenantInfo(unconfirmed.j).phone, reminderText(unconfirmed.j, unconfirmed.a!, "today"));
