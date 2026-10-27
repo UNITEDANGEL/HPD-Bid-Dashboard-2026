@@ -562,7 +562,7 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
 
 // What the helper understands, as examples to tap (23 Oct "what can I say").
 const AGENT_EXAMPLES: [string, string[]][] = [
-  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "the tenant confirmed", "show my job tracker"]],
+  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "the tenant confirmed", "what's next", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
@@ -847,6 +847,8 @@ export default function FieldCommandClient() {
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
   // Latest GPS fix with its accuracy and time: saved with each visit as proof of where the phone was.
   const lastFixRef = useRef<GpsFix | null>(null);
+  // The pill at the bottom of the map as last shown (it hides while the helper is open): "what's next?" reads it (27 Oct).
+  const nextStepRef = useRef<{ text: string; go: () => void } | null>(null);
   // The map follows you from the moment it opens; dragging the map pauses it, Me resumes it.
   const followMeRef = useRef(true);
   const centeredOnMeRef = useRef(false);
@@ -4064,6 +4066,14 @@ export default function FieldCommandClient() {
         actions: rows.slice(0, 3).filter((x) => tenantInfo(x.j).phone).map((x) => ({ label: `📞 ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: `tel:${tenantInfo(x.j).phone.replace(/[^\d+]/g, "")}` })) });
       return;
     }
+    if (cmd.intent === "whats-next") {
+      // "What's next?" (27 Oct): the pill at the bottom of the map as last shown (an urgent notice first, else the Next
+      // step), with "Do it" doing it for you.
+      const step = nextStepRef.current;
+      if (!step) { answer("Nothing urgent right now: no notices running out, no bids due today, no tenant waiting."); return; }
+      showPanel({ heard, reply: `Next: ${step.text}.`, actions: [{ label: "▶ Do it", href: "#next" }] });
+      return;
+    }
     if (cmd.intent === "help") {
       setHelpOpen(true);
       answer("Here's what you can say. Tap one to try it, or just say it your own way.");
@@ -5929,6 +5939,7 @@ export default function FieldCommandClient() {
             : toCall ? { kind: "call", icon: "📞", text: `Call the tenant at ${jobAddress(toCall).replace(/,\s*\d{5}$/, "")} (no answer to the text)`, go: () => openIssueJob(toCall, true) }
             : papers ? { kind: "paperwork", icon: "📄", text: `Paperwork: ${jobAddress(papers).replace(/,\s*\d{5}$/, "")}`, go: () => openIssueJob(papers, true) }
             : null;
+          nextStepRef.current = next ? { text: next.text, go: next.go } : null;
           if (!next) return null;
           return (
             <button type="button" className={`fc-focus-chip is-next is-${next.kind}`} data-hpd-smoke="fc-next-chip" data-kind={next.kind} onClick={next.go}>
@@ -5936,8 +5947,9 @@ export default function FieldCommandClient() {
             </button>
           );
         }
-        if (ping && ping.omo === top.omo) return null;
+        if (ping && ping.omo === top.omo) { nextStepRef.current = null; return null; }
         const h = Math.round(hoursLeft(top, Date.now()));
+        nextStepRef.current = { text: `notice ${top.omo} ${h < 0 ? `overdue ${-h} hours` : `${h} hours left`}${boardUrgent.length > 1 ? `, and ${boardUrgent.length - 1} more` : ""}`, go: () => goTo("board", top.omo) };
         return (
           <button type="button" className={`fc-focus-chip${h < 0 ? " is-late" : ""}`} data-hpd-smoke="fc-focus-chip" onClick={() => goTo("board", top.omo)}>
             <span aria-hidden="true">⏰</span> <b>{top.omo}</b> {h < 0 ? `overdue ${-h} h` : `${h} h left`}{boardUrgent.length > 1 ? <small> +{boardUrgent.length - 1} more</small> : null} <em>→</em>
@@ -5961,7 +5973,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
-            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={(ev) => { if (a.href === "#next") { ev.preventDefault(); setAgent(null); nextStepRef.current?.go(); return; } const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>

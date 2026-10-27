@@ -157,6 +157,20 @@ try {
   await examples.filter({ hasText: "how much does HPD owe me" }).click();
   await page.waitForFunction(() => /HPD owes you|PIP shows nothing owed/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-help"]').count(), 0, "the list folds away after a tap");
+  // 8a. "What's next?" -> the pill at the bottom of the map, read out; Do it taps it.
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  const pillKind = await page.locator('[data-hpd-smoke="fc-next-chip"], [data-hpd-smoke="fc-focus-chip"]').first().getAttribute("data-hpd-smoke", { timeout: 3000 }).catch(() => "");
+  const pill = pillKind === "fc-next-chip" ? ((await page.locator('[data-hpd-smoke="fc-next-chip"]').textContent()) || "").replace(/→/g, "").replace(/\s+/g, " ").replace(/^\W*Next:\s*/, "").trim() : pillKind ? "notice" : "";
+  const nx = await say("what's next", /^Next: |Nothing urgent right now/);
+  console.log(`  next: ${nx}`);
+  if (pill) {
+    if (pill === "notice") assert.match(nx, /^Next: notice \w+ (overdue \d+ hours|\d+ hours left)/); else assert.equal(nx, `Next: ${pill}.`);
+    await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Do it" }).click();
+    assert.equal(await page.locator('[data-hpd-smoke="fc-agent-reply"]').count(), 0, "the helper closes and the pill's step opens");
+    await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
+    await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+    while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
+  }
   // 8b. The tenant confirmed: by voice, then (set back to requested) with the ✅ button on the job card.
   const conf = await say(`the tenant said yes for ${JOB}`, /Confirmed:|already confirmed/);
   assert.match(conf, /Confirmed: \w{3} \d\d\/\d\d · 10–11 AM at /);
@@ -178,7 +192,7 @@ try {
     assert.match(await page.locator('[data-hpd-smoke="paperwork-fix-progress"]').innerText(), /Fixing one by one · 1 of \d+/);
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; tomorrow's list offers 📅 Text reminder (once); "the tenant said yes" and the ✅ Tenant confirmed button confirm it; "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
+  console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; tomorrow's list offers 📅 Text reminder (once); "the tenant said yes" and the ✅ Tenant confirmed button confirm it; "what's next" reads the map's pill and Do it taps it; "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
   await c.close();
 } finally {
   await browser.close();

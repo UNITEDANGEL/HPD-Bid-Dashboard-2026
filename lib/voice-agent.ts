@@ -17,6 +17,7 @@ export type AgentCommand =
   | { intent: "bid-advice" }
   | { intent: "tenants-waiting" }
   | { intent: "help" }
+  | { intent: "whats-next" }
   | { intent: "tell-tenant"; ref: string; message: string }
   | { intent: "week"; days?: number }
   | { intent: "tracker" }
@@ -84,6 +85,8 @@ export function parseCommand(heard: string): AgentCommand {
   }
   // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
+  // "What's next?" (27 Oct): the map's Next pill, read out, with a button to do it.
+  if (/^(so )?(what'?s|what is) next$|^what (should|do) i do( now| next)?$|^what now$|^next (thing|step)$/.test(t)) return { intent: "whats-next" };
   // ❓ "What can you do?" / "help" (23 Oct): the examples list.
   if (/^(help|what can (you|i) (do|say|ask)|what do you do|how do i use (you|this)|what are you able to do)\b/.test(t)) return { intent: "help" };
   // Reminders for tomorrow's tenants (27 Oct): "remind tomorrow's tenants", "text the tenants for tomorrow" -> tomorrow's
