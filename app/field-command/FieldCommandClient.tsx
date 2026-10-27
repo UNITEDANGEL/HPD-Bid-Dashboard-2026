@@ -3710,7 +3710,11 @@ export default function FieldCommandClient() {
         return;
       }
       if (cmd.intent === "navigate") {
-        showPanel({ heard, reply: `${where} (${jobId(j)}). Pick Waze or Google.`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }] });
+        // With the tenant's phone on file: "on my way" in one tap too (26 Oct), before you drive.
+        const raw = (t.name || "").split(/\s+/)[0];
+        const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello";
+        const onWay = t.phone && !t.commonArea ? [{ label: "🚚 Text: on my way", href: smsHref(t.phone, `${hi}, this is Jot from United Angel Construction. We are on the way to ${where} for the HPD repair. See you soon.`) }] : [];
+        showPanel({ heard, reply: `${where} (${jobId(j)}). Pick Waze or Google.${onWay.length ? " Tap \"on my way\" first to let the tenant know." : ""}`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }, ...onWay] });
         speak(sayOmo(`${where}. Pick Waze or Google.`), 200);
         return;
       }

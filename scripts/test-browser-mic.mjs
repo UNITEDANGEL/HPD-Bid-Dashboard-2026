@@ -82,7 +82,7 @@ try {
   results.push(["plan my day", await say("plan my day", /^Your day: \d+ stops?\. First .+\. Say "take me to the next stop"/)]);
   const firstStop = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-today-route-v1") || "{}").ids?.[0] || "");
   assert.match(firstStop, /^[A-Z]{2}\d{5}$/, "a route is planned");
-  results.push(["take me to the next stop", await say("take me to the next stop", new RegExp(`\\(${firstStop}\\)\\. Pick Waze or Google\\.$`))]);
+  results.push(["take me to the next stop", await say("take me to the next stop", new RegExp(`\\(${firstStop}\\)\\. Pick Waze or Google\\.( Tap "on my way" first to let the tenant know\\.)?$`))]);
   results.push(["read me the new bids",await say("read me the new bids", /^(You have \d+ open invitations? to bid|No open invitations)/)]);
   results.push(["what do I have today", await say("what do I have today", /^(Today: |Nothing urgent today)/)]);
   results.push(["which notices are open", await say("which notices are open", /notice|No notices/)]);
@@ -116,9 +116,10 @@ try {
     results.push(["text the tenant", await say("text the tenant", /^I wrote a text for /)]);
     await page.locator('[data-hpd-smoke="jc-tenant-draft"]').waitFor({ timeout: 10000 });
   }
-  results.push([`navigate to ${todo[1]}`, await say(`navigate to ${todo[1].split("").join(" ")}`, /Pick Waze or Google\.$/)]);
+  results.push([`navigate to ${todo[1]}`, await say(`navigate to ${todo[1].split("").join(" ")}`, /Pick Waze or Google\.( Tap "on my way" first to let the tenant know\.)?$/)]);
   const nav = await page.locator('[data-hpd-smoke="fc-agent-action"]').evaluateAll((els) => els.map((e) => e.getAttribute("href")));
   assert.ok(/waze\.com/.test(nav[0]) && /google\.com\/maps/.test(nav[1]), "Waze and Google for that job");
+  if (nav[2]) assert.match(decodeURIComponent(nav[2]), /^sms:.*We are on the way to .* for the HPD repair/, "on my way, when the tenant's phone is on file");
   results.push(["do the paperwork for this job", await say("do the paperwork for this job", /Tap Open the paperwork\.$/)]);
   assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href"), /^\/paperwork\/?\?job=/);
   results.push(["I'm here",await say("I'm here", new RegExp(`^Start .+, job ${todo[1]}\\? Say yes`))]);
