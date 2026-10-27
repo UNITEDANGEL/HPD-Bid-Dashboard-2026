@@ -3520,6 +3520,10 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-agent-type button { min-height: 42px; padding: 0 16px; border-radius: 21px; border: 0; background: #6366f1; color: #fff; font: 700 15px system-ui, sans-serif; }
 .fc-agent-type button:disabled { opacity: .45; }
 .fc-agent-hint { text-align: left; min-height: 40px; padding: 8px 12px; border-radius: 12px; border: 1px solid #f59e0b; background: rgba(245,158,11,.14); color: #fde68a; font: 700 14px/1.35 system-ui, sans-serif; }
+.fc-agent-try { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fc-agent-try small { color: #9ca3af; font: 700 12px system-ui, sans-serif; }
+.fc-agent-try button { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid rgba(165,180,252,.5); background: rgba(99,102,241,.16); color: #e0e7ff; font: 600 14px system-ui, sans-serif; }
+.fc-agent-try button:active { transform: scale(.96); background: rgba(99,102,241,.35); }
 /* A route on the map (27 Oct, owner: "once I select a route, all the other things dimmed out"). */
 .fc-map-node .leaflet-marker-pane > *, .fc-map-node .leaflet-tile-pane { transition: opacity .6s ease, filter .6s ease; }
 .fc-map-node.is-route-on .leaflet-marker-pane > :not(.fc-you-marker) { opacity: .18; filter: grayscale(.8); }

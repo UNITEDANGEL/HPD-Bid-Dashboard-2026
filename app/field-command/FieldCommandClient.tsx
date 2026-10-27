@@ -6011,6 +6011,21 @@ export default function FieldCommandClient() {
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
           ) : null}
           <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
+          {/* 👉 Try next (27 Oct, "more advanced helper"): what makes sense to say next here, one tap to run it. */}
+          {!agent.confirm && !helpOpen ? (() => {
+            const heard = agent.heard.toLowerCase().replace(/[^a-z' ]/g, "").trim();
+            const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+            const j = selectedJob;
+            const done = j ? Boolean(value(j, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])) : false;
+            const list = j
+              ? (done ? ["make the paperwork", "what's left on this job"] : ["read the description", "take me there", ...(tenantInfo(j).phone ? ["text the tenant"] : []), "what's left on this job"])
+              : bidsOpen ? ["what should I bid", "what's next"]
+              : [...(nextStepRef.current ? ["what's next"] : []), "what do I have today", ...(hour >= 15 && hour <= 21 ? ["remind tomorrow's tenants"] : []), "which notices are open"];
+            const chips = list.filter((c) => c.toLowerCase() !== heard).slice(0, 3);
+            return chips.length ? (
+              <div className="fc-agent-try" data-hpd-smoke="fc-agent-try"><small>Try:</small>{chips.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-try-chip" onClick={() => agentRef.current(c)}>{c}</button>)}</div>
+            ) : null;
+          })() : null}
           {/* ❓ What can I say (23 Oct): example sentences by topic; tap one to run it. */}
           {helpOpen ? (
             <div className="fc-agent-help" data-hpd-smoke="fc-agent-help">

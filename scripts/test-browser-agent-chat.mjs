@@ -54,6 +54,14 @@ try {
   assert.match(await page.locator('[data-hpd-smoke="fc-agent-past"]').last().innerText(), /make the zoom smoother[\s\S]*Sent to Claude/i);
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-type-input"]').inputValue(), "", "the box empties after sending");
   if (shots) await page.screenshot({ path: `${shots}/agent-chat.png` });
+  // 👉 Try: what to say next, minus what was just said; one tap runs it like speaking.
+  const chips = await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts();
+  assert.ok(chips.includes("what do I have today"), `chips: ${chips}`);
+  assert.ok(!chips.includes("what's next"), "the question just asked is not offered again");
+  await page.locator('[data-hpd-smoke="fc-agent-try-chip"]', { hasText: "what do I have today" }).click();
+  await page.waitForFunction(() => /what do I have today/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
+  await page.waitForFunction(() => !/^(…|Thinking)/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "…"), null, { timeout: 20000 });
+  assert.ok((await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts()).every((t) => t !== "what do I have today"));
 
   // 3. Typed straight to Claude, then My requests opens the list.
   await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("send to Claude: add a dark mode");
