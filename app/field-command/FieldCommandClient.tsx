@@ -562,7 +562,7 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
 
 // What the helper understands, as examples to tap (23 Oct "what can I say").
 const AGENT_EXAMPLES: [string, string[]][] = [
-  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "show my job tracker"]],
+  ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "show my job tracker"]],
   ["A job", ["what's left on this job", "read me this job", "I finished this job"]],
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
@@ -1359,7 +1359,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[] }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -2927,6 +2927,20 @@ export default function FieldCommandClient() {
       setTenantText((cur) => (cur && cur.id === id ? (d?.ai && text && text.length <= 480 ? { ...cur, text, ai: "✨ Written by AI. Read it, change anything, then open it in Messages and press Send there." } : { ...cur, ai: status === 401 ? "Ready text below. Sign in with Google on this phone and the AI writes it next time." : "" }) : cur));
     }).catch(() => setTenantText((cur) => (cur && cur.id === id ? { ...cur, ai: "" } : cur)));
   }
+  // The evening-before reminder text for an appointment, and noting it on the job so it isn't offered again (27 Oct).
+  function reminderText(job: JobRecord, a: Appointment) {
+    const raw = (tenantInfo(job).name || "").split(/\s+/)[0];
+    const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello";
+    return `${hi}, this is Jot from United Angel Construction. Reminder: we will see you tomorrow ${appointmentLabel(a).split(" · ")[1]} at ${jobAddress(job).replace(/,\s*\d{5}$/, "")} for the HPD repair. Reply YES to confirm, or tell us a better time.`;
+  }
+  function markReminderSent(job: JobRecord, date: string) {
+    const id = jobId(job), patch = { ApptReminderSentFor: date, FieldVisitHistory: visitHistoryWith(job, "Texted the tenant a reminder for tomorrow", null) };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+  }
+  function needsReminder(job: JobRecord, a: Appointment | null): a is Appointment {
+    return Boolean(a && appointmentTiming(a).days === 1 && tenantInfo(job).phone && value(job, ["ApptReminderSentFor"]) !== a.date && !value(job, ["FieldArrivedAt"]));
+  }
   function markTenantTexted(job: JobRecord) {
     const id = jobId(job);
     const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, "Texted the tenant", null) };
@@ -3614,7 +3628,7 @@ export default function FieldCommandClient() {
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
     // A panel with buttons ends a chain: what was answered before goes on top.
-    function showPanel(p: { heard: string; reply: string; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[] }[] }) {
+    function showPanel(p: { heard: string; reply: string; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] }) {
       const m = multiRef.current;
       multiRef.current = null;
       setAgent(m ? { ...p, heard: m.heard, reply: [...m.replies, p.reply].join("\n\n") } : p);
@@ -3942,7 +3956,8 @@ export default function FieldCommandClient() {
       lastJobsRef.current = { ids: list.slice(0, 5).map((x) => jobId(x.j)), at: Date.now() };
       const lines = list.slice(0, 4).map((x) => `${appointmentLabel(x.a!)} at ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}${x.a!.state === "requested" ? " (not confirmed yet)" : ""}`);
       showPanel({ heard, reply: `${list.length} appointment${list.length === 1 ? "" : "s"} ${span}: ${lines.join("; ")}${list.length > 4 ? `, and ${list.length - 4} more` : ""}.`,
-        actions: list.slice(0, 3).map((x) => ({ label: `Waze · ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: wazeHref(x.j), id: jobId(x.j), via: "Waze" as const })) });
+        actions: [...list.filter((x) => needsReminder(x.j, x.a)).slice(0, 3).map((x) => ({ label: `📅 Text reminder · ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: smsHref(tenantInfo(x.j).phone, reminderText(x.j, x.a!)), id: jobId(x.j), remind: x.a!.date })),
+          ...list.slice(0, 3).map((x) => ({ label: `Waze · ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: wazeHref(x.j), id: jobId(x.j), via: "Waze" as const }))].slice(0, 4) });
       return;
     }
     if (cmd.intent === "no-bid") {
@@ -5844,17 +5859,13 @@ export default function FieldCommandClient() {
           // From 3 PM to 9 PM (New York): an appointment tomorrow, tenant's phone on file, no reminder sent for that date yet ->
           // text the tenant a reminder (27 Oct). Sending it is noted on the job so it isn't offered again.
           const nyHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
-          const remind = nyHour >= 15 && nyHour < 21 ? jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).find(({ j, a }) =>
-            a && appointmentTiming(a).days === 1 && tenantInfo(j).phone && value(j, ["ApptReminderSentFor"]) !== a.date && !value(j, ["FieldArrivedAt"])) : undefined;
-          const remindText = remind ? (() => { const raw = (tenantInfo(remind.j).name || "").split(/\s+/)[0]; const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello"; return `${hi}, this is Jot from United Angel Construction. Reminder: we will see you tomorrow ${appointmentLabel(remind.a!).split(" · ")[1]} at ${jobAddress(remind.j).replace(/,\s*\d{5}$/, "")} for the HPD repair. Reply YES to confirm, or tell us a better time.`; })() : "";
+          const remind = nyHour >= 15 && nyHour < 21 ? jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).find(({ j, a }) => needsReminder(j, a)) : undefined;
           const lateText = late ? (() => { const raw = (tenantInfo(late.j).name || "").split(/\s+/)[0]; const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello"; return `${hi}, this is Jot from United Angel Construction. We are running about 15 minutes late to ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}. Sorry for the wait.`; })() : "";
           const next = late ? { kind: "late", icon: "⏱", text: `Appointment ${appointmentLabel(late.a!).split(" · ")[1]} at ${jobAddress(late.j).replace(/,\s*\d{5}$/, "")}: running late? Text the tenant`, go: () => { window.location.href = smsHref(tenantInfo(late.j).phone, lateText); } }
             : bidsDue.unsentToday ? { kind: "bids", icon: "🧾", text: `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today${bidsDue.firstTime ? ` · first ${bidsDue.firstTime}` : ""}`, go: () => goTo("bids", "") }
             : remind ? { kind: "remind", icon: "📅", text: `Tomorrow ${appointmentLabel(remind.a!).split(" · ")[1]} at ${jobAddress(remind.j).replace(/,\s*\d{5}$/, "")}: text the tenant a reminder`, go: () => {
-              const id = jobId(remind.j), patch = { ApptReminderSentFor: remind.a!.date, FieldVisitHistory: visitHistoryWith(remind.j, "Texted the tenant a reminder for tomorrow", null) };
-              try { writeSharedWorkflowPatch(id, patch); } catch {}
-              mergeWorkflowPatchIntoScreen(id, patch);
-              window.location.href = smsHref(tenantInfo(remind.j).phone, remindText);
+              markReminderSent(remind.j, remind.a!.date);
+              window.location.href = smsHref(tenantInfo(remind.j).phone, reminderText(remind.j, remind.a!));
             } }
             : replied ? { kind: "tenant", icon: "💬", text: `${jobAddress(replied).replace(/,\s*\d{5}$/, "")}: tenant replied, book a time`, go: () => openIssueJob(replied, true) }
             : toCall ? { kind: "call", icon: "📞", text: `Call the tenant at ${jobAddress(toCall).replace(/,\s*\d{5}$/, "")} (no answer to the text)`, go: () => openIssueJob(toCall, true) }
@@ -5892,7 +5903,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
-            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={() => { const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>

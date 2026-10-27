@@ -60,7 +60,19 @@ try {
   // The list of appointments: tomorrow's shows, with a Waze button.
   const appts = await say("any appointments tomorrow", /appointments? tomorrow:/);
   assert.match(appts, /\w{3} \d\d\/\d\d · 10–11 AM at .*\(not confirmed yet\)/);
-  assert.ok((await page.locator('[data-hpd-smoke="fc-agent-action"]').first().getAttribute("href")).includes("waze"), "Waze button");
+  const apptActions = await page.locator('[data-hpd-smoke="fc-agent-action"]').evaluateAll((els) => els.map((e) => ({ text: e.textContent, href: e.getAttribute("href") })));
+  assert.ok(apptActions.some((x) => x.href.includes("waze")), "Waze button");
+  // With the tenant's phone on file: a 📅 Text reminder button first; tapping it notes the reminder on the job, and
+  // "remind tomorrow's tenants" no longer offers it.
+  if (text) {
+    assert.match(apptActions[0].text, /📅 Text reminder · /);
+    assert.match(decodeURIComponent(apptActions[0].href), /Reminder: we will see you tomorrow 10–11 AM at .* Reply YES to confirm/);
+    await page.evaluate(() => document.addEventListener("click", (e) => { const a = e.target.closest?.('a[href^="sms:"]'); if (a) e.preventDefault(); }, true));
+    await page.locator('[data-hpd-smoke="fc-agent-action"]').first().click();
+    await page.waitForFunction((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j]?.ApptReminderSentFor, JOB, { timeout: 10000 });
+    await say("remind tomorrow's tenants", /appointments? tomorrow:/);
+    assert.equal(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Text reminder" }).count(), 0, "reminder already sent");
+  }
   await say("appointments today", /No appointments today|appointments? today:/);
 
   // 2. Reminder (made due right away here instead of waiting).
@@ -153,7 +165,7 @@ try {
     assert.match(await page.locator('[data-hpd-smoke="paperwork-fix-progress"]').innerText(), /Fixing one by one · 1 of \d+/);
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
+  console.log(`PASS voice appointments: "${JOB} tomorrow at 10am" -> yes -> saved 10–11 AM with Text the tenant + Add to Calendar; tomorrow's list offers 📅 Text reminder (once); "remind me to call Lewis at 4pm" -> rings when due; a free sentence -> the AI picked "take me to ${JOB}" -> Waze / Google; the AI gets the last turns for follow-ups; "how much does HPD owe me" answered from PIP`);
   await c.close();
 } finally {
   await browser.close();

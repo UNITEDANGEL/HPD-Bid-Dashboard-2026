@@ -80,6 +80,9 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // ❓ "What can you do?" / "help" (23 Oct): the examples list.
   if (/^(help|what can (you|i) (do|say|ask)|what do you do|how do i use (you|this)|what are you able to do)\b/.test(t)) return { intent: "help" };
+  // Reminders for tomorrow's tenants (27 Oct): "remind tomorrow's tenants", "text the tenants for tomorrow" -> tomorrow's
+  // appointments with a 📅 Text reminder button each.
+  if (/\b(remind|text|message)\b/.test(t) && /\btenants\b|\btomorrow'?s tenants?\b/.test(t) && /\btomorrow'?s?\b/.test(t)) return { intent: "appointments", when: "tomorrow" };
   // Your own words to the tenant (23 Oct): "tell the tenant we'll be there at 10", "reply to the tenant for EQ15239:
   // thank you, see you Thursday", "text them that we're running late".
   {
