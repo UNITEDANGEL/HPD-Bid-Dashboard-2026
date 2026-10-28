@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T13:37:05.632969+00:00",
+  "generatedAt": "2026-10-28T13:48:56.652135+00:00",
   "days": 14,
   "bids": [
     {
@@ -523,6 +523,136 @@
       },
       "lat": 40.859497,
       "lng": -73.86882
+    },
+    {
+      "omo": "ER09216",
+      "bidDue": "2026-10-29",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-02",
+      "workCompletion": "2026-11-16",
+      "address": "2186 CRUGER AVENUE",
+      "borough": "BX",
+      "itbFile": "ER09216_102826093411.pdf",
+      "description": "DOOR REPAIR MAKE ALL NECESSARY REPAIRS TO MAKE DOOR SELF CLOSING AND LATCHING AS PER NYC CODE. REPLACE HINGES SO TO ENSURE DOOR SELF CLOSES AND LATCHES AT 6TH STORY FIRE DOOR NEXT TO APT H5. TOTAL DOORS= 1",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793194456000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501.1,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 45,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.9,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.855799,
+      "lng": -73.866387
     },
     {
       "omo": "ER07636",
