@@ -9,7 +9,7 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const BUTTONS = {
   route: { tap: '[data-hpd-smoke="fc-route-open"]', open: '.fc-route-toggle[aria-expanded="true"]' },
-  today: { tap: '.fc-map-fab[aria-label="Today\'s appointments"]', open: ".fc-appointment-agenda" },
+  today: { tap: '[data-hpd-smoke="fc-appts-open"]', open: ".fc-appointment-agenda" },
   stats: { tap: '[data-hpd-smoke="fc-stats-open"]', open: '[data-hpd-smoke="fc-stats-sheet"]', close: '[data-hpd-smoke="fc-stats-sheet"] header button' },
   notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]', close: '[data-hpd-smoke="fc-notice-chooser-close"]' },
   follow: { tap: '[data-hpd-smoke="fc-follow-open"]', open: '[data-hpd-smoke="fc-follow-sheet"]', close: '[data-hpd-smoke="fc-follow-sheet"] header button' },
@@ -97,7 +97,7 @@ try {
     await jobsSheet.locator('[data-hpd-smoke="fc-jobs-row"] button').first().click();
     await page.locator("#fc-job-card").waitFor({ timeout: 8000 });
     assert.equal(await isOpen("jobs"), false);
-    assert.equal(await page.locator(".fc-work-fabs").count(), 0, "the round buttons hide behind a job card");
+    assert.equal(await page.locator(".fc-dock").count(), 0, "the dock hides behind a job card");
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
     await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
     // Notices: close the list (map still shows the notice jobs), tap Notices again -> the list opens.

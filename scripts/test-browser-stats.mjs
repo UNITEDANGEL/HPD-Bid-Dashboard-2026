@@ -48,6 +48,8 @@ try {
   // The chart button is on the map itself (iPhone size), no menu needed.
   const button = page.locator('[data-hpd-smoke="fc-stats-open"]');
   await button.waitFor({ state: "visible", timeout: 120000 });
+  // Since 28 Oct it's in the strip above the bottom dock, which you swipe sideways.
+  await button.scrollIntoViewIfNeeded();
   const box = await button.boundingBox();
   assert.ok(box && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 844, "stats button must be on screen");
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });

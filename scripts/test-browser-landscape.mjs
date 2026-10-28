@@ -32,13 +32,13 @@ try {
     await page.waitForTimeout(800);
     const layout = await page.evaluate(() => {
       const app = document.querySelector(".fc-app").getBoundingClientRect();
-      const bad = [...document.querySelectorAll(".fc-map-controls .fc-map-fab")].filter((b) => b.offsetParent).map((b) => {
+      const bad = [...document.querySelectorAll(".fc-map-controls .fc-map-fab, .fc-dock .fc-dock-btn, .fc-dock .fc-ai-orb")].filter((b) => b.offsetParent).map((b) => {
         const r = b.getBoundingClientRect();
         const off = r.bottom > innerHeight || r.right > innerWidth || r.top < 0;
         const covered = !b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
         return off || covered ? `${b.getAttribute("aria-label")}${off ? " off screen" : " covered"}` : "";
       }).filter(Boolean);
-      return { width: Math.round(app.width), bad, count: document.querySelectorAll(".fc-map-controls .fc-map-fab").length };
+      return { width: Math.round(app.width), bad, count: document.querySelectorAll(".fc-map-controls .fc-map-fab, .fc-dock .fc-dock-btn").length };
     });
     assert.equal(layout.width, w, `${where}: app uses the whole width`);
     assert.deepEqual(layout.bad, [], `${where}: every map button reachable`);

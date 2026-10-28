@@ -251,6 +251,8 @@ jobs:
             scripts/test-browser-claude-progress.mjs \
             scripts/test-browser-voice.mjs \
             scripts/test-browser-weather-alert.mjs \
+            scripts/test-browser-asp-chip.mjs \
+            scripts/test-browser-dock.mjs \
             scripts/test-browser-tenant-text.mjs \
             scripts/test-browser-calm.mjs \
             scripts/test-browser-today.mjs \

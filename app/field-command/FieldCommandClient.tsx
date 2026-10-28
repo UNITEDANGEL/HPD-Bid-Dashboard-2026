@@ -64,7 +64,7 @@ import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
 import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater } from "../../lib/weather";
-import { aspAnswer } from "../../lib/asp";
+import { aspAnswer, aspOff } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
 import BuildingFacts from "./BuildingFacts";
 import { smsHref, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
@@ -1461,6 +1461,15 @@ export default function FieldCommandClient() {
   // 🌤 Weather on the map (27 Oct, owner: "I want to see temp etc on the map"): now, and rain / snow coming in the next
   // hours (else today's high and low); refreshed every 10 minutes from the 30-minute forecast; tap for the full answer.
   const [wxChip, setWxChip] = useState<ReturnType<typeof weatherNow>>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  // Checked after load (the page is built ahead of time) and every 10 minutes, so it flips at midnight.
+  const [aspOffToday, setAspOffToday] = useState("");
+  useEffect(() => {
+    const check = () => setAspOffToday(aspOff(nyNow().iso.slice(0, 10)));
+    check();
+    const t = window.setInterval(check, 600000);
+    return () => window.clearInterval(t);
+  }, []);
   useEffect(() => {
     let live = true;
     const load = () => { if (document.visibilityState === "visible") void fetchWeather().then((w) => { if (live && w) setWxChip(weatherNow(w, nyNow().iso)); }); };
@@ -4787,27 +4796,14 @@ export default function FieldCommandClient() {
         {/* Jobs ready to close out and 2nd tries: two round buttons (bottom left) instead of bars across the map. */}
         {/* One round Jobs button (bottom left); Close out and 2nd try are tabs inside it (owner, 21 Oct: "make it like the
             others, it takes too much space"). */}
-        {wxChip && !selectedJob && !agent ? (
-          <button type="button" className={`fc-wx-chip${wxChip.alert ? " is-alert" : ""}`} data-hpd-smoke="fc-wx-chip" aria-label={`Weather: ${wxChip.temp} degrees${wxChip.note ? `, ${wxChip.note}` : ""}. Tap for the forecast`} onClick={() => { unlockChime(); agentRef.current("what's the weather"); }}>
-            <span aria-hidden="true">{wxChip.icon}</span><b>{wxChip.temp}°</b>{wxChip.note ? <small>{wxChip.note}</small> : null}
-          </button>
-        ) : null}
-        {!selectedJob && !agent ? (
-          <button type="button" className={`fc-ai-orb${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
-            <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
-          </button>
-        ) : null}
-        {jobRows.length && !selectedJob ? (
-          <div className="fc-work-fabs" onTouchStart={() => undefined}>
-            <button type="button" className="fc-work-fab is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
-              <JobsIcon /><span className="fc-fab-label">Jobs</span><span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span>
-            </button>
-          </div>
-        ) : null}
-        <div className="fc-map-controls" onTouchStart={() => undefined}>
-          <button
+        {/* Bottom dock (28 Oct, owner picked layout 2: "i like it dont leave anything"): Jobs, Bids, ✨ AI, Notices and
+            More at the bottom; Route, Appts, Follow-up, Stats, Alerts and What's new in a strip above it you swipe sideways;
+            More lists everything with what's waiting in it. Map style, Locate and the job count stay on the map (right). */}
+        {!selectedJob ? (
+          <div className="fc-dock-strip" data-hpd-smoke="fc-dock-strip" onTouchStart={() => undefined}>
+            <button
             type="button"
-            className="fc-map-fab fc-route-fab"
+            className="fc-dock-chip fc-route-fab"
             aria-label="Today's route" data-tip="Today's route: plan your stops"
             title="Today's route"
             data-hpd-smoke="fc-route-open"
@@ -4816,9 +4812,25 @@ export default function FieldCommandClient() {
           >
             <RouteIcon /><span className="fc-fab-label">Route</span>
           </button>
-          <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" data-hpd-smoke="fc-appts-open" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Appts</span></button>
-          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
+            <button type="button" className="fc-dock-chip" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" data-hpd-smoke="fc-appts-open" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Appts</span></button>
+            <button type="button" className={`fc-dock-chip fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
+            <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
+          </button>
+            <button type="button" className="fc-dock-chip" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
+            <Link href="/alerts/" className="fc-dock-chip" data-hpd-smoke="fc-dock-alerts"><BellIcon /><span className="fc-fab-label">Alerts</span></Link>
+            {appVersion ? <button type="button" className="fc-dock-chip fc-version-chip" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
+          </div>
+        ) : null}
+        {!selectedJob ? (
+          <nav className="fc-dock" data-hpd-smoke="fc-dock" aria-label="Main buttons" onTouchStart={() => undefined}>
+            <button type="button" className="fc-dock-btn is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
+              <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span> : null}
+            </button>
+            <button type="button" className={`fc-dock-btn ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>
+            {!agent ? <button type="button" className={`fc-ai-orb fc-dock-ai${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
+            <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
+          </button> : <span className="fc-dock-gap" aria-hidden="true" />}
+            <button type="button" className={`fc-dock-btn fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
             // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
             if (noticesOpen) { setNoticesOpen(false); return; }
@@ -4831,10 +4843,46 @@ export default function FieldCommandClient() {
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
-            <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
-          </button>
-          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>
+            <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="More: everything" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
+              <MenuIcon /><span className="fc-fab-label">More</span>{boardUrgent.length || bidsDue.today || followReport.counts.overdue ? <span className="fc-more-dot" aria-hidden="true" /> : null}
+            </button>
+          </nav>
+        ) : null}
+        {moreOpen && !selectedJob ? (() => {
+          const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
+          const noticeCount = openRejections.length + followReport.counts.hpdAsked;
+          const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
+            { key: "jobs", icon: "🧰", label: "Jobs", info: jobRows.length ? `${jobsTodo} to do` : "Your jobs", go: () => tap("fc-jobs-open") },
+            { key: "bids", icon: "🧾", label: "Bids", info: bidsDue.open ? `${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} tomorrow` : ""}` : "Invitations to bid", go: () => tap("fc-bids-open") },
+            { key: "notices", icon: "⏰", label: "HPD notices", info: `${noticeCount} open${boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}`, go: () => tap("fc-notices-open") },
+            { key: "follow", icon: "📋", label: "Follow-up", info: `${followReport.counts.overdue} overdue · ${followReport.counts.dueWeek} due this week`, go: () => tap("fc-follow-open") },
+            { key: "appts", icon: "📅", label: "Appointments", info: upcomingAppointments.length ? `${upcomingAppointments.length} today` : "None today", go: () => tap("fc-appts-open") },
+            { key: "route", icon: "🧭", label: "Today's route", info: "Plan your stops", go: () => tap("fc-route-open") },
+            { key: "stats", icon: "📊", label: "My stats", info: "Jobs and money", go: () => tap("fc-stats-open") },
+            { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
+            { key: "parking", icon: "🅿️", label: "Parking (ASP)", info: aspOffToday ? `No ASP today · ${aspOffToday}` : "In effect today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
+            { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
+            { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
+            { key: "map", icon: "🗺", label: "Map style", info: darkTiles ? "Dark map" : "Light map", go: () => { setMoreOpen(false); toggleTileStyle(); } },
+            { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
+            { key: "alerts", icon: "🔔", label: "Phone alerts", info: "Sounds, voice, alerts", go: () => { setMoreOpen(false); window.location.href = "/alerts/"; } },
+            { key: "new", icon: "🆕", label: "What's new", info: versionLabel() || (appVersion ? `v${appVersion}` : ""), go: () => tap("fc-version-tag") },
+          ];
+          return (
+            <div className="fc-more-scrim" onClick={() => setMoreOpen(false)}>
+              <section className="fc-more-sheet" role="dialog" aria-label="Everything" data-hpd-smoke="fc-more-sheet" onClick={(e) => e.stopPropagation()}>
+                <div className="fc-more-grab" aria-hidden="true" />
+                <h3>Everything</h3>
+                {rows.map((r) => (
+                  <button key={r.key} type="button" className="fc-more-row" data-hpd-smoke={`fc-more-${r.key}`} onClick={r.go}>
+                    <span aria-hidden="true">{r.icon}</span><b>{r.label}</b><small>{r.info}</small><em aria-hidden="true">›</em>
+                  </button>
+                ))}
+              </section>
+            </div>
+          );
+        })() : null}
+        <div className="fc-map-controls" onTouchStart={() => undefined}>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
@@ -4858,6 +4906,21 @@ export default function FieldCommandClient() {
         </div>
         {/* Status messages stack below the search box instead of overlapping each other. */}
         <div className="fc-map-hints" hidden={filtersOpen}>
+          {/* Weather + 🅿️ no street cleaning today (28 Oct): the first line of the top-left column, so it never sits on top of the job banners (28 Oct, "make the layout better"). */}
+          {(wxChip || aspOffToday) && !selectedJob && !agent ? (
+            <div className="fc-wx-row">
+              {wxChip ? (
+                <button type="button" className={`fc-wx-chip${wxChip.alert ? " is-alert" : ""}`} data-hpd-smoke="fc-wx-chip" aria-label={`Weather: ${wxChip.temp} degrees${wxChip.note ? `, ${wxChip.note}` : ""}. Tap for the forecast`} onClick={() => { unlockChime(); agentRef.current("what's the weather"); }}>
+                  <span aria-hidden="true">{wxChip.icon}</span><b>{wxChip.temp}°</b>{wxChip.note ? <small>{wxChip.note}</small> : null}
+                </button>
+              ) : null}
+              {aspOffToday ? (
+                <button type="button" className="fc-asp-chip" data-hpd-smoke="fc-asp-chip" aria-label={`No alternate side parking today (${aspOffToday}). Tap for details`} onClick={() => { unlockChime(); agentRef.current("is alternate side on today"); }}>
+                  <span aria-hidden="true">🅿️</span><b>No ASP</b>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {locateStatus === "error" ? (
             <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
           ) : null}
@@ -5651,7 +5714,6 @@ export default function FieldCommandClient() {
       </div>
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
-      {appVersion && !selectedJob ? <button type="button" className="fc-version-tag" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
       {newItems.length && !selectedJob && !whatsNewOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>
@@ -6230,9 +6292,18 @@ export default function FieldCommandClient() {
           const nextJob = late ? late.j : bidsDue.unsentToday ? null : over ? over.j : unconfirmed ? unconfirmed.j : remind ? remind.j : replied || toCall || papers || null;
           nextOmoRef.current = nextJob ? jobId(nextJob) : "";
           if (!next) return null;
+          // 🚗 How far it is from where you are (28 Oct): a GPS fix from the last 10 minutes, straight line x 1.35 for the
+          // streets, 18 mph in the city (12 in rush hour).
+          const here = lastFixRef.current;
+          const there = nextJob ? jobLatLng(nextJob) : null;
+          const driveMin = here && there && Date.now() - here.at < 600000 ? (() => {
+            const wd = nyNow().weekday;
+            const rush = wd >= 1 && wd <= 5 && ((nyHour >= 7 && nyHour < 10) || (nyHour >= 16 && nyHour < 19));
+            return Math.max(3, Math.round(distanceMiles(here, there) * 1.35 / (rush ? 12 : 18) * 60));
+          })() : 0;
           return (
             <button type="button" className={`fc-focus-chip is-next is-${next.kind}`} data-hpd-smoke="fc-next-chip" data-kind={next.kind} onClick={next.go}>
-              <span aria-hidden="true">{next.icon}</span> <b>Next:</b> {next.text} <em>→</em>
+              <span aria-hidden="true">{next.icon}</span> <b>Next:</b> {next.text}{driveMin ? <small className="fc-next-drive" data-hpd-smoke="fc-next-drive"> · 🚗 {driveMin} min</small> : null} <em>→</em>
             </button>
           );
         }

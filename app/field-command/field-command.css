@@ -3494,6 +3494,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* "Next" pill (23 Oct): the next thing to do when nothing on the board is urgent. */
 .fc-focus-chip.is-next { background: #1e3a8a; border-color: #3b82f6; }
 .fc-focus-chip.is-next b { margin-right: 2px; }
+.fc-focus-chip.is-next .fc-next-drive { color: #bfdbfe; font-weight: 800; white-space: nowrap; }
 .fc-focus-chip.is-next { white-space: normal; text-align: left; line-height: 1.2; padding: 6px 12px !important; border-radius: 16px; max-width: calc(100% - 180px) !important; }
 .fc-evening { border-color: #a855f7 !important; }
 .fc-evening b { color: #e9d5ff; }
@@ -3551,11 +3552,109 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-push-sounds .fc-push-voicepick div button.is-on { border-color: #818cf8; background: #312e81; }
 .fc-agent-hush { border-color: #f87171 !important; color: #fecaca !important; }
 /* 🌤 Weather on the map (27 Oct): above the AI orb, bottom left. */
-.fc-wx-chip { position: absolute; z-index: 1560; left: calc(10px + env(safe-area-inset-left)); bottom: calc(max(24px, env(safe-area-inset-bottom)) + 222px); display: flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 11px 0 9px; border-radius: 18px; border: 1px solid rgba(255,255,255,.35); background: rgba(15,23,42,.82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; font: 800 15px system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.fc-wx-row { pointer-events: auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-self: start; }
+.fc-wx-chip { display: flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 11px 0 9px; border-radius: 18px; border: 1px solid rgba(255,255,255,.35); background: rgba(15,23,42,.82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; font: 800 15px system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
 .fc-wx-chip span { font-size: 18px; }
 .fc-wx-chip small { color: #cbd5e1; font: 700 12px system-ui, sans-serif; text-transform: capitalize; }
 .fc-wx-chip.is-alert { border-color: #60a5fa; }
 .fc-wx-chip.is-alert small { color: #93c5fd; }
 .fc-wx-chip:active { transform: scale(.96); }
-.fc-app.fc-has-job .fc-wx-chip { display: none; }
-@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) { .fc-wx-chip { bottom: calc(max(24px, env(safe-area-inset-bottom)) + 190px); } }
+.fc-app.fc-has-job .fc-wx-row { display: none; }
+.fc-asp-chip { display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 11px 0 8px; border-radius: 18px; border: 1px solid #4ade80; background: rgba(15,23,42,.82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #bbf7d0; font: 800 13px system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.fc-asp-chip span { font-size: 16px; }
+.fc-asp-chip:active { transform: scale(.96); }
+
+/* Bottom dock (28 Oct, owner picked layout 2: "i like it dont leave anything"): Jobs, Bids, AI, Notices, More at the
+   bottom; a strip above it you swipe sideways (Route, Appts, Follow-up, Stats, Alerts, What's new); More lists
+   everything. Map style, Locate and the job count stay at the top right of the map. */
+.fc-app { --fc-dock-h: calc(62px + env(safe-area-inset-bottom, 0px)); --fc-dock-total: calc(var(--fc-dock-h) + 48px); }
+.fc-dock { position: absolute; z-index: 1600; left: 0; right: 0; bottom: 0; height: var(--fc-dock-h); box-sizing: border-box; padding: 0 4px env(safe-area-inset-bottom, 0px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; background: rgba(11, 18, 32, 0.95); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid rgba(148, 163, 184, 0.22); box-shadow: 0 -6px 22px rgba(0, 0, 0, 0.32); }
+.fc-dock-btn { position: relative; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 58px; min-height: 52px; padding: 6px 4px 4px; border: 0; border-radius: 14px; background: transparent; color: #cbd5e1; font: 800 11.5px system-ui, sans-serif; cursor: pointer; }
+.fc-dock-btn svg { width: 24px; height: 24px; }
+.fc-dock-btn.is-jobs svg { color: #34d399; }
+.fc-dock-btn[data-hpd-smoke="fc-bids-open"] svg { color: #fb923c; }
+.fc-dock-btn.fc-notices-fab svg { color: #f87171; }
+.fc-dock-btn[aria-pressed="true"], .fc-dock-btn.is-active { color: #fde047; background: rgba(250, 204, 21, 0.13); }
+.fc-dock-btn:active { transform: scale(0.92); }
+.fc-dock-btn .fc-follow-badge { position: absolute; top: 0; right: 2px; left: auto; border: 1.5px solid #0b1220; }
+.fc-dock-btn .fc-urgent-tag { left: 50%; top: -22px; transform: translateX(-50%); }
+.fc-dock-btn.fc-notices-fab.is-urgent svg { animation: fc-urgent 1.2s ease-in-out infinite; }
+.fc-more-dot { position: absolute; top: 6px; right: 16px; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid #0b1220; }
+.fc-dock .fc-ai-orb.fc-dock-ai { position: relative; left: auto; bottom: auto; justify-self: center; margin-top: -30px; z-index: 1; }
+.fc-dock .fc-ai-orb.fc-dock-ai .fc-ai-orb-core { width: 58px; height: 58px; box-shadow: 0 0 0 4px #0b1220, 0 6px 18px rgba(124, 58, 237, 0.55); }
+.fc-dock .fc-ai-orb.fc-dock-ai .fc-fab-label { color: #e9d5ff; text-shadow: none; }
+.fc-dock-gap { display: block; }
+.fc-dock-strip { position: absolute; z-index: 1590; left: 0; right: 0; bottom: calc(var(--fc-dock-h) + 7px); display: flex; gap: 7px; padding: 0 10px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.fc-dock-strip::-webkit-scrollbar { display: none; }
+.fc-dock-chip { flex: none; position: relative; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 13px 0 10px; border-radius: 18px; border: 1px solid rgba(148, 163, 184, 0.32); background: rgba(15, 23, 42, 0.92); color: #f8fafc; font: 800 13px system-ui, sans-serif; text-decoration: none; white-space: nowrap; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); cursor: pointer; }
+.fc-dock-chip svg { width: 17px; height: 17px; }
+.fc-dock-chip.fc-route-fab svg { color: #34d399; }
+.fc-dock-chip[data-hpd-smoke="fc-appts-open"] svg { color: #60a5fa; }
+.fc-dock-chip.fc-follow-fab svg { color: #fbbf24; }
+.fc-dock-chip[data-hpd-smoke="fc-stats-open"] svg { color: #a78bfa; }
+.fc-dock-chip[data-hpd-smoke="fc-dock-alerts"] svg { color: #f472b6; }
+.fc-dock-chip[aria-pressed="true"], .fc-dock-chip.is-active { border-color: #facc15; color: #fde047; }
+.fc-dock-chip .fc-follow-badge { position: static; margin-left: 1px; border: 0; }
+.fc-dock-chip.fc-version-chip { color: #94a3b8; font-weight: 700; font-size: 12px; }
+.fc-dock-chip:active { transform: scale(0.95); }
+/* Things that sat at the bottom now sit above the dock. */
+.fc-focus-chip { bottom: calc(var(--fc-dock-total) + 8px) !important; left: 10px !important; right: 10px !important; max-width: none !important; width: fit-content; margin: 0 auto; }
+.fc-app .leaflet-bottom { bottom: var(--fc-dock-total); }
+.fc-app.fc-has-job .leaflet-bottom { bottom: 0; }
+.fc-app .fc-map-hints:not(:empty) { padding-bottom: 0; }
+/* More: everything, with what's waiting in it. */
+.fc-more-scrim { position: fixed; inset: 0; z-index: 1700; background: rgba(2, 6, 23, 0.5); display: flex; align-items: flex-end; justify-content: center; animation: fc-more-fade 0.18s ease-out; }
+.fc-more-sheet { width: 100%; max-width: 560px; max-height: calc(100dvh - 90px); overflow-y: auto; box-sizing: border-box; padding: 8px 12px calc(var(--fc-dock-h) + 10px); border-radius: 20px 20px 0 0; background: #0f172a; border-top: 1px solid rgba(148, 163, 184, 0.3); box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.5); animation: fc-more-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.fc-more-grab { width: 40px; height: 4px; border-radius: 2px; background: #475569; margin: 2px auto 8px; }
+.fc-more-sheet h3 { margin: 0 4px 8px; color: #f8fafc; font: 900 17px system-ui, sans-serif; }
+.fc-more-row { display: grid; grid-template-columns: 30px auto 1fr 14px; align-items: center; gap: 8px; width: 100%; min-height: 50px; margin-bottom: 6px; padding: 8px 12px; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 14px; background: #1e293b; color: #f8fafc; text-align: left; cursor: pointer; }
+.fc-more-row span { font-size: 20px; }
+.fc-more-row b { font: 800 15px system-ui, sans-serif; white-space: nowrap; }
+.fc-more-row small { justify-self: end; color: #94a3b8; font: 700 12.5px system-ui, sans-serif; text-align: right; }
+.fc-more-row em { color: #64748b; font-style: normal; font-size: 18px; }
+.fc-more-row:active { transform: scale(0.98); background: #273449; }
+.fc-app:has(.fc-more-scrim) .fc-dock { z-index: 1710; }
+@keyframes fc-more-up { from { transform: translateY(40%); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes fc-more-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fc-more-scrim, .fc-more-sheet, .fc-dock-btn.fc-notices-fab.is-urgent svg { animation: none; } }
+.fc-dock .fc-dock-btn .fc-fab-label, .fc-dock-strip .fc-fab-label { padding: 0 !important; background: none !important; color: inherit !important; text-shadow: none !important; font: inherit !important; }
+.fc-dock-chip { background: #0f172a; }
+.fc-focus-chip { bottom: calc(var(--fc-dock-total) + 20px) !important; }
+.fc-dock .fc-ai-orb.fc-dock-ai .fc-fab-label { font: 800 11.5px system-ui, sans-serif; }
+/* Screens that open from the bottom sit above the dock, so the dock stays usable and covers none of their buttons. */
+.fc-app .fc-bids-list { bottom: calc(var(--fc-dock-h) + 8px) !important; }
+.fc-app.fc-bids-mode .fc-dock-strip { display: none; }
+.fc-app .fc-appointment-agenda { bottom: calc(var(--fc-dock-total) + 6px); max-height: calc(100% - var(--fc-dock-total) - 140px); }
+.fc-notice-chooser { bottom: calc(var(--fc-dock-total) + 6px) !important; }
+/* The raised AI button stays clear of the strip; chips compact enough that four fit on an iPhone. */
+.fc-app { --fc-dock-total: calc(var(--fc-dock-h) + 58px); }
+.fc-dock-strip { bottom: calc(var(--fc-dock-h) + 16px); gap: 6px; }
+.fc-dock-chip { height: 34px; padding: 0 10px 0 8px; gap: 5px; font-size: 12.5px; }
+.fc-dock .fc-ai-orb.fc-dock-ai { margin-top: -12px; }
+.fc-dock .fc-ai-orb.fc-dock-ai .fc-ai-orb-core { width: 50px; height: 50px; font-size: 22px; }
+/* Short screens (iPhone sideways): a slimmer dock, labels beside nothing but still shown. */
+@media (max-height: 500px) {
+  .fc-app { --fc-dock-h: calc(48px + env(safe-area-inset-bottom, 0px)); --fc-dock-total: calc(var(--fc-dock-h) + 50px); }
+  .fc-dock-btn { min-height: 44px; padding: 3px 4px 2px; gap: 1px; }
+  .fc-dock-btn svg { width: 20px; height: 20px; }
+  .fc-dock .fc-ai-orb.fc-dock-ai { margin-top: -6px; }
+  .fc-dock .fc-ai-orb.fc-dock-ai .fc-ai-orb-core { width: 40px; height: 40px; font-size: 18px; }
+  .fc-dock-strip { bottom: calc(var(--fc-dock-h) + 10px); }
+}
+/* Cards that pop up at the bottom sit above the dock and its strip (28 Oct). */
+.fc-today { bottom: calc(var(--fc-dock-total) + 6px) !important; max-height: calc(100dvh - var(--fc-dock-total) - 70px); overflow-y: auto; }
+.fc-app .fc-pin-jobs { bottom: calc(var(--fc-dock-total) + 6px); }
+.fc-app .fc-updated-banner { bottom: calc(var(--fc-dock-total) + 56px); }
+.fc-allow-alerts { bottom: calc(var(--fc-dock-total) + 6px) !important; }
+.fc-app .fc-missed { bottom: calc(var(--fc-dock-total) + 56px); }
+.fc-app .fc-arrive { bottom: calc(var(--fc-dock-total) + 6px); }
+.fc-newupdate { max-height: min(60vh, calc(100dvh - env(safe-area-inset-top) - 130px - var(--fc-dock-total))); }
+@media (max-height: 500px) { .fc-newupdate { top: calc(env(safe-area-inset-top) + 60px); max-height: calc(100dvh - env(safe-area-inset-top) - 70px - var(--fc-dock-total)); } }
+/* Pinned to the screen, not the map (sideways the map can be taller than the screen). */
+.fc-dock, .fc-dock-strip { position: fixed; }
+@media (max-height: 500px) {
+  .fc-app { --fc-dock-h: calc(52px + env(safe-area-inset-bottom, 0px)); }
+  .fc-dock-btn { min-height: 0; height: 46px; padding: 2px 4px; box-sizing: border-box; justify-content: center; }
+  .fc-dock .fc-dock-btn .fc-fab-label { font-size: 10.5px !important; line-height: 13px !important; }
+  .fc-dock .fc-ai-orb.fc-dock-ai .fc-fab-label { font-size: 10.5px; line-height: 13px; }
+}

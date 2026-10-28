@@ -21,7 +21,7 @@ try {
     await page.locator('[data-hpd-smoke="fc-hpd-ping"]').waitFor();
     await page.waitForTimeout(800);
     const r = await page.evaluate(() => {
-      const buttons = [...document.querySelectorAll(".fc-map-controls .fc-map-fab")].filter((x) => x.offsetParent);
+      const buttons = [...document.querySelectorAll(".fc-map-controls .fc-map-fab, .fc-dock .fc-dock-btn, .fc-dock .fc-ai-orb")].filter((x) => x.offsetParent);
       const hidden = buttons.map((x) => {
         const parts = [x.querySelector("svg"), x.querySelector(".fc-fab-label")].filter(Boolean);
         const bad = parts.some((el) => { const b = el.getBoundingClientRect(); const e = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return b.bottom > innerHeight || b.right > innerWidth || !e || !x.contains(e); });
@@ -29,7 +29,7 @@ try {
       }).filter(Boolean);
       return { count: buttons.length, hidden };
     });
-    assert.ok(r.count >= 8, `${w}x${h}: map buttons shown`);
+    assert.ok(r.count >= 7, `${w}x${h}: map buttons shown (Map, Locate + the 5 in the dock)`);
     assert.deepEqual(r.hidden, [], `${w}x${h}: hidden buttons`);
     seen.push(`${w}x${h}: ${r.count}`);
     await context.close();

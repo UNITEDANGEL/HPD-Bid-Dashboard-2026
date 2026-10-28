@@ -31,3 +31,9 @@ export function aspAnswer(date: string, label: "Today" | "Tomorrow") {
   const nextWords = next ? ` Next suspension: ${new Date(`${next}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long", month: "short", day: "numeric" })} (${ASP_2026[next]}).` : "";
   return `${label}: alternate side parking is in effect: check the street signs before you park.${nextWords} Snow or emergency suspensions are announced the same day by 311.`;
 }
+
+// For the map's 🅿️ chip (28 Oct): why there's no street cleaning on this date (Sunday or a holiday), or "" when it's on.
+export function aspOff(date: string) {
+  if (new Date(`${date}T12:00:00Z`).getUTCDay() === 0) return "Sunday";
+  return date.startsWith("2026") ? ASP_2026[date] || "" : "";
+}
