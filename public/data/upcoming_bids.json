@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T15:58:24.943607+00:00",
+  "generatedAt": "2026-10-28T16:10:36.670757+00:00",
   "days": 14,
   "bids": [
     {
@@ -1173,6 +1173,136 @@
       },
       "lat": 40.743615,
       "lng": -73.877586
+    },
+    {
+      "omo": "ER09326",
+      "bidDue": "2026-10-29",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-29",
+      "workCompletion": "2026-11-09",
+      "address": "83-02 34 AVENUE",
+      "borough": "QN",
+      "itbFile": "ER09326_102826120228.pdf",
+      "description": "DEFECTIVE METAL SOFFIT AND RAILING 83RD STREET SIDE NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SERVICE WORK. BUILDING FRONT PARAPET WALL /CORNICE MAKE ALL NECESSARY REPAIRS TO PROPERLY SECURE THE METAL CORNICE/ SOFFIT APPROXIMATELY 6 FEET -8 FEET LONG AND 3 FEET WIDE AT BUILDING FRONT PARAPET WALL, RESTORE IN SAFE AND PROPER ORDER, METAL SOFFIT AT ROOF ,WEST EXTERIOR WALL (83 rd STREET SIDE)AT SECTION “C” MAKE ALL NECESSARY REPAIRS TO INSTALL NEW RAILING AT ROOF BALCONY APPROX 8 LN FT. PROPERLY SECURE TO BRICKS AND RETURN TO PROPER SAFE CONDITION. SIMILAR TO EXISTING. METAL RAILING AT( 83 rd STREET SIDE)AT ROOF WEAR EXTERIOR WALL AT SECTION “C” REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 212 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212) 863 6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793203351000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.753448,
+      "lng": -73.883781
     },
     {
       "omo": "ER07636",
