@@ -75,7 +75,8 @@ try {
   await page.locator('[data-hpd-smoke="fc-notices-rejected"]').waitFor();
   await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-chooser-close"]').click();
-  await page.waitForFunction(() => !document.querySelector(".leaflet-marker-icon.is-glow"), null, { timeout: 10000 });
+  // (The "👉 Next" job keeps its own glow on the all-jobs map.)
+  await page.waitForFunction(() => !document.querySelector(".leaflet-marker-icon.is-glow:not(.is-glow-next)"), null, { timeout: 10000 });
   assert.deepEqual(errors, []);
   console.log(`PASS priority map: Notices puts every notice job on the map at once (${allKinds.join(', ')}); Priority (${nPrio}) Priority shows only those jobs, ${lit} glowing with countdowns (${[...new Set(tags)].slice(0, 4).join(", ")}); the card says PRIORITY and makes the affidavit for each outcome; Payment rejected switches the map; List; ✕ back to all`);
   await context.close();

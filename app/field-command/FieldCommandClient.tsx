@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import BidsMode from "./BidsMode";
@@ -854,6 +854,13 @@ function CountUp({ value, format = (n: number) => String(Math.round(n)) }: { val
 }
 const USD0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+// The bottom dock's 3 swappable buttons (next to ✨ AI); the rest show in the strip above, in this order.
+const DOCK_STRIP_ORDER = ["route", "appts", "follow", "stats", "jobs", "bids", "notices"] as const;
+type DockKey = (typeof DOCK_STRIP_ORDER)[number];
+const DOCK_DEFAULT: DockKey[] = ["jobs", "bids", "notices"];
+const DOCK_LABEL: Record<DockKey, string> = { route: "Route", appts: "Appts", follow: "Follow-up", stats: "Stats", jobs: "Jobs", bids: "Bids", notices: "Notices" };
+const DOCK_SLOTS_KEY = "hpd-dock-slots-v1";
+
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
@@ -1462,6 +1469,18 @@ export default function FieldCommandClient() {
   // hours (else today's high and low); refreshed every 10 minutes from the 30-minute forecast; tap for the full answer.
   const [wxChip, setWxChip] = useState<ReturnType<typeof weatherNow>>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [dockSlots, setDockSlots] = useState<DockKey[]>([...DOCK_DEFAULT]);
+  const [dockEdit, setDockEdit] = useState(-1);
+  const dockHold = useRef({ timer: 0, fired: false });
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(DOCK_SLOTS_KEY) || "null");
+      if (Array.isArray(saved) && saved.length === 3 && new Set(saved).size === 3 && saved.every((key) => (DOCK_STRIP_ORDER as readonly string[]).includes(key))) setDockSlots(saved);
+    } catch { /* private mode */ }
+  }, []);
+  const saveDockSlots = (next: DockKey[]) => { setDockSlots(next); try { localStorage.setItem(DOCK_SLOTS_KEY, JSON.stringify(next)); } catch { /* private mode */ } };
+  // Putting a button in a slot swaps it with wherever it was.
+  const setDockSlot = (slot: number, key: DockKey) => { const next = [...dockSlots]; const was = next.indexOf(key); if (was >= 0) next[was] = next[slot]; next[slot] = key; saveDockSlots(next); };
   // Checked after load (the page is built ahead of time) and every 10 minutes, so it flips at midnight.
   const [aspOffToday, setAspOffToday] = useState("");
   useEffect(() => {
@@ -4799,38 +4818,14 @@ export default function FieldCommandClient() {
         {/* Bottom dock (28 Oct, owner picked layout 2: "i like it dont leave anything"): Jobs, Bids, ✨ AI, Notices and
             More at the bottom; Route, Appts, Follow-up, Stats, Alerts and What's new in a strip above it you swipe sideways;
             More lists everything with what's waiting in it. Map style, Locate and the job count stay on the map (right). */}
-        {!selectedJob ? (
-          <div className="fc-dock-strip" data-hpd-smoke="fc-dock-strip" onTouchStart={() => undefined}>
-            <button
-            type="button"
-            className="fc-dock-chip fc-route-fab"
-            aria-label="Today's route" data-tip="Today's route: plan your stops"
-            title="Today's route"
-            data-hpd-smoke="fc-route-open"
-            aria-pressed={routeOpen}
-            onClick={() => { if (routeOpen) { setRouteCloseRequest((n) => n + 1); return; } closeScreens("route"); setRouteOpenRequest((n) => n + 1); }}
-          >
-            <RouteIcon /><span className="fc-fab-label">Route</span>
-          </button>
-            <button type="button" className="fc-dock-chip" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" data-hpd-smoke="fc-appts-open" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Appts</span></button>
-            <button type="button" className={`fc-dock-chip fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
-            <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
-          </button>
-            <button type="button" className="fc-dock-chip" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-            <Link href="/alerts/" className="fc-dock-chip" data-hpd-smoke="fc-dock-alerts"><BellIcon /><span className="fc-fab-label">Alerts</span></Link>
-            {appVersion ? <button type="button" className="fc-dock-chip fc-version-chip" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
-          </div>
-        ) : null}
-        {!selectedJob ? (
-          <nav className="fc-dock" data-hpd-smoke="fc-dock" aria-label="Main buttons" onTouchStart={() => undefined}>
-            <button type="button" className="fc-dock-btn is-jobs" data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
+        {!selectedJob ? (() => {
+          // Owner can pick which 3 buttons sit next to ✨ AI (hold one, or More → Bottom buttons); the rest go in the strip.
+          const make: Record<DockKey, (cls: string) => ReactElement> = {
+            jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs`} data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
               <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span> : null}
-            </button>
-            <button type="button" className={`fc-dock-btn ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>
-            {!agent ? <button type="button" className={`fc-ai-orb fc-dock-ai${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
-            <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
-          </button> : <span className="fc-dock-gap" aria-hidden="true" />}
-            <button type="button" className={`fc-dock-btn fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
+            </button>,
+            bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>,
+            notices: (cls) => <button key="notices" type="button" className={`${cls} fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
             // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
             if (noticesOpen) { setNoticesOpen(false); return; }
@@ -4842,11 +4837,88 @@ export default function FieldCommandClient() {
             setNoticeMini(false);
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
-          </button>
-            <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="More: everything" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
+          </button>,
+            follow: (cls) => <button key="follow" type="button" className={`${cls} fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
+            <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
+          </button>,
+            appts: (cls) => <button key="appts" type="button" className={cls} aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" data-hpd-smoke="fc-appts-open" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Appts</span></button>,
+            route: (cls) => <button key="route"
+            type="button"
+            className={`${cls} fc-route-fab`}
+            aria-label="Today's route" data-tip="Today's route: plan your stops"
+            title="Today's route"
+            data-hpd-smoke="fc-route-open"
+            aria-pressed={routeOpen}
+            onClick={() => { if (routeOpen) { setRouteCloseRequest((n) => n + 1); return; } closeScreens("route"); setRouteOpenRequest((n) => n + 1); }}
+          >
+            <RouteIcon /><span className="fc-fab-label">Route</span>
+          </button>,
+            stats: (cls) => <button key="stats" type="button" className={cls} data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>,
+          };
+          const stripKeys = DOCK_STRIP_ORDER.filter((key) => !dockSlots.includes(key));
+          const holdEnd = () => window.clearTimeout(dockHold.current.timer);
+          return (
+            <>
+              <div className="fc-dock-strip" data-hpd-smoke="fc-dock-strip" onTouchStart={() => undefined}>
+                {stripKeys.map((key) => make[key]("fc-dock-chip"))}
+                <Link href="/alerts/" className="fc-dock-chip" data-hpd-smoke="fc-dock-alerts"><BellIcon /><span className="fc-fab-label">Alerts</span></Link>
+                {appVersion ? <button type="button" className="fc-dock-chip fc-version-chip" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
+              </div>
+              <nav
+                className="fc-dock"
+                data-hpd-smoke="fc-dock"
+                aria-label="Main buttons"
+                onTouchStart={() => undefined}
+                onContextMenu={(e) => e.preventDefault()}
+                onPointerDown={(e) => {
+                  // Press and hold a bottom button (about half a second) to swap it.
+                  const b = (e.target as HTMLElement).closest("button");
+                  const slot = b ? dockSlots.indexOf((b.dataset.hpdSmoke || "").replace(/^fc-|-open$/g, "") as DockKey) : -1;
+                  holdEnd();
+                  dockHold.current.fired = false;
+                  if (slot < 0) return;
+                  dockHold.current.timer = window.setTimeout(() => { dockHold.current.fired = true; try { navigator.vibrate?.(15); } catch { /* not on iPhone */ } setMoreOpen(false); setDockEdit(slot); }, 550);
+                }}
+                onPointerUp={holdEnd}
+                onPointerCancel={holdEnd}
+                onPointerLeave={holdEnd}
+                onClickCapture={(e) => { if (dockHold.current.fired) { dockHold.current.fired = false; e.preventDefault(); e.stopPropagation(); } }}
+              >
+                {make[dockSlots[0]]("fc-dock-btn")}
+                {make[dockSlots[1]]("fc-dock-btn")}
+                {!agent ? <button type="button" className={`fc-ai-orb fc-dock-ai${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
+            <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
+          </button> : <span className="fc-dock-gap" aria-hidden="true" />}
+                {make[dockSlots[2]]("fc-dock-btn")}
+                <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="More: everything" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
               <MenuIcon /><span className="fc-fab-label">More</span>{boardUrgent.length || bidsDue.today || followReport.counts.overdue ? <span className="fc-more-dot" aria-hidden="true" /> : null}
             </button>
-          </nav>
+              </nav>
+            </>
+          );
+        })() : null}
+        {dockEdit >= 0 && !selectedJob ? (
+          <div className="fc-more-scrim" onClick={() => setDockEdit(-1)}>
+            <section className="fc-more-sheet fc-dock-edit" role="dialog" aria-label="Bottom buttons" data-hpd-smoke="fc-dock-edit" onClick={(e) => e.stopPropagation()}>
+              <div className="fc-more-grab" aria-hidden="true" />
+              <h3>Bottom buttons</h3>
+              <p className="fc-dock-edit-hint">Pick the 3 buttons next to ✨ AI. The others stay in the row above them.</p>
+              {["Far left", "Left of AI", "Right of AI"].map((name, slot) => (
+                <div key={name} className={`fc-dock-edit-slot${dockEdit === slot ? " is-on" : ""}`} data-hpd-smoke={`fc-dock-slot-${slot}`}>
+                  <b>{name}</b>
+                  <div className="fc-dock-edit-chips">
+                    {DOCK_STRIP_ORDER.map((key) => (
+                      <button key={key} type="button" aria-pressed={dockSlots[slot] === key} data-hpd-smoke={`fc-dock-pick-${slot}-${key}`} onClick={() => { setDockSlot(slot, key); setDockEdit(slot); }}>{DOCK_LABEL[key]}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="fc-dock-edit-foot">
+                <button type="button" data-hpd-smoke="fc-dock-reset" onClick={() => saveDockSlots([...DOCK_DEFAULT])}>Back to Jobs · Bids · Notices</button>
+                <button type="button" className="is-done" data-hpd-smoke="fc-dock-done" onClick={() => setDockEdit(-1)}>Done</button>
+              </div>
+            </section>
+          </div>
         ) : null}
         {moreOpen && !selectedJob ? (() => {
           const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
@@ -4863,6 +4935,7 @@ export default function FieldCommandClient() {
             { key: "parking", icon: "🅿️", label: "Parking (ASP)", info: aspOffToday ? `No ASP today · ${aspOffToday}` : "In effect today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
             { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
             { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
+            { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
             { key: "map", icon: "🗺", label: "Map style", info: darkTiles ? "Dark map" : "Light map", go: () => { setMoreOpen(false); toggleTileStyle(); } },
             { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
             { key: "alerts", icon: "🔔", label: "Phone alerts", info: "Sounds, voice, alerts", go: () => { setMoreOpen(false); window.location.href = "/alerts/"; } },
