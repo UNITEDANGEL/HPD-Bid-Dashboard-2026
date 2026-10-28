@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-28T23:32:28.736Z
+Fetcher run started: 2026-10-28T23:41:56.845Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/20 [00:00<?, ?it/s]Downloading COA messages:  10%|█         | 2/20 [00:00<00:01, 15.50it/s]Downloading COA messages:  20%|██        | 4/20 [00:00<00:00, 16.13it/s]Downloading COA messages:  30%|███       | 6/20 [00:00<00:00, 16.49it/s]Downloading COA messages:  40%|████      | 8/20 [00:00<00:00, 16.55it/s]Downloading COA messages:  50%|█████     | 10/20 [00:00<00:00, 16.33it/s]Downloading COA messages:  60%|██████    | 12/20 [00:00<00:00, 15.92it/s]Downloading COA messages:  70%|███████   | 14/20 [00:00<00:00, 16.08it/s]Downloading COA messages:  80%|████████  | 16/20 [00:00<00:00, 16.23it/s]Downloading COA messages:  90%|█████████ | 18/20 [00:01<00:00, 16.58it/s]Downloading COA messages: 100%|██████████| 20/20 [00:01<00:00, 16.62it/s]Downloading COA messages: 100%|██████████| 20/20 [00:01<00:00, 16.37it/s]
-Geocoding COA addresses:   0%|          | 0/19 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 19/19 [00:00<00:00, 455381.58it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/19 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/19 [00:00<00:05,  3.48it/s]Fetching ITBs for COA OMOs:  11%|█         | 2/19 [00:00<00:04,  3.90it/s]Fetching ITBs for COA OMOs:  16%|█▌        | 3/19 [00:00<00:04,  3.52it/s]Fetching ITBs for COA OMOs:  21%|██        | 4/19 [00:01<00:04,  3.69it/s]Fetching ITBs for COA OMOs:  26%|██▋       | 5/19 [00:01<00:04,  3.17it/s]Fetching ITBs for COA OMOs:  32%|███▏      | 6/19 [00:01<00:03,  3.45it/s]Fetching ITBs for COA OMOs:  37%|███▋      | 7/19 [00:01<00:03,  3.59it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 8/19 [00:02<00:02,  3.82it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 9/19 [00:02<00:02,  3.53it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 10/19 [00:02<00:02,  3.75it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 11/19 [00:03<00:02,  3.83it/s]Fetching ITBs for COA OMOs:  63%|██████▎   | 12/19 [00:03<00:01,  3.81it/s]Fetching ITBs for COA OMOs:  68%|██████▊   | 13/19 [00:03<00:01,  3.52it/s]Fetching ITBs for COA OMOs:  74%|███████▎  | 14/19 [00:04<00:01,  3.07it/s]Fetching ITBs for COA OMOs:  79%|███████▉  | 15/19 [00:04<00:01,  3.43it/s]Fetching ITBs for COA OMOs:  84%|████████▍ | 16/19 [00:04<00:00,  3.67it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 17/19 [00:04<00:00,  3.64it/s]Fetching ITBs for COA OMOs:  95%|█████████▍| 18/19 [00:05<00:00,  3.26it/s]Fetching ITBs for COA OMOs: 100%|██████████| 19/19 [00:05<00:00,  2.95it/s]Fetching ITBs for COA OMOs: 100%|██████████| 19/19 [00:05<00:00,  3.42it/s]
+Downloading COA messages:   0%|          | 0/20 [00:00<?, ?it/s]Downloading COA messages:  10%|█         | 2/20 [00:00<00:01, 16.71it/s]Downloading COA messages:  20%|██        | 4/20 [00:00<00:00, 16.91it/s]Downloading COA messages:  30%|███       | 6/20 [00:00<00:00, 16.67it/s]Downloading COA messages:  40%|████      | 8/20 [00:00<00:00, 16.78it/s]Downloading COA messages:  50%|█████     | 10/20 [00:00<00:00, 16.60it/s]Downloading COA messages:  60%|██████    | 12/20 [00:00<00:00, 17.04it/s]Downloading COA messages:  70%|███████   | 14/20 [00:00<00:00, 16.92it/s]Downloading COA messages:  80%|████████  | 16/20 [00:00<00:00, 17.24it/s]Downloading COA messages:  90%|█████████ | 18/20 [00:01<00:00, 17.11it/s]Downloading COA messages: 100%|██████████| 20/20 [00:01<00:00, 17.27it/s]Downloading COA messages: 100%|██████████| 20/20 [00:01<00:00, 17.03it/s]
+Geocoding COA addresses:   0%|          | 0/19 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 19/19 [00:00<00:00, 317497.12it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/19 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/19 [00:00<00:05,  3.38it/s]Fetching ITBs for COA OMOs:  11%|█         | 2/19 [00:00<00:04,  3.81it/s]Fetching ITBs for COA OMOs:  16%|█▌        | 3/19 [00:00<00:04,  3.75it/s]Fetching ITBs for COA OMOs:  21%|██        | 4/19 [00:01<00:04,  3.72it/s]Fetching ITBs for COA OMOs:  26%|██▋       | 5/19 [00:01<00:04,  3.31it/s]Fetching ITBs for COA OMOs:  32%|███▏      | 6/19 [00:01<00:03,  3.47it/s]Fetching ITBs for COA OMOs:  37%|███▋      | 7/19 [00:01<00:03,  3.62it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 8/19 [00:02<00:03,  3.48it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 9/19 [00:02<00:03,  3.18it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 10/19 [00:02<00:02,  3.36it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 11/19 [00:03<00:02,  3.39it/s]Fetching ITBs for COA OMOs:  63%|██████▎   | 12/19 [00:03<00:02,  3.47it/s]Fetching ITBs for COA OMOs:  68%|██████▊   | 13/19 [00:03<00:01,  3.20it/s]Fetching ITBs for COA OMOs:  74%|███████▎  | 14/19 [00:04<00:01,  2.93it/s]Fetching ITBs for COA OMOs:  79%|███████▉  | 15/19 [00:04<00:01,  3.02it/s]Fetching ITBs for COA OMOs:  84%|████████▍ | 16/19 [00:04<00:00,  3.22it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 17/19 [00:05<00:00,  3.43it/s]Fetching ITBs for COA OMOs:  95%|█████████▍| 18/19 [00:05<00:00,  2.93it/s]Fetching ITBs for COA OMOs: 100%|██████████| 19/19 [00:05<00:00,  2.74it/s]Fetching ITBs for COA OMOs: 100%|██████████| 19/19 [00:05<00:00,  3.20it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -141,7 +141,7 @@ Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/14
 Upcoming bids: 20 not awarded yet (20 on the map), 16 received today, from 141 emails
 
-[0;93m2026-10-28 23:32:50.379387770 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+[0;93m2026-10-28 23:42:32.510520454 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
 
@@ -182,7 +182,7 @@ Reading 76 emails from HPD staff...
 Reading 75 emails you sent HPD staff...
 HPD requests: 38 OMOs HPD asked about (paperwork / status) from 76 staff emails since 2026/10/14
 
-[0;93m2026-10-28 23:37:54.360144068 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+[0;93m2026-10-28 23:50:15.051635911 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
 
@@ -283,7 +283,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-28T23:38:09.038Z
+Fetcher run finished: 2026-10-28T23:50:28.937Z
 {
   "fetchedCoaItems": 19,
   "fetchedItbItems": 19,
