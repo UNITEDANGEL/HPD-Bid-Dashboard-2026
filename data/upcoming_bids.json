@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T15:49:22.505447+00:00",
+  "generatedAt": "2026-10-28T15:58:24.943607+00:00",
   "days": 14,
   "bids": [
     {
@@ -393,6 +393,136 @@
       },
       "lat": 40.803306,
       "lng": -73.938502
+    },
+    {
+      "omo": "ER09017",
+      "bidDue": "2026-10-29",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-30",
+      "workCompletion": "2026-11-10",
+      "address": "311 EAST 111 STREET",
+      "borough": "MN",
+      "itbFile": "ER09017_102826114517.pdf",
+      "description": "ALTERNATIVE ENFORCEMENT PROGRAM – AEP; 311 EAST 111 STREET, MN. ***IN APT.6FE – WINDOW BALANCES ROOM NW-3, NE-3 AND KITCHEN*** [1]*REPLACE THE BROKEN AND OR DEFECTIVE UPPER & LOWER SASH WINDOW BALANCES; @ *KITCHEN, @ *LIVING ROOM NW-3 (LEFT WINDOW), and @ *ROOM NE-3; TOTAL = 3 WINDOWS; *ENSURE THAT WINDOW BALANCES OPERATES IN PROPER CONDITION; *NOTE; *VENDOR SHALL BE RESPONSIBLE TO RESTORE DAMAGES CAUSED DURING CONSTRUCTION PHASE. *REMOVE ALL WORK-RELATED DEBRIS. *VENDOR MUST CONTACT HPD @ (212) 863-8262 WITH A START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. *IF LANDLORD REFUSED ACCESS VENDOR MUST CONTACT HPD FROM THE JOB SITE ON TELEPHONE - FOR SUPERVISOR MR. HOLMES, OFFICE #: (212) 863-8969, CELL #: (phone: sign in to see) AND OR TECH/CPM MR. DIMORIAKU, CELL #: (phone: sign in to see); *AFFIDAVITS, ALL PHOTOS TAKEN PRIOR & AFTER @ JOB COMPLETION MUST BE SENT TO AEP OFFICE VIA E-MAIL @ SUPERVISOR MR. HOLMES, (HOLMESJ@HPD.NYC.GOV) AND MR. DIMORIAKU (CPM/TECH) @ (DIMORIAN@HPD.NYC.GOV). *ALSO, SEND COPIES TO THE VENDOR TRACKER ASSIGNED TO YOUR COMPANY FOR PROPER PAYMENT; *AEP GENERAL PHONE LINE: (212) 863-8262. FOR ACCESS CONTACT PHONE APT.6FE @ (phone: sign in to see);",
+      "notes": "",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793202321000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.79363,
+      "lng": -73.939186
     },
     {
       "omo": "ER09212",
