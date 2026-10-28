@@ -24,6 +24,10 @@ try {
       stop() { this.onend?.(); }
     };
   });
+  // A made-up New York forecast for today: rain 2–5 PM.
+  const nyDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+  const hrs = Array.from({ length: 24 }, (_, h) => `${nyDay}T${String(h).padStart(2, "0")}:00`);
+  await c.route(/api\.open-meteo\.com/, (r) => r.fulfill({ json: { hourly: { time: hrs, temperature_2m: hrs.map(() => 60), precipitation_probability: hrs.map((_, h) => (h >= 14 && h < 17 ? 70 : 10)), precipitation: hrs.map((_, h) => (h >= 14 && h < 17 ? 0.1 : 0)), weathercode: hrs.map((_, h) => (h >= 14 && h < 17 ? 63 : 3)), windspeed_10m: hrs.map(() => 8) }, daily: { time: [nyDay], temperature_2m_max: [66], temperature_2m_min: [58], precipitation_probability_max: [70], weathercode: [63], sunrise: [`${nyDay}T07:21`], sunset: [`${nyDay}T18:02`], windspeed_10m_max: [8] } } }));
   const page = await c.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -79,6 +83,25 @@ try {
   await page.waitForFunction(() => /what do I have today/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
   await page.waitForFunction(() => !/^(…|Thinking)/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "…"), null, { timeout: 20000 });
   assert.ok((await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts()).every((t) => t !== "what do I have today"));
+
+  // 🌦 Weather (faked forecast for today in New York: rain from 2 PM) and traffic, typed.
+  await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("is it going to rain today");
+  await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
+  await waitReply(/^Today: \d+° to \d+°F/);
+  assert.match(await reply.innerText(), /Rain likely from 2 PM \(70%\)|No rain expected|Small chance/);
+  await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("how's the traffic");
+  await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
+  await waitReply(/rush hour|Midday|light/);
+  assert.ok(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Live traffic" }).count(), "Waze button");
+
+  // 🅿️ Parking and 🛠 a supply run.
+  await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("is alternate side on today");
+  await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
+  await waitReply(/alternate side parking|Sunday/);
+  await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("where's the nearest home depot");
+  await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
+  await waitReply(/nearest Home Depot/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Home Depot" }).getAttribute("href"), /^https:\/\/waze\.com\/ul\?q=Home%20Depot&navigate=yes$/);
 
   // 3. Typed straight to Claude, then My requests opens the list.
   await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("send to Claude: add a dark mode");

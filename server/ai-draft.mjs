@@ -95,6 +95,9 @@ const ASK_SYSTEM = [
   "  Claude and add the 'DO: send to Claude: …' line with what's wrong, in their words.",
   "- Think ahead: facts.nextStep is the most pressing thing right now. If the question doesn't already cover it, end with",
   "  one short sentence bringing it up (e.g. 'Also, notice ER03009 has 2 hours left.').",
+  "- facts.weather is New York's forecast (today and tomorrow) and facts.traffic the rush-hour note. Use them when they",
+  "  matter for the work: rain or wind on roof / outside jobs, freezing on plaster or paint, getting dark before photos,",
+  "  rush hour on the drive. Mention them only when they help.",
 ].join("\n");
 
 export function askFacts(body) {

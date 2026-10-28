@@ -63,6 +63,9 @@ import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
+import { fetchWeather, trafficNote, weatherReport } from "../../lib/weather";
+import { aspAnswer } from "../../lib/asp";
+import { loadBuildingFacts } from "../../lib/building-facts";
 import { smsHref, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
@@ -476,6 +479,11 @@ function directionsHref(job: JobRecord) {
 
 // Today's route as the route panel saved it on this phone (stop IDs in order), or [] if it is
 // from another day or there is none.
+// New York's clock as "2026-10-27T14:05" and the weekday (0 = Sunday), for the weather and traffic answers.
+function nyNow() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", weekday: "short" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { iso: `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`, weekday: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday) };
+}
 function todayRouteIds(): string[] {
   try {
     const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
@@ -567,6 +575,8 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Tenants", ["text the tenant", "which tenants haven't answered", "I called the tenant, no answer", "make an appointment tomorrow at 10am", "tell the tenant we'll be there at 10"]],
   ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
+  ["Out and about", ["what's the weather", "is it going to rain tomorrow", "how's the traffic", "how long to the next job", "is alternate side on today", "where's the nearest Home Depot", "how old is this building", "should I do the roof job today"]],
+  ["The app", ["tell Claude to make the buttons bigger", "send to Claude: add a dark mode"]],
 ];
 
 function BellIcon() {
@@ -820,6 +830,28 @@ function boroughLabelHtml(label: string, dark: boolean) {
     : "color:rgba(71,85,105,.85);text-shadow:0 1px 0 rgba(255,255,255,.55),-1px 0 0 rgba(255,255,255,.4),1px 0 0 rgba(255,255,255,.4),0 -1px 0 rgba(255,255,255,.4);";
   return `<span style="display:inline-block;${style}font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;pointer-events:none;">${label}</span>`;
 }
+
+// Numbers that count up when a screen opens (27 Oct, "the app should feel premium"): about a second, easing out; the
+// final number shows at once with Reduce Motion on (and in test browsers).
+function CountUp({ value, format = (n: number) => String(Math.round(n)) }: { value: number; format?: (n: number) => string }) {
+  const [shown, setShown] = useState(value);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const still = typeof window === "undefined" || navigator.webdriver || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (still || !value) { setShown(value); fromRef.current = value; return; }
+    const from = fromRef.current, start = performance.now(), ms = Math.min(1400, 600 + Math.abs(value - from) * 4);
+    let raf = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - start) / ms);
+      setShown(from + (value - from) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) raf = requestAnimationFrame(step); else fromRef.current = value;
+    };
+    raf = requestAnimationFrame(step);
+    return () => { cancelAnimationFrame(raf); fromRef.current = value; };
+  }, [value]);
+  return <>{format(shown)}</>;
+}
+const USD0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
@@ -3775,6 +3807,15 @@ export default function FieldCommandClient() {
       closeScreens("route");
       setRouteBuildRequest((n) => n + 1);
       if (!multiRef.current) setAgent({ heard, reply: "Planning your day…" });
+      // ☀️ The day's weather and parking with the plan (27 Oct, "do all of them"): rain, freezing, wind, dark early.
+      let wxText = "";
+      void fetchWeather().then((w) => { if (!w) return; const r = weatherReport(w, "today", nyNow().iso); wxText = r.tips.length ? `${r.text} ${r.tips[0]}` : r.text; });
+      const dayExtras = () => {
+        const asp = aspAnswer(nyNow().iso.slice(0, 10), "Today");
+        return `${wxText ? `
+🌦 ${wxText}` : ""}${/suspended|Sunday/.test(asp) ? `
+🅿️ ${asp}` : ""}`;
+      };
       // Read it back once the new plan is saved (up to 8 s; the map and your location may still be loading).
       const before = JSON.stringify((() => { try { return JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null"); } catch { return null; } })());
       let tries = 0;
@@ -3786,7 +3827,7 @@ export default function FieldCommandClient() {
         if (stops.length) lastJobsRef.current = { ids: stops.map((j) => jobId(j)), at: Date.now() };
         if (!stops.length) { answer("I couldn't plan a route: no open jobs with a location in the area set on the route panel."); return; }
         const short = (j: JobRecord) => jobAddress(j).replace(/,\s*\d{5}$/, "");
-        answer(`Your day: ${stops.length} stop${stops.length === 1 ? "" : "s"}. First ${short(stops[0])}${stops[1] ? `, then ${short(stops[1])}` : ""}${stops[2] ? `, then ${short(stops[2])}` : ""}${stops.length > 3 ? `, and ${stops.length - 3} more` : ""}. Say "take me to the next stop" when you're ready.`);
+        answer(`Your day: ${stops.length} stop${stops.length === 1 ? "" : "s"}. First ${short(stops[0])}${stops[1] ? `, then ${short(stops[1])}` : ""}${stops[2] ? `, then ${short(stops[2])}` : ""}${stops.length > 3 ? `, and ${stops.length - 3} more` : ""}. Say "take me to the next stop" when you're ready.` + dayExtras());
       };
       window.setTimeout(readBack, 600);
       return;
@@ -3897,7 +3938,13 @@ export default function FieldCommandClient() {
       void (async () => {
         const nyDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
         const bidsData = await fetch("/data/upcoming_bids.json", { cache: "no-cache" }).then((r) => r.json()).catch(() => ({}));
+        const wx = await fetchWeather();
+        const clockNow = nyNow();
         const facts = {
+          // Weather and traffic (27 Oct), so "should I do the roof today?" or "plan my day" can use them.
+          weather: wx ? `${weatherReport(wx, "today", clockNow.iso).text} ${weatherReport(wx, "tomorrow", clockNow.iso).text}`.trim() : "",
+          traffic: trafficNote(clockNow.iso, clockNow.weekday),
+          parking: aspAnswer(clockNow.iso.slice(0, 10), "Today"),
           now: new Date().toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }),
           notices: boardOpenRows.slice(0, 40).map((r) => ({ job: r.omo, address: addressOf(r.omo), kind: r.kind === "docs" ? "missing documents" : `${r.hours}-hour notice`, from: r.who, hoursLeft: r.dueAt ? Math.round(hoursLeft(r, Date.now())) : null, want: r.want, status: boardSide(r), pdfAlreadyEmailed: r.filed ? r.filed.at.slice(0, 10) : null })),
           openBids: (Array.isArray(bidsData?.bids) ? bidsData.bids : []).filter((b: { bidDue?: string }) => (b.bidDue || "") >= nyDay).slice(0, 40).map((b: { omo: string; borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => ({ job: b.omo, borough: b.borough, work: jobSummary(b.description || "").lines.map(lineText).join("; ").slice(0, 160), due: `${b.bidDue} ${b.bidDueTime || ""}`.trim() })),
@@ -4170,6 +4217,80 @@ export default function FieldCommandClient() {
       showPanel({ heard, reply: `Sending to Claude: "${text}"…` });
       void sendChangeRequest(`(said to the helper) ${text}`).then((ok) => {
         showPanel({ heard, reply: ok ? `📥 Sent to Claude for the next upgrade: "${text}". You'll see the progress under What's new → Your requests.` : `Saved on this phone; it goes to Claude when the internet is back: "${text}".`, actions: [{ label: "📋 My requests", href: "#requests" }] });
+      });
+      return;
+    }
+    if (cmd.intent === "weather") {
+      // 🌦 The forecast with what it means for the work (27 Oct: "the AI smarter: weather, traffic").
+      if (!multiRef.current) setAgent({ heard, reply: "Checking the weather…" });
+      void fetchWeather().then((w) => {
+        const r = w ? weatherReport(w, cmd.when, nyNow().iso) : null;
+        if (!r?.text) { answer("I couldn't get the weather right now (no signal?). Try again in a minute."); return; }
+        answer([r.text, ...r.tips.map((tip) => `• ${tip}`)].join("\n"));
+      });
+      return;
+    }
+    if (cmd.intent === "traffic") {
+      // 🚗 Rush hour by the clock; live traffic in Waze to the first stop of today's route (or the job on screen).
+      const now = nyNow();
+      const stopId = selectedJob ? jobId(selectedJob) : todayRouteIds()[0];
+      const stop = stopId ? jobs.find((x) => jobId(x) === stopId) : undefined;
+      showPanel({ heard, reply: `${trafficNote(now.iso, now.weekday)}${stop ? ` For live traffic to ${jobAddress(stop).replace(/,\s*\d{5}$/, "")}, open Waze.` : " Waze shows live traffic."}`, actions: [stop ? { label: "🚗 Live traffic (Waze)", href: wazeHref(stop), id: jobId(stop), via: "Waze" as const } : { label: "🚗 Live traffic map", href: "https://www.waze.com/live-map" }] });
+      return;
+    }
+    if (cmd.intent === "asp") {
+      // 🅿️ Alternate side parking from the city's 2026 calendar (27 Oct, "do all of them").
+      const today = nyNow().iso.slice(0, 10);
+      answer(aspAnswer(cmd.when === "today" ? today : shiftDay(today, 1), cmd.when === "today" ? "Today" : "Tomorrow"));
+      return;
+    }
+    if (cmd.intent === "store") {
+      // 🛠 Supply run: Waze finds the closest one to where you are.
+      const label = cmd.store.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/^Lowes$/, "Lowe's");
+      const fix = lastFixRef.current;
+      showPanel({ heard, reply: `Opening the nearest ${label}: Waze picks the closest one to where you are.`, actions: [
+        { label: `🚗 ${label} (Waze)`, href: `https://waze.com/ul?q=${encodeURIComponent(label)}&navigate=yes` },
+        { label: "🗺 Google Maps", href: `https://www.google.com/maps/search/${encodeURIComponent(label)}/${fix ? `@${fix.lat.toFixed(5)},${fix.lng.toFixed(5)},14z` : ""}` },
+      ] });
+      return;
+    }
+    if (cmd.intent === "building") {
+      // 🏢 The building: year built, floors, apartments, walk-up or elevator, open HPD violations (city open data).
+      const found = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (found === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!found) { answer(cmd.ref ? `I can't find ${cmd.ref} in your jobs.` : "Which building? Open the job, or say the job number."); return; }
+      const where = jobAddress(found).replace(/,\s*\d{5}$/, "");
+      if (!multiRef.current) setAgent({ heard, reply: `Looking up ${where}…` });
+      const boro = jobBorough(found);
+      void loadBuildingFacts(jobAddress(found).replace(/,\s*\d{5}$/, ""), boro === "NYC" ? "" : boro, jobScope(found)).then((f) => {
+        if (!f) { answer(`I couldn't find the city's records for ${where}.`); return; }
+        const age = f.yearBuilt ? `built in ${f.yearBuilt} (${new Date().getFullYear() - f.yearBuilt} years old)` : "year built unknown";
+        const size = [f.floors ? `${f.floors} floor${f.floors === 1 ? "" : "s"}` : "", f.units ? `${f.units} apartment${f.units === 1 ? "" : "s"}` : ""].filter(Boolean).join(", ");
+        const viol = f.open.total ? `${f.open.total} open HPD violation${f.open.total === 1 ? "" : "s"} (${f.open.C} immediately hazardous, ${f.open.B} hazardous, ${f.open.A} non-hazardous).` : "No open HPD violations.";
+        const like = f.related.length ? ` Like this job: ${f.related.map((r) => `${r.text}${r.apt ? ` (apt ${r.apt})` : ""}`).join("; ")}.` : "";
+        answer(`${where}: ${age}${size ? `, ${size}` : ""}${f.kind ? `, ${f.kind}` : ""}. ${viol}${like}`);
+      }).catch(() => answer("I couldn't reach the city's records right now. Try again in a minute."));
+      return;
+    }
+    if (cmd.intent === "drive-time") {
+      // 🚗 How long to a job: road time from where you are (no live traffic), more in rush hour; Waze for live traffic.
+      const named = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : null;
+      if (named === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      const routeId = todayRouteIds()[0];
+      const target = named || selectedJob || (routeId ? jobs.find((x) => jobId(x) === routeId) : undefined);
+      if (!target) { answer(cmd.ref ? `I can't find ${cmd.ref} in your jobs.` : "To which job? Open it, plan today's route, or say the job number."); return; }
+      const to = jobLatLng(target);
+      const fix = lastFixRef.current;
+      const where = jobAddress(target).replace(/,\s*\d{5}$/, "");
+      const waze = { label: "🚗 Go (Waze, live traffic)", href: wazeHref(target), id: jobId(target), via: "Waze" as const };
+      if (!to || !fix || Date.now() - fix.at > 15 * 60000) { showPanel({ heard, reply: `I need your location to time the drive to ${where}: tap 📍 Locate on the map, then ask again. Waze shows the time with live traffic.`, actions: [waze] }); return; }
+      if (!multiRef.current) setAgent({ heard, reply: `Timing the drive to ${where}…` });
+      void fetchRoadRoute([{ lat: fix.lat, lng: fix.lng }, to]).then((road) => {
+        const now = nyNow();
+        const rush = /rush hour/.test(trafficNote(now.iso, now.weekday));
+        if (!road) { showPanel({ heard, reply: `About ${distanceMiles(fix, to).toFixed(1)} miles to ${where} in a straight line. Waze shows the drive time with live traffic.`, actions: [waze] }); return; }
+        const mins = Math.max(1, Math.round(road.minutes));
+        showPanel({ heard, reply: `About ${mins} min to ${where} (${road.miles.toFixed(1)} mi) without traffic.${rush ? ` It's rush hour: plan on about ${Math.round(mins * 1.4)} min.` : ""}`, actions: [waze] });
       });
       return;
     }
@@ -6298,12 +6419,12 @@ export default function FieldCommandClient() {
             </div>
             <p className="fc-stats-label">{stats.label}</p>
             <div className="fc-stats-earned" data-hpd-smoke="fc-stats-earned">
-              <b>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stats.earned)}</b>
+              <b><CountUp value={stats.earned} format={(n) => USD0.format(Math.round(n))} /></b>
               <span>earned · {stats.counts.completed + stats.counts.partial} job{stats.counts.completed + stats.counts.partial === 1 ? "" : "s"} finished {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stats.earnedWork)} + {stats.counts.serviceCalls} service call{stats.counts.serviceCalls === 1 ? "" : "s"} {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stats.earnedService)}</span>
             </div>
             <div className="fc-summary-counts" data-hpd-smoke="fc-stats-counts">
               {([["Visited", stats.counts.visited], ["Completed", stats.counts.completed], ["Partial", stats.counts.partial], ["No access", stats.counts.noAccess], ["Refused", stats.counts.refused], ["Emailed", stats.counts.emailed]] as const).map(([label, n]) => (
-                <span key={label} className={n ? "has" : ""}><b>{n}</b>{label}</span>
+                <span key={label} className={n ? "has" : ""}><b><CountUp value={n} /></b>{label}</span>
               ))}
             </div>
             {stats.days.length > 1 ? (() => {
@@ -6325,9 +6446,9 @@ export default function FieldCommandClient() {
             <section data-hpd-smoke="fc-stats-open-work">
               <h3>Still open</h3>
               <div className="fc-summary-counts">
-                <span className={statsOpenWork.toVisit ? "has" : ""}><b>{statsOpenWork.toVisit}</b>Not visited</span>
-                <span className={statsOpenWork.secondDue ? "has" : ""}><b>{statsOpenWork.secondDue}</b>2nd try due</span>
-                <span className={statsOpenWork.closeOut ? "has" : ""}><b>{statsOpenWork.closeOut}</b>To close out</span>
+                <span className={statsOpenWork.toVisit ? "has" : ""}><b><CountUp value={statsOpenWork.toVisit} /></b>Not visited</span>
+                <span className={statsOpenWork.secondDue ? "has" : ""}><b><CountUp value={statsOpenWork.secondDue} /></b>2nd try due</span>
+                <span className={statsOpenWork.closeOut ? "has" : ""}><b><CountUp value={statsOpenWork.closeOut} /></b>To close out</span>
               </div>
               {statsOpenWork.secondWaiting ? <p>{statsOpenWork.secondWaiting} more no-access job{statsOpenWork.secondWaiting === 1 ? "" : "s"} waiting out the 72 hours.</p> : null}
             </section>

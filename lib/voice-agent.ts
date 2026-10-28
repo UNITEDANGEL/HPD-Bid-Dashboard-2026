@@ -18,6 +18,12 @@ export type AgentCommand =
   | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "whats-next" }
+  | { intent: "weather"; when: "today" | "tomorrow" }
+  | { intent: "traffic" }
+  | { intent: "asp"; when: "today" | "tomorrow" }
+  | { intent: "store"; store: string }
+  | { intent: "building"; ref: string }
+  | { intent: "drive-time"; ref: string }
   | { intent: "app-request"; text: string }
   | { intent: "tell-tenant"; ref: string; message: string }
   | { intent: "week"; days?: number }
@@ -99,6 +105,16 @@ export function parseCommand(heard: string): AgentCommand {
   }
   // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
+  // Weather and traffic (owner, 27 Oct: "I want the AI smarter: weather, traffic"): the forecast in plain words with what
+  // it means for the jobs; rush hour and live traffic in Waze.
+  if (/\b(weather|forecast|going to rain|gonna rain|will it rain|is it raining|rain (today|tomorrow|later)|(going to|gonna|will it) snow|snow(ing)? (today|tomorrow)|how (cold|hot) (is it|will it be)|temperature (outside|today|tomorrow)|umbrella|is it (cold|hot) outside)\b/.test(t)) return { intent: "weather", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
+  if (/\b(traffic|rush hour|how('?s| is) the (drive|road|roads)|roads? (busy|bad|clear))\b/.test(t)) return { intent: "traffic" };
+  // Parking, the building, drive time, supply runs (27 Oct, "do all of them").
+  if (/\b(alternate[ -]side|a ?s ?p|street cleaning|move (my|the) (car|truck|van))\b/.test(t)) return { intent: "asp", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
+  const store = /\b(home depot|lowe'?s|hardware store|plumbing supply|electrical supply|supply (?:store|house)|lumber ?yard|gas station|paint store|sherwin[- ]williams|locksmith)\b/.exec(t);
+  if (store && /\b(nearest|closest|near me|nearby|find|where|take me|go to|need|get to)\b/.test(t)) return { intent: "store", store: store[1] };
+  if (/\b(how old is|when was .{0,20}built|year built|building (facts|info|age)|how many (floors|stories|units)|(open )?violations (on|at|in|for))\b/.test(t)) return { intent: "building", ref: refOf(t.replace(/\b(how old is|when was|built|year|building|facts|info|age|how many|floors|stories|units|violations)\b/g, " ")) };
+  if (/\bhow (long|far)\b.{0,30}\b(to get|get to|drive|driving|to the|to my|from here)\b|\bhow far is\b|\bdrive time\b|\bminutes away\b/.test(t)) return { intent: "drive-time", ref: refOf(t.replace(/\b(how|long|far|will|does|it|is|take|to|get|driving|drive|time|minutes|away|from)\b/g, " ")) };
   // "What's next?" (27 Oct): the map's Next pill, read out, with a button to do it.
   if (/^(so )?(what'?s|what is) next$|^what (should|do) i do( now| next)?$|^what now$|^next (thing|step)$/.test(t)) return { intent: "whats-next" };
   // ❓ "What can you do?" / "help" (23 Oct): the examples list.

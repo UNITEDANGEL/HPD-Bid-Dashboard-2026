@@ -5,6 +5,13 @@
       "date": "Oct 27, 2026",
       "title": "Reminder the evening before",
       "items": [
+        "🅿️ Ask \"is alternate side on today?\": it knows the city's 2026 parking calendar (holidays, meters, the next day off).",
+        "🛠 \"Where's the nearest Home Depot?\" (or Lowe's, hardware store, plumbing supply, gas station) opens Waze to the closest one.",
+        "🏢 \"How old is this building?\": year built, floors, apartments, walk-up or elevator, and open HPD violations, from the city's records.",
+        "🚗 \"How long to the next job?\": drive time from where you are (more in rush hour), with Waze for live traffic.",
+        "☀️ Start my day now includes the weather (rain, freezing, wind, dark early) and alternate side parking when it's off.",
+        "🌦 The AI knows the weather and traffic: ask \"what's the weather\", \"is it going to rain tomorrow\" or \"how's the traffic\". It says what it means for the jobs (rain on roof work, freezing, wind, when it gets dark) and opens live traffic in Waze.",
+        "📊 Stats count up: your money and job numbers roll up when you open My stats.",
         "👉 The job that needs you now glows on the map with a \"Next\" tag: the same one the Next pill at the bottom points to.",
         "🤖 Claude's progress comes to you: when Claude works on something you asked for, a \"🤖 Claude: Working on it\" alert pops up with the latest note; tap it to see Your requests.",
         "✨ Your AI is on the map: tap the glowing AI button (bottom left) and just talk. It tells you the most pressing thing first and keeps the conversation going (your request).",
