@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T14:48:18.262825+00:00",
+  "generatedAt": "2026-10-28T14:59:27.291648+00:00",
   "days": 14,
   "bids": [
     {
@@ -653,6 +653,266 @@
       },
       "lat": 40.855799,
       "lng": -73.866387
+    },
+    {
+      "omo": "ER09284",
+      "bidDue": "2026-10-29",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-30",
+      "workCompletion": "2026-11-07",
+      "address": "63-48 FRESH POND ROAD",
+      "borough": "QN",
+      "itbFile": "ER09284_102826104736.pdf",
+      "description": "REPLACE APT 1L ENTRANCE DOOR AND 2ND EGRESS DOOR MAKE ALL NECESSARY REPAIRS TO REPLACE BROKEN/DEFECTIVE DOOR AND JAMB WITH NEW PROPERLY FIRE RATED DOOR AND JAMB SIMILAR TO EXISTING, COMPLETE WITH SELF-CLOSING HINGES, ALL NECESSARY HARDWARE AND RESTORATION OF AFFECTED FINISHES AT (APT 1 ENTRANCE DOOR) AT 2ND MEANS OF EGRESS DOOR INSTALL NEW HINGESA AND MORTISE LOCK. RETUN DOOR TO PROPER WORKING ORDER AND ENSURE DOORS ARE SELF CLOSING AND LATCHING AS PER NYC CODE. TOTAL DOORS= (2)",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793198859000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.710559,
+      "lng": -73.899797
+    },
+    {
+      "omo": "ER09292",
+      "bidDue": "2026-10-29",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-02",
+      "workCompletion": "2026-11-17",
+      "address": "42-42 ITHACA STREET",
+      "borough": "QN",
+      "itbFile": "ER09292_102826104436.pdf",
+      "description": "REPLACE LATCH AT 1ST STY COMPACTOR CLOSET NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT 1ST STY PUBLIC HALL COMPACTOR DOOR..MAKE ALL NECESSARY REPAIRS TO DOOR AND JAMB..REPLACE THE DEFECTIVE HINGES WITH NEW SELF CLOSING HINGES..ENSURE DOOR SELF CLOSE AND LATCH TOTAL DOORS = 1 REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 212 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793198681000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501.1,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 45,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.9,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.743615,
+      "lng": -73.877586
     },
     {
       "omo": "ER07636",
