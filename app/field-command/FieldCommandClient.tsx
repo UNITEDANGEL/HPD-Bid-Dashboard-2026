@@ -51,7 +51,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { speak, voiceOff } from "../../lib/speak";
+import { speak, stopSpeaking, voiceOff } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -63,9 +63,10 @@ import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
-import { fetchWeather, trafficNote, weatherReport } from "../../lib/weather";
+import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater } from "../../lib/weather";
 import { aspAnswer } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
+import BuildingFacts from "./BuildingFacts";
 import { smsHref, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
@@ -1268,6 +1269,7 @@ export default function FieldCommandClient() {
     return () => window.removeEventListener("hpd-listen", on);
   }, []);
   function startListening() {
+    stopSpeaking();
     type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
     const W = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const Ctor = W.SpeechRecognition || W.webkitSpeechRecognition;
@@ -1442,6 +1444,13 @@ export default function FieldCommandClient() {
   const prevAgentRef = useRef<{ heard: string; reply: string } | null>(null);
   const [agentTyped, setAgentTyped] = useState("");
   const [agentTypeOpen, setAgentTypeOpen] = useState(false);
+  // 🔇 Stop talking (27 Oct): while the helper is speaking, one tap hushes it; talking to it hushes it too.
+  const [speakingNow, setSpeakingNow] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setSpeakingNow(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("hpd-speaking", on);
+    return () => window.removeEventListener("hpd-speaking", on);
+  }, []);
   useEffect(() => {
     const prev = prevAgentRef.current;
     if (prev && agent && prev.heard !== agent.heard && prev.heard !== "🎤" && prev.heard !== "👋" && prev.reply && !/^(Listening|Sending to Claude)/.test(prev.reply)) {
@@ -1449,6 +1458,17 @@ export default function FieldCommandClient() {
     }
     prevAgentRef.current = agent ? { heard: agent.heard, reply: agent.reply } : prevAgentRef.current;
   }, [agent]);
+  // 🌤 Weather on the map (27 Oct, owner: "I want to see temp etc on the map"): now, and rain / snow coming in the next
+  // hours (else today's high and low); refreshed every 10 minutes from the 30-minute forecast; tap for the full answer.
+  const [wxChip, setWxChip] = useState<ReturnType<typeof weatherNow>>(null);
+  useEffect(() => {
+    let live = true;
+    const load = () => { if (document.visibilityState === "visible") void fetchWeather().then((w) => { if (live && w) setWxChip(weatherNow(w, nyNow().iso)); }); };
+    load();
+    const t = window.setInterval(load, 600000);
+    document.addEventListener("visibilitychange", load);
+    return () => { live = false; window.clearInterval(t); document.removeEventListener("visibilitychange", load); };
+  }, []);
   // ✨ The AI on the map (27 Oct, owner: "I want the AI agent on the map, click it and start a conversation"): one tap
   // opens the helper already listening, says the most pressing thing first, and keeps the conversation going.
   const startAgentChat = () => {
@@ -2045,6 +2065,32 @@ export default function FieldCommandClient() {
     return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", look); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const claudeHeardRef = useRef<string | null>(null);
+  // 🌧 Heads-up before the weather turns (27 Oct, "the AI should figure it out by itself"): once a day, 6 AM-5 PM, when
+  // rain / snow comes during work hours and today's route has roof or outside work, an alert names the job to do first.
+  useEffect(() => {
+    if (!wxChip || !jobs.length) return;
+    const now = nyNow();
+    const day = now.iso.slice(0, 10);
+    const hour = Number(now.iso.slice(11, 13));
+    if (hour < 6 || hour > 17) return;
+    try { if (localStorage.getItem("hpd-wx-alert") === day) return; } catch { /* private mode */ }
+    void fetchWeather().then((w) => {
+      const wet = w ? wetLater(w, now.iso) : null;
+      if (!wet) return;
+      const outside = todayRouteIds().map((id) => jobs.find((j) => jobId(j) === id)).filter((j): j is JobRecord => Boolean(j) && OUTSIDE_WORK.test(jobScope(j as JobRecord)));
+      if (!outside.length) return;
+      try { localStorage.setItem("hpd-wx-alert", day); } catch { /* private mode */ }
+      const where = jobAddress(outside[0]).replace(/,\s*\d{5}$/, "");
+      const n: AppNotice = {
+        kind: "weather", go: "job", omo: jobId(outside[0]),
+        title: `${wet.word === "Snow" ? "❄️" : "🌧"} ${wet.word} ${wet.now ? "now" : `at ${wet.at}`} · outside work at ${where}${outside.length > 1 ? ` +${outside.length - 1} more` : ""}`,
+        text: wet.now ? "Cover the work and the materials; take the after photos once it stops." : "Do the roof and outside jobs first, bring tarps, take the before photos early.",
+      };
+      addToLog(n);
+      ring(n);
+      if (!pingNowRef.current) setPing({ ...n, at: Date.now() });
+    });
+  }, [wxChip, jobs.length]); // eslint-disable-line react-hooks/exhaustive-deps
   // Another alert on screen (a notice, a fax): Claude's news waits its turn instead of being covered.
   const claudePendingRef = useRef<(AppNotice & { at: number }) | null>(null);
   const pingNowRef = useRef(ping);
@@ -4741,6 +4787,11 @@ export default function FieldCommandClient() {
         {/* Jobs ready to close out and 2nd tries: two round buttons (bottom left) instead of bars across the map. */}
         {/* One round Jobs button (bottom left); Close out and 2nd try are tabs inside it (owner, 21 Oct: "make it like the
             others, it takes too much space"). */}
+        {wxChip && !selectedJob && !agent ? (
+          <button type="button" className={`fc-wx-chip${wxChip.alert ? " is-alert" : ""}`} data-hpd-smoke="fc-wx-chip" aria-label={`Weather: ${wxChip.temp} degrees${wxChip.note ? `, ${wxChip.note}` : ""}. Tap for the forecast`} onClick={() => { unlockChime(); agentRef.current("what's the weather"); }}>
+            <span aria-hidden="true">{wxChip.icon}</span><b>{wxChip.temp}°</b>{wxChip.note ? <small>{wxChip.note}</small> : null}
+          </button>
+        ) : null}
         {!selectedJob && !agent ? (
           <button type="button" className={`fc-ai-orb${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
             <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
@@ -5016,6 +5067,9 @@ export default function FieldCommandClient() {
                   </div>
                 ) : null}
               </section>
+              {/* 🏢 The building on the job card too (27 Oct, "keep upgrading"): year built, floors, walk-up or elevator,
+                  open HPD violations and the ones like this job, before you get there (city records, kept 12 hours). */}
+              {(() => { const boro = jobBorough(selectedJob); return <BuildingFacts address={jobAddress(selectedJob).replace(/,\s*\d{5}$/, "")} borough={boro === "NYC" ? "" : boro} description={hasScope ? scope : ""} />; })()}
 
               {(() => {
                 // Guided steps: arrive -> start visit -> what happened (start work = before media, or a
@@ -6241,10 +6295,11 @@ export default function FieldCommandClient() {
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>
             </> : null}
+            {speakingNow ? <button type="button" className="fc-agent-hush" data-hpd-smoke="fc-agent-hush" aria-label="Stop talking" onClick={() => stopSpeaking()}>🔇 Stop</button> : null}
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
             <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => setAgentTypeOpen((o) => !o)}>⌨️</button>
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>
         </div>
       ) : null}
@@ -6261,9 +6316,9 @@ export default function FieldCommandClient() {
       {evening && !morning && jobs.length && !selectedJob && !arrivePrompt && !critical && !agent ? (
         <div className="fc-arrive fc-evening" role="dialog" aria-label="Wrap up the day" data-hpd-smoke="fc-evening">
           <b>🌆 Wrap up the day</b>
-          <span>One tap: how today went, and the bids coming up.</span>
+          <span>One tap: how today went, tomorrow&apos;s weather and parking, and the bids coming up.</span>
           <div>
-            <button type="button" className="is-yes" data-hpd-smoke="fc-evening-go" onClick={() => { doneEvening(); unlockChime(); agentRef.current("how did I do today and read me the new bids"); }}>🌆 How did today go?</button>
+            <button type="button" className="is-yes" data-hpd-smoke="fc-evening-go" onClick={() => { doneEvening(); unlockChime(); agentRef.current("how did I do today and what's the weather tomorrow and is alternate side on tomorrow and read me the new bids"); }}>🌆 How did today go?</button>
             <button type="button" data-hpd-smoke="fc-evening-no" onClick={doneEvening}>Not now</button>
           </div>
         </div>

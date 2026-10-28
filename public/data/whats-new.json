@@ -5,6 +5,11 @@
       "date": "Oct 27, 2026",
       "title": "Reminder the evening before",
       "items": [
+        "🌆 Wrap up the day now also tells you tomorrow's weather and whether alternate side parking is on tomorrow.",
+        "🌧 Rain heads-up: when rain or snow is coming today and your route has roof or outside work, an alert tells you which job to do first (once a day).",
+        "🌤 Weather on the map: the temperature now and when rain or snow starts (or today's high and low), bottom left above the AI. Tap it for the full forecast and tips for the work (your request).",
+        "🏢 Every job card now shows the building: year built, floors, walk-up or elevator, apartments, and open HPD violations (with the ones like your job), before you get there.",
+        "🗣 A better AI voice: it picks the most natural voice on your phone, says numbers like a person (\"58 degrees\", no emoji), and a 🔇 Stop button hushes it. Pick the voice and speed under Alerts → Phone alerts.",
         "🅿️ Ask \"is alternate side on today?\": it knows the city's 2026 parking calendar (holidays, meters, the next day off).",
         "🛠 \"Where's the nearest Home Depot?\" (or Lowe's, hardware store, plumbing supply, gas station) opens Waze to the closest one.",
         "🏢 \"How old is this building?\": year built, floors, apartments, walk-up or elevator, and open HPD violations, from the city's records.",

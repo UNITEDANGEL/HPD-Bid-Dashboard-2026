@@ -87,6 +87,13 @@ try {
   // Fits the iPhone width.
   const overflow = await page.evaluate(() => { const b = document.querySelector('[data-hpd-smoke="fc-bldg"]'); return b.scrollWidth - b.clientWidth; });
   assert.ok(overflow <= 1, `building box overflows by ${overflow}px`);
+  // 🏢 The same box on a job card (27 Oct): open a job straight from its link.
+  const jobPage = await context.newPage();
+  await jobPage.goto(`${baseUrl}/map/?omo=EQ15239&view=all`, { waitUntil: "load", timeout: 180000 });
+  await jobPage.locator('#fc-job-card [data-hpd-smoke="fc-bldg-facts"]').waitFor({ state: "attached", timeout: 30000 });
+  assert.match(await jobPage.locator('#fc-job-card [data-hpd-smoke="fc-bldg-facts"]').textContent(), /Built 1901 \(\d+ yrs\) · 6 floors/);
+  assert.match(await jobPage.locator('#fc-job-card [data-hpd-smoke="fc-bldg-viol"]').textContent(), /128 open HPD violations/);
+  await jobPage.close();
   assert.deepEqual(errors, []);
   console.log(`PASS building facts (${pick.omo}): Open Data down -> message + Try again, then built 1901 · 6 floors · walk-up · 16 apartments, 128 open (13 C), ${related.length} matching violation(s), HPD Online link, cached on reopen; invitation pages 2-3 shown, full screen + zoom`);
 } finally {

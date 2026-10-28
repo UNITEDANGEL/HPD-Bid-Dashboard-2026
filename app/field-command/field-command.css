@@ -3544,3 +3544,18 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @keyframes fc-ai-listen { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .fc-ai-orb-core, .fc-ai-orb-core::before { animation: none; } }
 @media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) { .fc-ai-orb { bottom: calc(max(24px, env(safe-area-inset-bottom)) + 120px); } .fc-ai-orb-core { width: 46px; height: 46px; font-size: 20px; } }
+/* 🗣 Voice and speed (27 Oct), and 🔇 Stop in the helper. */
+.fc-push-voicepick { display: grid; gap: 8px; margin: 6px 0 10px; padding: 10px; border-radius: 12px; border: 1px solid #334155; background: #0b1220; }
+.fc-push-voicepick label { display: grid; gap: 4px; color: #e2e8f0; font: 800 14px system-ui, sans-serif; }
+.fc-push-voicepick select { min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #475569; background: #111827; color: #f8fafc; font: 600 15px system-ui, sans-serif; }
+.fc-push-sounds .fc-push-voicepick div button.is-on { border-color: #818cf8; background: #312e81; }
+.fc-agent-hush { border-color: #f87171 !important; color: #fecaca !important; }
+/* 🌤 Weather on the map (27 Oct): above the AI orb, bottom left. */
+.fc-wx-chip { position: absolute; z-index: 1560; left: calc(10px + env(safe-area-inset-left)); bottom: calc(max(24px, env(safe-area-inset-bottom)) + 222px); display: flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 11px 0 9px; border-radius: 18px; border: 1px solid rgba(255,255,255,.35); background: rgba(15,23,42,.82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; font: 800 15px system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.fc-wx-chip span { font-size: 18px; }
+.fc-wx-chip small { color: #cbd5e1; font: 700 12px system-ui, sans-serif; text-transform: capitalize; }
+.fc-wx-chip.is-alert { border-color: #60a5fa; }
+.fc-wx-chip.is-alert small { color: #93c5fd; }
+.fc-wx-chip:active { transform: scale(.96); }
+.fc-app.fc-has-job .fc-wx-chip { display: none; }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) { .fc-wx-chip { bottom: calc(max(24px, env(safe-area-inset-bottom)) + 190px); } }

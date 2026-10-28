@@ -101,3 +101,39 @@ export function trafficNote(nowIso: string, weekday: number) {
   if (workday && h >= 9.5 && h < 15.5) return "Midday: usually the easiest time to drive between jobs.";
   return "Traffic is usually light now.";
 }
+
+// The map's weather chip (27 Oct, owner: "I want to see temp etc on the map"): now, its icon, and what's coming.
+export function skyIcon(code: number, night = false) {
+  if (code === 0) return night ? "🌙" : "☀️";
+  if (code <= 2) return night ? "☁️" : "🌤";
+  if (code === 3) return "☁️";
+  if (code <= 48) return "🌫";
+  if (code <= 67 || (code >= 80 && code <= 82)) return "🌧";
+  if (code <= 77 || code === 85 || code === 86) return "❄️";
+  return "⛈";
+}
+export function weatherNow(w: Weather, nowIso: string) {
+  const hour = nowIso.slice(0, 13);
+  const at = w.hours.findIndex((x) => x.t.slice(0, 13) === hour);
+  if (at < 0) return null;
+  const h = w.hours[at];
+  const day = w.days.find((d) => d.date === nowIso.slice(0, 10));
+  const night = day ? nowIso < day.sunrise || nowIso > day.sunset : false;
+  // Rain (or snow) in the next 6 hours, said as when it starts; else today's high and low.
+  const wet = w.hours.slice(at + 1, at + 7).find((x) => x.rainPct >= 50 || x.rain >= 0.02);
+  const raining = h.rainPct >= 50 || h.rain >= 0.02;
+  const kind = (c: number) => (/snow/.test(sky(c)) ? "snow" : "rain");
+  const note = raining ? `${kind(h.code)} now` : wet ? `${kind(wet.code)} ${clock(wet.t)}` : day ? `H ${deg(day.max)} L ${deg(day.min)}` : "";
+  return { temp: Math.round(h.temp), icon: skyIcon(h.code, night), note, wind: Math.round(h.wind), alert: raining || Boolean(wet) || h.temp <= 32 || h.temp >= 90 || h.wind >= 25 };
+}
+
+// Rain / snow coming during the rest of today's work hours (7 AM-7 PM), for the heads-up when the route has outside work.
+export function wetLater(w: Weather, nowIso: string) {
+  const hours = workHours(w, nowIso.slice(0, 10), nowIso);
+  const wet = hours.find((x) => x.rainPct >= 50 || x.rain >= 0.02);
+  if (!wet) return null;
+  const c = sky(wet.code);
+  return { word: /snow/.test(c) ? "Snow" : /thunder/.test(c) ? "Storms" : /freezing/.test(c) ? "Freezing rain" : "Rain", at: clock(wet.t), now: wet.t.slice(0, 13) === nowIso.slice(0, 13) };
+}
+// Work that the weather stops: on the roof or outside the building.
+export const OUTSIDE_WORK = /\b(roof|roofing|parapet|coping|gutter|leader|downspout|skylight|bulkhead|chimney|facade|fa[cç]ade|exterior|brick ?work|pointing|sidewalk|stoop|fire escape|yard|courtyard|siding|cornice)\b/i;

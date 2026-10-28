@@ -37,6 +37,11 @@ try {
   const reply = page.locator('[data-hpd-smoke="fc-agent-reply"]');
   const waitReply = async (re) => page.waitForFunction((src) => new RegExp(src).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 20000 });
 
+  // 🌤 The weather chip on the map: temperature now (the faked forecast: 60°).
+  const wx = page.locator('[data-hpd-smoke="fc-wx-chip"]');
+  await wx.waitFor({ timeout: 15000 });
+  assert.match(await wx.innerText(), /60°/);
+
   // 0. ✨ The AI on the map: one tap opens the helper already listening, most pressing thing first; what you say is answered.
   const orb = page.locator('[data-hpd-smoke="fc-ai-orb"]');
   assert.ok(await orb.isVisible(), "AI button on the map");
@@ -84,6 +89,11 @@ try {
   await page.waitForFunction(() => !/^(…|Thinking)/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "…"), null, { timeout: 20000 });
   assert.ok((await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts()).every((t) => t !== "what do I have today"));
 
+  // Tapping the chip asks for the forecast.
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await wx.click();
+  await waitReply(/^Today: \d+° to \d+°F/);
+  if (!(await page.locator('[data-hpd-smoke="fc-agent-type-input"]').count())) await page.locator('[data-hpd-smoke="fc-agent-type-btn"]').click();
   // 🌦 Weather (faked forecast for today in New York: rain from 2 PM) and traffic, typed.
   await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("is it going to rain today");
   await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();

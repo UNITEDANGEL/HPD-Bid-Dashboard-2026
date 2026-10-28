@@ -29,6 +29,9 @@ try {
   await card.locator('[data-hpd-smoke="fc-evening-go"]').click();
   await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""; return /Today you won/.test(t) && /invitations? to bid|No open invitations/.test(t); }, null, { timeout: 30000 });
   const reply = await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText();
+  // Tomorrow's weather (the test browser's fixed forecast) and parking come with it.
+  assert.match(reply, /Tomorrow: \d+° to \d+°F/);
+  assert.match(reply, /Tomorrow: alternate side parking|Tomorrow is Sunday|only have the 2026/);
   assert.equal(await card.count(), 0, "the card goes away");
   if (shots) await page.screenshot({ path: `${shots}/evening-started.png` });
   await page.reload({ waitUntil: "load" });

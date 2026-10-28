@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { autoRegisterPush, pushState, testAlert, thisPhoneOnServer, turnOffPush, turnOnPush, type PushState } from "../lib/push";
 import { ring, unlockChime, type AppNotice } from "../lib/chime";
-import { setVoiceOff, voiceOff, voiceSupported } from "../lib/speak";
+import { chosenVoiceName, englishVoices, setChosenVoice, setVoiceOff, setVoiceRate, speak, voiceOff, voiceRate, voiceSupported } from "../lib/speak";
 import { ALERT_KINDS, type AlertKind } from "../lib/alert-kinds";
 
 // What each alert sounds like (tone, then the words), with made-up work orders.
@@ -17,6 +17,7 @@ const SAMPLES: Record<AlertKind, AppNotice> = {
   "fax-ok": { kind: "fax-ok", title: "✅ Fax went through · ER07749: HPD received your bid" },
   "fax-bad": { kind: "fax-bad", title: "❌ Fax failed · ER07749", text: "The line was busy. Send it again." },
   urgent: { kind: "urgent", title: "⏰ ER01987: notice overdue 2 h", text: "Nothing sent yet: answer it now" },
+  weather: { kind: "weather", title: "🌧 Rain at 2 PM · roof work at 1207 1 AVENUE", text: "Do the roof and outside jobs first, bring tarps, take the before photos early" },
   claude: { kind: "claude", title: "🤖 Claude: Working on it", text: "Making the map buttons bigger; you'll see it after the next update" },
 };
 
@@ -25,6 +26,20 @@ export default function PhoneAlerts() {
   const [voice, setVoice] = useState(true);
   const [canSpeak, setCanSpeak] = useState(true);
   useEffect(() => { setCanSpeak(voiceSupported()); setVoice(voiceSupported() && !voiceOff()); }, []);
+  // 🗣 Which voice and how fast (27 Oct, "the AI should sound premium"): the phone's natural voices, best first.
+  const [voices, setVoices] = useState<{ name: string; lang: string }[]>([]);
+  const [voiceName, setVoiceName] = useState("");
+  const [rate, setRate] = useState(1);
+  useEffect(() => {
+    if (!voiceSupported()) return;
+    const load = () => setVoices(englishVoices().slice(0, 12).map((v) => ({ name: v.name, lang: v.lang })));
+    load();
+    setVoiceName(chosenVoiceName());
+    setRate(voiceRate());
+    window.speechSynthesis.addEventListener?.("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", load);
+  }, []);
+  const tryVoice = () => { unlockChime(); speak("Hi, I'm your HPD helper. Today: 58 to 66°F, rain likely from 2 PM. Next: two bids due today.", 100); };
   const [state, setState] = useState<PushState | "">("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -62,6 +77,23 @@ export default function PhoneAlerts() {
           {voice ? "🗣 Voice on: alerts are read out loud" : "🔇 Voice off: tones only"}
         </button>
         <small>{canSpeak ? "While the app is open you hear the tone, then the words (who it's from, the work order, what they want). With the phone locked the alert shows the same words." : "This browser can't speak: tones only."}</small>
+        {canSpeak && voices.length ? (
+          <div className="fc-push-voicepick" data-hpd-smoke="fc-push-voicepick">
+            <label>Voice
+              <select value={voiceName} data-hpd-smoke="fc-push-voice-name" onChange={(e) => { setVoiceName(e.target.value); setChosenVoice(e.target.value); tryVoice(); }}>
+                <option value="">Best on this phone ({voices[0].name})</option>
+                {voices.map((v) => <option key={v.name} value={v.name}>{v.name}{/premium|enhanced|neural|natural|siri/i.test(v.name) ? " ★" : ""}</option>)}
+              </select>
+            </label>
+            <div role="group" aria-label="Speed">
+              {([[0.85, "Slower"], [1, "Normal"], [1.15, "Faster"]] as const).map(([r, label]) => (
+                <button key={label} type="button" className={rate === r ? "is-on" : ""} aria-pressed={rate === r} data-hpd-smoke={`fc-push-rate-${label.toLowerCase()}`} onClick={() => { setRate(r); setVoiceRate(r); tryVoice(); }}>{label}</button>
+              ))}
+              <button type="button" data-hpd-smoke="fc-push-voice-try" onClick={tryVoice}>▶ Try it</button>
+            </div>
+            <small>★ = natural voice. For the best one: iPhone Settings → Accessibility → Spoken Content → Voices → English → download a Premium or Enhanced voice (e.g. Ava or Zoe), then pick it here.</small>
+          </div>
+        ) : null}
         <small>Hear each one:</small>
         <div>{(Object.keys(ALERT_KINDS) as AlertKind[]).map((k) => <button key={k} type="button" data-hpd-smoke={`fc-push-sound-${k}`} onClick={() => { unlockChime(); ring(SAMPLES[k]); }}>{ALERT_KINDS[k].icon} {ALERT_KINDS[k].name}</button>)}</div>
       </div>

@@ -41,6 +41,16 @@ export async function routePrivate(context, opts = {}) {
   // The "🆕 New update includes…" card (27 Oct) shows on a reload; the What's new lines count as seen in the tests
   // (test-browser-newupdate sets its own).
   await markNewsSeen(context);
+  // City building records (27 Oct: the job card looks them up too): answered "not found" at once, so cards don't
+  // wait on the network or move; a test that needs them routes its own (registered later, so it wins).
+  await context.route(/geosearch\.planninglabs\.nyc/, (route) => route.fulfill({ json: { features: [] } }));
+  // The weather (27 Oct: chip on the map, helper answers): a dry 61° day, so tests don't depend on the real sky.
+  await context.route(/api\.open-meteo\.com/, (route) => {
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    const next = new Date(Date.parse(`${day}T12:00:00Z`) + 86400000).toISOString().slice(0, 10);
+    const time = [day, next].flatMap((d) => Array.from({ length: 24 }, (_, h) => `${d}T${String(h).padStart(2, "0")}:00`));
+    return route.fulfill({ json: { hourly: { time, temperature_2m: time.map(() => 61), precipitation_probability: time.map(() => 5), precipitation: time.map(() => 0), weathercode: time.map(() => 1), windspeed_10m: time.map(() => 6) }, daily: { time: [day, next], temperature_2m_max: [64, 66], temperature_2m_min: [55, 57], precipitation_probability_max: [5, 5], weathercode: [1, 1], sunrise: [`${day}T07:20`, `${next}T07:21`], sunset: [`${day}T18:00`, `${next}T17:59`], windspeed_10m_max: [9, 9] } } });
+  });
   await context.route(/\/api\/private\//, (route) => {
     if (!k) return route.fulfill({ status: 401, json: { error: "not signed in (test)" } });
     const rel = decodeURIComponent(new URL(route.request().url()).pathname.replace(/^\/api\/private\//, ""));
