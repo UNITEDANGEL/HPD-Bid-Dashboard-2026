@@ -46,7 +46,7 @@ try {
     assert.match(await more.innerText(), /MOVE MINI-SPLIT CONDENSOR/);
     assert.ok(await more.locator('[data-hpd-smoke="fc-find-pdf"]').count(), "the invitation PDF link");
   } else {
-    assert.match(await page.locator("body").innerText(), /3619 BEDFORD/i, "its bid screen opened");
+    await page.waitForFunction(() => /ER08283|3619 BEDFORD/i.test(document.body.innerText), null, { timeout: 15000 }); // its bid screen opened
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
     await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
   }

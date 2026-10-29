@@ -38,7 +38,8 @@ try {
     assert.deepEqual(options.slice(1), ["Ava (Premium) ★", "Samantha", "Daniel"], "natural first; no Bells / Fred / French");
     await pick.selectOption("Samantha");
     await page.locator('[data-hpd-smoke="fc-push-rate-faster"]').click();
-    await page.waitForFunction(() => window.__said.length >= 2, null, { timeout: 5000 });
+    // (Wait for the sample at the new speed: the voice pick says one at the old speed first.)
+    await page.waitForFunction(() => window.__said.length >= 2 && window.__said[window.__said.length - 1].rate > 1, null, { timeout: 5000 });
     const last = await page.evaluate(() => window.__said[window.__said.length - 1]);
     assert.equal(last.voice, "Samantha");
     assert.ok(Math.abs(last.rate - 0.98 * 1.15) < 0.001, `rate ${last.rate}`);
