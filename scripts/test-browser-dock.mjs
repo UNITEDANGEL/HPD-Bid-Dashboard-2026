@@ -26,9 +26,12 @@ try {
   assert.deepEqual(labels, ["Jobs", "Bids", "AI", "Notices", "More"]);
   const box = await dock.boundingBox();
   assert.ok(Math.abs(box.y + box.height - 844) < 2 && box.width >= 389, `dock along the bottom: ${JSON.stringify(box)}`);
-  const color = await dock.locator('[data-hpd-smoke="fc-bids-open"] .fc-fab-label').evaluate((el) => getComputedStyle(el).color);
-  const [r, g, b] = color.match(/\d+/g).map(Number);
-  assert.ok(r + g + b > 450, `label readable on the dark dock: ${color}`);
+  // Round buttons like Map / Locate (owner, 28 Oct): dark text on a white label, under a colored circle.
+  const look = await dock.locator('[data-hpd-smoke="fc-bids-open"]').evaluate((el) => { const l = getComputedStyle(el.querySelector(".fc-fab-label")); const s = getComputedStyle(el.querySelector("svg")); return { color: l.color, bg: l.backgroundColor, circle: s.borderRadius, fill: s.backgroundColor }; });
+  const sum = (c) => c.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number).reduce((a, n) => a + n, 0);
+  assert.ok(sum(look.color) < 200 && sum(look.bg) > 700, `label readable (dark on white): ${JSON.stringify(look)}`);
+  assert.equal(look.circle, "50%", "round button");
+  assert.notEqual(look.fill, "rgba(0, 0, 0, 0)", "colored circle");
 
   // 2. The strip above it, and the buttons still on the map.
   const strip = (await page.locator('[data-hpd-smoke="fc-dock-strip"] .fc-dock-chip').allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());

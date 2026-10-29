@@ -38,10 +38,18 @@ try {
   assert.match(await mini.innerText(), /3619 BEDFORD AVENUE/);
   assert.match(await mini.innerText(), /MINI-SPLIT/i, "the matching words show");
   await mini.locator("button").first().click();
+  // A job that's an open invitation right now (ER08283 was again, due 29 Oct) opens its bid screen; otherwise the row
+  // opens to HPD's full description and the invitation PDF.
   const more = mini.locator('[data-hpd-smoke="fc-find-more"]');
-  await more.waitFor();
-  assert.match(await more.innerText(), /MOVE MINI-SPLIT CONDENSOR/);
-  assert.ok(await more.locator('[data-hpd-smoke="fc-find-pdf"]').count(), "the invitation PDF link");
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-find-more"]') || !document.querySelector('[data-hpd-smoke="fc-find"]'), null, { timeout: 15000 });
+  if (await more.count()) {
+    assert.match(await more.innerText(), /MOVE MINI-SPLIT CONDENSOR/);
+    assert.ok(await more.locator('[data-hpd-smoke="fc-find-pdf"]').count(), "the invitation PDF link");
+  } else {
+    assert.match(await page.locator("body").innerText(), /3619 BEDFORD/i, "its bid screen opened");
+    await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
+    await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
+  }
   if (shots) await page.screenshot({ path: `${shots}/find-mini-split.png` });
 
   // The job number.

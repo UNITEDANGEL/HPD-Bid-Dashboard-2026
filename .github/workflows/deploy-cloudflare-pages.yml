@@ -254,6 +254,7 @@ jobs:
             scripts/test-browser-asp-chip.mjs \
             scripts/test-browser-dock.mjs \
             scripts/test-browser-dock-swap.mjs \
+            scripts/test-browser-dock-drag.mjs \
             scripts/test-browser-tenant-text.mjs \
             scripts/test-browser-calm.mjs \
             scripts/test-browser-today.mjs \

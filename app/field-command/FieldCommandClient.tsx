@@ -2729,6 +2729,10 @@ export default function FieldCommandClient() {
         // Reopening starts where the map was left, not zoomed out to the whole city.
         if (lastView) restoredMapViewRef.current = true;
         map.on("dragstart", () => { followMeRef.current = false; });
+        // While you drag the map, the bottom buttons slide away so you see the whole map; they come back when you let go.
+        let dockBack = 0;
+        map.on("dragstart", () => { window.clearTimeout(dockBack); map.getContainer().closest(".fc-app")?.classList.add("fc-map-dragging"); });
+        map.on("dragend", () => { window.clearTimeout(dockBack); dockBack = window.setTimeout(() => map.getContainer().closest(".fc-app")?.classList.remove("fc-map-dragging"), 450); });
         map.on("moveend", () => {
           const center = map.getCenter();
           try { localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); } catch {}
@@ -5787,7 +5791,8 @@ export default function FieldCommandClient() {
       </div>
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
-      {newItems.length && !selectedJob && !whatsNewOpen ? (
+      {/* Not over the bids list (it covered the list's pull-up bar on short screens); it shows again back on the map. */}
+      {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>
           <ul>{newItems.map((x) => <li key={x}>{x}</li>)}</ul>
