@@ -57,7 +57,9 @@ const day = await autoTextAwards({ ...base, awards, records: {}, now: Date.parse
 assert.equal(day.length, 1, "only the job with a real tenant phone");
 assert.equal(calls.length, 1);
 const body = new URLSearchParams(calls[0].opts.body).get("Body");
-assert.match(body, /^Hi Maria, this is Jot from United Angel Construction\. HPD sent us to do a repair at 500 FT WASHINGTON AVENUE, apt 4B: .*lock/i);
+assert.match(body, /^Hello Maria, this is Jot from United Angel Construction, the contractor NYC HPD assigned to the repair at 500 FT WASHINGTON AVENUE, apt 4B \(HPD work order ER05729\)\. The work: .*lock/i);
+assert.match(saved.ER05729.FieldVisitHistory.at(-1).note, /^Texted the tenant the job summary \(automatic, on the award\): .*lock/i, "on the job's contact log");
+assert.ok(!JSON.stringify(saved.ER05729.FieldVisitHistory).includes("Maria") && !JSON.stringify(saved.ER05729.FieldVisitHistory).includes("555"), "no name or phone on the log");
 assert.ok(saved.ER05729.TenantTextedAt, "remembered on the job");
 assert.equal(saved.ER05729.TenantTextedBy, "auto");
 assert.match(day[0].title, /Texted the tenant · ER05729/);

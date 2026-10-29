@@ -67,7 +67,7 @@ import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wet
 import { aspAnswer, aspOff } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
 import BuildingFacts from "./BuildingFacts";
-import { smsHref, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
+import { smsHref, tenantContactState, tenantJobSummary, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
@@ -2495,7 +2495,8 @@ export default function FieldCommandClient() {
       const group: JobRow["group"] = closeIds.has(id) ? "closeout" : second ? "secondtry" : sentAt ? "waiting" : "todo";
       return { id, address: jobAddress(job), borough: String(jobBorough(job)), status: st.label, color: st.color, due: String(value(job, ["WorkCompletionDate", "MaturityDate"]) || ""), award: String(value(job, ["AwardDate"]) || ""), group,
         note: group === "waiting" ? `Paperwork sent ${sentAt} · waiting on HPD` : group === "closeout" ? `${FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome"])] || "Visit saved"} · package not sent` : second ? `2nd try ${second.due ? "due now" : `from ${second.dueLabel}`} · 1st try ${second.firstLabel}` : undefined,
-        packageHref: group === "closeout" ? paperworkGenerateHref(id, value(job, ["FieldOutcome", "fieldOutcome"])) : undefined, due2nd: !!second?.due };
+        packageHref: group === "closeout" ? paperworkGenerateHref(id, value(job, ["FieldOutcome", "fieldOutcome"])) : undefined, due2nd: !!second?.due,
+        contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone }; })() };
     });
   }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
@@ -3133,16 +3134,20 @@ export default function FieldCommandClient() {
   };
 
   // 📱 Text the tenant: a ready text at once, the AI's version when it answers (the owner sends it from Messages).
+  // The job in a few plain words, for the tenant (and for the log of what was sent).
+  function tenantJobWords(job: JobRecord) {
+    const sum = jobSummary(jobScope(job));
+    return tenantJobSummary(sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(job).replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120));
+  }
   function openTenantText(job: JobRecord) {
     const t = tenantInfo(job);
-    const sum = jobSummary(jobScope(job));
-    const jobWords = sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(job).replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120);
-    const ready = tenantTextDraft({ name: t.name, address: jobAddress(job), apt: t.apt, job: jobWords });
+    const jobWords = tenantJobWords(job);
+    const ready = tenantTextDraft({ name: t.name, address: jobAddress(job), apt: t.apt, job: jobWords, omo: jobId(job) });
     const id = jobId(job);
     setTenantText({ id, text: ready, ai: "✨ Writing it with AI…", at: Date.now() });
     void fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      question: "Write one short, friendly text message (SMS, under 300 characters, no emojis, no markdown) from Jot at United Angel Construction to the tenant: HPD sent us to do the repair described; say the job in plain words; ask for a good day and time to come; ask them to text or call back. Use their first name if given. Return only the message.",
-      facts: { tenantFirstName: (t.name || "").split(/\s+/)[0] || null, address: jobAddress(job).replace(/,\s*\d{5}$/, ""), apartment: t.apt || null, job: jobWords, company: "United Angel Construction" },
+      question: "Write one short, professional text message (SMS, under 320 characters, no emojis, no markdown) from Jot at United Angel Construction to the tenant: we are the contractor NYC HPD assigned to the repair; give the HPD work order number; say the work in a short plain summary (not every detail); ask for a good day and time to come; ask them to reply or call this number. Use their first name if given. Return only the message.",
+      facts: { tenantFirstName: (t.name || "").split(/\s+/)[0] || null, address: jobAddress(job).replace(/,\s*\d{5}$/, ""), apartment: t.apt || null, hpdWorkOrder: jobId(job), job: jobWords, company: "United Angel Construction" },
     }) }).then(async (r) => ({ status: r.status, d: await r.json().catch(() => ({})) })).then(({ status, d }) => {
       const text = String(d?.text || "").replace(/^"|"$/g, "").trim();
       setTenantText((cur) => (cur && cur.id === id ? (d?.ai && text && text.length <= 480 ? { ...cur, text, ai: "✨ Written by AI. Read it, change anything, then open it in Messages and press Send there." } : { ...cur, ai: status === 401 ? "Ready text below. Sign in with Google on this phone and the AI writes it next time." : "" }) : cur));
@@ -3164,7 +3169,7 @@ export default function FieldCommandClient() {
   }
   function markTenantTexted(job: JobRecord) {
     const id = jobId(job);
-    const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, "Texted the tenant", null) };
+    const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, `Texted the tenant the job summary: ${tenantJobWords(job)}`, null) };
     try { writeSharedWorkflowPatch(id, patch); } catch {}
     mergeWorkflowPatchIntoScreen(id, patch);
     // Close the text box that was open when it went (not one opened in the meantime).
@@ -3947,7 +3952,7 @@ export default function FieldCommandClient() {
         if (smsReady) {
           const sum = jobSummary(jobScope(j));
           const words = sum.lines.length ? sum.lines.map(lineText).join(", ") : jobScope(j).replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120);
-          const text = tenantTextDraft({ name: t.name, address: jobAddress(j), apt: t.apt, job: words });
+          const text = tenantTextDraft({ name: t.name, address: jobAddress(j), apt: t.apt, job: words, omo: jobId(j) });
           pendingSmsRef.current = { id: jobId(j), text };
           openIssueJob(j);
           answer(`I'll text ${t.name ? t.name.split(/\s+/)[0] : "the tenant"} at ${where}: "${text}" Say yes to send it.`, { id: jobId(j), outcome: "SMS" });
@@ -5172,29 +5177,28 @@ export default function FieldCommandClient() {
                   permanently"): reached or not, one tap to call or text, and every call, text, reply and appointment kept
                   on the job (the status server), newest first. */}
               {(() => {
-                const hist = (Array.isArray(selectedJob.FieldVisitHistory) ? selectedJob.FieldVisitHistory as { recordedAt?: string; outcome?: string | null; note?: string }[] : [])
-                  .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || "")));
-                if (tenant.commonArea && !hist.length) return null;
+                const cs = tenantContactState(selectedJob as Record<string, unknown>, tenant.commonArea);
+                const hist = cs.log;
                 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
                 const label = (v: { outcome?: string | null; note?: string }) => /^APPOINTMENT_/.test(String(v.outcome || "")) ? `📅 Appointment ${String(v.outcome).replace("APPOINTMENT_", "").toLowerCase()}: ${String(v.note || "").split(" America/")[0]}` : `${/called|talked/i.test(String(v.note)) ? "📞" : /replied/i.test(String(v.note)) ? "💬" : "📱"} ${String(v.note || "").replace(/\.$/, "")}`;
-                const reachedAt = [...hist].reverse().find((v) => /^APPOINTMENT_/.test(String(v.outcome || "")) || /talked|replied/i.test(String(v.note || "")))?.recordedAt;
-                const tries = hist.filter((v) => /^(Called|Texted) the tenant/.test(String(v.note || ""))).length;
+                const { reachedAt, tries } = cs;
                 const last = hist[hist.length - 1];
                 const asking = last?.note === "Called the tenant" && Date.now() - Date.parse(String(last.recordedAt || "")) < 3 * 3600000;
                 const raw = (tenant.name || "").split(/\s+/)[0];
                 const first = raw && raw.length > 1 ? `${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "the tenant";
                 const status = reachedAt ? { tone: "ok", text: `✅ Reached ${first} · ${when(reachedAt)}` }
+                  : cs.tone === "common" ? { tone: "common", text: "🏢 Public area job (hallway, stairs): no tenant to call. Log anyone you talk to by calling from here." }
                   : tries ? { tone: "try", text: `🟡 Not reached yet · ${tries} ${tries === 1 ? "try" : "tries"}, last ${when(last?.recordedAt)}` }
-                  : { tone: "none", text: "🔴 Not contacted yet: call the tenant first" };
+                  : { tone: "none", text: "🔴 Not contacted yet: text the tenant the job summary first, then call" };
                 const newest = [...hist].reverse();
                 const callLog = (what: string) => { setCallAsk(""); agentRef.current(`I called the tenant for ${id}, ${what}`); };
                 return (
                   <section className={`jc-contact is-${status.tone}`} data-hpd-smoke="jc-contact" aria-label="Tenant contact">
                     <p className="jc-contact-status" data-hpd-smoke="jc-contact-status">{status.text}</p>
                     {tenant.phone ? (
-                      <div className="jc-contact-btns">
+                      <div className={`jc-contact-btns${cs.tone === "none" && !tenant.commonArea ? " is-text-first" : ""}`}>
                         <a className={`jc-contact-call${reachedAt ? "" : " is-first"}`} data-hpd-smoke="jc-contact-call" href={`tel:${tenant.phone}`} onClick={() => startTenantCall(selectedJob)}>📞 Call {first}</a>
-                        {!tenant.commonArea ? <button type="button" data-hpd-smoke="jc-contact-text" onClick={() => { openTenantText(selectedJob); window.setTimeout(() => document.querySelector('[data-hpd-smoke="jc-tenant-draft"]')?.scrollIntoView({ block: "center", behavior: "smooth" }), 150); }}>📱 Text</button> : null}
+                        {!tenant.commonArea ? <button type="button" className="jc-contact-textbtn" data-hpd-smoke="jc-contact-text" onClick={() => { openTenantText(selectedJob); window.setTimeout(() => document.querySelector('[data-hpd-smoke="jc-tenant-draft"]')?.scrollIntoView({ block: "center", behavior: "smooth" }), 150); }}>{cs.tone === "none" ? "📱 First: text the job summary" : "📱 Text"}</button> : null}
                       </div>
                     ) : <p className="jc-contact-none" data-hpd-smoke="jc-contact-nophone">No tenant phone on this job yet{privateOk === false ? ": sign in under Tenant below to see it" : ""}.</p>}
                     {asking ? (
@@ -5205,6 +5209,12 @@ export default function FieldCommandClient() {
                         <button type="button" className="is-yes" data-hpd-smoke="jc-contact-talked" onClick={() => callLog("talked")}>Talked</button>
                       </div>
                     ) : null}
+                    {/* Reached -> book the visit; booked -> when (29 Oct: text -> call -> reached -> appointment, all in one box). */}
+                    {(() => {
+                      const appt = activeAppointment(selectedJob);
+                      if (appt) return <p className={`jc-contact-appt is-${appt.state}`} data-hpd-smoke="jc-contact-appt">📅 Appointment {appointmentLabel(appt)} · {appt.state === "confirmed" ? "confirmed" : "not confirmed yet"}</p>;
+                      return reachedAt && !tenant.commonArea ? <button type="button" className="jc-contact-book" data-hpd-smoke="jc-contact-book" onClick={openAppointment}>📅 Reached: book the visit</button> : null;
+                    })()}
                     {hist.length ? (
                       <ul className="jc-tenant-history" data-hpd-smoke="jc-tenant-history">
                         {(contactAll ? newest : newest.slice(0, 4)).map((v, i) => <li key={i}><span>{label(v)}</span><small>{when(v.recordedAt)}</small></li>)}

@@ -3,6 +3,26 @@
   "versions": [
     {
       "date": "Oct 29, 2026",
+      "title": "First text = first contact",
+      "items": [
+        "📱 On a job nobody has contacted yet, the big button is now \"First: text the job summary\". Call sits right next to it.",
+        "✍️ The text is professional and short: who we are, that NYC HPD assigned us, the HPD work order number, and a short summary of the work (not every detail). Then it asks for a good day and time.",
+        "📝 The job card writes down what was sent: \"Texted the tenant the job summary: ...\" with the date and time. That is the first record of contact. The automatic text on a new award is written down the same way.",
+        "📅 Once you reach the tenant, the box shows \"Reached: book the visit\" and opens the appointment. After you book it, the box shows the day and time and whether it is confirmed."
+      ]
+    },
+    {
+      "date": "Oct 29, 2026",
+      "title": "Who still needs a call",
+      "items": [
+        "📞 The Jobs list shows the tenant on every to-do job: 🔴 Call the tenant first, 🟡 Not reached yet (how many tries), ✅ Tenant reached, or 🏢 Public area.",
+        "🔴 New button on the Jobs list: \"Tenant not reached yet\" shows only those jobs, so you can call them one after another.",
+        "🏢 Public hallway / common area jobs say \"no tenant to call\" instead of asking you to call. If you do call someone from the job, it is still logged.",
+        "🧭 The job tracker now counts calls: no answer says call again, talked says book a time."
+      ]
+    },
+    {
+      "date": "Oct 29, 2026",
       "title": "Tenant first",
       "items": [
         "📞 Calling the tenant is now the first thing on every job card, right under the address: a big green Call button and a Text button.",

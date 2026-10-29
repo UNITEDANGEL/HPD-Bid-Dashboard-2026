@@ -8,7 +8,16 @@ const tones = (st) => st.map((x) => `${x.key}:${x.tone}`).join(" ");
 // Just awarded.
 let st = jobStages({ OMO: "A1", AwardDate: "10/01/26", WorkCompletionDate: "10/10/26" });
 assert.equal(tones(st), "awarded:done tenant:todo work:todo paperwork:todo closed:todo paid:todo");
-assert.equal(nextStep(st), "Text the tenant for a day and time.");
+assert.equal(nextStep(st), "Call the tenant first (or text) for a day and time.");
+// Calls count (29 Oct): no answer -> call again; talked -> book a time; a public-area job has no tenant step.
+st = jobStages({ OMO: "C1", AwardDate: "10/01/26", TenantCalledAt: "2026-10-02T14:00:00Z", TenantCallResult: "no-answer" });
+assert.equal(st[1].label, "Tenant called");
+assert.equal(nextStep(st), "Call the tenant again (or text them).");
+st = jobStages({ OMO: "C2", AwardDate: "10/01/26", TenantCalledAt: "2026-10-02T14:00:00Z", TenantCallResult: "talked" });
+assert.equal(nextStep(st), "Call the tenant and set the appointment.");
+st = jobStages({ OMO: "C3", AwardDate: "10/01/26", ItbTenantAccessType: "Common Area" });
+assert.equal(st[1].tone, "done");
+assert.equal(st[1].label, "Public area");
 // The tenant: texted -> replied -> appointment (23 Oct).
 st = jobStages({ OMO: "T1", AwardDate: "10/01/26", TenantTextedAt: "2026-10-02T14:00:00Z" });
 assert.equal(st[1].label, "Tenant texted");

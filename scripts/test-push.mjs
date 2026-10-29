@@ -249,8 +249,14 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
 // 📱 Text the tenant: the ready text, the Messages link, and when to call (22 Oct).
 {
   const { tenantTextDraft, smsHref, tenantStep } = await loadLib("tenant-text");
-  const text = tenantTextDraft({ name: "NELLY ROSERIO", address: "707 EAST 189 STREET, 10458", apt: "3B", job: "Door closer · 1 door" });
-  assert.equal(text, "Hi Nelly, this is Jot from United Angel Construction. HPD sent us to do a repair at 707 EAST 189 STREET, apt 3B: Door closer, 1 door. When is a good day and time for us to come? Please text or call back at this number. Thank you!");
+  const text = tenantTextDraft({ name: "NELLY ROSERIO", address: "707 EAST 189 STREET, 10458", apt: "3B", job: "Door closer · 1 door", omo: "ER05729" });
+  assert.equal(text, "Hello Nelly, this is Jot from United Angel Construction, the contractor NYC HPD assigned to the repair at 707 EAST 189 STREET, apt 3B (HPD work order ER05729). The work: Door closer, 1 door. When is a good day and time for us to come? Please reply here or call this number. Thank you!");
+  // A long job: the summary, not every line (29 Oct).
+  const { tenantJobSummary } = await loadLib("tenant-text");
+  const long = tenantJobSummary("Trace & repair leak (repair), Plumbing, Replace ceiling (60 sq ft), Paint ceiling (60 sq ft), Replace floor tiles (20 sq ft), Replace vanity, Replace toilet seat");
+  assert.ok(long.length <= 160, long);
+  assert.match(long, /^Trace & repair leak \(repair\), Plumbing, Replace ceiling/);
+  assert.ok(!/toilet seat/.test(long), "not every detail");
   assert.equal(smsHref("(347) 555-0100", "Hi there", "iPhone"), "sms:3475550100&body=Hi%20there");
   assert.equal(smsHref("347-555-0100", "Hi", "Android"), "sms:3475550100?body=Hi");
   const texted = "2026-10-22T19:40:00Z"; // Thu 3:40 PM NY

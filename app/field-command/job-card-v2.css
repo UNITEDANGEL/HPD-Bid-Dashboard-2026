@@ -1033,3 +1033,11 @@
 #fc-job-card .jc-contact-ask button.is-yes { background: #16a34a; border-color: #16a34a; }
 #fc-job-card .jc-contact .jc-tenant-history { margin: 0; }
 #fc-job-card .jc-contact-more { justify-self: start; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #334155; background: transparent; color: var(--jc-muted); font: 800 13px system-ui, sans-serif; }
+#fc-job-card .jc-contact.is-common { border-color: #64748b; }
+/* Nothing yet: the first text (job summary) is the big blue button, Call beside it (29 Oct). */
+#fc-job-card .jc-contact-btns.is-text-first { flex-direction: row-reverse; }
+#fc-job-card .jc-contact-book { min-height: 46px; border-radius: 14px; border: 1px solid #7c3aed; background: #6d28d9; color: #fff; font: 800 15px system-ui, sans-serif; cursor: pointer; }
+#fc-job-card .jc-contact-appt { margin: 0; padding: 8px 10px; border-radius: 12px; background: rgba(124, 58, 237, 0.18); font: 800 14px/1.3 system-ui, sans-serif; }
+#fc-job-card .jc-contact-appt.is-confirmed { background: rgba(22, 163, 74, 0.18); }
+#fc-job-card .jc-contact-btns.is-text-first .jc-contact-textbtn { flex: 2; background: #2563eb; border-color: #2563eb; color: #fff; }
+#fc-job-card .jc-contact-btns.is-text-first .jc-contact-call { flex: 1; background: #1e293b; border-color: #16a34a; box-shadow: none; }

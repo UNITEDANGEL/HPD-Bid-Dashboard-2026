@@ -310,10 +310,13 @@ export async function autoTextAwards({ awards, tenants, records, addresses, desc
     const d = String(descriptions[omo] || "");
     const s = d ? jobSummary(d) : { lines: [] };
     const job = s.lines.length ? s.lines.map(lineText).join(", ") : d.replace(/\s+/g, " ").split(/(?<=\.)\s/)[0].slice(0, 120) || "the repair";
-    const text = tenantTextDraft({ name: t.TenantName || t.ItbTenantName || "", address: String(addresses[omo] || ""), apt: t.ApartmentUnit || t.ItbTenantApartment || "", job });
+    const text = tenantTextDraft({ name: t.TenantName || t.ItbTenantName || "", address: String(addresses[omo] || ""), apt: t.ApartmentUnit || t.ItbTenantApartment || "", job, omo });
     const r = await sendSms(env, phone, text, fetcher);
     const at = new Date(now).toISOString();
-    await save(omo, r.sent ? { ...rec, TenantTextedAt: at, TenantRepliedAt: "", TenantTextedBy: "auto" } : { ...rec, AutoTextTried: at, AutoTextError: String(r.reason || "").slice(0, 160) });
+    // On the job's contact log like a text from the app (the summary only: no names or phones on the status server).
+    const { tenantJobSummary } = await loadLib("tenant-text");
+    const log = [...(Array.isArray(rec.FieldVisitHistory) ? rec.FieldVisitHistory : []), { recordedAt: at, outcome: null, note: `Texted the tenant the job summary (automatic, on the award): ${tenantJobSummary(job)}` }];
+    await save(omo, r.sent ? { ...rec, TenantTextedAt: at, TenantRepliedAt: "", TenantTextedBy: "auto", FieldVisitHistory: log } : { ...rec, AutoTextTried: at, AutoTextError: String(r.reason || "").slice(0, 160) });
     if (r.sent) done.push({ key: `t:${h(`${omo}|${at}`)}`, kind: "message", title: `📱 Texted the tenant · ${omo}`, body: `${String(addresses[omo] || "").replace(/,\s*\d{5}$/, "")}: asked when they can let us in. Their answer comes to the app.`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `t-${omo}` });
   }
   return done;

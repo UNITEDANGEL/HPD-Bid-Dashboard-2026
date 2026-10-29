@@ -49,6 +49,23 @@ try {
     await page.locator(".fc-job-sheet-close").click();
   }
   assert.ok(JOB, "a to-do job with a tenant phone");
+  // The Jobs list shows the tenant on every to-do job (29 Oct), with a button for the ones not reached yet.
+  const rowChip = async () => {
+    await page.locator(".fc-job-sheet-close").click();
+    if (!(await page.locator('[data-hpd-smoke="fc-jobs"]').count())) await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
+    const t = await page.locator(`[data-hpd-smoke="fc-jobs-row"][data-omo="${JOB}"] [data-hpd-smoke="fc-jobs-contact"]`).innerText();
+    return t;
+  };
+  const chip0 = await rowChip();
+  assert.match(chip0, /🔴 Call the tenant first|🟡 Not reached yet|✅ Tenant reached/);
+  const reach = page.locator('[data-hpd-smoke="fc-jobs-reach"]');
+  assert.match(await reach.innerText(), /📞 Tenant not reached yet: \d+/);
+  await reach.click();
+  const onlyRows = await page.locator('[data-hpd-smoke="fc-jobs-row"] [data-hpd-smoke="fc-jobs-contact"]').allInnerTexts();
+  assert.ok(onlyRows.length && onlyRows.every((t) => /🔴|🟡/.test(t)), "only tenants not reached");
+  if (shots) await page.screenshot({ path: `${shots}/contact-0-list.png` });
+  await reach.click();
+  await openJob(JOB);
   const box = page.locator('[data-hpd-smoke="jc-contact"]');
   // First on the card: right under the address, before the job description.
   assert.ok(await page.evaluate(() => {
@@ -85,9 +102,13 @@ try {
   await box.locator('[data-hpd-smoke="jc-contact-text"]').click();
   const openSms = page.locator('[data-hpd-smoke="jc-tenant-open-sms"]');
   await openSms.waitFor({ timeout: 15000 });
+  // A professional first text: who we are, HPD's work order, and the job summary (29 Oct).
+  const draft = await page.locator('[data-hpd-smoke="jc-tenant-draft-text"]').inputValue();
+  assert.ok(draft.includes("the contractor NYC HPD assigned to the repair at ") && draft.includes(`(HPD work order ${JOB}). The work: `), draft);
   await openSms.click();
   await page.waitForFunction(() => /Texted the tenant/.test(document.querySelector('[data-hpd-smoke="jc-tenant-history"] li')?.textContent || ""), null, { timeout: 10000 });
   assert.equal(await total(), startCount + 2);
+  assert.match((await lines())[0], /📱 Texted the tenant the job summary: \S/);
   assert.match((await lines()).join("\n"), /Called the tenant: no answer/);
 
   // Every line went to the status server (other phones, and kept for good).
@@ -112,8 +133,15 @@ try {
   if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   await page.locator('[data-hpd-smoke="jc-contact"]').scrollIntoViewIfNeeded();
   if (shots) await page.screenshot({ path: `${shots}/contact-3-reached.png` });
+  // Reached -> book the visit: the appointment editor opens (or, already booked, the box says when).
+  const book = page.locator('[data-hpd-smoke="jc-contact-book"]');
+  if (await book.count()) {
+    await book.click();
+    await page.locator("#fc-job-card .fc-appointment-editor").waitFor({ timeout: 10000 });
+  } else assert.match(await page.locator('[data-hpd-smoke="jc-contact-appt"]').innerText(), /📅 Appointment /, "already booked: the box says when");
+  assert.equal(await rowChip(), "✅ Tenant reached", "the list shows it too");
   assert.deepEqual(errors, []);
-  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached`);
+  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, and the Jobs list chip + 📞 Not reached filter`);
   await c.close();
 } finally {
   await browser.close();

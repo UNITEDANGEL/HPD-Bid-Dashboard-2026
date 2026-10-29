@@ -64,9 +64,12 @@ export function jobStages(job: Record<string, unknown>, pip?: StagePip | null, r
   let tenant: Stage;
   if (work.tone === "done" || work.tone === "now") tenant = { key: "tenant", label: "Tenant", detail: hasAppt ? `appt ${shortDay(appt!.date)}` : "reached", tone: "done" };
   else if (hasAppt) tenant = { key: "tenant", label: "Appointment", detail: `${shortDay(appt!.date)} ${s(appt!.start)}`.trim(), tone: "done" };
+  else if (s(job.TenantCallResult) === "talked") tenant = { key: "tenant", label: "Talked to tenant", detail: `${shortDay(job.TenantCalledAt)}: book a time`, tone: "now" };
   else if (s(job.TenantRepliedAt)) tenant = { key: "tenant", label: "Tenant replied", detail: `${shortDay(job.TenantRepliedAt)}: book a time`, tone: "now" };
+  else if (/common/i.test(`${s(job.ItbTenantAccessType)} ${s(job.TenantAccessType)} ${s(job.ItbTenantContactStatus)} ${s(job.TenantContactStatus)}`)) tenant = { key: "tenant", label: "Public area", detail: "no tenant to reach", tone: "done" };
+  else if (s(job.TenantCalledAt) && (!s(job.TenantTextedAt) || s(job.TenantCalledAt) > s(job.TenantTextedAt))) tenant = { key: "tenant", label: "Tenant called", detail: `${shortDay(job.TenantCalledAt)}, ${s(job.TenantCallResult) === "voicemail" ? "voicemail" : "no answer"}`, tone: "now" };
   else if (s(job.TenantTextedAt)) tenant = { key: "tenant", label: "Tenant texted", detail: `${shortDay(job.TenantTextedAt)}, waiting`, tone: "now" };
-  else tenant = { key: "tenant", label: "Tenant", detail: "text for a time", tone: "todo" };
+  else tenant = { key: "tenant", label: "Tenant", detail: "call first", tone: "todo" };
 
   return [awarded, tenant, work, paperwork, closed, paid];
 }
@@ -77,6 +80,6 @@ export function nextStep(stages: Stage[]) {
   if (!st) return "All done: paid.";
   if (st.tone === "bad" && st.key === "paperwork") return "Fix and resend the rejected paperwork.";
   if (st.tone === "bad" && st.key === "paid") return "HPD closed it with $0 paid: dispute it with HPD.";
-  if (st.key === "tenant") return st.tone === "now" && /replied/i.test(st.label) ? "Call the tenant and set the appointment." : st.tone === "now" ? "Waiting for the tenant to answer (call after a day)." : "Text the tenant for a day and time.";
+  if (st.key === "tenant") return st.tone === "now" && /replied|talked/i.test(st.label) ? "Call the tenant and set the appointment." : st.tone === "now" && /called/i.test(st.label) ? "Call the tenant again (or text them)." : st.tone === "now" ? "Waiting for the tenant to answer (call after a day)." : "Call the tenant first (or text) for a day and time.";
   return ({ awarded: "Check the award.", work: "Do the work (or record the visit).", paperwork: "Send the paperwork to HPD.", closed: "Waiting for HPD to close it.", paid: "Waiting for payment (check PIP)." } as const)[st.key];
 }

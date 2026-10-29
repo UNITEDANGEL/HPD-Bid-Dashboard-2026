@@ -3812,3 +3812,11 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 
 /* The ☰ menu or the controls open: the New update card steps aside so it never covers them (29 Oct). */
 .fc-app.fc-chrome-open .fc-newupdate, .fc-app.fc-controls-open .fc-newupdate { display: none; }
+
+/* Jobs list (29 Oct): the tenant on every to-do job, and a button to see only the ones not reached yet. */
+.fc-jobs-contact { display: inline-block; margin-top: 3px; font: 800 12.5px/1.3 system-ui, sans-serif; font-style: normal; color: #fca5a5; }
+.fc-jobs-contact.is-try { color: #fcd34d; }
+.fc-jobs-contact.is-ok { color: #86efac; }
+.fc-jobs-contact.is-common { color: #94a3b8; }
+.fc-jobs-reach { width: 100%; min-height: 42px; margin: 6px 0 2px; border-radius: 12px; border: 1px solid #dc2626; background: rgba(220, 38, 38, 0.14); color: #fecaca; font: 800 14px system-ui, sans-serif; }
+.fc-jobs-reach.is-on { border-color: #475569; background: #1e293b; color: #e2e8f0; }

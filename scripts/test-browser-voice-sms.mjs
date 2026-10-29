@@ -56,7 +56,7 @@ try {
   assert.equal(sent.length, 0, "nothing sent before the yes");
   await say("yes", /^Sent\./);
   assert.equal(sent.length, 1, "sent once");
-  assert.match(sent[0].text, /HPD sent us to do a repair at/);
+  assert.match(sent[0].text, /the contractor NYC HPD assigned to the repair at .*\(HPD work order [A-Z]{2}\d{5}\)\. The work: /);
   const rec = await page.evaluate((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j], JOB);
   assert.ok(rec?.TenantTextedAt, "the job is marked texted");
   // Who hasn't answered: that tenant, with a Call button.
