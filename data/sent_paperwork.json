@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-29T15:48:11.911015+00:00",
+"generatedAt": "2026-10-29T16:00:49.517879+00:00",
 "since": "2026/10/15",
 "jobs": {
 "EN04541": [
@@ -21645,6 +21645,16 @@
 "file": "EQ29830 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: STATUS UPDATE REQUEST- OMO#ER06362, OMO#EQ29830, OMO#ER05941",
+"via": "hpd-staff"
+}
+],
+"ER07717": [
+{
+"date": "2026-10-29",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-bgsqasze.png",
+"outcome": "",
+"subject": "Re: OMO#ER07717- STATUS UPDATE REQUEST",
 "via": "hpd-staff"
 }
 ],
