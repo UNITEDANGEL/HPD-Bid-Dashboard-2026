@@ -81,6 +81,14 @@ try {
     assert.equal(faxes.length, 0, "first tap only arms");
     assert.match(await faxBtn.innerText(), /Tap again: fax NO BID to \(212\) 863-8655/);
     await faxBtn.click();
+    await sheet.locator('[data-hpd-smoke="fc-nobid-fax-status"]', { hasText: /NO BID faxed to HPD/ }).waitFor({ timeout: 30000 });
+    // Then on to the next bid by itself (owner, 29 Oct: "even after no bid, automatically take me to the next job").
+    const backBtn = sheet.locator('[data-hpd-smoke="fc-bid-come-back"]');
+    await backBtn.waitFor({ timeout: 10000 });
+    assert.match(await sheet.innerText(), new RegExp(`🚫 ${omo2}: NO BID faxed to HPD[\\s\\S]*Next bid: (?!${omo2})`), "the next bid opened");
+    assert.equal(await sheet.locator('[data-hpd-smoke="fc-nobid-set"]').count(), 0, "the next bid is not a no-bid");
+    if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/nobid-3-next.png` });
+    await backBtn.click();
     await sheet.locator('[data-hpd-smoke="fc-nobid-fax-status"]', { hasText: /confirmed by HumbleFax/ }).waitFor({ timeout: 90000 });
     assert.equal(faxes.length, 1);
     const fx = faxes[0];
@@ -102,7 +110,7 @@ try {
     }
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS no bid: ${omo} marked No bid (Too far): row chip, grey pin, checklist 5 -> 4 to bid, NOBID-${omo} on the status server, no fax record; kept after reload; Undo puts it back; ${bid2 ? `${bid2.omo}: NO BID form made, faxed with two taps (subject NO BID, reason not sent), HumbleFax confirmed` : 'no invitation PDF to fax'}`);
+  console.log(`PASS no bid: ${omo} marked No bid (Too far): row chip, grey pin, checklist 5 -> 4 to bid, NOBID-${omo} on the status server, no fax record; kept after reload; Undo puts it back; ${bid2 ? `${bid2.omo}: NO BID form made, faxed with two taps (subject NO BID, reason not sent), then the next bid opened by itself, Come back -> HumbleFax confirmed` : 'no invitation PDF to fax'}`);
   await context.close();
 } finally {
   await browser.close();

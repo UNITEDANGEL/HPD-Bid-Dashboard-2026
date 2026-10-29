@@ -1516,6 +1516,7 @@ export default function FieldCommandClient() {
   // 📞 After a call from the app (26 Oct): back in the app, "How did the call go?" with one tap to note it.
   const callStartRef = useRef<{ id: string; at: number } | null>(null);
   const [callAsk, setCallAsk] = useState<string>("");
+  const [contactAll, setContactAll] = useState(false);
   // 🚪 Arrived (26 Oct): a ready "we're outside" text to the tenant, one tap away (Messages; you press Send).
   const offerOutside = (job: JobRecord) => {
     const t = tenantInfo(job);
@@ -3170,6 +3171,15 @@ export default function FieldCommandClient() {
     const sentAt = Date.now();
     window.setTimeout(() => setTenantText((cur) => (cur && (cur.at || 0) <= sentAt ? null : cur)), 800);
   }
+  // 📞 The call is written on the job the moment Call is tapped (29 Oct), so it stays even with no answer; how it went
+  // (talked / no answer / voicemail) then takes its place.
+  function startTenantCall(job: JobRecord) {
+    const id = jobId(job);
+    noteCallStarted(id);
+    const patch = { TenantCalledAt: new Date().toISOString(), FieldVisitHistory: visitHistoryWith(job, "Called the tenant", null) };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+  }
   function markTenantReplied(job: JobRecord) {
     const id = jobId(job);
     const patch = { TenantRepliedAt: new Date().toISOString(), FieldVisitHistory: visitHistoryWith(job, "The tenant replied", null) };
@@ -4253,7 +4263,11 @@ export default function FieldCommandClient() {
       const id = jobId(found);
       const where = jobAddress(found).replace(/,\s*\d{5}$/, "");
       const note = cmd.result === "no-answer" ? "Called the tenant: no answer" : cmd.result === "voicemail" ? "Called the tenant: left a voicemail" : `Talked to the tenant${cmd.said ? `: ${cmd.said}` : ""}`;
-      const patch = { TenantCalledAt: new Date().toISOString(), TenantCallResult: cmd.result, ...(cmd.result === "talked" ? { TenantRepliedAt: new Date().toISOString() } : {}), FieldVisitHistory: visitHistoryWith(found, note, null) };
+      const hist = visitHistoryWith(found, note, null);
+      // The tap on 📞 Call already wrote "Called the tenant": how it went takes its place (one line per call).
+      const prev = hist[hist.length - 2] as { note?: string; recordedAt?: string } | undefined;
+      if (prev?.note === "Called the tenant" && Date.now() - Date.parse(String(prev.recordedAt || "")) < 3 * 3600000) hist.splice(hist.length - 2, 1);
+      const patch = { TenantCalledAt: new Date().toISOString(), TenantCallResult: cmd.result, ...(cmd.result === "talked" ? { TenantRepliedAt: new Date().toISOString() } : {}), FieldVisitHistory: hist };
       try { writeSharedWorkflowPatch(id, patch); } catch { /* still on screen */ }
       mergeWorkflowPatchIntoScreen(id, patch);
       if (cmd.result !== "talked") {
@@ -5153,6 +5167,53 @@ export default function FieldCommandClient() {
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
               </header>
+              {/* 👤 The tenant first (owner, 29 Oct: "the first thing I need to do on the job is to contact the tenant; once we
+                  made contact it should log it; even no answer; what we send through the app logs on the job card
+                  permanently"): reached or not, one tap to call or text, and every call, text, reply and appointment kept
+                  on the job (the status server), newest first. */}
+              {(() => {
+                const hist = (Array.isArray(selectedJob.FieldVisitHistory) ? selectedJob.FieldVisitHistory as { recordedAt?: string; outcome?: string | null; note?: string }[] : [])
+                  .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || "")));
+                if (tenant.commonArea && !hist.length) return null;
+                const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
+                const label = (v: { outcome?: string | null; note?: string }) => /^APPOINTMENT_/.test(String(v.outcome || "")) ? `📅 Appointment ${String(v.outcome).replace("APPOINTMENT_", "").toLowerCase()}: ${String(v.note || "").split(" America/")[0]}` : `${/called|talked/i.test(String(v.note)) ? "📞" : /replied/i.test(String(v.note)) ? "💬" : "📱"} ${String(v.note || "").replace(/\.$/, "")}`;
+                const reachedAt = [...hist].reverse().find((v) => /^APPOINTMENT_/.test(String(v.outcome || "")) || /talked|replied/i.test(String(v.note || "")))?.recordedAt;
+                const tries = hist.filter((v) => /^(Called|Texted) the tenant/.test(String(v.note || ""))).length;
+                const last = hist[hist.length - 1];
+                const asking = last?.note === "Called the tenant" && Date.now() - Date.parse(String(last.recordedAt || "")) < 3 * 3600000;
+                const raw = (tenant.name || "").split(/\s+/)[0];
+                const first = raw && raw.length > 1 ? `${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "the tenant";
+                const status = reachedAt ? { tone: "ok", text: `✅ Reached ${first} · ${when(reachedAt)}` }
+                  : tries ? { tone: "try", text: `🟡 Not reached yet · ${tries} ${tries === 1 ? "try" : "tries"}, last ${when(last?.recordedAt)}` }
+                  : { tone: "none", text: "🔴 Not contacted yet: call the tenant first" };
+                const newest = [...hist].reverse();
+                const callLog = (what: string) => { setCallAsk(""); agentRef.current(`I called the tenant for ${id}, ${what}`); };
+                return (
+                  <section className={`jc-contact is-${status.tone}`} data-hpd-smoke="jc-contact" aria-label="Tenant contact">
+                    <p className="jc-contact-status" data-hpd-smoke="jc-contact-status">{status.text}</p>
+                    {tenant.phone ? (
+                      <div className="jc-contact-btns">
+                        <a className={`jc-contact-call${reachedAt ? "" : " is-first"}`} data-hpd-smoke="jc-contact-call" href={`tel:${tenant.phone}`} onClick={() => startTenantCall(selectedJob)}>📞 Call {first}</a>
+                        {!tenant.commonArea ? <button type="button" data-hpd-smoke="jc-contact-text" onClick={() => { openTenantText(selectedJob); window.setTimeout(() => document.querySelector('[data-hpd-smoke="jc-tenant-draft"]')?.scrollIntoView({ block: "center", behavior: "smooth" }), 150); }}>📱 Text</button> : null}
+                      </div>
+                    ) : <p className="jc-contact-none" data-hpd-smoke="jc-contact-nophone">No tenant phone on this job yet{privateOk === false ? ": sign in under Tenant below to see it" : ""}.</p>}
+                    {asking ? (
+                      <div className="jc-contact-ask" data-hpd-smoke="jc-contact-ask">
+                        <b>How did the call go?</b>
+                        <button type="button" data-hpd-smoke="jc-contact-noanswer" onClick={() => callLog("no answer")}>No answer</button>
+                        <button type="button" data-hpd-smoke="jc-contact-voicemail" onClick={() => callLog("left a voicemail")}>Voicemail</button>
+                        <button type="button" className="is-yes" data-hpd-smoke="jc-contact-talked" onClick={() => callLog("talked")}>Talked</button>
+                      </div>
+                    ) : null}
+                    {hist.length ? (
+                      <ul className="jc-tenant-history" data-hpd-smoke="jc-tenant-history">
+                        {(contactAll ? newest : newest.slice(0, 4)).map((v, i) => <li key={i}><span>{label(v)}</span><small>{when(v.recordedAt)}</small></li>)}
+                      </ul>
+                    ) : null}
+                    {hist.length > 4 ? <button type="button" className="jc-contact-more" data-hpd-smoke="jc-contact-more" onClick={() => setContactAll((v) => !v)}>{contactAll ? "Show less" : `Show all ${hist.length}`}</button> : null}
+                  </section>
+                );
+              })()}
 
               {testModeVersion >= 0 && isTestJob(jobId(selectedJob)) ? (
                 <div className="jc-test-banner" data-hpd-smoke="jc-test-banner">
@@ -5558,20 +5619,6 @@ export default function FieldCommandClient() {
                       const t = (iso: string) => new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
                       return (
                         <div className="jc-tenant-text" data-hpd-smoke="jc-tenant-text">
-                          {(() => {
-                            // 👤 Every contact with the tenant (23 Oct): texts, replies, calls, appointments, newest first.
-                            const hist = (Array.isArray(selectedJob.FieldVisitHistory) ? selectedJob.FieldVisitHistory as { recordedAt?: string; outcome?: string | null; note?: string }[] : [])
-                              .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || "")))
-                              .slice(-5).reverse();
-                            if (!hist.length) return null;
-                            const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
-                            const label = (v: { outcome?: string | null; note?: string }) => /^APPOINTMENT_/.test(String(v.outcome || "")) ? `📅 Appointment ${String(v.outcome).replace("APPOINTMENT_", "").toLowerCase()}: ${String(v.note || "").split(" America/")[0]}` : `${/called|talked/i.test(String(v.note)) ? "📞" : /replied/i.test(String(v.note)) ? "💬" : "📱"} ${String(v.note || "").replace(/\.$/, "")}`;
-                            return (
-                              <ul className="jc-tenant-history" data-hpd-smoke="jc-tenant-history">
-                                {hist.map((v, i) => <li key={i}><span>{label(v)}</span><small>{when(v.recordedAt)}</small></li>)}
-                              </ul>
-                            );
-                          })()}
                           {step.state !== "none" ? <p className={`jc-tenant-step is-${step.state}`} data-hpd-smoke="jc-tenant-step">📱 Texted {t(step.textedAt)}{step.repliedAt ? ` · replied ${t(step.repliedAt)}` : ""} · {step.why}</p> : null}
                           <div>
                             <button type="button" data-hpd-smoke="jc-text-tenant" onClick={() => openTenantText(selectedJob)}>📱 {step.textedAt ? "Text again" : "Text tenant"}</button>
@@ -5609,7 +5656,7 @@ export default function FieldCommandClient() {
                     })() : null}
                     <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in to see" : "Not listed")}</strong>
                     {!tenant.phone && privateOk === false ? <form className="fc-signin-form" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="jc-tenant-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
-                    {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" onClick={() => noteCallStarted(jobId(selectedJob))} href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
+                    {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" onClick={() => startTenantCall(selectedJob)} href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
                   </div>
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}

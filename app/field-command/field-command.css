@@ -3809,3 +3809,6 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* All sits above the notice chooser and the morning cards (they were on top of its tiles). */
 .fc-more-scrim { z-index: 3300; }
 .fc-app:has(.fc-more-scrim) .fc-dock { z-index: 3310; }
+
+/* The ☰ menu or the controls open: the New update card steps aside so it never covers them (29 Oct). */
+.fc-app.fc-chrome-open .fc-newupdate, .fc-app.fc-controls-open .fc-newupdate { display: none; }

@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 29, 2026",
+      "title": "Tenant first",
+      "items": [
+        "📞 Calling the tenant is now the first thing on every job card, right under the address: a big green Call button and a Text button.",
+        "📝 Every contact stays on the job for good: the call is written down the moment you tap Call (even with no answer), then tap No answer, Voicemail or Talked. Texts sent from the app, the tenant's replies and appointments are written down too. Newest first, on every phone.",
+        "🚦 The box says where you stand: 🔴 not contacted yet, 🟡 not reached yet (how many tries), ✅ reached and when.",
+        "🚫 After you fax a NO BID, the next bid opens by itself, the same as after sending a bid. Tap Come back to see the NO BID again."
+      ]
+    },
+    {
+      "date": "Oct 29, 2026",
       "title": "Cleaner bottom",
       "items": [
         "🧹 Fewer buttons at the bottom: just Jobs, Bids, ✨ AI, Notices and All. Tap All for big round tiles: Route, Appts, Follow-up, Stats, Alerts and What's new. The rest of the map is clear."

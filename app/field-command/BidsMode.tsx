@@ -150,7 +150,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
   // Sent: back to the bids map by itself, with a note (owner, 23 Oct: "once I send, it should go back to the bids map").
   // next: the bid the app moved on to by itself; "Come back" returns to the one just sent.
-  const [sentNote, setSentNote] = useState<{ omo: string; price: number; next?: string } | null>(null);
+  const [sentNote, setSentNote] = useState<{ omo: string; price: number; next?: string; noBid?: boolean } | null>(null);
   useEffect(() => { if (!sentNote) return; const t = window.setTimeout(() => setSentNote(null), sentNote.next ? 15000 : 8000); return () => window.clearTimeout(t); }, [sentNote]);
   // Glide the map to a building (zooms out and back in, so you see where it is).
   const flyTo = (b: UpcomingBid) => {
@@ -555,6 +555,16 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (!result.ok) { setNoBidBusy(`Not sent: ${result.error}`); return; }
     setNoBids(await saveNoBid({ ...nb, faxedAt: result.sentAt, faxTo: result.to, faxStatus: "sent", faxNote: undefined, confirmedAt: undefined }, HPD_STATUS_WORKER_URL));
     setNoBidBusy("");
+    // On to the next bid by itself, like after a bid (owner, 29 Oct: "even after no bid, automatically take me to the
+    // next job"). The NO BID fax keeps being tracked.
+    const doneOmo = selected.omo;
+    window.setTimeout(() => {
+      const next = nextToBid(doneOmo);
+      setListSize("peek");
+      setSentNote({ omo: doneOmo, price: 0, next: next?.omo, noBid: true });
+      setSelected((cur) => (cur && cur.omo === doneOmo ? null : cur));
+      if (next) { flyTo(next); openBid(next); }
+    }, 2200);
   };
   // The open invitation marked No bid but not faxed: its form is made when the sheet opens.
   useEffect(() => {
@@ -950,7 +960,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       </div>
       {sentNote && !selected ? (
         <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
-          <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
+          <b>{sentNote.noBid ? `🚫 ${sentNote.omo}: NO BID faxed to HPD` : `📠 ${sentNote.omo} sent to HPD · ${money2(sentNote.price)}`}</b>
           <span>{sentNote.next ? `Next bid: ${sentNote.next}. The fax is being tracked.` : "All bids done. The fax is being tracked: tap the bid to see when HPD receives it."}</span>
           {sentNote.next ? <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button> : null}
         </div>
@@ -971,7 +981,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           {/* Moved on after a send: the note rides in this card, so an alert at the top can't cover "Come back". */}
           {sentNote && sentNote.next === selected.omo ? (
             <div className="fc-bid-sent-note is-in-sheet" role="status" data-hpd-smoke="fc-bid-sent-note">
-              <b>📠 {sentNote.omo} sent to HPD · {money2(sentNote.price)}</b>
+              <b>{sentNote.noBid ? `🚫 ${sentNote.omo}: NO BID faxed to HPD` : `📠 ${sentNote.omo} sent to HPD · ${money2(sentNote.price)}`}</b>
               <span>Next bid: {sentNote.next}. The fax is being tracked.</span>
               <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button>
             </div>
