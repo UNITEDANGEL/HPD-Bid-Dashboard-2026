@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 29, 2026",
+      "title": "Cleaner bottom",
+      "items": [
+        "🧹 Fewer buttons at the bottom: just Jobs, Bids, ✨ AI, Notices and All. Tap All for big round tiles: Route, Appts, Follow-up, Stats, Alerts and What's new. The rest of the map is clear."
+      ]
+    },
+    {
       "date": "Oct 28, 2026",
       "title": "New bottom dock",
       "items": [

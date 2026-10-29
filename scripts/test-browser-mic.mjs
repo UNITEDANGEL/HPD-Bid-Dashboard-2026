@@ -65,7 +65,9 @@ try {
   const week = await say("what did I win this week", /^(You won \d+ jobs? this week|No awards this week yet)/);
   results.push(["what did I win this week", week]);
   // It remembers the list it just gave (owner, 23 Oct: "it asked which job, I already told it the jobs").
-  if (/^You won/.test(week)) {
+  // (With one win this week it reads that one job; "the second one" only makes sense with two or more.)
+  if (/^You won 1 job/.test(week)) results.push(["read me the descriptions", await say("read me the descriptions", /^[^:]+: .+\.$/)]);
+  else if (/^You won/.test(week)) {
     results.push(["read me the descriptions", await say("read me the descriptions", /^1: .+\. 2: /)]);
     results.push(["the second one", await say("the second one", /^[^:]+: .+\.$/)]);
   }

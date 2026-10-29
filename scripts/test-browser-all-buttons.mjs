@@ -94,9 +94,9 @@ try {
   await visit("/map/?view=all&map=1", () => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50);
   current = "map";
   const close = async () => { for (const sel of ['[data-hpd-smoke="fc-stats-sheet"] header button', ".fc-summary-sheet header button", '[aria-label="Close appointments"]', ".fc-route-toggle[aria-expanded=true]"]) { const b = page.locator(sel).first(); if (await b.count() && await b.isVisible().catch(() => false)) await b.click().catch(() => {}); } await page.keyboard.press("Escape").catch(() => {}); await page.waitForTimeout(400); };
-  await tap("map: route", '[data-hpd-smoke="fc-route-open"]', 2500); await close();
-  await tap("map: appointments", '[aria-label="Today\'s appointments"]'); await close();
-  await tap("map: stats", '[data-hpd-smoke="fc-stats-open"]');
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await tap("map: route", '[data-hpd-smoke="fc-route-open"]', 2500); await close();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await tap("map: appointments", '[aria-label="Today\'s appointments"]'); await close();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await tap("map: stats", '[data-hpd-smoke="fc-stats-open"]');
   for (const p of ["today", "week", "month"]) await tap(`stats: ${p}`, `[data-hpd-smoke="fc-stats-period-${p}"]`, 300);
   await close();
   await tap("map: layers", '[aria-label="Toggle map style"]'); await tap("map: layers back", '[aria-label="Toggle map style"]');

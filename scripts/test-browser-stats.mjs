@@ -45,13 +45,16 @@ try {
   page.on("pageerror", (error) => errors.push(String(error)));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
 
-  // The chart button is on the map itself (iPhone size), no menu needed.
+  // Stats is a big tile under All (29 Oct): All, then Stats (once the map has loaded).
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
+  while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click();
   const button = page.locator('[data-hpd-smoke="fc-stats-open"]');
-  await button.waitFor({ state: "visible", timeout: 120000 });
-  // Since 28 Oct it's in the strip above the bottom dock, which you swipe sideways.
-  await button.scrollIntoViewIfNeeded();
+  await button.waitFor({ state: "visible", timeout: 20000 });
   const box = await button.boundingBox();
   assert.ok(box && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 844, "stats button must be on screen");
+  await page.locator('.fc-more-scrim').click({ position: { x: 195, y: 20 } }); // tap outside closes All
+  await page.locator('[data-hpd-smoke="fc-more-sheet"]').waitFor({ state: "detached", timeout: 5000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
   // The map's close-out list (the test job is listed there for practice; stats leave it out).
   // Close out is a tab in the Jobs list (21 Oct).
@@ -63,6 +66,7 @@ try {
   await closeOut.locator('[data-hpd-smoke="fc-jobs-close"]').click();
   const realCloseOut = closeOutIds.filter((id) => id !== "TEST-0001");
   assert.ok(["EQ21462", "EQ14157", "EQ13990"].every((id) => realCloseOut.includes(id)), `close-out list ${closeOutIds}`);
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click();
   await button.click();
 
   const sheet = page.locator('[data-hpd-smoke="fc-stats-sheet"]');
@@ -102,9 +106,9 @@ try {
 
   await sheet.locator("header button").click();
   await sheet.waitFor({ state: "detached", timeout: 10000 });
-  await button.waitFor({ state: "visible" });
+  await page.locator('[data-hpd-smoke="fc-more-open"]').waitFor({ state: "visible" }); // back to the map with All
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS stats: button on the map, $3,800 = $3,400 work + $100 + $300 service calls, counts, close-outs, periods; status server calls answered locally: ${statusServerCalls}`);
+  console.log(`PASS stats: All -> Stats tile, $3,800 = $3,400 work + $100 + $300 service calls, counts, close-outs, periods; status server calls answered locally: ${statusServerCalls}`);
 } finally {
   await browser.close();
 }

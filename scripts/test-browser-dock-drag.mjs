@@ -28,7 +28,7 @@ try {
   await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => document.querySelector(".fc-app")?.classList.contains("fc-map-dragging")), true, "dragging");
   assert.equal(await shown(), false, "dock slid away while dragging");
-  assert.equal(await page.locator('[data-hpd-smoke="fc-dock-strip"]').evaluate((el) => getComputedStyle(el).pointerEvents), "none", "strip can't be tapped mid-drag");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-dock"]').evaluate((el) => getComputedStyle(el).pointerEvents), "none", "dock can't be tapped mid-drag");
   await page.mouse.up();
 
   // Back after letting go, and it works.

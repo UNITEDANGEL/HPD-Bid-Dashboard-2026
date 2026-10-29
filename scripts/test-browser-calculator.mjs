@@ -65,11 +65,12 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li', { hasText: "ER90003" }).first().locator("button").first().click();
   assert.match(await calc.locator('[data-hpd-smoke="fc-my-total"]').innerText(), /My price: \$1,275/, "back to the rates when reopened");
   await sheet.locator("header button").first().click();
-  // Version at the bottom -> What's new; Ask for a change.
+  // All -> What's new; Ask for a change.
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); // What's new is a tile under All (29 Oct)
   const tag = page.locator('[data-hpd-smoke="fc-version-tag"]');
   await tag.waitFor({ timeout: 20000 });
-  assert.match(await tag.innerText(), /what's new/);
+  assert.match(await tag.innerText(), /what's new/i);
   await page.waitForFunction(() => /1 new update/.test(document.querySelector('[data-hpd-smoke="fc-version-tag"]')?.textContent || ""), null, { timeout: 15000 }); // the replies load after the map
   await tag.click();
   const wn = page.locator('[data-hpd-smoke="fc-whatsnew"]');

@@ -29,7 +29,7 @@ try {
   // The HPD / paperwork files load after the jobs: wait for the badge to settle.
   await page.waitForTimeout(2500);
 
-  await page.locator('[data-hpd-smoke="fc-follow-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await page.locator('[data-hpd-smoke="fc-follow-open"]').click();
   const sheet = page.locator('[data-hpd-smoke="fc-follow-sheet"]');
   await sheet.waitFor({ timeout: 10000 });
   const tile = async (key) => Number((await page.locator(`[data-hpd-smoke="fc-follow-tile-${key}"] b`).innerText()).trim());
@@ -53,7 +53,7 @@ try {
   }
 
   // A tile filters the map: "Showing: Overdue · N jobs", the quick filters agree, ✕ clears it.
-  await page.locator('[data-hpd-smoke="fc-follow-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await page.locator('[data-hpd-smoke="fc-follow-open"]').click();
   await page.locator('[data-hpd-smoke="fc-follow-tile-overdue"]').click();
   const active = page.locator('[data-hpd-smoke="fc-follow-active"]');
   await active.waitFor({ timeout: 5000 });

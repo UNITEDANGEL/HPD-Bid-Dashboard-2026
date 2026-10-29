@@ -36,6 +36,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
 
   // One tap on the route button: the panel opens and the day is planned.
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); // Route is a tile under All (29 Oct)
   const button = page.locator('[data-hpd-smoke="fc-route-open"]');
   await button.waitFor({ state: "visible" });
   await button.click();
@@ -84,6 +85,7 @@ try {
   await page.evaluate(() => { const zoomIn = document.querySelector(".leaflet-control-zoom-in"); for (let i = 0; i < 4; i++) zoomIn?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
   await page.mouse.move(195, 300); await page.mouse.down(); await page.mouse.move(60, 120, { steps: 8 }); await page.mouse.up();
   await page.waitForTimeout(800);
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click();
   await button.click();
   await page.waitForTimeout(1500);
   const onScreen = await page.locator(".fc-route-number").evaluateAll((markers) => markers.filter((m) => { const r = m.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }).length);

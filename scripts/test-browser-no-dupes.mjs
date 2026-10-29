@@ -35,16 +35,15 @@ try {
 
   // The map.
   assert.equal(await page.locator(".fc-today-route .fc-route-toggle").filter({ visible: true }).count(), 0, "no Today's route bar at the bottom");
-  assert.match(await page.locator('[data-hpd-smoke="fc-appts-open"]').innerText(), /Appts/);
   const mapNames = await visibleNames(page);
   assert.deepEqual(dups(mapNames), [], `map: the same button twice: ${dups(mapNames)}`);
   if (shots) await page.screenshot({ path: `${shots}/nodupes-map.png` });
   // The route button still opens Today's route (once), and closes it.
-  await page.locator('[data-hpd-smoke="fc-route-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await page.locator('[data-hpd-smoke="fc-route-open"]').click();
   await page.locator('.fc-route-toggle[aria-expanded="true"]').waitFor({ timeout: 10000 });
   const routeNames = await visibleNames(page, ".fc-today-route");
   assert.deepEqual(dups(routeNames.filter((n) => !/^[↑↓]$|^skip$/.test(n))), [], `route panel: the same button twice: ${dups(routeNames)}`);
-  await page.locator('[data-hpd-smoke="fc-route-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await page.locator('[data-hpd-smoke="fc-route-open"]').click();
 
   // A job card: one Waze, one Google.
   await page.locator(".fc-pin").first().click({ force: true });

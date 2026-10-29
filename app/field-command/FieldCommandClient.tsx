@@ -4823,7 +4823,8 @@ export default function FieldCommandClient() {
             More at the bottom; Route, Appts, Follow-up, Stats, Alerts and What's new in a strip above it you swipe sideways;
             More lists everything with what's waiting in it. Map style, Locate and the job count stay on the map (right). */}
         {!selectedJob ? (() => {
-          // Owner can pick which 3 buttons sit next to ✨ AI (hold one, or More → Bottom buttons); the rest go in the strip.
+          // Owner can pick which 3 buttons sit next to ✨ AI (hold one, or All → Bottom buttons); the rest are tiles under All.
+          // 29 Oct, owner: "too many buttons on the bottom" → picked layout A: one row (Jobs, Bids, ✨ AI, Notices, All), no strip.
           const make: Record<DockKey, (cls: string) => ReactElement> = {
             jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs`} data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
               <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span> : null}
@@ -4863,11 +4864,6 @@ export default function FieldCommandClient() {
           const holdEnd = () => window.clearTimeout(dockHold.current.timer);
           return (
             <>
-              <div className="fc-dock-strip" data-hpd-smoke="fc-dock-strip" onTouchStart={() => undefined}>
-                {stripKeys.map((key) => make[key]("fc-dock-chip"))}
-                <Link href="/alerts/" className="fc-dock-chip" data-hpd-smoke="fc-dock-alerts"><BellIcon /><span className="fc-fab-label">Alerts</span></Link>
-                {appVersion ? <button type="button" className="fc-dock-chip fc-version-chip" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
-              </div>
               <nav
                 className="fc-dock"
                 data-hpd-smoke="fc-dock"
@@ -4894,10 +4890,42 @@ export default function FieldCommandClient() {
             <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
           </button> : <span className="fc-dock-gap" aria-hidden="true" />}
                 {make[dockSlots[2]]("fc-dock-btn")}
-                <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="More: everything" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
-              <MenuIcon /><span className="fc-fab-label">More</span>{boardUrgent.length || bidsDue.today || followReport.counts.overdue ? <span className="fc-more-dot" aria-hidden="true" /> : null}
+                <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="All: every screen" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
+              <MenuIcon /><span className="fc-fab-label">All</span>{boardUrgent.length || bidsDue.today || followReport.counts.overdue || newReplies ? <span className="fc-more-dot" aria-hidden="true" /> : null}
             </button>
               </nav>
+              {moreOpen ? (() => {
+            const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
+            const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
+              { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
+              { key: "parking", icon: "🅿️", label: "Parking (ASP)", info: aspOffToday ? `No ASP today · ${aspOffToday}` : "In effect today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
+              { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
+              { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
+              { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
+              { key: "map", icon: "🗺", label: "Map style", info: darkTiles ? "Dark map" : "Light map", go: () => { setMoreOpen(false); toggleTileStyle(); } },
+              { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
+            ];
+            return (
+              <div className="fc-more-scrim" onClick={() => setMoreOpen(false)}>
+                <section className="fc-more-sheet" role="dialog" aria-label="Everything" data-hpd-smoke="fc-more-sheet" onClick={(e) => e.stopPropagation()}>
+                  <div className="fc-more-grab" aria-hidden="true" />
+                  <h3>All</h3>
+                  {/* Big round tiles for every screen that isn't on the bottom row; a tap opens it, then this sheet closes (bubble, not capture:
+                  React re-renders between the two, which would remove the tile before its own tap ran). */}
+                  <div className="fc-all-tiles" data-hpd-smoke="fc-all-tiles" onClick={() => setMoreOpen(false)}>
+                    {stripKeys.map((key) => make[key]("fc-all-tile"))}
+                    <Link href="/alerts/" className="fc-all-tile" data-hpd-smoke="fc-dock-alerts"><BellIcon /><span className="fc-fab-label">Alerts</span></Link>
+                    {appVersion ? <button type="button" className="fc-all-tile is-new" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" /></svg><span className="fc-fab-label">What&apos;s new</span><small>{versionLabel() || `v${appVersion}`}</small>{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new">💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
+                  </div>
+                  {rows.map((r) => (
+                    <button key={r.key} type="button" className="fc-more-row" data-hpd-smoke={`fc-more-${r.key}`} onClick={r.go}>
+                      <span aria-hidden="true">{r.icon}</span><b>{r.label}</b><small>{r.info}</small><em aria-hidden="true">›</em>
+                    </button>
+                  ))}
+                </section>
+              </div>
+            );
+              })() : null}
             </>
           );
         })() : null}
@@ -4906,7 +4934,7 @@ export default function FieldCommandClient() {
             <section className="fc-more-sheet fc-dock-edit" role="dialog" aria-label="Bottom buttons" data-hpd-smoke="fc-dock-edit" onClick={(e) => e.stopPropagation()}>
               <div className="fc-more-grab" aria-hidden="true" />
               <h3>Bottom buttons</h3>
-              <p className="fc-dock-edit-hint">Pick the 3 buttons next to ✨ AI. The others stay in the row above them.</p>
+              <p className="fc-dock-edit-hint">Pick the 3 buttons next to ✨ AI. The others are big tiles under All.</p>
               {["Far left", "Left of AI", "Right of AI"].map((name, slot) => (
                 <div key={name} className={`fc-dock-edit-slot${dockEdit === slot ? " is-on" : ""}`} data-hpd-smoke={`fc-dock-slot-${slot}`}>
                   <b>{name}</b>
@@ -4924,41 +4952,6 @@ export default function FieldCommandClient() {
             </section>
           </div>
         ) : null}
-        {moreOpen && !selectedJob ? (() => {
-          const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
-          const noticeCount = openRejections.length + followReport.counts.hpdAsked;
-          const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
-            { key: "jobs", icon: "🧰", label: "Jobs", info: jobRows.length ? `${jobsTodo} to do` : "Your jobs", go: () => tap("fc-jobs-open") },
-            { key: "bids", icon: "🧾", label: "Bids", info: bidsDue.open ? `${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} tomorrow` : ""}` : "Invitations to bid", go: () => tap("fc-bids-open") },
-            { key: "notices", icon: "⏰", label: "HPD notices", info: `${noticeCount} open${boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}`, go: () => tap("fc-notices-open") },
-            { key: "follow", icon: "📋", label: "Follow-up", info: `${followReport.counts.overdue} overdue · ${followReport.counts.dueWeek} due this week`, go: () => tap("fc-follow-open") },
-            { key: "appts", icon: "📅", label: "Appointments", info: upcomingAppointments.length ? `${upcomingAppointments.length} today` : "None today", go: () => tap("fc-appts-open") },
-            { key: "route", icon: "🧭", label: "Today's route", info: "Plan your stops", go: () => tap("fc-route-open") },
-            { key: "stats", icon: "📊", label: "My stats", info: "Jobs and money", go: () => tap("fc-stats-open") },
-            { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
-            { key: "parking", icon: "🅿️", label: "Parking (ASP)", info: aspOffToday ? `No ASP today · ${aspOffToday}` : "In effect today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
-            { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
-            { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
-            { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
-            { key: "map", icon: "🗺", label: "Map style", info: darkTiles ? "Dark map" : "Light map", go: () => { setMoreOpen(false); toggleTileStyle(); } },
-            { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
-            { key: "alerts", icon: "🔔", label: "Phone alerts", info: "Sounds, voice, alerts", go: () => { setMoreOpen(false); window.location.href = "/alerts/"; } },
-            { key: "new", icon: "🆕", label: "What's new", info: versionLabel() || (appVersion ? `v${appVersion}` : ""), go: () => tap("fc-version-tag") },
-          ];
-          return (
-            <div className="fc-more-scrim" onClick={() => setMoreOpen(false)}>
-              <section className="fc-more-sheet" role="dialog" aria-label="Everything" data-hpd-smoke="fc-more-sheet" onClick={(e) => e.stopPropagation()}>
-                <div className="fc-more-grab" aria-hidden="true" />
-                <h3>Everything</h3>
-                {rows.map((r) => (
-                  <button key={r.key} type="button" className="fc-more-row" data-hpd-smoke={`fc-more-${r.key}`} onClick={r.go}>
-                    <span aria-hidden="true">{r.icon}</span><b>{r.label}</b><small>{r.info}</small><em aria-hidden="true">›</em>
-                  </button>
-                ))}
-              </section>
-            </div>
-          );
-        })() : null}
         <div className="fc-map-controls" onTouchStart={() => undefined}>
           <button
             type="button"

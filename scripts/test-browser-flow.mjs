@@ -39,13 +39,17 @@ try {
     const isOpen = async (k) => (await page.locator(BUTTONS[k].open).count()) > 0 && (await page.locator(BUTTONS[k].open).first().isVisible());
     const openNow = async () => { const out = []; for (const k of Object.keys(BUTTONS)) if (await isOpen(k)) out.push(k); return out; };
     const reachable = (sel) => page.evaluate((s) => { const b = document.querySelector(s); if (!b || !b.offsetParent) return false; const r = b.getBoundingClientRect(); if (r.bottom > innerHeight || r.right > innerWidth) return false; return b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }, sel);
+    // Route, Appts, Stats and Follow-up are big tiles under All (29 Oct): All, then the tile.
+    const viaAll = (k) => ["route", "today", "stats", "follow"].includes(k);
+    const press = async (k) => { if (viaAll(k) && !(await page.locator(BUTTONS[k].tap).count())) await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await page.locator(BUTTONS[k].tap).click(); };
+    const reachableK = (k) => reachable(viaAll(k) ? '[data-hpd-smoke="fc-more-open"]' : BUTTONS[k].tap);
     const backToMap = async () => {
       for (let i = 0; i < 4; i++) {
         const now = await openNow();
         if (!now.length) return;
         const k = now[0];
         if (BUTTONS[k].close && await page.locator(BUTTONS[k].close).first().isVisible()) await page.locator(BUTTONS[k].close).first().click();
-        else await page.locator(BUTTONS[k].tap).click();
+        else await press(k);
         await page.waitForTimeout(250);
       }
       assert.deepEqual(await openNow(), [], `${where}: back to the map`);
@@ -54,26 +58,26 @@ try {
     for (const a of Object.keys(BUTTONS)) {
       // From the map: opens, and only it.
       await backToMap();
-      await page.locator(BUTTONS[a].tap).click();
+      await press(a);
       await page.locator(BUTTONS[a].open).first().waitFor({ timeout: 8000 });
       await page.waitForTimeout(250);
       assert.deepEqual(await openNow(), [a], `${where}: ${a} opens alone from the map`);
       // Tap again (if the button is still on screen): closes it.
-      if (await reachable(BUTTONS[a].tap)) {
-        await page.locator(BUTTONS[a].tap).click();
+      if (await reachableK(a)) {
+        await press(a);
         await page.waitForTimeout(300);
         assert.equal(await isOpen(a), false, `${where}: second tap on ${a} closes it`);
-        await page.locator(BUTTONS[a].tap).click();
+        await press(a);
         await page.locator(BUTTONS[a].open).first().waitFor({ timeout: 8000 });
       }
       // Every other button from here: if it's on screen, it opens its screen and closes this one.
       for (const b of Object.keys(BUTTONS)) {
         if (b === a) continue;
-        if (!(await isOpen(a))) { await page.locator(BUTTONS[a].tap).click(); await page.locator(BUTTONS[a].open).first().waitFor({ timeout: 8000 }); }
+        if (!(await isOpen(a))) { await press(a); await page.locator(BUTTONS[a].open).first().waitFor({ timeout: 8000 }); }
         pairs++;
-        if (!(await reachable(BUTTONS[b].tap))) continue; // covered by a full-screen sheet: its Close is the way out
+        if (!(await reachableK(b))) continue; // covered by a full-screen sheet: its Close is the way out
         direct++;
-        await page.locator(BUTTONS[b].tap).click();
+        await press(b);
         await page.locator(BUTTONS[b].open).first().waitFor({ timeout: 8000 });
         await page.waitForTimeout(250);
         assert.deepEqual(await openNow(), [b], `${where}: from ${a}, ${b} opens and ${a} closes`);

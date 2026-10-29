@@ -30,7 +30,7 @@ try {
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
-  await page.locator('[data-hpd-smoke="fc-route-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await page.locator('[data-hpd-smoke="fc-route-open"]').click();
   await page.locator('[data-hpd-smoke="fc-route-done-row"]').waitFor({ timeout: 30000 });
 
   const read = async () => ({
