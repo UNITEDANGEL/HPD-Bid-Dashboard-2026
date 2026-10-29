@@ -36,6 +36,10 @@ try {
   // 2. The strip above it, and the buttons still on the map.
   const strip = (await page.locator('[data-hpd-smoke="fc-dock-strip"] .fc-dock-chip').allInnerTexts()).map((t) => t.replace(/\s+/g, " ").trim());
   for (const want of [/^Route/, /^Appts/, /^Follow-up/, /^Stats/, /^Alerts/, /what's new/]) assert.ok(strip.some((t) => want.test(t)), `strip has ${want}: ${strip.join(" | ")}`);
+  // Each strip button has its own color (Route green, Appts blue, Follow-up amber, Stats purple).
+  const fills = await page.locator('[data-hpd-smoke="fc-dock-strip"]').evaluate((el) => ["fc-route-open", "fc-appts-open", "fc-follow-open", "fc-stats-open"].map((s) => getComputedStyle(el.querySelector(`[data-hpd-smoke="${s}"] svg`)).backgroundColor));
+  assert.equal(new Set(fills).size, 4, `strip buttons each have their own color: ${fills.join(" | ")}`);
+  assert.ok(!fills.includes("rgb(51, 65, 85)"), `no plain slate strip button: ${fills.join(" | ")}`);
   for (const sel of ['[aria-label="Toggle map style"]', '[aria-label="Locate me"]', '[data-hpd-smoke="fc-days-menu-btn"]']) assert.ok(await page.locator(sel).isVisible(), `${sel} still on the map`);
 
   // 3. More: everything, with counts; a row opens its screen.
