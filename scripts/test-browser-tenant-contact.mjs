@@ -140,8 +140,19 @@ try {
     await page.locator("#fc-job-card .fc-appointment-editor").waitFor({ timeout: 10000 });
   } else assert.match(await page.locator('[data-hpd-smoke="jc-contact-appt"]').innerText(), /📅 Appointment /, "already booked: the box says when");
   assert.equal(await rowChip(), "✅ Tenant reached", "the list shows it too");
+  // ➡️ Next tenant to call (30 Oct): after logging this one, one tap opens the next tenant not reached yet.
+  await openJob(JOB);
+  const nextBtn = page.locator('[data-hpd-smoke="jc-contact-next"]');
+  assert.match(await nextBtn.innerText(), /➡️ Next tenant to call · \d+ left/);
+  const NEXT = await nextBtn.getAttribute("data-omo");
+  assert.ok(NEXT && NEXT !== JOB, "a different job");
+  await nextBtn.click();
+  await page.waitForFunction((n) => (document.querySelector("#fc-job-card")?.textContent || "").includes(n), NEXT, { timeout: 10000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-contact-status"]').innerText(), /🔴|🟡/, "the next one isn't reached yet");
+  assert.equal(await page.locator('[data-hpd-smoke="jc-contact-next"]').count(), 0, "no Next until this one is logged");
+  if (shots) await page.screenshot({ path: `${shots}/contact-4-next.png` });
   assert.deepEqual(errors, []);
-  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, and the Jobs list chip + 📞 Not reached filter`);
+  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, and ➡️ Next tenant to call`);
   await c.close();
 } finally {
   await browser.close();

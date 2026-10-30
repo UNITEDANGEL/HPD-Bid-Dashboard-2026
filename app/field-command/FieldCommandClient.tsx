@@ -2496,7 +2496,7 @@ export default function FieldCommandClient() {
       return { id, address: jobAddress(job), borough: String(jobBorough(job)), status: st.label, color: st.color, due: String(value(job, ["WorkCompletionDate", "MaturityDate"]) || ""), award: String(value(job, ["AwardDate"]) || ""), group,
         note: group === "waiting" ? `Paperwork sent ${sentAt} · waiting on HPD` : group === "closeout" ? `${FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome"])] || "Visit saved"} · package not sent` : second ? `2nd try ${second.due ? "due now" : `from ${second.dueLabel}`} · 1st try ${second.firstLabel}` : undefined,
         packageHref: group === "closeout" ? paperworkGenerateHref(id, value(job, ["FieldOutcome", "fieldOutcome"])) : undefined, due2nd: !!second?.due,
-        contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone }; })() };
+        contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone, lastAt: cs.lastAt }; })() };
     });
   }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
@@ -5221,6 +5221,22 @@ export default function FieldCommandClient() {
                       </ul>
                     ) : null}
                     {hist.length > 4 ? <button type="button" className="jc-contact-more" data-hpd-smoke="jc-contact-more" onClick={() => setContactAll((v) => !v)}>{contactAll ? "Show less" : `Show all ${hist.length}`}</button> : null}
+                    {/* ➡️ Next tenant (30 Oct, like the next bid after a NO BID): once this one is logged, the next to-do job
+                        whose tenant isn't reached yet (has a phone, not tried in the last 3 hours), oldest due first. */}
+                    {(() => {
+                      if (asking || !last || Date.now() - Date.parse(String(last.recordedAt || "")) > 30 * 60000) return null;
+                      const left = jobRows.filter((r) => r.id !== id && (r.group === "todo" || r.group === "secondtry") && r.contact?.phone && (r.contact.tone === "none" || r.contact.tone === "try")
+                        && !(r.contact.lastAt && Date.now() - Date.parse(r.contact.lastAt) < 3 * 3600000))
+                        .sort((a, b) => (a.due || "9").localeCompare(b.due || "9"));
+                      const next = left[0];
+                      const nextJob = next && jobs.find((j) => jobId(j) === next.id);
+                      if (!nextJob) return null;
+                      return (
+                        <button type="button" className="jc-contact-next" data-hpd-smoke="jc-contact-next" data-omo={next.id} onClick={() => { setCallAsk(""); setContactAll(false); openIssueJob(nextJob, true); }}>
+                          <span>➡️ Next tenant to call · {left.length} left</span><small>{next.id} · {next.address}</small>
+                        </button>
+                      );
+                    })()}
                   </section>
                 );
               })()}

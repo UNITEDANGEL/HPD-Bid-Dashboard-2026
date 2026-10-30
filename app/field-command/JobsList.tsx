@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 export type JobRow = { id: string; address: string; borough: string; status: string; color: string; due: string; award: string; group: "todo" | "closeout" | "secondtry" | "waiting"; note?: string; packageHref?: string; due2nd?: boolean;
   // The tenant (29 Oct): reached / tried / nothing yet / a public-area job.
-  contact?: { tone: "none" | "try" | "ok" | "common"; tries: number; phone: boolean } };
+  contact?: { tone: "none" | "try" | "ok" | "common"; tries: number; phone: boolean; lastAt?: string } };
 type Tab = "todo" | "closeout" | "secondtry" | "waiting" | "all";
 
 // "1/15/26", "01/15/2026", "2026-01-15" -> a day number (NaN if unreadable).

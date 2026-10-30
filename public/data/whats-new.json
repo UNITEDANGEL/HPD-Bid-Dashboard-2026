@@ -2,6 +2,15 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Oct 30, 2026",
+      "title": "Next tenant to call",
+      "items": [
+        "➡️ After you log a call or a text on a job, a blue \"Next tenant to call\" button shows up in the tenant box. It shows how many are left and the next job number and address.",
+        "📞 One tap opens that job, so you can call tenants one after another without going back to the list. It's the same idea as the next bid opening after a NO BID.",
+        "⏱ It picks to-do jobs with a tenant phone that nobody has reached yet, oldest due date first. Jobs you already tried in the last 3 hours wait their turn."
+      ]
+    },
+    {
       "date": "Oct 29, 2026",
       "title": "First text = first contact",
       "items": [
