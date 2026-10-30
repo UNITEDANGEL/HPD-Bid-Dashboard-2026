@@ -1057,3 +1057,7 @@
 #fc-job-card .jc-refused-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 #fc-job-card .jc-refused-chips button { min-height: 34px; padding: 0 10px; border-radius: 17px; border: 1px solid #64748b; background: #1e293b; color: #e2e8f0; font: 700 13px system-ui, sans-serif; }
 #fc-job-card .jc-refused-chips button.is-picked { border-color: #ef4444; background: #7f1d1d; color: #fff; }
+
+/* 📝 Just the affidavit: the outcome shortcut above I have arrived. */
+#fc-job-card .jc-step-affidavit { border: 1px dashed #fbbf24; border-radius: 14px; background: rgba(251, 191, 36, 0.06); }
+#fc-job-card .jc-step-affidavit.is-current { border-style: solid; }

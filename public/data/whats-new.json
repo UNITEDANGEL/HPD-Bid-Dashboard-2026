@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "Job card: just the affidavit",
+      "items": [
+        "📝 New box at the top of the job card: Just the affidavit? Pick what happened (Refused access, No access, Done by others, Work completed) without tapping I have arrived or Start visit.",
+        "⛔ It asks only what that outcome needs: the date (today or a past day), and for Refused access who refused. Save, and Make the package is the next step (the affidavit and the invoice together).",
+        "🚪 Arriving to do the work is the same as before: I have arrived, then Start visit."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Refused access: just the date and who",
       "items": [
         "⛔ On the job card, Refused access now asks only 2 things: the date (today, or pick the past day it happened) and the person who refused (one tap for Male, tall, dark hair). Then Save.",

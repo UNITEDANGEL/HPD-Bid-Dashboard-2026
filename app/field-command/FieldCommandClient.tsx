@@ -5400,9 +5400,10 @@ export default function FieldCommandClient() {
                 const rawOutcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
                 const savedOutcome = [...noWorkOutcomes, ...workOutcomes].includes(rawOutcome) ? rawOutcome : "";
                 const workStarted = Boolean(stamps.work) || counts.before > 0;
+                // An outcome saved straight from "Just the affidavit" skips arrive / start visit, so the package is next.
                 const steps = [
-                  { done: Boolean(stamps.arrived) },
-                  { done: Boolean(stamps.visit) },
+                  { done: Boolean(stamps.arrived) || Boolean(savedOutcome) },
+                  { done: Boolean(stamps.visit) || Boolean(savedOutcome) },
                   { done: workStarted || noWorkOutcomes.includes(savedOutcome) || workOutcomes.includes(savedOutcome) },
                   { done: counts.after > 0 || noWorkOutcomes.includes(savedOutcome) || workOutcomes.includes(savedOutcome) },
                   { done: Boolean(savedOutcome) },
@@ -5453,7 +5454,28 @@ export default function FieldCommandClient() {
                 return (
                   <ol className="jc-steps" data-hpd-smoke="jc-steps" aria-label="Job steps">
                     {/* Step 0: go there. The tap on Waze / Google is recorded with the date. */}
-                    {value(selectedJob, ["TravelStartedAt"]) || !stamps.arrived ? (
+                    {/* 📝 Just the affidavit (owner, 30 Oct: "when I arrive that's fine, I start the job, but sometimes I just want to
+                        fill up the affidavit: the outcome, what happened, refused access, no access ..."): pick what happened, its
+                        date (and who refused), Save, and the package opens. No arrive / start visit first. */}
+                    {!savedOutcome && !workStarted && current < 2 && !secondTry ? (() => {
+                      const quick = [...noWorkOutcomes, "WORK_COMPLETED"];
+                      return (
+                        <li className={`jc-step jc-step-affidavit ${quick.includes(draft.outcome) ? "is-current" : ""}`} data-hpd-smoke="jc-affidavit-only">
+                          <span className="jc-step-num" aria-hidden="true">📝</span>
+                          <div>
+                            <b>Just the affidavit?</b>
+                            <small>Already know what happened? Pick it: no need to tap I have arrived.</small>
+                            <div className="jc-step-choices">
+                              {quick.map((key) => (
+                                <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} data-hpd-smoke={`jc-affidavit-${key.toLowerCase()}`} onClick={() => setDraft(draft.outcome === key ? { outcome: "" } : { outcome: key })}>{OUTCOME_ICONS[key] || "✅"} {FIELD_OUTCOMES[key]}</button>
+                              ))}
+                            </div>
+                            {outcomeForm(quick)}
+                          </div>
+                        </li>
+                      );
+                    })() : null}
+                    {(value(selectedJob, ["TravelStartedAt"]) || !stamps.arrived) && !savedOutcome ? (
                       <li className={`jc-step jc-step-travel ${value(selectedJob, ["TravelStartedAt"]) ? "is-done" : "is-current"}`} data-hpd-smoke="jc-step-travel">
                         <span className="jc-step-num" aria-hidden="true">🚗</span>
                         <div>
@@ -5472,7 +5494,7 @@ export default function FieldCommandClient() {
                       {num(0)}
                       <div>
                         <b>I have arrived</b>
-                        <small>{stamps.arrived ? `Arrived ${formatSavedTime(stamps.arrived)}${value(selectedJob, ["ArrivedLatitude"]) ? " · location saved" : ""}` : "Saves the time and your location"}</small>
+                        <small>{stamps.arrived ? `Arrived ${formatSavedTime(stamps.arrived)}${value(selectedJob, ["ArrivedLatitude"]) ? " · location saved" : ""}` : savedOutcome ? "Skipped: outcome saved for the affidavit" : "Saves the time and your location"}</small>
                         {current === 0 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-arrived" disabled={!workflowLoaded} onClick={() => markArrived(selectedJob)}>I have arrived<span aria-hidden="true">&rarr;</span></button> : null}
                       </div>
                     </li>
@@ -5480,7 +5502,7 @@ export default function FieldCommandClient() {
                       {num(1)}
                       <div>
                         <b>Start visit</b>
-                        <small>{stamps.visit ? `Started ${formatSavedTime(stamps.visit)}` : "Head to the job site; read the description above"}</small>
+                        <small>{stamps.visit ? `Started ${formatSavedTime(stamps.visit)}` : savedOutcome ? "Skipped" : "Head to the job site; read the description above"}</small>
                         {current === 1 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-visit" onClick={() => saveWorkflowStamp(selectedJob, "visit")}>Start visit<span aria-hidden="true">&rarr;</span></button> : null}
                       </div>
                     </li>
