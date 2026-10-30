@@ -18,6 +18,13 @@ const dayNum = (v: string) => {
   if (m) return Date.UTC(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[1] - 1, +m[2]) / 86400000;
   return NaN;
 };
+// Tenants still to call, in calling order (30 Oct): to-do / 2nd-try jobs with a tenant phone whose tenant isn't reached
+// yet, oldest due first; jobs tried in the last 3 hours wait their turn. Used by ▶ Start calling and the card's ➡️ Next.
+export const needsCall = (r: JobRow) => (r.group === "todo" || r.group === "secondtry") && (r.contact?.tone === "none" || r.contact?.tone === "try");
+export function tenantsToCall(rows: JobRow[], exceptId = "", now = Date.now()) {
+  return rows.filter((r) => r.id !== exceptId && needsCall(r) && r.contact?.phone && !(r.contact.lastAt && now - Date.parse(r.contact.lastAt) < 3 * 3600000))
+    .sort((a, b) => (dayNum(a.due) || 1e9) - (dayNum(b.due) || 1e9));
+}
 const todayNum = () => { const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); return dayNum(p); };
 const short = (v: string) => { const n = dayNum(v); if (!Number.isFinite(n)) return ""; const d = new Date(n * 86400000); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
 
@@ -29,7 +36,6 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
   const setTab = (t: Tab) => { setTabState(t); onTab?.(t); onMini?.(false); };
   const [q, setQ] = useState("");
   const [toReach, setToReach] = useState(false);
-  const needsCall = (r: JobRow) => (r.group === "todo" || r.group === "secondtry") && (r.contact?.tone === "none" || r.contact?.tone === "try");
   const today = todayNum();
   const shown = useMemo(() => {
     const term = q.trim().toUpperCase();
@@ -58,7 +64,14 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
         <input className="fc-jobs-search" data-hpd-smoke="fc-jobs-search" placeholder="Search job # or address" value={q} onChange={(e) => setQ(e.target.value)} />
         {(() => {
           const n = rows.filter((r) => (tab === "all" || r.group === tab) && needsCall(r)).length;
-          return n || toReach ? <button type="button" className={`fc-jobs-reach${toReach ? " is-on" : ""}`} aria-pressed={toReach} data-hpd-smoke="fc-jobs-reach" onClick={() => setToReach((v) => !v)}>{toReach ? "✕ Show every job" : `📞 Tenant not reached yet: ${n}`}</button> : null;
+          const first = toReach ? tenantsToCall(shown)[0] : undefined;
+          return n || toReach ? (
+            <div className="fc-jobs-reachrow">
+              <button type="button" className={`fc-jobs-reach${toReach ? " is-on" : ""}`} aria-pressed={toReach} data-hpd-smoke="fc-jobs-reach" onClick={() => setToReach((v) => !v)}>{toReach ? "✕ Show every job" : `📞 Tenant not reached yet: ${n}`}</button>
+              {/* ▶ Start calling (30 Oct): opens the first tenant; ➡️ Next on the card goes on from there. */}
+              {first ? <button type="button" className="fc-jobs-startcall" data-hpd-smoke="fc-jobs-startcall" data-omo={first.id} onClick={() => onOpen(first.id)}>▶ Start calling</button> : null}
+            </div>
+          ) : null;
         })()}
         {!shown.length ? <p className="fc-follow-note" data-hpd-smoke="fc-jobs-empty">{q ? "No job matches." : "Nothing here. 🎉"}</p> : null}
         <ul className="fc-jobs-list">

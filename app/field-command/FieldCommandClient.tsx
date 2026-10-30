@@ -58,7 +58,7 @@ import AutopilotPanel from "./AutopilotPanel";
 import JobTracker, { type TrackerRow } from "./JobTracker";
 import { trackerStage } from "../../lib/job-tracker";
 import NotificationsPanel from "./NotificationsPanel";
-import JobsList, { type JobRow } from "./JobsList";
+import JobsList, { type JobRow, tenantsToCall } from "./JobsList";
 import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
@@ -5225,9 +5225,7 @@ export default function FieldCommandClient() {
                         whose tenant isn't reached yet (has a phone, not tried in the last 3 hours), oldest due first. */}
                     {(() => {
                       if (asking || !last || Date.now() - Date.parse(String(last.recordedAt || "")) > 30 * 60000) return null;
-                      const left = jobRows.filter((r) => r.id !== id && (r.group === "todo" || r.group === "secondtry") && r.contact?.phone && (r.contact.tone === "none" || r.contact.tone === "try")
-                        && !(r.contact.lastAt && Date.now() - Date.parse(r.contact.lastAt) < 3 * 3600000))
-                        .sort((a, b) => (a.due || "9").localeCompare(b.due || "9"));
+                      const left = tenantsToCall(jobRows, id);
                       const next = left[0];
                       const nextJob = next && jobs.find((j) => jobId(j) === next.id);
                       if (!nextJob) return null;

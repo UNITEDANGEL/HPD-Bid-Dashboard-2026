@@ -64,7 +64,14 @@ try {
   const onlyRows = await page.locator('[data-hpd-smoke="fc-jobs-row"] [data-hpd-smoke="fc-jobs-contact"]').allInnerTexts();
   assert.ok(onlyRows.length && onlyRows.every((t) => /🔴|🟡/.test(t)), "only tenants not reached");
   if (shots) await page.screenshot({ path: `${shots}/contact-0-list.png` });
-  await reach.click();
+  // ▶ Start calling (30 Oct) opens the first tenant on that list.
+  const start = page.locator('[data-hpd-smoke="fc-jobs-startcall"]');
+  const FIRST = await start.getAttribute("data-omo");
+  assert.ok(FIRST && ids.includes(FIRST), "first tenant to call");
+  await start.click();
+  await page.waitForFunction((n) => (document.querySelector("#fc-job-card")?.textContent || "").includes(n), FIRST, { timeout: 10000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-contact-status"]').innerText(), /🔴|🟡/);
+  await page.locator(".fc-job-sheet-close").click();
   await openJob(JOB);
   const box = page.locator('[data-hpd-smoke="jc-contact"]');
   // First on the card: right under the address, before the job description.
@@ -152,7 +159,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="jc-contact-next"]').count(), 0, "no Next until this one is logged");
   if (shots) await page.screenshot({ path: `${shots}/contact-4-next.png` });
   assert.deepEqual(errors, []);
-  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, and ➡️ Next tenant to call`);
+  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling and ➡️ Next tenant to call`);
   await c.close();
 } finally {
   await browser.close();

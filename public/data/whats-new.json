@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "Start calling",
+      "items": [
+        "▶ In Jobs, tap \"📞 Tenant not reached yet\" and a green \"Start calling\" button shows up next to it. It opens the first tenant to call.",
+        "➡️ From there, each job's \"Next tenant to call\" button takes you to the next one, so you go down the whole list without going back.",
+        "📅 Fixed: the order is now truly the oldest due date first, for every date format HPD uses."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Next tenant to call",
       "items": [
         "➡️ After you log a call or a text on a job, a blue \"Next tenant to call\" button shows up in the tenant box. It shows how many are left and the next job number and address.",
