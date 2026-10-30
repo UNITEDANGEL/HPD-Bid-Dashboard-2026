@@ -509,6 +509,17 @@ function addToTodayRoute(id: string) {
   }
 }
 
+function removeFromTodayRoute(id: string) {
+  try {
+    const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
+    if (saved?.settings?.date !== nyToday() || !Array.isArray(saved.ids) || !saved.ids.includes(id)) return false;
+    localStorage.setItem("hpd-today-route-v1", JSON.stringify({ ...saved, ids: saved.ids.filter((x: unknown) => x !== id) }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function wazeHref(job: JobRecord) {
   const ll = jobLatLng(job);
   if (ll) return `https://waze.com/ul?ll=${ll.lat},${ll.lng}&navigate=yes`;
@@ -3910,6 +3921,23 @@ export default function FieldCommandClient() {
       const href = outcome ? paperworkGenerateHref(jobId(job), outcome) : paperworkNextHref(jobId(job), outcome);
       showPanel({ heard, reply: `${jobAddress(job).replace(/,\s*\d{5}$/, "")}: ${outcome ? `${FIELD_OUTCOMES[outcome] || "outcome saved"}, the affidavit and invoice are ready to make.` : "no outcome saved yet: the paperwork page asks what happened."} Tap Open the paperwork.`, actions: [{ label: "📄 Open the paperwork", href }] });
       speak(`${jobAddress(job).replace(/,\s*\d{5}$/, "")}. Tap open the paperwork.`, 200);
+      return;
+    }
+    if (cmd.intent === "route-add" || cmd.intent === "route-remove") {
+      // One job on / off Today's route by voice (30 Oct): the job named, else the one on screen.
+      const job = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (job === "many") { answer("I found more than one of your jobs at that address. Say the job number, letter by letter."); return; }
+      if (!job) { answer(cmd.ref ? `I can't find ${cmd.ref} in your jobs. Say the job number, letter by letter.` : "Which job? Open its card, or say the job number."); return; }
+      const jid = jobId(job);
+      const where = jobAddress(job).replace(/,\s*\d{5}$/, "");
+      if (cmd.intent === "route-remove") {
+        answer(removeFromTodayRoute(jid) ? `Took ${where} off Today's route. ${todayRouteIds().length} stop${todayRouteIds().length === 1 ? "" : "s"} left.` : `${where} isn't on Today's route.`);
+        return;
+      }
+      if (todayRouteIds().includes(jid)) { answer(`${where} is already on Today's route: stop ${todayRouteIds().indexOf(jid) + 1}.`); return; }
+      if (!addToTodayRoute(jid)) { answer("I couldn't save the route on this phone."); return; }
+      setRouteAdded(jid);
+      answer(`Added ${where} to Today's route: stop ${todayRouteIds().length}.`);
       return;
     }
     if (cmd.intent === "plan") {

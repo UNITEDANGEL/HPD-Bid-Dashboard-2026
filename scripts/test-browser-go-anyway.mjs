@@ -29,6 +29,13 @@ try {
     localStorage.removeItem("hpd-today-route-v1");
     sessionStorage.setItem("seeded", "1");
   }, { JOB, OTHER });
+  await c.addInitScript(() => {
+    if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { setTimeout(() => u.onend?.(), 30); };
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() { setTimeout(() => { const text = window.__hear || ""; if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 100); }
+      stop() { this.onend?.(); }
+    };
+  });
   const page = await c.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -55,14 +62,28 @@ try {
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null"));
   assert.deepEqual(saved.ids, [JOB]);
   assert.equal(saved.settings.start, "08:00");
-  // The route panel lists it.
   await page.locator(".fc-job-sheet-close").click();
   if (await page.locator('[data-hpd-smoke="fc-jobs-close"]').count()) await page.locator('[data-hpd-smoke="fc-jobs-close"]').click();
+  // By voice (30 Oct): take it off the route, then put it back.
+  const say = async (s, re) => {
+    if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+    await page.evaluate((x) => { window.__hear = x; }, s);
+    await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
+    await page.waitForFunction((r) => new RegExp(r).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 20000 });
+  };
+  const routeIds = () => page.evaluate(() => JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null")?.ids);
+  await say(`take ${JOB} off my route`, /^Took 1207 1 AVENUE off Today's route\. 0 stops left\./);
+  assert.deepEqual(await routeIds(), []);
+  await say(`put ${JOB} on today's route`, /^Added 1207 1 AVENUE to Today's route: stop 1\./);
+  assert.deepEqual(await routeIds(), [JOB]);
+  await say(`add ${JOB} to my route`, /already on Today's route: stop 1/);
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  // The route panel lists it.
   await page.locator('[data-hpd-smoke="fc-more-open"]').click();
   await page.locator('[data-hpd-smoke="fc-route-open"]').click();
   await page.waitForFunction((j) => [...document.querySelectorAll(".fc-route-stop b")].some((b) => b.textContent.includes(j)), JOB, { timeout: 20000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS go anyway: 2 tries -> nothing; 3 tries over 3 days -> "go anyway for the 1st access attempt", Add to Today's route -> ✅ on the route and the route panel lists ${JOB}`);
+  console.log(`PASS go anyway: 2 tries -> nothing; 3 tries over 3 days -> "go anyway for the 1st access attempt", Add to Today's route -> ✅ on the route; by voice taken off, put back, "already on"; the route panel lists ${JOB}`);
   await c.close();
 } finally {
   await browser.close();

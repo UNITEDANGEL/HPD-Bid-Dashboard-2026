@@ -49,6 +49,8 @@ export type AgentCommand =
   | { intent: "arrived"; ref: string }
   | { intent: "open"; ref: string }
   | { intent: "plan" }
+  | { intent: "route-add"; ref: string }
+  | { intent: "route-remove"; ref: string }
   | { intent: "reply-notice"; ref: string; who: string }
   | { intent: "paperwork"; ref: string }
   | { intent: "ask"; question: string }
@@ -163,6 +165,14 @@ export function parseCommand(heard: string): AgentCommand {
   }
   // "Come back" after a bid was sent and the app moved on to the next one (23 Oct).
   if (/^(come|go|take me) back( to (it|that|that one|the last( one| bid)?|the (bid|one) i (just )?sent))?$/.test(t) || /^back to the last bid$/.test(t)) return { intent: "come-back" };
+  // One job on / off Today's route (30 Oct): "add this job to my route", "put EQ15239 on today's route", "take it off my
+  // route". The verbs come out before the job is read.
+  {
+    const routeWords = /\b(my |the |today'?s? )?(route|stops)( for today| today)?$/;
+    const bare = (s: string) => refOf(s.replace(/\btoday'?s\b/g, " ").replace(/\b(add|put|remove|drop|take|off|from|onto)\b/g, " "));
+    if (/\b(add|put)\b.{0,40}\b(to|on|onto)\b/.test(t) && routeWords.test(t)) return { intent: "route-add", ref: bare(t) };
+    if (/\b(remove|drop|take)\b.{0,40}\b(off|from)\b/.test(t) && routeWords.test(t)) return { intent: "route-remove", ref: bare(t) };
+  }
   // "Plan my day" / "build my route" (22 Oct): Today's route planned for you, then read out.
   if (/\b(plan|build|make|set up|map out)\b.{0,20}\b(my |the |today'?s? )?(day|route|stops)\b/.test(t) || /^where (should|do) i go( first| today)?\b/.test(t)) return { intent: "plan" };
   // "Answer the notice for ER01987" / "reply to Lewis" / "reply to Gafur" (22 Oct).
