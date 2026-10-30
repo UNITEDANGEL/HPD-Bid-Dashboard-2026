@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T13:20:57.565526+00:00",
+  "generatedAt": "2026-10-30T13:31:50.124710+00:00",
   "days": 14,
   "bids": [
     {
@@ -1825,6 +1825,136 @@
       },
       "lat": 40.659424,
       "lng": -73.740285
+    },
+    {
+      "omo": "ER09325",
+      "bidDue": "2026-11-02",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-09",
+      "workCompletion": "2026-11-27",
+      "address": "1661 AMSTERDAM AVENUE",
+      "borough": "MN",
+      "itbFile": "ER09325_103026091704.pdf",
+      "description": "DEFECTIVE STRIKE PLATE AT NORTH DOOR LEADING TO BASEMENT AT PUBLIC HALL, 1st STORY. DEFECTIVE DOOR NOT SELF CLOSING AT BOILER ROOM DOOR IN BASEMENT. CRACKED WIRED GLASS AT VESTIBULE DOOR AT PULIC HALL , 1st STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ INSTALL A NEW STRIKE PLATE MAKE ALL ADJUSTMENTS AND ALIGNMENTS TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES.AT NORTH DOOR LEADING TO BASEMENT AT PUBLIC HALL, 1st STORY. INSTALL A NEW PASSAGE LOCK MAKE ALL ADJUSTMENTS AND ALIGNMENTS TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. AT BOILER ROOM DOOR IN BASEMENT. REPLACE WITH NEW THE BROKEN WIRED GLASS PANE AT VESTIBULE DOOR APPX 7FTX3FTSASH AND MAKE ALL ADJUSTMENTS AND ALIGNMENTS TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES.AT BUILDING VESTIBULE DOOR PUBLIC HALL,1ST STORY TOTAL DOORS= (3) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE PER HPD GUIDELINES.",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793366233000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 501.1,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.8,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496.6,
+          "y": 45.6,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.5,
+          "y": 45,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.8,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 88.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 268.1,
+          "y": 467.9,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.823433,
+      "lng": -73.948672
     },
     {
       "omo": "ER09330",

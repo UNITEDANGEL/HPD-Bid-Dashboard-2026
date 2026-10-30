@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-30T13:21:26.126808+00:00",
+"generatedAt": "2026-10-30T13:32:12.502456+00:00",
 "since": "2026/10/16",
 "jobs": {
 "EN04541": [
@@ -21133,6 +21133,16 @@
 "file": "VIDEO-2026-07-22-16-39-29.mp4",
 "outcome": "",
 "subject": "OMO No: ER01115 Issuer: KELLY ANN PERROTTE-DAVID Boro: Manhattan Bldg Address: 115, EDGECOMBE AVENUE",
+"via": "hpd-staff"
+}
+],
+"ER01720": [
+{
+"date": "2026-10-30",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "ER01720 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO#ER01720- STOP WORK NOTICE",
 "via": "hpd-staff"
 }
 ],
