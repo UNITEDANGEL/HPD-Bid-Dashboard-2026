@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-30T18:35:51.907Z
+Fetcher run started: 2026-10-30T18:47:59.635Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/13 [00:00<?, ?it/s]Downloading COA messages:   8%|▊         | 1/13 [00:00<00:01,  9.25it/s]Downloading COA messages:  15%|█▌        | 2/13 [00:00<00:01,  9.15it/s]Downloading COA messages:  23%|██▎       | 3/13 [00:00<00:01,  9.16it/s]Downloading COA messages:  31%|███       | 4/13 [00:00<00:01,  8.64it/s]Downloading COA messages:  46%|████▌     | 6/13 [00:00<00:00,  8.55it/s]Downloading COA messages:  54%|█████▍    | 7/13 [00:00<00:00,  8.67it/s]Downloading COA messages:  62%|██████▏   | 8/13 [00:00<00:00,  7.61it/s]Downloading COA messages:  69%|██████▉   | 9/13 [00:01<00:00,  7.79it/s]Downloading COA messages:  77%|███████▋  | 10/13 [00:01<00:00,  7.25it/s]Downloading COA messages:  85%|████████▍ | 11/13 [00:01<00:00,  7.53it/s]Downloading COA messages:  92%|█████████▏| 12/13 [00:01<00:00,  7.74it/s]Downloading COA messages: 100%|██████████| 13/13 [00:01<00:00,  7.95it/s]Downloading COA messages: 100%|██████████| 13/13 [00:01<00:00,  8.06it/s]
-Geocoding COA addresses:   0%|          | 0/12 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 12/12 [00:00<00:00, 312618.93it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/12 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   8%|▊         | 1/12 [00:00<00:06,  1.60it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 2/12 [00:01<00:04,  2.00it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 3/12 [00:01<00:04,  1.82it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 4/12 [00:02<00:03,  2.02it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 5/12 [00:02<00:03,  2.12it/s]Fetching ITBs for COA OMOs:  50%|█████     | 6/12 [00:03<00:03,  1.69it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 7/12 [00:03<00:02,  1.69it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 8/12 [00:04<00:02,  1.89it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 9/12 [00:04<00:01,  2.12it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 10/12 [00:05<00:00,  2.26it/s]Fetching ITBs for COA OMOs:  92%|█████████▏| 11/12 [00:05<00:00,  2.32it/s]Fetching ITBs for COA OMOs: 100%|██████████| 12/12 [00:06<00:00,  1.95it/s]Fetching ITBs for COA OMOs: 100%|██████████| 12/12 [00:06<00:00,  1.96it/s]
+Downloading COA messages:   0%|          | 0/13 [00:00<?, ?it/s]Downloading COA messages:   8%|▊         | 1/13 [00:00<00:01,  7.76it/s]Downloading COA messages:  15%|█▌        | 2/13 [00:00<00:01,  8.72it/s]Downloading COA messages:  23%|██▎       | 3/13 [00:00<00:01,  8.23it/s]Downloading COA messages:  31%|███       | 4/13 [00:00<00:01,  6.32it/s]Downloading COA messages:  38%|███▊      | 5/13 [00:00<00:01,  7.08it/s]Downloading COA messages:  54%|█████▍    | 7/13 [00:00<00:00,  8.11it/s]Downloading COA messages:  62%|██████▏   | 8/13 [00:01<00:00,  8.16it/s]Downloading COA messages:  69%|██████▉   | 9/13 [00:01<00:00,  8.01it/s]Downloading COA messages:  77%|███████▋  | 10/13 [00:01<00:00,  8.27it/s]Downloading COA messages:  85%|████████▍ | 11/13 [00:01<00:00,  8.26it/s]Downloading COA messages:  92%|█████████▏| 12/13 [00:01<00:00,  7.81it/s]Downloading COA messages: 100%|██████████| 13/13 [00:01<00:00,  7.76it/s]Downloading COA messages: 100%|██████████| 13/13 [00:01<00:00,  7.83it/s]
+Geocoding COA addresses:   0%|          | 0/12 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 12/12 [00:00<00:00, 218833.25it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/12 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   8%|▊         | 1/12 [00:00<00:08,  1.28it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 2/12 [00:01<00:05,  1.72it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 3/12 [00:01<00:05,  1.68it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 4/12 [00:02<00:04,  1.79it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 5/12 [00:02<00:03,  1.82it/s]Fetching ITBs for COA OMOs:  50%|█████     | 6/12 [00:03<00:03,  1.58it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 7/12 [00:04<00:03,  1.66it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 8/12 [00:04<00:02,  1.83it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 9/12 [00:04<00:01,  2.05it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 10/12 [00:05<00:00,  2.14it/s]Fetching ITBs for COA OMOs:  92%|█████████▏| 11/12 [00:05<00:00,  2.11it/s]Fetching ITBs for COA OMOs: 100%|██████████| 12/12 [00:06<00:00,  1.79it/s]Fetching ITBs for COA OMOs: 100%|██████████| 12/12 [00:06<00:00,  1.80it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -134,7 +134,7 @@ Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/16
 Upcoming bids: 23 not awarded yet (23 on the map), 10 received today, from 128 emails
 
-[0;93m2026-10-30 18:36:19.017050242 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+[0;93m2026-10-30 18:48:27.947653444 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
 
@@ -175,7 +175,7 @@ Reading 75 emails from HPD staff...
 Reading 71 emails you sent HPD staff...
 HPD requests: 46 OMOs HPD asked about (paperwork / status) from 75 staff emails since 2026/10/16
 
-[0;93m2026-10-30 18:42:49.279895364 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+[0;93m2026-10-30 18:56:25.824074455 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
 
@@ -276,7 +276,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-30T18:43:10.559Z
+Fetcher run finished: 2026-10-30T18:56:45.520Z
 {
   "fetchedCoaItems": 12,
   "fetchedItbItems": 12,
