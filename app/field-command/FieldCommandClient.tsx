@@ -503,6 +503,7 @@ function addToTodayRoute(id: string) {
     const settings = today ? saved.settings : { date: nyToday(), start: "08:00", end: "17:00", minutes: 45, borough: "ALL" };
     const ids = today && Array.isArray(saved.ids) ? saved.ids.filter((x: unknown) => typeof x === "string" && x !== id) : [];
     localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings, ids: [...ids, id], ...(today && saved.origin ? { origin: saved.origin } : {}) }));
+    window.dispatchEvent(new Event("hpd-route-changed"));
     return true;
   } catch {
     return false;
@@ -514,6 +515,7 @@ function removeFromTodayRoute(id: string) {
     const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
     if (saved?.settings?.date !== nyToday() || !Array.isArray(saved.ids) || !saved.ids.includes(id)) return false;
     localStorage.setItem("hpd-today-route-v1", JSON.stringify({ ...saved, ids: saved.ids.filter((x: unknown) => x !== id) }));
+    window.dispatchEvent(new Event("hpd-route-changed"));
     return true;
   } catch {
     return false;
@@ -3439,7 +3441,9 @@ export default function FieldCommandClient() {
     const history = (Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory : []) as { recordedAt?: string; outcome?: string | null }[];
     const last = [...history].reverse().find((entry) => entry?.outcome && newYorkDay(entry.recordedAt) === today);
     const done = last && queue !== 'pending' && FIELD_OUTCOMES[String(last.outcome)] ? { at: String(last.recordedAt), label: FIELD_OUTCOMES[String(last.outcome)] } : undefined;
-    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined,done}];
+    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined,done,
+      // The tenant on the route too (30 Oct): who expects you, who's a knock-anyway access attempt.
+      contact:(()=>{const cs=tenantContactState(job as Record<string, unknown>,tenantInfo(job).commonArea);return {tone:cs.tone,tries:cs.tries};})()}];
   }), [jobs, calendarDate]);
 
   // Two taps instead of pop-up boxes (the iPhone home-screen app blocks confirm()): the first tap arms the button and

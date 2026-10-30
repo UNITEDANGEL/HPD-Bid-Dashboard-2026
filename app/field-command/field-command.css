@@ -3821,6 +3821,11 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-jobs-reach { width: 100%; min-height: 42px; margin: 6px 0 2px; border-radius: 12px; border: 1px solid #dc2626; background: rgba(220, 38, 38, 0.14); color: #fecaca; font: 800 14px system-ui, sans-serif; }
 .fc-jobs-reach.is-on { border-color: #475569; background: #1e293b; color: #e2e8f0; }
 .fc-jobs-reachrow { display: flex; gap: 8px; align-items: stretch; }
+.fc-route-stop .fc-route-contact { font-weight: 800; }
+.fc-route-stop .fc-route-contact.is-none { color: #fca5a5; }
+.fc-route-stop .fc-route-contact.is-try { color: #fcd34d; }
+.fc-route-stop .fc-route-contact.is-ok { color: #86efac; }
+.fc-route-stop .fc-route-contact.is-common { color: #cbd5e1; }
 .fc-jobs-today { margin: 6px 0 0; padding: 6px 10px; border-radius: 10px; background: rgba(14, 165, 233, 0.14); color: #e0f2fe; font: 700 13px/1.3 system-ui, sans-serif; }
 .fc-jobs-today b { color: #fff; font-weight: 900; }
 .fc-jobs-reachrow .fc-jobs-reach { flex: 1; width: auto; }

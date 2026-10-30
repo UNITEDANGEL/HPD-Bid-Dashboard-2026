@@ -82,8 +82,15 @@ try {
   await page.locator('[data-hpd-smoke="fc-more-open"]').click();
   await page.locator('[data-hpd-smoke="fc-route-open"]').click();
   await page.waitForFunction((j) => [...document.querySelectorAll(".fc-route-stop b")].some((b) => b.textContent.includes(j)), JOB, { timeout: 20000 });
+  // The panel took the stop added from the card / by voice (not a new plan saved over it).
+  assert.deepEqual(await page.locator("li:not(.fc-route-done-row) > .fc-route-stop b").allInnerTexts(), [`1. ${JOB}`]);
+  assert.deepEqual(await routeIds(), [JOB]);
+  // The tenant on the route stop (30 Oct): not reached after 3 tries -> an access attempt.
+  const stopText = await page.locator(".fc-route-stop", { hasText: JOB }).first().innerText();
+  assert.match(stopText, /🟡 Tenant not reached \(3 tries\): access attempt/, stopText);
+  if (shots) await page.screenshot({ path: `${shots}/go-anyway-route.png` });
   assert.deepEqual(errors, []);
-  console.log(`PASS go anyway: 2 tries -> nothing; 3 tries over 3 days -> "go anyway for the 1st access attempt", Add to Today's route -> ✅ on the route; by voice taken off, put back, "already on"; the route panel lists ${JOB}`);
+  console.log(`PASS go anyway: 2 tries -> nothing; 3 tries over 3 days -> "go anyway for the 1st access attempt", Add to Today's route -> ✅ on the route; by voice taken off, put back, "already on"; the route panel lists ${JOB} with 🟡 access attempt`);
   await c.close();
 } finally {
   await browser.close();

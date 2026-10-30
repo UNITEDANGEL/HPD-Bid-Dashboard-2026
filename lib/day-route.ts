@@ -1,4 +1,4 @@
-export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string }; done?: { at: string; label: string } };
+export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string }; done?: { at: string; label: string }; contact?: { tone: "none" | "try" | "ok" | "common"; tries: number } };
 export type RoutePoint = { lat: number; lng: number };
 export type RouteSettings = { date: string; start: string; end: string; minutes: number; borough: string };
 export type RouteStop = { job: RouteJob; arrival: number; finish: number; travel: number; warning: string };

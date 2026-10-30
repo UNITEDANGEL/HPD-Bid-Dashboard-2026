@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "Tenant status on the route",
+      "items": [
+        "🗺 Each stop on Today's route now shows the tenant: ✅ reached, 🟡 not reached (an access attempt), 🔴 not contacted yet (call first), or 🏢 public area.",
+        "🛠 Fixed: a stop added from the job card or by voice now always shows on the route. Before, opening the route panel could plan a new route over it."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Route by voice",
       "items": [
         "🎤 Say \"add this job to my route\" or \"put EQ15239 on today's route\" and the AI adds it to the end of Today's route. It tells you which stop it is.",
