@@ -52,7 +52,7 @@ export function tenantStep(job: Record<string, unknown>, now = Date.now()): Tena
 // ok = reached (talked, they replied, or an appointment), try = called / texted but not reached, none = nothing yet,
 // common = a public-area job with no tenant to reach.
 export type ContactEntry = { recordedAt?: string; outcome?: string | null; note?: string };
-export type ContactState = { tone: "none" | "try" | "ok" | "common"; tries: number; reachedAt: string; lastAt: string; log: ContactEntry[]; triesToday: number; reachedToday: boolean };
+export type ContactState = { tone: "none" | "try" | "ok" | "common"; tries: number; reachedAt: string; lastAt: string; log: ContactEntry[]; triesToday: number; reachedToday: boolean; firstTryAt: string; goAnyway: boolean };
 const nyDay = (v: string | number | Date) => { const d = new Date(v); return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d); };
 export function tenantContactState(job: Record<string, unknown>, commonArea = false, now = Date.now()): ContactState {
   const log = (Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory as ContactEntry[] : [])
@@ -65,7 +65,11 @@ export function tenantContactState(job: Record<string, unknown>, commonArea = fa
   const today = nyDay(now);
   const triesToday = log.filter((v) => /^(Called|Texted|Talked to) the tenant/.test(String(v.note || "")) && nyDay(String(v.recordedAt || "")) === today).length;
   const reachedToday = !!reachedAt && nyDay(reachedAt) === today;
-  return { tone: reachedAt ? "ok" : commonArea ? "common" : tries ? "try" : "none", tries, reachedAt, lastAt, log, triesToday, reachedToday };
+  // Not reached after 3 tries over 2 days or more (30 Oct): time to go anyway for the 1st access attempt (No Access needs
+  // two visits 72 hours apart).
+  const firstTryAt = String(log.find((v) => /^(Called|Texted) the tenant/.test(String(v.note || "")))?.recordedAt || "");
+  const goAnyway = !reachedAt && !commonArea && tries >= 3 && !!firstTryAt && now - Date.parse(firstTryAt) >= 2 * 86400000;
+  return { tone: reachedAt ? "ok" : commonArea ? "common" : tries ? "try" : "none", tries, reachedAt, lastAt, log, triesToday, reachedToday, firstTryAt, goAnyway };
 }
 
 // 📋 The job's contact record as plain text (30 Oct: the log "is going to be the truth"): for a reply when HPD or vendor

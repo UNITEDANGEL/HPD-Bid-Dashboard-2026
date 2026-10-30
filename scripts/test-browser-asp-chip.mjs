@@ -8,7 +8,11 @@ import { loadLib } from "./daily-report.mjs";
 
 // "A normal Wednesday": the next Wednesday from today with street cleaning on (a fixed past date stops working once the
 // job data is newer than it).
-const { aspOff } = await loadLib("asp");
+const { aspOff, ASP_2026 } = await loadLib("asp");
+// The next street-cleaning holiday from today (it was Election Day, 3 Nov, when written); none left in the calendar
+// (the 2027 one isn't published yet) -> that part is skipped.
+const todayIso = new Date().toISOString().slice(0, 10);
+const holiday = Object.keys(ASP_2026).sort().find((d) => d > todayIso && new Date(`${d}T12:00:00Z`).getUTCDay() !== 0);
 const wed = (() => {
   const d = new Date(); d.setUTCHours(16, 0, 0, 0);
   do d.setUTCDate(d.getUTCDate() + 1); while (d.getUTCDay() !== 3 || aspOff(d.toISOString().slice(0, 10)));
@@ -33,14 +37,14 @@ async function open({ at, gps = false, texted = "" }) {
   return { c, page, errors };
 }
 try {
-  // 1. Election Day, noon: the chip, and what it says.
-  {
-    const { c, page, errors } = await open({ at: "2026-11-03T17:00:00Z" });
+  // 1. A street-cleaning holiday, noon: the chip, and what it says.
+  if (holiday) {
+    const { c, page, errors } = await open({ at: `${holiday}T17:00:00Z` });
     const chip = page.locator('[data-hpd-smoke="fc-asp-chip"]');
     await chip.waitFor({ timeout: 20000 });
     assert.match(await chip.innerText(), /No ASP/);
     await chip.click();
-    await page.waitForFunction(() => /suspended \(Election Day\)/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
+    await page.waitForFunction((name) => (document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").includes(`suspended (${name})`), ASP_2026[holiday], { timeout: 15000 });
     assert.deepEqual(errors, []);
     await c.close();
   }
@@ -58,7 +62,7 @@ try {
     assert.deepEqual(errors, []);
     await c.close();
   }
-  console.log("PASS ASP chip + drive time: Election Day shows 🅿️ No ASP (tap: suspended, Election Day), a normal Wednesday none; the Next pill says 🚗 N min from the phone's location");
+  console.log(`PASS ASP chip + drive time: ${holiday ? `${ASP_2026[holiday]} (${holiday}) shows 🅿️ No ASP (tap: suspended, the holiday named)` : "no holiday left in the 2026 calendar (chip part skipped)"}, a normal Wednesday none; the Next pill says 🚗 N min from the phone's location`);
 } finally {
   await browser.close();
 }

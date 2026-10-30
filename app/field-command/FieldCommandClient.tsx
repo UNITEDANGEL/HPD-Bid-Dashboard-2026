@@ -494,6 +494,21 @@ function todayRouteIds(): string[] {
   }
 }
 
+// Put a job on Today's route (30 Oct, "go anyway" after 3 tries): added at the end of today's saved stops, or a new
+// route for today (8 AM to 5 PM, 45 minutes a stop) when there's none. The route panel reads it when it opens.
+function addToTodayRoute(id: string) {
+  try {
+    const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
+    const today = saved?.settings?.date === nyToday();
+    const settings = today ? saved.settings : { date: nyToday(), start: "08:00", end: "17:00", minutes: 45, borough: "ALL" };
+    const ids = today && Array.isArray(saved.ids) ? saved.ids.filter((x: unknown) => typeof x === "string" && x !== id) : [];
+    localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings, ids: [...ids, id], ...(today && saved.origin ? { origin: saved.origin } : {}) }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function wazeHref(job: JobRecord) {
   const ll = jobLatLng(job);
   if (ll) return `https://waze.com/ul?ll=${ll.lat},${ll.lng}&navigate=yes`;
@@ -1518,6 +1533,7 @@ export default function FieldCommandClient() {
   const [callAsk, setCallAsk] = useState<string>("");
   const [contactAll, setContactAll] = useState(false);
   const [contactCopied, setContactCopied] = useState("");
+  const [routeAdded, setRouteAdded] = useState("");
   // 🚪 Arrived (26 Oct): a ready "we're outside" text to the tenant, one tap away (Messages; you press Send).
   const offerOutside = (job: JobRecord) => {
     const t = tenantInfo(job);
@@ -5221,6 +5237,17 @@ export default function FieldCommandClient() {
                         <button type="button" className="is-yes" data-hpd-smoke="jc-contact-talked" onClick={() => callLog("talked")}>Talked</button>
                       </div>
                     ) : null}
+                    {/* 📍 3 tries over 2+ days and no answer (30 Oct): go anyway for the 1st access attempt. */}
+                    {cs.goAnyway && !activeAppointment(selectedJob) && !FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] ? (() => {
+                      const onRoute = routeAdded === id || todayRouteIds().includes(id);
+                      return (
+                        <div className="jc-contact-go" data-hpd-smoke="jc-contact-go">
+                          <p>📍 {tries} tries since {when(cs.firstTryAt).split(",").slice(0, 2).join(",")} and no answer: go anyway for the 1st access attempt. No Access needs 2 visits 72 hours apart.</p>
+                          {onRoute ? <span className="jc-contact-go-done" data-hpd-smoke="jc-contact-go-done">✅ On Today&apos;s route</span>
+                            : <button type="button" data-hpd-smoke="jc-contact-go-add" onClick={() => { if (addToTodayRoute(id)) setRouteAdded(id); }}>➕ Add to Today&apos;s route</button>}
+                        </div>
+                      );
+                    })() : null}
                     {/* Reached -> book the visit; booked -> when (29 Oct: text -> call -> reached -> appointment, all in one box). */}
                     {(() => {
                       const appt = activeAppointment(selectedJob);

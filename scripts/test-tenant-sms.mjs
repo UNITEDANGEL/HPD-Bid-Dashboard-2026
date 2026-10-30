@@ -100,5 +100,12 @@ assert.ok(failed.ER05729.AutoTextTried && /21610/.test(failed.ER05729.AutoTextEr
   assert.match(recLines.at(-1), /New York time/);
   assert.ok(!/\d{3}\D?\d{3}\D?\d{4}/.test(rec), "no phone numbers");
   assert.match(tenantContactRecord({ omo: "ER05729", address: "", log: [] }), /No contact recorded yet/);
+  // 📍 Go anyway (30 Oct): 3 tries over 2+ days, not reached -> yes; reached, 2 days not passed, or a public area -> no.
+  const tries3 = { FieldVisitHistory: job.FieldVisitHistory.slice(0, 3) };
+  assert.equal(tenantContactState(tries3, false, now).goAnyway, false, "first try 11.5 hours ago");
+  assert.equal(tenantContactState(tries3, false, now + 2 * 86400000).goAnyway, true, "3 tries, 2 days on");
+  assert.equal(tenantContactState(tries3, true, now + 2 * 86400000).goAnyway, false, "public area");
+  assert.equal(tenantContactState(job, false, now + 2 * 86400000).goAnyway, false, "reached");
+  assert.equal(tenantContactState({ FieldVisitHistory: tries3.FieldVisitHistory.slice(0, 2) }, false, now + 5 * 86400000).goAnyway, false, "2 tries");
 }
 console.log("PASS text service: US numbers only, Twilio form and auth, forged replies refused, inbox keeps replies; award text once in working hours with the tenant's name, address, apartment and the work; STOP / errors remembered; AUTO_TENANT_TEXT=off or the app's Autopilot switch stops it; today's calls / texts and reached today");
