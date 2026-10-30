@@ -129,6 +129,11 @@ try {
   assert.equal(shared.title, `Tenant contact record · ${JOB}`);
   assert.ok(shared.text.startsWith(`Tenant contact record, HPD work order ${JOB}, `), shared.text);
   assert.ok(shared.text.indexOf("Called the tenant: no answer") < shared.text.indexOf("Texted the tenant the job summary"), "oldest first");
+  // 📝 A quick "On the way" text is logged as that, not as the job summary (30 Oct).
+  await box.locator('[data-hpd-smoke="jc-contact-text"]').click();
+  await page.locator('[data-hpd-smoke="jc-tenant-quick-btn"]', { hasText: "On the way" }).click();
+  await page.locator('[data-hpd-smoke="jc-tenant-open-sms"]').click();
+  await page.waitForFunction(() => /Texted the tenant: on the way/.test(document.querySelector('[data-hpd-smoke="jc-tenant-history"] li')?.textContent || ""), null, { timeout: 10000 });
 
   // Every line went to the status server (other phones, and kept for good).
   // (The outbox goes out a moment after each change.)

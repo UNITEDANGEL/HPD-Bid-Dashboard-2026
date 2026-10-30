@@ -107,5 +107,20 @@ assert.ok(failed.ER05729.AutoTextTried && /21610/.test(failed.ER05729.AutoTextEr
   assert.equal(tenantContactState(tries3, true, now + 2 * 86400000).goAnyway, false, "public area");
   assert.equal(tenantContactState(job, false, now + 2 * 86400000).goAnyway, false, "reached");
   assert.equal(tenantContactState({ FieldVisitHistory: tries3.FieldVisitHistory.slice(0, 2) }, false, now + 5 * 86400000).goAnyway, false, "2 tries");
+  // 📝 Each text logged as what it was (30 Oct), no names or phone numbers.
+  const { tenantTextLogNote, tenantTextDraft } = await loadLib("tenant-text");
+  const words = "Trace & repair leak (repair), Plumbing";
+  const me = "this is Jot from United Angel Construction";
+  const kinds = [
+    [tenantTextDraft({ name: "ANGIE SMITH", address: "1207 1 AVENUE, 10065", apt: "4B", job: words, omo: "EQ15239" }), `Texted the tenant the job summary: ${words}`],
+    [`Hi Angie, ${me}. We are on the way to 1207 1 AVENUE for the HPD repair. See you soon.`, "Texted the tenant: on the way"],
+    [`Hi Angie, ${me}. We are running about 15 minutes late to 1207 1 AVENUE. Sorry for the wait.`, "Texted the tenant: running late"],
+    [`Hi Angie, ${me}. Can we come to 1207 1 AVENUE tomorrow for the HPD repair? Please reply with a good time.`, "Texted the tenant: asked about coming tomorrow"],
+    [`Hi Angie, ${me}. Please confirm our appointment at 1207 1 AVENUE. Reply YES to confirm or tell us a better time.`, "Texted the tenant: asked to confirm the appointment"],
+    [`Hi Angie, ${me}. We are outside 1207 1 AVENUE for the HPD repair. Please let us in.`, "Texted the tenant: we're outside, please let us in"],
+    ["Angie, call me back at 718 555 1234", "Texted the tenant a message in your own words"],
+    ["", `Texted the tenant the job summary: ${words}`],
+  ];
+  for (const [text, note] of kinds) assert.equal(tenantTextLogNote(text, words), note, text);
 }
 console.log("PASS text service: US numbers only, Twilio form and auth, forged replies refused, inbox keeps replies; award text once in working hours with the tenant's name, address, apartment and the work; STOP / errors remembered; AUTO_TENANT_TEXT=off or the app's Autopilot switch stops it; today's calls / texts and reached today");

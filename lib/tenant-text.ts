@@ -86,3 +86,18 @@ export function tenantContactRecord({ omo, address, log, company = "United Angel
   const where = String(address || "").replace(/,\s*\d{5}$/, "");
   return [`Tenant contact record, HPD work order ${omo}${where ? `, ${where}` : ""} (${company}):`, ...(lines.length ? lines : ["- No contact recorded yet."]), "Times are New York time, as logged in HPD Field when each call or text was made."].join("\n");
 }
+
+// 📝 What a text was, for the job's contact log (30 Oct: the log is "the truth", so an "on the way" text isn't written as
+// the job summary). The kind of message only: the tenant's name, phone and a message in your own words stay off the
+// status server.
+export function tenantTextLogNote(text: string, jobWords: string) {
+  const t = String(text || "");
+  if (/\bThe work:|\bwork order\b/i.test(t) || (jobWords && t.includes(jobWords.slice(0, 24))) || !t.trim()) return `Texted the tenant the job summary: ${jobWords}`;
+  if (/\bon the way\b|\bon my way\b/i.test(t)) return "Texted the tenant: on the way";
+  if (/\brunning (about )?\d*\s*(minutes? )?late\b|\brunning late\b/i.test(t)) return "Texted the tenant: running late";
+  if (/\b(outside|downstairs|at the door|in front)\b/i.test(t)) return "Texted the tenant: we're outside, please let us in";
+  if (/\bconfirm\b/i.test(t)) return "Texted the tenant: asked to confirm the appointment";
+  if (/\btomorrow\b/i.test(t)) return "Texted the tenant: asked about coming tomorrow";
+  if (/\b(appointment|reminder)\b/i.test(t)) return "Texted the tenant about the appointment";
+  return "Texted the tenant a message in your own words";
+}

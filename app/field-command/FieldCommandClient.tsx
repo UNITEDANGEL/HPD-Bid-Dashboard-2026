@@ -67,7 +67,7 @@ import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wet
 import { aspAnswer, aspOff } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
 import BuildingFacts from "./BuildingFacts";
-import { smsHref, tenantContactRecord, tenantContactState, tenantJobSummary, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
+import { smsHref, tenantContactRecord, tenantContactState, tenantJobSummary, tenantStep, tenantTextDraft, tenantTextLogNote } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
@@ -3197,9 +3197,10 @@ export default function FieldCommandClient() {
   function needsReminder(job: JobRecord, a: Appointment | null): a is Appointment {
     return Boolean(a && appointmentTiming(a).days === 1 && tenantInfo(job).phone && value(job, ["ApptReminderSentFor"]) !== a.date && !value(job, ["FieldArrivedAt"]));
   }
-  function markTenantTexted(job: JobRecord) {
+  // text: what went (logged as its kind: job summary, on the way, running late, ...; 30 Oct).
+  function markTenantTexted(job: JobRecord, text = "") {
     const id = jobId(job);
-    const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, `Texted the tenant the job summary: ${tenantJobWords(job)}`, null) };
+    const patch = { TenantTextedAt: new Date().toISOString(), TenantRepliedAt: "", FieldVisitHistory: visitHistoryWith(job, tenantTextLogNote(text, tenantJobWords(job)), null) };
     try { writeSharedWorkflowPatch(id, patch); } catch {}
     mergeWorkflowPatchIntoScreen(id, patch);
     // Close the text box that was open when it went (not one opened in the meantime).
@@ -3236,7 +3237,7 @@ export default function FieldCommandClient() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.reason || d.error || `HTTP ${r.status}`);
       if (confirm) { const id = jobId(job); const patch = { TenantConfirmedAt: new Date().toISOString(), FieldVisitHistory: visitHistoryWith(job, "Texted the tenant the appointment", null) }; try { writeSharedWorkflowPatch(id, patch); } catch {} mergeWorkflowPatchIntoScreen(id, patch); }
-      else markTenantTexted(job);
+      else markTenantTexted(job, text);
       return { sent: true, message: `✓ Sent to ${d.to}. Their answer comes back here.` };
     } catch (e) {
       return { sent: false, message: `Not sent: ${e instanceof Error ? e.message : "error"}` };
@@ -5751,7 +5752,7 @@ export default function FieldCommandClient() {
                               <textarea rows={6} data-hpd-smoke="jc-tenant-draft-text" value={tenantText.text} onChange={(e) => setTenantText({ ...tenantText, text: e.target.value })} />
                               <div>
                                 {smsReady ? <button type="button" className={`is-send${smsSend?.id === jobId(selectedJob) && smsSend.armed ? " is-armed" : ""}`} data-hpd-smoke="jc-tenant-send-sms" disabled={smsSend?.id === jobId(selectedJob) && smsSend.status === "Sending…"} onClick={() => void sendTenantSms(selectedJob, tenantText.text)}>{smsSend?.id === jobId(selectedJob) && smsSend.armed ? "✅ Tap again: send the text" : "📤 Send it now"}</button> : null}
-                                <a className={smsReady ? undefined : "is-send"} data-hpd-smoke="jc-tenant-open-sms" href={smsHref(tenant.phone, tenantText.text)} onClick={() => markTenantTexted(selectedJob)}>📱 {smsReady ? "From my phone" : "Open in Messages"}</a>
+                                <a className={smsReady ? undefined : "is-send"} data-hpd-smoke="jc-tenant-open-sms" href={smsHref(tenant.phone, tenantText.text)} onClick={() => markTenantTexted(selectedJob, tenantText.text)}>📱 {smsReady ? "From my phone" : "Open in Messages"}</a>
                                 <button type="button" onClick={() => setTenantText(null)}>Cancel</button>
                               </div>
                               {smsSend?.id === jobId(selectedJob) && smsSend.status ? <p className="jc-tenant-sms-status" role="status" data-hpd-smoke="jc-tenant-sms-status">{smsSend.status}</p> : null}

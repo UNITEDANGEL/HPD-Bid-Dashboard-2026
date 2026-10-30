@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "The log says what each text was",
+      "items": [
+        "🛠 Fixed: every text was written on the job as \"Texted the tenant the job summary\", even an \"On the way\" or \"15 min late\" text.",
+        "📝 Now the job card records what it was: the job summary, on the way, running late, we're outside, asked to confirm, asked about tomorrow, or a message in your own words.",
+        "📋 The shared contact record shows the same, so it's the truth. Names and phone numbers are still never saved on the log."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Tenant status on the route",
       "items": [
         "🗺 Each stop on Today's route now shows the tenant: ✅ reached, 🟡 not reached (an access attempt), 🔴 not contacted yet (call first), or 🏢 public area.",
