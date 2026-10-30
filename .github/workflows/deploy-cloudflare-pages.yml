@@ -249,6 +249,8 @@ jobs:
             scripts/test-browser-next-chip.mjs \
             scripts/test-browser-call-ask.mjs \
             scripts/test-browser-tenant-contact.mjs \
+            scripts/test-browser-affidavit-dates.mjs \
+            scripts/test-browser-claude-live.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

@@ -1875,6 +1875,14 @@ export default function PaperworkPage() {
     const workStart = displayDate(activeForm.workStart || activeForm.workComplete || activeForm.fieldDate);
     const workComplete = displayDate(activeForm.workComplete || activeForm.fieldDate);
     const invoiceDate = useWorkTemplate ? workComplete || displayDate(fieldDate) : secondAttempt;
+    // Refused access / done by others (owner, 30 Oct: "I'm closing a refused access today but it was in the past; I need
+    // the past date, and the past invoice"): the invoice starts on the refusal date you picked, or on an earlier real
+    // 1st attempt; never on a later day (a default of today made HPD's "start after completed" stop the package).
+    const noWorkStart = (() => {
+      if (activeOutcome === "no_access") return firstAttempt;
+      const first = parseFormDate(activeForm.firstAttempt), second = parseFormDate(secondAttempt);
+      return activeForm.firstAttempt && first && second && first.getTime() <= second.getTime() ? firstAttempt : secondAttempt;
+    })();
     const signer = includeSignature ? activeForm.signer || DEFAULT_PACKAGE_SIGNER : "";
     const locationText = upper(activeForm.location);
     const locationFontSize = pdfLocationFontSize(locationText);
@@ -2176,7 +2184,7 @@ export default function PaperworkPage() {
 
         // Every outcome: HPD rejects an invoice without dates. Work started = the first day you attempted
         // the job, work completed = the last day (the 2nd attempt / refusal / verified date).
-        setInvoiceText("START DATE", activeOutcome === "no_access" ? firstAttempt : activeForm.firstAttempt ? firstAttempt : secondAttempt);
+        setInvoiceText("START DATE", noWorkStart);
         setInvoiceText("COMPLETE DATE", secondAttempt);
         setInvoiceText("Work Description", activeForm.description || noWorkReason, 12);
       }
@@ -2257,7 +2265,7 @@ export default function PaperworkPage() {
       }
 
       // Invoice dates: work packages use the work dates; no-work packages use the attempt dates.
-      const invoiceStart = useWorkTemplate ? workStart : activeOutcome === "no_access" ? firstAttempt : secondAttempt;
+      const invoiceStart = useWorkTemplate ? workStart : noWorkStart;
       const invoiceComplete = useWorkTemplate ? workComplete : secondAttempt;
 
       const pdfDoc = await PDFDocument.create();
@@ -5224,7 +5232,7 @@ export default function PaperworkPage() {
           {locked ? (
             <div className="paperwork-locked" data-hpd-smoke="paperwork-locked">
               <strong>🔒 Paperwork sent to HPD{lock.approvedAt && lock.approvedAt !== "approved" ? ` on ${new Date(lock.approvedAt).toLocaleDateString("en-US")}` : ""}</strong>
-              <span>Locked: this is the version HPD has. The outcome and dates can&apos;t be changed by accident.</span>
+              <span>Locked: this is the version HPD has. The outcome and dates can&apos;t be changed by accident. To change a date, tap Revise paperwork below: every date opens up again.</span>
               <dl>
                 <div><dt>Job</dt><dd>{selectedJobId} · {form.address}</dd></div>
                 <div><dt>Outcome sent</dt><dd>{form.affidavitType || lock.outcome || "-"}</dd></div>
@@ -5363,34 +5371,28 @@ export default function PaperworkPage() {
                 Their Telephone (7b)
                 <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
               </label>
-              <label className="paperwork-field">
-                Date Refused
-                <input
-                  type="date"
-                  data-hpd-smoke="paperwork-refused-date"
-                  value={dateInputValue(form.secondAttempt)}
-                  onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
-                />
-                <small>Change it to the real day you were refused.</small>
-              </label>
             </div>
           ) : null}
 
-          {outcome === "completed_by_others" ? (
-            <div className="refused-access-required ready" data-hpd-smoke="paperwork-by-others-card">
+
+          {/* The refusal date / the day the work was found done by others, right on the card (owner, 30 Oct: "I should be
+              able to change any date on the refused access ... you locked me out of the refused access date"). Before,
+              it was only a text box under More details. Prints as the affidavit's date and the invoice dates. */}
+          {outcome === "refused_access" || outcome === "completed_by_others" ? (
+            <div className="refused-access-required ready" data-hpd-smoke="paperwork-date-card">
               <div>
-                <span>Done By Others</span>
-                <strong>Date you found the work done</strong>
+                <span>{outcome === "refused_access" ? "Date of the refusal" : "Date found done by others"}</span>
+                <strong>{form.secondAttempt || form.fieldDate ? displayDate(form.secondAttempt || form.fieldDate) : "Pick the date"}</strong>
+                <small>Change it if it isn&apos;t the day you were there. It prints on the affidavit and the invoice.</small>
               </div>
               <label className="paperwork-field">
-                Date Found Done
+                {outcome === "refused_access" ? "Date refused" : "Date found done"}
                 <input
                   type="date"
-                  data-hpd-smoke="paperwork-by-others-date"
-                  value={dateInputValue(form.secondAttempt)}
+                  data-hpd-smoke={outcome === "refused_access" ? "paperwork-refused-date" : "paperwork-by-others-date"}
+                  value={dateInputValue(form.secondAttempt || form.fieldDate)}
                   onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
                 />
-                <small>Change it to the real day you found it done.</small>
               </label>
             </div>
           ) : null}

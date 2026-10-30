@@ -3289,6 +3289,26 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 /* The focus chip: the one thing to look at first. */
 .fc-focus-chip { position: absolute; z-index: 1400; top: calc(max(12px, env(safe-area-inset-top)) + 136px); left: 12px; max-width: calc(100% - 100px); display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 20px; border: 2px solid #f97316; background: #0b1220ee; color: #fff; font: 800 14px system-ui, sans-serif; box-shadow: 0 6px 16px #0007; white-space: nowrap; overflow: hidden; }
 .fc-focus-chip.is-late { border-color: #ef4444; background: #3b0a0aee; }
+/* 🤖 Claude live (30 Oct): the open request's progress, under the top chips, clear of Map / Locate. */
+.fc-claude-live { position: absolute; z-index: 1450; top: calc(max(12px, env(safe-area-inset-top)) + 184px); left: 12px; width: min(420px, calc(100% - 96px)); display: flex; align-items: flex-start; border-radius: 16px; border: 2px solid #8b5cf6; background: #140b2bf2; color: #fff; box-shadow: 0 8px 22px #0008; overflow: hidden; }
+.fc-claude-live.is-working { border-color: #22c55e; }
+.fc-claude-live.is-done { border-color: #16a34a; background: #052e16f2; }
+.fc-claude-live.is-ask { border-color: #f59e0b; }
+.fc-claude-live-main { flex: 1; min-width: 0; display: grid; gap: 4px; padding: 9px 4px 9px 12px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.fc-claude-live-main b { display: flex; align-items: center; gap: 6px; font: 900 14px/1.2 system-ui, sans-serif; }
+.fc-claude-live-dot { width: 9px; height: 9px; border-radius: 50%; background: #a78bfa; flex: none; }
+.fc-claude-live.is-working .fc-claude-live-dot { background: #22c55e; animation: fc-claude-pulse 1.4s ease-in-out infinite; }
+.fc-claude-live.is-done .fc-claude-live-dot { background: #22c55e; }
+.fc-claude-live.is-ask .fc-claude-live-dot { background: #f59e0b; }
+@keyframes fc-claude-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } }
+.fc-claude-live-req { font: 700 12.5px/1.3 system-ui, sans-serif; color: #ddd6fe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-claude-live-steps { display: grid; gap: 3px; font: 800 12.5px/1.3 system-ui, sans-serif; color: #e9d5ff; }
+.fc-claude-live-bar { display: block; height: 6px; border-radius: 3px; background: #ffffff22; overflow: hidden; }
+.fc-claude-live-bar > span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8b5cf6, #22c55e); transition: width 0.6s ease; }
+.fc-claude-live-note { font: 600 12.5px/1.35 system-ui, sans-serif; color: #f1f5f9; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fc-claude-live-note small { color: #a5b4fc; font-weight: 700; }
+.fc-claude-live-x { flex: none; width: 36px; height: 36px; margin: 4px 4px 0 0; border: 0; border-radius: 50%; background: transparent; color: #c4b5fd; font: 800 20px/1 system-ui, sans-serif; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .fc-claude-live.is-working .fc-claude-live-dot { animation: none; } }
 .fc-focus-chip small { color: #fca5a5; font-weight: 700; }
 .fc-focus-chip em { font-style: normal; color: #fbbf24; }
 @media (prefers-reduced-motion: reduce) { .fc-label-marker.is-glow-top .fc-pin { animation: none !important; } }

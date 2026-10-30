@@ -1369,6 +1369,7 @@ export default function FieldCommandClient() {
   type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string };
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
   const [repliesSeen, setRepliesSeen] = useState("");
+  const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
   const loadChangeThreads = async () => {
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
@@ -2117,9 +2118,17 @@ export default function FieldCommandClient() {
   };
   // 🤖 Claude's progress on your requests comes to you (27 Oct, "keep upgrading"): the list is looked at every 2 minutes
   // while the app is open (one cached read on the status server), and a new step or note pops up like any alert.
+  // While a request is open (30 Oct, "live request updates, so I know what's going on in the background"): every 20 s.
+  const claudeLiveRef = useRef(false);
   useEffect(() => {
-    const look = () => { if (document.visibilityState === "visible") void loadChangeThreads(); };
-    const t = window.setInterval(look, 120000);
+    let last = Date.now();
+    const look = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!claudeLiveRef.current && Date.now() - last < 115000) return;
+      last = Date.now();
+      void loadChangeThreads();
+    };
+    const t = window.setInterval(look, 20000);
     document.addEventListener("visibilitychange", look);
     return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", look); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4374,7 +4383,7 @@ export default function FieldCommandClient() {
       const text = cmd.text.replace(/^\w/, (c) => c.toUpperCase());
       showPanel({ heard, reply: `Sending to Claude: "${text}"…` });
       void sendChangeRequest(`(said to the helper) ${text}`).then((ok) => {
-        showPanel({ heard, reply: ok ? `📥 Sent to Claude for the next upgrade: "${text}". You'll see the progress under What's new → Your requests.` : `Saved on this phone; it goes to Claude when the internet is back: "${text}".`, actions: [{ label: "📋 My requests", href: "#requests" }] });
+        showPanel({ heard, reply: ok ? `📥 Sent to Claude for the next upgrade: "${text}". Watch it live on the map: the 🤖 Claude card shows each step as it happens.` : `Saved on this phone; it goes to Claude when the internet is back: "${text}".`, actions: [{ label: "📋 My requests", href: "#requests" }] });
       });
       return;
     }
@@ -6456,6 +6465,39 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {/* 🤖 Claude live (owner, 30 Oct: "when I'm talking to AI and it's sending a request to Claude, I should be able to see
+          the progress of the request, what's going on all the time, live request updates"): the newest open request on
+          the map with its status, steps, the step being done now and the last note; checked every 20 s while open. */}
+      {(() => {
+        const activity = (t: ChangeThread) => [t.at, t.workingAt, ...t.updates.map((u) => u.at)].filter(Boolean).sort().slice(-1)[0] || "";
+        const live = (changeThreads || []).filter((t) => (t.status !== "Done" ? Date.now() - Date.parse(activity(t)) < 7 * 86400000 : Date.now() - Date.parse(activity(t)) < 15 * 60000))
+          .sort((a, b) => activity(b).localeCompare(activity(a)));
+        claudeLiveRef.current = live.some((t) => t.status !== "Done" && t.status !== "Waiting for you");
+        const t = live[0];
+        if (!t || claudeLiveHidden === `${t.id}|${activity(t)}` || selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
+        const done = t.steps.filter((s) => s.done).length;
+        const nowStep = t.steps.find((s) => !s.done);
+        const working = t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000;
+        const lastNote = t.updates[t.updates.length - 1];
+        const ago = (iso: string) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+        const state = t.status === "Done" ? "done" : t.status === "Waiting for you" ? "ask" : working ? "working" : "queued";
+        return (
+          <div className={`fc-claude-live is-${state}`} data-hpd-smoke="fc-claude-live" role="status" aria-live="polite">
+            <button type="button" className="fc-claude-live-main" onClick={() => goTo("requests", "")}>
+              <b><i className="fc-claude-live-dot" aria-hidden="true" />🤖 Claude · {state === "working" ? "working on it now" : state === "done" ? "✅ done" : state === "ask" ? "❓ needs your answer" : "got it, starting soon"}</b>
+              <span className="fc-claude-live-req">“{t.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 70)}{t.text.length > 70 ? "…" : ""}”</span>
+              {t.steps.length ? (
+                <span className="fc-claude-live-steps" data-hpd-smoke="fc-claude-live-steps">
+                  <span className="fc-claude-live-bar" aria-hidden="true"><span style={{ width: `${Math.round((done / t.steps.length) * 100)}%` }} /></span>
+                  {done}/{t.steps.length}{nowStep ? ` · Now: ${nowStep.text}` : ""}
+                </span>
+              ) : null}
+              {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. Claude picks it up in the next session.</span>}
+            </button>
+            <button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>
+          </div>
+        );
+      })()}
       {(() => {
         // The one thing to look at first (overdue / under 6 h), instead of the map flashing.
         const top = [...boardUrgent].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
