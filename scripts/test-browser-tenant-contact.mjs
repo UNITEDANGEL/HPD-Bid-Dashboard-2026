@@ -21,6 +21,10 @@ try {
   });
   await c.addInitScript(() => {
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { setTimeout(() => u.onend?.(), 30); };
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() { setTimeout(() => { const text = window.__hear || ""; if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 100); }
+      stop() { this.onend?.(); }
+    };
     // tel: / sms: go to the phone's apps; here they're stopped so the page stays.
     document.addEventListener("click", (e) => { const a = e.target.closest?.('a[href^="tel:"], a[href^="sms:"]'); if (a) e.preventDefault(); }, true);
   });
@@ -158,8 +162,14 @@ try {
   assert.match(await page.locator('[data-hpd-smoke="jc-contact-status"]').innerText(), /🔴|🟡/, "the next one isn't reached yet");
   assert.equal(await page.locator('[data-hpd-smoke="jc-contact-next"]').count(), 0, "no Next until this one is logged");
   if (shots) await page.screenshot({ path: `${shots}/contact-4-next.png` });
+  // By voice (30 Oct): "next tenant" opens the one after that.
+  await page.evaluate(() => { window.__hear = "next tenant"; });
+  await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
+  await page.waitForFunction(() => /Next tenant: .+, \d+ left\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  await page.waitForFunction((n) => { const t = document.querySelector("#fc-job-card")?.textContent || ""; return t && !t.includes(n); }, NEXT, { timeout: 10000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-contact-status"]').innerText(), /🔴|🟡/, "by voice: another tenant not reached yet");
   assert.deepEqual(errors, []);
-  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling and ➡️ Next tenant to call`);
+  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling, ➡️ Next tenant to call and \"next tenant\" by voice`);
   await c.close();
 } finally {
   await browser.close();

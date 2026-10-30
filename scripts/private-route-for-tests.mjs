@@ -26,11 +26,16 @@ export async function markNewsSeen(context) {
   // Bid invitations that are already due (the real list can be all morning bids by the afternoon) move to tomorrow, so
   // the bid screens have open invitations at any hour. A test that routes upcoming_bids.json itself wins (routed later).
   const tomorrow = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + 86400000));
+  // (A short test can close the browser while this list is still loading: that's not a failure.)
   await context.route(/\/data\/upcoming_bids\.json/, async (route) => {
-    const res = await route.fetch();
-    const data = await res.json().catch(() => null);
-    if (!data || !Array.isArray(data.bids)) return route.fulfill({ response: res });
-    return route.fulfill({ response: res, json: { ...data, bids: data.bids.map((b) => (String(b.bidDue || "") < tomorrow ? { ...b, bidDue: tomorrow } : b)) } });
+    try {
+      const res = await route.fetch();
+      const data = await res.json().catch(() => null);
+      if (!data || !Array.isArray(data.bids)) return await route.fulfill({ response: res });
+      return await route.fulfill({ response: res, json: { ...data, bids: data.bids.map((b) => (String(b.bidDue || "") < tomorrow ? { ...b, bidDue: tomorrow } : b)) } });
+    } catch (e) {
+      if (!/closed/i.test(String(e?.message || e))) throw e;
+    }
   });
   let news = [];
   try { news = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/data/whats-new.json"), "utf8")).versions.flatMap((v) => v.items); } catch { /* none */ }

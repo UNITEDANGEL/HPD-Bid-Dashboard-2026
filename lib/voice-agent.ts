@@ -18,6 +18,7 @@ export type AgentCommand =
   | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "whats-next" }
+  | { intent: "next-tenant" }
   | { intent: "weather"; when: "today" | "tomorrow" }
   | { intent: "traffic" }
   | { intent: "asp"; when: "today" | "tomorrow" }
@@ -103,6 +104,9 @@ export function parseCommand(heard: string): AgentCommand {
       return { intent: "called", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), result, said: rest.replace(/^(they|she|he) said\s*/i, "").replace(/^(talked|spoke)( to (them|her|him))?$/i, "") };
     }
   }
+  // The calling round (30 Oct): "next tenant", "call the next tenant", "start calling", "who's next to call" opens the next
+  // tenant not reached yet (the same order as ▶ Start calling and ➡️ Next tenant on the card).
+  if (/^(ok |okay |so )?(go to |open |call |take me to )?(the )?next (tenant|call)( to call)?( please)?$|^start calling( tenants?)?$|^who'?s next to call$|^(who|which tenant) (do i|should i) call next$/.test(t)) return { intent: "next-tenant" };
   // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // Weather and traffic (owner, 27 Oct: "I want the AI smarter: weather, traffic"): the forecast in plain words with what

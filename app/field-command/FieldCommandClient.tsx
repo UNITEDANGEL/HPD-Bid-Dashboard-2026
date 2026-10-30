@@ -4295,6 +4295,17 @@ export default function FieldCommandClient() {
       answer(`Noted on ${id}: "${cmd.said || "talked to the tenant"}".`);
       return;
     }
+    if (cmd.intent === "next-tenant") {
+      // The calling round by voice (30 Oct): the next tenant not reached yet opens; Call / First text are on the card.
+      const left = tenantsToCall(jobRows, selectedJob ? jobId(selectedJob) : "");
+      const nextJob = left[0] && jobs.find((j) => jobId(j) === left[0].id);
+      if (!nextJob) { answer("Nobody left to call right now: every tenant with a phone is reached, or was tried in the last 3 hours."); return; }
+      setCallAsk(""); setContactAll(false);
+      openIssueJob(nextJob, true);
+      const tone = left[0].contact?.tone;
+      answer(`Next tenant: ${left[0].address.replace(/,\s*\d{5}$/, "")}, ${left.length} left. ${tone === "none" ? "Not contacted yet: text the job summary first, then call." : "Not reached yet: tap Call."}`);
+      return;
+    }
     if (cmd.intent === "tenants-waiting") {
       // Tenants texted with no answer (23 Oct): oldest text first, with Call buttons; "the first one" then works on them.
       const rows = jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ j, st: tenantStep(j as Record<string, unknown>) }))

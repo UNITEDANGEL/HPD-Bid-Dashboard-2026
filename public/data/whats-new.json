@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "\"Next tenant\" by voice",
+      "items": [
+        "🎤 Say \"next tenant\" (or \"start calling\", \"call the next tenant\", \"who's next to call\") and the AI opens the next tenant who hasn't been reached yet.",
+        "🗣 It tells you the address and how many are left, and what to do: text the job summary first, or tap Call.",
+        "📞 It's the same order as Start calling and the Next tenant button, so the whole calling round works hands-free."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Start calling",
       "items": [
         "▶ In Jobs, tap \"📞 Tenant not reached yet\" and a green \"Start calling\" button shows up next to it. It opens the first tenant to call.",
