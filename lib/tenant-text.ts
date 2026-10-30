@@ -52,13 +52,18 @@ export function tenantStep(job: Record<string, unknown>, now = Date.now()): Tena
 // ok = reached (talked, they replied, or an appointment), try = called / texted but not reached, none = nothing yet,
 // common = a public-area job with no tenant to reach.
 export type ContactEntry = { recordedAt?: string; outcome?: string | null; note?: string };
-export type ContactState = { tone: "none" | "try" | "ok" | "common"; tries: number; reachedAt: string; lastAt: string; log: ContactEntry[] };
-export function tenantContactState(job: Record<string, unknown>, commonArea = false): ContactState {
+export type ContactState = { tone: "none" | "try" | "ok" | "common"; tries: number; reachedAt: string; lastAt: string; log: ContactEntry[]; triesToday: number; reachedToday: boolean };
+const nyDay = (v: string | number | Date) => { const d = new Date(v); return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d); };
+export function tenantContactState(job: Record<string, unknown>, commonArea = false, now = Date.now()): ContactState {
   const log = (Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory as ContactEntry[] : [])
     .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || "")));
   const reached = [...log].reverse().find((v) => /^APPOINTMENT_/.test(String(v.outcome || "")) || /talked|replied/i.test(String(v.note || "")));
   const reachedAt = String(reached?.recordedAt || (job.TenantCallResult === "talked" ? job.TenantCalledAt || "" : "") || job.TenantRepliedAt || "");
   const tries = log.filter((v) => /^(Called|Texted) the tenant/.test(String(v.note || ""))).length;
   const lastAt = String(log[log.length - 1]?.recordedAt || "");
-  return { tone: reachedAt ? "ok" : commonArea ? "common" : tries ? "try" : "none", tries, reachedAt, lastAt, log };
+  // Today's calling round (30 Oct): calls / texts made today (a call that got through is saved as "Talked to the tenant") (New York day) and whether the tenant was reached today.
+  const today = nyDay(now);
+  const triesToday = log.filter((v) => /^(Called|Texted|Talked to) the tenant/.test(String(v.note || "")) && nyDay(String(v.recordedAt || "")) === today).length;
+  const reachedToday = !!reachedAt && nyDay(reachedAt) === today;
+  return { tone: reachedAt ? "ok" : commonArea ? "common" : tries ? "try" : "none", tries, reachedAt, lastAt, log, triesToday, reachedToday };
 }

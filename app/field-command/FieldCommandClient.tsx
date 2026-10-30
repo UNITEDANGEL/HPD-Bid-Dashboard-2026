@@ -2496,7 +2496,7 @@ export default function FieldCommandClient() {
       return { id, address: jobAddress(job), borough: String(jobBorough(job)), status: st.label, color: st.color, due: String(value(job, ["WorkCompletionDate", "MaturityDate"]) || ""), award: String(value(job, ["AwardDate"]) || ""), group,
         note: group === "waiting" ? `Paperwork sent ${sentAt} · waiting on HPD` : group === "closeout" ? `${FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome"])] || "Visit saved"} · package not sent` : second ? `2nd try ${second.due ? "due now" : `from ${second.dueLabel}`} · 1st try ${second.firstLabel}` : undefined,
         packageHref: group === "closeout" ? paperworkGenerateHref(id, value(job, ["FieldOutcome", "fieldOutcome"])) : undefined, due2nd: !!second?.due,
-        contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone, lastAt: cs.lastAt }; })() };
+        contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone, lastAt: cs.lastAt, triesToday: cs.triesToday, reachedToday: cs.reachedToday }; })() };
     });
   }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;

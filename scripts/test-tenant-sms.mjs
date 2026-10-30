@@ -74,4 +74,20 @@ const failing = async () => new Response(JSON.stringify({ code: 21610, message: 
 const failed = {};
 await autoTextAwards({ ...base, awards, records: {}, fetcher: failing, save: async (o, r) => { failed[o] = r; }, now: Date.parse("2026-10-23T15:00:00Z") });
 assert.ok(failed.ER05729.AutoTextTried && /21610/.test(failed.ER05729.AutoTextError), "a failure is remembered, not retried every run");
-console.log("PASS text service: US numbers only, Twilio form and auth, forged replies refused, inbox keeps replies; award text once in working hours with the tenant's name, address, apartment and the work; STOP / errors remembered; AUTO_TENANT_TEXT=off or the app's Autopilot switch stops it");
+// Today's calling round (30 Oct): calls / texts today in New York time, reached today; yesterday's don't count.
+{
+  const { tenantContactState } = await loadLib("tenant-text");
+  const now = Date.parse("2026-10-30T15:00:00Z"); // 11 AM New York
+  const job = { FieldVisitHistory: [
+    { recordedAt: "2026-10-30T03:30:00Z", note: "Called the tenant: no answer" }, // 10/29 11:30 PM New York: yesterday
+    { recordedAt: "2026-10-30T13:05:00Z", note: "Texted the tenant the job summary: Leak" },
+    { recordedAt: "2026-10-30T14:10:00Z", note: "Called the tenant: no answer" },
+  ] };
+  const a = tenantContactState(job, false, now);
+  assert.equal(a.tries, 3); assert.equal(a.triesToday, 2); assert.equal(a.reachedToday, false); assert.equal(a.tone, "try");
+  job.FieldVisitHistory.push({ recordedAt: "2026-10-30T14:40:00Z", note: "Talked to the tenant" });
+  const b = tenantContactState(job, false, now);
+  assert.equal(b.tone, "ok"); assert.equal(b.reachedToday, true); assert.equal(b.triesToday, 3, "the call that got through counts");
+  assert.equal(tenantContactState(job, false, now + 86400000).triesToday, 0, "tomorrow starts at zero");
+}
+console.log("PASS text service: US numbers only, Twilio form and auth, forged replies refused, inbox keeps replies; award text once in working hours with the tenant's name, address, apartment and the work; STOP / errors remembered; AUTO_TENANT_TEXT=off or the app's Autopilot switch stops it; today's calls / texts and reached today");

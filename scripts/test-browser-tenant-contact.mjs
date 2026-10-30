@@ -151,6 +151,11 @@ try {
     await page.locator("#fc-job-card .fc-appointment-editor").waitFor({ timeout: 10000 });
   } else assert.match(await page.locator('[data-hpd-smoke="jc-contact-appt"]').innerText(), /📅 Appointment /, "already booked: the box says when");
   assert.equal(await rowChip(), "✅ Tenant reached", "the list shows it too");
+  // Today's score (30 Oct): this test's 2 calls + 1 text today, this tenant reached.
+  const today = (await page.locator('[data-hpd-smoke="fc-jobs-today"]').innerText()).replace(/\s+/g, " ");
+  const m = /📊 Today: (\d+) calls \/ texts · (\d+) reached/.exec(today);
+  assert.ok(m && +m[1] >= 3 && +m[2] >= 1, today);
+  if (shots) await page.screenshot({ path: `${shots}/contact-5-today.png` });
   // ➡️ Next tenant to call (30 Oct): after logging this one, one tap opens the next tenant not reached yet.
   await openJob(JOB);
   const nextBtn = page.locator('[data-hpd-smoke="jc-contact-next"]');
@@ -169,7 +174,7 @@ try {
   await page.waitForFunction((n) => { const t = document.querySelector("#fc-job-card")?.textContent || ""; return t && !t.includes(n); }, NEXT, { timeout: 10000 });
   assert.match(await page.locator('[data-hpd-smoke="jc-contact-status"]').innerText(), /🔴|🟡/, "by voice: another tenant not reached yet");
   assert.deepEqual(errors, []);
-  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling, ➡️ Next tenant to call and \"next tenant\" by voice`);
+  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling, ➡️ Next tenant to call, \"next tenant\" by voice and today's score`);
   await c.close();
 } finally {
   await browser.close();

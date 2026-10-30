@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "Today's calling score",
+      "items": [
+        "📊 Jobs now shows how today is going: \"Today: 6 calls / texts · 2 reached\", right above the Tenant not reached yet button.",
+        "📞 Every call (answered or not) and every text from the app counts, by New York time. It starts at zero each morning."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "\"Next tenant\" by voice",
       "items": [
         "🎤 Say \"next tenant\" (or \"start calling\", \"call the next tenant\", \"who's next to call\") and the AI opens the next tenant who hasn't been reached yet.",

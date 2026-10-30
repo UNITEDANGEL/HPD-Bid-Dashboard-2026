@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 export type JobRow = { id: string; address: string; borough: string; status: string; color: string; due: string; award: string; group: "todo" | "closeout" | "secondtry" | "waiting"; note?: string; packageHref?: string; due2nd?: boolean;
   // The tenant (29 Oct): reached / tried / nothing yet / a public-area job.
-  contact?: { tone: "none" | "try" | "ok" | "common"; tries: number; phone: boolean; lastAt?: string } };
+  contact?: { tone: "none" | "try" | "ok" | "common"; tries: number; phone: boolean; lastAt?: string; triesToday?: number; reachedToday?: boolean } };
 type Tab = "todo" | "closeout" | "secondtry" | "waiting" | "all";
 
 // "1/15/26", "01/15/2026", "2026-01-15" -> a day number (NaN if unreadable).
@@ -65,12 +65,18 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
         {(() => {
           const n = rows.filter((r) => (tab === "all" || r.group === tab) && needsCall(r)).length;
           const first = toReach ? tenantsToCall(shown)[0] : undefined;
+          // Today's calling round (30 Oct): how many calls / texts went out today and how many tenants were reached.
+          const triedToday = rows.reduce((sum, r) => sum + (r.contact?.triesToday || 0), 0);
+          const reachedToday = rows.filter((r) => r.contact?.reachedToday).length;
           return n || toReach ? (
+            <>
+            {triedToday || reachedToday ? <p className="fc-jobs-today" data-hpd-smoke="fc-jobs-today">📊 Today: <b>{triedToday}</b> {triedToday === 1 ? "call or text" : "calls / texts"} · <b>{reachedToday}</b> reached</p> : null}
             <div className="fc-jobs-reachrow">
               <button type="button" className={`fc-jobs-reach${toReach ? " is-on" : ""}`} aria-pressed={toReach} data-hpd-smoke="fc-jobs-reach" onClick={() => setToReach((v) => !v)}>{toReach ? "✕ Show every job" : `📞 Tenant not reached yet: ${n}`}</button>
               {/* ▶ Start calling (30 Oct): opens the first tenant; ➡️ Next on the card goes on from there. */}
               {first ? <button type="button" className="fc-jobs-startcall" data-hpd-smoke="fc-jobs-startcall" data-omo={first.id} onClick={() => onOpen(first.id)}>▶ Start calling</button> : null}
             </div>
+            </>
           ) : null;
         })()}
         {!shown.length ? <p className="fc-follow-note" data-hpd-smoke="fc-jobs-empty">{q ? "No job matches." : "Nothing here. 🎉"}</p> : null}
