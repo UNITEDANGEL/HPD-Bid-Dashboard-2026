@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-30T17:27:39.931025+00:00",
+"generatedAt": "2026-10-30T17:39:40.272084+00:00",
 "since": "2026/10/16",
 "jobs": {
 "EN04541": [
@@ -21658,6 +21658,26 @@
 "via": "hpd-staff"
 }
 ],
+"ER07315": [
+{
+"date": "2026-10-30",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-ptdptunb.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER07980, OMO#ER07640, OMO#ER07315",
+"via": "hpd-staff"
+}
+],
+"ER07640": [
+{
+"date": "2026-10-30",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-ptdptunb.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER07980, OMO#ER07640, OMO#ER07315",
+"via": "hpd-staff"
+}
+],
 "ER07717": [
 {
 "date": "2026-10-29",
@@ -21675,6 +21695,16 @@
 "file": "ER07755_BID_5200_854-MYRTLE-AVENUE.pdf",
 "outcome": "",
 "subject": "Re: Bid - OMO ER07755 - 854 MYRTLE AVENUE - United Angel Construction Corp.",
+"via": "hpd-staff"
+}
+],
+"ER07980": [
+{
+"date": "2026-10-30",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-ptdptunb.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER07980, OMO#ER07640, OMO#ER07315",
 "via": "hpd-staff"
 }
 ]
