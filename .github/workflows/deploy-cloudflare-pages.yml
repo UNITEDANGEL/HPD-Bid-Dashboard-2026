@@ -264,6 +264,7 @@ jobs:
             scripts/test-browser-today.mjs \
             scripts/test-browser-followup.mjs \
             scripts/test-browser-paperwork-lock.mjs \
+            scripts/test-browser-paperwork-refused-date.mjs \
             scripts/test-browser-two-tap.mjs
 
       - name: Resolve Cloudflare production branch

@@ -5363,6 +5363,35 @@ export default function PaperworkPage() {
                 Their Telephone (7b)
                 <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
               </label>
+              <label className="paperwork-field">
+                Date Refused
+                <input
+                  type="date"
+                  data-hpd-smoke="paperwork-refused-date"
+                  value={dateInputValue(form.secondAttempt)}
+                  onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                />
+                <small>Change it to the real day you were refused.</small>
+              </label>
+            </div>
+          ) : null}
+
+          {outcome === "completed_by_others" ? (
+            <div className="refused-access-required ready" data-hpd-smoke="paperwork-by-others-card">
+              <div>
+                <span>Done By Others</span>
+                <strong>Date you found the work done</strong>
+              </div>
+              <label className="paperwork-field">
+                Date Found Done
+                <input
+                  type="date"
+                  data-hpd-smoke="paperwork-by-others-date"
+                  value={dateInputValue(form.secondAttempt)}
+                  onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                />
+                <small>Change it to the real day you found it done.</small>
+              </label>
             </div>
           ) : null}
 
