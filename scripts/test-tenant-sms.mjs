@@ -89,5 +89,16 @@ assert.ok(failed.ER05729.AutoTextTried && /21610/.test(failed.ER05729.AutoTextEr
   const b = tenantContactState(job, false, now);
   assert.equal(b.tone, "ok"); assert.equal(b.reachedToday, true); assert.equal(b.triesToday, 3, "the call that got through counts");
   assert.equal(tenantContactState(job, false, now + 86400000).triesToday, 0, "tomorrow starts at zero");
+  // 📋 The contact record (30 Oct): oldest first, New York time, the work order and address, no phone numbers.
+  const { tenantContactRecord } = await loadLib("tenant-text");
+  const rec = tenantContactRecord({ omo: "ER05729", address: "500 FT WASHINGTON AVENUE, 10033", log: job.FieldVisitHistory });
+  const recLines = rec.split(/\n/);
+  assert.equal(recLines[0], "Tenant contact record, HPD work order ER05729, 500 FT WASHINGTON AVENUE (United Angel Construction):");
+  assert.equal(recLines[1], "- Thu, 10/29/2026, 11:30 PM: Called the tenant: no answer");
+  assert.equal(recLines[2], "- Fri, 10/30/2026, 9:05 AM: Texted the tenant the job summary: Leak");
+  assert.equal(recLines[4], "- Fri, 10/30/2026, 10:40 AM: Talked to the tenant");
+  assert.match(recLines.at(-1), /New York time/);
+  assert.ok(!/\d{3}\D?\d{3}\D?\d{4}/.test(rec), "no phone numbers");
+  assert.match(tenantContactRecord({ omo: "ER05729", address: "", log: [] }), /No contact recorded yet/);
 }
 console.log("PASS text service: US numbers only, Twilio form and auth, forged replies refused, inbox keeps replies; award text once in working hours with the tenant's name, address, apartment and the work; STOP / errors remembered; AUTO_TENANT_TEXT=off or the app's Autopilot switch stops it; today's calls / texts and reached today");

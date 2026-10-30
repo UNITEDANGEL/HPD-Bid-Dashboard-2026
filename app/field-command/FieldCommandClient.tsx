@@ -67,7 +67,7 @@ import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wet
 import { aspAnswer, aspOff } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
 import BuildingFacts from "./BuildingFacts";
-import { smsHref, tenantContactState, tenantJobSummary, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
+import { smsHref, tenantContactRecord, tenantContactState, tenantJobSummary, tenantStep, tenantTextDraft } from "../../lib/tenant-text";
 import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
@@ -1517,6 +1517,7 @@ export default function FieldCommandClient() {
   const callStartRef = useRef<{ id: string; at: number } | null>(null);
   const [callAsk, setCallAsk] = useState<string>("");
   const [contactAll, setContactAll] = useState(false);
+  const [contactCopied, setContactCopied] = useState("");
   // 🚪 Arrived (26 Oct): a ready "we're outside" text to the tenant, one tap away (Messages; you press Send).
   const offerOutside = (job: JobRecord) => {
     const t = tenantInfo(job);
@@ -5232,6 +5233,17 @@ export default function FieldCommandClient() {
                       </ul>
                     ) : null}
                     {hist.length > 4 ? <button type="button" className="jc-contact-more" data-hpd-smoke="jc-contact-more" onClick={() => setContactAll((v) => !v)}>{contactAll ? "Show less" : `Show all ${hist.length}`}</button> : null}
+                    {/* 📋 The record for HPD / vendor tracking (30 Oct): the whole log as text, to the share sheet or copied. */}
+                    {hist.length ? (
+                      <button type="button" className="jc-contact-share" data-hpd-smoke="jc-contact-share" onClick={async () => {
+                        const text = tenantContactRecord({ omo: id, address: jobAddress(selectedJob), log: hist });
+                        try {
+                          if (navigator.share) { await navigator.share({ title: `Tenant contact record · ${id}`, text }); return; }
+                          await navigator.clipboard.writeText(text);
+                          setContactCopied(id);
+                        } catch { /* closed the share sheet */ }
+                      }}>{contactCopied === id ? "✅ Copied: paste it into your reply" : "📋 Share contact record"}</button>
+                    ) : null}
                     {/* ➡️ Next tenant (30 Oct, like the next bid after a NO BID): once this one is logged, the next to-do job
                         whose tenant isn't reached yet (has a phone, not tried in the last 3 hours), oldest due first. */}
                     {(() => {

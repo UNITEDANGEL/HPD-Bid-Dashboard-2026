@@ -26,6 +26,8 @@ try {
       stop() { this.onend?.(); }
     };
     // tel: / sms: go to the phone's apps; here they're stopped so the page stays.
+    // The phone's share sheet: what would be shared is kept for the test.
+    navigator.share = async (d) => { window.__shared = d; };
     document.addEventListener("click", (e) => { const a = e.target.closest?.('a[href^="tel:"], a[href^="sms:"]'); if (a) e.preventDefault(); }, true);
   });
   const page = await c.newPage();
@@ -121,6 +123,12 @@ try {
   assert.equal(await total(), startCount + 2);
   assert.match((await lines())[0], /📱 Texted the tenant the job summary: \S/);
   assert.match((await lines()).join("\n"), /Called the tenant: no answer/);
+  // 📋 Share contact record (30 Oct): the whole log as text for HPD / vendor tracking, oldest first.
+  await box.locator('[data-hpd-smoke="jc-contact-share"]').click();
+  const shared = await page.waitForFunction(() => window.__shared, null, { timeout: 5000 }).then((h) => h.jsonValue());
+  assert.equal(shared.title, `Tenant contact record · ${JOB}`);
+  assert.ok(shared.text.startsWith(`Tenant contact record, HPD work order ${JOB}, `), shared.text);
+  assert.ok(shared.text.indexOf("Called the tenant: no answer") < shared.text.indexOf("Texted the tenant the job summary"), "oldest first");
 
   // Every line went to the status server (other phones, and kept for good).
   // (The outbox goes out a moment after each change.)
@@ -174,7 +182,7 @@ try {
   await page.waitForFunction((n) => { const t = document.querySelector("#fc-job-card")?.textContent || ""; return t && !t.includes(n); }, NEXT, { timeout: 10000 });
   assert.match(await page.locator('[data-hpd-smoke="jc-contact-status"]').innerText(), /🔴|🟡/, "by voice: another tenant not reached yet");
   assert.deepEqual(errors, []);
-  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling, ➡️ Next tenant to call, \"next tenant\" by voice and today's score`);
+  console.log(`PASS tenant contact on ${JOB}: box first under the address; Call logged at once, No answer took its place + reminder; Text from Messages logged; on the status server and after a reload; Talked -> ✅ Reached, the Jobs list chip + 📞 Not reached filter, ▶ Start calling, ➡️ Next tenant to call, \"next tenant\" by voice, today's score and the shared contact record`);
   await c.close();
 } finally {
   await browser.close();

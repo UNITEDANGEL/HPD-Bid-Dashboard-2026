@@ -4,6 +4,16 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { loadLib } from "./daily-report.mjs";
+
+// "A normal Wednesday": the next Wednesday from today with street cleaning on (a fixed past date stops working once the
+// job data is newer than it).
+const { aspOff } = await loadLib("asp");
+const wed = (() => {
+  const d = new Date(); d.setUTCHours(16, 0, 0, 0);
+  do d.setUTCDate(d.getUTCDate() + 1); while (d.getUTCDay() !== 3 || aspOff(d.toISOString().slice(0, 10)));
+  return d.toISOString();
+})();
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -36,7 +46,7 @@ try {
   }
   // 2. A normal Wednesday: no chip. 3. The Next pill (call the tenant) with the phone's location: minutes away.
   {
-    const { c, page, errors } = await open({ at: "2026-10-28T16:00:00Z", gps: true, texted: "EQ15239" });
+    const { c, page, errors } = await open({ at: wed, gps: true, texted: "EQ15239" });
     const pill = page.locator('[data-hpd-smoke="fc-next-chip"]');
     await pill.waitFor({ timeout: 30000 });
     assert.equal(await page.locator('[data-hpd-smoke="fc-asp-chip"]').count(), 0, "street cleaning is on: no chip");

@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "Share the contact record",
+      "items": [
+        "📋 Each job's tenant box has a \"Share contact record\" button. It puts every call, text, reply and appointment on that job in one list, with the date and time, oldest first.",
+        "✉️ It opens your phone's share sheet (Mail, Messages, Notes), so you can paste the record into a reply when HPD or vendor tracking asks if you reached the tenant.",
+        "🔒 It shows the HPD work order number and address. It doesn't add the tenant's phone number."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Today's calling score",
       "items": [
         "📊 Jobs now shows how today is going: \"Today: 6 calls / texts · 2 reached\", right above the Tenant not reached yet button.",

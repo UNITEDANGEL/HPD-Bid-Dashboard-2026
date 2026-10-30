@@ -1042,5 +1042,6 @@
 #fc-job-card .jc-contact-next { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 50px; padding: 8px 12px; border-radius: 14px; border: 1px solid #0ea5e9; background: #0369a1; color: #fff; font: 800 15px system-ui, sans-serif; text-align: left; cursor: pointer; }
 #fc-job-card .jc-contact-next small { font: 600 12px/1.25 system-ui, sans-serif; opacity: 0.9; }
 #fc-job-card .jc-contact-next:active { transform: scale(0.98); }
+#fc-job-card .jc-contact-share { align-self: flex-start; min-height: 38px; padding: 0 12px; border-radius: 12px; border: 1px solid #475569; background: transparent; color: #e2e8f0; font: 700 13px system-ui, sans-serif; cursor: pointer; }
 #fc-job-card .jc-contact-btns.is-text-first .jc-contact-textbtn { flex: 2; background: #2563eb; border-color: #2563eb; color: #fff; }
 #fc-job-card .jc-contact-btns.is-text-first .jc-contact-call { flex: 1; background: #1e293b; border-color: #16a34a; box-shadow: none; }

@@ -67,3 +67,18 @@ export function tenantContactState(job: Record<string, unknown>, commonArea = fa
   const reachedToday = !!reachedAt && nyDay(reachedAt) === today;
   return { tone: reachedAt ? "ok" : commonArea ? "common" : tries ? "try" : "none", tries, reachedAt, lastAt, log, triesToday, reachedToday };
 }
+
+// 📋 The job's contact record as plain text (30 Oct: the log "is going to be the truth"): for a reply when HPD or vendor
+// tracking asks whether the tenant was contacted. Oldest first, New York time, what the log says (no names or phones).
+export function tenantContactRecord({ omo, address, log, company = "United Angel Construction" }: { omo: string; address: string; log: ContactEntry[]; company?: string }) {
+  const when = (iso?: string) => {
+    const d = new Date(String(iso || ""));
+    return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+  const what = (v: ContactEntry) => /^APPOINTMENT_/.test(String(v.outcome || ""))
+    ? `Appointment ${String(v.outcome).replace("APPOINTMENT_", "").toLowerCase()}${v.note ? `: ${String(v.note).split(" America/")[0]}` : ""}`
+    : String(v.note || "").replace(/\.$/, "");
+  const lines = log.filter((v) => when(v.recordedAt)).map((v) => `- ${when(v.recordedAt)}: ${what(v)}`);
+  const where = String(address || "").replace(/,\s*\d{5}$/, "");
+  return [`Tenant contact record, HPD work order ${omo}${where ? `, ${where}` : ""} (${company}):`, ...(lines.length ? lines : ["- No contact recorded yet."]), "Times are New York time, as logged in HPD Field when each call or text was made."].join("\n");
+}
