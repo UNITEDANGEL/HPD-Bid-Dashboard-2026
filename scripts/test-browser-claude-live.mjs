@@ -50,7 +50,7 @@ try {
   assert.match(text, /2\/5 · Now: Live progress/);
   assert.match(text, /Found what locks the date; fixing it\. · 3 min ago/);
   assert.match(await card.getAttribute("class"), /is-working/);
-  await page.screenshot({ path: process.env.SHOTS ? `${process.env.SHOTS}/claude-live.png` : "claude-live.png" }).catch(() => {});
+  if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/claude-live.png` }).catch(() => {});
   // × hides it; the next note brings it back by itself (no reload).
   await page.locator('[data-hpd-smoke="fc-claude-live-hide"]').click();
   assert.equal(await card.count(), 0);

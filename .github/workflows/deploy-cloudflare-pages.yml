@@ -251,6 +251,7 @@ jobs:
             scripts/test-browser-tenant-contact.mjs \
             scripts/test-browser-affidavit-dates.mjs \
             scripts/test-browser-claude-live.mjs \
+            scripts/test-browser-refused-questions.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

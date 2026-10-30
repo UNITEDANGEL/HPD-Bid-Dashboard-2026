@@ -31,7 +31,7 @@ try {
   // Refused access: the date box on the card.
   await open("REFUSED_ACCESS");
   await setDate("paperwork-refused-date", "2026-10-20");
-  assert.match(await page.locator('[data-hpd-smoke="paperwork-date-card"]').innerText(), /Date of the refusal[\s\S]*10\/20\/26/i);
+  assert.match(await page.locator('[data-hpd-smoke="paperwork-date-card"]').innerText(), /Refused on 10\/20\/26/i);
   await setDate("paperwork-refused-date", "2026-10-22");
   assert.match(await page.locator('[data-hpd-smoke="paperwork-date-card"]').innerText(), /10\/22\/26/, "changed again");
   if (shots) await page.screenshot({ path: `${shots}/affidavit-refused-date.png` });
@@ -71,7 +71,7 @@ try {
   // Work completed by others.
   await open("COMPLETED_BY_OTHERS");
   await setDate("paperwork-by-others-date", "2026-10-21");
-  assert.match(await page.locator('[data-hpd-smoke="paperwork-date-card"]').innerText(), /Date found done by others[\s\S]*10\/21\/26/i);
+  assert.match(await page.locator('[data-hpd-smoke="paperwork-date-card"]').innerText(), /Found done on 10\/21\/26/i);
   // No Access: both attempts.
   await open("NO_ACCESS");
   await setDate("paperwork-attempt-1", "2026-10-19");

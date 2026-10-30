@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 30, 2026",
+      "title": "Refused access: just the date and who",
+      "items": [
+        "⛔ On the job card, Refused access now asks only 2 things: the date (today, or pick the past day it happened) and the person who refused (one tap for Male, tall, dark hair). Then Save.",
+        "📅 Every outcome asks its date the same way: Work completed (date finished), No access (date you were there), Done by others (date found done).",
+        "🛠 Fixed: opening the paperwork from the job card reset the date to today, so a past refusal date never reached the affidavit. Now the date you picked stays.",
+        "🧾 The affidavit screen shows one Refused access card: 1. Date refused, 2. Person who refused. Name, relationship and phone are folded away (they print DID NOT PROVIDE / SUPER if blank). The invoice is made with the affidavit on the same date, and the Invoice Date box shows that date."
+      ]
+    },
+    {
+      "date": "Oct 30, 2026",
       "title": "Change any affidavit date + Claude live",
       "items": [
         "📅 Refused access and Work completed by others now have a date box right on the card. Pick any date from the calendar, a past day too, any time before you send. Before, it was only a small text box hidden under More details.",

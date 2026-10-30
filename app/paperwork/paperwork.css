@@ -70,3 +70,7 @@
 .paperwork-old-dates-ok { color: #15803d; font-weight: 800; }
 .paperwork-old-dates, .paperwork-old-dates p, .paperwork-old-dates b { color: #78350f !important; }
 .paperwork-old-dates [data-hpd-smoke="paperwork-old-dates-ok-btn"] { background: #fff !important; color: #78350f !important; border: 2px solid #b45309 !important; border-radius: 12px; font-weight: 900; }
+/* Refused access: optional name / relationship / phone folded away (30 Oct). */
+.paperwork-optional { border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 12px; padding: 8px 10px; }
+.paperwork-optional summary { cursor: pointer; font-weight: 800; font-size: 14px; }
+.paperwork-optional[open] summary { margin-bottom: 8px; }

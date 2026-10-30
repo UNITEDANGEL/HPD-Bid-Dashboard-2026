@@ -418,7 +418,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const firstAttemptAt = String(job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "").trim();
   const secondAttemptAt = String(job.NoAccessSecondAttemptAt || job.noAccessSecondAttemptAt || "").trim();
   const refusedAt = String(job.RefusalDate || job.refusalDate || "").trim();
-  const verifiedByOthersAt = String(job.VerifiedByOthersDate || job.verifiedByOthersDate || "").trim();
+  const verifiedByOthersAt = String(job.VerifiedByOthersDate || job.verifiedByOthersDate || job.CompletedByOthersDate || job.completedByOthersDate || "").trim();
   const actualStartAt = String(job.ActualWorkStartDate || job.actualWorkStartDate || "").trim();
   const actualCompleteAt = String(job.ActualWorkCompletionDate || job.actualWorkCompletionDate || "").trim();
   const lastEvidenceAt = String(job.LastEvidenceCapturedAt || job.lastEvidenceCapturedAt || "").trim();
@@ -478,7 +478,10 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const lockedAt = String(job.OutcomeLockedAt || job.outcomeLockedAt || "").trim();
   const sourceStatus = getJobWorkflowStatus(job);
   const fieldDate = lastEvidenceAt || lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
-  const noWorkCompleteAt = lastEvidenceAt || secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
+  // The day picked on the job card for a refusal / done by others / 2nd try comes first (30 Oct: a past refusal closed
+  // today keeps its past date; photos taken later don't move it).
+  const noWorkCompleteAt = (outcome === "refused_access" ? refusedAt : outcome === "completed_by_others" ? verifiedByOthersAt : outcome === "no_access" ? secondAttemptAt : "")
+    || lastEvidenceAt || secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
   const bidAmount = formatCurrency(getJobAmount(job));
   const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : bidAmount;
 
@@ -574,8 +577,10 @@ function workflowPatchFromQuery(params: URLSearchParams, outcome: PaperworkOutco
     patch.actualWorkStartDate = workStartedAt;
   }
 
+  // The outcome from the link; a date only when the link has one (30 Oct: the job card's "Make the package" link set
+  // today here, over the past refusal / attempt / finish date saved on the job, so a past date never reached the
+  // affidavit and the invoice).
   if (status === "REFUSED_ACCESS" || outcome === "refused_access") {
-    const iso = refusedAt || new Date().toISOString();
     return {
       ...patch,
       WorkflowStatus: "REFUSED_ACCESS",
@@ -584,15 +589,11 @@ function workflowPatchFromQuery(params: URLSearchParams, outcome: PaperworkOutco
       fieldOutcome: "REFUSED_ACCESS",
       StatusOverride: "Refused Access",
       status: "Refused Access",
-      RefusalDate: iso,
-      refusalDate: iso,
-      OutcomeLockedAt: iso,
-      outcomeLockedAt: iso,
+      ...(refusedAt ? { RefusalDate: refusedAt, refusalDate: refusedAt, OutcomeLockedAt: refusedAt, outcomeLockedAt: refusedAt } : {}),
     };
   }
 
   if (status === "NO_ACCESS_1_WAITING_72H" || outcome === "no_access") {
-    const iso = noAccessAt || new Date().toISOString();
     return {
       ...patch,
       WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
@@ -601,15 +602,11 @@ function workflowPatchFromQuery(params: URLSearchParams, outcome: PaperworkOutco
       fieldOutcome: "NO_ACCESS_1_WAITING_72H",
       StatusOverride: "No Access 1st - Waiting 72h",
       status: "No Access 1st - Waiting 72h",
-      NoAccessFirstAttemptAt: iso,
-      noAccessFirstAttemptAt: iso,
-      OutcomeLockedAt: iso,
-      outcomeLockedAt: iso,
+      ...(noAccessAt ? { NoAccessFirstAttemptAt: noAccessAt, noAccessFirstAttemptAt: noAccessAt, OutcomeLockedAt: noAccessAt, outcomeLockedAt: noAccessAt } : {}),
     };
   }
 
   if (status === "WORK_COMPLETED" || outcome === "work_completed") {
-    const iso = workCompletedAt || new Date().toISOString();
     return {
       ...patch,
       WorkflowStatus: "WORK_COMPLETED",
@@ -618,12 +615,7 @@ function workflowPatchFromQuery(params: URLSearchParams, outcome: PaperworkOutco
       fieldOutcome: "WORK_COMPLETED",
       StatusOverride: "Work Completed",
       status: "Work Completed",
-      ActualWorkCompletionDate: iso,
-      actualWorkCompletionDate: iso,
-      JobFinishedAt: iso,
-      jobFinishedAt: iso,
-      OutcomeLockedAt: iso,
-      outcomeLockedAt: iso,
+      ...(workCompletedAt ? { ActualWorkCompletionDate: workCompletedAt, actualWorkCompletionDate: workCompletedAt, JobFinishedAt: workCompletedAt, jobFinishedAt: workCompletedAt, OutcomeLockedAt: workCompletedAt, outcomeLockedAt: workCompletedAt } : {}),
     };
   }
 
@@ -5339,16 +5331,30 @@ export default function PaperworkPage() {
             </div>
           </div>
 
+          {/* Each outcome asks only what its affidavit needs (owner, 30 Oct: "for refused access you only need to fill the
+              refused access part; why open everything ... make the affidavit a good flow; the invoice always goes with the
+              affidavit"). Refused access: 1. the date, 2. who refused; name / relationship / phone are optional (the form
+              prints DID NOT PROVIDE / SUPER). The date prints on the affidavit and on the invoice made with it. */}
           {outcome === "refused_access" ? (
-            <div className={`refused-access-required ${refusedAccessNeedsDescription(outcome, form) ? "needs-description" : "ready"}`}>
+            <div className={`refused-access-required ${refusedAccessNeedsDescription(outcome, form) ? "needs-description" : "ready"}`} data-hpd-smoke="paperwork-date-card">
               <div>
-                <span>Section 7b Required</span>
-                <strong>{refusedAccessNeedsDescription(outcome, form) ? "Describe the person who refused access" : "Person description recorded"}</strong>
-                <small>Use the JSON value when it exists. If it is missing, enter exactly what you observed in the field.</small>
+                <span>⛔ Refused access: 2 things for the affidavit</span>
+                <strong>{refusedAccessNeedsDescription(outcome, form) ? "Describe the person who refused access" : `Refused on ${displayDate(form.secondAttempt || form.fieldDate) || "-"}`}</strong>
               </div>
               <label className="paperwork-field">
-                Description of Individual
+                1. Date refused
                 <input
+                  type="date"
+                  data-hpd-smoke="paperwork-refused-date"
+                  value={dateInputValue(form.secondAttempt || form.fieldDate)}
+                  onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                />
+                <small>Pick the real day, a past day too. It prints on the affidavit and on the invoice.</small>
+              </label>
+              <label className="paperwork-field">
+                2. Person who refused (description, item 7b)
+                <input
+                  data-hpd-smoke="paperwork-refused-who"
                   value={form.deniedDescription}
                   onChange={(event) => update("deniedDescription", event.target.value)}
                   placeholder={`Example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}`}
@@ -5357,42 +5363,42 @@ export default function PaperworkPage() {
                   Use Male Tall Dark Hair
                 </button>
               </label>
-              <div className="paperwork-grid">
+              <details className="paperwork-optional" data-hpd-smoke="paperwork-refused-more">
+                <summary>Name, relationship, phone (optional){form.deniedName || form.deniedRelationship ? `: ${[form.deniedName || "DID NOT PROVIDE", form.deniedRelationship || "SUPER"].join(", ")}` : ""}</summary>
+                <div className="paperwork-grid">
+                  <label className="paperwork-field">
+                    Name Given (7a)
+                    <input value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} placeholder="DID NOT PROVIDE" />
+                  </label>
+                  <label className="paperwork-field">
+                    Relationship (7a)
+                    <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
+                  </label>
+                </div>
                 <label className="paperwork-field">
-                  Name Given (7a)
-                  <input value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} placeholder="DID NOT PROVIDE" />
+                  Their Telephone (7b)
+                  <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
                 </label>
-                <label className="paperwork-field">
-                  Relationship (7a)
-                  <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
-                </label>
-              </div>
-              <label className="paperwork-field">
-                Their Telephone (7b)
-                <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
-              </label>
+              </details>
+              <small>🧾 The invoice is made with this affidavit, dated {displayDate(form.secondAttempt || form.fieldDate) || "the refusal day"}.</small>
             </div>
           ) : null}
 
-
-          {/* The refusal date / the day the work was found done by others, right on the card (owner, 30 Oct: "I should be
-              able to change any date on the refused access ... you locked me out of the refused access date"). Before,
-              it was only a text box under More details. Prints as the affidavit's date and the invoice dates. */}
-          {outcome === "refused_access" || outcome === "completed_by_others" ? (
+          {outcome === "completed_by_others" ? (
             <div className="refused-access-required ready" data-hpd-smoke="paperwork-date-card">
               <div>
-                <span>{outcome === "refused_access" ? "Date of the refusal" : "Date found done by others"}</span>
-                <strong>{form.secondAttempt || form.fieldDate ? displayDate(form.secondAttempt || form.fieldDate) : "Pick the date"}</strong>
-                <small>Change it if it isn&apos;t the day you were there. It prints on the affidavit and the invoice.</small>
+                <span>👥 Done by others: 1 thing for the affidavit</span>
+                <strong>{form.secondAttempt || form.fieldDate ? `Found done on ${displayDate(form.secondAttempt || form.fieldDate)}` : "Pick the date"}</strong>
               </div>
               <label className="paperwork-field">
-                {outcome === "refused_access" ? "Date refused" : "Date found done"}
+                Date found done
                 <input
                   type="date"
-                  data-hpd-smoke={outcome === "refused_access" ? "paperwork-refused-date" : "paperwork-by-others-date"}
+                  data-hpd-smoke="paperwork-by-others-date"
                   value={dateInputValue(form.secondAttempt || form.fieldDate)}
                   onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
                 />
+                <small>Pick the real day, a past day too. It prints on the affidavit and on the invoice made with it.</small>
               </label>
             </div>
           ) : null}
@@ -5598,8 +5604,8 @@ export default function PaperworkPage() {
               <input value={form.invoiceNo} onChange={(event) => update("invoiceNo", event.target.value)} />
             </label>
             <label className="paperwork-field">
-              Invoice Date
-              <input value={form.invoiceDate} onChange={(event) => update("invoiceDate", event.target.value)} />
+              Invoice Date (prints as the closing date: work completed, the refusal or the last attempt)
+              <input readOnly data-hpd-smoke="paperwork-invoice-date" value={displayDate(isNoWorkOutcome(outcome) ? form.secondAttempt || form.fieldDate : form.workComplete || form.fieldDate)} />
             </label>
           </div>
 

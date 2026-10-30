@@ -11,7 +11,12 @@ const shots = process.env.SHOTS || "";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
-  await routePrivate(context);
+  // Its own fresh 24-hour notice on a job with no paperwork (30 Oct: the real inbox can have none left, which failed the
+  // test and blocked deploys).
+  const OMO = "EQ15239";
+  const at = new Date(Date.now() - 3 * 3600000).toISOString();
+  await routePrivate(context, { conversations: (d) => ({ ...d, threads: [{ id: "test-vt-24", subject: `24 HR POOR PERFORMANCE NOTICE - OMO#${OMO}`, omos: [OMO], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: at, waiting: true,
+    messages: [{ at, from: "Test Tracker <test.tracker@hpd.nyc.gov>", hpd: true, mine: false, subject: `24 HR POOR PERFORMANCE NOTICE - OMO#${OMO}`, text: `Please be advised OMO# ${OMO} is past due. Reply with the paperwork. Test Tracker, Vendor Tracking, test.tracker@hpd.nyc.gov`, files: [] }] }, ...(d.threads || [])] }) });
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const replies = [];
   const otherDrive = [];
@@ -32,7 +37,7 @@ try {
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   // A notice with nothing on record yet: tick "Reply sent" -> the paperwork is next.
-  const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').filter({ hasNotText: "paperwork on record" }).first();
+  const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').filter({ hasText: OMO }).first();
   const omo = await row.locator(".fc-board-job b").innerText();
   await row.locator('[data-hpd-smoke="fc-board-step-replied"]').click();
   // Reply sent: it moves to 📤 Sent · waiting (22 Oct board tabs), the paperwork still next.

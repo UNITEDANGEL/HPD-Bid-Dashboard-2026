@@ -893,7 +893,9 @@ export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
   const sheetTouchStart = useRef<number | null>(null);
-  const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
+  // date: the day it happened (YYYY-MM-DD, blank = today); who: the person who refused access (30 Oct).
+  type OutcomeDraft = { outcome: string; note: string; date?: string; who?: string };
+  const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, OutcomeDraft>>({});
   const [outcomeMessage, setOutcomeMessage] = useState("");
   const [appointmentOpen, setAppointmentOpen] = useState(false);
   const [agendaOpen, setAgendaOpen] = useState(false);
@@ -3655,10 +3657,15 @@ export default function FieldCommandClient() {
 
   function saveVisitOutcome(job: JobRecord, review = false) {
     const id = jobId(job);
-    const draft = outcomeDrafts[id] || { outcome: "", note: "" };
+    const draft: OutcomeDraft = outcomeDrafts[id] || { outcome: "", note: "" };
     if (draft.outcome && paperworkLock(job).locked && !isTestJob(id)) { setOutcomeMessage(lockedMessage(id, paperworkLock(job))); return; }
+    if (draft.outcome === "REFUSED_ACCESS" && !String(draft.who || "").trim()) { setOutcomeMessage("Describe who refused access first (the affidavit needs it), e.g. Male, tall, dark hair."); return; }
     try {
-      const patch = withVisitLocation(job, fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString()));
+      // A past day picked (30 Oct: "I'm closing a refused access today, but it was in the past"): saved at noon New York
+      // that day, so the affidavit and the invoice carry that date.
+      const when = draft.date && draft.date < nyToday() ? new Date(`${draft.date}T16:00:00Z`).toISOString() : new Date().toISOString();
+      const extra: Record<string, unknown> = draft.outcome === "REFUSED_ACCESS" ? { DeniedDescription: String(draft.who || "").trim().toUpperCase() } : {};
+      const patch = withVisitLocation(job, { ...fieldOutcomePatch(job, draft.outcome, draft.note, when), ...extra });
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
@@ -5406,8 +5413,26 @@ export default function FieldCommandClient() {
                 const secondTrySaved = value(selectedJob, ["NoAccessSecondAttemptAt"]);
                 const stepClass = (index: number) => `jc-step ${steps[index].done ? "is-done" : index === current ? "is-current" : "is-later"}`;
                 const num = (index: number) => <span className="jc-step-num" aria-hidden="true">{steps[index].done ? "✓" : index + 1}</span>;
+                const setDraft = (patch: Partial<OutcomeDraft>) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...(prev[id] || { outcome: "", note: "" }), ...patch } }));
+                const datedPick = Boolean(draft.outcome) && draft.outcome !== "APPOINTMENT_REQUESTED";
                 const outcomeForm = (keys: string[]) => keys.includes(draft.outcome) ? (
                   <div className="jc-step-form">
+                    {/* Just what the paperwork needs (owner, 30 Oct: "if I hit refused access I should get the menu for refused
+                        access: confirm, change the date, the person's description; same with work completed"). */}
+                    {datedPick ? (
+                      <label className="jc-outcome-date">{draft.outcome === "REFUSED_ACCESS" ? "📅 Date refused" : draft.outcome === "WORK_COMPLETED_BY_OTHERS" ? "📅 Date found done" : draft.outcome === "WORK_COMPLETED" || draft.outcome === "PARTIAL_WORK" ? "📅 Date finished" : "📅 Date you were there"}
+                        <input type="date" data-hpd-smoke="jc-outcome-date" value={draft.date || nyToday()} max={nyToday()} onChange={(event) => setDraft({ date: event.target.value })} />
+                        <small>{(draft.date || nyToday()) === nyToday() ? "Today. Change it if it was another day." : "A past day: the affidavit and the invoice use this date."}</small>
+                      </label>
+                    ) : null}
+                    {draft.outcome === "REFUSED_ACCESS" ? (
+                      <div className="jc-refused-questions" data-hpd-smoke="jc-refused-questions">
+                        <label>👤 Person who refused (description)
+                          <input data-hpd-smoke="jc-refused-who" value={draft.who || ""} placeholder="MALE, TALL, DARK HAIR" onChange={(event) => setDraft({ who: event.target.value })} />
+                        </label>
+                        <div className="jc-refused-chips">{["Male, tall, dark hair", "Female, short, dark hair", "Male, short, gray hair"].map((d) => <button key={d} type="button" onClick={() => setDraft({ who: d })}>{d}</button>)}</div>
+                      </div>
+                    ) : null}
                     <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                     <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>
                   </div>
