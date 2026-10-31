@@ -10,7 +10,12 @@ const shots = process.env.SHOTS || "";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
-  await routePrivate(context);
+  // Its own fresh 24-hour notice on a job with no paperwork (31 Oct: the real inbox had no notice left to answer, which
+  // failed the test and blocked deploys; same as test-browser-vt-send).
+  const SEED = "EQ15239";
+  const seedAt = new Date(Date.now() - 3 * 3600000).toISOString();
+  await routePrivate(context, { conversations: (d) => ({ ...d, threads: [{ id: "test-board-24", subject: `24 HR POOR PERFORMANCE NOTICE - OMO#${SEED}`, omos: [SEED], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: seedAt, waiting: true,
+    messages: [{ at: seedAt, from: "Test Tracker <test.tracker@hpd.nyc.gov>", hpd: true, mine: false, subject: `24 HR POOR PERFORMANCE NOTICE - OMO#${SEED}`, text: `Please be advised OMO# ${SEED} is past due. Reply with the paperwork. Test Tracker, Vendor Tracking, test.tracker@hpd.nyc.gov`, files: [] }] }, ...(d.threads || [])] }) });
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   let sends = 0;
   await context.route("**/api/drive/hpd-reply", (r) => { sends += 1; return r.fulfill({ status: 500, json: { error: "test: no sending" } }); });

@@ -97,6 +97,8 @@ try {
   const rowsAll = list.locator("ol > li");
   for (let i = 0; i < await rowsAll.count(); i++) {
     const t = await rowsAll.nth(i).innerText();
+    // An invitation whose description couldn't be read has nothing to price from (ER09499, 31 Oct).
+    if (!String(open.find((b) => t.includes(b.omo))?.description || "").trim()) continue;
     assert.ok(/Easy win · ~\$[\d,]+|Best ~\$[\d,]+ \(wins ~\d+%\) · middle \$[\d,]+/.test(t), `prediction on every row: ${t.split("\n")[0]}`);
   }
   // Every easy-win invitation with a map location has the green $ pin, and no other pin does.

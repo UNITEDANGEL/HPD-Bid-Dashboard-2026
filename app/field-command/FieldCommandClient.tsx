@@ -896,6 +896,8 @@ export default function FieldCommandClient() {
   // date: the day it happened (YYYY-MM-DD, blank = today); who: the person who refused access (30 Oct).
   type OutcomeDraft = { outcome: string; note: string; date?: string; who?: string };
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, OutcomeDraft>>({});
+  // ✏️ Change outcome or date: the job whose saved outcome is being changed on the card.
+  const [changeOutcomeFor, setChangeOutcomeFor] = useState("");
   const [outcomeMessage, setOutcomeMessage] = useState("");
   const [appointmentOpen, setAppointmentOpen] = useState(false);
   const [agendaOpen, setAgendaOpen] = useState(false);
@@ -3665,11 +3667,15 @@ export default function FieldCommandClient() {
       // that day, so the affidavit and the invoice carry that date.
       const when = draft.date && draft.date < nyToday() ? new Date(`${draft.date}T16:00:00Z`).toISOString() : new Date().toISOString();
       const extra: Record<string, unknown> = draft.outcome === "REFUSED_ACCESS" ? { DeniedDescription: String(draft.who || "").trim().toUpperCase() } : {};
-      const patch = withVisitLocation(job, { ...fieldOutcomePatch(job, draft.outcome, draft.note, when), ...extra });
+      // Changing a saved outcome replaces it: no access starts again at the 1st try.
+      const changing = changeOutcomeFor === id && Boolean(draft.outcome);
+      const restart = changing ? { NoAccessFirstAttemptAt: "", NoAccessSecondAttemptAt: "", SecondAttemptAvailableAt: "" } : {};
+      const patch = withVisitLocation(job, { ...restart, ...fieldOutcomePatch(changing ? { ...job, ...restart } : job, draft.outcome, changing && !draft.note.trim() ? "Changed on the job card" : draft.note, when), ...extra });
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
+      if (draft.outcome) setChangeOutcomeFor("");
       const waiting = draft.outcome ? secondTryState({ ...job, ...patch }) : null;
       setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : draft.outcome
         ? `✅ ${id} is ${FIELD_OUTCOMES[draft.outcome]}. This job is finished.`
@@ -5416,6 +5422,16 @@ export default function FieldCommandClient() {
                 const num = (index: number) => <span className="jc-step-num" aria-hidden="true">{steps[index].done ? "✓" : index + 1}</span>;
                 const setDraft = (patch: Partial<OutcomeDraft>) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...(prev[id] || { outcome: "", note: "" }), ...patch } }));
                 const datedPick = Boolean(draft.outcome) && draft.outcome !== "APPOINTMENT_REQUESTED";
+                const changing = changeOutcomeFor === id && Boolean(savedOutcome) && !steps[5].done;
+                // ✏️ Change outcome or date (31 Oct, "keep upgrading": a wrong pick on the card had no way back): the
+                // saved outcome, its date and who refused, ready to change.
+                const startChange = () => {
+                  const savedAt = savedOutcome === "REFUSED_ACCESS" ? value(selectedJob, ["RefusalDate"]) : savedOutcome === "WORK_COMPLETED_BY_OTHERS" ? value(selectedJob, ["CompletedByOthersDate"])
+                    : savedOutcome === "NO_ACCESS_1_WAITING_72H" ? value(selectedJob, ["NoAccessFirstAttemptAt"]) : value(selectedJob, ["ActualWorkCompletionDate"]);
+                  setDraft({ outcome: savedOutcome, note: "", date: newYorkDay(savedAt) || "", who: value(selectedJob, ["DeniedDescription"]) });
+                  setChangeOutcomeFor(id);
+                  window.setTimeout(() => document.querySelector('[data-hpd-smoke="jc-affidavit-only"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                };
                 const outcomeForm = (keys: string[]) => keys.includes(draft.outcome) ? (
                   <div className="jc-step-form">
                     {/* Just what the paperwork needs (owner, 30 Oct: "if I hit refused access I should get the menu for refused
@@ -5457,20 +5473,21 @@ export default function FieldCommandClient() {
                     {/* 📝 Just the affidavit (owner, 30 Oct: "when I arrive that's fine, I start the job, but sometimes I just want to
                         fill up the affidavit: the outcome, what happened, refused access, no access ..."): pick what happened, its
                         date (and who refused), Save, and the package opens. No arrive / start visit first. */}
-                    {!savedOutcome && !workStarted && current < 2 && !secondTry ? (() => {
-                      const quick = [...noWorkOutcomes, "WORK_COMPLETED"];
+                    {(!savedOutcome && !workStarted && current < 2 && !secondTry) || changing ? (() => {
+                      const quick = [...noWorkOutcomes, "WORK_COMPLETED", ...(changing ? ["PARTIAL_WORK"] : [])];
                       return (
                         <li className={`jc-step jc-step-affidavit ${quick.includes(draft.outcome) ? "is-current" : ""}`} data-hpd-smoke="jc-affidavit-only">
-                          <span className="jc-step-num" aria-hidden="true">📝</span>
+                          <span className="jc-step-num" aria-hidden="true">{changing ? "✏️" : "📝"}</span>
                           <div>
-                            <b>Just the affidavit?</b>
-                            <small>Already know what happened? Pick it: no need to tap I have arrived.</small>
+                            <b>{changing ? "Change what happened" : "Just the affidavit?"}</b>
+                            <small>{changing ? `Saved: ${FIELD_OUTCOMES[savedOutcome]}. Change the outcome, the date${savedOutcome === "REFUSED_ACCESS" ? " or who refused" : ""}, then Save.${draft.outcome === "NO_ACCESS_1_WAITING_72H" ? " No access starts again at the 1st try." : ""}` : "Already know what happened? Pick it: no need to tap I have arrived."}</small>
                             <div className="jc-step-choices">
                               {quick.map((key) => (
                                 <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} data-hpd-smoke={`jc-affidavit-${key.toLowerCase()}`} onClick={() => setDraft(draft.outcome === key ? { outcome: "" } : { outcome: key })}>{OUTCOME_ICONS[key] || "✅"} {FIELD_OUTCOMES[key]}</button>
                               ))}
                             </div>
                             {outcomeForm(quick)}
+                            {changing ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-change-outcome-cancel" onClick={() => { setChangeOutcomeFor(""); setDraft({ outcome: "", date: "", who: "" }); }}>Cancel: keep {FIELD_OUTCOMES[savedOutcome]}</button> : null}
                           </div>
                         </li>
                       );
@@ -5510,6 +5527,7 @@ export default function FieldCommandClient() {
                       {num(2)}
                       <div>
                         <b>Outcome</b>
+                        {savedOutcome && !steps[5].done && !changing ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-change-outcome" onClick={startChange}>✏️ Change outcome or date</button> : null}
                         <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · before: ${counts.before - (counts.beforeVideos || 0)} photo(s), ${counts.beforeVideos || 0} video(s)` : "Do the work (before photos/video), or record why not"}</small>
                         {appointment && !savedOutcome && !workStarted ? (
                           <p className={`jc-step-appointment ${appointmentWhen?.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-step-appointment">
