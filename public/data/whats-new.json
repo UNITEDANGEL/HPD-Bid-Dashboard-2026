@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 31, 2026",
+      "title": "Corrections: dates from what you sent",
+      "items": [
+        "📨 Fix & resend fills in the dates from the paperwork you already sent HPD (your Sent mail): work dates, access tries and calls, refusal or done-by-others day. Now 42 rejected jobs have them, up from 32 (the rest have no affidavit in your Sent mail: faxed, or sent another way).",
+        "🔄 New rejections get their dates by themselves: the app reads your Sent mail for them every half hour (newest first). A job with nothing found is looked at again after 2 weeks.",
+        "✅ It still says where the dates came from (\"Dates filled in from the paperwork you sent HPD on ...\"), and you check them against HPD's reason before you save."
+      ]
+    },
+    {
+      "date": "Oct 31, 2026",
       "title": "Say the outcome; 2nd tries on the route",
       "items": [
         "🎤 Say it: \"refused access on EQ15239 yesterday, male, tall, dark hair\". The helper reads it back with the day and who refused; say yes and it's saved on that day, then the package (affidavit + invoice) opens.",

@@ -10,7 +10,11 @@ opened (text, or OCR for a scanned signed copy) and these are read:
 Writes data/sent_paperwork_dates.json (with the file and email date) and public/data/correction_dates.json
 (OMO -> dates only; nothing private).
 
-    python scripts/fetch_sent_paperwork_dates.py [--omo EQ17038 ...] [--all]
+    python scripts/fetch_sent_paperwork_dates.py [--omo EQ17038 ...] [--all] [--limit 10]
+
+Runs with the GitHub fetcher too (31 Oct): there the private file isn't kept, so the public file's dates are the
+starting point, and the public file also keeps "checked" (OMO -> day looked for, nothing found) so a job with no
+sent paperwork is looked for again only after RETRY_DAYS, not every run. Newest rejections first.
 """
 import argparse
 import base64
@@ -26,6 +30,7 @@ PRIVATE_OUT = os.path.join(ROOT, "data", "sent_paperwork_dates.json")
 PUBLIC_OUT = os.path.join(ROOT, "public", "data", "correction_dates.json")
 DATE = r"(\d{1,2}/\d{1,2}/\d{2,4})"
 NL = chr(10)
+RETRY_DAYS = 14
 
 
 def iso(d):
@@ -175,9 +180,16 @@ def parts(payload):
 
 def dates_for(service, omo):
     """Newest sent PDF for this OMO that has dates."""
-    resp = service.users().messages().list(userId="me", q=f"in:sent has:attachment {omo}", maxResults=20).execute(num_retries=3)
+    # By the attachment's name first: a plain search for the OMO also finds every vendor-tracking email that only
+    # mentions it, and the email with its PDF falls past the first 20 (31 Oct: EQ14962, EQ20456).
+    refs = []
+    for q in (f"in:sent filename:{omo}", f"in:sent has:attachment {omo}"):
+        resp = service.users().messages().list(userId="me", q=q, maxResults=20).execute(num_retries=3)
+        refs = resp.get("messages", [])
+        if refs:
+            break
     found = None
-    for ref in resp.get("messages", []):  # newest first
+    for ref in refs:  # newest first
         msg = service.users().messages().get(userId="me", id=ref["id"], format="full").execute(num_retries=3)
         day = datetime.datetime.fromtimestamp(int(msg.get("internalDate", 0)) / 1000, datetime.timezone.utc).date().isoformat()
         merged, files = {}, []
@@ -204,23 +216,49 @@ def dates_for(service, omo):
     return found
 
 
-def main(omos, everything):
+def load_json(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def to_read(req, known, checked, everything, today):
+    """Rejected jobs still to look for, newest rejection first: not on file, and not looked for in RETRY_DAYS."""
+    def due(o):
+        if everything:
+            return True
+        if o in known:
+            return False
+        try:
+            return (today - datetime.date.fromisoformat(checked.get(o, ""))).days >= RETRY_DAYS
+        except ValueError:
+            return True
+    return [o for o, r in sorted(req.items(), key=lambda kv: kv[1].get("rejectedAt", ""), reverse=True) if r.get("rejectedAt") and due(o)]
+
+
+def main(omos, everything, limit=0):
     sys.path.insert(0, ROOT)
     from FetchrMatcherV5 import get_gmail_service
-    service = get_gmail_service()
-    try:
-        with open(PRIVATE_OUT, encoding="utf-8") as f:
-            known = json.load(f).get("jobs", {})
-    except (OSError, ValueError):
-        known = {}
+    public = load_json(PUBLIC_OUT)
+    # The private file (with the file names) where it exists; else the public dates (the GitHub fetcher).
+    known = {**public.get("jobs", {}), **load_json(PRIVATE_OUT).get("jobs", {})}
+    checked = dict(public.get("checked", {}))
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     if not omos:
         # The public summary (OMO -> rejectedAt ...); the private file keeps every email per OMO.
-        with open(os.path.join(ROOT, "public", "data", "hpd_requests.json"), encoding="utf-8") as f:
-            req = json.load(f).get("jobs", {})
-        omos = [o for o, r in req.items() if r.get("rejectedAt") and (everything or o not in known)]
+        req = load_json(os.path.join(ROOT, "public", "data", "hpd_requests.json")).get("jobs", {})
+        omos = to_read(req, known, checked, everything, today)
+    if limit:
+        omos = omos[:limit]
+    if not omos:
+        print("Sent paperwork dates: nothing new to read")
+        return
+    service = get_gmail_service()
     print(f"Reading the sent paperwork of {len(omos)} jobs...", flush=True)
     found = 0
-    for i, omo in enumerate(sorted(omos)):
+    for i, omo in enumerate(omos):
         try:
             got = dates_for(service, omo)
         except Exception as error:
@@ -228,14 +266,18 @@ def main(omos, everything):
             continue
         if got:
             known[omo] = got
+            checked.pop(omo, None)
             found += 1
+        else:
+            checked[omo] = today.isoformat()
         print(f"  {i + 1}/{len(omos)} {omo}: {json.dumps({k: v for k, v in (got or {}).items() if k != 'files'}) if got else 'no dates found'}", flush=True)
-    os.makedirs(os.path.dirname(PRIVATE_OUT), exist_ok=True)
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    with open(PRIVATE_OUT, "w", encoding="utf-8") as f:
-        json.dump({"generatedAt": now, "jobs": dict(sorted(known.items()))}, f, indent=1)
+    if os.path.isdir(os.path.dirname(PRIVATE_OUT)):
+        with open(PRIVATE_OUT, "w", encoding="utf-8") as f:
+            json.dump({"generatedAt": now, "jobs": dict(sorted(known.items()))}, f, indent=1)
     with open(PUBLIC_OUT, "w", encoding="utf-8") as f:
-        json.dump({"generatedAt": now, "jobs": {o: {k: v for k, v in d.items() if k != "files"} for o, d in sorted(known.items())}}, f)
+        json.dump({"generatedAt": now, "jobs": {o: {k: v for k, v in d.items() if k != "files"} for o, d in sorted(known.items())},
+                   "checked": dict(sorted(checked.items()))}, f)
     print(f"Sent paperwork dates: {found} of {len(omos)} jobs read; {len(known)} on file")
 
 
@@ -243,5 +285,6 @@ if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--omo", nargs="*", default=[])
     a.add_argument("--all", action="store_true", help="re-read jobs already on file too")
+    a.add_argument("--limit", type=int, default=0, help="read at most this many jobs (newest rejections first)")
     args = a.parse_args()
-    main([o.upper() for o in args.omo], args.all)
+    main([o.upper() for o in args.omo], args.all, args.limit)

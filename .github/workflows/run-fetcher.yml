@@ -94,6 +94,12 @@ jobs:
           HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
         run: python -m pip install --quiet --disable-pip-version-check cryptography && python scripts/fetch_notice_documents.py
 
+      # The dates on the paperwork already sent HPD for each rejected job (31 Oct), so a correction is filled in
+      # with them; new rejections only, 10 a run, newest first (public/data/correction_dates.json, dates only).
+      - name: Read the dates on sent paperwork
+        continue-on-error: true
+        run: python scripts/fetch_sent_paperwork_dates.py --limit 10
+
       # Every email thread with HPD staff (work orders, corrections, AEP, the vendor tracker), both sides,
       # encrypted; only new mail after the first run. Shown in HPD notices and on each job card.
       - name: Read conversations with HPD
@@ -163,6 +169,7 @@ jobs:
             if [ -f data/hpd_job_status.json ]; then git add data/hpd_job_status.json public/data/hpd_job_status.json; fi
             if [ -f data/sent_paperwork.json ]; then git add data/sent_paperwork.json public/data/sent_paperwork.json; fi
             if [ -f public/data/hpd_requests.json ]; then git add public/data/hpd_requests.json; fi
+            if [ -f public/data/correction_dates.json ]; then git add public/data/correction_dates.json; fi
             if [ -f data/master/master-file.json.enc ]; then git add data/master/master-file.json.enc; fi
           fi
 
