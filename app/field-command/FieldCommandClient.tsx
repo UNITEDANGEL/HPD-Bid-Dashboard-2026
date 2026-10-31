@@ -56,6 +56,8 @@ import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
 import JobTracker, { type TrackerRow } from "./JobTracker";
+import PaymentWaits from "./PaymentWaits";
+import { paymentWaits, type PipJob } from "../../lib/pay-waiting";
 import { trackerStage } from "../../lib/job-tracker";
 import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow, tenantsToCall } from "./JobsList";
@@ -1971,6 +1973,23 @@ export default function FieldCommandClient() {
     Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1, by: String(j.HpdAskedBy || ""), kind: String(j.HpdAskedFor || ""), askedTs: Number(j.HpdAskedTs || 0), repliedTs: Number(j.HpdRepliedTs || 0) }])),
   ), [jobs, calendarDate]);
   const rejections = useMemo(() => paperworkRejections(askedMap, [...jobs, ...olderJobs], pipMap), [askedMap, jobs, olderJobs, pipMap]);
+  // Payment tracker (31 Oct "do 6"): every job sent to HPD until PIP shows it paid (lib/pay-waiting.ts).
+  const payWaits = useMemo(() => {
+    const sent: Record<string, { sentAt?: string }> = { ...((followRef.current?.sent || {}) as Record<string, { sentAt?: string }>) };
+    const closed: Record<string, string> = Object.fromEntries(Object.entries((followRef.current?.hpd || {}) as Record<string, { closedReason?: string }>).map(([o, h]) => [o, String(h?.closedReason || "")]));
+    const emailed: Record<string, string> = {};
+    const info: Record<string, { address: string; award: number; outcome: string }> = {};
+    for (const j of [...olderJobs, ...jobs]) {
+      const id = jobId(j);
+      if (!id || isTestJob(id)) continue;
+      info[id] = { address: jobAddress(j), award: Number(String(value(j, ["AwardAmount", "awardAmount", "BidAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, outcome: value(j, ["FieldOutcome"]) };
+      const e = value(j, ["PackageEmailedAt"]);
+      if (e) emailed[id] = e;
+      if (j.PaperworkSentAt && !sent[id]) sent[id] = { sentAt: String(j.PaperworkSentAt) };
+      if (j.HpdClosedReason) closed[id] = String(j.HpdClosedReason);
+    }
+    return paymentWaits({ sent, emailed, pip: pipMap as unknown as Record<string, PipJob>, pipAsOf, jobs: info, closedReason: closed });
+  }, [jobs, olderJobs, pipMap, pipAsOf, askedMap]); // eslint-disable-line react-hooks/exhaustive-deps
   const findAnyJob = (omo: string) => jobs.find((j) => jobId(j) === omo) || olderJobs.find((j) => jobId(j) === omo) || (olderLayer || []).find((j) => jobId(j) === omo);
   const openRejections = rejections.filter((r) => !r.answered);
   useEffect(() => {
@@ -6402,6 +6421,8 @@ export default function FieldCommandClient() {
               </section>
             ) : null}
             {noticesTab === "money" ? (
+              <>
+              <PaymentWaits track={payWaits} pipAsOfText={pipAsOfText} onOpen={(omo) => { const job = findAnyJob(omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } }} />
               <section className="fc-follow-section is-money" data-hpd-smoke="fc-money">
                 <h4>💰 To get paid: rejections until HPD pays</h4>
                 <div className="fc-money-sum" data-hpd-smoke="fc-money-sum">
@@ -6441,6 +6462,7 @@ export default function FieldCommandClient() {
                   })}
                 </ol>
               </section>
+              </>
             ) : null}
             {noticesTab === "rejected" ? (<>
             <p className="fc-follow-note">💵 Procurement (they pay you): the job is done and the invoice was sent, but the invoice / affidavit was rejected. Fix it and send it again. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>

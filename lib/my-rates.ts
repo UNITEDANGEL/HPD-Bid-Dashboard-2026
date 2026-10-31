@@ -1,7 +1,8 @@
 // Your own rates (what you charge): per square foot (floor / tile, sheetrock, painting), per door (closer,
 // hinges, locks), per window, per part (Secure Tech lock, electric strike) or per job (leak, plumbing).
 // "My price" for an invitation = each line of the job summary (lib/job-summary.ts) × your rate for it.
-// Kept on this phone, never published.
+// Kept on this phone and in your own Google Drive (lib/pricing-sync.ts), never published.
+import { stampPricing } from "./pricing-sync";
 import type { JobSummary, SummaryLine, Unit } from "./job-summary";
 
 export type Rates = Record<string, number>;
@@ -23,6 +24,7 @@ export function saveRate(key: string, amount: number | null): Rates {
   if (amount && amount > 0) next[key] = Math.round(amount * 100) / 100;
   else delete next[key];
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode: lasts this visit */ }
+  stampPricing("rates", key); // and to your other devices (lib/pricing-sync.ts)
   return next;
 }
 

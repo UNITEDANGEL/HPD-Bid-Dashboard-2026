@@ -1,6 +1,7 @@
 // The owner's own minimum price per kind of work ("my cost floor"): the best price the app suggests never goes
-// below it, and a price typed under it gets a note. Set on the phone (kept on this device, never published);
+// below it, and a price typed under it gets a note. Set on the phone (kept on this device and in your own Google Drive, never published);
 // no minimum set = the app's best price as before.
+import { stampPricing } from "./pricing-sync";
 import { bestPrice, readScope, winChance, type PriceHelp } from "./bid-price";
 
 export type Floors = Record<string, number>;
@@ -23,6 +24,7 @@ export function saveFloor(kind: string, amount: number | null): Floors {
   if (amount && amount > 0) next[kind] = Math.round(amount);
   else delete next[kind];
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode: lasts this visit */ }
+  stampPricing("floors", kind); // and to your other devices (lib/pricing-sync.ts)
   return next;
 }
 

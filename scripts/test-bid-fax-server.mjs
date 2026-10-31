@@ -58,10 +58,18 @@ assert.equal((await check([
 assert.equal((await check([{ subject: "Your fax was sent successfully", snippet: "Bid - OMO ER09999 - 1 MAIN ST", at: "2026-10-12T20:02:00Z" }])).status, "waiting");
 // An email that names no job (e.g. "Successful transmission") still counts.
 assert.equal((await check([{ subject: "Successful transmission", snippet: "Your fax to 2128638655 was delivered", at: "2026-10-12T20:04:00Z" }])).status, "confirmed");
+// Bids sent in one fax (31 Oct): HumbleFax's answer names the fax's subject ("3 BIDS - OMO ER07409, ER09999, ...") or
+// only one of its OMOs; either counts for every bid of that fax, and never for a bid that wasn't in it.
+const batchCheck = async (omo, omos, messages) => (await (await handleDrivePackages(new Request("https://app.example.test/api/drive/fax-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sentAt: "2026-10-12T20:00:00Z", omo, omos }) }), "fax-status", auth, inbox(messages), {}, "owner@example.test")).json());
+const batchReply = [{ subject: "Fax delivered", snippet: "2 BIDS - OMO ER07409, ER09999 - United Angel", at: "2026-10-12T20:09:00Z" }];
+assert.equal((await batchCheck("ER09999", ["ER07409", "ER09999"], batchReply)).status, "confirmed");
+assert.equal((await batchCheck("ER07409", ["ER07409", "ER09999"], [{ subject: "Fax failed", snippet: "Busy. OMO ER09999", at: "2026-10-12T20:09:00Z" }])).status, "failed", "the other OMO of the same fax");
+assert.equal((await batchCheck("ER55555", undefined, batchReply)).status, "waiting", "a bid not in that fax");
+assert.equal((await check(batchReply)).status, "confirmed", "a single bid named in a batch subject still finds its own");
 const noRead = await handleDrivePackages(statusRequest(), "fax-status", auth, async () => new Response("{}", { status: 403 }), {}, "owner@example.test");
 assert.equal(noRead.status, 403);
 assert.match((await noRead.json()).error, /read access to email/);
 assert.equal(faxResult("Fax transmission complete", ""), "confirmed");
 assert.equal(faxResult("Your fax could not be delivered", ""), "failed");
 
-console.log("PASS bid fax server: always to HPD's bid fax at HumbleFax, cover subject, status confirmed / failed / waiting, read-permission message");
+console.log("PASS bid fax server: always to HPD's bid fax at HumbleFax, cover subject, status confirmed / failed / waiting, one answer for every bid of a shared fax, read-permission message");

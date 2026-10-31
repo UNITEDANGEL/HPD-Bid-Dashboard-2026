@@ -51,6 +51,11 @@ export function bidChecklist(
   };
 }
 
+// Bids that can go in one fax together (31 Oct): price saved, not sent, still before the deadline; soonest due first.
+export function batchCandidates(rows: ChecklistRow[]) {
+  return rows.filter((r) => r.state === "saved" && r.minutesLeft > 0).sort((a, b) => a.minutesLeft - b.minutesLeft || a.omo.localeCompare(b.omo));
+}
+
 export function isDone(r: ChecklistRow) {
   return r.state === "pending" || r.state === "confirmed";
 }

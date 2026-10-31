@@ -23,6 +23,8 @@ export type BidRecord = {
   reason?: string;
   // Everything that happened to this bid, oldest first: price saved, package filled, fax sent, HumbleFax.
   log?: BidLogEntry[];
+  // Sent in one fax with other bids (31 Oct): every OMO in that fax, this one included.
+  batch?: string[];
 };
 export type BidResult = "won" | "lost" | "pending";
 export type BidLogEntry = { at: string; what: string };
@@ -223,7 +225,39 @@ export function autoResendPlan(record: BidRecord, now = new Date()): { line: Fax
 }
 
 export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, previousPrice?: number, line: FaxLine = "main") {
-  return faxToHpd(bidFaxCover(bid, price, previousPrice), pdf, fileName, fetcher, line);
+  return faxToHpd(bidFaxCover(bid, price, previousPrice), [{ name: fileName, mimeType: "application/pdf", bytes: pdf }], fetcher, line);
+}
+
+// Several bids in ONE fax (owner, 31 Oct: "one fax for several bids"): each bid's own filled package, one after
+// another, behind one cover that lists every OMO. HPD once missed a bid (ER06823) that came inside a fax titled with
+// another job's OMO, so the subject and the cover name them all and ask HPD to log each under its own OMO.
+export const MAX_BATCH = 6;
+export type BatchBid = { omo: string; address: string; borough?: string; price: number; previousPrice?: number };
+export function batchFaxCover(bids: BatchBid[]) {
+  const usd = (v: number) => v.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const line = (b: BatchBid, i: number) => {
+    const where = `${b.address}${b.borough ? `, ${b.borough}` : ""}`;
+    const revised = b.previousPrice && b.previousPrice > 0 && b.previousPrice !== b.price;
+    return `${i + 1}. OMO ${b.omo} · ${where} · ${revised ? `REVISED BID ${usd(b.price)} (please disregard our previous bid of ${usd(b.previousPrice!)})` : `Bid price ${usd(b.price)}`}`;
+  };
+  return {
+    subject: `${bids.length} BIDS - OMO ${bids.map((b) => b.omo).join(", ")} - United Angel Construction Corp.`,
+    text: [
+      `${bids.length} SEPARATE BIDS IN THIS FAX. Please log each one under its own OMO:`,
+      "",
+      ...bids.map(line),
+      "",
+      "Each job's bid package follows, in this order.",
+      "",
+      "United Angel Construction Corp.",
+      "Jot Singh · 718-989-1381 · Fax 718-989-1382",
+      "12017 91st Ave, Richmond Hill, NY 11418",
+    ].join("\n"),
+  };
+}
+export async function sendBatchBidFax(items: (BatchBid & { pdf: Uint8Array; fileName: string })[], fetcher: typeof fetch = fetch, line: FaxLine = "main") {
+  if (items.length < 2 || items.length > MAX_BATCH) return { ok: false as const, error: `One fax takes 2 to ${MAX_BATCH} bids.` };
+  return faxToHpd(batchFaxCover(items), items.map((i) => ({ name: i.fileName, mimeType: "application/pdf", bytes: i.pdf })), fetcher, line);
 }
 
 // "No bid" back to HPD (owner, 20 Oct): the invitation with NO BID on it. The owner's reason is not sent.
@@ -242,11 +276,11 @@ export function noBidFaxCover(bid: { omo: string; address: string; borough?: str
   };
 }
 export async function sendNoBidFax(bid: { omo: string; address: string; borough?: string }, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, line: FaxLine = "main") {
-  return faxToHpd(noBidFaxCover(bid), pdf, fileName, fetcher, line);
+  return faxToHpd(noBidFaxCover(bid), [{ name: fileName, mimeType: "application/pdf", bytes: pdf }], fetcher, line);
 }
 
-async function faxToHpd(cover: { subject: string; text: string }, pdf: Uint8Array, fileName: string, fetcher: typeof fetch, line: FaxLine) {
-  const email = buildPackageEmail(cover.text, [{ name: fileName, mimeType: "application/pdf", bytes: pdf }]);
+async function faxToHpd(cover: { subject: string; text: string }, files: { name: string; mimeType: string; bytes: Uint8Array }[], fetcher: typeof fetch, line: FaxLine) {
+  const email = buildPackageEmail(cover.text, files);
   const response = await fetcher("/api/drive/fax-bid", {
     method: "POST",
     headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(cover.subject), "X-HPD-Fax-Line": line },
@@ -257,9 +291,10 @@ async function faxToHpd(cover: { subject: string; text: string }, pdf: Uint8Arra
   return { ok: true as const, to: String(body.to), messageId: String(body.messageId || ""), sentAt: String(body.sentAt || new Date().toISOString()) };
 }
 
-export async function checkBidFax(omo: string, sentAt: string, fetcher: typeof fetch = fetch) {
+export async function checkBidFax(omo: string, sentAt: string, fetcher: typeof fetch = fetch, batch?: string[]) {
   try {
-    const response = await fetcher("/api/drive/fax-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo, sentAt }) });
+    // A bid sent in one fax with others: HumbleFax's answer may name any OMO of that fax.
+    const response = await fetcher("/api/drive/fax-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(batch?.length ? { omo, sentAt, omos: batch } : { omo, sentAt }) });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) return { status: "unknown" as const, error: String(body.error || `HTTP ${response.status}`), noReadAccess: response.status === 403 };
     return { status: body.status as "confirmed" | "failed" | "waiting", subject: String(body.subject || ""), at: String(body.at || "") };

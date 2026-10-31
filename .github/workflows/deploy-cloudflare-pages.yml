@@ -97,6 +97,9 @@ jobs:
           node scripts/test-voice-route.mjs
           node scripts/test-voice-outcome-date.mjs
           node scripts/test-sent-dates-select.mjs
+          node scripts/test-batch-fax.mjs
+          node scripts/test-pricing-sync.mjs
+          node scripts/test-pay-waiting.mjs
           node scripts/test-free-space.mjs
           node scripts/test-rollout.mjs
           node scripts/test-next-job.mjs
@@ -256,6 +259,9 @@ jobs:
             scripts/test-browser-refused-questions.mjs \
             scripts/test-browser-affidavit-only.mjs \
             scripts/test-browser-voice-outcome.mjs \
+            scripts/test-browser-batch-fax.mjs \
+            scripts/test-browser-pricing-sync.mjs \
+            scripts/test-browser-pay-waiting.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

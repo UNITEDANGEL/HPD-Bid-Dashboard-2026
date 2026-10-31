@@ -3,6 +3,35 @@
   "versions": [
     {
       "date": "Oct 31, 2026",
+      "title": "Payments: every job until it's paid",
+      "items": [
+        "💵 HPD notices → Procurement → 💰 To get paid now starts with every job whose paperwork went to HPD: sent date, days waiting, and what PIP shows (open, paid).",
+        "⏰ Late first: jobs PIP still shows open more than 90 days after you sent the paperwork, with the amount, so you know whom to call at HPD procurement. Tap one to open the job.",
+        "❔ Jobs sent after PIP's last download, or not in PIP's download at all, are never called late: the screen says how many, and a fresh Agreement Summary from PIP fills them in.",
+        "📈 Paid in the last 30 days are listed too."
+      ]
+    },
+    {
+      "date": "Oct 31, 2026",
+      "title": "Your rates on the phone and the computer",
+      "items": [
+        "☁️ Your rates (My price), your minimums and your costs now follow you: set them on the iPhone and the computer has them, change them on the computer and the phone gets the change.",
+        "🔒 Kept in one private file in your own Google Drive (like your saved signatures), never published. The newest change of each one wins, a removal too.",
+        "📱 Not connected to Google on a device? Bids → Stats → Costs & rates says they stay on that device only."
+      ]
+    },
+    {
+      "date": "Oct 31, 2026",
+      "title": "One fax for several bids",
+      "items": [
+        "📠 Two or more bids with a price saved and not sent? The Bid checklist shows \"Send N saved bids in one fax\". Tick the ones to send (up to 6), tap Send, then tap again: one fax to HPD (212) 863-8655.",
+        "📋 The first page lists every OMO with its address and price and asks HPD to log each one under its own OMO (HPD once missed a bid that came inside a fax titled with another job). Each bid's own package follows, in that order.",
+        "✓ Each bid is then tracked on its own: fax going through, then confirmed by HumbleFax's one answer for that fax. If the fax fails, each bid is resent by itself as usual.",
+        "✏️ A revised price still goes in its own fax (the old price is crossed out on it)."
+      ]
+    },
+    {
+      "date": "Oct 31, 2026",
       "title": "Corrections: dates from what you sent",
       "items": [
         "📨 Fix & resend fills in the dates from the paperwork you already sent HPD (your Sent mail): work dates, access tries and calls, refusal or done-by-others day. Now 42 rejected jobs have them, up from 32 (the rest have no affidavit in your Sent mail: faxed, or sent another way).",

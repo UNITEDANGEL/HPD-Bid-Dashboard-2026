@@ -12,7 +12,7 @@ import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { autoResendPlan, lineOf } from "../../lib/bid-records";
-import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, sendNoBidFax, winRate, type BidRecord } from "../../lib/bid-records";
+import { bidHistory, currentRecord, earlierRounds, FAX_LINES, MAX_BATCH, sendBatchBidFax, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, sendNoBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import { BuildingHero } from "./BuildingPhoto";
@@ -22,11 +22,12 @@ import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "..
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
 import { jobGlyphSvg, jobIcon } from "../../lib/job-icon";
 import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
+import { syncPricing } from "../../lib/pricing-sync";
 import { calcContext, calcPrice } from "../../lib/bid-calc";
 import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "../../lib/costs";
 import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
-import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
+import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
@@ -114,6 +115,17 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const [costs, setCosts] = useState<Costs>({});
   const [costEdit, setCostEdit] = useState<Record<string, { material: string; labor: string }>>({});
   useEffect(() => { setCosts(readCosts()); }, []);
+  // Rates, minimums and costs from your other devices (your own Google Drive): the newest change of each wins.
+  const [pricingSync, setPricingSync] = useState<"" | "off" | "on">("");
+  useEffect(() => {
+    let gone = false;
+    void syncPricing().then((r) => {
+      if (gone) return;
+      setPricingSync(r ? "on" : "off");
+      if (r) { setRates(readRates()); setFloors(readFloors()); setCosts(readCosts()); }
+    });
+    return () => { gone = true; };
+  }, []);
   // No bid (lib/no-bid): decided not to bid this invitation, with a reason.
   const [noBids, setNoBids] = useState<Record<string, NoBid>>({});
   const [noBidAsk, setNoBidAsk] = useState(false);
@@ -427,7 +439,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     const checkAll = async () => {
       for (const rec of bidsToCheck(recordsRef.current)) {
         if (stopped) return;
-        const result = await checkBidFax(rec.omo, rec.sentAt!);
+        const result = await checkBidFax(rec.omo, rec.sentAt!, fetch, rec.batch);
         if (result.status === "confirmed" || result.status === "failed") {
           const latest = recordsRef.current[rec.omo];
           if (latest && latest.sentAt === rec.sentAt && latest.status === "sent") {
@@ -696,6 +708,53 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     return { bytes, name: `${bid.omo}_BID_${Math.round(price)}_${bid.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf` };
   }
 
+  // One fax for several bids (owner, 31 Oct "do 4"): the checklist's saved, unsent bids (not revisions: those go alone)
+  // in a single fax to HPD's main line, one cover listing every OMO, each bid's own package after it. Two taps, like
+  // every fax; each bid is then tracked on its own (HumbleFax's answer for the fax counts for all of them; a failure is
+  // resent bid by bid by the usual auto-resend).
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchSkip, setBatchSkip] = useState<string[]>([]);
+  const [batchArmed, setBatchArmed] = useState(false);
+  const [batchBusy, setBatchBusy] = useState("");
+  const [batchDone, setBatchDone] = useState<{ omos: string[]; to: string } | null>(null);
+  async function sendBatch(rows: { omo: string }[]) {
+    if (rows.length < 2 || batchBusy) return;
+    if (!batchArmed) { setBatchArmed(true); return; }
+    setBatchArmed(false);
+    try {
+      const items: { bid: UpcomingBid; rec: BidRecord; bytes: Uint8Array; name: string }[] = [];
+      for (const [i, r] of rows.entries()) {
+        const bid = (bids || []).find((b) => b.omo === r.omo);
+        const rec = recordsRef.current[r.omo];
+        if (!bid || !rec || !(rec.price > 0) || rec.status !== "saved") continue;
+        setBatchBusy(`Filling bid ${i + 1} of ${rows.length} (${r.omo})…`);
+        items.push({ bid, rec, ...(await buildPackageFor(bid, rec.price)) });
+      }
+      if (items.length < 2) { setBatchBusy("Not sent: fewer than 2 bids are still ready. Send it on its own."); return; }
+      setBatchBusy(`Sending 1 fax with ${items.length} bids…`);
+      const result = await sendBatchBidFax(items.map((i) => ({ omo: i.bid.omo, address: i.bid.address, borough: i.bid.borough, price: i.rec.price, pdf: i.bytes, fileName: i.name })), fetch, "main");
+      const batch = items.map((i) => i.bid.omo);
+      const label = FAX_LINES[0].label;
+      if (!result.ok) {
+        for (const i of items) await update(withLog({ ...(recordsRef.current[i.bid.omo] || i.rec), updatedAt: new Date().toISOString() }, `One fax with ${batch.length} bids NOT sent to ${label}: ${result.error}`));
+        setBatchBusy(`Not sent: ${result.error}`);
+        return;
+      }
+      for (const i of items) {
+        const record = recordsRef.current[i.bid.omo] || i.rec;
+        const others = batch.filter((o) => o !== i.bid.omo).join(", ");
+        await update(withLog({ ...record, status: "sent", sentAt: result.sentAt, sentPrice: record.price, priorPrice: undefined, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, batch, filledAt: result.sentAt, filledPrice: record.price, attempts: (record.attempts || 0) + 1, updatedAt: new Date().toISOString() },
+          `Fax sent to HPD ${label} at ${money2(record.price)}, in one fax with ${others}`, result.sentAt));
+      }
+      setBatchBusy("");
+      setBatchOpen(false);
+      setBatchSkip([]);
+      setBatchDone({ omos: batch, to: label });
+    } catch (err) {
+      setBatchBusy(`Not sent: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   // A failed fax is sent again (owner, 19 Oct: "this should be auto resend and confirm"): the same bid at the price
   // already sent, to the next HPD fax line. By itself when the app is open (once per failure, up to 3, only before it's
   // due), or with one tap on "Resend now". HumbleFax's answer is then checked every minute as usual.
@@ -722,7 +781,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         if (auto) notify({ kind: "fax-bad", go: "bids", omo: rec.omo, title: `Bid fax FAILED · ${rec.omo}`, text: `The automatic resend didn't go out (${result.error}): open it and send it.` });
         return;
       }
-      await update(withLog({ ...base, status: "sent", sentAt: result.sentAt, sentPrice: price, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts: (base.attempts || 0) + 1, updatedAt: new Date().toISOString() },
+      await update(withLog({ ...base, status: "sent", sentAt: result.sentAt, sentPrice: price, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, batch: undefined, attempts: (base.attempts || 0) + 1, updatedAt: new Date().toISOString() },
         `Fax sent again${auto ? " automatically" : ""} to HPD ${label} at ${money2(price)} (after a failed fax)`, result.sentAt));
       setAutoNote(`🔁 ${rec.omo}: the fax failed, so it was sent again${auto ? " automatically" : ""} to ${label}. Waiting for HumbleFax to confirm.`);
     } catch (err) {
@@ -797,7 +856,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     }
     const revisions = previous ? [...(record.revisions || []), { price: previous, sentAt: record.sentAt }] : record.revisions;
     const attempts = (record.attempts || 0) + 1;
-    await update(withLog({ ...record, status: "sent", sentAt: result.sentAt, sentPrice: record.price, priorPrice: undefined, revisions, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts, updatedAt: new Date().toISOString() },
+    await update(withLog({ ...record, status: "sent", sentAt: result.sentAt, sentPrice: record.price, priorPrice: undefined, revisions, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, batch: undefined, attempts, updatedAt: new Date().toISOString() },
       previous ? `Revised fax sent to HPD ${lineLabel}: ${money2(previous)} → ${money2(record.price)}` : `Fax sent to HPD ${lineLabel} at ${money2(record.price)}${attempts > 1 ? ` (send ${attempts})` : ""}`, result.sentAt));
     setRevising(false);
     setBusy("");
@@ -1475,6 +1534,42 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               {checklist.todo.length > 1 && !sitting ? (
                 <button type="button" className="fc-sitting-start" data-hpd-smoke="fc-sitting-start" onClick={startSitting}>🎯 Bid all {checklist.todo.length} in a row · best price filled in</button>
               ) : null}
+              {batchDone ? (
+                <p className="fc-batch-done" data-hpd-smoke="fc-batch-done">📠 1 fax with {batchDone.omos.length} bids sent to HPD {batchDone.to}: {batchDone.omos.join(", ")}. Each is tracked on its own; HumbleFax&apos;s answer counts for all of them.
+                  <button type="button" onClick={() => setBatchDone(null)}>OK</button>
+                </p>
+              ) : null}
+              {(() => {
+                // Saved, unsent, not a revision (a revised price goes in its own fax, with the old price crossed out).
+                const ready = batchCandidates(checklist.rows).filter((r) => { const rec = records[r.omo]; return rec && !revisedFrom(rec) && (bids || []).some((b) => b.omo === r.omo); });
+                if (ready.length < 2) return null;
+                const picked = ready.filter((r) => !batchSkip.includes(r.omo)).slice(0, MAX_BATCH);
+                const total = picked.reduce((sum, r) => sum + (records[r.omo]?.price || 0), 0);
+                if (!batchOpen) return <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => { setBatchOpen(true); setBatchArmed(false); setBatchBusy(""); }}>📠 Send {Math.min(ready.length, MAX_BATCH)} saved bids in one fax</button>;
+                return (
+                  <div className="fc-batch" data-hpd-smoke="fc-batch">
+                    <b>📠 One fax to HPD {FAX_LINES[0].label}</b>
+                    <small>A cover page lists every OMO and asks HPD to log each one under its own OMO. Then each bid&apos;s own package, in this order.</small>
+                    <ul>{ready.map((r) => {
+                      const on = !batchSkip.includes(r.omo) && picked.some((x) => x.omo === r.omo);
+                      return (
+                        <li key={r.omo} className={on ? "" : "is-off"}>
+                          <label><input type="checkbox" data-hpd-smoke="fc-batch-pick" data-omo={r.omo} checked={on} disabled={!!batchBusy} onChange={() => { setBatchArmed(false); setBatchSkip((v) => (v.includes(r.omo) ? v.filter((o) => o !== r.omo) : [...v, r.omo])); }} />
+                            <span><span><b>{r.omo}</b> · {money2(records[r.omo]?.price || 0)}</span><small>{r.address} · due {r.day === "today" ? "today" : "tomorrow"} {r.bidDueTime} · {timeLeft(r.minutesLeft)}</small></span></label>
+                        </li>
+                      );
+                    })}</ul>
+                    {ready.length > MAX_BATCH ? <small>Up to {MAX_BATCH} bids in one fax; the rest go in the next one.</small> : null}
+                    {batchBusy ? <p className="fc-batch-busy" data-hpd-smoke="fc-batch-busy">{batchBusy}</p> : null}
+                    <div className="fc-batch-actions">
+                      <button type="button" className={`fc-batch-send${batchArmed ? " is-armed" : ""}`} data-hpd-smoke="fc-batch-send" disabled={picked.length < 2 || /^(Filling|Sending)/.test(batchBusy)} onClick={() => void sendBatch(picked)}>
+                        {batchArmed ? `Tap again to fax ${picked.length} bids (${money2(total)} in all)` : picked.length < 2 ? "Pick at least 2 bids" : `Send 1 fax with ${picked.length} bids`}
+                      </button>
+                      <button type="button" className="fc-batch-cancel" data-hpd-smoke="fc-batch-cancel" disabled={/^(Filling|Sending)/.test(batchBusy)} onClick={() => { setBatchOpen(false); setBatchArmed(false); setBatchBusy(""); }}>Cancel</button>
+                    </div>
+                  </div>
+                );
+              })()}
               {checklistOpen ? (
                 <div className="fc-cl-rows" role="list">
                   {checklist.rows.map((r) => {
@@ -1560,7 +1655,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               {statsPage === "costs" ? (
               <section className="fc-stats-block fc-floors" data-hpd-smoke="fc-floors">
                 <h4>🧾 Your costs</h4>
-                <p className="fc-stats-note">What each kind of work costs you (materials and labor), counted the same way as the price. The calculator shows your profit on every bid. Kept on this phone.</p>
+                <p className="fc-stats-note">What each kind of work costs you (materials and labor), counted the same way as the price. The calculator shows your profit on every bid.</p>
                 <div className="fc-costs" data-hpd-smoke="fc-costs">
                   {COST_ITEMS.map((it) => {
                     const c = costs[it.key];
@@ -1587,6 +1682,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     <li key={kind}><span>{kind}</span><b>{money(amount)}</b><button type="button" data-hpd-smoke="fc-floors-remove" onClick={() => setFloors(saveFloor(kind, null))}>Remove</button></li>
                   ))}</ul>
                 ) : <p className="fc-stats-note">None yet. Open a bid and tap &quot;Set my minimum&quot; under the best price: the least you&apos;ll take for that kind of work. The best price never goes below it.</p>}
+                <p className={`fc-pricing-sync is-${pricingSync || "wait"}`} data-hpd-smoke="fc-pricing-sync">{pricingSync === "on" ? "☁️ Costs, rates and minimums are the same on your phone and computer (kept in your own Google Drive)." : pricingSync === "off" ? "📱 Kept on this device only: connect Google (Storage page) to have them on your phone and computer too." : "Checking your other devices…"}</p>
               </section>
               ) : null}
               {statsPage === "prices" ? <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} /> : null}

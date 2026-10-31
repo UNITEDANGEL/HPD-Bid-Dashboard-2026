@@ -4,6 +4,8 @@
 // Starting numbers are the owner's own: hollow metal door ~$500, hopper door ~$300, hinges ~$15 each, door closer
 // ~$30, Secure Tech lock ~$1,000+, electric strike ~$150. Everything else starts empty for the owner to fill in.
 
+import { stampPricing } from "./pricing-sync";
+
 export type CostEntry = { material: number; labor: number };
 export type Costs = Record<string, CostEntry> & { trip?: CostEntry };
 export type CostItem = { key: string; label: string; unit: string; note?: string };
@@ -56,6 +58,7 @@ export function saveCost(key: string, entry: CostEntry | null): Costs {
   if (entry && (entry.material > 0 || entry.labor > 0)) next[key] = { material: Math.max(0, Math.round(entry.material * 100) / 100), labor: Math.max(0, Math.round(entry.labor * 100) / 100) };
   else delete next[key];
   try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode: lasts this visit */ }
+  stampPricing("costs", key); // and to your other devices (lib/pricing-sync.ts)
   return next;
 }
 

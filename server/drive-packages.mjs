@@ -85,6 +85,21 @@ export function packageRecipients(env, ownerEmail) {
 }
 
 const SIGNATURES_KIND = "hpd-signatures-v1";
+const PRICING_KIND = "hpd-pricing-v1";
+// Your rates, minimums and costs (31 Oct): name -> { v: amount (0 = removed), l: labor (costs), at: when changed }.
+// Numbers and short names only.
+export function pricingFields(value) {
+  const side = (raw, withLabor) => {
+    const out = {};
+    for (const [k, e] of Object.entries(raw && typeof raw === "object" ? raw : {}).slice(0, 400)) {
+      const v = Number(e?.v), at = typeof e?.at === "string" && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(e.at) ? e.at : "";
+      const l = Number(e?.l) || 0;
+      if (typeof k === "string" && k.length <= 80 && Number.isFinite(v) && v >= 0 && v <= 1_000_000) out[k] = withLabor ? { v: Math.round(v * 100) / 100, l: Math.round(Math.min(Math.max(l, 0), 1_000_000) * 100) / 100, at } : { v: Math.round(v * 100) / 100, at };
+    }
+    return out;
+  };
+  return { rates: side(value?.rates), floors: side(value?.floors), costs: side(value?.costs, true) };
+}
 // Only PNG signature pictures and a short notary name are kept.
 function signatureFields(value) {
   const png = (v) => typeof v === "string" && v.startsWith("data:image/png;base64,") && v.length <= 600_000 ? v : "";
@@ -151,6 +166,30 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
         body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${boundary}--`,
       });
       if (!upload.ok) fail(`Could not save the signatures to Drive (HTTP ${upload.status}). They are still saved on this phone.`);
+      return reply({ saved: true });
+    }
+    // Your rates (My price) and minimums, in one private file in the owner's own Drive, so the phone and the computer
+    // have the same ones (31 Oct). The app merges (newest change per item wins) and sends the whole set back.
+    if (action === "pricing") {
+      if (!request.headers.get("Content-Type")?.startsWith("application/json")) fail("JSON request required.", 415);
+      let body;
+      try { body = JSON.parse(new TextDecoder().decode(await bodyBytes(request, 200_000, "Rates"))); } catch (e) { if (e.status) throw e; fail("Invalid request.", 400); }
+      const query = new URLSearchParams({ q: `trashed = false and 'me' in owners and appProperties has { key='hpdKind' and value='${PRICING_KIND}' }`, fields: "files(id)", pageSize: "1" });
+      const found = (await getJson(`${DRIVE}/files?${query}`, "Could not read Google Drive")).files?.[0]?.id || "";
+      if (body.op !== "save") {
+        if (!validId(found)) return reply(pricingFields({}));
+        const response = await call(`${DRIVE}/files/${found}?alt=media`);
+        if (!response.ok) fail(`Could not read your saved rates (HTTP ${response.status}).`);
+        try { return reply(pricingFields(JSON.parse(await response.text()))); } catch { return reply(pricingFields({})); }
+      }
+      const text = JSON.stringify({ ...pricingFields(body), savedAt: new Date().toISOString() });
+      const boundary = `hpd_${crypto.randomUUID()}`;
+      const meta = found ? {} : { name: "HPD my rates (private).json", mimeType: "application/json", appProperties: { hpdKind: PRICING_KIND } };
+      const upload = await call(`https://www.googleapis.com/upload/drive/v3/files${found ? `/${found}` : ""}?uploadType=multipart&fields=id`, {
+        method: found ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+        body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${boundary}--`,
+      });
+      if (!upload.ok) fail(`Could not save your rates to Drive (HTTP ${upload.status}). They are still saved on this device.`);
       return reply({ saved: true });
     }
     if (action === "package-folder") {
@@ -224,7 +263,10 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       // HumbleFax emails a confirmation after a fax goes through: look for its reply since the send.
       const body = await request.json().catch(() => null);
       const since = Date.parse(body?.sentAt || "");
-      const omo = String(body?.omo || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+      const clean = (v) => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+      const omo = clean(body?.omo);
+      // Bids sent in one fax (31 Oct): an answer naming any OMO of that fax is this bid's answer.
+      const mine = new Set([omo, ...(Array.isArray(body?.omos) ? body.omos.slice(0, 10).map(clean) : [])].filter(Boolean));
       if (!Number.isFinite(since)) fail("Invalid fax status request.", 400);
       const q = encodeURIComponent(`from:humblefax.com after:${Math.floor(since / 1000) - 120}`);
       const listed = await call(`${GMAIL_API}?q=${q}&maxResults=10`);
@@ -242,8 +284,8 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       // The reply that names this OMO; otherwise the first reply after the send that names no other OMO
       // (with several bids out, one job's confirmation must not count for another).
       const names = (r) => (`${r.subject} ${r.snippet}`.toUpperCase().match(/\b[A-Z]{2}\d{5}\b/g) || []);
-      const pick = replies.find((r) => omo && names(r).includes(omo))
-        || replies.filter((r) => !names(r).some((o) => o !== omo)).sort((a, b) => a.at.localeCompare(b.at))[0];
+      const pick = replies.find((r) => names(r).some((o) => mine.has(o)))
+        || replies.filter((r) => !names(r).some((o) => !mine.has(o))).sort((a, b) => a.at.localeCompare(b.at))[0];
       const status = pick ? faxResult(pick.subject, pick.snippet) || "confirmed" : "waiting";
       return reply({ status, subject: pick?.subject || "", at: pick?.at || "" });
     }
