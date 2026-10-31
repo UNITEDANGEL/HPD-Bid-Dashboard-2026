@@ -1,4 +1,4 @@
-export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string }; done?: { at: string; label: string }; contact?: { tone: "none" | "try" | "ok" | "common"; tries: number } };
+export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string }; done?: { at: string; label: string }; contact?: { tone: "none" | "try" | "ok" | "common"; tries: number }; secondTry?: { from: string; first: string } };
 export type RoutePoint = { lat: number; lng: number };
 export type RouteSettings = { date: string; start: string; end: string; minutes: number; borough: string };
 export type RouteStop = { job: RouteJob; arrival: number; finish: number; travel: number; warning: string };
@@ -18,11 +18,12 @@ export function travelEstimate(a: RoutePoint, b: RoutePoint) {
   const h = Math.sin((b.lat-a.lat)*rad/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin((b.lng-a.lng)*rad/2)**2;
   return Math.ceil(3959 * 2 * Math.asin(Math.sqrt(Math.min(1,h))) / 15 * 60) + 5;
 }
+// A no-access job joins the route on the day its 2nd try is allowed (72 hours after the 1st), and every day after.
 export function eligibleRouteJobs(jobs: RouteJob[], s: RouteSettings) {
   return jobs.filter(j => !j.closed && !j.blocked && Number.isFinite(j.lat) && Number.isFinite(j.lng) && Math.abs(j.lat)<=90 && Math.abs(j.lng)<=180 && !(j.lat===0 && j.lng===0) && (s.borough==='ALL' || j.borough===s.borough) &&
     (j.appointment && ['confirmed','requested'].includes(j.appointment.state)
       ? j.appointment.state==='confirmed' && j.appointment.date===s.date
-      : j.pending));
+      : j.pending || Boolean(j.secondTry && j.secondTry.from <= s.date)));
 }
 // Minutes to park and walk in, added to real road driving time (the straight-line estimate already has it).
 export const PARK_MINUTES = 5;

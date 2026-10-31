@@ -4,7 +4,7 @@
 
 import { spokenSearch } from "./job-search";
 
-import { parseWhen } from "./voice-when";
+import { parseWhen, parsePastDay } from "./voice-when";
 
 export type AgentCommand =
   | { intent: "paid-period"; period: "month" | "last-month" | "year" | "last-year" }
@@ -31,7 +31,7 @@ export type AgentCommand =
   | { intent: "tracker" }
   | { intent: "money" }
   | { intent: "job-status"; ref: string }
-  | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string }
+  | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string; date?: string; who?: string }
   | { intent: "read-job"; ref: string; pick?: number; all?: boolean }
   | { intent: "bids" }
   | { intent: "come-back" }
@@ -71,6 +71,23 @@ function refOf(text: string) {
     .replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
   // A job is named by its number or its address (addresses have numbers); anything else means the job on screen.
   return /\d/.test(left) ? left : "";
+}
+
+// The day it happened and, for a refusal, who refused, said with the outcome (31 Oct: "refused access EQ15239 yesterday,
+// male, tall, dark hair"): both taken out before the job is looked up, so "10/24" or "tall" isn't read as an address.
+export const WHO_START = /\b(?:by )?(?:an? |the )?(male|female|man|woman|guy|lady|boy|girl|young|old|older|elderly|super|superintendent|porter|handyman|landlord|owner|son|daughter|husband|wife|mother|father|grand(?:mother|father|ma|pa))\b/;
+function outcomeCommand(t: string, outcome: Extract<AgentCommand, { intent: "outcome" }>["outcome"]): AgentCommand {
+  const when = parsePastDay(t);
+  let rest = when.words;
+  let who = "";
+  if (outcome === "REFUSED_ACCESS") {
+    const m = WHO_START.exec(rest);
+    if (m) {
+      who = rest.slice(m.index).replace(/^by\s+/, "").replace(/\b(refused|refusal|access|denied|entry)\b/g, " ").replace(/\s+/g, " ").trim();
+      rest = rest.slice(0, m.index);
+    }
+  }
+  return { intent: "outcome", outcome, ref: refOf(rest), ...(when.date ? { date: when.date } : {}), ...(who ? { who } : {}) };
 }
 
 export function parseCommand(heard: string): AgentCommand {
@@ -222,7 +239,7 @@ export function parseCommand(heard: string): AgentCommand {
   const pick = (ORD.find(([re]) => re.test(t)) || [null, 0])[1] as number;
   if (/\b(read|describe|descriptions?|what('?s| is| are) (the|this|those|these) jobs?|tell me (about|more)|scope|details?)\b/.test(t) || (pick && /\b(one|job|it|number|about)\b/.test(t))) return { intent: "read-job", ref: refOf(t), ...(pick ? { pick } : {}), ...(/\b(descriptions|all|them|those|these|each|jobs)\b/.test(t) ? { all: true } : {}) };
   // A job outcome needs "I / we / job / work order / this", so a search like "completed jobs" stays a search.
-  if (/\b(i|we|i'?ve|we'?ve|job|work ?order|this|tenant|nobody|no one|someone|it)\b/.test(t) || /\bno access\b/.test(t) || /[a-z]{2}\s*\d{5}/.test(t)) for (const [re, outcome] of OUTCOMES) if (re.test(t)) return { intent: "outcome", outcome, ref: refOf(t) };
+  if (/\b(i|we|i'?ve|we'?ve|job|work ?order|this|tenant|nobody|no one|someone|it)\b/.test(t) || /\bno access\b/.test(t) || /[a-z]{2}\s*\d{5}/.test(t)) for (const [re, outcome] of OUTCOMES) if (re.test(t)) return outcomeCommand(t, outcome);
   // Any other question goes to the AI with the app's facts (owner, 22 Oct: "talk it out with me").
   if (/\?$/.test(String(heard).trim()) || /^(what|which|how|when|why|who|where|can|could|should|would|is|are|do|does|did|will|tell me|give me|explain)\b/.test(t)) return { intent: "ask", question: String(heard).trim() };
   // Said like a sentence, not a search ("anything new from Gafur", "HPD gave me work today?"): the AI answers it

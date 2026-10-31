@@ -18,6 +18,9 @@ assert.equal(validRouteSettings({...s,end:'07:00'}),false);assert.equal(validRou
 assert.equal(planDay(jobs,{...s,borough:'QN'},origin).length,0);
 assert.equal(eligibleRouteJobs([job('bad',1,{lat:NaN})],s).length,0);
 assert.equal(planDay(Array.from({length:20},(_,i)=>job(String(i),i)),s,origin).length,8);
+// A no-access job joins the route on the day its 2nd try is allowed, and after; not before.
+const t2=(from)=>job('t2',30,{pending:false,secondTry:{from,first:'Mon 09/26'}});
+assert.equal(eligibleRouteJobs([t2('2026-09-30')],s).length,1);assert.equal(eligibleRouteJobs([t2('2026-09-28')],s).length,1);assert.equal(eligibleRouteJobs([t2('2026-10-01')],s).length,0);
 assert.equal(scheduleStops([appointment],{...s,start:'10:50'},origin)[0].warning,'Appointment window conflict');
 assert.equal(scheduleStops([job('late',1)],{...s,start:'16:50'},origin)[0].warning,'Beyond workday');
 assert.equal(routeTime(480),'08:00');assert.equal(routeTime(NaN),'Unavailable');

@@ -149,6 +149,20 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       }
     } catch (e) { console.log(`appointment alerts skipped: ${e.message}`); }
   }
+  // 🔒 2nd try due (owner, 31 Oct "do 2"): a no-access job whose 2nd try is allowed (72 hours after the 1st), once, from
+  // 10 AM on a weekday (a 2nd try due on the weekend rings Monday 10 AM). The job is on Today's route from that day too.
+  if (loadLib && workingHours(now) && Number(nyParts(now).hour) >= 10) {
+    try {
+      const { secondTryState } = await loadLib("field-next-action");
+      for (const [omo, rec] of Object.entries(records || {})) {
+        if (!/^[A-Z]{2}\d{5}$/.test(omo)) continue;
+        const t2 = secondTryState(rec || {}, new Date(now));
+        if (!t2?.due) continue;
+        const address = String(addresses?.[omo] || rec.BuildingAddress || "").replace(/,\s*\d{5}$/, "");
+        out.push({ key: `t2:${h(`${omo}|${t2.firstDay}`)}`, kind: "message", title: `🔒 2nd try due${address ? ` · ${address}` : ""}`, body: `${omo}: no access ${t2.firstLabel}. Knock again; the affidavit needs both tries. It's on Today's route.`, url: `/map/?view=all&map=1&omo=${omo}`, tag: `t2-${omo}` });
+      }
+    } catch (e) { console.log(`2nd try alerts skipped: ${e.message}`); }
+  }
   // 💵 Paid (owner, 23 Oct "build the paid alert"): a payment from HPD in PIP, and each job PIP now shows as paid. Only
   // the last 7 days, so turning this on doesn't ring for old payments.
   const recentDay = (d) => d && now - Date.parse(`${d}T12:00:00Z`) <= 7 * 86400000;

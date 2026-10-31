@@ -1324,7 +1324,9 @@ export default function FieldCommandClient() {
         heardSomething = true;
         if (final && convoRef.current && /^(stop|bye|goodbye|thanks|thank you|that'?s all|i'?m done|done|end)\b/i.test(said.trim())) { convoRef.current = false; setConvo(false); setAgent({ heard: said, reply: "OK. Tap 💬 when you want to talk again." }); speak("OK, talk later.", 100); return; }
         const cmd = parseCommand(said);
-        if (cmd.intent === "search" && !convoRef.current) { setFindHidden(""); setSearch(cmd.text); return; }
+        // Right after "Who refused?" the description goes to the helper, not the search box.
+        const answeringWho = Boolean(pendingWhoRef.current && Date.now() - pendingWhoRef.current.at < 120000);
+        if (cmd.intent === "search" && !convoRef.current && !answeringWho) { setFindHidden(""); setSearch(cmd.text); return; }
         if (final) { setSearch(""); convoMissRef.current = 0; agentRef.current(said); }
       };
       rec.onend = () => {
@@ -1542,6 +1544,9 @@ export default function FieldCommandClient() {
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
   const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
+  // An outcome said with its day / who refused, waiting for yes; a refusal said without who waits for the description.
+  const pendingOutcomeRef = useRef<{ id: string; outcome: string; date?: string; who?: string } | null>(null);
+  const pendingWhoRef = useRef<{ id: string; date?: string; at: number } | null>(null);
   // An appointment said to the helper, waiting for your yes.
   const pendingApptRef = useRef<{ id: string; appt: Appointment } | null>(null);
   // The tenant last asked to call (by voice), for "I called the tenant, no answer" right after.
@@ -3457,7 +3462,9 @@ export default function FieldCommandClient() {
     const done = last && queue !== 'pending' && FIELD_OUTCOMES[String(last.outcome)] ? { at: String(last.recordedAt), label: FIELD_OUTCOMES[String(last.outcome)] } : undefined;
     return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined,done,
       // The tenant on the route too (30 Oct): who expects you, who's a knock-anyway access attempt.
-      contact:(()=>{const cs=tenantContactState(job as Record<string, unknown>,tenantInfo(job).commonArea);return {tone:cs.tone,tries:cs.tries};})()}];
+      contact:(()=>{const cs=tenantContactState(job as Record<string, unknown>,tenantInfo(job).commonArea);return {tone:cs.tone,tries:cs.tries};})(),
+      // 🔒 A no-access job waiting for its 2nd try (31 Oct): on the route from the day it's allowed.
+      ...(()=>{const t2=secondTryState(job as Record<string, unknown>);return t2?{secondTry:{from:t2.dueDay,first:t2.firstLabel}}:{};})()}];
   }), [jobs, calendarDate]);
 
   // Two taps instead of pop-up boxes (the iPhone home-screen app blocks confirm()): the first tap arms the button and
@@ -3658,8 +3665,11 @@ export default function FieldCommandClient() {
   }
 
   function saveVisitOutcome(job: JobRecord, review = false) {
+    saveOutcomeFor(job, outcomeDrafts[jobId(job)] || { outcome: "", note: "" }, review);
+  }
+  // The card's outcome form and the voice helper ("refused access EQ15239 yesterday, male, tall, dark hair") save the same way.
+  function saveOutcomeFor(job: JobRecord, draft: OutcomeDraft, review = false) {
     const id = jobId(job);
-    const draft: OutcomeDraft = outcomeDrafts[id] || { outcome: "", note: "" };
     if (draft.outcome && paperworkLock(job).locked && !isTestJob(id)) { setOutcomeMessage(lockedMessage(id, paperworkLock(job))); return; }
     if (draft.outcome === "REFUSED_ACCESS" && !String(draft.who || "").trim()) { setOutcomeMessage("Describe who refused access first (the affidavit needs it), e.g. Male, tall, dark hair."); return; }
     try {
@@ -3899,7 +3909,13 @@ export default function FieldCommandClient() {
       const parts = splitCommands(heard);
       if (parts.length > 1) { multiRef.current = { heard, queue: parts.slice(1), replies: [] }; setAgent({ heard, reply: "Working on it…" }); agentRef.current(parts[0], true); return; }
     }
-    const cmd = parseCommand(heard);
+    let cmd = parseCommand(heard);
+    // "Who refused?" was just asked: what's said next is the description (unless it's no / cancel).
+    const askedWho = pendingWhoRef.current;
+    pendingWhoRef.current = null;
+    if (askedWho && Date.now() - askedWho.at < 120000 && cmd.intent !== "no" && cmd.intent !== "yes" && String(heard).trim()) {
+      cmd = { intent: "outcome", outcome: "REFUSED_ACCESS", ref: askedWho.id, ...(askedWho.date ? { date: askedWho.date } : {}), who: String(heard).trim().replace(/[.!?]+$/, "") };
+    }
     const answer = (reply: string, confirm?: { id: string; outcome: string }) => {
       const m = multiRef.current;
       if (m) {
@@ -4187,11 +4203,22 @@ export default function FieldCommandClient() {
         return;
       }
       if (c.outcome === "ARRIVED") { openIssueJob(job); markArrived(job); answer(`Started. You're at ${jobAddress(job)}: the arrival is saved.`); window.setTimeout(() => offerOutside(job), 2500); return; }
+      const said = pendingOutcomeRef.current;
+      pendingOutcomeRef.current = null;
+      if (said && said.id === c.id && said.outcome === c.outcome) {
+        // Saved like the job card: that day, who refused, then the package (affidavit + invoice) opens.
+        saveOutcomeFor(job, { outcome: c.outcome, note: "Said to the voice helper", date: said.date, who: said.who });
+        const fresh = { ...job, ...(readSharedWorkflowOverrides()[c.id] || {}) };
+        if (value(fresh, ["FieldOutcome"]) !== c.outcome) { answer("Not saved. Open the job card to check it."); return; }
+        const waiting = secondTryState(fresh);
+        answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}${said.date ? ` on ${said.date.slice(5).replace("-", "/")}` : ""}.${waiting ? ` Come back from ${waiting.dueLabel} for the 2nd try.` : " The package opens next."}`);
+        return;
+      }
       setJobOutcome(job, c.outcome, "Said to the voice helper");
       answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.`);
       return;
     }
-    if (cmd.intent === "no") { answer("OK, nothing saved."); return; }
+    if (cmd.intent === "no") { pendingOutcomeRef.current = null; answer("OK, nothing saved."); return; }
     if (cmd.intent === "read-job" && !cmd.ref && lastJobsRef.current && Date.now() - lastJobsRef.current.at < 15 * 60000 && (cmd.pick || cmd.all || !selectedJob)) {
       const ids = cmd.pick ? lastJobsRef.current.ids.slice(cmd.pick - 1, cmd.pick) : lastJobsRef.current.ids.slice(0, 5);
       if (!ids.length) { answer(`I only listed ${lastJobsRef.current.ids.length}.`); return; }
@@ -4224,7 +4251,17 @@ export default function FieldCommandClient() {
         answer(`${jobAddress(job)}. ${plain ? `The job: ${plain}.` : ""}${where ? ` Where: ${where}.` : ""} HPD says: ${scope.replace(/\s+/g, " ").slice(0, 400)}`);
         return;
       }
-      answer(`Mark ${jobAddress(job)}, job ${jobId(job)}, as ${FIELD_OUTCOMES[cmd.outcome].toLowerCase()}? Say yes, or tap Yes.`, { id: jobId(job), outcome: cmd.outcome });
+      // The day it happened and who refused, as on the job card (31 Oct): a refusal needs the description first.
+      const today = nyToday();
+      const date = cmd.date && cmd.date < today ? cmd.date : undefined;
+      if (cmd.outcome === "REFUSED_ACCESS" && !cmd.who) {
+        pendingWhoRef.current = { id: jobId(job), date, at: Date.now() };
+        answer(`Refused access at ${jobAddress(job).replace(/,\s*\d{5}$/, "")}${date ? ` on ${dayWord(date)} ${date.slice(5).replace("-", "/")}` : ""}. Who refused? Describe them, like: male, tall, dark hair.`);
+        return;
+      }
+      pendingOutcomeRef.current = { id: jobId(job), outcome: cmd.outcome, date, who: cmd.who };
+      const when = date ? ` on ${dayWord(date)} ${date.slice(5).replace("-", "/")}` : "";
+      answer(`Mark ${jobAddress(job)}, job ${jobId(job)}, as ${FIELD_OUTCOMES[cmd.outcome].toLowerCase()}${when}${cmd.who ? `, refused by ${cmd.who.toUpperCase()}` : ""}? Say yes, or tap Yes.`, { id: jobId(job), outcome: cmd.outcome });
       return;
     }
     if (cmd.intent === "appointment") {

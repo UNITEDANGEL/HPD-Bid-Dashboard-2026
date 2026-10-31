@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Oct 31, 2026",
+      "title": "Say the outcome; 2nd tries on the route",
+      "items": [
+        "🎤 Say it: \"refused access on EQ15239 yesterday, male, tall, dark hair\". The helper reads it back with the day and who refused; say yes and it's saved on that day, then the package (affidavit + invoice) opens.",
+        "📅 Any day works: yesterday, 3 days ago, Monday, 10/24, October 24. Leave it out and it's today. Forgot who refused? It asks you.",
+        "🔒 No access 2nd tries: from the day the 2nd try is allowed (72 hours after the 1st) the job is on Today's route, marked 🔒 2nd try: knock again.",
+        "🔔 And a phone alert at 10 AM that day: 2nd try due, with the address. Weekends ring Monday 10 AM."
+      ]
+    },
+    {
+      "date": "Oct 31, 2026",
       "title": "Job card: change the outcome or date",
       "items": [
         "✏️ Saved the wrong outcome or date? The job card's Outcome step has Change outcome or date. It opens with what you saved (the date, and who refused), so you change just what's wrong and Save.",

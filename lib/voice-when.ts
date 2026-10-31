@@ -80,3 +80,42 @@ export function hourAfter(time: string) {
   const [h, m] = time.split(":").map(Number);
   return hhmm(Math.min(23 * 60 + 59, h * 60 + m + 60));
 }
+
+// The day something happened, said out loud (31 Oct: "refused access on EQ15239 yesterday, male, tall, dark hair"):
+// today, yesterday, N days ago, (last / on) Monday = the latest one up to today, 10/24, October 24. Never a future day.
+export function parsePastDay(said: string, now = new Date()): { date?: string; words: string } {
+  const today = nyParts(now);
+  let t = ` ${String(said || "").toLowerCase().replace(/[.,!?]/g, " ").replace(/\s+/g, " ")} `;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  let date: string | undefined;
+  const take = (m: RegExpExecArray | null, d: string | undefined) => { if (m && d) { date = d; t = t.replace(m[0], " "); } return Boolean(m && d); };
+  const counts: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
+  const ago = /\b(?:on |from )?(\d{1,2}|one|two|three|four|five|six|seven) days? ago\b/.exec(t);
+  if (take(ago, ago ? addDays(today.date, -(counts[ago[1]] || Number(ago[1]))) : undefined)) return { date, words: t.trim() };
+  const yd = /\b(?:on )?(?:the day before yesterday|yesterday)\b/.exec(t);
+  if (take(yd, yd ? addDays(today.date, /before/.test(yd[0]) ? -2 : -1) : undefined)) return { date, words: t.trim() };
+  const td = /\b(?:on )?today\b/.exec(t);
+  if (take(td, td ? today.date : undefined)) return { date, words: t.trim() };
+  const wd = new RegExp(`\\b(?:(last|on|this past|past) )?(${WEEKDAYS.join("|")})\\b`).exec(t);
+  if (wd) {
+    let back = (today.weekday - WEEKDAYS.indexOf(wd[2]) + 7) % 7;
+    if (back === 0 && wd[1] === "last") back = 7;
+    take(wd, addDays(today.date, -back));
+    return { date, words: t.trim() };
+  }
+  const md = /\b(?:on )?(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/.exec(t);
+  const named = new RegExp(`\\b(?:on )?(${MONTHS.join("|")})[a-z]* (\\d{1,2})(?:st|nd|rd|th)?\\b`).exec(t);
+  const m = md || named;
+  if (m) {
+    const month = md ? Number(md[1]) : MONTHS.indexOf(named![1]) + 1;
+    const day = Number(md ? md[2] : named![2]);
+    const typedYear = md && md[3] ? Number(md[3].length === 2 ? `20${md[3]}` : md[3]) : 0;
+    let year = typedYear || Number(today.date.slice(0, 4));
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      if (!typedYear && `${year}-${pad(month)}-${pad(day)}` > today.date) year -= 1;
+      const d = `${year}-${pad(month)}-${pad(day)}`;
+      take(m, d <= today.date ? d : undefined);
+    }
+  }
+  return { date, words: t.trim() };
+}

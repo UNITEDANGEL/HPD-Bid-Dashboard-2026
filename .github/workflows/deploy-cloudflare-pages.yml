@@ -95,6 +95,7 @@ jobs:
           node scripts/test-weather.mjs
           node scripts/test-voice-next-tenant.mjs
           node scripts/test-voice-route.mjs
+          node scripts/test-voice-outcome-date.mjs
           node scripts/test-free-space.mjs
           node scripts/test-rollout.mjs
           node scripts/test-next-job.mjs
@@ -253,6 +254,7 @@ jobs:
             scripts/test-browser-claude-live.mjs \
             scripts/test-browser-refused-questions.mjs \
             scripts/test-browser-affidavit-only.mjs \
+            scripts/test-browser-voice-outcome.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

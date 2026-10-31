@@ -367,3 +367,22 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(ap[0].body, /EQ15239 · Mon 10\/26 · 10–11 AM · Maria/);
   console.log("PASS appointment alert: 'Appointment in 40 min · 1207 1 AVENUE' once; later and cancelled ones stay quiet");
 }
+
+// 🔒 2nd try due (31 Oct): a no-access job past its 72 hours rings once from 10 AM on a weekday; not before 10, not on the
+// weekend (Monday instead), not when the 2nd try is saved or isn't due yet.
+{
+  const recs = {
+    EQ15239: { FieldOutcome: "NO_ACCESS_1_WAITING_72H", NoAccessFirstAttemptAt: "2026-10-23T15:00:00Z" },
+    EQ17776: { FieldOutcome: "NO_ACCESS_1_WAITING_72H", NoAccessFirstAttemptAt: "2026-10-23T15:00:00Z", NoAccessSecondAttemptAt: "2026-10-26T15:00:00Z" },
+    EQ18710: { FieldOutcome: "NO_ACCESS_1_WAITING_72H", NoAccessFirstAttemptAt: "2026-10-25T15:00:00Z" },
+  };
+  const at = async (iso) => (await findAlerts({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse(iso), loadLib, records: recs, addresses: { EQ15239: "1207 1 AVENUE, 10065" } })).filter((x) => String(x.tag).startsWith("t2-"));
+  assert.equal((await at("2026-10-24T15:00:00Z")).length, 0, "Saturday: no alert");
+  assert.equal((await at("2026-10-26T13:30:00Z")).length, 0, "Monday 9:30 AM: not before 10");
+  const mon = await at("2026-10-26T14:30:00Z"); // Monday 10:30 AM New York
+  assert.deepEqual(mon.map((x) => x.tag), ["t2-EQ15239"], "only the one due, not the saved 2nd try or the one due Wednesday");
+  assert.equal(mon[0].title, "🔒 2nd try due · 1207 1 AVENUE");
+  assert.match(mon[0].body, /EQ15239: no access Fri 10\/23\. Knock again/);
+  assert.equal((await at("2026-10-27T15:00:00Z")).find((x) => x.tag === "t2-EQ15239").key, mon[0].key, "same key: sent once");
+  console.log("PASS 2nd try alert: '2nd try due · 1207 1 AVENUE' once from 10 AM on a weekday; weekend, before 10, saved or not yet due stay quiet");
+}
