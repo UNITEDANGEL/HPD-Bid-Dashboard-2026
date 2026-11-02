@@ -12,6 +12,8 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const ago = (m) => new Date(Date.now() - m * 60000).toISOString();
 const id = "20261030120000";
 const overrides = {
+  // Claude is on (the office computer looked 3 minutes ago): 2 Nov, "do I have to leave Claude open?"
+  "CLAUDE-HEARTBEAT": { at: ago(3), every: 9 },
   [`CHANGE-REQUEST-${id}`]: { at: ago(30), text: "(said to the helper) Let me change any date on the affidavit" },
   [`CHANGE-REPLY-${id}`]: { status: "Working on it", workingAt: ago(2), updates: [{ at: ago(25), text: "Got it, looking now." }, { at: ago(3), text: "Found what locks the date; fixing it." }],
     steps: [{ text: "Find the lock", done: true }, { text: "Date box on the card", done: true }, { text: "Live progress", done: false }, { text: "Test", done: false }, { text: "Push live", done: false }] },
@@ -47,7 +49,8 @@ try {
   const text = (await card.innerText()).replace(/\s+/g, " ");
   assert.match(text, /🤖 Claude · working on it now/);
   assert.match(text, /“Let me change any date on the affidavit”/, "the request, without the (said to the helper) tag");
-  assert.match(text, /2\/5 · Now: Live progress/);
+  assert.match(text, /40% 2\/5 · Now: Live progress/);
+  assert.match(await card.locator(".fc-claude-live-bar").getAttribute("class"), /is-moving/, "the bar moves while Claude works");
   assert.match(text, /Found what locks the date; fixing it\. · 3 min ago/);
   assert.match(await card.getAttribute("class"), /is-working/);
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/claude-live.png` }).catch(() => {});
@@ -73,9 +76,21 @@ try {
   await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
   await page.waitForFunction(() => /Sent to Claude/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
   assert.ok(posted.some((b) => String(b.key).startsWith("CHANGE-REQUEST-") && /map buttons bigger/i.test(b.patch?.text || "")), "request sent");
-  await page.waitForFunction(() => /got it, starting soon/.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || "") && /map buttons bigger/i.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || ""), null, { timeout: 15000 });
+  await page.waitForFunction(() => /on, starting in a minute or two/.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || "") && /map buttons bigger/i.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || ""), null, { timeout: 15000 });
+  // The office computer goes off (no heartbeat for an hour): the card says so instead of "starting soon".
+  overrides["CLAUDE-HEARTBEAT"] = { at: ago(60), every: 9 };
+  await page.waitForFunction(() => /off: starts when the office computer is on/.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || ""), null, { timeout: 35000 });
+  await card.locator(".fc-claude-live-main").click();
+  const online = page.locator('[data-hpd-smoke="fc-claude-online"]');
+  await online.waitFor({ timeout: 10000 });
+  assert.match(await online.getAttribute("class"), /is-off/);
+  assert.match(await online.innerText(), /Claude is off right now \(last on .+\): it starts as soon as the office computer is on with the Claude app open/);
+  // Back on while the list is open: it turns green by itself (the list refreshes every 15 s).
+  overrides["CLAUDE-HEARTBEAT"] = { at: new Date().toISOString(), every: 9 };
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-online"]')?.classList.contains("is-on"), null, { timeout: 25000 });
+  assert.match(await online.innerText(), /Claude is on: checking for requests every 20 seconds/);
   assert.deepEqual(errors, []);
-  console.log("PASS Claude live: open request on the map (working now, 2/5 · Now: step, last note · N min ago); × hides it until the next note, which arrives by itself (3/5); tap opens Your requests; a request said to the AI shows at once (got it, starting soon)");
+  console.log("PASS Claude live: open request on the map (working now, 2/5 · Now: step, last note · N min ago); × hides it until the next note, which arrives by itself (3/5); tap opens Your requests; a request said to the AI shows at once (on, starting in a minute or two); computer off -> off: starts when the office computer is on; back on -> green by itself");
   await c.close();
 } finally {
   await browser.close();

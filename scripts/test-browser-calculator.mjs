@@ -80,12 +80,12 @@ try {
   const th = wn.locator('[data-hpd-smoke="fc-change-thread"]').first();
   await th.waitFor({ timeout: 5000 });
   { const t = await th.innerText(); assert.ok(t.includes("Look at the email from HPD") && t.includes("Working on it") && t.includes("Checked the 14 OMOs"), t); }
-  assert.equal(await th.locator('[data-hpd-smoke="fc-change-count"]').innerText(), "2 of 4 steps · 50%");
+  assert.match(await th.locator('[data-hpd-smoke="fc-change-count"]').innerText(), /^50% · 2 of 4 steps/);
   assert.ok((await th.locator('[data-hpd-smoke="fc-change-working"]').innerText()).includes("Claude is working on this right now"));
   await wn.locator('[data-hpd-smoke="fc-ask-change-text"]').fill("Add 15 days to the day filter");
   await wn.locator('[data-hpd-smoke="fc-ask-change-save"]').click();
   await wn.locator('[data-hpd-smoke="fc-ask-change-status"]').waitFor({ timeout: 5000 });
-  assert.match(await wn.locator('[data-hpd-smoke="fc-ask-change-status"]').innerText(), /Received\. Claude will start (within about 5-10 minutes|at 7 AM)/);
+  assert.match(await wn.locator('[data-hpd-smoke="fc-ask-change-status"]').innerText(), /Received\. Claude is (on now|off right now)/);
   const req = Object.entries(posted).find(([k]) => k.startsWith("CHANGE-REQUEST-"));
   assert.equal(req?.[1]?.text, "Add 15 days to the day filter");
   assert.deepEqual(errors, []);

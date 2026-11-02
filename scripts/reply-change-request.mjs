@@ -21,7 +21,13 @@ const requests = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUES
 const openOnes = (o) => Object.keys(o).filter((k) => k.startsWith("CHANGE-REQUEST-")).filter((k) => !["Done", "Waiting for you"].includes(o[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received"));
 const busyNow = (o) => Object.entries(o).some(([k, v]) => k.startsWith("CHANGE-REPLY-") && v?.workingAt && Date.now() - Date.parse(v.workingAt) < 30 * 60000);
 
+// "Claude is on" for the app (owner, 2 Nov: "do I have to leave Claude open?"): every check and every wait writes the
+// time to CLAUDE-HEARTBEAT, so the app can say whether requests are being picked up right now or wait for the computer.
+// About once per 9-minute wait, so the status server's daily write limit isn't touched.
+const heartbeat = () => fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "CLAUDE-HEARTBEAT", patch: { at: new Date().toISOString(), every: 9 } }) }).catch(() => {});
+
 if (flag("check")) {
+  await heartbeat();
   const open = openOnes(all);
   console.log(busyNow(all) ? "BUSY" : open.length ? `OPEN ${open.length}` : "NONE");
   process.exit(0);
@@ -29,6 +35,7 @@ if (flag("check")) {
 // Wait up to <minutes> (max 9, so one command fits the tool time limit), looking every 20 seconds; returns as soon
 // as there's an open request no one is working on ("OPEN <n>"), else "NONE".
 if (flag("wait")) {
+  await heartbeat();
   const until = Date.now() + Math.min(9, Number(arg("wait")) || 9) * 60000;
   let o = all;
   for (;;) {

@@ -181,10 +181,16 @@ const versionLabel = () => {
   return [when ? `Updated ${when}` : "", BUILT_NUMBER ? `#${BUILT_NUMBER}` : BUILT_COMMIT ? `v${BUILT_COMMIT}` : ""].filter(Boolean).join(" · ");
 };
 type WhatsNew = { date: string; title: string; items: string[] }[];
-// When Claude picks up a new request: the check runs every 5 minutes from 7 AM to 11 PM (New York time).
-const pickupLabel = () => {
+// Is Claude on right now (owner, 2 Nov: "the request just tells me to wait, how many minutes? do I have to leave Claude
+// open?")? Claude runs on the office computer: while it's on with the Claude app open it looks for requests every 20 s
+// and writes CLAUDE-HEARTBEAT about every 9 minutes (scripts/reply-change-request.mjs). Seen in the last 12 minutes = on.
+const CLAUDE_ON_MS = 12 * 60000;
+const claudeIsOn = (seenAt: string) => Boolean(seenAt) && Date.now() - Date.parse(seenAt) < CLAUDE_ON_MS;
+const pickupLabel = (seenAt: string) => {
+  if (claudeIsOn(seenAt)) return "Claude is on now: it starts on it within a minute or two";
   const h = Number(new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }));
-  return h >= 7 && h < 23 ? "Claude will start within about 5-10 minutes" : "Claude will start at 7 AM";
+  const last = seenAt ? ` (last on ${new Date(seenAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })})` : "";
+  return `Claude is off right now${last}: it starts as soon as the office computer is on with the Claude app open${h >= 7 && h < 23 ? "" : " (it looks from 7 AM to 11 PM)"}`;
 };
 
 function itbFileName(job: JobRecord | null | undefined) {
@@ -1378,10 +1384,12 @@ export default function FieldCommandClient() {
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
+  const [claudeSeenAt, setClaudeSeenAt] = useState("");
   const loadChangeThreads = async () => {
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
       const all = (await r.json())?.overrides || {};
+      setClaudeSeenAt(String((all["CLAUDE-HEARTBEAT"] as { at?: string } | undefined)?.at || ""));
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
         const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string } | undefined;
         return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || "") };
@@ -1415,7 +1423,7 @@ export default function FieldCommandClient() {
     setChangeText("");
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
-      setChangeStatus(r.ok ? `📥 Received. ${pickupLabel()}; progress shows below.` : "Saved on this phone; it will be sent when the server answers.");
+      setChangeStatus(r.ok ? `📥 Received. ${pickupLabel(claudeSeenAt)}; progress shows below, live.` : "Saved on this phone; it will be sent when the server answers.");
       if (r.ok) void loadChangeThreads();
     } catch { setChangeStatus("Saved on this phone (offline)."); }
   };
@@ -2148,6 +2156,12 @@ export default function FieldCommandClient() {
   // while the app is open (one cached read on the status server), and a new step or note pops up like any alert.
   // While a request is open (30 Oct, "live request updates, so I know what's going on in the background"): every 20 s.
   const claudeLiveRef = useRef(false);
+  // Your requests open: refreshed every 15 s so the steps and the bar move while you watch.
+  useEffect(() => {
+    if (!whatsNewOpen) return;
+    const t = window.setInterval(() => { if (document.visibilityState === "visible") void loadChangeThreads(); }, 15000);
+    return () => window.clearInterval(t);
+  }, [whatsNewOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     let last = Date.now();
     const look = () => {
@@ -6102,20 +6116,23 @@ export default function FieldCommandClient() {
             </section>
             <section className="fc-change-threads" data-hpd-smoke="fc-change-threads">
               <h4>💬 Your requests and progress</h4>
+              <p className={`fc-claude-online is-${claudeIsOn(claudeSeenAt) ? "on" : "off"}`} data-hpd-smoke="fc-claude-online"><i aria-hidden="true" />{claudeIsOn(claudeSeenAt) ? "Claude is on: checking for requests every 20 seconds. This list updates by itself." : pickupLabel(claudeSeenAt)}</p>
               {changeThreads === null ? <p className="fc-follow-note">Couldn&apos;t load them right now.</p>
                 : !changeThreads.length ? (myRequests.length ? <ul>{myRequests.slice(0, 5).map((r) => <li key={r.at}>{r.text}</li>)}</ul> : <p className="fc-follow-note">No requests yet.</p>)
                 : changeThreads.map((t) => (
                   <article key={t.id} className={`fc-change-thread is-${t.status.toLowerCase().replace(/[^a-z]+/g, "-")}`} data-hpd-smoke="fc-change-thread">
                     <p className="fc-change-ask"><small>You · {new Date(t.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{t.text}</p>
-                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}{t.status === "Received" && !t.updates.length ? <small className="fc-change-pickup" data-hpd-smoke="fc-change-pickup"> · {pickupLabel()}</small> : null}</b>
+                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}{t.status === "Received" && !t.updates.length ? <small className="fc-change-pickup" data-hpd-smoke="fc-change-pickup"> · {pickupLabel(claudeSeenAt)}</small> : null}</b>
                     {t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? <p className="fc-change-working" data-hpd-smoke="fc-change-working"><i aria-hidden="true" /> Claude is working on this right now (since {new Date(t.workingAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })})</p> : null}
                     {t.steps.length ? (() => {
                       const done = t.steps.filter((x) => x.done).length;
                       const pct = Math.round((done / t.steps.length) * 100);
+                      const moving = t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000;
+                      const nowStep = t.steps.find((x) => !x.done);
                       return (
                         <div className="fc-change-progress" data-hpd-smoke="fc-change-progress">
-                          <div className="fc-change-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${pct}%` }} /></div>
-                          <small data-hpd-smoke="fc-change-count">{done} of {t.steps.length} steps · {pct}%</small>
+                          <div className={`fc-change-bar${moving ? " is-moving" : ""}`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${Math.max(pct, moving ? 6 : 0)}%` }} /></div>
+                          <small data-hpd-smoke="fc-change-count"><b className="fc-change-pct">{pct}%</b> · {done} of {t.steps.length} steps{moving && nowStep ? <> · <span className="fc-change-now" data-hpd-smoke="fc-change-now"><span className="hpd-spin" aria-hidden="true" /> Now: {nowStep.text}</span></> : null}</small>
                           <ol>{t.steps.map((x) => <li key={x.text} className={x.done ? "is-done" : ""}>{x.done ? "✓" : "○"} {x.text}</li>)}</ol>
                         </div>
                       );
@@ -6608,15 +6625,15 @@ export default function FieldCommandClient() {
         return (
           <div className={`fc-claude-live is-${state}`} data-hpd-smoke="fc-claude-live" role="status" aria-live="polite">
             <button type="button" className="fc-claude-live-main" onClick={() => goTo("requests", "")}>
-              <b><i className="fc-claude-live-dot" aria-hidden="true" />🤖 Claude · {state === "working" ? "working on it now" : state === "done" ? "✅ done" : state === "ask" ? "❓ needs your answer" : "got it, starting soon"}</b>
+              <b><i className="fc-claude-live-dot" aria-hidden="true" />🤖 Claude · {state === "working" ? "working on it now" : state === "done" ? "✅ done" : state === "ask" ? "❓ needs your answer" : claudeIsOn(claudeSeenAt) ? "on, starting in a minute or two" : "⏸ off: starts when the office computer is on"}</b>
               <span className="fc-claude-live-req">“{t.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 70)}{t.text.length > 70 ? "…" : ""}”</span>
               {t.steps.length ? (
                 <span className="fc-claude-live-steps" data-hpd-smoke="fc-claude-live-steps">
-                  <span className="fc-claude-live-bar" aria-hidden="true"><span style={{ width: `${Math.round((done / t.steps.length) * 100)}%` }} /></span>
-                  {done}/{t.steps.length}{nowStep ? ` · Now: ${nowStep.text}` : ""}
+                  <span className={`fc-claude-live-bar${state === "working" ? " is-moving" : ""}`} aria-hidden="true"><span style={{ width: `${Math.max(Math.round((done / t.steps.length) * 100), state === "working" ? 6 : 0)}%` }} /></span>
+                  <b className="fc-claude-live-pct" data-hpd-smoke="fc-claude-live-pct">{Math.round((done / t.steps.length) * 100)}%</b> {done}/{t.steps.length}{nowStep && state !== "done" ? ` · Now: ${nowStep.text}` : ""}
                 </span>
               ) : null}
-              {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. Claude picks it up in the next session.</span>}
+              {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
             </button>
             <button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>
           </div>

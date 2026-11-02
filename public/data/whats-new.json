@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 2, 2026",
+      "title": "See Claude working, live",
+      "items": [
+        "🟢 What's new → Your requests says whether Claude is ON right now (checking for requests every 20 seconds) or OFF, with when it was last on. No more guessing how many minutes.",
+        "⏸ Claude runs on the office computer: it picks up requests while that computer is on with the Claude app open (7 AM to 11 PM). When it's off, the 🤖 card on the map says so instead of \"starting soon\".",
+        "📊 Each request shows a big percent, a moving bar while Claude works, and the step being done right now. The list refreshes by itself every 15 seconds while it's open."
+      ]
+    },
+    {
+      "date": "Nov 2, 2026",
       "title": "Affidavit straight from the job card",
       "items": [
         "📄 Tap the affidavit / package button on the job card: it goes straight to making it. Your saved signature and the notary's saved signature go on by themselves, no taps.",
