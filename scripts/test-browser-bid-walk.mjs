@@ -40,6 +40,7 @@ try {
   await arriving.waitFor({ timeout: 5000 });
   assert.equal((await page.locator('[data-hpd-smoke="fc-bid-arriving-boro"]').innerText()).trim(), "📍 Queens");
   assert.match(await arriving.innerText(), /47-46 40 STREET · ER09499/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-bid-arriving-what"]').innerText(), /door.* · (tomorrow|\w{3}) .*11:00/i, "what the job is and when it's due");
   assert.equal(await page.locator('[data-hpd-smoke="fc-bids-list"]').getAttribute("data-size"), "peek", "the list folds so the map shows");
   assert.equal(await page.locator('[data-hpd-smoke="fc-bid-sheet"]').count(), 0, "the bid opens after the map");
   // Then the bid opens on HPD's page 2 (ER09499's work is on the order form), full screen, zoomed in on the work.

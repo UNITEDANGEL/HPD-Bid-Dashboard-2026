@@ -175,7 +175,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // Going to a bid (owner, 2 Nov: "it zooms into the map first, shows me where the bid is located, which borough, then
   // opens the work description page"): the map shows the borough, then the building, with the borough and address on
   // top; then the bid opens on HPD's job description page, zoomed in (ItbPages showDescription).
-  const [arriving, setArriving] = useState<{ omo: string; boro: string; address: string } | null>(null);
+  const [arriving, setArriving] = useState<{ omo: string; boro: string; address: string; what: string } | null>(null);
   const arriveTimer = useRef(0);
   const [showDesc, setShowDesc] = useState(0);
   const openBidRef = useRef<(b: UpcomingBid, page?: boolean) => void>(() => {});
@@ -190,7 +190,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (!map || !Number.isFinite(b.lat) || !Number.isFinite(b.lng)) { open(); return; }
     setSelected(null);
     setListSize("peek");
-    setArriving({ omo: b.omo, boro: BORO_NAME[String(b.borough || "").toUpperCase()] || b.borough || "", address: b.address || "" });
+    setArriving({ omo: b.omo, boro: BORO_NAME[String(b.borough || "").toUpperCase()] || b.borough || "", address: b.address || "", what: [jobSummary(b.description || "").lines.map(lineText)[0], dueLabel(b)].filter(Boolean).join(" · ") });
     try { if (map.flyTo) map.flyTo([b.lat, b.lng], 12, { duration: 0.9 }); else map.setView?.([b.lat, b.lng], 12); } catch { /* map not ready */ }
     arriveTimer.current = window.setTimeout(() => {
       try { if (map.flyTo) map.flyTo([b.lat, b.lng], 17, { duration: 1.1 }); else map.setView?.([b.lat, b.lng], 17); } catch { /* map not ready */ }
@@ -1070,6 +1070,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         <div className="fc-bid-arriving" role="status" data-hpd-smoke="fc-bid-arriving">
           <b data-hpd-smoke="fc-bid-arriving-boro">📍 {arriving.boro || "New York"}</b>
           <span>{arriving.address} · {arriving.omo}</span>
+          {arriving.what ? <em data-hpd-smoke="fc-bid-arriving-what">{arriving.what}</em> : null}
           <small>Opening the job description…</small>
         </div>
       ) : null}
