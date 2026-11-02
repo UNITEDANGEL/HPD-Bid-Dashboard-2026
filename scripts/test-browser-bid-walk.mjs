@@ -56,8 +56,15 @@ try {
   const at = await box.evaluate((el) => ({ top: el.scrollTop / el.scrollHeight, bottom: (el.scrollTop + el.clientHeight) / el.scrollHeight }));
   assert.ok(at.top > 0.15 && at.top <= 0.57 && at.bottom >= 0.68, `scrolled down to the WORK DESCRIPTION box (${at.top.toFixed(2)}-${at.bottom.toFixed(2)})`);
   await page.screenshot({ path: process.env.SHOT || "bid-walk.png" }).catch(() => {});
-  await page.locator('[data-hpd-smoke="fc-itb-close"]').click();
+  // "💰 Price it": the page closes, the price box is on the screen with the cursor in it.
+  await page.locator('[data-hpd-smoke="fc-itb-price"]').click();
   await page.locator('[data-hpd-smoke="fc-bid-sheet"]').waitFor();
+  assert.equal(await full.count(), 0, "the page closed");
+  await page.waitForTimeout(800);
+  const price = await page.locator('[data-hpd-smoke="fc-bid-price"]').evaluate((el) => { const r = el.getBoundingClientRect(); return { focused: document.activeElement === el, inView: r.top >= 0 && r.bottom <= innerHeight }; });
+  assert.deepEqual(price, { focused: true, inView: true }, "the price box is on the screen, ready to type");
+  await page.keyboard.type("385");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bid-price"]').inputValue(), "385");
   assert.match(await page.locator('[data-hpd-smoke="fc-bid-sheet"]').innerText(), /ER09499/);
 
   // "Next ▶" on the bid card goes to the other bid the same way (map first). A usual invitation: page 3, near the top.
@@ -90,7 +97,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-bid-arriving"]').count(), 0);
   assert.equal(await full.count(), 0, "off: no full-screen page");
   assert.deepEqual(errors, []);
-  console.log(`PASS going to a bid: list folds, "📍 Queens · 47-46 40 STREET" over the map while it moves, then HPD's page full screen at 2x on the work (ER09499: page 2, the order form, showing ${at.top.toFixed(2)}-${at.bottom.toFixed(2)} of it; Next ▶ to ${other.omo}: page 3 near the top); the switch turns it off`);
+  console.log(`PASS going to a bid: list folds, "📍 Queens · 47-46 40 STREET" over the map while it moves, then HPD's page full screen at 2x on the work (ER09499: page 2, the order form, showing ${at.top.toFixed(2)}-${at.bottom.toFixed(2)} of it; 💰 Price it puts the cursor in the price box; Next ▶ to ${other.omo}: page 3 near the top); the switch turns it off`);
 } finally {
   await browser.close();
 }

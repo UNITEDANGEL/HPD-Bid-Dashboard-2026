@@ -8,6 +8,7 @@
         "📍 While the map moves, the card on top also says what the job is and when it is due (\"door · tomorrow 11:00 AM\").",
         "🗺 Opening a bid (from the list, the checklist, Next bid, or after you send) moves the map there first, with the borough and address on top (\"📍 Queens · 47-46 40 STREET\"), then opens HPD's job description page full screen, zoomed in on the work. Close it to price the bid.",
         "📄 Some invitations type the work on page 2 and leave page 3 empty (ER09499): the app now reads and shows page 2 for those. A long job that goes on to page 4 still shows both pages (Next ›).",
+        "💰 On HPD's full-screen page: \"Price it\" at the bottom closes the page and puts the cursor in the price box, keyboard up.",
         "▶ New \"Next ▶\" button at the top of every bid card: goes to the next bid still to price or send (by deadline), map first, and says how many are left.",
         "🔘 Don't want it? Tap \"🗺 Opening a bid: map first…\" on the bid card to turn it off."
       ]

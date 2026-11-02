@@ -64,7 +64,7 @@ export const bidPages = (pageCount: number, descPages?: number[]) => [...new Set
 // form (page 2, when page 3 is empty: ER09499) the "WORK DESCRIPTION" box a little past the middle.
 const workAt = (page: number) => (page === 2 ? 0.56 : 0.12);
 
-export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0 }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number }) {
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, onPrice }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; onPrice?: () => void }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -155,6 +155,8 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
             }} />
           </div>
           <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>
+          {/* Read it, then one tap to the price box (2 Nov): the page closes and the keyboard opens on the price. */}
+          {onPrice ? <button type="button" className="fc-itb-price" data-hpd-smoke="fc-itb-price" onClick={() => { setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
         </div>
       ) : null}
     </section>
