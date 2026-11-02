@@ -660,6 +660,16 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       .filter((b) => b.omo !== after && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || ""))
       .sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime)).localeCompare(b.bidDue + minutesOf(b.bidDueTime)))[0];
   }
+  // "Next ▶" on the bid card (owner, 2 Nov: "when I go through each bid, go to the next bid"): the bids still to price
+  // or send, by deadline; the one after this, or back to the first one left.
+  function nextInLine(omo: string) {
+    const line = [...shownBids]
+      .filter((b) => b.omo === omo || (!noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || "")))
+      .sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime) + a.omo).localeCompare(b.bidDue + minutesOf(b.bidDueTime) + b.omo));
+    const at = line.findIndex((b) => b.omo === omo);
+    const left = line.filter((b) => b.omo !== omo);
+    return { next: line[at + 1] || left[0], left: left.length };
+  }
   // "Come back" (button or the helper): the bid just sent, opened again with the map on it.
   function comeBack() {
     const b = sentNote && (bids || []).find((x) => x.omo === sentNote.omo);
@@ -1075,6 +1085,10 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               setListCollapsed(true);
               if (Number.isFinite(b.lat) && Number.isFinite(b.lng)) map?.setView?.([b.lat, b.lng], 16);
             }}>🗺 Map</button>
+            {!(sitting && !sitting.done) ? (() => {
+              const { next, left } = nextInLine(selected.omo);
+              return next ? <button type="button" className="fc-bid-next" data-hpd-smoke="fc-bid-next" aria-label={`Next bid: ${next.omo} (${left} left)`} onClick={() => goToBid(next, undefined, true)}>Next ▶<small>{left} left</small></button> : null;
+            })() : null}
           </header>
           {/* Moved on after a send: the note rides in this card, so an alert at the top can't cover "Come back". */}
           {sentNote && sentNote.next === selected.omo ? (

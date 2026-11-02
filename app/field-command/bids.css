@@ -856,3 +856,6 @@ i.is-won { background: #16a34a; }
 @keyframes fc-arrive-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .fc-bid-walk { display: block; margin: 6px 0 2px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #334155; font: 600 12px/1.4 system-ui; }
 .fc-bid-walk[aria-pressed="false"] { color: #94a3b8; }
+/* Next ▶ on the bid card (2 Nov). */
+.fc-bid-sheet header .fc-bid-next { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; padding: 4px 12px; border: 0; border-radius: 12px; background: #2563eb; color: #fff; font-weight: 800; }
+.fc-bid-sheet header .fc-bid-next small { font-size: 10px; font-weight: 600; opacity: .85; }

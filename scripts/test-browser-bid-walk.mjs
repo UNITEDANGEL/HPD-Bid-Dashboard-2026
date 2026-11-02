@@ -59,11 +59,14 @@ try {
   await page.locator('[data-hpd-smoke="fc-bid-sheet"]').waitFor();
   assert.match(await page.locator('[data-hpd-smoke="fc-bid-sheet"]').innerText(), /ER09499/);
 
-  // A usual invitation: page 3, near the top.
-  await page.locator('[data-hpd-smoke="fc-bid-to-map"]').click();
-  await openBidList(page);
-  await page.locator('[data-hpd-smoke="fc-bid-row"]', { hasText: other.omo }).click();
-  await page.locator('[data-hpd-smoke="fc-bid-arriving"]').waitFor({ timeout: 5000 });
+  // "Next ▶" on the bid card goes to the other bid the same way (map first). A usual invitation: page 3, near the top.
+  const next = page.locator('[data-hpd-smoke="fc-bid-next"]');
+  const head = await page.locator('[data-hpd-smoke="fc-bid-sheet"] header').evaluate((el) => ({ fits: el.scrollWidth <= el.clientWidth + 1, nextRight: el.querySelector(".fc-bid-next")?.getBoundingClientRect().right || 0 }));
+  assert.ok(head.fits && head.nextRight <= 390, `the bid card's top row fits the iPhone (${JSON.stringify(head)})`);
+  await page.locator('[data-hpd-smoke="fc-bid-sheet"] header').screenshot({ path: process.env.SHOT || "bid-walk.png" }).catch(() => {});
+  assert.equal(await next.getAttribute("aria-label"), `Next bid: ${other.omo} (1 left)`);
+  await next.click();
+  await page.locator('[data-hpd-smoke="fc-bid-arriving"]', { hasText: other.omo }).waitFor({ timeout: 5000 });
   await full.waitFor({ timeout: 30000 });
   assert.match(await full.locator(".fc-itb-bar b").innerText(), /^Page 3 of \d+$/);
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-itb-zoombox"]')?.getAttribute("data-zoom") === "2.00", null, { timeout: 10000 });
@@ -86,7 +89,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-bid-arriving"]').count(), 0);
   assert.equal(await full.count(), 0, "off: no full-screen page");
   assert.deepEqual(errors, []);
-  console.log(`PASS going to a bid: list folds, "📍 Queens · 47-46 40 STREET" over the map while it moves, then HPD's page full screen at 2x on the work (ER09499: page 2, the order form, showing ${at.top.toFixed(2)}-${at.bottom.toFixed(2)} of it; ${other.omo}: page 3 near the top); the switch turns it off`);
+  console.log(`PASS going to a bid: list folds, "📍 Queens · 47-46 40 STREET" over the map while it moves, then HPD's page full screen at 2x on the work (ER09499: page 2, the order form, showing ${at.top.toFixed(2)}-${at.bottom.toFixed(2)} of it; Next ▶ to ${other.omo}: page 3 near the top); the switch turns it off`);
 } finally {
   await browser.close();
 }
