@@ -5448,7 +5448,10 @@ export default function FieldCommandClient() {
                 const omo = jobId(selectedJob);
                 const it = prioByOmo.get(omo);
                 const rj = openRejections.find((r) => r.omo === omo);
-                if (!it && !rj) return null;
+                // HPD asked about the job (an email naming it, nothing sent since) without a timed notice: it glows
+                // "🔥 Asked" on the map, so the card says why too (2 Nov: tapped, and the card didn't say).
+                const asked = !it && !rj ? followReport.hpdAsked.find((r) => r.omo === omo) : undefined;
+                if (!it && !rj && !asked) return null;
                 const due = it ? dueText(it.dueAt) : "";
                 const outcomes = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
                 return (
@@ -5466,6 +5469,17 @@ export default function FieldCommandClient() {
                       </div>
                       <div className="fc-notice-actions">
                         {it.threadId ? <button type="button" onClick={() => setThreadView({ ids: [it.threadId], title: `${omo}: ${it.title}` })}>💬 Their email</button> : null}
+                        <button type="button" onClick={() => { setNoticesTab("priority"); setNoticesOpen(true); }}>✉ Reply / Handled</button>
+                      </div>
+                    </> : null}
+                    {asked ? <>
+                      <p className="fc-prio-card-head"><b>🔥 PRIORITY</b> · HPD asked about this job{asked.askedBy ? ` · ${asked.askedBy}` : ""}</p>
+                      <p className="fc-prio-card-due" data-hpd-smoke="fc-prio-card-due">Asked {new Date(asked.askedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}{asked.askedFor ? ` · ${asked.askedFor}` : ""}: nothing sent since</p>
+                      <p className="fc-prio-card-q">What happened? Pick it, put the date, and the affidavit (copy + original) is made for you to check:</p>
+                      <div className="fc-prio-outcomes" data-hpd-smoke="fc-prio-outcomes">
+                        {outcomes.map(([k, label]) => <a key={k} href={`/paperwork/?job=${encodeURIComponent(omo)}&outcome=${k}`} data-hpd-smoke={`fc-prio-outcome-${k}`}>{label}</a>)}
+                      </div>
+                      <div className="fc-notice-actions">
                         <button type="button" onClick={() => { setNoticesTab("priority"); setNoticesOpen(true); }}>✉ Reply / Handled</button>
                       </div>
                     </> : null}

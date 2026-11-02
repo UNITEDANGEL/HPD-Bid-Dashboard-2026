@@ -6,6 +6,7 @@
       "title": "A chat on the map",
       "items": [
         "🎙 The chat bar's mic is always there now. If your phone doesn't let the app listen by itself (Chrome on iPhone does that), the 🎙 opens the keyboard: tap the 🎙 at the bottom of the keyboard, talk, then ➤, and I answer out loud.",
+        "🔥 A job glowing \"Asked\" on the Notices map (HPD asked about it, nothing sent since) now says so on its card too, with the outcomes to make the affidavit and ✉ Reply.",
         "🔊 A speaker button on the chat bar shows whether I say my answers out loud. 🔇 means silent; tap it to turn the voice back on.",
         "⚡ While Claude works on your request, the card shows what it is doing right now (\"Running the tests\", \"Pushing it live\") with a seconds counter, and checks for news every 3 seconds.",
         "🧭 Today's route: the red Clear route button now sits at the top of the panel and stays there while you scroll the stops.",
