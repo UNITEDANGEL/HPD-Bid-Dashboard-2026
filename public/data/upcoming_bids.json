@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T16:00:50.364476+00:00",
+  "generatedAt": "2026-11-02T16:09:51.589685+00:00",
   "days": 14,
   "bids": [
     {
@@ -2344,6 +2344,268 @@
       },
       "lat": 40.72411,
       "lng": -73.760087
+    },
+    {
+      "omo": "ER09459",
+      "bidDue": "2026-11-04",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-05",
+      "workCompletion": "2026-11-15",
+      "address": "120 FORSYTH STREET",
+      "borough": "MN",
+      "itbFile": "ER09459_110226105924.pdf",
+      "description": "AT APT # 2 TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CONCEALED WATER LEAK(S) AT CEILING AND WALLS . THE PROBABLE SOURCE IS UNKNOWN. ENSURE THAT THE LEAK(S) DOES NOT RE-OCCUR. LOCATION OF WORK : ROOM EAST 3....AKA BEDROOM. (CEILING,WALLS) REMOVE ALL LOOSE MATERIAL FROM DAMAGED AREAS BEFORE REPAIRS. PROVIDE APPROXIMATELY 70 SQ. FT. OF RESTORATION FOR CEILING AND WALL DAMAGES AS A RESULT OF THE LEAK(S)INSTALL BASEBOARD 4 LF. PRIME AND PAINT WITH TWO COATS AT ALL WORK AREAS. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. CALL TENANT FOR ACCESS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. CALL TENANT FOR MAKING APPOINTMENT FOR ACCESS.IF NOT POSSIBLE BY TELEPHONE.GO PHYSICALLY TO SITE AT LEAST 2 TIMES NOTE 1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
+      "notes": "NOTE 2: CONTRACTOR MUST CONTACT HPD EHU OFFICE AT 212-863-6017,5893,5527 AND/OR VIA EMAIL TO INFORM THE TARGETTED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK TENANT CONTACT: (tenant contact: sign in to see) ERP OMO's ( GC-NON SWP) CONTRACTORS MUST CONTACT HPD- S. HUGHES @ 212-863-5754; B. CARR @ 212-863-5518; S. CROSSLAND @212-863-6132; A. MARTINEZ @ 212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @ 212-863-5496; R. REED @ 212-863-5481; R. BUSHRA @ 212-863-6046; E. ORR @ 212-863-6875; K. ATKINS @ 212-863-6182; P. DAS @ 212-863-5491; A. LAWSON @ 212-863-6208; D. SIACA @ 212-863-5549; Supervisor D. SAUL @ 212-863-5527 J. Rishi Jagdeor@hpd.nyc.gov.",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793635168000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.719196,
+      "lng": -73.992151
+    },
+    {
+      "omo": "ER09472",
+      "bidDue": "2026-11-04",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-05",
+      "workCompletion": "2026-11-15",
+      "address": "2331 DEAN STREET",
+      "borough": "BK",
+      "itbFile": "ER09472_110226105418.pdf",
+      "description": "AT APT : 3A TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CONCEALED WATER LEAK(S) AT CEILING AND WALLS . THE PROBABLE SOURCE IS UNKNOWN. ENSURE THAT THE LEAK(S) DOES NOT RE-OCCUR. LOCATION OF WORK : ROOM NORTH 2(CEILING) REMOVE ALL LOOSE MATERIAL FROM DAMAGED AREAS BEFORE REPAIRS. PROVIDE APPROXIMATELY 50 SQ. FT. OF RESTORATION FOR CEILING AND WALL DAMAGES AS A RESULT OF THE LEAK(S). PRIME AND PAINT WITH TWO COATS AT ALL WORK AREAS. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. CALL TENANT FOR ACCESS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. CALL TENANT FOR MAKING APPOINTMENT FOR ACCESS.IF NOT POSSIBLE BY TELEPHONE.GO PHYSICALLY TO SITE AT LEAST 2 TIMES NOTE 1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
+      "notes": "NOTE 2: CONTRACTOR MUST CONTACT HPD EHU OFFICE AT 212-863-6017,5893,5527 AND/OR VIA EMAIL TO INFORM THE TARGETTED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK TENANT CONTACT : (tenant contact: sign in to see) ERP OMO's ( GC-NON SWP) CONTRACTORS MUST CONTACT HPD- S. HUGHES @ 212-863-5754; B. CARR @ 212-863-5518; S. CROSSLAND @212-863-6132; A. MARTINEZ @ 212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @ 212-863-5496; R. REED @ 212-863-5481; R. BUSHRA @ 212-863-6046; E. ORR @ 212-863-6875; K. ATKINS @ 212-863-6182; P. DAS @ 212-863-5491; A. LAWSON @ 212-863-6208; D. SIACA @ 212-863-5549; Supervisor D. SAUL @ 212-863-5527 J. Rishi Jagdeor@hpd.nyc.g D. SIACA @ 212 863 5549; Supervisor D. SAUL @ 212 863 5527 J. Rishi Jagdeor@hpd.nyc.g",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793634862000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.7,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.5,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.7,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45.1,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.4,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.9,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.3,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.674911,
+      "lng": -73.910387
     },
     {
       "omo": "ER08297",
