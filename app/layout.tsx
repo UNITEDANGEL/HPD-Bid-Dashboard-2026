@@ -6,6 +6,7 @@ import "./dashboard-table-upgrade.css";
 import DriveSessionKeeper from "../components/DriveSessionKeeper";
 import DriveAutoBackup from "../components/DriveAutoBackup";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
+import ErrorReporter from "../components/ErrorReporter";
 
 export const metadata: Metadata = {
   title: "HPD Bid Dashboard 2026",
@@ -51,7 +52,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: UPDATE_RECOVERY }} />
         <script dangerouslySetInnerHTML={{ __html: NO_PAGE_ZOOM }} />
       </head>
-      <body><DriveSessionKeeper /><DriveAutoBackup /><ServiceWorkerRegister />{children}</body>
+      <body><DriveSessionKeeper /><DriveAutoBackup /><ServiceWorkerRegister /><ErrorReporter />{children}</body>
     </html>
   );
 }
