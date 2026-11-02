@@ -3928,3 +3928,4 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-chat-nudge-x { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #c7d2fe; font: 700 15px system-ui, sans-serif; }
 .fc-app:has(.fc-chat-nudge) .fc-focus-chip { display: none !important; }
 @keyframes fc-arrive-in-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fc-route-clear { position:sticky; top:0; z-index:2; display:block; width:100%; min-height:44px; margin:0 0 8px; border:1px solid #e0a18f; border-radius:8px; background:#4a2a24; color:#ffd9cf; font:700 14px system-ui; }

@@ -802,3 +802,4 @@ them. The owner enters any payment details and API keys themselves (keys go into
   nightly encrypted master file; until then it's written when run on this PC.
 - Google reconnect with "read email" lets the phone confirm faxes by itself (the fax checker covers it).
 - Status-server worker deploy needs Cloudflare Workers permission on the API token.
+- **Clear route always reachable** (2 Nov): the Clear route button is pinned at the top of Today's route panel (was at the very bottom of a long list). Test: test-browser-route-clear.mjs.

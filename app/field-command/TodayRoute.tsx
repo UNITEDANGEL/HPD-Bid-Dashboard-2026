@@ -48,6 +48,7 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
   return <aside className={`fc-today-route ${open?'is-open':''}`} aria-label="Today's route">
     <button className="fc-route-toggle" type="button" aria-expanded={open} onClick={()=>{setOpen(!open);if(!origin)setOrigin(getOrigin());else if(!open)showRoute();}}>Today&apos;s route {done.length?`(${done.length}/${selected.length+done.length} done)`:selected.length?`(${selected.length})`:''}<span aria-hidden="true">{open?'⌄':'⌃'}</span></button>
     {open&&<div className="fc-route-body" ref={bodyRef}>
+      {ids.length>0&&<button type="button" className="fc-route-clear" data-hpd-smoke="fc-route-clear" onClick={()=>setIds([])}>Clear route</button>}
       <details open={!ids.length}><summary>Plan settings · {settings.start}-{settings.end}</summary><div className="fc-route-settings">
         <label>Day<input aria-label="Route day" type="date" value={settings.date} onChange={e=>setSettings({...settings,date:e.target.value})}/></label>
         <label>Area<select aria-label="Route area" value={settings.borough} onChange={e=>setSettings({...settings,borough:e.target.value})}><option value="ALL">All boroughs</option>{Object.entries({MN:'Manhattan',BK:'Brooklyn',QN:'Queens',BX:'Bronx',SI:'Staten Island'}).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
@@ -77,7 +78,7 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
       <label>Add stop<select aria-label="Add route stop" value="" onChange={e=>{if(e.target.value)setIds([...ids,e.target.value]);}}><option value="">Select job</option>{eligible.filter(j=>!ids.includes(j.id)).map(j=><option key={j.id} value={j.id}>{j.id} · {j.address}</option>)}</select></label>
       <p role="status">{message}</p>
       <a href="/storage/">Drive backup / recovery</a>
-      {ids.length>0&&<button type="button" className="fc-route-toggle" onClick={()=>setIds([])}>Clear route</button>}
+
     </div>}
   </aside>;
 }

@@ -188,6 +188,7 @@ jobs:
             scripts/test-browser-stats.mjs \
             scripts/test-browser-route.mjs \
             scripts/test-browser-next-stop.mjs \
+            scripts/test-browser-route-clear.mjs \
             scripts/test-browser-auto-next.mjs \
             scripts/test-browser-route-progress.mjs \
             scripts/test-browser-bids.mjs \

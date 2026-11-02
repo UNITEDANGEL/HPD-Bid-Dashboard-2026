@@ -5,6 +5,7 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "🧭 Today's route: the red Clear route button now sits at the top of the panel and stays there while you scroll the stops.",
         "🎙 The helper's typing box now has its own mic: tap it, say it, and I answer (it glows red while listening; tap again to stop).",
         "🃏 The chat's answers now come with cards you can tap: a bid (with your saved price, or the best price from what wins, and 💰 Price), a notice (with ✍️ Answer), a job (with its appointment time). One tap opens it.",
         "⏰ The chat speaks up by itself, right above the bar, when something matters: bids due within the hour (\"1 bid due in 30 min, 1 not priced. Start?\" ▶ Start opens it), HPD answered one of your notices (Open), or an appointment in the next 3 hours the tenant hasn't confirmed (📱 Text them). Tap ✕ and it won't bring that one up again.",
