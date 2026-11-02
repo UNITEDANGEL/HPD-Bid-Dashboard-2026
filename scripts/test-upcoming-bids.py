@@ -57,9 +57,14 @@ desc = ub.job_description(work)
 assert "3) AT ENTRANCE DOOR REPLACE LATCH SET TOTAL DOORS = 3" in desc and "General Decision" not in desc and "V N O" not in desc, desc
 assert "CONTRACTOR MUST CONTACT" in ub.job_notes(work)
 assert itb_text.work_text(["a", "b", "Job Description: X", "WORK DESCRIPTION FORM"])[1] == [3]
+# Page 3 empty (ER09499): the work is on HPD's order form, page 2, before the form's labels.
+order = NL.join(["APARTMENT #1H", "ENTRANCE DOOR", "RE-ALIGN DOOR", "REPLACE ALL HINGES", "X", "(Site)", "(Data)", "Block No."])
+work, used = itb_text.work_text(["cover", order, "", "WORK DESCRIPTION FORM"], page3_blank=True)
+assert used == [2] and ub.job_description(work) == "APARTMENT #1H ENTRANCE DOOR RE-ALIGN DOOR REPLACE ALL HINGES", (used, work)
+assert itb_text.work_text(["cover", order, "", "WORK DESCRIPTION FORM"])[1] == [3], "a scanned page 3 (picture) stays page 3"
 
 # HPD's Confirmation of Award is not an invitation (it opens with that title; invitations only mention it).
 assert ub.is_award_letter("missing.pdf", "Confirmation  of  Award" + chr(10) + "10" + chr(10) + "Y") is True
 assert ub.is_award_letter("missing.pdf", "INVITATION TO BID QUOTATION SHEET ... Confirmation of Award") is False
 
-print("PASS upcoming bids reader: OMO (O->0), bid due date/time, work dates, address (last page wins), boro, job description (page 3 + continuation pages), award letters skipped")
+print("PASS upcoming bids reader: OMO (O->0), bid due date/time, work dates, address (last page wins), boro, job description (page 3 + continuation pages; page 2 when page 3 is empty), award letters skipped")

@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fetch_upcoming_bids import OUT_FILES, ROOT, job_description, job_notes  # noqa: E402
-from itb_text import work_text  # noqa: E402
+from itb_text import page_is_blank, work_text  # noqa: E402
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
         if not os.path.exists(path):
             continue
         with fitz.open(path) as doc:
-            work, pages = work_text([p.get_text() for p in doc])  # page 3 + continuation pages
+            work, pages = work_text([p.get_text() for p in doc], len(doc) >= 3 and page_is_blank(doc[2]))  # page 3 + continuation pages
         bid["description"] = job_description(work)[:8000] or bid.get("description", "")
         bid["notes"] = job_notes(work)[:4000]
         bid["descPages"] = pages

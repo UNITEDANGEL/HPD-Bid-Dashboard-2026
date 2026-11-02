@@ -25,7 +25,7 @@ import urllib.request
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from itb_text import work_text  # noqa: E402  (page 3 + continuation pages)
+from itb_text import page_is_blank, work_text  # noqa: E402  (page 3 + continuation pages; page 2 if 3 is empty)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NY = ZoneInfo("America/New_York")
@@ -153,7 +153,7 @@ def read_pdf(path):
     page1 = pytesseract.image_to_string(Image.open(io.BytesIO(doc[0].get_pixmap(dpi=300).tobytes("png"))))
     last = doc[-1].get_text() if len(doc) else ""
     # Page 3 and its continuation pages (long jobs run onto page 4: scripts/itb_text.py).
-    work, desc_pages = work_text([p.get_text() for p in doc])
+    work, desc_pages = work_text([p.get_text() for p in doc], len(doc) >= 3 and page_is_blank(doc[2]))
     return page1, last, job_description(work), job_notes(work), desc_pages
 
 

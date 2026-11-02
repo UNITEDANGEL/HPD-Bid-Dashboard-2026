@@ -4,6 +4,9 @@
 bid form ("WORK DESCRIPTION FORM" / "BID AMOUNT").
 
   work_text(page_texts)  -> (text, pages)   page_texts: every page's text, in order; pages are 1-based
+
+Some invitations leave page 3 empty (ER09499, EQ31601: no text and no scan) and the work is only typed on HPD's
+order form, page 2, under "WORK DESCRIPTION": work_text(..., page3_blank=True) reads it from there (pages [2]).
 """
 import re
 
@@ -29,10 +32,33 @@ def continuation(text):
     return "\n".join(out)
 
 
-def work_text(page_texts):
+def page_is_blank(page):
+    """A PyMuPDF page with no text and no picture (a scan has a picture: its words are in the picture)."""
+    return not (page.get_text() or "").strip() and not page.get_images()
+
+
+def order_text(text):
+    """The work typed on HPD's order form (page 2): the lines before the form's own labels ("(Site)", "X")."""
+    out = []
+    for line in (text or "").splitlines():
+        s = line.strip()
+        if s == "(Site)":
+            break
+        if s:
+            out.append(s)
+    while out and out[-1] == "X":
+        out.pop()
+    return "\n".join(out)
+
+
+def work_text(page_texts, page3_blank=False):
     texts = list(page_texts or [])
     if len(texts) < 3:
         return "", []
+    if page3_blank:
+        work = order_text(texts[1])
+        if work.strip():
+            return work, [2]
     parts, pages = [texts[2]], [3]
     for i in range(3, len(texts)):
         if FORM_PAGE.search(texts[i] or ""):
