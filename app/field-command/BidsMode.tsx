@@ -20,6 +20,7 @@ import ItbPages, { pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
+import type { ChatCard } from "../../lib/chat-cards";
 import { jobGlyphSvg, jobIcon } from "../../lib/job-icon";
 import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
 import { syncPricing } from "../../lib/pricing-sync";
@@ -101,7 +102,7 @@ const BORO_NAME: Record<string, string> = { MN: "Manhattan", BX: "Bronx", BK: "B
 // What the chat on the map asks the bids to do (2 Nov): show a borough / day on the map, or go to the next bid.
 export type BidsChat = { n: number; kind: "show"; boro: string; day: "all" | "0" | "1" } | { n: number; kind: "next" };
 
-export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused, chat = null, onChat }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void; chat?: BidsChat | null; onChat?: (reply: string) => void }) {
+export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused, chat = null, onChat }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void; chat?: BidsChat | null; onChat?: (reply: string, cards?: ChatCard[]) => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
   const [privOk, setPrivOk] = useState(false);
@@ -692,7 +693,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   useEffect(() => {
     if (!open || !bids || !chat || chat.n === chatDone.current) return;
     chatDone.current = chat.n;
-    const reply = (t: string) => onChat?.(t);
+    const reply = (t: string, cards?: ChatCard[]) => onChat?.(t, cards);
     const byDue = (a: UpcomingBid, b: UpcomingBid) => (a.bidDue + minutesOf(a.bidDueTime) + a.omo).localeCompare(b.bidDue + minutesOf(b.bidDueTime) + b.omo);
     if (chat.kind === "show") {
       const where = chat.boro ? ` in ${BORO_NAME[chat.boro] || chat.boro}` : "";
@@ -708,15 +709,24 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       setRefit((n) => n + 1);
       const todo = pool.filter((b) => !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || ""));
       const first = todo[0] || pool[0];
-      reply(`${pool.length} bid${pool.length === 1 ? "" : "s"}${where}${when} on the map${todo.length < pool.length ? `, ${todo.length} still to send` : ""}. First due: ${first.address || first.omo}, ${dueLabel(first)}.${todo.length ? ' Say "next bid" to start.' : ""}`);
+      // A card for each (up to 5): your saved price, else the best price from what wins.
+      const cards: ChatCard[] = pool.slice(0, 5).map((b) => {
+        const rec = currentRecord(b, records);
+        const h = rowHelp.get(b.omo);
+        const tag = rec && ["sent", "confirmed"].includes(rec.status || "") ? "✓ sent" : rec?.price ? `${money(rec.price)} saved` : noBidOf(b) ? "🚫 no bid" : h ? `💰 best ~${money(bestWithFloor(h, floors[floorKind(b.description)]).price)}` : undefined;
+        return { kind: "bid", id: b.omo, title: `${BORO_NAME[String(b.borough || "").toUpperCase()] || b.borough || "New York"} · ${b.address || b.omo}`, sub: [b.omo, jobSummary(b.description || "").lines.map(lineText)[0], `due ${dueLabel(b)}`].filter(Boolean).join(" · "), tag };
+      });
+      reply(`${pool.length} bid${pool.length === 1 ? "" : "s"}${where}${when} on the map${todo.length < pool.length ? `, ${todo.length} still to send` : ""}. First due: ${first.address || first.omo}, ${dueLabel(first)}.${todo.length ? ' Say "next bid" to start.' : ""}`, cards);
       return;
     }
+    const reply2 = (t: string) => onChat?.(t, []);
     const { next, left } = nextInLine(selected?.omo || "");
     if (!next) { reply(`No bids left to price or send${boroPick ? ` in ${BORO_NAME[boroPick] || boroPick}` : ""}. 👍`); return; }
     goToBid(next, undefined, true);
+    // The bid opens by itself: no card for it.
     const what = jobSummary(next.description || "").lines.map(lineText)[0];
     const more = Math.max(0, left - 1);
-    reply(`${next.omo} in ${BORO_NAME[String(next.borough || "").toUpperCase()] || next.borough || "New York"}, ${next.address}${what ? `: ${what}` : ""}. Due ${dueLabel(next)}. ${more ? `${more} more after this one.` : "That's the last one."} Say "bid" and a price when you're ready.`);
+    reply2(`${next.omo} in ${BORO_NAME[String(next.borough || "").toUpperCase()] || next.borough || "New York"}, ${next.address}${what ? `: ${what}` : ""}. Due ${dueLabel(next)}. ${more ? `${more} more after this one.` : "That's the last one."} Say "bid" and a price when you're ready.`);
   }, [open, bids, chat]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const on = () => comeBackRef.current();

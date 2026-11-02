@@ -63,6 +63,7 @@ import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow, tenantsToCall } from "./JobsList";
 import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
+import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
 import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater } from "../../lib/weather";
@@ -1488,7 +1489,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1509,7 +1510,19 @@ export default function FieldCommandClient() {
   const [chatBarText, setChatBarText] = useState("");
   const [chatAll, setChatAll] = useState(false);
   const [bidsChat, setBidsChat] = useState<BidsChat | null>(null);
-  const chatReplyRef = useRef<(reply: string) => void>(() => {});
+  const chatReplyRef = useRef<(reply: string, cards?: ChatCard[]) => void>(() => {});
+  // Cards for the next answer (set just before it); without them, the jobs the answer names become cards.
+  const cardsRef = useRef<ChatCard[] | null>(null);
+  // The invitations last loaded (for bid cards and the "bids due soon" nudge).
+  const bidsListRef = useRef<{ omo?: string; bidDue: string; bidDueTime: string; address?: string; borough?: string; description?: string }[]>([]);
+  // Nudges (2 Nov, part 4: "the chat starts the conversation when something matters"), checked every minute.
+  const [nudgeSeen, setNudgeSeen] = useState<string[]>([]);
+  const [, setNudgeTick] = useState(0);
+  useEffect(() => {
+    setNudgeSeen(nudgesSeen());
+    const t = window.setInterval(() => setNudgeTick((n) => n + 1), 60000);
+    return () => window.clearInterval(t);
+  }, []);
   const chatLoadedRef = useRef(false);
   useEffect(() => {
     try {
@@ -1643,6 +1656,7 @@ export default function FieldCommandClient() {
       const nowMin = (() => { const [h, m] = new Date().toLocaleTimeString("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number); return h * 60 + m; })();
       const minutes = (t: string) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
       const bids: { bidDue: string; bidDueTime: string; omo?: string; address?: string }[] = Array.isArray(d?.bids) ? d.bids : [];
+      bidsListRef.current = bids;
       try {
         const raw = localStorage.getItem("hpd-seen-invites");
         const seen = new Set<string>(raw ? JSON.parse(raw) : []);
@@ -3993,21 +4007,33 @@ export default function FieldCommandClient() {
         multiRef.current = null;
         const rest = confirm && m.queue.length ? `\n\nAfter that, ask me: ${m.queue.join("; ")}.` : "";
         const all = `${m.replies.join("\n\n")}${rest}`;
-        setAgent({ heard: m.heard, reply: all, confirm }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
+        setAgent({ heard: m.heard, reply: all, confirm, cards: takeCards(all) }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
         speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200, () => { if (convoRef.current) startListening(); });
         return;
       }
-      setAgent({ heard, reply, confirm });
+      setAgent({ heard, reply, confirm, cards: takeCards(reply) });
       // 💬 Conversation mode: listen again once the answer has been said.
       const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200, again); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
+    // The cards under an answer: the ones set for it, else the jobs it names (not the one already open).
+    function takeCards(reply: string) {
+      const set = cardsRef.current;
+      cardsRef.current = null;
+      const open = selectedJob ? jobId(selectedJob) : "";
+      // Over an open bid card the panel stays small (its Save / Send buttons stay free): no cards from the words.
+      if (!set && document.querySelector('[data-hpd-smoke="fc-bid-sheet"]')) return [];
+      const list = set || omosIn(reply).filter((o) => o !== open).map((o) => chatCard(o)).filter((c): c is ChatCard => Boolean(c));
+      return list.slice(0, 5);
+    }
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
     // A panel with buttons ends a chain: what was answered before goes on top.
-    function showPanel(p: { heard: string; reply: string; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] }) {
+    function showPanel(p: { heard: string; reply: string; cards?: ChatCard[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] }) {
       const m = multiRef.current;
       multiRef.current = null;
-      setAgent(m ? { ...p, heard: m.heard, reply: [...m.replies, p.reply].join("\n\n") } : p);
+      const reply = m ? [...m.replies, p.reply].join("\n\n") : p.reply;
+      if (p.cards) cardsRef.current = p.cards;
+      setAgent({ ...p, heard: m ? m.heard : p.heard, reply, cards: takeCards(reply) });
     }
     if (cmd.intent === "reply-notice") {
       // Which notice: the job named, else the one on screen, else the only one waiting (or the most urgent from Lewis / Gafur).
@@ -4386,7 +4412,7 @@ export default function FieldCommandClient() {
       if (!list.length) { answer(`No appointments ${span}.`); return; }
       lastJobsRef.current = { ids: list.slice(0, 5).map((x) => jobId(x.j)), at: Date.now() };
       const lines = list.slice(0, 4).map((x) => `${appointmentLabel(x.a!)} at ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}${x.a!.state === "requested" ? " (not confirmed yet)" : ""}`);
-      showPanel({ heard, reply: `${list.length} appointment${list.length === 1 ? "" : "s"} ${span}: ${lines.join("; ")}${list.length > 4 ? `, and ${list.length - 4} more` : ""}.`,
+      showPanel({ heard, reply: `${list.length} appointment${list.length === 1 ? "" : "s"} ${span}: ${lines.join("; ")}${list.length > 4 ? `, and ${list.length - 4} more` : ""}.`, cards: list.slice(0, 4).map((x) => chatCard(jobId(x.j), "job")).filter((c): c is ChatCard => Boolean(c)),
         actions: [...list.filter((x) => needsReminder(x.j, x.a)).slice(0, 3).map((x) => ({ label: `📅 Text reminder · ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: smsHref(tenantInfo(x.j).phone, reminderText(x.j, x.a!)), id: jobId(x.j), remind: x.a!.date })),
           ...list.slice(0, 3).map((x) => ({ label: `Waze · ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`, href: wazeHref(x.j), id: jobId(x.j), via: "Waze" as const }))].slice(0, 4) });
       return;
@@ -4416,7 +4442,7 @@ export default function FieldCommandClient() {
     }
     if (cmd.intent === "bids-show" || cmd.intent === "next-bid") {
       // The bids answer once they're on the map (BidsMode onChat).
-      chatReplyRef.current = (reply) => answer(reply);
+      chatReplyRef.current = (reply, cards) => { if (cards) cardsRef.current = cards; answer(reply); };
       goTo("bids", "");
       setBidsChat(cmd.intent === "bids-show" ? { n: Date.now(), kind: "show", boro: cmd.boro, day: cmd.day } : { n: Date.now(), kind: "next" });
       return;
@@ -4438,7 +4464,7 @@ export default function FieldCommandClient() {
       const where = jobAddress(hit.j).replace(/,\s*\d{5}$/, "");
       setBidsOpen(false);
       openIssueJob(hit.j, true);
-      showPanel({ heard, reply: `${appointmentLabel(hit.a!)}: ${where} (${jobId(hit.j)})${hit.a!.state === "requested" ? ", not confirmed yet" : ", confirmed"}. It's on the map.`, actions: [{ label: "Waze", href: wazeHref(hit.j), id: jobId(hit.j), via: "Waze" }, { label: "Google Maps", href: directionsHref(hit.j), id: jobId(hit.j), via: "Google" }] });
+      showPanel({ heard, cards: [], reply: `${appointmentLabel(hit.a!)}: ${where} (${jobId(hit.j)})${hit.a!.state === "requested" ? ", not confirmed yet" : ", confirmed"}. It's on the map.`, actions: [{ label: "Waze", href: wazeHref(hit.j), id: jobId(hit.j), via: "Waze" }, { label: "Google Maps", href: directionsHref(hit.j), id: jobId(hit.j), via: "Google" }] });
       speak(sayOmo(`${appointmentLabel(hit.a!).split(" · ")[1].replace("–", " to ")}: ${where}. It's on the map.`), 200);
       return;
     }
@@ -4782,6 +4808,7 @@ export default function FieldCommandClient() {
         const open = (Array.isArray(d?.bids) ? d.bids : []).filter((b: { bidDue?: string; bidDueTime?: string }) => (b.bidDue || "") > today || (b.bidDue === today && minOf(b.bidDueTime) > nowMin)).sort((a: { bidDue: string }, b: { bidDue: string }) => a.bidDue.localeCompare(b.bidDue));
         if (!open.length) { answer("No open invitations to bid right now."); return; }
         lastJobsRef.current = { ids: open.slice(0, 5).map((b: { omo: string }) => b.omo), at: Date.now() };
+        cardsRef.current = open.slice(0, 5).map(bidCard);
         const lines = open.slice(0, 5).map((b: { borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => { const first = jobSummary(b.description || "").lines.map(lineText)[0] || "general repair"; return `${({ MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" } as Record<string, string>)[String(b.borough || "").toUpperCase()] || b.borough || "New York"}: ${first}, due ${b.bidDue === today ? "today" : dayWord(b.bidDue)} ${b.bidDueTime || ""}`.trim(); });
         answer(`${open.length === 1 ? "You have 1 open invitation to bid." : `You have ${open.length} open invitations to bid.`} ${lines.join(". ")}.${open.length > 5 ? ` And ${open.length - 5} more in Bids.` : ""}`);
       }).catch(() => answer("I couldn't load the bids right now."));
@@ -4790,6 +4817,7 @@ export default function FieldCommandClient() {
     if (cmd.intent === "notices") {
       const open = boardOpenRows.filter((r) => !r.steps.sent.done);
       if (open.length) lastJobsRef.current = { ids: [...open].sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now())).map((r) => r.omo), at: Date.now() };
+      if (open.length) cardsRef.current = lastJobsRef.current!.ids.slice(0, 5).map((o) => chatCard(o)).filter((c): c is ChatCard => Boolean(c));
       if (!open.length) { answer("No notices waiting on you. Nice."); return; }
       const late = open.filter((r) => r.kind === "ppn" && hoursLeft(r, Date.now()) < 0);
       answer(`${open.length} notice${open.length === 1 ? "" : "s"} waiting on you${late.length ? `, ${late.length} overdue: ${late.slice(0, 3).map((r) => addressOf(r.omo) || r.omo).join("; ")}` : ""}. Open Notices to answer them.`);
@@ -4807,6 +4835,41 @@ export default function FieldCommandClient() {
     answer(parts.length ? `Today: ${parts.join(", ")}.` : "Nothing urgent today.");
   };
   const addressOf = (omo: string) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; };
+  // Cards under the chat's answers (2 Nov, part 3): a notice (with Answer), a bid still open, else the job.
+  const BORO_WORD: Record<string, string> = { MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" };
+  const noZip = (a: string) => a.replace(/,\s*\d{5}$/, "");
+  function bidCard(b: { omo?: string; bidDue: string; bidDueTime: string; address?: string; borough?: string; description?: string }): ChatCard {
+    let rec: { status?: string; price?: number; bidDue?: string } | undefined;
+    try { rec = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}")[b.omo || ""]; } catch { /* private mode */ }
+    const mine = rec && rec.bidDue === b.bidDue ? rec : undefined;
+    const day = b.bidDue === nyToday() ? "today" : new Date(`${b.bidDue}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" });
+    return {
+      kind: "bid", id: b.omo || "", title: `${BORO_WORD[String(b.borough || "").toUpperCase()] || b.borough || "New York"} · ${b.address || b.omo}`,
+      sub: [b.omo, jobSummary(b.description || "").lines.map(lineText)[0], `due ${day} ${b.bidDueTime || ""}`.trim()].filter(Boolean).join(" · "),
+      tag: mine && ["sent", "confirmed"].includes(String(mine.status)) ? "✓ sent" : mine?.price ? `$${Number(mine.price).toLocaleString("en-US")} saved` : undefined,
+    };
+  }
+  function chatCard(omo: string, only?: ChatCard["kind"]): ChatCard | null {
+    const row = !only || only === "notice" ? boardOpenRows.find((r) => r.omo === omo) : undefined;
+    if (row) {
+      const h = row.dueAt ? Math.round(hoursLeft(row, Date.now())) : null;
+      return { kind: "notice", id: omo, title: noZip(addressOf(omo)) || omo, sub: [omo, row.kind === "docs" ? "missing documents" : `${row.hours}-hour notice`, h === null ? "" : h < 0 ? `overdue ${-h} h` : `${h} h left`].filter(Boolean).join(" · "), tag: boardSide(row) === "replied" ? "HPD answered" : undefined };
+    }
+    const b = !only || only === "bid" ? bidsListRef.current.find((x) => x.omo === omo && x.bidDue >= nyToday()) : undefined;
+    if (b) return bidCard(b);
+    const j = findAnyJob(omo);
+    if (!j) return null;
+    const a = activeAppointment(j as Record<string, unknown>);
+    return { kind: "job", id: omo, title: noZip(jobAddress(j)), sub: [omo, jobSummary(jobScope(j)).lines.map(lineText)[0]].filter(Boolean).join(" · "), tag: a && !appointmentTiming(a).past ? `📅 ${appointmentLabel(a).split(" · ")[1]}` : undefined };
+  }
+  function openCard(c: ChatCard) {
+    stopSpeaking();
+    setAgent(null);
+    if (c.kind === "bid") { goTo("bids", c.id); return; }
+    if (c.kind === "notice") { setBidsOpen(false); goTo("board", c.id); return; }
+    const j = findAnyJob(c.id);
+    if (j) { setBidsOpen(false); closeScreens(); openIssueJob(j, true); }
+  }
 
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
@@ -6228,7 +6291,7 @@ export default function FieldCommandClient() {
         focusOmo={bidsFocus}
         onFocused={() => setBidsFocus("")}
         chat={bidsChat}
-        onChat={(reply) => chatReplyRef.current(reply)}
+        onChat={(reply, cards) => chatReplyRef.current(reply, cards)}
       />
       {closeOutOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-work-sheet" role="dialog" aria-label="Ready to close out" data-hpd-smoke="fc-close-out-sheet">
@@ -6791,6 +6854,44 @@ export default function FieldCommandClient() {
           </button>
         );
       })()}
+      {!agent && !selectedJob && !moreOpen && dockEdit < 0 && !bidsOpen ? (() => {
+        // What matters right now, once each (closing it or acting on it puts it away): bids due within the hour, HPD
+        // answered a notice (last 24 h), an appointment in the next 3 hours the tenant hasn't confirmed.
+        const now = Date.now();
+        const today = nyToday();
+        const nowMin = (() => { const [h, m] = new Date().toLocaleTimeString("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number); return h * 60 + m; })();
+        const minOf = (t: string) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
+        let recs: Record<string, { status?: string; price?: number; bidDue?: string }> = {};
+        try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+        const soon = bidsListRef.current.filter((b) => b.omo && b.bidDue === today && minOf(b.bidDueTime) - nowMin > 0 && minOf(b.bidDueTime) - nowMin <= 60
+          && !(["sent", "confirmed"].includes(String(recs[b.omo]?.status)) && recs[b.omo]?.bidDue === b.bidDue)).sort((a, b) => minOf(a.bidDueTime) - minOf(b.bidDueTime));
+        const answered = boardOpenRows.filter((r) => boardSide(r) === "replied" && r.lastTheirsAt && now - Date.parse(r.lastTheirsAt) < 86400000).sort((a, b) => Date.parse(b.lastTheirsAt || "") - Date.parse(a.lastTheirsAt || ""));
+        const unconfirmed = jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).filter(({ j, a }) => {
+          if (!a || a.state !== "requested" || a.date !== today || !tenantInfo(j).phone || value(j, ["ApptReminderSentFor"]) === a.date) return false;
+          const t = appointmentTiming(a);
+          return t.startsIn > 0 && t.startsIn <= 180;
+        });
+        type Nudge = { key: string; kind: string; text: string; label: string; go?: () => void; href?: string };
+        const all: Nudge[] = [];
+        if (soon.length) {
+          const unpriced = soon.filter((b) => !(recs[b.omo!]?.price && recs[b.omo!]?.bidDue === b.bidDue)).length;
+          const mins = minOf(soon[0].bidDueTime) - nowMin;
+          all.push({ key: `bids|${today}|${soon.map((b) => b.omo).join(",")}`, kind: "bids", text: `⏰ ${soon.length} bid${soon.length === 1 ? "" : "s"} due in ${mins} min${unpriced ? `, ${unpriced} not priced` : ""}. Start?`, label: "▶ Start", go: () => agentRef.current("next bid") });
+        }
+        for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
+        for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
+        const nudge = all.find((n) => !nudgeSeen.includes(n.key));
+        if (!nudge) return null;
+        const done = () => setNudgeSeen(markNudgeSeen(nudge.key));
+        return (
+          <div className="fc-chat-nudge" role="status" data-hpd-smoke="fc-chat-nudge" data-kind={nudge.kind}>
+            <span data-hpd-smoke="fc-chat-nudge-text">{nudge.text}</span>
+            {nudge.href ? <a href={nudge.href} data-hpd-smoke="fc-chat-nudge-go" onClick={() => { done(); nudge.go?.(); }}>{nudge.label}</a>
+              : <button type="button" data-hpd-smoke="fc-chat-nudge-go" onClick={() => { done(); nudge.go?.(); }}>{nudge.label}</button>}
+            <button type="button" className="fc-chat-nudge-x" aria-label="Not now" data-hpd-smoke="fc-chat-nudge-close" onClick={done}>✕</button>
+          </div>
+        );
+      })() : null}
       {!agent && !selectedJob && !moreOpen && dockEdit < 0 ? (
         <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
           e.preventDefault();
@@ -6823,6 +6924,19 @@ export default function FieldCommandClient() {
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
           ) : null}
           <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
+          {agent.cards?.length ? (
+            <div className="fc-chat-cards" data-hpd-smoke="fc-chat-cards">
+              {agent.cards.map((c) => (
+                <div key={`${c.kind}${c.id}`} className={`fc-chat-card is-${c.kind}`} data-hpd-smoke="fc-chat-card" data-kind={c.kind} data-id={c.id}>
+                  <button type="button" className="fc-chat-card-main" onClick={() => openCard(c)}>
+                    <b>{c.kind === "bid" ? "📨 " : c.kind === "notice" ? "⏰ " : "🔧 "}{c.title}</b><small>{c.sub}</small>{c.tag ? <em>{c.tag}</em> : null}
+                  </button>
+                  {c.kind === "notice" ? <button type="button" className="fc-chat-card-act" data-hpd-smoke="fc-chat-card-answer" onClick={() => agentRef.current(`answer the notice for ${c.id}`)}>✍️ Answer</button>
+                    : c.kind === "bid" ? <button type="button" className="fc-chat-card-act" data-hpd-smoke="fc-chat-card-price" onClick={() => openCard(c)}>💰 Price</button> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
           {/* 👉 Try next (27 Oct, "more advanced helper"): what makes sense to say next here, one tap to run it. */}
           {!agent.confirm && !helpOpen ? (() => {
             const heard = agent.heard.toLowerCase().replace(/[^a-z' ]/g, "").trim();

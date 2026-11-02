@@ -5,6 +5,8 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "🃏 The chat's answers now come with cards you can tap: a bid (with your saved price, or the best price from what wins, and 💰 Price), a notice (with ✍️ Answer), a job (with its appointment time). One tap opens it.",
+        "⏰ The chat speaks up by itself, right above the bar, when something matters: bids due within the hour (\"1 bid due in 30 min, 1 not priced. Start?\" ▶ Start opens it), HPD answered one of your notices (Open), or an appointment in the next 3 hours the tenant hasn't confirmed (📱 Text them). Tap ✕ and it won't bring that one up again.",
         "✨ A chat bar is now always on the map, right above the bottom buttons: type anything (or tap 🎤 to talk) without opening anything first.",
         "🗺 The chat moves the map: \"show me the bids in Brooklyn\" or \"today's bids in Queens\" shows only those pins (tap 📍 Brooklyn ✕ on top to see them all again); \"next bid\" opens the next bid to price, map first, and says how many are left; \"bid 450\" fills the price (sending is still your two taps).",
         "📍 \"Where's my 2 PM?\" or \"where's my next appointment?\" opens that job on the map with Waze and Google Maps.",
