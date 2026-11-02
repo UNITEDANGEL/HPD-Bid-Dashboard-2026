@@ -73,6 +73,7 @@ try {
 
   // 2. Typed: works like speaking; the first turn stays on screen above.
   await page.locator('[data-hpd-smoke="fc-agent-type-btn"]').click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-type-mic"]').count(), 1, "the typing box has its own 🎤");
   await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("what's next");
   await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
   await waitReply(/^Next: |Nothing urgent right now/);

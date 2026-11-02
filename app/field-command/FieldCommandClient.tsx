@@ -6906,7 +6906,7 @@ export default function FieldCommandClient() {
           <span aria-hidden="true">✨</span>
           <input value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "Ask me, or \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
           {chatBarText.trim() ? <button type="submit" aria-label="Send" data-hpd-smoke="fc-chatbar-send">➤</button>
-            : canListen ? <button type="button" aria-label="Talk to the AI" data-hpd-smoke="fc-chatbar-mic" onClick={startAgentChat}>🎤</button> : null}
+            : canListen ? <button type="button" aria-label="Talk to the AI" data-hpd-smoke="fc-chatbar-mic" onClick={startAgentChat}>🎙️</button> : null}
         </form>
       ) : null}
       {agent ? (
@@ -6965,6 +6965,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agentTypeOpen ? <form className="fc-agent-type" data-hpd-smoke="fc-agent-type" onSubmit={(e) => { e.preventDefault(); const t = agentTyped.trim(); if (!t) return; setAgentTyped(""); agentRef.current(t); }}>
             <input autoFocus value={agentTyped} onChange={(e) => setAgentTyped(e.target.value)} placeholder="Type anything, or tell Claude what to change" aria-label="Type to the helper" data-hpd-smoke="fc-agent-type-input" enterKeyHint="send" />
+            {canListen ? <button type="button" className={`fc-agent-type-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Talk instead of typing"} aria-pressed={listening} data-hpd-smoke="fc-agent-type-mic" onClick={() => { if (listening) { listenRef.current?.stop(); } else { unlockChime(); startListening(); } }}>🎙️</button> : null}
             <button type="submit" disabled={!agentTyped.trim()} data-hpd-smoke="fc-agent-type-send">Send</button>
           </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
