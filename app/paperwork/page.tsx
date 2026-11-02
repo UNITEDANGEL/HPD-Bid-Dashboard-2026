@@ -1588,6 +1588,16 @@ export default function PaperworkPage() {
       return;
     }
 
+    // Already made and emailed for this outcome (owner, 2 Nov: "a very smooth transaction"): opening the package again
+    // (close-out list, a link, the voice helper, a second tap while the first was going) must not build and email it a
+    // second time by itself; the page shows it as sent and locked, with Revise for a real change. Saving an outcome sets
+    // the review back to Pending, so a changed outcome or date builds and sends as usual.
+    if (String(selectedJob.PackageEmailedAt || "") && /approved/i.test(String(selectedJob.PackageReviewStatus || ""))) {
+      autoGenerateStartedRef.current = true;
+      setPdfStatus("");
+      return;
+    }
+
     // The emailed copy needs the signer's signature and the notary's approval. Wait on this
     // screen for both, then build the package by itself -- no extra Generate tap.
     if (includePackageSignature && (!signerReady || !notaryApproved)) {

@@ -3878,3 +3878,21 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @keyframes fc-bar-move { from { background-position: 0 0, 0 0; } to { background-position: 22px 0, 0 0; } }
 .fc-claude-live-pct { color: #fde68a; }
 @media (prefers-reduced-motion: reduce) { .fc-claude-online.is-on i, .fc-change-bar.is-moving i, .fc-claude-live-bar.is-moving span { animation: none; } }
+
+/* Bottom buttons glow when something needs you (2 Nov). */
+.fc-dock-btn.is-glow { --glow: 52, 211, 153; }
+.fc-dock-btn.is-glow[data-hpd-smoke="fc-bids-open"] { --glow: 251, 146, 60; }
+.fc-dock-btn.is-glow.fc-notices-fab { --glow: 248, 113, 113; }
+.fc-dock-btn.is-glow::before { content: ""; position: absolute; left: 50%; top: 32%; width: 66px; height: 66px; margin: -33px 0 0 -33px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--glow), .75) 0%, rgba(var(--glow), .35) 45%, rgba(var(--glow), 0) 72%); animation: fc-dock-glow 1.8s ease-in-out infinite; pointer-events: none; z-index: -1; }
+.fc-dock-btn.is-glow svg { filter: drop-shadow(0 0 6px rgba(var(--glow), .9)); }
+@keyframes fc-dock-glow { 0%, 100% { opacity: .35; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .fc-dock-btn.is-glow::before { animation: none; opacity: .8; } }
+
+/* Claude working clock (2 Nov). */
+.fc-working-clock { display: inline-flex; align-items: center; gap: 6px; color: #86efac; font: 800 13px system-ui; font-variant-numeric: tabular-nums; }
+.fc-working-dots { display: inline-flex; gap: 3px; }
+.fc-working-dots i { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: fc-dot-bounce 1s ease-in-out infinite; }
+.fc-working-dots i:nth-child(2) { animation-delay: .15s; }
+.fc-working-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes fc-dot-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-4px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fc-working-dots i { animation: none; opacity: 1; } }

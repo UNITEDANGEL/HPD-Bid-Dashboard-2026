@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 2, 2026",
+      "title": "Glowing buttons, Claude's clock, affidavit sent once",
+      "items": [
+        "✨ Jobs, Bids and Notices glow softly when something there needs you: a 2nd try due or a job to close out, a bid due today not sent, a notice overdue or under 6 hours. Nothing waiting: no glow.",
+        "⏱ While Claude works on your request, a clock counts up every second next to the moving bar (\"working for 3:12\"), on the map card and in Your requests.",
+        "📄 Affidavit from the job card: open the job, Work completed (or what happened), Save, and it makes, emails and files itself. Opening it again later never sends it a second time: it shows as sent, with Revise for a real change."
+      ]
+    },
+    {
+      "date": "Nov 2, 2026",
       "title": "See Claude working, live",
       "items": [
         "🟢 What's new → Your requests says whether Claude is ON right now (checking for requests every 20 seconds) or OFF, with when it was last on. No more guessing how many minutes.",

@@ -51,6 +51,13 @@ try {
   assert.match(text, /“Let me change any date on the affidavit”/, "the request, without the (said to the helper) tag");
   assert.match(text, /40% 2\/5 · Now: Live progress/);
   assert.match(await card.locator(".fc-claude-live-bar").getAttribute("class"), /is-moving/, "the bar moves while Claude works");
+  // The clock counts up every second while Claude works.
+  const clock = card.locator('[data-hpd-smoke="fc-working-clock"]');
+  const t1 = await clock.innerText();
+  await page.waitForTimeout(2200);
+  const t2 = await clock.innerText();
+  assert.match(t1, /working for \d+:\d\d/);
+  assert.notEqual(t1, t2, "the working clock ticks");
   assert.match(text, /Found what locks the date; fixing it\. · 3 min ago/);
   assert.match(await card.getAttribute("class"), /is-working/);
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/claude-live.png` }).catch(() => {});

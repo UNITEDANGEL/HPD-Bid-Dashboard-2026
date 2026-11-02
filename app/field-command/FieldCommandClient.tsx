@@ -185,6 +185,15 @@ type WhatsNew = { date: string; title: string; items: string[] }[];
 // open?")? Claude runs on the office computer: while it's on with the Claude app open it looks for requests every 20 s
 // and writes CLAUDE-HEARTBEAT about every 9 minutes (scripts/reply-change-request.mjs). Seen in the last 12 minutes = on.
 const CLAUDE_ON_MS = 12 * 60000;
+// A clock that counts up every second while Claude works on a request (owner, 2 Nov: "something moving that is actually
+// work in progress"). Its own little timer, so the rest of the screen doesn't redraw every second.
+function WorkingClock({ since }: { since: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
+  const s = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
+  const text = s >= 3600 ? `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  return <span className="fc-working-clock" data-hpd-smoke="fc-working-clock"><span className="fc-working-dots" aria-hidden="true"><i /><i /><i /></span>working for {text}</span>;
+}
 const claudeIsOn = (seenAt: string) => Boolean(seenAt) && Date.now() - Date.parse(seenAt) < CLAUDE_ON_MS;
 const pickupLabel = (seenAt: string) => {
   if (claudeIsOn(seenAt)) return "Claude is on now: it starts on it within a minute or two";
@@ -2581,6 +2590,10 @@ export default function FieldCommandClient() {
     });
   }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
+  // The bottom buttons glow when something there needs you now (owner, 2 Nov: "bids, notices, jobs: glowing a little so I
+  // know to pay attention"): a 2nd try due or a job ready to close out (same as the red Jobs badge); a bid due today not
+  // sent; a notice overdue or under 6 hours. Nothing waiting: no glow.
+  const jobsNeedYou = secondTryJobs.some((r) => r.second.due) || closeOutJobs.length > 0;
   // Stats sheet (chart button on the map): visits, outcomes, packages and money for today / this
   // week / this month, plus what is still open. The test job never counts.
   const [statsOpen, setStatsOpen] = useState(false);
@@ -4998,11 +5011,11 @@ export default function FieldCommandClient() {
           // Owner can pick which 3 buttons sit next to ✨ AI (hold one, or All → Bottom buttons); the rest are tiles under All.
           // 29 Oct, owner: "too many buttons on the bottom" → picked layout A: one row (Jobs, Bids, ✨ AI, Notices, All), no strip.
           const make: Record<DockKey, (cls: string) => ReactElement> = {
-            jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs`} data-hpd-smoke="fc-jobs-open" aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
+            jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs${jobsNeedYou ? " is-glow" : ""}`} data-hpd-smoke="fc-jobs-open" data-glow={jobsNeedYou ? "1" : undefined} aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
               <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span> : null}
             </button>,
-            bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>,
-            notices: (cls) => <button key="notices" type="button" className={`${cls} fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent" : ""}`} data-hpd-smoke="fc-notices-open" data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
+            bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}${bidsDue.unsentToday ? " is-glow" : ""}`} data-hpd-smoke="fc-bids-open" data-glow={bidsDue.unsentToday ? "1" : undefined} aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>,
+            notices: (cls) => <button key="notices" type="button" className={`${cls} fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent is-glow" : ""}`} data-hpd-smoke="fc-notices-open" data-glow={boardUrgent.length ? "1" : undefined} data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
             // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
             if (noticesOpen) { setNoticesOpen(false); return; }
@@ -6133,6 +6146,7 @@ export default function FieldCommandClient() {
                         <div className="fc-change-progress" data-hpd-smoke="fc-change-progress">
                           <div className={`fc-change-bar${moving ? " is-moving" : ""}`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${Math.max(pct, moving ? 6 : 0)}%` }} /></div>
                           <small data-hpd-smoke="fc-change-count"><b className="fc-change-pct">{pct}%</b> · {done} of {t.steps.length} steps{moving && nowStep ? <> · <span className="fc-change-now" data-hpd-smoke="fc-change-now"><span className="hpd-spin" aria-hidden="true" /> Now: {nowStep.text}</span></> : null}</small>
+                          {moving ? <WorkingClock since={t.workingAt} /> : null}
                           <ol>{t.steps.map((x) => <li key={x.text} className={x.done ? "is-done" : ""}>{x.done ? "✓" : "○"} {x.text}</li>)}</ol>
                         </div>
                       );
@@ -6633,6 +6647,7 @@ export default function FieldCommandClient() {
                   <b className="fc-claude-live-pct" data-hpd-smoke="fc-claude-live-pct">{Math.round((done / t.steps.length) * 100)}%</b> {done}/{t.steps.length}{nowStep && state !== "done" ? ` · Now: ${nowStep.text}` : ""}
                 </span>
               ) : null}
+              {state === "working" ? <WorkingClock since={t.workingAt} /> : null}
               {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
             </button>
             <button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>
