@@ -60,7 +60,11 @@ async function renderPages(pdfUrl: string, pages: number[]) {
 // The pages a bid card shows: HPD's form (page 2) and every page the job description is on (3, 4+).
 export const bidPages = (pageCount: number, descPages?: number[]) => [...new Set([2, ...(descPages?.length ? descPages : [3])])].filter((p) => p <= pageCount).sort((a, b) => a - b);
 
-export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string }) {
+// Where HPD types the work on a page, as a part of its height: page 3's "Job Description:" near the top; on the order
+// form (page 2, when page 3 is empty: ER09499) the "WORK DESCRIPTION" box a little past the middle.
+const workAt = (page: number) => (page === 2 ? 0.56 : 0.12);
+
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0 }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -71,6 +75,18 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   const [big, setBig] = useState<Rendered | null>(null);
   const urls = useRef<string[]>([]);
   const { zoom, zoomTo, bind } = usePinchZoom();
+  // showDescription changes (a bid was just opened): the job description page opens full screen, zoomed in on the work.
+  const [wantDesc, setWantDesc] = useState(0);
+  const autoZoom = useRef<number | null>(null);
+  useEffect(() => { if (showDescription) setWantDesc(showDescription); }, [showDescription]);
+  useEffect(() => {
+    if (!wantDesc || !shown?.length) return;
+    const first = descPages?.length ? descPages[0] : 3;
+    const p = shown.find((x) => x.page === first) || shown.find((x) => x.page === 3) || shown[0];
+    setWantDesc(0);
+    autoZoom.current = workAt(p.page);
+    setBig(p);
+  }, [wantDesc, shown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let live = true;
@@ -129,7 +145,14 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
           </div>
           <div className="fc-itb-full-body" {...bind} data-hpd-smoke="fc-itb-zoombox">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={big.url} alt={`${title || "Invitation"} page ${big.page}`} draggable={false} style={{ width: `${zoom * 100}%`, maxWidth: "none" }} />
+            <img src={big.url} alt={`${title || "Invitation"} page ${big.page}`} draggable={false} style={{ width: `${zoom * 100}%`, maxWidth: "none" }} onLoad={() => {
+              const at = autoZoom.current;
+              if (at === null) return;
+              autoZoom.current = null;
+              zoomTo(2);
+              // After zoomTo's own scroll: the left margin, at the line where the work starts.
+              requestAnimationFrame(() => requestAnimationFrame(() => { const el = bind.ref.current; if (el) { el.scrollLeft = el.scrollWidth * 0.04; el.scrollTop = el.scrollHeight * at; } }));
+            }} />
           </div>
           <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>
         </div>

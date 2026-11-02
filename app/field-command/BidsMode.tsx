@@ -95,6 +95,9 @@ function badge(record?: BidRecord) {
   return { text: `Fax going through · ${money(record.sentPrice || record.price)}${state === "unconfirmed" ? " · no answer yet" : ""}`, tone: "pending" };
 }
 
+const WALK_KEY = "hpd-bid-walk";
+const BORO_NAME: Record<string, string> = { MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" };
+
 export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
@@ -169,6 +172,34 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (!Number.isFinite(b.lat) || !Number.isFinite(b.lng)) return;
     try { if (map?.flyTo) map.flyTo([b.lat, b.lng], 16, { duration: 1.2 }); else map?.setView?.([b.lat, b.lng], 16); } catch { /* map not ready */ }
   };
+  // Going to a bid (owner, 2 Nov: "it zooms into the map first, shows me where the bid is located, which borough, then
+  // opens the work description page"): the map shows the borough, then the building, with the borough and address on
+  // top; then the bid opens on HPD's job description page, zoomed in (ItbPages showDescription).
+  const [arriving, setArriving] = useState<{ omo: string; boro: string; address: string } | null>(null);
+  const arriveTimer = useRef(0);
+  const [showDesc, setShowDesc] = useState(0);
+  const openBidRef = useRef<(b: UpcomingBid, page?: boolean) => void>(() => {});
+  // On unless turned off on the bid card ("🗺 Map, then HPD's page").
+  const [walk, setWalk] = useState(true);
+  useEffect(() => { try { setWalk(localStorage.getItem(WALK_KEY) !== "off"); } catch { /* private mode */ } }, []);
+  const toggleWalk = () => setWalk((v) => { try { localStorage.setItem(WALK_KEY, v ? "off" : "on"); } catch { /* private mode */ } return !v; });
+  function goToBid(b: UpcomingBid, then?: () => void, flyWhenOff = false) {
+    window.clearTimeout(arriveTimer.current);
+    if (!walk) { if (flyWhenOff) flyTo(b); openBidRef.current(b); then?.(); return; }
+    const open = () => { setArriving(null); openBidRef.current(b, true); then?.(); };
+    if (!map || !Number.isFinite(b.lat) || !Number.isFinite(b.lng)) { open(); return; }
+    setSelected(null);
+    setListSize("peek");
+    setArriving({ omo: b.omo, boro: BORO_NAME[String(b.borough || "").toUpperCase()] || b.borough || "", address: b.address || "" });
+    try { if (map.flyTo) map.flyTo([b.lat, b.lng], 12, { duration: 0.9 }); else map.setView?.([b.lat, b.lng], 12); } catch { /* map not ready */ }
+    arriveTimer.current = window.setTimeout(() => {
+      try { if (map.flyTo) map.flyTo([b.lat, b.lng], 17, { duration: 1.1 }); else map.setView?.([b.lat, b.lng], 17); } catch { /* map not ready */ }
+      arriveTimer.current = window.setTimeout(open, 1400);
+    }, 1200);
+  }
+  useEffect(() => () => window.clearTimeout(arriveTimer.current), []);
+  const walkRef = useRef(walk);
+  walkRef.current = walk;
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
   const [draft, setDraft] = useState("");
   const [reason, setReason] = useState("");
@@ -402,7 +433,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           const el = e.target?.getElement?.();
           if (el) { el.classList.remove("is-tapped"); void el.offsetWidth; el.classList.add("is-tapped"); }
           try { navigator.vibrate?.(12); } catch { /* not on iPhone */ }
-          openBid(bid);
+          openBidRef.current(bid, walkRef.current);
         });
       });
       if (!markers.length) return;
@@ -575,7 +606,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       setListSize("peek");
       setSentNote({ omo: doneOmo, price: 0, next: next?.omo, noBid: true });
       setSelected((cur) => (cur && cur.omo === doneOmo ? null : cur));
-      if (next) { flyTo(next); openBid(next); }
+      if (next) goToBid(next, undefined, true);
     }, 2200);
   };
   // The open invitation marked No bid but not faxed: its form is made when the sheet opens.
@@ -620,7 +651,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   useEffect(() => {
     if (!open || !focusOmo || !bids) return;
     const bid = bids.find((b) => b.omo.toUpperCase() === focusOmo);
-    if (bid) openBid(bid);
+    if (bid) goToBid(bid);
     onFocused?.();
   }, [open, focusOmo, bids]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -645,7 +676,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     return () => window.removeEventListener("hpd-bid-come-back", on);
   }, []);
 
-  function openBid(bid: UpcomingBid) {
+  function openBid(bid: UpcomingBid, page = false) {
+    setShowDesc((n) => (page ? n + 1 : 0)); // 0: the bid card, no page on top
     setFullText(false);
     setShowSimilar(false);
     setNote("");
@@ -659,6 +691,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     setArmed("");
     setReason(currentRecord(bid, records)?.reason || records[bid.omo]?.reason || "");
   }
+  openBidRef.current = openBid;
 
   // Bid by voice: the helper's "bid 500" fills the open bid's price, then the Save button is tapped for you (so a
   // price far above what wins still asks for its second tap).
@@ -870,7 +903,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       setListSize("peek");
       setSentNote({ omo: sentOmo, price, next: next?.omo });
       setSelected((cur) => (cur && cur.omo === sentOmo ? null : cur));
-      if (next) { flyTo(next); openBid(next); }
+      if (next) goToBid(next, undefined, true);
     }, 2200);
   }
 
@@ -937,8 +970,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     const bid = (bids || []).find((b) => b.omo === omo);
     if (!bid) return;
     const row = checklist.rows.find((r) => r.omo === omo);
-    openBid(bid);
-    if (row && row.state === "not-priced" && row.best) setDraft(String(row.best));
+    goToBid(bid, () => { if (row && row.state === "not-priced" && row.best) setDraft(String(row.best)); });
   }
   function startSitting() {
     const omos = checklist.todo.map((r) => r.omo);
@@ -1022,6 +1054,13 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           <b>{sentNote.noBid ? `🚫 ${sentNote.omo}: NO BID faxed to HPD` : `📠 ${sentNote.omo} sent to HPD · ${money2(sentNote.price)}`}</b>
           <span>{sentNote.next ? `Next bid: ${sentNote.next}. The fax is being tracked.` : "All bids done. The fax is being tracked: tap the bid to see when HPD receives it."}</span>
           {sentNote.next ? <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button> : null}
+        </div>
+      ) : null}
+      {arriving ? (
+        <div className="fc-bid-arriving" role="status" data-hpd-smoke="fc-bid-arriving">
+          <b data-hpd-smoke="fc-bid-arriving-boro">📍 {arriving.boro || "New York"}</b>
+          <span>{arriving.address} · {arriving.omo}</span>
+          <small>Opening the job description…</small>
         </div>
       ) : null}
       {selected ? (
@@ -1136,7 +1175,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </div>
             ) : null}
             <section>
-              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} /> : null}
+              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} /> : null}
+              <button type="button" className="fc-bid-walk" data-hpd-smoke="fc-bid-walk" aria-pressed={walk} onClick={toggleWalk}>{walk ? "🗺 Opening a bid: map first, then HPD's page ✓" : "🗺 Opening a bid: map first, then HPD's page (off)"}</button>
               <div className="fc-bid-desc-head">
                 <button type="button" className="fc-bid-text-toggle" data-hpd-smoke="fc-bid-text-toggle" aria-expanded={showText} onClick={() => setShowText((v) => !v)}>{showText ? "▾ HPD's text" : "▸ Show HPD's text"}</button>
                 <button type="button" data-hpd-smoke="fc-bid-text-size" aria-label={bigText ? "Smaller text" : "Bigger text"} aria-pressed={bigText} onClick={() => setBigText((v) => { try { localStorage.setItem("hpd-bid-text", v ? "l" : "xl"); } catch {} return !v; })}>{bigText ? "A−" : "A+"}</button>
@@ -1608,7 +1648,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               <p data-hpd-smoke="fc-session-count"><b>{todayInfo.sent} of {todayInfo.total}</b> due today sent · <b>{todayInfo.confirmed}</b> confirmed{todayInfo.pending ? ` · ${todayInfo.pending} going through` : ""}{todayInfo.failed ? ` · ${todayInfo.failed} failed` : ""}</p>
               {todayInfo.notSent.length ? (
                 <ul className="fc-session-alerts" data-hpd-smoke="fc-session-alerts">{todayInfo.notSent.map((r) => (
-                  <li key={r.omo}><button type="button" onClick={() => { const b = list.find((x) => x.omo === r.omo); if (b) openBid(b); }}>⚠ <b>{r.omo}</b> due {r.bidDueTime} · {leftText(r.minutesLeft)} · {r.state === "failed" ? "fax FAILED: resend" : r.state === "saved" ? "price saved, not sent" : "not priced yet"}</button></li>
+                  <li key={r.omo}><button type="button" onClick={() => { const b = list.find((x) => x.omo === r.omo); if (b) goToBid(b); }}>⚠ <b>{r.omo}</b> due {r.bidDueTime} · {leftText(r.minutesLeft)} · {r.state === "failed" ? "fax FAILED: resend" : r.state === "saved" ? "price saved, not sent" : "not priced yet"}</button></li>
                 ))}</ul>
               ) : null}
             </div>
@@ -1626,7 +1666,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 const ew = stats && !currentRecord(bid, records) ? easyWin(bid.description, stats.workPrices) : null;
                 return (
                   <li key={bid.omo}>
-                    <button type="button" onClick={() => openBid(bid)}>
+                    <button type="button" data-hpd-smoke="fc-bid-row" onClick={() => goToBid(bid)}>
                       <span className="fc-bid-row"><span className="fc-bid-row-ico" title={jobIcon(bid.description || "").label} data-icon={jobIcon(bid.description || "").icon} data-hpd-smoke="fc-bid-row-ico" style={{ background: jobIcon(bid.description || "").color }} dangerouslySetInnerHTML={{ __html: jobGlyphSvg(jobIcon(bid.description || "").group, 20) }} /><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = calcPrice(sm, rates, calcContext(sm, readScope(bid.description).tasks, bid.borough || "")); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}

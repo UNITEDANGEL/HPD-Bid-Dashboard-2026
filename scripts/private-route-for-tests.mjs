@@ -40,6 +40,9 @@ export async function markNewsSeen(context) {
   let news = [];
   try { news = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/data/whats-new.json"), "utf8")).versions.flatMap((v) => v.items); } catch { /* none */ }
   await context.addInitScript((items) => { try { if (!localStorage.getItem("hpd-whatsnew-seen")) localStorage.setItem("hpd-whatsnew-seen", JSON.stringify(items)); } catch { /* private mode */ } }, news.slice(0, 60));
+  // Opening a bid moves the map, then shows HPD's page full screen (2 Nov): off in the tests that price bids, so the bid
+  // card opens at once; test-browser-bid-walk turns it on.
+  await context.addInitScript(() => { try { if (!localStorage.getItem("hpd-bid-walk")) localStorage.setItem("hpd-bid-walk", "off"); } catch { /* private mode */ } });
 }
 export async function routePrivate(context, opts = {}) {
   const k = key();

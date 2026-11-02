@@ -266,6 +266,7 @@ jobs:
             scripts/test-browser-dock-glow.mjs \
             scripts/test-browser-affidavit-smooth.mjs \
             scripts/test-browser-street-view-budget.mjs \
+            scripts/test-browser-bid-walk.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

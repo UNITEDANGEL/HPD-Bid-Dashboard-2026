@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 2, 2026",
+      "title": "Each bid: map first, then HPD's page",
+      "items": [
+        "🗺 Opening a bid (from the list, the checklist, Next bid, or after you send) moves the map there first, with the borough and address on top (\"📍 Queens · 47-46 40 STREET\"), then opens HPD's job description page full screen, zoomed in on the work. Close it to price the bid.",
+        "📄 Some invitations type the work on page 2 and leave page 3 empty (ER09499): the app now reads and shows page 2 for those. A long job that goes on to page 4 still shows both pages (Next ›).",
+        "🔘 Don't want it? Tap \"🗺 Opening a bid: map first…\" on the bid card to turn it off."
+      ]
+    },
+    {
+      "date": "Nov 2, 2026",
       "title": "Building pictures stay free",
       "items": [
         "🖼 The job card keeps Google's building picture, with a counter on it: \"Free pictures this month: N of 9,000\" (all your devices together).",
