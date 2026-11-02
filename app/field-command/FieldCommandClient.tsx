@@ -1523,7 +1523,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1547,6 +1547,8 @@ export default function FieldCommandClient() {
   const chatReplyRef = useRef<(reply: string, cards?: ChatCard[]) => void>(() => {});
   // Cards for the next answer (set just before it); without them, the jobs the answer names become cards.
   const cardsRef = useRef<ChatCard[] | null>(null);
+  // The cards last shown in the chat, for "open the second one" (15 minutes).
+  const lastCardsRef = useRef<{ cards: ChatCard[]; at: number } | null>(null);
   // The invitations last loaded (for bid cards and the "bids due soon" nudge).
   const bidsListRef = useRef<{ omo?: string; bidDue: string; bidDueTime: string; address?: string; borough?: string; description?: string }[]>([]);
   // Nudges (2 Nov, part 4: "the chat starts the conversation when something matters"), checked every minute.
@@ -2258,6 +2260,18 @@ export default function FieldCommandClient() {
     return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", look); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const claudeHeardRef = useRef<string | null>(null);
+  // The "what's Claude doing" answer stays live in the chat: rewritten every 2 s from the last check (not said again),
+  // and while it shows the requests are checked at least every 15 s (every 3 s when Claude works, as above).
+  const agentLive = agent?.live === "claude";
+  useEffect(() => {
+    if (!agentLive) return;
+    let n = 0;
+    const t = window.setInterval(() => {
+      if (++n % 7 === 0 && !claudeWorkingRef.current && document.visibilityState === "visible") void loadChangeThreads();
+      setAgent((a) => (a && a.live === "claude" ? { ...a, reply: claudeStatusText() } : a));
+    }, 2000);
+    return () => window.clearInterval(t);
+  }, [agentLive, changeThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   // 🌧 Heads-up before the weather turns (27 Oct, "the AI should figure it out by itself"): once a day, 6 AM-5 PM, when
   // rain / snow comes during work hours and today's route has roof or outside work, an alert names the job to do first.
   useEffect(() => {
@@ -4061,11 +4075,30 @@ export default function FieldCommandClient() {
       const open = selectedJob ? jobId(selectedJob) : "";
       // Over an open bid card the panel stays small (its Save / Send buttons stay free): no cards from the words.
       if (!set && document.querySelector('[data-hpd-smoke="fc-bid-sheet"]')) return [];
-      const list = set || omosIn(reply).filter((o) => o !== open).map((o) => chatCard(o)).filter((c): c is ChatCard => Boolean(c));
-      return list.slice(0, 5);
+      const list = (set || omosIn(reply).filter((o) => o !== open).map((o) => chatCard(o)).filter((c): c is ChatCard => Boolean(c))).slice(0, 5);
+      if (list.length) lastCardsRef.current = { cards: list, at: Date.now() };
+      return list;
     }
     const dayWord = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" });
     if (cmd.intent === "search") { setFindHidden(""); setSearch(cmd.text); setAgent(null); return; }
+    // "Open the second one": the card with that number from the last answer.
+    if (cmd.intent === "open-pick") {
+      const last = lastCardsRef.current && Date.now() - lastCardsRef.current.at < 15 * 60000 ? lastCardsRef.current.cards : [];
+      const c = last[cmd.pick - 1];
+      if (!c) { answer(last.length ? `I only showed ${last.length}. Say "open number 1"${last.length > 1 ? ` to ${last.length}` : ""}.` : "Ask me for a list first, like \"which notices are open\" or \"bids in Queens\", then say \"open the second one\"."); return; }
+      speak(`Opening ${c.title.replace(/^.*? · /, "")}.`, 100);
+      openCard(c);
+      return;
+    }
+    // "What's Claude doing?": the answer stays live in the chat, refreshed with every check (every 3 s while it works).
+    if (cmd.intent === "claude-status") {
+      void loadChangeThreads();
+      const reply = claudeStatusText();
+      if (multiRef.current) { answer(reply); return; }
+      setAgent({ heard, reply, live: "claude" });
+      speak(reply.split("\n")[0], 200, () => { if (convoRef.current) startListening(); });
+      return;
+    }
     // A panel with buttons ends a chain: what was answered before goes on top.
     function showPanel(p: { heard: string; reply: string; cards?: ChatCard[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] }) {
       const m = multiRef.current;
@@ -4900,6 +4933,31 @@ export default function FieldCommandClient() {
     if (!j) return null;
     const a = activeAppointment(j as Record<string, unknown>);
     return { kind: "job", id: omo, title: noZip(jobAddress(j)), sub: [omo, jobSummary(jobScope(j)).lines.map(lineText)[0]].filter(Boolean).join(" · "), tag: a && !appointmentTiming(a).past ? `📅 ${appointmentLabel(a).split(" · ")[1]}` : undefined };
+  }
+  // Claude's requests in one answer (newest working first): what it's doing now, the steps, the last note.
+  function claudeStatusText() {
+    const list = changeThreads || [];
+    const act = (t: ChangeThread) => [t.at, t.workingAt, t.now?.at || "", ...t.updates.map((u) => u.at)].filter(Boolean).sort().slice(-1)[0] || "";
+    const open = list.filter((t) => t.status !== "Done").sort((a, b) => act(b).localeCompare(act(a)));
+    const ask = (t: ChangeThread) => `“${t.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 70)}${t.text.length > 70 ? "…" : ""}”`;
+    const secs = (iso: string) => { const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return s < 60 ? `${s} s ago` : s < 3600 ? `${Math.floor(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`; };
+    if (!open.length) {
+      const last = [...list].sort((a, b) => act(b).localeCompare(act(a)))[0];
+      return last ? `No requests open: Claude finished your last one, ${ask(last)}${last.updates.length ? `. ${last.updates[last.updates.length - 1].text.slice(0, 160)}` : ""}.` : "You haven't asked Claude for anything yet. Say \"tell Claude to …\" and it starts on it.";
+    }
+    const t = open[0];
+    const working = Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000;
+    const done = t.steps.filter((x) => x.done).length;
+    const lines = [
+      t.status === "Waiting for you" ? `❓ Claude needs your answer on ${ask(t)}.`
+        : working ? `🤖 Claude is working on ${ask(t)} right now (for ${Math.max(1, Math.round((Date.now() - Date.parse(t.workingAt)) / 60000))} min).`.replace("(for 1 min)", "(for a minute)")
+        : `⏳ ${ask(t)} is waiting. ${pickupLabel(claudeSeenAt)}.`,
+      t.steps.length ? `${done} of ${t.steps.length} steps done${t.steps.find((x) => !x.done) ? `, next: ${t.steps.find((x) => !x.done)!.text}` : ""}.` : "",
+      working && t.now ? `⚡ Now: ${t.now.text} (${secs(t.now.at)}).` : "",
+      t.updates.length ? `Last note (${secs(t.updates[t.updates.length - 1].at)}): ${t.updates[t.updates.length - 1].text.slice(0, 160)}` : "",
+      open.length > 1 ? `+ ${open.length - 1} more request${open.length > 2 ? "s" : ""} open.` : "",
+    ];
+    return lines.filter(Boolean).join("\n");
   }
   function openCard(c: ChatCard) {
     stopSpeaking();
@@ -6988,12 +7046,14 @@ export default function FieldCommandClient() {
           {nextStepRef.current && !agent.reply.startsWith("Next:") && !agent.confirm ? (
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
           ) : null}
-          <p data-hpd-smoke="fc-agent-reply">{agent.reply}</p>
+          <p data-hpd-smoke="fc-agent-reply" className={agent.live ? "is-live" : undefined}>{agent.reply}</p>
+          {agent.live ? <p className="fc-agent-live" data-hpd-smoke="fc-agent-live"><i aria-hidden="true" /> Live: this answer updates by itself</p> : null}
           {agent.cards?.length ? (
             <div className="fc-chat-cards" data-hpd-smoke="fc-chat-cards">
-              {agent.cards.map((c) => (
+              {agent.cards.map((c, i) => (
                 <div key={`${c.kind}${c.id}`} className={`fc-chat-card is-${c.kind}`} data-hpd-smoke="fc-chat-card" data-kind={c.kind} data-id={c.id}>
                   <button type="button" className="fc-chat-card-main" onClick={() => openCard(c)}>
+                    {agent.cards!.length > 1 ? <i className="fc-chat-card-n" aria-label={`number ${i + 1}`}>{i + 1}</i> : null}
                     <b>{c.kind === "bid" ? "📨 " : c.kind === "notice" ? "⏰ " : "🔧 "}{c.title}</b><small>{c.sub}</small>{c.tag ? <em>{c.tag}</em> : null}
                   </button>
                   {c.kind === "notice" ? <button type="button" className="fc-chat-card-act" data-hpd-smoke="fc-chat-card-answer" onClick={() => agentRef.current(`answer the notice for ${c.id}`)}>✍️ Answer</button>

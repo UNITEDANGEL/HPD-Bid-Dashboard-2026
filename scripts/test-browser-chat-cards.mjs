@@ -101,11 +101,19 @@ try {
   await waitReply(/^You have 3 open invitations to bid\./);
   const bidCards = await cards();
   assert.deepEqual(bidCards.map((x) => x.kind + x.id), bids.map((b) => `bid${b.omo}`));
-  assert.match(bidCards[1].text, /^📨 Brooklyn · .+ due \w{3} 10:00 AM 💰 Price$/);
+  assert.match(bidCards[1].text, /^2\s*📨 Brooklyn · .+ due \w{3} 10:00 AM 💰 Price$/);
   if (shots) await page.screenshot({ path: `${shots}/chat-cards-bids.png` });
   await page.locator(`[data-hpd-smoke="fc-chat-card"][data-id="${bids[2].omo}"] [data-hpd-smoke="fc-chat-card-price"]`).click();
   await page.locator('[data-hpd-smoke="fc-bid-sheet"]', { hasText: bids[2].omo }).waitFor();
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent"]').count(), 0, "the chat closes for the bid");
+  await page.locator('[data-hpd-smoke="fc-bid-to-map"]').click();
+  // The cards are numbered: "open number 2" opens the second one (2 Nov, the chat more interactive).
+  await say("read me the new bids");
+  await waitReply(/^You have 3 open invitations to bid\./);
+  // Said back in the chat (its typing box, the bar hides while the answer is open).
+  await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("open number 2");
+  await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
+  await page.locator('[data-hpd-smoke="fc-bid-sheet"]', { hasText: bids[1].omo }).waitFor();
   await page.locator('[data-hpd-smoke="fc-bid-to-map"]').click();
   // "Bids in Brooklyn" from the bids: a card each.
   await say("bids in Brooklyn");

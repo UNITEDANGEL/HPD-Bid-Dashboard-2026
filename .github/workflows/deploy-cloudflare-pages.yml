@@ -96,6 +96,7 @@ jobs:
           node scripts/test-voice-next-tenant.mjs
           node scripts/test-voice-route.mjs
           node scripts/test-voice-chat-map.mjs
+          node scripts/test-voice-chat-live.mjs
           node scripts/test-voice-outcome-date.mjs
           node scripts/test-sent-dates-select.mjs
           node scripts/test-batch-fax.mjs

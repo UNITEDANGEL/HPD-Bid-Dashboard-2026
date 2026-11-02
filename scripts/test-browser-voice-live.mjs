@@ -55,6 +55,22 @@ try {
   const lag = Date.now() - t0;
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/voice-live.png` }).catch(() => {});
   await page.locator('[data-hpd-smoke="fc-claude-live-hide"]').click();
+  // Asked in the chat: "what's Claude doing" -> the answer stays live and changes by itself with the next "now" line.
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what's Claude doing");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  const reply = page.locator('[data-hpd-smoke="fc-agent-reply"]');
+  await page.waitForFunction(() => /Claude is working on “Make the voice active again” right now/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
+  const r1 = await reply.innerText();
+  assert.match(r1, /1 of 3 steps done, next: Fix\./);
+  assert.match(r1, /⚡ Now: Running the tests on iPhone size \(\d+ s ago\)\./);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-live"]').count(), 1);
+  await page.waitForFunction(() => window.__said.some((t) => /Claude is working on/.test(t)), null, { timeout: 5000 });
+  const saidBefore = await page.evaluate(() => window.__said.length);
+  overrides[`CHANGE-REPLY-${id}`] = { ...overrides[`CHANGE-REPLY-${id}`], now: { at: new Date().toISOString(), text: "Pushing it live" }, steps: overrides[`CHANGE-REPLY-${id}`].steps.map((x, i) => ({ ...x, done: i < 2 })) };
+  await page.waitForFunction(() => /⚡ Now: Pushing it live/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 9000 });
+  assert.match(await reply.innerText(), /2 of 3 steps done, next: Test\./);
+  assert.ok(!(await page.evaluate((n) => window.__said.slice(n), saidBefore)).some((t) => /Claude is working on/.test(t)), "the live answer isn't said again");
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
 
   // 1) The mic is there even without listening; it opens the keyboard with the tip.
   const mic = page.locator('[data-hpd-smoke="fc-chatbar-mic"]');

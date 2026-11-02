@@ -5,6 +5,8 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "🤖 Ask the chat \"what's Claude doing?\" (or \"status of my request\"): the answer stays live, with the steps done, what it is doing now and the last note, and changes by itself while you watch (green Live dot).",
+        "🔢 The cards in the chat are numbered now: say or type \"open number 2\" (or \"take me to the third one\") to open that one. \"The second one\" still reads it to you.",
         "🎙 The chat bar's mic is always there now. If your phone doesn't let the app listen by itself (Chrome on iPhone does that), the 🎙 opens the keyboard: tap the 🎙 at the bottom of the keyboard, talk, then ➤, and I answer out loud.",
         "🔥 A job glowing \"Asked\" on the Notices map (HPD asked about it, nothing sent since) now says so on its card too, with the outcomes to make the affidavit and ✉ Reply.",
         "🔊 A speaker button on the chat bar shows whether I say my answers out loud. 🔇 means silent; tap it to turn the voice back on.",

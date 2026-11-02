@@ -18,6 +18,8 @@ export type AgentCommand =
   | { intent: "tenants-waiting" }
   | { intent: "help" }
   | { intent: "whats-next" }
+  | { intent: "claude-status" }
+  | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
   | { intent: "weather"; when: "today" | "tomorrow" }
   | { intent: "traffic" }
@@ -112,6 +114,20 @@ export function parseCommand(heard: string): AgentCommand {
     if (/^(?:i want the app to|the app should|make the app)\b/.test(t)
       || (/^(?:can you |could you |please |i want (?:you )?to |i'?d like (?:you )?to |i would like (?:you )?to |let'?s |we need to |i need (?:you )?to )?(?:make|add|change|fix|remove|move|put|upgrade|improve|build|create|redesign|dim|slow down|speed up)\b/.test(t)
         && ui.test(t) && !/\b(appointments?|reminders?|paperwork|invoice|affidavit|notice|bid for|tenant)\b/.test(t))) return { intent: "app-request", text: raw };
+  }
+  // What Claude is doing on your requests (owner, 2 Nov: "I need to know exactly what's going on every second"):
+  // "what's Claude doing", "is Claude done", "status of my request", "how's my request going".
+  if ((/\b(claude|cloud|clod|claud)\b/.test(t) && /\b(doing|working|status|progress|updates?|done|finished|ready|busy|up to|on it|where)\b/.test(t))
+    || /\b(status|progress|update|updates) (of|on|for) my (change )?requests?\b|^how'?s my (change )?requests?\b|^(is|are) my (change )?requests? (done|ready|finished)\b|^my requests?$/.test(t)) return { intent: "claude-status" };
+  // "Open the second one", "open number 2", "take me to the third" right after cards in the chat: that card opens
+  // (2 Nov, the chat on the map). Without "open" / "go to" it still reads that job ("the second one", 23 Oct).
+  {
+    const m = /^(?:open|show me|go to|take me to|pick|tap|let'?s do)\s+(?:the\s+)?(?:(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)|(?:number|#|no\.?)\s*(one|two|three|four|five|[1-5])|#?([1-5]))(?:\s+(?:one|card|bid|job|notice))?$/.exec(t);
+    if (m) {
+      const W: Record<string, number> = { first: 1, "1st": 1, one: 1, second: 2, "2nd": 2, two: 2, third: 3, "3rd": 3, three: 3, fourth: 4, "4th": 4, four: 4, fifth: 5, "5th": 5, five: 5 };
+      const w = m[1] || m[2] || m[3];
+      return { intent: "open-pick", pick: W[w] || Number(w) };
+    }
   }
   // The tenant confirmed the appointment (27 Oct): "the tenant confirmed", "tenant said yes for EQ15239".
   if (/\btenant\b/.test(t) && /\b(confirmed|said yes|replied yes|answered yes|texted (back )?yes|wrote yes)\b/.test(t) && !/\b(did|has|have|is|was)\b.*\?|^(did|has|is|was)\b/.test(t)) {
