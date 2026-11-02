@@ -51,7 +51,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { speak, stopSpeaking, voiceOff } from "../../lib/speak";
+import { setVoiceOff, speak, stopSpeaking, voiceOff, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -194,6 +194,14 @@ function WorkingClock({ since }: { since: string }) {
   const s = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
   const text = s >= 3600 ? `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   return <span className="fc-working-clock" data-hpd-smoke="fc-working-clock"><span className="fc-working-dots" aria-hidden="true"><i /><i /><i /></span>working for {text}</span>;
+}
+// "12 s ago", counting every second (the live Claude card): its own timer, like WorkingClock.
+function SecondsAgo({ at, bare }: { at: string; bare?: boolean }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
+  const s = Math.max(0, Math.floor((now - Date.parse(at)) / 1000));
+  const text = s < 60 ? `${s} s ago` : s < 3600 ? `${Math.floor(s / 60)} min ${s % 60} s ago` : `${Math.floor(s / 3600)} h ago`;
+  return bare ? <>{text}</> : <small className="fc-seconds-ago">· {text}</small>;
 }
 const claudeIsOn = (seenAt: string) => Boolean(seenAt) && Date.now() - Date.parse(seenAt) < CLAUDE_ON_MS;
 const pickupLabel = (seenAt: string) => {
@@ -1317,6 +1325,28 @@ export default function FieldCommandClient() {
   const [recent, setRecent] = useState<string[]>([]);
   const listenRef = useRef<{ stop: () => void } | null>(null);
   useEffect(() => { setCanListen(typeof window !== "undefined" && !!((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)); setRecent(recentSearches()); }, []);
+  // 🔊 / 🔇 and a 🎙 that always works (owner, 2 Nov: "the voice is not active anymore, I want the voice to be active"):
+  // the chat bar shows whether answers are said out loud, and on a phone that can't listen by itself (Chrome on iPhone,
+  // some Home Screen apps) its 🎙 opens the keyboard, whose own 🎙 does the listening.
+  const [canSpeak, setCanSpeak] = useState(false);
+  const [voiceMuted, setVoiceMuted] = useState(false);
+  const [chatTip, setChatTip] = useState("");
+  const chatInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => { setCanSpeak(voiceSupported()); setVoiceMuted(voiceOff()); }, []);
+  // What this phone can do with voice, on the status server (no names or phones) so Claude can see why the voice isn't
+  // working there: at most once every 10 minutes, and on every mic error. Not from the automatic tests.
+  const reportVoice = (what: string) => {
+    if (navigator.webdriver) return;
+    try {
+      const last = Number(localStorage.getItem("hpd-voice-report-at") || 0);
+      if (!/^error/.test(what) && Date.now() - last < 600000) return;
+      localStorage.setItem("hpd-voice-report-at", String(Date.now()));
+    } catch { /* private mode */ }
+    const ua = navigator.userAgent;
+    const browser = /CriOS/.test(ua) ? "Chrome on iPhone" : /FxiOS/.test(ua) ? "Firefox on iPhone" : /iPhone|iPad/.test(ua) ? "Safari on iPhone" : /Android/.test(ua) ? "Android" : /Edg\//.test(ua) ? "Edge computer" : /Chrome/.test(ua) ? "Chrome computer" : "other";
+    const homeScreen = Boolean(window.matchMedia?.("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone);
+    void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "VOICE-CHECK", patch: { at: new Date().toISOString(), what: what.slice(0, 80), browser, homeScreen, canListen, canSpeak: voiceSupported(), spokenAnswersOff: voiceOff(), version: BUILT_NUMBER || BUILT_COMMIT } }) }).catch(() => {});
+  };
   useEffect(() => { if (search.trim().length < 3) return; const t = window.setTimeout(() => { rememberSearch(search); setRecent(recentSearches()); }, 2500); return () => window.clearTimeout(t); }, [search]);
   const listen = () => { if (listening) { listenRef.current?.stop(); return; } startListening(); };
   // Other screens start the helper's 🎤 too (the bid sheet's "Say the price").
@@ -1333,7 +1363,7 @@ export default function FieldCommandClient() {
     const W = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
     const Ctor = W.SpeechRecognition || W.webkitSpeechRecognition;
     // No speech recognition here (some iPhone Home Screen apps): the keyboard's own 🎙 works (owner, 23 Oct "mic not working").
-    if (!Ctor) { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "This phone doesn't let the app listen by itself. Tap the search box, tap the 🎙 on the keyboard, say it, then tap Go: I answer the same way." }); return; }
+    if (!Ctor) { reportVoice("no listening on this phone"); convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "This phone doesn't let the app listen by itself. Tap the search box, tap the 🎙 on the keyboard, say it, then tap Go: I answer the same way." }); return; }
     let heardSomething = false;
     try {
       const rec = new Ctor();
@@ -1357,6 +1387,7 @@ export default function FieldCommandClient() {
       rec.onerror = (e) => {
         setListening(false); listenRef.current = null;
         const why = e?.error || "";
+        if (why && why !== "no-speech" && why !== "aborted") reportVoice(`error ${why}`);
         // Say what's wrong instead of nothing (owner, 23 Oct: "mic not working on my iPhone").
         if (why === "not-allowed" || why === "service-not-allowed") { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "The iPhone blocked listening for HPD Field. On the iPhone: Settings → Privacy & Security → Microphone and Speech Recognition: allow it; and Settings → General → Keyboard → Enable Dictation: on. Or tap the search box and use the keyboard's 🎙, then Go." }); }
         else if (why === "network") setAgent({ heard: "🎤", reply: "Listening needs internet: check the signal and tap 🎤 again." });
@@ -1365,7 +1396,8 @@ export default function FieldCommandClient() {
       listenRef.current = rec;
       setListening(true);
       rec.start();
-    } catch { setListening(false); if (convoRef.current) { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Tap 💬 to answer.)` } : a)); } }
+      reportVoice("mic on");
+    } catch { reportVoice("error start failed"); setListening(false); if (convoRef.current) { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Tap 💬 to answer.)` } : a)); } }
   }
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [currentJob,setCurrentJob] = useState<CurrentJob|null>(null);
@@ -1392,21 +1424,23 @@ export default function FieldCommandClient() {
   useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
   // Your requests with their answers (status + dated progress notes), from the status server: CHANGE-REQUEST-<id>
   // and CHANGE-REPLY-<id> (scripts/reply-change-request.mjs). "New" = an update after you last opened the list.
-  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string };
+  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string; now: { at: string; text: string } | null };
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
   const [claudeSeenAt, setClaudeSeenAt] = useState("");
+  const [changeCheckedAt, setChangeCheckedAt] = useState(0);
   const loadChangeThreads = async () => {
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
       const all = (await r.json())?.overrides || {};
       setClaudeSeenAt(String((all["CLAUDE-HEARTBEAT"] as { at?: string } | undefined)?.at || ""));
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
-        const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string } | undefined;
-        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || "") };
+        const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string; now?: { at?: string; text?: string } } | undefined;
+        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || ""), now: rep?.now?.text ? { at: String(rep.now.at || ""), text: String(rep.now.text) } : null };
       }).sort((a, b) => b.at.localeCompare(a.at));
       setChangeThreads(list);
+      setChangeCheckedAt(Date.now());
     } catch { setChangeThreads(null); }
   };
   useEffect(() => { try { setRepliesSeen(localStorage.getItem("hpd-replies-seen") || ""); } catch { /* private mode */ } void loadChangeThreads(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2199,22 +2233,27 @@ export default function FieldCommandClient() {
   // 🤖 Claude's progress on your requests comes to you (27 Oct, "keep upgrading"): the list is looked at every 2 minutes
   // while the app is open (one cached read on the status server), and a new step or note pops up like any alert.
   // While a request is open (30 Oct, "live request updates, so I know what's going on in the background"): every 20 s.
+  // While Claude is working on one right now (owner, 2 Nov: "I need to know exactly what's going on every second"):
+  // every 3 s, so its "Now: …" line and the steps change as it works (reads of the status server are cached there).
   const claudeLiveRef = useRef(false);
-  // Your requests open: refreshed every 15 s so the steps and the bar move while you watch.
+  const claudeWorkingRef = useRef(false);
+  // Your requests open: refreshed every 15 s so the steps and the bar move while you watch (3 s while Claude works).
   useEffect(() => {
     if (!whatsNewOpen) return;
-    const t = window.setInterval(() => { if (document.visibilityState === "visible") void loadChangeThreads(); }, 15000);
+    let last = Date.now();
+    const t = window.setInterval(() => { if (document.visibilityState === "visible" && Date.now() - last >= (claudeWorkingRef.current ? 2500 : 14500)) { last = Date.now(); void loadChangeThreads(); } }, 3000);
     return () => window.clearInterval(t);
   }, [whatsNewOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     let last = Date.now();
     const look = () => {
       if (document.visibilityState !== "visible") return;
-      if (!claudeLiveRef.current && Date.now() - last < 115000) return;
+      const wait = claudeWorkingRef.current ? 2500 : claudeLiveRef.current ? 19500 : 115000;
+      if (Date.now() - last < wait) return;
       last = Date.now();
       void loadChangeThreads();
     };
-    const t = window.setInterval(look, 20000);
+    const t = window.setInterval(look, 3000);
     document.addEventListener("visibilitychange", look);
     return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", look); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -6259,6 +6298,7 @@ export default function FieldCommandClient() {
                           <div className={`fc-change-bar${moving ? " is-moving" : ""}`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${Math.max(pct, moving ? 6 : 0)}%` }} /></div>
                           <small data-hpd-smoke="fc-change-count"><b className="fc-change-pct">{pct}%</b> · {done} of {t.steps.length} steps{moving && nowStep ? <> · <span className="fc-change-now" data-hpd-smoke="fc-change-now"><span className="hpd-spin" aria-hidden="true" /> Now: {nowStep.text}</span></> : null}</small>
                           {moving ? <WorkingClock since={t.workingAt} /> : null}
+                          {moving && t.now ? <p className="fc-change-now" data-hpd-smoke="fc-change-now">⚡ Now: {t.now.text} <SecondsAgo at={t.now.at} /></p> : null}
                           <ol>{t.steps.map((x) => <li key={x.text} className={x.done ? "is-done" : ""}>{x.done ? "✓" : "○"} {x.text}</li>)}</ol>
                         </div>
                       );
@@ -6742,6 +6782,7 @@ export default function FieldCommandClient() {
         const live = (changeThreads || []).filter((t) => (t.status !== "Done" ? Date.now() - Date.parse(activity(t)) < 7 * 86400000 : Date.now() - Date.parse(activity(t)) < 15 * 60000))
           .sort((a, b) => activity(b).localeCompare(activity(a)));
         claudeLiveRef.current = live.some((t) => t.status !== "Done" && t.status !== "Waiting for you");
+        claudeWorkingRef.current = live.some((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
         const t = live[0];
         if (!t || claudeLiveHidden === `${t.id}|${activity(t)}` || selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
         const done = t.steps.filter((s) => s.done).length;
@@ -6762,6 +6803,8 @@ export default function FieldCommandClient() {
                 </span>
               ) : null}
               {state === "working" ? <WorkingClock since={t.workingAt} /> : null}
+              {state === "working" && t.now ? <span className="fc-claude-live-now" data-hpd-smoke="fc-claude-live-now">⚡ {t.now.text.slice(0, 120)} <SecondsAgo at={t.now.at} /></span> : null}
+              {state === "working" && changeCheckedAt ? <span className="fc-claude-live-checked" data-hpd-smoke="fc-claude-live-checked">🔄 Live: checked <SecondsAgo at={new Date(changeCheckedAt).toISOString()} bare /></span> : null}
               {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
             </button>
             <button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>
@@ -6898,15 +6941,23 @@ export default function FieldCommandClient() {
           const t = chatBarText.trim();
           if (!t) return;
           setChatBarText("");
+          setChatTip("");
           (e.currentTarget.querySelector("input") as HTMLInputElement | null)?.blur();
           unlockChime();
           setAgentTypeOpen(true);
           agentRef.current(t);
         }}>
           <span aria-hidden="true">✨</span>
-          <input value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "Ask me, or \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
+          {chatTip ? <p className="fc-chatbar-tip" data-hpd-smoke="fc-chatbar-tip" role="status">{chatTip}<button type="button" aria-label="Close the tip" onClick={() => setChatTip("")}>✕</button></p> : null}
+          <input ref={chatInputRef} value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "Ask me, or \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
+          {canSpeak ? <button type="button" className={`fc-chatbar-voice${voiceMuted ? " is-off" : ""}`} aria-label={voiceMuted ? "Answers are silent: tap to hear them out loud" : "Answers are said out loud: tap for silent"} aria-pressed={!voiceMuted} data-hpd-smoke="fc-chatbar-voice" onClick={() => { const off = !voiceMuted; setVoiceOff(off); setVoiceMuted(off); if (off) stopSpeaking(); else { unlockChime(); speak("Voice on. I'll say my answers out loud.", 50); } }}>{voiceMuted ? "🔇" : "🔊"}</button> : null}
           {chatBarText.trim() ? <button type="submit" aria-label="Send" data-hpd-smoke="fc-chatbar-send">➤</button>
-            : canListen ? <button type="button" aria-label="Talk to the AI" data-hpd-smoke="fc-chatbar-mic" onClick={startAgentChat}>🎙️</button> : null}
+            : <button type="button" aria-label="Talk to the AI" data-hpd-smoke="fc-chatbar-mic" data-listen={canListen ? "app" : "keyboard"} onClick={() => {
+              if (canListen) { setChatTip(""); startAgentChat(); return; }
+              // No listening in this browser: the keyboard's 🎙 does it (focus inside the tap so the keyboard opens).
+              unlockChime(); reportVoice("keyboard mic"); chatInputRef.current?.focus();
+              setChatTip("🎙 On this phone you talk through the keyboard: tap the 🎙 at the bottom of the keyboard, talk, then ➤. I answer out loud.");
+            }}>🎙️</button>}
         </form>
       ) : null}
       {agent ? (
@@ -6965,7 +7016,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agentTypeOpen ? <form className="fc-agent-type" data-hpd-smoke="fc-agent-type" onSubmit={(e) => { e.preventDefault(); const t = agentTyped.trim(); if (!t) return; setAgentTyped(""); agentRef.current(t); }}>
             <input autoFocus value={agentTyped} onChange={(e) => setAgentTyped(e.target.value)} placeholder="Type anything, or tell Claude what to change" aria-label="Type to the helper" data-hpd-smoke="fc-agent-type-input" enterKeyHint="send" />
-            {canListen ? <button type="button" className={`fc-agent-type-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Talk instead of typing"} aria-pressed={listening} data-hpd-smoke="fc-agent-type-mic" onClick={() => { if (listening) { listenRef.current?.stop(); } else { unlockChime(); startListening(); } }}>🎙️</button> : null}
+            <button type="button" className={`fc-agent-type-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Talk instead of typing"} aria-pressed={listening} data-hpd-smoke="fc-agent-type-mic" onClick={(e) => { if (listening) { listenRef.current?.stop(); } else if (canListen) { unlockChime(); startListening(); } else { reportVoice("keyboard mic"); (e.currentTarget.form?.querySelector("input") as HTMLInputElement | null)?.focus(); } }}>🎙️</button>
             <button type="submit" disabled={!agentTyped.trim()} data-hpd-smoke="fc-agent-type-send">Send</button>
           </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}

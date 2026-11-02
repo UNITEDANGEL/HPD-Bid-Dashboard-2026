@@ -271,6 +271,7 @@ jobs:
             scripts/test-browser-bid-walk.mjs \
             scripts/test-browser-chat-map.mjs \
             scripts/test-browser-chat-cards.mjs \
+            scripts/test-browser-voice-live.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

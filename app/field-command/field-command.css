@@ -3910,6 +3910,14 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-app:has(.fc-chatbar) .fc-bids-list[data-size="peek"] { bottom: calc(var(--fc-dock-h) + 62px) !important; }
 .fc-app:has(.fc-chatbar) .fc-focus-chip { bottom: calc(var(--fc-dock-total) + 74px) !important; }
 .fc-map-dragging .fc-chatbar { opacity: 0.4; }
+.fc-chatbar button.fc-chatbar-voice { background: rgba(99, 102, 241, 0.22); font-size: 16px; }
+.fc-chatbar button.fc-chatbar-voice.is-off { background: #7f1d1d; box-shadow: 0 0 0 2px #f87171; }
+.fc-chatbar-tip { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); margin: 0; padding: 10px 34px 10px 12px; border-radius: 14px; background: #1e1b4b; border: 1.5px solid #8b5cf6; color: #e0e7ff; font: 600 14px/1.35 system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.fc-chatbar .fc-chatbar-tip button { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; background: transparent; color: #c7d2fe; font-size: 14px; }
+.fc-claude-live-now { display: block; margin-top: 4px; color: #fde68a; font-weight: 700; }
+.fc-claude-live-checked { display: block; margin-top: 2px; font-size: 11px; opacity: 0.75; }
+.fc-change-now { margin: 4px 0; color: #92400e; font-weight: 700; }
+.fc-seconds-ago { opacity: 0.75; font-weight: 500; }
 .fc-agent-earlier { justify-self: center; padding: 3px 12px; border: 1px solid #6366f1; border-radius: 12px; background: transparent; color: #c7d2fe; font: 700 12px system-ui, sans-serif; }
 
 /* The chat's answers as cards you can tap, and its nudges right above the bar (2 Nov, parts 3 and 4). */

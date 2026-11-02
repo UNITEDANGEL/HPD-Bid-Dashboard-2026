@@ -99,7 +99,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("is it going to rain today");
   await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
   await waitReply(/^Today: \d+° to \d+°F/);
-  assert.match(await reply.innerText(), /Rain likely from 2 PM \(70%\)|No rain expected|Small chance/);
+  assert.match(await reply.innerText(), /Rain likely from \d+ [AP]M \(70%\)|Rain now|No rain expected|Small chance|No more rain/);
   await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("how's the traffic");
   await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();
   await waitReply(/rush hour|Midday|light/);

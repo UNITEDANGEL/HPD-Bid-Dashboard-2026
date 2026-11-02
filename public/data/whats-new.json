@@ -5,6 +5,9 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "🎙 The chat bar's mic is always there now. If your phone doesn't let the app listen by itself (Chrome on iPhone does that), the 🎙 opens the keyboard: tap the 🎙 at the bottom of the keyboard, talk, then ➤, and I answer out loud.",
+        "🔊 A speaker button on the chat bar shows whether I say my answers out loud. 🔇 means silent; tap it to turn the voice back on.",
+        "⚡ While Claude works on your request, the card shows what it is doing right now (\"Running the tests\", \"Pushing it live\") with a seconds counter, and checks for news every 3 seconds.",
         "🧭 Today's route: the red Clear route button now sits at the top of the panel and stays there while you scroll the stops.",
         "🎙 The helper's typing box now has its own mic: tap it, say it, and I answer (it glows red while listening; tap again to stop).",
         "🃏 The chat's answers now come with cards you can tap: a bid (with your saved price, or the best price from what wins, and 💰 Price), a notice (with ✍️ Answer), a job (with its appointment time). One tap opens it.",

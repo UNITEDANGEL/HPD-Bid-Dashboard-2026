@@ -7,6 +7,7 @@
 //     node scripts/reply-change-request.mjs --id <id> --status "Working on it" --working --steps "Read the emails|Check each OMO|Build it|Test|Push" --update "..."
 //     node scripts/reply-change-request.mjs --id <id> --done 2 --update "..."      (step 2 done; --done all = every step)
 //     node scripts/reply-change-request.mjs --id <id> --idle                       (no longer working on it right now)
+//     node scripts/reply-change-request.mjs --id <id> --now "Running the tests"    (the live "Now:" line; also keeps the green light on)
 //     --status "Waiting for you"   (needs the owner's answer: not picked up again until they write)
 import fs from "node:fs";
 
@@ -67,7 +68,9 @@ const text = arg("update");
 const reply = {
   status: arg("status") || (steps.length && steps.every((s) => s.done) ? "Done" : old.status || "Received"),
   steps,
-  workingAt: flag("idle") ? "" : flag("working") ? new Date().toISOString() : old.workingAt || "",
+  workingAt: flag("idle") ? "" : flag("working") || arg("now") ? new Date().toISOString() : old.workingAt || "",
+  // The live line the app shows under "working on it now" with its seconds (owner, 2 Nov: "every second").
+  now: flag("idle") || done === "all" ? null : arg("now") ? { at: new Date().toISOString(), text: arg("now").slice(0, 200) } : old.now || null,
   updates: [...(old.updates || []), ...(text ? [{ at: new Date().toISOString(), text: text.slice(0, 3000) }] : [])].slice(-30),
 };
 const res = await fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REPLY-${id}`, patch: reply }) });

@@ -103,7 +103,9 @@ try {
   await page.reload({ waitUntil: "load" });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
-  await say("where's my next appointment");
+  // "Next appointment" only finds the 3 PM one before 3 PM (New York); later in the day ask for it by its time.
+  const nyHour = Number(new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }));
+  await say(nyHour < 15 ? "where's my next appointment" : "where's my 3 PM");
   await waitReply(/\(EQ15239\), confirmed\. It's on the map\.$/);
   // Over a job card the panel stays small; back on the map the earlier turns show.
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
