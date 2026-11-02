@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { listFieldEvidenceLite, saveFieldPhotos, type FieldMedia } from "../../lib/field-photo-store";
 import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink, streetViewPicture, type StreetViewPicture } from "../../lib/building-photo";
 import { listFieldPackets, type FieldPacket } from "../../lib/field-packet-store";
+import { countStreetViewPicture, streetViewBudget, type StreetViewBudget } from "../../lib/street-view-budget";
 
 // Banner at the top of the job card: your own building photo if you took one, otherwise Google's
 // Street View picture of the building. On it: the 360° Street View (Google Maps), and a button to
@@ -11,6 +12,9 @@ import { listFieldPackets, type FieldPacket } from "../../lib/field-packet-store
 export function BuildingHero({ id, address, borough, point }: { id: string; address: string; borough: string; point: { lat: number; lng: number } | null }) {
   const [own, setOwn] = useState<FieldMedia | null>(null);
   const [google, setGoogle] = useState<StreetViewPicture | null>(null);
+  // Google's free 10,000 pictures a month (lib/street-view-budget.ts): checked before each picture, counted after it loads.
+  const [budget, setBudget] = useState<StreetViewBudget | null>(null);
+  const counted = useRef("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const camera = useRef<HTMLInputElement>(null);
@@ -20,7 +24,12 @@ export function BuildingHero({ id, address, borough, point }: { id: string; addr
     setOwn(null); setGoogle(null); setError("");
     // Lite: the job's videos are never read just to find the building photo.
     listFieldEvidenceLite(id).then((rows) => { if (!cancelled) setOwn(buildingPhoto(rows as FieldMedia[])); }).catch(() => {});
-    if (lat !== undefined && lng !== undefined) streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGoogle(picture); }).catch(() => {});
+    if (lat !== undefined && lng !== undefined) void streetViewBudget().then((b) => {
+      if (cancelled) return;
+      setBudget(b);
+      // Over this month's free pictures: no picture until the 1st (the 360° view still works, it's free).
+      if (b.allowed) return streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGoogle(picture); });
+    }).catch(() => {});
     return () => { cancelled = true; };
   }, [id, lat, lng]);
   async function save(file?: File) {
@@ -38,8 +47,10 @@ export function BuildingHero({ id, address, borough, point }: { id: string; addr
   const link360 = point ? streetViewLink(point, google?.pano || "", google?.heading) : null;
   if (!src && !link360) return null;
   return <figure className={`jc-hero-photo ${src ? "" : "is-empty"}`} data-hpd-smoke="jc-hero-photo">
-    {src ? <img src={src} alt={`Building at ${address}`} onError={() => { if (own) setOwn(null); else setGoogle(null); }} /> : <span className="jc-hero-empty">No building picture yet</span>}
+    {src ? <img src={src} alt={`Building at ${address}`} onLoad={() => { if (!own && google && counted.current !== google.url) { counted.current = google.url; countStreetViewPicture(); setBudget((b) => b && { ...b, used: b.used + 1 }); } }} onError={() => { if (own) setOwn(null); else setGoogle(null); }} />
+      : <span className="jc-hero-empty" data-hpd-smoke="jc-hero-empty">{budget && !budget.allowed ? "This month's free Google pictures are used up: back on the 1st. The 360° view still works." : "No building picture yet"}</span>}
     {src ? <figcaption>{own ? "Your photo" : `Google Street View${google?.date ? ` · ${google.date}` : ""}`}</figcaption> : null}
+    {budget && !own ? <span className={`jc-hero-count${budget.allowed ? "" : " is-out"}`} data-hpd-smoke="jc-hero-count">Free pictures this month: {budget.used.toLocaleString("en-US")} of {budget.stopAt.toLocaleString("en-US")}</span> : null}
     <div className="jc-hero-actions">
       {link360 ? <a className="jc-hero-360" data-hpd-smoke="jc-hero-360" href={link360} target="_blank" rel="noreferrer">🔄 360° view</a> : null}
       <button type="button" data-hpd-smoke="jc-hero-photo-take" disabled={busy} onClick={() => camera.current?.click()} aria-label="Take your own building photo">📷{own ? "" : " Your photo"}</button>

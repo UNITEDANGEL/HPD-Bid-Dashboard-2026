@@ -100,6 +100,7 @@ jobs:
           node scripts/test-batch-fax.mjs
           node scripts/test-pricing-sync.mjs
           node scripts/test-pay-waiting.mjs
+          node scripts/test-street-view-budget.mjs
           node scripts/test-free-space.mjs
           node scripts/test-rollout.mjs
           node scripts/test-next-job.mjs
@@ -264,6 +265,7 @@ jobs:
             scripts/test-browser-pay-waiting.mjs \
             scripts/test-browser-dock-glow.mjs \
             scripts/test-browser-affidavit-smooth.mjs \
+            scripts/test-browser-street-view-budget.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 2, 2026",
+      "title": "Building pictures stay free",
+      "items": [
+        "🖼 The job card keeps Google's building picture, with a counter on it: \"Free pictures this month: N of 9,000\" (all your devices together).",
+        "🛑 At 9,000 the app stops loading pictures until the 1st (Google gives 10,000 free a month), so there's never a bill. The 🔄 360° view always works, it's free.",
+        "🔒 Also set in your Google Cloud: at most 300 pictures a day, and an email alert at $2.50 / $4.50 / $5."
+      ]
+    },
+    {
+      "date": "Nov 2, 2026",
       "title": "Glowing buttons, Claude's clock, affidavit sent once",
       "items": [
         "✨ Jobs, Bids and Notices glow softly when something there needs you: a 2nd try due or a job to close out, a bid due today not sent, a notice overdue or under 6 hours. Nothing waiting: no glow.",
