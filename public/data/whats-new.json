@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Nov 2, 2026",
+      "title": "A chat on the map",
+      "items": [
+        "✨ A chat bar is now always on the map, right above the bottom buttons: type anything (or tap 🎤 to talk) without opening anything first.",
+        "🗺 The chat moves the map: \"show me the bids in Brooklyn\" or \"today's bids in Queens\" shows only those pins (tap 📍 Brooklyn ✕ on top to see them all again); \"next bid\" opens the next bid to price, map first, and says how many are left; \"bid 450\" fills the price (sending is still your two taps).",
+        "📍 \"Where's my 2 PM?\" or \"where's my next appointment?\" opens that job on the map with Waze and Google Maps.",
+        "💬 Today's conversation stays on your phone until midnight: tap ▲ Earlier today in the chat to scroll back."
+      ]
+    },
+    {
+      "date": "Nov 2, 2026",
       "title": "Each bid: map first, then HPD's page",
       "items": [
         "📍 While the map moves, the card on top also says what the job is and when it is due (\"door · tomorrow 11:00 AM\").",

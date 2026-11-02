@@ -34,6 +34,9 @@ export type AgentCommand =
   | { intent: "outcome"; outcome: "WORK_COMPLETED" | "NO_ACCESS_1_WAITING_72H" | "REFUSED_ACCESS" | "PARTIAL_WORK" | "WORK_COMPLETED_BY_OTHERS"; ref: string; date?: string; who?: string }
   | { intent: "read-job"; ref: string; pick?: number; all?: boolean }
   | { intent: "bids" }
+  | { intent: "bids-show"; boro: string; day: "all" | "0" | "1" }
+  | { intent: "next-bid" }
+  | { intent: "where-appt"; at: number }
   | { intent: "come-back" }
   | { intent: "bid-price"; price: number }
   | { intent: "appointment"; ref: string; date?: string; time?: string }
@@ -90,6 +93,8 @@ function outcomeCommand(t: string, outcome: Extract<AgentCommand, { intent: "out
   return { intent: "outcome", outcome, ref: refOf(rest), ...(when.date ? { date: when.date } : {}), ...(who ? { who } : {}) };
 }
 
+const BORO_CODE: Record<string, string> = { manhattan: "MN", bronx: "BX", brooklyn: "BK", queens: "QN", "staten island": "SI" };
+
 export function parseCommand(heard: string): AgentCommand {
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;
@@ -126,6 +131,23 @@ export function parseCommand(heard: string): AgentCommand {
   // The calling round (30 Oct): "next tenant", "call the next tenant", "start calling", "who's next to call" opens the next
   // tenant not reached yet (the same order as ▶ Start calling and ➡️ Next tenant on the card).
   if (/^(ok |okay |so )?(go to |open |call |take me to )?(the )?next (tenant|call)( to call)?( please)?$|^start calling( tenants?)?$|^who'?s next to call$|^(who|which tenant) (do i|should i) call next$/.test(t)) return { intent: "next-tenant" };
+  // The chat on the map moves the map (owner, 2 Nov: "a chat on the map, better flow"): "show me the bids in Brooklyn",
+  // "today's bids in Queens", "bids on the map" -> only those pins; "next bid" -> the next bid to price (map first,
+  // then HPD's page); "where's my 2 PM" / "where's my next appointment" -> that job on the map.
+  {
+    const boro = /\b(manhattan|bronx|brooklyn|queens|staten island)\b/.exec(t);
+    if (/\b(bids|invitations)\b/.test(t) && (boro || /\b(show|map|zoom|go to|take me to|open)\b/.test(t)) && !/\b(won|win|awards?|no bid|read|how many|should|price|sent)\b/.test(t)) {
+      return { intent: "bids-show", boro: boro ? BORO_CODE[boro[1]] : "", day: /\btomorrow'?s?\b/.test(t) ? "1" : /\btoday'?s?\b/.test(t) ? "0" : "all" };
+    }
+    if (/^(ok |okay |so |now )?(go to |open |show me |take me to |do |start )?(the |my )?next (bid|invitation)( please)?$|^(start|let'?s start) (bidding|pricing|the bids)$|^let'?s (bid|price)$/.test(t)) return { intent: "next-bid" };
+    const w = /^where(?:'?s| is) my (?:(next)(?: (?:appointment|appt|job|stop))?|(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|o'?clock)?)(?: (?:appointment|appt|job|one))?(?: today)?$/.exec(t);
+    if (w) {
+      if (w[1]) return { intent: "where-appt", at: -1 };
+      const h = Number(w[2]);
+      const pm = w[4] && !/o'?clock/.test(w[4]) ? /^p/.test(w[4]) : h === 12 || (h >= 1 && h <= 6);
+      if (h >= 1 && h <= 12) return { intent: "where-appt", at: ((h % 12) + (pm ? 12 : 0)) * 60 + Number(w[3] || 0) };
+    }
+  }
   // Tenants who were texted and haven't answered (23 Oct): "which tenants haven't answered", "who do I need to call".
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // Weather and traffic (owner, 27 Oct: "I want the AI smarter: weather, traffic"): the forecast in plain words with what

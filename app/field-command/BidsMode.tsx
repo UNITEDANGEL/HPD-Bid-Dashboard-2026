@@ -98,7 +98,10 @@ function badge(record?: BidRecord) {
 const WALK_KEY = "hpd-bid-walk";
 const BORO_NAME: Record<string, string> = { MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" };
 
-export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void }) {
+// What the chat on the map asks the bids to do (2 Nov): show a borough / day on the map, or go to the next bid.
+export type BidsChat = { n: number; kind: "show"; boro: string; day: "all" | "0" | "1" } | { n: number; kind: "next" };
+
+export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused, chat = null, onChat }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void; chat?: BidsChat | null; onChat?: (reply: string) => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
   const [privOk, setPrivOk] = useState(false);
@@ -350,7 +353,10 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
 
   const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
   const dayKeys = useMemo(() => [0, 1, 2].map((n) => NY_DAY.format(new Date(clock + n * 86400000))), [clock]);
-  const shownBids = useMemo(() => (bids || []).filter((b) => dayPick === "all" || b.bidDue === dayKeys[Number(dayPick)]), [bids, dayPick, dayKeys]);
+  // One borough only (the chat's "bids in Brooklyn"; the 📍 chip on top clears it). Not remembered.
+  const [boroPick, setBoroPick] = useState("");
+  const [refit, setRefit] = useState(0);
+  const shownBids = useMemo(() => (bids || []).filter((b) => (dayPick === "all" || b.bidDue === dayKeys[Number(dayPick)]) && (!boroPick || String(b.borough || "").toUpperCase() === boroPick)), [bids, dayPick, dayKeys, boroPick]);
   // HPD's pages load fast: the job-description page of every bid already drawn on this phone shows as a small
   // picture on its row; the next bids due are drawn ahead (one at a time, after the list shows), so opening
   // them is instant.
@@ -455,7 +461,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       window.setTimeout(fit, 450);
     });
     return () => { cancelled = true; };
-  }, [open, bids, map, records, easyOmos, alertKey, shownBids, noBids]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, bids, map, records, easyOmos, alertKey, shownBids, noBids, refit]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { layerRef.current?.remove(); map?.getContainer?.()?.classList.remove("is-bids"); }, [map]);
 
   // HumbleFax emails a confirmation (or a failure) a few minutes after each fax: check Gmail for every
@@ -680,6 +686,38 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   }
   const comeBackRef = useRef(comeBack);
   comeBackRef.current = comeBack;
+  // The chat on the map (2 Nov): "bids in Brooklyn" shows only those pins, fitted on the map; "next bid" goes to the
+  // next bid to price the usual way (map first, then HPD's page). The answer goes back to the chat.
+  const chatDone = useRef(0);
+  useEffect(() => {
+    if (!open || !bids || !chat || chat.n === chatDone.current) return;
+    chatDone.current = chat.n;
+    const reply = (t: string) => onChat?.(t);
+    const byDue = (a: UpcomingBid, b: UpcomingBid) => (a.bidDue + minutesOf(a.bidDueTime) + a.omo).localeCompare(b.bidDue + minutesOf(b.bidDueTime) + b.omo);
+    if (chat.kind === "show") {
+      const where = chat.boro ? ` in ${BORO_NAME[chat.boro] || chat.boro}` : "";
+      const when = chat.day === "0" ? " due today" : chat.day === "1" ? " due tomorrow" : "";
+      const pool = bids.filter((b) => (chat.day === "all" || b.bidDue === dayKeys[Number(chat.day)]) && (!chat.boro || String(b.borough || "").toUpperCase() === chat.boro)).sort(byDue);
+      if (!pool.length) { reply(`No open bids${where}${when}.${chat.boro ? " The map shows all of them." : ""}`); return; }
+      window.clearTimeout(arriveTimer.current);
+      setArriving(null);
+      setSelected(null);
+      setListSize("peek");
+      setDayPick(chat.day);
+      setBoroPick(chat.boro);
+      setRefit((n) => n + 1);
+      const todo = pool.filter((b) => !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || ""));
+      const first = todo[0] || pool[0];
+      reply(`${pool.length} bid${pool.length === 1 ? "" : "s"}${where}${when} on the map${todo.length < pool.length ? `, ${todo.length} still to send` : ""}. First due: ${first.address || first.omo}, ${dueLabel(first)}.${todo.length ? ' Say "next bid" to start.' : ""}`);
+      return;
+    }
+    const { next, left } = nextInLine(selected?.omo || "");
+    if (!next) { reply(`No bids left to price or send${boroPick ? ` in ${BORO_NAME[boroPick] || boroPick}` : ""}. 👍`); return; }
+    goToBid(next, undefined, true);
+    const what = jobSummary(next.description || "").lines.map(lineText)[0];
+    const more = Math.max(0, left - 1);
+    reply(`${next.omo} in ${BORO_NAME[String(next.borough || "").toUpperCase()] || next.borough || "New York"}, ${next.address}${what ? `: ${what}` : ""}. Due ${dueLabel(next)}. ${more ? `${more} more after this one.` : "That's the last one."} Say "bid" and a price when you're ready.`);
+  }, [open, bids, chat]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const on = () => comeBackRef.current();
     window.addEventListener("hpd-bid-come-back", on);
@@ -1051,6 +1089,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         <button type="button" className={`fc-bids-daypick${dayPick !== "all" ? " is-set" : ""}`} aria-expanded={daysOpen} data-hpd-smoke="fc-bids-day-pick" onClick={() => setDaysOpen((o) => !o)}>
           📅 {dayPick === "all" ? "All" : dayPick === "0" ? "Today" : dayPick === "1" ? "Tomorrow" : new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" })}
         </button>
+        {boroPick ? <button type="button" className="fc-bids-boro" aria-label={`Only ${BORO_NAME[boroPick] || boroPick}: tap to show every borough`} data-hpd-smoke="fc-bids-boro" onClick={() => { setBoroPick(""); setRefit((n) => n + 1); }}>📍 {BORO_NAME[boroPick] || boroPick} ✕</button> : null}
         {onNotifications ? <button type="button" className={`fc-bids-notif${notifUnread ? " has-new" : ""}`} aria-label="Notifications" data-hpd-smoke="fc-bids-notif" onClick={onNotifications}>🔔{notifUnread ? <b>{notifUnread}</b> : null}</button> : null}
         <button type="button" className="fc-bids-back" aria-label="Back to jobs" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>✕</button>
         {google && (!google.connected || !google.canEmail) ? <ReconnectGoogle text={google.connected ? "Google is connected but can't send email: reconnect and allow sending email." : "Google isn't connected: bids can't be faxed until you reconnect."} /> : null}

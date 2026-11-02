@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
-import BidsMode from "./BidsMode";
+import BidsMode, { type BidsChat } from "./BidsMode";
 import { fetchRoadRoute, type RoadRoute } from "../../lib/road-route";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
@@ -906,6 +906,8 @@ const DOCK_DEFAULT: DockKey[] = ["jobs", "bids", "notices"];
 const DOCK_LABEL: Record<DockKey, string> = { route: "Route", appts: "Appts", follow: "Follow-up", stats: "Stats", jobs: "Jobs", bids: "Bids", notices: "Notices" };
 const DOCK_SLOTS_KEY = "hpd-dock-slots-v1";
 
+const CHAT_DAY_KEY = "hpd-chat-day";
+
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
@@ -1502,6 +1504,24 @@ export default function FieldCommandClient() {
   // The helper as a conversation (27 Oct, owner: "a better interface for the AI"): the earlier turns stay on screen
   // for 15 minutes, and a box to type anything (questions, app actions, or a change for Claude).
   const [agentHistory, setAgentHistory] = useState<{ heard: string; reply: string; at: number }[]>([]);
+  // The chat on the map (owner, 2 Nov: "build a chat on the map, better flow"): a bar over the map to type or talk,
+  // and today's conversation kept on this phone until midnight (▲ Earlier today shows all of it).
+  const [chatBarText, setChatBarText] = useState("");
+  const [chatAll, setChatAll] = useState(false);
+  const [bidsChat, setBidsChat] = useState<BidsChat | null>(null);
+  const chatReplyRef = useRef<(reply: string) => void>(() => {});
+  const chatLoadedRef = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHAT_DAY_KEY) || "null");
+      if (saved && saved.day === nyToday() && Array.isArray(saved.turns)) setAgentHistory(saved.turns.slice(-30));
+    } catch { /* private mode */ }
+    chatLoadedRef.current = true;
+  }, []);
+  useEffect(() => {
+    if (!chatLoadedRef.current) return;
+    try { localStorage.setItem(CHAT_DAY_KEY, JSON.stringify({ day: nyToday(), turns: agentHistory.slice(-30) })); } catch { /* private mode */ }
+  }, [agentHistory]);
   const prevAgentRef = useRef<{ heard: string; reply: string } | null>(null);
   const [agentTyped, setAgentTyped] = useState("");
   const [agentTypeOpen, setAgentTypeOpen] = useState(false);
@@ -1514,10 +1534,11 @@ export default function FieldCommandClient() {
   }, []);
   useEffect(() => {
     const prev = prevAgentRef.current;
-    if (prev && agent && prev.heard !== agent.heard && prev.heard !== "🎤" && prev.heard !== "👋" && prev.reply && !/^(Listening|Sending to Claude)/.test(prev.reply)) {
-      setAgentHistory((h) => [...h, { heard: prev.heard, reply: prev.reply, at: Date.now() }].slice(-6));
+    if (prev && (!agent || prev.heard !== agent.heard) && prev.heard !== "🎤" && prev.heard !== "👋" && prev.reply && !/^(Listening|Sending to Claude)/.test(prev.reply)) {
+      setAgentHistory((h) => [...h.filter((x) => nyToday(new Date(x.at)) === nyToday()), { heard: prev.heard, reply: prev.reply, at: Date.now() }].slice(-30));
     }
-    prevAgentRef.current = agent ? { heard: agent.heard, reply: agent.reply } : prevAgentRef.current;
+    // Closed: the last answer is kept too (it was only kept when the next question came).
+    prevAgentRef.current = agent ? { heard: agent.heard, reply: agent.reply } : null;
   }, [agent]);
   // 🌤 Weather on the map (27 Oct, owner: "I want to see temp etc on the map"): now, and rain / snow coming in the next
   // hours (else today's high and low); refreshed every 10 minutes from the 30-minute forecast; tap for the full answer.
@@ -4393,6 +4414,34 @@ export default function FieldCommandClient() {
       answer(`${money(cmd.price)} on ${omo}. Saving it now; tap Send twice when you're ready.`);
       return;
     }
+    if (cmd.intent === "bids-show" || cmd.intent === "next-bid") {
+      // The bids answer once they're on the map (BidsMode onChat).
+      chatReplyRef.current = (reply) => answer(reply);
+      goTo("bids", "");
+      setBidsChat(cmd.intent === "bids-show" ? { n: Date.now(), kind: "show", boro: cmd.boro, day: cmd.day } : { n: Date.now(), kind: "next" });
+      return;
+    }
+    if (cmd.intent === "where-appt") {
+      // "Where's my 2 PM?" (2 Nov): that appointment's job on the map, its card open. "Next": the next one coming up.
+      const today = nyToday();
+      const mins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      const all = jobs.map((j) => ({ j, a: activeAppointment(j as Record<string, unknown>) })).filter((x) => x.a)
+        .sort((p, q) => `${p.a!.date}${p.a!.start}`.localeCompare(`${q.a!.date}${q.a!.start}`));
+      const hit = cmd.at < 0
+        ? all.find((x) => !appointmentTiming(x.a!).past)
+        : all.filter((x) => x.a!.date === today).map((x) => ({ ...x, off: cmd.at >= mins(x.a!.start) && cmd.at < mins(x.a!.end || x.a!.start) ? 0 : Math.abs(mins(x.a!.start) - cmd.at) })).filter((x) => x.off <= 60).sort((p, q) => p.off - q.off)[0];
+      if (!hit) {
+        const todays = all.filter((x) => x.a!.date === today);
+        answer(cmd.at < 0 ? "No appointments coming up." : todays.length ? `Nothing at that time today. Today: ${todays.map((x) => `${appointmentLabel(x.a!).split(" · ")[1]} at ${jobAddress(x.j).replace(/,\s*\d{5}$/, "")}`).join("; ")}.` : "No appointments today.");
+        return;
+      }
+      const where = jobAddress(hit.j).replace(/,\s*\d{5}$/, "");
+      setBidsOpen(false);
+      openIssueJob(hit.j, true);
+      showPanel({ heard, reply: `${appointmentLabel(hit.a!)}: ${where} (${jobId(hit.j)})${hit.a!.state === "requested" ? ", not confirmed yet" : ", confirmed"}. It's on the map.`, actions: [{ label: "Waze", href: wazeHref(hit.j), id: jobId(hit.j), via: "Waze" }, { label: "Google Maps", href: directionsHref(hit.j), id: jobId(hit.j), via: "Google" }] });
+      speak(sayOmo(`${appointmentLabel(hit.a!).split(" · ")[1].replace("–", " to ")}: ${where}. It's on the map.`), 200);
+      return;
+    }
     if (cmd.intent === "come-back") {
       if (!bidsOpen) { answer("Open the bids first, then say come back after sending one."); return; }
       window.dispatchEvent(new Event("hpd-bid-come-back"));
@@ -6178,6 +6227,8 @@ export default function FieldCommandClient() {
         onNotifications={() => setNotifOpen(true)}
         focusOmo={bidsFocus}
         onFocused={() => setBidsFocus("")}
+        chat={bidsChat}
+        onChat={(reply) => chatReplyRef.current(reply)}
       />
       {closeOutOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-work-sheet" role="dialog" aria-label="Ready to close out" data-hpd-smoke="fc-close-out-sheet">
@@ -6740,10 +6791,30 @@ export default function FieldCommandClient() {
           </button>
         );
       })()}
+      {!agent && !selectedJob && !moreOpen && dockEdit < 0 ? (
+        <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
+          e.preventDefault();
+          const t = chatBarText.trim();
+          if (!t) return;
+          setChatBarText("");
+          (e.currentTarget.querySelector("input") as HTMLInputElement | null)?.blur();
+          unlockChime();
+          setAgentTypeOpen(true);
+          agentRef.current(t);
+        }}>
+          <span aria-hidden="true">✨</span>
+          <input value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "Ask me, or \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
+          {chatBarText.trim() ? <button type="submit" aria-label="Send" data-hpd-smoke="fc-chatbar-send">➤</button>
+            : canListen ? <button type="button" aria-label="Talk to the AI" data-hpd-smoke="fc-chatbar-mic" onClick={startAgentChat}>🎤</button> : null}
+        </form>
+      ) : null}
       {agent ? (
         <div className="fc-agent" role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
           {/* Earlier turns only over the map: over a sheet (bid, job) the panel stays small so it doesn't hide its buttons. */}
-          {(selectedJob || bidsOpen ? [] : agentHistory.filter((h) => Date.now() - h.at < 15 * 60000).slice(-3)).map((h) => (
+          {!selectedJob && !bidsOpen && agentHistory.length > 3 ? (
+            <button type="button" className="fc-agent-earlier" data-hpd-smoke="fc-agent-earlier" aria-expanded={chatAll} onClick={() => setChatAll((v) => !v)}>{chatAll ? "▼ Only the last few" : `▲ Earlier today (${agentHistory.length - 3})`}</button>
+          ) : null}
+          {(selectedJob || bidsOpen ? [] : chatAll ? agentHistory : agentHistory.slice(-3)).map((h) => (
             <div key={h.at} className="fc-agent-past" data-hpd-smoke="fc-agent-past"><small>🗣 {h.heard}</small><span>{h.reply}</span></div>
           ))}
           {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ Your AI helper</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}
@@ -6760,8 +6831,8 @@ export default function FieldCommandClient() {
             const done = j ? Boolean(value(j, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])) : false;
             const list = j
               ? (done ? ["make the paperwork", "what's left on this job"] : ["read the description", "take me there", ...(tenantInfo(j).phone ? ["text the tenant"] : []), "what's left on this job"])
-              : bidsOpen ? ["what should I bid", "what's next"]
-              : [...(nextStepRef.current ? ["what's next"] : []), "what do I have today", ...(hour >= 15 && hour <= 21 ? ["remind tomorrow's tenants"] : []), "which notices are open"];
+              : bidsOpen ? ["next bid", "what should I bid", "what's next"]
+              : [...(nextStepRef.current ? ["what's next"] : []), "what do I have today", "where's my next appointment", ...(hour >= 15 && hour <= 21 ? ["remind tomorrow's tenants"] : []), "which notices are open"];
             const chips = list.filter((c) => c.toLowerCase() !== heard).slice(0, 3);
             return chips.length ? (
               <div className="fc-agent-try" data-hpd-smoke="fc-agent-try"><small>Try:</small>{chips.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-try-chip" onClick={() => agentRef.current(c)}>{c}</button>)}</div>
