@@ -20,7 +20,9 @@ function loadSavedNotary(): { signature: string; name: string } {
   }
 }
 
-export default function NotaryCard({ minDate, defaultName, onApprove }: { minDate: string; defaultName?: string; onApprove: (notary: NotaryApproval | null) => void }) {
+// autoApprove (owner, 2 Nov: "it's a digital signature, it doesn't matter; take me straight to the affidavit"): from the
+// job card, a saved notary signature is put on by itself, so the package builds and goes out with no tap.
+export default function NotaryCard({ minDate, defaultName, onApprove, autoApprove = false }: { minDate: string; defaultName?: string; onApprove: (notary: NotaryApproval | null) => void; autoApprove?: boolean }) {
   const [saved, setSaved] = useState({ signature: "", name: "" });
   const [signature, setSignature] = useState("");
   const [name, setName] = useState(defaultName || "");
@@ -31,6 +33,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
   const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
   const [details, setDetails] = useState(false);
+  const [autoDone, setAutoDone] = useState(false);
   const pad = useSignaturePad();
   const shownName = displayName(name);
 
@@ -110,8 +113,18 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
 
   function undoApproval() {
     setApproved(false);
+    setAutoDone(true); // put back by hand: don't approve again by itself
     onApprove(null);
   }
+
+  // The saved signature and name are here (this phone or Drive): approve by itself, once.
+  useEffect(() => {
+    if (!autoApprove || autoDone || approved || details) return;
+    if (!signature || signature !== saved.signature || !name.trim() || !date || date < minDate) return;
+    setAutoDone(true);
+    setApproved(true);
+    onApprove({ signature, name: name.trim(), date });
+  }, [autoApprove, autoDone, approved, details, signature, saved.signature, name, date, minDate, onApprove]);
 
   if (approved) {
     return (
@@ -119,6 +132,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
         <div>
           <span>Notary</span>
           <strong>Notarized by {shownName}</strong>
+          {autoApprove && autoDone ? <small data-hpd-smoke="paperwork-notary-auto">✓ The saved notary signature went on by itself.</small> : null}
           <small>The printed stamp text is added to this emailed/Drive copy automatically. A printed copy still needs the notary&apos;s real ink stamp.</small>
         </div>
         <img className="sig-preview" src={signature} alt="Notary signature" />

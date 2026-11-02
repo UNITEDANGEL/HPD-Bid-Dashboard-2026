@@ -181,9 +181,10 @@ try {
     await page.close();
   }
 
-  // Job card flow: "Review & Approve Package" opens the page with auto=package. It must wait for the
-  // signer and the notary, build by itself, and on approve email ONLY the signed copy while the
-  // unsigned print copy goes to the same Drive folder. Google is faked here; nothing is sent.
+  // Job card flow: "Review & Approve Package" opens the page with auto=package. The first time, you and the notary
+  // sign once (saved); the saved notary signature then goes on by itself (owner, 2 Nov: "it's a digital signature, take
+  // me straight to the affidavit"), it builds, emails ONLY the signed copy and files the unsigned print copy in the
+  // same Drive folder. The next job from the job card needs no tap at all. Google is faked here; nothing is sent.
   {
     const job = "ER05729";
     const page = await isolatedPage();
@@ -216,10 +217,8 @@ try {
     await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=work_completed&doc=package&auto=package&media=none`, { waitUntil: "networkidle" });
     await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
     await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
-    await page.waitForTimeout(1500);
-    assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count(), 0, `${job}: auto package must wait for the notary's approval`);
-    await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
-    // No Generate tap: the package builds by itself after the notary approves.
+    // No approve tap: the saved notary signature goes on by itself, then the package builds by itself.
+    await page.locator('[data-hpd-smoke="paperwork-notary-auto"]').waitFor({ timeout: 15000 });
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
     // No review/approve tap either: once built, the signed package emails itself and files in Drive.
@@ -268,7 +267,17 @@ try {
     assert.ok(signedText.startsWith("SIGNED COPY"), `${job}: could not read the SIGNED email text`);
     assert.ok(!/drive\.example|Google Drive/i.test(signedText), `${job}: SIGNED email must not include the Google Drive link`);
     assert.deepEqual(errors, [], `${job}: page errors`);
-    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails only the SIGNED copy, files signed + unsigned in Drive ${filing.path.join(" / ")} / ${filing.name}`);
+    // The next affidavit from the job card: signatures saved, so no tap at all: it builds, emails and files by itself.
+    const next = "ER06362"; // awarded 10/13/26: today is a believable work date (an older job stops at the date check)
+    const sentBefore = emails.length;
+    await page.goto(`${baseUrl}/paperwork?job=${next}&outcome=work_completed&doc=package&auto=package&media=all`, { waitUntil: "networkidle" });
+    await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 90000 });
+    for (let i = 0; i < 40 && emails.length <= sentBefore; i++) await page.waitForTimeout(250);
+    assert.equal(emails.length, sentBefore + 1, `${next}: emailed by itself with no tap`);
+    assert.ok(emails.at(-1).subject.startsWith(`SIGNED - ${next} - `), emails.at(-1).subject);
+    assert.ok(uploads.includes(`SIGNED - ${next} - Work Completed.pdf`) && uploads.includes(`NOT SIGNED - print copy - ${next} - Work Completed.pdf`), `${next}: both copies in Drive`);
+    assert.deepEqual(errors, [], `${next}: page errors`);
+    console.log(`PASS ${job} job-card flow: sign once, the saved notary signature goes on by itself, builds, emails only the SIGNED copy, files signed + unsigned in Drive ${filing.path.join(" / ")} / ${filing.name}; ${next} next: no tap at all`);
     await page.close();
   }
 

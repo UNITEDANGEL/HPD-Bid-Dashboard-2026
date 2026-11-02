@@ -1593,8 +1593,8 @@ export default function PaperworkPage() {
     if (includePackageSignature && (!signerReady || !notaryApproved)) {
       setPdfStatus(
         !signerReady
-          ? "Next: add your signature below (one tap). The package builds by itself after the notary approves."
-          : "Next: hand the phone to the notary to confirm and approve below. The package builds by itself right after."
+          ? "Putting your saved signature on… (none saved on this phone or in Drive yet? Sign once below: it's kept for every affidavit after this)."
+          : "Putting the notary's saved signature on… (none saved yet? The notary signs once below: it's kept for every affidavit after this)."
       );
       if (!autoWaitScrolledRef.current && typeof document !== "undefined") {
         autoWaitScrolledRef.current = true;
@@ -5737,6 +5737,7 @@ export default function PaperworkPage() {
               }
               defaultName={DEFAULT_NOTARY_NAME}
               onApprove={rememberNotary}
+              autoApprove={autoGeneratePackage}
             />
           ) : null}
 
