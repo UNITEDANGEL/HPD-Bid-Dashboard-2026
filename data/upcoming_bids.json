@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T17:15:32.531326+00:00",
+  "generatedAt": "2026-11-02T17:25:06.219866+00:00",
   "days": 14,
   "bids": [
     {
@@ -22,7 +22,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -52,7 +52,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -70,55 +70,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -152,7 +152,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -182,7 +182,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -200,55 +200,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -282,7 +282,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -312,7 +312,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -330,55 +330,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -413,7 +413,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -443,7 +443,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -461,55 +461,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 4,
           "x": 628.8,
-          "y": 501.1,
+          "y": 501,
           "rotate": 0
         },
         "preparedBy": {
           "page": 4,
           "x": 102.8,
-          "y": 45.6,
+          "y": 45.5,
           "rotate": 0
         },
         "lastSignature": {
           "page": 4,
           "x": 284.5,
-          "y": 44.3,
+          "y": 44.2,
           "rotate": 0
         },
         "lastDate": {
           "page": 4,
           "x": 496.6,
-          "y": 45.6,
+          "y": 45.5,
           "rotate": 0
         },
         "lastContractor": {
           "page": 4,
           "x": 646.5,
-          "y": 45,
+          "y": 44.9,
           "rotate": 0
         },
         "permitNo": {
           "page": 4,
           "x": 233.8,
-          "y": 88.8,
+          "y": 88.6,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 4,
           "x": 525.6,
-          "y": 88.8,
+          "y": 88.6,
           "rotate": 0
         },
         "description": {
           "page": 4,
           "x": 268.1,
-          "y": 467.9,
+          "y": 467.6,
           "rotate": 0,
           "width": 493.9
         },
@@ -544,7 +544,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -574,7 +574,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -592,55 +592,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 4,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 4,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 4,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 4,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 4,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 4,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 4,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 4,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -674,7 +674,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -704,7 +704,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -722,55 +722,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -804,7 +804,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -834,7 +834,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -852,55 +852,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 501.1,
+          "y": 501,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.8,
-          "y": 45.6,
+          "y": 45.5,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 44.3,
+          "y": 44.2,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496.6,
-          "y": 45.6,
+          "y": 45.5,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.5,
-          "y": 45,
+          "y": 44.9,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.8,
-          "y": 88.8,
+          "y": 88.6,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 88.8,
+          "y": 88.6,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 268.1,
-          "y": 467.9,
+          "y": 467.6,
           "rotate": 0,
           "width": 493.9
         },
@@ -935,7 +935,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -965,7 +965,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -983,55 +983,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 4,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 4,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 4,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 4,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 4,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 4,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 4,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 4,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1065,7 +1065,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1095,7 +1095,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1113,55 +1113,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1195,7 +1195,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1225,7 +1225,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1243,55 +1243,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 4,
           "x": 628.8,
-          "y": 501.1,
+          "y": 501,
           "rotate": 0
         },
         "preparedBy": {
           "page": 4,
           "x": 102.8,
-          "y": 45.6,
+          "y": 45.5,
           "rotate": 0
         },
         "lastSignature": {
           "page": 4,
           "x": 284.5,
-          "y": 44.3,
+          "y": 44.2,
           "rotate": 0
         },
         "lastDate": {
           "page": 4,
           "x": 496.6,
-          "y": 45.6,
+          "y": 45.5,
           "rotate": 0
         },
         "lastContractor": {
           "page": 4,
           "x": 646.5,
-          "y": 45,
+          "y": 44.9,
           "rotate": 0
         },
         "permitNo": {
           "page": 4,
           "x": 233.8,
-          "y": 88.8,
+          "y": 88.6,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 4,
           "x": 525.6,
-          "y": 88.8,
+          "y": 88.6,
           "rotate": 0
         },
         "description": {
           "page": 4,
           "x": 268.1,
-          "y": 467.9,
+          "y": 467.6,
           "rotate": 0,
           "width": 493.9
         },
@@ -1325,7 +1325,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1355,7 +1355,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1373,55 +1373,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1455,7 +1455,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1485,7 +1485,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1503,55 +1503,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1585,7 +1585,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1615,7 +1615,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1633,55 +1633,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1715,7 +1715,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1745,7 +1745,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1763,55 +1763,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1845,7 +1845,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -1875,7 +1875,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -1893,55 +1893,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -1975,7 +1975,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2005,7 +2005,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2023,55 +2023,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2105,7 +2105,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2135,7 +2135,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2153,55 +2153,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2235,7 +2235,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2265,7 +2265,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2283,55 +2283,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2365,7 +2365,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2395,7 +2395,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2413,55 +2413,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2496,7 +2496,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2526,7 +2526,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2544,55 +2544,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 4,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 4,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 4,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 4,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 4,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 4,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 4,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 4,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2627,7 +2627,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2657,7 +2657,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2675,55 +2675,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 4,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 4,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 4,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 4,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 4,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 4,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 4,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 4,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2757,7 +2757,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2787,7 +2787,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2805,55 +2805,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -2887,7 +2887,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -2917,7 +2917,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -2935,55 +2935,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
@@ -3017,7 +3017,7 @@
         "price": {
           "page": 0,
           "x": 95.9,
-          "y": 107.7,
+          "y": 107.6,
           "rotate": 0
         },
         "contractor": {
@@ -3047,7 +3047,7 @@
         "date": {
           "page": 0,
           "x": 315.4,
-          "y": 56.6,
+          "y": 56.5,
           "rotate": 0
         },
         "phone": {
@@ -3065,55 +3065,55 @@
         "pageTotal": {
           "page": 1,
           "x": 489.8,
-          "y": 209.6,
+          "y": 209.5,
           "rotate": 0
         },
         "bidAmount": {
           "page": 3,
           "x": 628.8,
-          "y": 500.5,
+          "y": 500.4,
           "rotate": 0
         },
         "preparedBy": {
           "page": 3,
           "x": 102.7,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastSignature": {
           "page": 3,
           "x": 284.5,
-          "y": 43.7,
+          "y": 43.6,
           "rotate": 0
         },
         "lastDate": {
           "page": 3,
           "x": 496,
-          "y": 45.1,
+          "y": 45,
           "rotate": 0
         },
         "lastContractor": {
           "page": 3,
           "x": 646.2,
-          "y": 44.4,
+          "y": 44.3,
           "rotate": 0
         },
         "permitNo": {
           "page": 3,
           "x": 233.2,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "bridgeNo": {
           "page": 3,
           "x": 525.6,
-          "y": 87.9,
+          "y": 87.8,
           "rotate": 0
         },
         "description": {
           "page": 3,
           "x": 267.8,
-          "y": 467.3,
+          "y": 467,
           "rotate": 0,
           "width": 494.2
         },
