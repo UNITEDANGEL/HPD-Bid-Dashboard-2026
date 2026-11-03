@@ -24,6 +24,9 @@ jobs:
       group: cloudflare-pages-production
       cancel-in-progress: false
     env:
+      # New York time, like the owner's phone (2 Nov: after 8 PM New York the UTC date is tomorrow; "3 days ago" and
+      # "due today" tests failed, and pages built on UTC days didn't match the phone's).
+      TZ: America/New_York
       # Tests open the encrypted tenant data / invitation PDFs the way the signed-in route does.
       HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -237,6 +240,9 @@ jobs:
       group: cloudflare-pages-browser-tests
       cancel-in-progress: false
     env:
+      # New York time, like the owner's phone (2 Nov: after 8 PM New York the UTC date is tomorrow; "3 days ago" and
+      # "due today" tests failed, and pages built on UTC days didn't match the phone's).
+      TZ: America/New_York
       # Tests open the encrypted tenant data / invitation PDFs the way the signed-in route does.
       HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
