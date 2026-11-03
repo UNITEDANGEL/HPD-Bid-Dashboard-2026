@@ -73,6 +73,12 @@ try {
   assert.equal(new Set(posted.filter((b) => String(b.key).startsWith("CHANGE-REQUEST-")).map((b) => b.key)).size, requests().length, "each request has its own key");
   assert.match(requests().slice(-1)[0], /^\(idea\) Give me more upgrade ideas/);
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  const before = requests().length;
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-ideas-more"]').click();
+  await page.locator('[data-hpd-smoke="fc-ideas-note"]').waitFor({ timeout: 10000 });
+  assert.equal(requests().length, before + 1, "More ideas row in the All menu asks Claude");
+  await page.getByRole("button", { name: "Close", exact: true }).first().click();
 
   // 4) 💬 on the live card while Claude works on a request.
   overrides["CHANGE-REQUEST-20261103190000"] = { at: ago(300), text: "(idea) Quiet hours for alerts" };

@@ -106,6 +106,41 @@
       "kind": "upgrade",
       "title": "Chat notes show on the job card",
       "why": "What you told the chat to remember about an address also shows on that job's card, so you see it before you knock."
+    },
+    {
+      "id": "tap-to-call",
+      "icon": "📞",
+      "kind": "upgrade",
+      "title": "Tap to call the super",
+      "why": "On a job card, one tap calls or texts the contact you saved for that address."
+    },
+    {
+      "id": "route-share",
+      "icon": "🗺️",
+      "kind": "upgrade",
+      "title": "Send tomorrow's route",
+      "why": "One tap sends tomorrow's route (addresses only) to your own phone or a helper's."
+    },
+    {
+      "id": "photo-checklist",
+      "icon": "✅",
+      "kind": "upgrade",
+      "title": "Photo checklist per job",
+      "why": "Each job shows the photos HPD needs (before, after, close-up) with ticks as you take them."
+    },
+    {
+      "id": "expiry-watch",
+      "icon": "📅",
+      "kind": "upgrade",
+      "title": "Insurance and license dates",
+      "why": "The app warns you 30 days before an insurance or license paper runs out."
+    },
+    {
+      "id": "slow-bid-nudge",
+      "icon": "💲",
+      "kind": "upgrade",
+      "title": "Bids with no price yet",
+      "why": "A small count on the Bids button of invitations still waiting for your price."
     }
   ]
 }
