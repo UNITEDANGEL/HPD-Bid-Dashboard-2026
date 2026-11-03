@@ -3,13 +3,6 @@
   "updated": "2026-11-03",
   "ideas": [
     {
-      "id": "photo-check",
-      "icon": "📸",
-      "kind": "upgrade",
-      "title": "Photo check before you send",
-      "why": "The AI looks at your before and after photos and tells you if one is blurry, dark or missing, before HPD rejects it."
-    },
-    {
       "id": "quiet-hours",
       "icon": "🌙",
       "kind": "upgrade",
@@ -64,6 +57,13 @@
       "kind": "upgrade",
       "title": "One-hand mode",
       "why": "A switch that moves the main buttons to the bottom corner so you can reach everything with your thumb while holding tools."
+    },
+    {
+      "id": "photo-count-warning",
+      "icon": "🖼️",
+      "kind": "upgrade",
+      "title": "Enough photos per job",
+      "why": "The job card tells you when a job has before photos but no after photos (or the other way round) before you close it."
     }
   ]
 }
