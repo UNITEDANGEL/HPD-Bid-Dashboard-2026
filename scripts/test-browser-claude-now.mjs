@@ -30,6 +30,14 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-orb"]')?.getAttribute("data-mode") === "working", null, { timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-ai-orb"]').count(), 0, "one AI: the chat bar");
   assert.match(await orb.innerText(), /Working/);
+  assert.equal(await orb.locator('[data-hpd-smoke="fc-face"]').getAttribute("data-mode"), "working", "the face on the button works (head moving)");
+  // One slim live line first (more room on the map); tap it for the whole card.
+  const slim = page.locator('[data-hpd-smoke="fc-claude-live"][data-slim="1"]');
+  await slim.waitFor({ timeout: 10000 });
+  assert.match(await slim.locator('[data-hpd-smoke="fc-claude-slim-text"]').innerText(), /Changing the screen/);
+  const sb = await slim.boundingBox();
+  assert.ok(sb && sb.height < 70, `one slim line (${sb && Math.round(sb.height)} px)`);
+  await slim.locator('[data-hpd-smoke="fc-claude-expand"]').click();
   const card = page.locator('[data-hpd-smoke="fc-claude-live"][data-kind="now"]');
   await card.waitFor({ timeout: 10000 });
   assert.match(await card.innerText(), /Make the chat better/);

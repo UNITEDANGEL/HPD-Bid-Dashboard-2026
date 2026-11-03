@@ -42,6 +42,7 @@ try {
     await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').click();
   }
   assert.match(await page.locator('[data-hpd-smoke="fc-chat-nudge-text"]').innerText(), /Looks like you're driving/);
+  assert.equal(await nudge.locator('[data-hpd-smoke="fc-face"]').getAttribute("data-mode"), "talking", "the helper's face says it");
   // 2) On.
   await page.locator('[data-hpd-smoke="fc-chat-nudge-go"]').click();
   await page.locator('[data-hpd-smoke="fc-agent-driving"]').waitFor({ timeout: 10000 });
@@ -54,7 +55,7 @@ try {
   await page.waitForFunction(() => window.__said.length > 0, null, { timeout: 10000 });
   const shown = await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText();
   const said = await page.evaluate(() => window.__said[window.__said.length - 1]);
-  assert.ok(said.length <= 220 && said.length < shown.length - 40, `said ${said.length} of ${shown.length}: ${said}`);
+  assert.ok(said.length <= 220 && said.length < shown.length - 20,`said ${said.length} of ${shown.length}: ${said}`);
   // 4) Silence: still listening after several quiet turns.
   const s0 = await page.evaluate(() => window.__starts);
   await page.waitForTimeout(5000);

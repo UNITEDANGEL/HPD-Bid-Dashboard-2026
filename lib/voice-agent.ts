@@ -36,7 +36,7 @@ export type AgentCommand =
   | { intent: "claude-not-right"; text: string }
   | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
-  | { intent: "weather"; when: "today" | "tomorrow" }
+  | { intent: "weather"; when: "today" | "tomorrow"; work?: string }
   | { intent: "traffic" }
   | { intent: "asp"; when: "today" | "tomorrow" }
   | { intent: "store"; store: string }
@@ -218,6 +218,14 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // Weather and traffic (owner, 27 Oct: "I want the AI smarter: weather, traffic"): the forecast in plain words with what
   // it means for the jobs; rush hour and live traffic in Waze.
+  // "Should I do a roof job tomorrow?" (owner, 3 Nov: "it should give me an answer for everything"): a straight yes / no
+  // from the forecast for outside work, then the list is offered.
+  const outside = t.match(/\b(roof|roofing|outside|outdoor|exterior|paint|painting|gutters?|concrete|facade|brick|pointing|caulk|caulking|parapet|sidewalk)\b/);
+  if (outside && /\b(should|shall|can|could|ok|okay|good|safe|go ahead|worth)\b/.test(t) && !/\b(bid|price|invoice|notice|text|call)\b/.test(t)) {
+    const w = outside[1];
+    const work = /^(outside|outdoor|exterior)$/.test(w) ? "outside" : ({ painting: "paint", roofing: "roof", caulking: "caulk", gutters: "gutter" } as Record<string, string>)[w] || w;
+    return { intent: "weather", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today", work };
+  }
   if (!/\b(money|pay|paid|income|payments?)\b/.test(t) && /\b(weather|forecast|going to rain|gonna rain|will it rain|is it raining|rain (today|tomorrow|later)|(going to|gonna|will it) snow|snow(ing)? (today|tomorrow)|how (cold|hot) (is it|will it be)|temperature (outside|today|tomorrow)|umbrella|is it (cold|hot) outside)\b/.test(t)) return { intent: "weather", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
   if (/\b(traffic|rush hour|how('?s| is) the (drive|road|roads)|roads? (busy|bad|clear))\b/.test(t)) return { intent: "traffic" };
   // Parking, the building, drive time, supply runs (27 Oct, "do all of them").

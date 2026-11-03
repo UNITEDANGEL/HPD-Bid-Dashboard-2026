@@ -159,6 +159,7 @@ jobs:
           node scripts/test-ai-draft.mjs
           node scripts/test-photo-ai.mjs
           node scripts/test-claude-now.mjs
+          node scripts/test-photo-check.cjs
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs
           node scripts/test-notice-findings.mjs
@@ -378,6 +379,8 @@ jobs:
             scripts/test-browser-photo.mjs \
             scripts/test-browser-claude-now.mjs \
             scripts/test-browser-ideas.mjs \
+            scripts/test-browser-photo-check.mjs \
+            scripts/test-browser-bids-welcome.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

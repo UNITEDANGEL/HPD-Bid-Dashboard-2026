@@ -20,6 +20,7 @@ try {
     return r.fulfill({ json: { ok: true, overrides, accepted: [] } });
   });
   const page = await c.newPage();
+  await page.addInitScript(() => { try { localStorage.setItem("hpd-claude-card", "big"); } catch { /* private mode */ } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
@@ -48,7 +49,13 @@ try {
   assert.equal(posted.find((b) => b.key === "AUTO-UPGRADE")?.patch.on, true);
   await page.locator('[data-hpd-smoke="fc-auto-upgrade-note"]').waitFor();
   await page.locator('[data-hpd-smoke="fc-auto-upgrade-status"]').waitFor();
+  assert.match(await page.locator('[data-hpd-smoke="fc-auto-status"]').innerText(), /Keep upgrading: ON ✓/, "ON shows first thing on the screen");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-claude-orb-auto"]').count(), 1, "🔁 on the Claude button");
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/ideas.png` }).catch(() => {});
+  await page.locator('[data-hpd-smoke="fc-whatsnew"] header button').first().click();
+  // 💡 in the chat bar opens the ideas any time.
+  await page.locator('[data-hpd-smoke="fc-chatbar-ideas"]').click();
+  await page.locator('[data-hpd-smoke="fc-ideas-more"]').waitFor({ timeout: 10000 });
   await page.locator('[data-hpd-smoke="fc-whatsnew"] header button').first().click();
 
   // 3) The chat.

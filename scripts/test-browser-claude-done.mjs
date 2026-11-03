@@ -33,6 +33,7 @@ try {
     return r.fulfill({ json: { ok: true, overrides, accepted: [] } });
   });
   const page = await c.newPage();
+  await page.addInitScript(() => { try { localStorage.setItem("hpd-claude-card", "big"); } catch { /* private mode */ } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });

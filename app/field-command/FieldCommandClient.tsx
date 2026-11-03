@@ -43,6 +43,8 @@ import { clearFieldPackets } from "../../lib/field-packet-store";
 import { FREED_KEY } from "../../lib/free-space";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import JobAssistant from "./JobAssistant";
+import PhotoCheck from "./PhotoCheck";
+import HelperFace from "./HelperFace";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
@@ -69,7 +71,7 @@ import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-sear
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
 import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
-import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater } from "../../lib/weather";
+import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater, workAnswer } from "../../lib/weather";
 import { aspAnswer, aspOff } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
 import BuildingFacts from "./BuildingFacts";
@@ -1480,6 +1482,11 @@ export default function FieldCommandClient() {
   };
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
+  // 🤖 Claude on the map is one slim live line by default (owner, 3 Nov: "like a real helper on the side ... more room
+  // on the map"); tap it for the whole card. Remembered on this phone.
+  const [claudeCardBig, setClaudeCardBigState] = useState(false);
+  useEffect(() => { try { setClaudeCardBigState(localStorage.getItem("hpd-claude-card") === "big"); } catch { /* private mode */ } }, []);
+  const setClaudeCardBig = (big: boolean) => { setClaudeCardBigState(big); try { localStorage.setItem("hpd-claude-card", big ? "big" : "slim"); } catch { /* private mode */ } };
   const [claudeSeenAt, setClaudeSeenAt] = useState("");
   const [claudeNow, setClaudeNow] = useState<ClaudeNow | null>(null);
   // 💬 Talk to Claude from the live card (3 Nov): a few taps ("Stop", "Do this first", "Looks good") or your own words.
@@ -1669,7 +1676,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; choices?: string[]; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; choices?: string[]; offers?: string[]; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1749,8 +1756,20 @@ export default function FieldCommandClient() {
   const prevAgentRef = useRef<{ heard: string; reply: string } | null>(null);
   const [agentTyped, setAgentTyped] = useState("");
   const [agentTypeOpen, setAgentTypeOpen] = useState(false);
+  // 💬 The chat moves to the side when you're done with it and comes back up by itself with its next answer or idea
+  // (owner, 3 Nov: "chat should just move to the side, and automatically zoom back up when it wants to give me an idea").
+  const [agentTucked, setAgentTucked] = useState(false);
+  const [tuckPoke, setTuckPoke] = useState(0);
   // 🔇 Stop talking (27 Oct): while the helper is speaking, one tap hushes it; talking to it hushes it too.
   const [speakingNow, setSpeakingNow] = useState(false);
+  // Tucks 15 s after the last answer or tap, on the map only (not over a bid or a job), not while listening, talking,
+  // driving or waiting for a yes / a pick.
+  useEffect(() => {
+    setAgentTucked(false);
+    if (!agent || selectedJob || bidsOpen || listening || speakingNow || convo || driving || agent.confirm || agent.choices?.length || agent.signIn || agentTypeOpen) return;
+    const t = window.setTimeout(() => setAgentTucked(true), 15000);
+    return () => window.clearTimeout(t);
+  }, [agent, selectedJob, bidsOpen, listening, speakingNow, convo, driving, agentTypeOpen, tuckPoke]);
   useEffect(() => {
     const on = (e: Event) => setSpeakingNow(Boolean((e as CustomEvent<boolean>).detail));
     window.addEventListener("hpd-speaking", on);
@@ -4694,6 +4713,10 @@ export default function FieldCommandClient() {
             const dos = lines.filter((l) => /^DO:/i.test(l)).map((l) => l.replace(/^DO:\s*/i, "").trim())
               .filter((x) => { const c = parseCommand(x); return c.intent !== "ask" && c.intent !== "search"; }).slice(0, 3);
             chatRef.current = [...chatRef.current, { you: cmd.question.slice(0, 200), helper: `${said}${dos.length ? ` (did: ${dos.join("; ")})` : ""}`.slice(0, 300), at: Date.now() }].slice(-8);
+            // A question gets the answer, and what the AI would do is offered to tap (owner, 3 Nov: "give me an answer,
+            // then ask me to open the list or not"). An order ("text the tenant") still runs.
+            const question = /\?\s*$|^\s*(should|shall|can|could|is|are|was|will|would|do|does|did|what|which|when|where|why|how|who|any)\b/i.test(cmd.question);
+            if (dos.length && question && said) { answer(said); if (!multiRef.current) setAgent((a) => (a ? { ...a, offers: dos } : a)); return; }
             if (dos.length) { multiRef.current = { heard, queue: dos.slice(1), replies: said ? [said] : [] }; agentRef.current(dos[0], true); return; }
             answer(said || d.text);
             return;
@@ -5036,6 +5059,12 @@ export default function FieldCommandClient() {
       void fetchWeather().then((w) => {
         const r = w ? weatherReport(w, cmd.when, nyNow().iso) : null;
         if (!r?.text) { answer("I couldn't get the weather right now (no signal?). Try again in a minute."); return; }
+        if (cmd.work) {
+          // The answer first, then the list is offered (not opened).
+          answer([workAnswer(r, cmd.when, cmd.work), r.text].join("\n"));
+          if (!multiRef.current) setAgent((a) => (a ? { ...a, offers: [`what do I have ${cmd.when}`] } : a));
+          return;
+        }
         answer([r.text, ...r.tips.map((tip) => `• ${tip}`)].join("\n"));
       });
       return;
@@ -5710,7 +5739,7 @@ export default function FieldCommandClient() {
                   const mode = asks ? "ask" : busy ? "working" : claudeIsOn(claudeSeenAt) || claudeNowFresh(claudeNow) ? "on" : "off";
                   return (
                     <button type="button" className={`fc-ai-orb fc-dock-ai fc-claude-orb is-${mode}`} data-hpd-smoke="fc-claude-orb" data-mode={mode} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. Tap for your requests`} onClick={() => { unlockChime(); goTo("requests", ""); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true">🤖{asks ? <b className="fc-claude-orb-badge">❓</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace mode={mode === "working" ? "working" : mode === "ask" ? "ask" : mode === "off" ? "off" : "idle"} size={38} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                   );
                 })() : <span className="fc-dock-gap" aria-hidden="true" />}
@@ -5911,8 +5940,24 @@ export default function FieldCommandClient() {
               </div>
             ) : null;
             const talkBtn = <button type="button" className="fc-claude-live-x fc-claude-talk-btn" aria-label="Talk to Claude" aria-pressed={claudeTalk} data-hpd-smoke="fc-claude-talk-open" onClick={() => { setClaudeTalk((o) => !o); setClaudeTalkSent(""); }}>💬</button>;
+            // Hidden with ×: a small tab stays where the card was, one tap brings it back (owner, 3 Nov: "hide and unhide").
+            const showTab = (label: string, kind: string) => <button type="button" className={`fc-claude-live-tab is-${kind}`} data-hpd-smoke="fc-claude-live-show" onClick={() => setClaudeLiveHidden("")}><i className="fc-claude-live-dot" aria-hidden="true" />🤖 {label} <b>Show ▾</b></button>;
+            const smaller = <button type="button" className="fc-claude-live-x fc-claude-smaller" aria-label="Make it one line" data-hpd-smoke="fc-claude-smaller" onClick={() => setClaudeCardBig(false)}>▴</button>;
+            const slim = (kind: string, line: string, pct: number | null, hide: () => void) => (
+              <div className={`fc-claude-live fc-claude-slim is-${kind}`} data-hpd-smoke="fc-claude-live" data-slim="1" role="status" aria-live="polite">
+                <button type="button" className="fc-claude-slim-main" data-hpd-smoke="fc-claude-expand" aria-label="Show what Claude is doing" onClick={() => setClaudeCardBig(true)}>
+                  <i className="fc-claude-live-dot" aria-hidden="true" />
+                  <span className="fc-claude-slim-text" key={line} data-hpd-smoke="fc-claude-slim-text"><HelperFace mode={kind === "working" ? "working" : kind === "ask" ? "ask" : "idle"} size={24} /> {line}</span>
+                  {pct !== null ? <em data-hpd-smoke="fc-claude-slim-pct">{pct}%</em> : null}
+                  <i className={`fc-claude-slim-bar${kind === "working" ? " is-moving" : ""}`} aria-hidden="true"><i style={{ width: `${pct === null ? (kind === "working" ? 100 : 0) : Math.max(pct, kind === "working" ? 6 : 0)}%` }} /></i>
+                </button>
+                {kind === "working" || kind === "ask" ? <button type="button" className="fc-claude-live-x fc-claude-talk-btn" aria-label="Talk to Claude" data-hpd-smoke="fc-claude-talk-open" onClick={() => { setClaudeCardBig(true); setClaudeTalk(true); setClaudeTalkSent(""); }}>💬</button> : null}
+                <button type="button" className="fc-claude-live-x" aria-label="Hide" data-hpd-smoke="fc-claude-live-hide" onClick={hide}>×</button>
+              </div>
+            );
             if ((!t || t.status === "Done") && nowOn) {
-              if (claudeLiveHidden === `now|${nowOn.task}`) return null;
+              if (claudeLiveHidden === `now|${nowOn.task}`) return showTab("Claude working", "working");
+              if (!claudeCardBig) return slim("working", nowOn.text || "working", null, () => setClaudeLiveHidden(`now|${nowOn.task}`));
               return (
                 <div className="fc-claude-live is-working" data-hpd-smoke="fc-claude-live" data-kind="now" role="status" aria-live="polite">
                   <button type="button" className="fc-claude-live-main" onClick={() => goTo("requests", "")}>
@@ -5920,18 +5965,25 @@ export default function FieldCommandClient() {
                     {nowOn.task ? <span className="fc-claude-live-req">“{nowOn.task.slice(0, 70)}”</span> : null}
                     <ClaudeNowLines now={nowOn} />
                   </button>
-                  <span className="fc-claude-live-side">{talkBtn}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next job" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`now|${nowOn.task}`)}>×</button></span>
+                  <span className="fc-claude-live-side">{talkBtn}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next job" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`now|${nowOn.task}`)}>×</button>{smaller}</span>
                   {talkBox}
                 </div>
               );
             }
-            if (!t || claudeLiveHidden === `${t.id}|${activity(t)}`) return null;
+            if (!t) return null;
             const done = t.steps.filter((s) => s.done).length;
             const nowStep = t.steps.find((s) => !s.done);
             const working = t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000;
             const lastNote = t.updates[t.updates.length - 1];
             const ago = (iso: string) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
             const state = t.status === "Done" ? "done" : t.status === "Waiting for you" ? "ask" : working ? "working" : "queued";
+            const pct = t.steps.length ? Math.round((done / t.steps.length) * 100) : null;
+            if (!claudeCardBig && claudeLiveHidden !== `${t.id}|${activity(t)}`) {
+              const ask = t.text.replace(/^\((said to the helper|from the chat|idea|auto upgrade)\)\s*/i, "").slice(0, 60);
+              const line = state === "working" ? (nowOn?.text || t.now?.text || (nowStep ? `Now: ${nowStep.text}` : "working on it")) : state === "done" ? `✅ Done: ${ask}` : state === "ask" ? `❓ Needs your answer: ${ask}` : claudeIsOn(claudeSeenAt) ? `Starting soon: ${ask}` : `⏸ Waiting for the office computer: ${ask}`;
+              return slim(state, line, state === "done" ? null : pct, () => setClaudeLiveHidden(`${t.id}|${activity(t)}`));
+            }
+            if (claudeLiveHidden === `${t.id}|${activity(t)}`) return showTab(state === "working" ? `Claude working${t.steps.length ? ` · ${Math.round((done / t.steps.length) * 100)}%` : ""}` : state === "done" ? "Claude: done" : state === "ask" ? "Claude needs you" : "Claude", state);
             return (
               <div className={`fc-claude-live is-${state}`} data-hpd-smoke="fc-claude-live" role="status" aria-live="polite">
                 <button type="button" className="fc-claude-live-main" onClick={() => goTo("requests", "")}>
@@ -5948,7 +6000,7 @@ export default function FieldCommandClient() {
                   {state === "working" && changeCheckedAt ? <span className="fc-claude-live-checked" data-hpd-smoke="fc-claude-live-checked">🔄 Live: checked <SecondsAgo at={new Date(changeCheckedAt).toISOString()} bare /></span> : null}
                   {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
                 </button>
-                <span className="fc-claude-live-side">{state !== "done" ? talkBtn : null}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button></span>
+                <span className="fc-claude-live-side">{state !== "done" ? talkBtn : null}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>{smaller}</span>
                 {state !== "done" ? talkBox : null}
               </div>
             );
@@ -6579,6 +6631,7 @@ export default function FieldCommandClient() {
                     ))}
                   </div>
                 ) : null}
+                <PhotoCheck jobId={id} before={counts.before} after={counts.after} total={counts.total} work={["WORK_STARTED", "WORK_COMPLETED", "PARTIAL_WORK"].includes(value(selectedJob, ["FieldOutcome", "fieldOutcome"]))} />
               </div>
 
               {jobQueue(selectedJob) === "completed" ? (
@@ -6832,9 +6885,9 @@ export default function FieldCommandClient() {
       {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>
-          {/* Short (3 Nov): the first 3 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
-          <ul>{newItems.slice(0, 3).map((x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return <li key={x}>{one.length > 150 ? `${one.slice(0, 148)}…` : one}</li>; })}</ul>
-          {newItems.length > 3 ? <small className="fc-newupdate-more-n" data-hpd-smoke="fc-newupdate-more-n">…and {newItems.length - 3} more: tap All changes</small> : null}
+          {/* Short (3 Nov): the first 2 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
+          <ul>{newItems.slice(0, 2).map((x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return <li key={x}>{one.length > 90 ? `${one.slice(0, 88)}…` : one}</li>; })}</ul>
+          {newItems.length > 2 ? <small className="fc-newupdate-more-n" data-hpd-smoke="fc-newupdate-more-n">…and {newItems.length - 2} more: tap All changes</small> : null}
           <div>
             <button type="button" data-hpd-smoke="fc-newupdate-ok" onClick={seenNewItems}>Got it</button>
             <button type="button" data-hpd-smoke="fc-newupdate-more" onClick={() => { seenNewItems(); setWhatsNewOpen(true); }}>All changes</button>
@@ -6855,6 +6908,11 @@ export default function FieldCommandClient() {
             <strong>✨ What&apos;s new</strong>
           </header>
           <div className="fc-summary-body">
+            {/* 🔁 Keep upgrading, ON or OFF, first thing on the screen (owner, 3 Nov: "I need to know that it is on"). */}
+            <button type="button" className={`fc-auto-status${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-status" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>
+              <b>🔁 Keep upgrading: {autoUpgrade ? "ON ✓" : "OFF"}</b>
+              <small>{autoUpgrade ? "Claude builds the next idea by itself when you have no requests open (up to 3 a day). Tap to turn off." : "Tap to turn on: Claude builds the next idea by itself when nothing else is open."}</small>
+            </button>
             <p className="fc-follow-note" data-hpd-smoke="fc-whatsnew-version">This version: {versionLabel() || `v${appVersion}`}{BUILT_COMMIT ? ` (${BUILT_COMMIT})` : ""}. Every version is kept.</p>
             <section className="fc-ideas" data-hpd-smoke="fc-ideas">
               <h4>💡 Ideas from Claude</h4>
@@ -7515,13 +7573,17 @@ export default function FieldCommandClient() {
           const lines = catchUp(awaySince);
           if (lines.length) all.push({ key: `away|${awaySince}`, kind: "away", text: `👋 While you were away: ${lines.map((l) => l.split(":")[0].replace(/ about .*/, "")).join(" · ")}`, label: "Tell me", go: () => agentRef.current("what did I miss") });
         }
+        // 🗣 A new notice (last 6 hours, nothing sent yet): the helper speaks up (owner, 3 Nov: "the chat speaks up by itself").
+        const fresh = boardOpenRows.filter((r) => r.kind === "ppn" && boardSide(r) === "tosend" && r.noticeAt && now - Date.parse(r.noticeAt) < 6 * 3600000).sort((a, b) => Date.parse(b.noticeAt) - Date.parse(a.noticeAt));
+        for (const r of fresh.slice(0, 2)) all.push({ key: `notice|${r.key}`, kind: "notice", text: `📨 New ${r.hours}-hour notice for ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}${r.want ? `: HPD wants ${r.want.toLowerCase()}` : ""}. Answer it now?`, label: "✍️ Answer", go: () => agentRef.current(`answer the notice for ${r.omo}`) });
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
         const nudge = all.find((n) => !nudgeSeen.includes(n.key));
         if (!nudge) return null;
         const done = () => setNudgeSeen(markNudgeSeen(nudge.key));
         return (
-          <div className="fc-chat-nudge" role="status" data-hpd-smoke="fc-chat-nudge" data-kind={nudge.kind}>
+          <div className="fc-chat-nudge" role="status" data-hpd-smoke="fc-chat-nudge" data-kind={nudge.kind} key={nudge.key}>
+            <HelperFace mode="talking" size={34} className="fc-nudge-face" />
             <span data-hpd-smoke="fc-chat-nudge-text">{nudge.text}</span>
             {nudge.href ? <a href={nudge.href} data-hpd-smoke="fc-chat-nudge-go" onClick={() => { done(); nudge.go?.(); }}>{nudge.label}</a>
               : <button type="button" data-hpd-smoke="fc-chat-nudge-go" onClick={() => { done(); nudge.go?.(); }}>{nudge.label}</button>}
@@ -7541,7 +7603,8 @@ export default function FieldCommandClient() {
           setAgentTypeOpen(true);
           agentRef.current(t);
         }}>
-          <span aria-hidden="true">✨</span>
+          {/* 💡 always here (owner, 3 Nov: "always have a more ideas button available"): Claude's ideas, one tap. */}
+          <button type="button" className="fc-chatbar-ideas" aria-label="Ideas from Claude" data-hpd-smoke="fc-chatbar-ideas" onClick={() => { unlockChime(); goTo("requests", ""); setTimeout(() => document.querySelector('[data-hpd-smoke="fc-ideas"]')?.scrollIntoView({ block: "start", behavior: "smooth" }), 400); }}>💡</button>
           {chatTip ? <p className="fc-chatbar-tip" data-hpd-smoke="fc-chatbar-tip" role="status">{chatTip}<button type="button" aria-label="Close the tip" onClick={() => setChatTip("")}>✕</button></p> : null}
           <input ref={chatInputRef} value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "Ask me, or \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
           {canSpeak ? <button type="button" className={`fc-chatbar-voice${voiceMuted ? " is-off" : ""}`} aria-label={voiceMuted ? "Answers are silent: tap to hear them out loud" : "Answers are said out loud: tap for silent"} aria-pressed={!voiceMuted} data-hpd-smoke="fc-chatbar-voice" onClick={() => { const off = !voiceMuted; setVoiceOff(off); setVoiceMuted(off); if (off) stopSpeaking(); else { unlockChime(); speak("Voice on. I'll say my answers out loud.", 50); } }}>{voiceMuted ? "🔇" : "🔊"}</button> : null}
@@ -7555,7 +7618,9 @@ export default function FieldCommandClient() {
         </form>
       ) : null}
       {agent ? (
-        <div className={`fc-agent${driving ? " is-driving" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
+        <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
+          onPointerDown={() => setTuckPoke((n) => n + 1)} onKeyDown={() => setTuckPoke((n) => n + 1)}>
+          {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => setAgentTucked(false)}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} /><small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small></button> : null}
           {driving ? <button type="button" className="fc-agent-driving" data-hpd-smoke="fc-agent-driving" onClick={() => setDrivingMode(false)}>🚗 Driving: short answers, I keep listening · tap to stop</button> : null}
           {/* Earlier turns only over the map: over a sheet (bid, job) the panel stays small so it doesn't hide its buttons. */}
           {!selectedJob && !bidsOpen && agentHistory.length > 3 ? (
@@ -7564,16 +7629,30 @@ export default function FieldCommandClient() {
           {(selectedJob || bidsOpen ? [] : chatAll ? agentHistory : agentHistory.slice(-3)).map((h) => (
             <div key={h.at} className="fc-agent-past" data-hpd-smoke="fc-agent-past"><small>🗣 {h.heard}</small><span>{h.reply}</span></div>
           ))}
+          {/* The helper's face: it listens, talks (the mouth moves while it speaks), and blinks in between. */}
+          {/* Over a bid or a job the panel stays small: the face sits in the first line instead. */}
+          <div className={`fc-agent-who${speakingNow ? " is-talking" : listening ? " is-listening" : ""}${selectedJob || bidsOpen ? " is-small" : ""}`} data-hpd-smoke="fc-agent-who">
+            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={46} />
+            <b>{speakingNow ? "Talking to you…" : listening ? "Listening…" : agent.reply === "Thinking…" ? "Thinking…" : "Your helper"}</b>
+          </div>
           {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ Your AI helper</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}
           {/* 💡 Before you ask (27 Oct, owner: "figure it out by itself beforehand"): the most pressing thing right now. */}
           {nextStepRef.current && !agent.reply.startsWith("Next:") && !agent.confirm ? (
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
           ) : null}
-          <p data-hpd-smoke="fc-agent-reply" className={agent.live ? "is-live" : undefined}>{agent.reply}</p>
+          {/* The answer appears word by word (owner, 3 Nov: "everything animated"; the words are all there at once for
+              reading and tests, each fades in a moment after the one before). */}
+          <p key={agent.reply} data-hpd-smoke="fc-agent-reply" className={`fc-agent-words${agent.live ? " is-live" : ""}`}>{agent.reply.length > 500 || agent.live ? agent.reply : agent.reply.split(/(\s+)/).map((w, i) => (/^\s+$/.test(w) || !w ? w : <span key={i} style={{ animationDelay: `${Math.min(i, 120) * 22}ms` }}>{w}</span>))}</p>
           {agent.choices?.length ? (
             <div className="fc-agent-try fc-agent-choices" data-hpd-smoke="fc-agent-choices">
               {agent.choices.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-choice" onClick={() => agentRef.current(c)}>{c}</button>)}
               <button type="button" className="is-ai" data-hpd-smoke="fc-agent-ask-ai" onClick={() => { const h = agent.heard; askAnywayRef.current = h; agentRef.current(h); }}>🤖 Ask the AI instead</button>
+            </div>
+          ) : null}
+          {agent.offers?.length && !agent.choices?.length ? (
+            <div className="fc-agent-try fc-agent-offers" data-hpd-smoke="fc-agent-offers">
+              <span>Want me to open it?</span>
+              {agent.offers.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-offer" onClick={() => agentRef.current(c)}>▶ {c.replace(/^\w/, (x) => x.toUpperCase())}</button>)}
             </div>
           ) : null}
           {agent.live ? <p className="fc-agent-live" data-hpd-smoke="fc-agent-live"><i aria-hidden="true" /> Live: this answer updates by itself</p> : null}
@@ -7636,6 +7715,7 @@ export default function FieldCommandClient() {
             <button type="button" aria-label="Read a photo" data-hpd-smoke="fc-agent-photo" onClick={() => photoInputRef.current?.click()}>📷</button>
             <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="fc-agent-photo-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void readPhoto(f); }} />
             <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>
+            <button type="button" aria-label="Move the chat to the side" data-hpd-smoke="fc-agent-tuck" onClick={(e) => { e.stopPropagation(); setAgentTucked(true); }}>⇥</button>
             <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>
         </div>

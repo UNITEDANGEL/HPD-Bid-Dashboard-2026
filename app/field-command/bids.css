@@ -864,3 +864,15 @@ i.is-won { background: #16a34a; }
 
 /* The chat's "bids in Brooklyn" (2 Nov): one borough on the map; tap to show them all. */
 .fc-app .fc-bids-banner .fc-bids-boro { grid-column: 1 / -1; grid-row: 2; justify-self: start; min-height: 28px; padding: 0 10px; border: 1px solid #fde68a; border-radius: 14px; background: #fff7ed; color: #7c2d12; font: 800 13px/1 system-ui; white-space: nowrap; }
+
+/* 👋 Start bidding (3 Nov). */
+.fc-bids-welcome { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 74px); transform: translateX(-50%); z-index: 1210; width: min(440px, calc(100vw - 24px)); box-sizing: border-box; display: grid; gap: 6px; padding: 14px 16px; border-radius: 18px; border: 2px solid #f97316; background: rgba(2, 6, 23, .94); color: #e2e8f0; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: fc-arrive-in .35s ease-out; }
+.fc-bids-welcome b { font: 900 21px/1.2 system-ui, sans-serif; color: #fff; }
+.fc-bids-welcome span { font: 600 15px/1.35 system-ui, sans-serif; }
+.fc-bids-welcome em { font: 700 14px/1.35 system-ui, sans-serif; font-style: normal; color: #fde68a; }
+.fc-bids-welcome small { font: 500 12.5px/1.35 system-ui, sans-serif; color: #94a3b8; }
+.fc-bids-welcome div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.fc-bids-welcome button { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid #475569; background: #1e293b; color: #f8fafc; font: 800 15px system-ui, sans-serif; cursor: pointer; }
+.fc-bids-welcome button.is-go { background: #ea580c; border-color: #f97316; }
+.fc-bids-welcome button.is-later { background: transparent; color: #94a3b8; }
+@media (prefers-reduced-motion: reduce) { .fc-bids-welcome { animation: none; } }

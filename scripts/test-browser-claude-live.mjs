@@ -39,6 +39,7 @@ try {
     };
   });
   const page = await c.newPage();
+  await page.addInitScript(() => { try { localStorage.setItem("hpd-claude-card", "big"); } catch { /* private mode */ } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
@@ -64,6 +65,7 @@ try {
   // × hides it; the next note brings it back by itself (no reload).
   await page.locator('[data-hpd-smoke="fc-claude-live-hide"]').click();
   assert.equal(await card.count(), 0);
+  assert.match(await page.locator('[data-hpd-smoke="fc-claude-live-show"]').innerText(), /Claude working · \d+%\s+Show/, "a small tab stays to bring it back");
   overrides[`CHANGE-REPLY-${id}`] = { ...overrides[`CHANGE-REPLY-${id}`], updates: [...overrides[`CHANGE-REPLY-${id}`].updates, { at: new Date().toISOString(), text: "Date box is on the card; testing on iPhone size." }],
     steps: overrides[`CHANGE-REPLY-${id}`].steps.map((s, i) => ({ ...s, done: i < 3 })) };
   await card.waitFor({ timeout: 35000 });

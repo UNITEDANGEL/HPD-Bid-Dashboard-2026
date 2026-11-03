@@ -55,4 +55,13 @@ for (const [said, intent, extra] of [["is alternate side on today", "asp"], ["do
   if (extra) assert.equal(c.ref, extra, said);
 }
 assert.notEqual(parseCommand("how long will the job take").intent, "drive-time");
+// "Should I do a roof job tomorrow?" (3 Nov): a straight answer first.
+const { workAnswer } = await loadLib("weather");
+assert.deepEqual(parseCommand("should I do a roof job tomorrow?"), { intent: "weather", when: "tomorrow", work: "roof" });
+assert.deepEqual(parseCommand("can I paint today"), { intent: "weather", when: "today", work: "paint" });
+assert.equal(parseCommand("is it ok to do outside work tomorrow").work, "outside");
+assert.notEqual(parseCommand("should I bid the roof job").intent, "weather");
+assert.equal(workAnswer(today, "today", "roof"), "Yes, but only early: rain from 2 PM. Start early and finish the roof work before then.");
+assert.match(workAnswer(tomorrow, "tomorrow", "paint"), /^No, not tomorrow: it's freezing/);
+assert.match(workAnswer(late, "today", "outside"), /^Yes, today looks good for outside work/);
 console.log("PASS weather: forecast in plain words (rain from 2 PM drying by 5, wind, dark at 6:02), tips for the work, freezing tomorrow, rush hour by the clock, voice phrases; alternate side parking (Election Day, Thanksgiving, next suspension, Sunday); store, building, drive-time phrases");

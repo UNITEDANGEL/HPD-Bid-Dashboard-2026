@@ -185,6 +185,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const openBidRef = useRef<(b: UpcomingBid, page?: boolean) => void>(() => {});
   // On unless turned off on the bid card ("🗺 Map, then HPD's page").
   const [walk, setWalk] = useState(true);
+  // 👋 Tapping Bids starts with a short hello (owner, 3 Nov: "let's start the bidding process, these are what's due,
+  // whatever is next ... you want to start?"): what's left to bid, the next one, and one tap to start the walk.
+  const [welcome, setWelcome] = useState(false);
+  useEffect(() => { setWelcome(open && !focusOmo); }, [open, focusOmo]);
+  useEffect(() => { if (selected || arriving) setWelcome(false); }, [selected, arriving]);
   useEffect(() => { try { setWalk(localStorage.getItem(WALK_KEY) !== "off"); } catch { /* private mode */ } }, []);
   const toggleWalk = () => setWalk((v) => { try { localStorage.setItem(WALK_KEY, v ? "off" : "on"); } catch { /* private mode */ } return !v; });
   function goToBid(b: UpcomingBid, then?: () => void, flyWhenOff = false) {
@@ -985,6 +990,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       setListSize("peek");
       setSentNote({ omo: sentOmo, price, next: next?.omo });
       setSelected((cur) => (cur && cur.omo === sentOmo ? null : cur));
+      // Bidding them in a row: on to the next one of the row by itself (zoom out, the next building, its description).
+      if (sitting && !sitting.done && sitting.omos[sitting.at] === sentOmo) { nextInSitting(false); return; }
       if (next) goToBid(next, undefined, true);
     }, 2200);
   }
@@ -1146,6 +1153,25 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           {sentNote.next ? <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button> : null}
         </div>
       ) : null}
+      {welcome && !selected && !arriving && !(sitting && !sitting.done) && bids && tab === "open" ? (() => {
+        const todo = checklist.todo;
+        const first = todo.length ? (bids || []).find((b) => b.omo === todo[0].omo) : nextToBid("");
+        const todayN = todo.filter((r) => r.day === "today").length;
+        const what = first ? [first.omo, BORO_NAME[String(first.borough || "").toUpperCase()] || first.borough, jobSummary(first.description || "").lines.map(lineText)[0], dueLabel(first)].filter(Boolean).join(" · ") : "";
+        return (
+          <div className="fc-bids-welcome" role="dialog" aria-label="Start bidding" data-hpd-smoke="fc-bids-welcome">
+            <b>👋 {todo.length ? "Let's start bidding" : first ? "Nothing due today or tomorrow" : "No bids open right now"}</b>
+            <span data-hpd-smoke="fc-bids-welcome-count">{todo.length ? `${todo.length} invitation${todo.length === 1 ? "" : "s"} still need${todo.length === 1 ? "s" : ""} a price: ${todayN ? `${todayN} due today` : ""}${todayN && todo.length - todayN ? ", " : ""}${todo.length - todayN ? `${todo.length - todayN} due tomorrow` : ""}.` : first ? "Everything due today and tomorrow is sent. Want to get ahead on the next one?" : "New invitations show up here as soon as HPD sends them."}</span>
+            {first ? <em data-hpd-smoke="fc-bids-welcome-next">Next: {what}</em> : null}
+            <div>
+              {first ? <button type="button" className="is-go" data-hpd-smoke="fc-bids-welcome-start" onClick={() => { setWelcome(false); if (todo.length) openFromChecklist(first.omo); else goToBid(first); }}>▶ Start with the next one</button> : null}
+              {todo.length > 1 ? <button type="button" data-hpd-smoke="fc-bids-welcome-all" onClick={() => { setWelcome(false); startSitting(); }}>🎯 Bid all {todo.length} in a row</button> : null}
+              <button type="button" className="is-later" data-hpd-smoke="fc-bids-welcome-later" onClick={() => setWelcome(false)}>Later</button>
+            </div>
+            {first && walk ? <small>Each one: the map flies to the building, then HPD&apos;s work description opens. After you send, it goes to the next one by itself.</small> : null}
+          </div>
+        );
+      })() : null}
       {arriving ? (
         <div className="fc-bid-arriving" role="status" data-hpd-smoke="fc-bid-arriving">
           <b data-hpd-smoke="fc-bid-arriving-boro">📍 {arriving.boro || "New York"}</b>

@@ -10,6 +10,49 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 3 Nov 2026: everything the owner asked in the chat, and the idea list (keep this up to date)
+
+The owner's words (3 Nov): "make this app high quality, very user friendly and very interactive"; "everything needs to be
+animated, every single item"; "the bot should look real: blink, move around, a talking thing"; "keep upgrading and keep
+giving me more ideas"; "everything we talk about goes in the master file". Claude keeps this list current: move a line to
+Done with its plan number when it is live, add new ideas at the bottom of Ideas.
+
+### Done today (live or going live)
+- Live steps on the phone (hook) and the listening hook: what the owner writes in the app reaches the working Claude (201, 208).
+- 💡 Ideas button, 🔁 Keep upgrading on its own, 💬 talk to Claude from its card, start / live phone alerts (202).
+- Photo check: warns at save (203) and checks all photos on the job card, missing before/after (208).
+- Keep upgrading shows proof; ON/OFF in big letters; 🔁 on the Claude button; 💡 always in the chat bar (204, 208).
+- Quiet hours 9 PM-7 AM except notices and emergencies (205).
+- Straight answers ("should I do a roof job tomorrow?": yes / no / only early, then offers the list) (208).
+- Next line no longer covers the Claude card; × leaves a Show tab (208).
+- Bids open with a hello: how many still need a price, the next one, ▶ Start, 🎯 all in a row, auto next after each send (209).
+- A face for the helper: blinks, head moves, mouth talks, ears listen; slim Claude line; chat tucks to the side and comes back; dock folder shakes, numbers bob; 6 new ideas (210).
+
+### Now (owner said "do all 6", 3 Nov), in this order
+1. 🗣 The chat speaks up by itself: DONE 211 (new notice, bids due, driving, HPD answered, appointment). Still to add: tenant texted back.
+2. ➡️ The chat asks the next step after every answer ("Text the tenant?", "Open the affidavit?").
+3. ☀️ Morning plan in 20 seconds: at 7 AM, out loud, today's jobs in order, bids due, notices, weather; one tap starts the route.
+4. 🎯 Price coach on every bid: mostly there already (best price, chance, similar, trend); next: a moving gauge for the chance to win.
+5. 🖼 A picture of Claude's change in Your requests when a request is done.
+6. 🚗 Hands-free while driving: the app already asks when the phone moves fast; next: bigger buttons in driving mode.
+7. ✨ Animate every item: started 211 (words fade in, buttons spring, lists slide in). Next: numbers count up, map pins drop in, sheets slide.
+
+### Picked in the app, the automatic helper is building them
+- 📝 Chat notes show on the job card. (🧠 The chat remembers: DONE 206; 💬 More ideas in the All menu: DONE 207.)
+- 💵 Money coming in; ⏰ late payment warning (30 days); 📶 photos work with no signal; ⏰ bid due reminders; ⚡ quick answer buttons in chat.
+
+### Ideas (not started; the app's 💡 list is public/data/upgrade-ideas.json)
+- 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up.
+- 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job.
+- 💬 Tenant answers in the chat (reads the text, suggests the reply and the appointment).
+- 🎙 The helper's voice: pick a voice and speed; it says your name.
+- 🗺 Route that learns: remembers how long each building really takes and plans the day with it.
+- 📅 Week view: jobs, bids due and notices for the next 7 days on one screen.
+- 🔔 One alert a day at 6 PM with what's due tomorrow, instead of many small ones.
+- 🧾 Invoice check before sending: amounts match the award and the COA.
+- 🏢 Building history: every past job at this address, photos and notes, one tap from the card.
+- 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF.
+
 ## What the owner asked for (this conversation)
 
 ### Invitations to bid
@@ -827,3 +870,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 205. **Quiet hours for alerts** (idea from the 💡 list, 3 Nov). Done: scripts/send-push.mjs holds every alert except notices and emergencies between 9 PM and 7 AM New York time; held ones are not marked sent, so they go out at the first run after 7 AM. Test: test-push.mjs.
 206. **The chat remembers what you tell it** (idea from the 💡 list, 3 Nov). Done: lib/voice-notes.ts + voice-agent intents `remember` / `my-notes`; notes are saved in localStorage (hpd-chat-notes) on the phone only and read back when that address is read. Test: test-voice-notes.mjs.
 207. **More ideas button always available** (owner, 3 Nov). Done: a "More ideas" row in the All menu asks Claude for new ideas from any screen; five new ideas added to upgrade-ideas.json. Test: test-browser-ideas.mjs.
+208. **Photo check on the job card, straight answers, tidier Claude card, 💡 always there** (owner, 3 Nov: "do idea 1"; "should I do a roof job tomorrow? it should give me an answer, then ask me to open the list"; "Next is overlapping Claude working on it ... hide and unhide ... make Claude bigger"; "always have a more ideas button"; "I need to know that it is on"). Done: lib/photo-check.ts (judgePixels: light and Laplacian sharpness of the photo between the stamp bands; summarizePhotoCheck: missing before/after, blurry/dark/bright) + app/field-command/PhotoCheck.tsx under the media on the job card (adds to 203, which warns once at save). voice-agent: outside-work questions (roof, paint, gutters, outside...) -> weather intent with work; weather.ts verdict + workAnswer (yes / no / only early / windy / hot); the helper answers then offers "what do I have today/tomorrow" (agent.offers, fc-agent-offers). AI answers to questions no longer run their DO: actions, they are offered. Claude card: bigger text, max-height above the Next line, slide-in, × leaves fc-claude-live-show tab. Next chip: one line right above the chat bar. 💡 fc-chatbar-ideas replaces ✨; fc-auto-status ON/OFF at the top of Your requests; 🔁 badge on the Claude button. scripts/claude-now.mjs --inbox hook now on (owner said yes). Tests: test-photo-check.cjs, test-browser-photo-check.mjs (new), test-weather, test-browser-agent-chat, test-browser-claude-live, test-browser-ideas.
+209. **Bids start with a hello, then one after another** (owner, 3 Nov: "when I click bids, give me a nice little message: let's start the bidding process, these are what's due ... whatever is next ... then a nice transition between each bid, zooming into the location, opening the work description ... as soon as I fill it out it's sent, it goes to the next location"). Done: BidsMode fc-bids-welcome when Bids opens (not from a focused bid): count still to price from the checklist (today / tomorrow), Next: OMO · borough · work · due, ▶ Start (goToBid walk: borough, building, HPD description page), 🎯 Bid all N in a row (startSitting), Later. After a send inside a sitting, nextInSitting runs by itself (before: only the Next bid button); outside a sitting the existing auto-next stays. Test: test-browser-bids-welcome.mjs.
+210. **A helper that feels alive** (owner, 3 Nov: "the bot should look real: blink, move around ... when he's talking to me it should have a talking thing"; "like a real helper on the side"; "chat should just move to the side and zoom back up when it wants to give me an idea"; "the folder should shake a little, the 99 should move a little"; "give me more ideas"). Done: app/field-command/HelperFace.tsx (SVG face; modes idle/working/listening/talking/ask/off; CSS .fc-face blink, head tilt, talking mouth, ear glow) on the Claude dock button, fc-agent-who at the top of the chat (talking while speakingNow), the slim line and the tucked bubble. Claude card slim by default (fc-claude-slim: step slides in, moving bar, %; fc-claude-expand -> whole card, fc-claude-smaller back; localStorage hpd-claude-card). Chat tuck: agentTucked after 15 s idle (not while listening/talking/driving/confirm/choices/typing), ⇥ fc-agent-tuck, fc-agent-bubble; any new answer brings it back. Dock: jobs folder wiggle, badges bob (reduce-motion off). upgrade-ideas.json: +6 ideas (chat-speaks-up, morning-plan, chat-next-question, claude-screenshot, tenant-reply-chat, price-coach), quiet-hours removed (built). Tests: claude-now (slim + face), agent-chat (face, tuck), claude-live / voice-live / ideas / claude-done use the whole card; page-zoom taps Later on the bids hello.
+211. **The helper speaks up; more movement** (owner, 3 Nov: "do all 6 ideas", "everything needs to be animated, every single item"). Done: chat nudges come from a talking HelperFace (fc-nudge-face) and pop in; new nudge for a fresh 24/72-hour notice (last 6 h, nothing sent) -> "answer the notice for OMO". Answers fade in word by word (fc-agent-words, text complete at once); buttons spring (scale on :active); ideas, More rows, chat cards, Try chips slide in staggered; the chat panel glides up. Reduce-motion turns it off. Price coach (idea 4) was already on the bid card (best, chance, similar, trend, lost-by). Driving (idea 6) was already detected (movingFast nudge).

@@ -58,6 +58,23 @@ try {
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   assert.ok(await orb.isVisible(), "🎙 back after closing");
 
+  // 0b. A question gets an answer first, then the list is offered (3 Nov: "should I do a roof job today?").
+  await page.evaluate(() => { window.__hear = "should I do a roof job today?"; });
+  await page.locator('[data-hpd-smoke="fc-search-mic"]').click();
+  await waitReply(/^(Yes|No|Better not)/);
+  assert.match(await reply.innerText(), /roof work/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-offers"]').innerText(), /Want me to open it\?[\s\S]*What do I have today/);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-choices"]').count(), 0, "no 'did you mean'");
+  // The helper's face is on the chat; ⇥ moves the chat to the side as a bubble, a tap brings it back.
+  await page.locator('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]').waitFor();
+  await page.locator('[data-hpd-smoke="fc-agent-tuck"]').click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent"]').getAttribute("data-tucked"), "1");
+  const bub = await page.locator('[data-hpd-smoke="fc-agent-bubble"]').boundingBox();
+  assert.ok(bub && bub.x > 150 && bub.width < 240, "a small bubble on the right side");
+  await page.locator('[data-hpd-smoke="fc-agent-bubble"]').click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent"]').getAttribute("data-tucked"), null, "back up");
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+
   // 1. Said: "Tell cloud to …" (how the iPhone often hears Claude).
   await page.evaluate(() => { window.__hear = "Tell cloud to make the zoom smoother when I close a job card"; });
   await page.locator('[data-hpd-smoke="fc-search-mic"]').click();

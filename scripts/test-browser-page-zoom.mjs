@@ -42,6 +42,8 @@ try {
   // The bids map fits itself to the pins right after it opens (twice): pinch once it has settled.
   await page.waitForFunction(() => document.querySelectorAll(".fc-bid-pin").length > 0, null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(1500);
+  // The 👋 start-bidding hello sits over the map: Later.
+  if (await page.locator('[data-hpd-smoke="fc-bids-welcome-later"]').count()) await page.locator('[data-hpd-smoke="fc-bids-welcome-later"]').click();
   const z0 = await page.evaluate(() => Number((document.querySelector(".leaflet-proxy")?.style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || 0));
   await pinchAt(195, 300, 60, 240);
   await page.waitForTimeout(600);

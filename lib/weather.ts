@@ -89,7 +89,8 @@ export function weatherReport(w: Weather, when: "today" | "tomorrow", nowIso: st
   if (day.max >= 90) tips.push("Hot: water breaks; roof work early in the morning.");
   if (windMax >= 25) tips.push(`Windy (${Math.round(windMax)} mph): careful on ladders and roofs.`);
   if (day.sunset && when === "today") { const left = (Date.parse(`${day.sunset}:00`) - Date.parse(`${nowIso.slice(0, 16)}:00`)) / 3600000; if (left > 0 && left < 2.5) tips.push(`Dark at ${clock(day.sunset)}: finish outside photos before then.`); }
-  return { text: parts.join(" "), tips };
+  const verdict = day.min <= 32 && day.max <= 40 ? "freezing" : wet && wet.t.slice(11, 13) <= "10" && !dry ? "wet" : wet ? "until" : windMax >= 30 ? "windy" : day.max >= 90 ? "hot" : "ok";
+  return { text: parts.join(" "), tips, verdict, wetFrom: wet ? clock(wet.t) : "", wetWord, wind: Math.round(windMax) };
 }
 
 // Rush hour in the city (no live traffic without a paid map service: Waze shows it live).
@@ -137,3 +138,17 @@ export function wetLater(w: Weather, nowIso: string) {
 }
 // Work that the weather stops: on the roof or outside the building.
 export const OUTSIDE_WORK = /\b(roof|roofing|parapet|coping|gutter|leader|downspout|skylight|bulkhead|chimney|facade|fa[cç]ade|exterior|brick ?work|pointing|sidewalk|stoop|fire escape|yard|courtyard|siding|cornice)\b/i;
+
+// "Should I do the roof job tomorrow?": yes / no first, in plain words (owner, 3 Nov: "give me an answer").
+export function workAnswer(r: ReturnType<typeof weatherReport>, when: "today" | "tomorrow", work = "outside") {
+  if (!r.text || !("verdict" in r)) return "";
+  const job = work === "outside" ? "outside work" : `the ${work} work`;
+  const day = when === "today" ? "today" : "tomorrow";
+  const wet = r.wetWord.toLowerCase();
+  if (r.verdict === "freezing") return `No, not ${day}: it's freezing, so paint, caulk and patching won't set. Do inside jobs.`;
+  if (r.verdict === "wet") return `No, not ${day}: ${wet} from ${r.wetFrom}. Do inside jobs and keep ${job} for a dry day.`;
+  if (r.verdict === "until") return `Yes, but only early: ${wet} from ${r.wetFrom}. Start early and finish ${job} before then.`;
+  if (r.verdict === "windy") return `Better not up high ${day}: wind up to ${r.wind} mph. Ground-level ${job} is OK with care.`;
+  if (r.verdict === "hot") return `Yes, early: it gets hot ${day}, so do ${job} in the morning and take water breaks.`;
+  return `Yes, ${day} looks good for ${job}: no rain expected during work hours.`;
+}

@@ -3,11 +3,46 @@
   "updated": "2026-11-03",
   "ideas": [
     {
-      "id": "quiet-hours",
-      "icon": "🌙",
+      "id": "chat-speaks-up",
+      "icon": "🗣",
       "kind": "upgrade",
-      "title": "Quiet hours for alerts",
-      "why": "No phone alerts after 9 PM or before 7 AM, except 24-hour notices and emergencies."
+      "title": "The chat speaks up by itself",
+      "why": "When something changes (a new notice, a bid due in an hour, a tenant answered), the chat pops up with one short line and a button, then tucks away again."
+    },
+    {
+      "id": "morning-plan",
+      "icon": "☀️",
+      "kind": "upgrade",
+      "title": "Morning plan in 20 seconds",
+      "why": "At 7 AM the chat says today's jobs in the best order, bids due, notices and the weather, out loud, with one tap to start the route."
+    },
+    {
+      "id": "chat-next-question",
+      "icon": "➡️",
+      "kind": "upgrade",
+      "title": "The chat asks the next step",
+      "why": "After every answer it offers the next useful thing, like \"Text the tenant?\" or \"Open the affidavit?\", so you finish each job in a few taps."
+    },
+    {
+      "id": "claude-screenshot",
+      "icon": "🖼",
+      "kind": "upgrade",
+      "title": "See Claude's change before you try it",
+      "why": "When Claude finishes a request it puts a picture of the new screen in Your requests, so you see what changed at a glance."
+    },
+    {
+      "id": "tenant-reply-chat",
+      "icon": "💬",
+      "kind": "upgrade",
+      "title": "Tenant answers in the chat",
+      "why": "When a tenant texts back, the chat reads it to you and suggests the reply and the appointment, one tap to send."
+    },
+    {
+      "id": "price-coach",
+      "icon": "🎯",
+      "kind": "upgrade",
+      "title": "Price coach on every bid",
+      "why": "Next to the price box: the prices that won this kind of job in the last 6 months, and how likely your price is to win."
     },
     {
       "id": "next-paperwork",
