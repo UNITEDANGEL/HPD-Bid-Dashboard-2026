@@ -5,6 +5,7 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "✅ When Claude finishes one of your requests, or needs your answer, your phone gets an alert even with the app closed: \"✅ Claude finished your request\" or \"❓ Claude needs your answer\". Tap it and Your requests opens. With the app open you see it and hear it within a few seconds.",
         "🛠️ When something breaks on your phone, Claude now gets a short note about it by itself (no names or phone numbers), so it gets fixed without you having to explain it. If a screen ever crashes, you see \"This screen hit a problem\" with ↻ Try again and 🗺 Back to the map instead of a blank page.",
         "🤖 Ask the chat \"what's Claude doing?\" (or \"status of my request\"): the answer stays live, with the steps done, what it is doing now and the last note, and changes by itself while you watch (green Live dot).",
         "🔢 The cards in the chat are numbered now: say or type \"open number 2\" (or \"take me to the third one\") to open that one. \"The second one\" still reads it to you.",

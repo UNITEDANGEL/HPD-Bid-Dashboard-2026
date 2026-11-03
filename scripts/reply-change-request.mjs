@@ -9,7 +9,10 @@
 //     node scripts/reply-change-request.mjs --id <id> --idle                       (no longer working on it right now)
 //     node scripts/reply-change-request.mjs --id <id> --now "Running the tests"    (the live "Now:" line; also keeps the green light on)
 //     --status "Waiting for you"   (needs the owner's answer: not picked up again until they write)
+//     Done or Waiting for you sends one phone alert (scripts/claude-alert.mjs); --no-alert leaves it out.
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
+import { claudeAlert } from "./claude-alert.mjs";
 
 const URL_ = /HPD_STATUS_WORKER_URL = "([^"]+)"/.exec(fs.readFileSync(new URL("../lib/paperwork.ts", import.meta.url), "utf8"))[1];
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : ""; };
@@ -74,4 +77,9 @@ const reply = {
   updates: [...(old.updates || []), ...(text ? [{ at: new Date().toISOString(), text: text.slice(0, 3000) }] : [])].slice(-30),
 };
 const res = await fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REPLY-${id}`, patch: reply }) });
+const alert = res.ok && !flag("no-alert") ? claudeAlert(old.status, reply, all[`CHANGE-REQUEST-${id}`]?.text) : null;
+if (alert) {
+  const out = spawnSync(process.execPath, ["scripts/send-push.mjs", "--alert", "--title", alert.title, "--body", alert.body, "--url", alert.url], { cwd: new URL("..", import.meta.url), encoding: "utf8" });
+  console.log(`Phone alert: ${(out.stdout || out.stderr || "").trim().split("\n").pop()}`);
+}
 console.log(res.ok ? `Replied to ${id}: ${reply.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length}` : ""}${text ? " + update" : ""}${reply.workingAt ? " · working now" : ""}` : `Failed: HTTP ${res.status}`);

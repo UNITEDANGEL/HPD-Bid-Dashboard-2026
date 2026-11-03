@@ -15,7 +15,9 @@ import { sendSms, smsReady, usPhone } from "../server/tenant-sms.mjs";
 
 const ROOT = process.cwd();
 const DRY = process.argv.includes("--dry-run");
-const TEST = process.argv.includes("--test");
+const ALERT = process.argv.includes("--alert"); // one alert to every phone: --title "…" --body "…" --url "/map/…" (Claude finished a request)
+const TEST = process.argv.includes("--test") || ALERT;
+const argOf = (n) => { const i = process.argv.indexOf(`--${n}`); return i > 0 ? process.argv[i + 1] || "" : ""; };
 const BRIEF_NOW = process.argv.includes("--briefing"); // the morning briefing right now (owner asked to see it)
 const WRAP_NOW = process.argv.includes("--wrapup");
 const MONEY_NOW = process.argv.includes("--money"); // the Friday money report right now // the evening wrap-up right now // one test alert to every phone, nothing else (owner asked to try it)
@@ -376,7 +378,8 @@ async function main() {
       fresh.push(...await autoTextAwards({ awards: alerts.filter((a) => String(a.tag || "").startsWith("a-")), tenants, records, addresses, descriptions, loadLib, save }));
     } catch (e) { console.log(`automatic tenant texts skipped: ${e.message}`); }
   }
-  if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
+  if (ALERT) fresh.push({ key: "alert", kind: "message", title: argOf("title").slice(0, 80) || "🤖 Claude", body: argOf("body").slice(0, 240), url: argOf("url") || "/map/?view=all&map=1", tag: "hpd-claude" });
+  else if (TEST) fresh.push({ key: "test", kind: "award", title: "💰 Test alert from HPD Field", body: "Phone alerts work. Wins ring cha-ching; notices, requests, rejections and new bids each have their own alert.", url: "/map/?view=all&map=1", tag: "hpd-test" });
   if (!fresh.length) { console.log("Phone alerts: nothing new."); return; }
   // Who gets them: the phones that turned alerts on (PUSH-<id> on the status server, encrypted).
   // Straight from storage (/push-subs); the combined list (/overrides) can miss a phone saved at a busy moment.
@@ -404,7 +407,7 @@ async function main() {
     }
   }
   if (!TEST && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW) fs.writeFileSync(STATE, JSON.stringify(nextState));
-  else console.log(`${BRIEF_NOW ? "Morning briefing" : WRAP_NOW ? "Evening wrap-up" : MONEY_NOW ? "Friday money report" : "Test alert"} sent to ${subs.length} phone(s).`);
+  else console.log(`${BRIEF_NOW ? "Morning briefing" : WRAP_NOW ? "Evening wrap-up" : MONEY_NOW ? "Friday money report" : ALERT ? "Alert" : "Test alert"} sent to ${subs.length} phone(s).`);
 }
 
 if (/send-push\.mjs$/.test(process.argv[1] || "")) {

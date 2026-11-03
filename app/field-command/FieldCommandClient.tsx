@@ -2232,6 +2232,12 @@ export default function FieldCommandClient() {
     else if (go === "job") { closeScreens("board"); setBoardShow("all"); setBoardFocus(omo.toUpperCase()); setBoardOpen(true); }
     else if (go === "requests") { closeScreens(); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); }
   };
+  // The phone alert "Claude finished your request" / "needs your answer" opens Your requests (…&requests=1).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("requests") !== "1") return;
+    goTo("requests");
+    try { window.history.replaceState(null, "", window.location.pathname); } catch { /* old browser */ }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 🤖 Claude's progress on your requests comes to you (27 Oct, "keep upgrading"): the list is looked at every 2 minutes
   // while the app is open (one cached read on the status server), and a new step or note pops up like any alert.
   // While a request is open (30 Oct, "live request updates, so I know what's going on in the background"): every 20 s.
@@ -2331,7 +2337,7 @@ export default function FieldCommandClient() {
     try { localStorage.setItem("hpd-claude-heard", next); } catch { /* private mode */ }
     if (!fresh.length) return;
     const last = fresh[fresh.length - 1];
-    const n: AppNotice = { kind: "claude", go: "requests", title: `🤖 Claude: ${last.t.status}${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ""}`, text: last.u.text.slice(0, 160) };
+    const n: AppNotice = { kind: "claude", go: "requests", title: `${last.t.status === "Done" ? "✅ Claude finished your request" : last.t.status === "Waiting for you" ? "❓ Claude needs your answer" : `🤖 Claude: ${last.t.status}`}${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ""}`, text: last.u.text.slice(0, 160) };
     addToLog(n);
     ring(n);
     const shownAt = { ...n, at: Date.now() };
