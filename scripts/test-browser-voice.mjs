@@ -60,7 +60,7 @@ try {
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
     await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
     while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
-    await page.locator('[data-hpd-smoke="fc-ai-orb"]').click();
+    await page.locator('[data-hpd-smoke="fc-chatbar-mic"]').click();
     await page.locator('[data-hpd-smoke="fc-agent-type-btn"]').click();
     await page.locator('[data-hpd-smoke="fc-agent-type-input"]').fill("is alternate side on today");
     await page.locator('[data-hpd-smoke="fc-agent-type-send"]').click();

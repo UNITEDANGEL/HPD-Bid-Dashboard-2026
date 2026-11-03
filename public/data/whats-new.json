@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 3, 2026",
+      "title": "Claude in the middle, live every few seconds",
+      "items": [
+        "🤖 The middle button at the bottom is now Claude (it was a second ✨ AI button that did the same as the chat bar's 🎙). It turns green and says Working while Claude builds something, shows ❓ when Claude needs your answer, and is grey when the office computer is off. Tap it for your requests.",
+        "⚡ See what Claude is doing right now: the card on the map says the step it's on (\"Changing the screen\", \"Testing on my computer\", \"Sending it live\"), with the seconds counting, and the steps it just finished. It updates by itself every few seconds while Claude works. Ask the chat \"what's Claude doing?\" any time.",
+        "🅿️ \"No ASP\" now says it in plain words: \"No street cleaning · park free\"."
+      ]
+    },
+    {
+      "date": "Nov 3, 2026",
       "title": "Ask the app what changed",
       "items": [
         "💵 Ask the chat \"how much will HPD pay me this month?\" (or \"money forecast\"): it adds up what PIP still owes you, takes out what rejections are holding, and says what HPD usually pays you in a month. It says it is a guess, and points you to the rejections to fix.",

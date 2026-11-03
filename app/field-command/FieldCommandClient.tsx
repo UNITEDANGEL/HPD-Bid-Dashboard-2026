@@ -204,6 +204,19 @@ function SecondsAgo({ at, bare }: { at: string; bare?: boolean }) {
   const text = s < 60 ? `${s} s ago` : s < 3600 ? `${Math.floor(s / 60)} min ${s % 60} s ago` : `${Math.floor(s / 3600)} h ago`;
   return bare ? <>{text}</> : <small className="fc-seconds-ago">· {text}</small>;
 }
+// 🤖 Claude right now (owner, 3 Nov: "I need to know every second what's going on"): what Claude is doing on the office
+// computer, written by scripts/claude-now.mjs as it works (CLAUDE-NOW). Fresh = said in the last 10 minutes.
+type ClaudeNow = { at: string; text: string; task: string; state: string; log: { at: string; text: string }[] };
+const claudeNowFresh = (n: ClaudeNow | null) => Boolean(n && n.state === "working" && n.text && Date.now() - Date.parse(n.at) < 10 * 60000);
+function ClaudeNowLines({ now }: { now: ClaudeNow }) {
+  const before = now.log.filter((l) => l.text !== now.text).slice(-3).reverse();
+  return (
+    <span className="fc-claude-now" data-hpd-smoke="fc-claude-now">
+      <span className="fc-claude-now-main"><span className="fc-working-dots" aria-hidden="true"><i /><i /><i /></span><b data-hpd-smoke="fc-claude-now-text">{now.text}</b> <SecondsAgo at={now.at} /></span>
+      {before.length ? <span className="fc-claude-now-log" data-hpd-smoke="fc-claude-now-log">{before.map((l) => <span key={l.at}>✓ {l.text} <SecondsAgo at={l.at} /></span>)}</span> : null}
+    </span>
+  );
+}
 const claudeIsOn = (seenAt: string) => Boolean(seenAt) && Date.now() - Date.parse(seenAt) < CLAUDE_ON_MS;
 const pickupLabel = (seenAt: string) => {
   if (claudeIsOn(seenAt)) return "Claude is on now: it starts on it within a minute or two";
@@ -1458,12 +1471,18 @@ export default function FieldCommandClient() {
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
   const [claudeSeenAt, setClaudeSeenAt] = useState("");
+  const [claudeNow, setClaudeNow] = useState<ClaudeNow | null>(null);
+  const claudeNowRef = useRef(false);
   const [changeCheckedAt, setChangeCheckedAt] = useState(0);
   const loadChangeThreads = async () => {
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
       const all = (await r.json())?.overrides || {};
       setClaudeSeenAt(String((all["CLAUDE-HEARTBEAT"] as { at?: string } | undefined)?.at || ""));
+      const cn = all["CLAUDE-NOW"] as Partial<ClaudeNow> | undefined;
+      const nowValue: ClaudeNow | null = cn?.text ? { at: String(cn.at || ""), text: String(cn.text).slice(0, 120), task: String(cn.task || "").slice(0, 120), state: String(cn.state || ""), log: Array.isArray(cn.log) ? cn.log.slice(-8).map((l) => ({ at: String(l?.at || ""), text: String(l?.text || "").slice(0, 120) })) : [] } : null;
+      setClaudeNow(nowValue);
+      claudeNowRef.current = claudeNowFresh(nowValue);
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
         const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string; now?: { at?: string; text?: string } } | undefined;
         return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || ""), now: rep?.now?.text ? { at: String(rep.now.at || ""), text: String(rep.now.text) } : null,
@@ -2423,14 +2442,14 @@ export default function FieldCommandClient() {
   useEffect(() => {
     if (!whatsNewOpen) return;
     let last = Date.now();
-    const t = window.setInterval(() => { if (document.visibilityState === "visible" && Date.now() - last >= (claudeWorkingRef.current ? 2500 : 14500)) { last = Date.now(); void loadChangeThreads(); } }, 3000);
+    const t = window.setInterval(() => { if (document.visibilityState === "visible" && Date.now() - last >= (claudeWorkingRef.current || claudeNowRef.current ? 2500 : 14500)) { last = Date.now(); void loadChangeThreads(); } }, 3000);
     return () => window.clearInterval(t);
   }, [whatsNewOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     let last = Date.now();
     const look = () => {
       if (document.visibilityState !== "visible") return;
-      const wait = claudeWorkingRef.current ? 2500 : claudeLiveRef.current ? 19500 : 115000;
+      const wait = claudeWorkingRef.current || claudeNowRef.current ? 2500 : claudeLiveRef.current ? 19500 : 115000;
       if (Date.now() - last < wait) return;
       last = Date.now();
       void loadChangeThreads();
@@ -2447,7 +2466,7 @@ export default function FieldCommandClient() {
     if (!agentLive) return;
     let n = 0;
     const t = window.setInterval(() => {
-      if (++n % 7 === 0 && !claudeWorkingRef.current && document.visibilityState === "visible") void loadChangeThreads();
+      if (++n % 7 === 0 && !claudeWorkingRef.current && !claudeNowRef.current && document.visibilityState === "visible") void loadChangeThreads();
       setAgent((a) => (a && a.live === "claude" ? { ...a, reply: claudeStatusText() } : a));
     }, 2000);
     return () => window.clearInterval(t);
@@ -5218,6 +5237,10 @@ export default function FieldCommandClient() {
   }
   // Claude's requests in one answer (newest working first): what it's doing now, the steps, the last note.
   function claudeStatusText() {
+    const live = claudeNowFresh(claudeNow) && claudeNow ? `⚡ Claude right now: ${claudeNow.text}${claudeNow.task ? ` (on “${claudeNow.task}”)` : ""}.\n` : "";
+    return live + claudeThreadsText();
+  }
+  function claudeThreadsText() {
     const list = changeThreads || [];
     const act = (t: ChangeThread) => [t.at, t.workingAt, t.now?.at || "", ...t.updates.map((u) => u.at)].filter(Boolean).sort().slice(-1)[0] || "";
     const open = list.filter((t) => t.status !== "Done").sort((a, b) => act(b).localeCompare(act(a)));
@@ -5562,9 +5585,19 @@ export default function FieldCommandClient() {
               >
                 {make[dockSlots[0]]("fc-dock-btn")}
                 {make[dockSlots[1]]("fc-dock-btn")}
-                {!agent ? <button type="button" className={`fc-ai-orb fc-dock-ai${listening ? " is-on" : ""}`} data-hpd-smoke="fc-ai-orb" aria-label="Talk to your AI helper" title="Talk to your AI helper" onClick={startAgentChat}>
-            <span className="fc-ai-orb-core" aria-hidden="true">✨</span><span className="fc-fab-label">AI</span>
-          </button> : <span className="fc-dock-gap" aria-hidden="true" />}
+                {/* 🤖 Claude (owner, 3 Nov: "the AI button, isn't that the same as your chat bot?"): talking to the AI is the
+                    chat bar right above; this middle button is Claude, who builds the app: green and turning while it works,
+                    ❓ when it needs your answer, grey when the office computer is off. Opens Your requests. */}
+                {!agent ? (() => {
+                  const asks = (changeThreads || []).filter((x) => x.status === "Waiting for you").length;
+                  const busy = claudeNowFresh(claudeNow) || (changeThreads || []).some((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000);
+                  const mode = asks ? "ask" : busy ? "working" : claudeIsOn(claudeSeenAt) || claudeNowFresh(claudeNow) ? "on" : "off";
+                  return (
+                    <button type="button" className={`fc-ai-orb fc-dock-ai fc-claude-orb is-${mode}`} data-hpd-smoke="fc-claude-orb" data-mode={mode} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. Tap for your requests`} onClick={() => { unlockChime(); goTo("requests", ""); }}>
+                      <span className="fc-ai-orb-core" aria-hidden="true">🤖{asks ? <b className="fc-claude-orb-badge">❓</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                    </button>
+                  );
+                })() : <span className="fc-dock-gap" aria-hidden="true" />}
                 {make[dockSlots[2]]("fc-dock-btn")}
                 <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="All: every screen" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
               <MenuIcon /><span className="fc-fab-label">All</span>{boardUrgent.length || bidsDue.today || followReport.counts.overdue || newReplies ? <span className="fc-more-dot" aria-hidden="true" /> : null}
@@ -5574,7 +5607,7 @@ export default function FieldCommandClient() {
             const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
             const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
               { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
-              { key: "parking", icon: "🅿️", label: "Parking (ASP)", info: aspOffToday ? `No ASP today · ${aspOffToday}` : "In effect today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
+              { key: "parking", icon: "🅿️", label: "Parking (street cleaning)", info: aspOffToday ? `No street cleaning today · ${aspOffToday}` : "Street cleaning rules today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
               { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
               { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
@@ -5662,7 +5695,7 @@ export default function FieldCommandClient() {
               ) : null}
               {aspOffToday ? (
                 <button type="button" className="fc-asp-chip" data-hpd-smoke="fc-asp-chip" aria-label={`No alternate side parking today (${aspOffToday}). Tap for details`} onClick={() => { unlockChime(); agentRef.current("is alternate side on today"); }}>
-                  <span aria-hidden="true">🅿️</span><b>No ASP</b>
+                  <span aria-hidden="true">🅿️</span><b>No street cleaning</b><small>park free</small>
                 </button>
               ) : null}
             </div>
@@ -5736,7 +5769,22 @@ export default function FieldCommandClient() {
             claudeLiveRef.current = live.some((t) => t.status !== "Done" && t.status !== "Waiting for you");
             claudeWorkingRef.current = live.some((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
             const t = live[0];
-            if (!t || claudeLiveHidden === `${t.id}|${activity(t)}` || selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
+            const nowOn = claudeNowFresh(claudeNow) && claudeNow ? claudeNow : null;
+            if (selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
+            if ((!t || t.status === "Done") && nowOn) {
+              if (claudeLiveHidden === `now|${nowOn.task}`) return null;
+              return (
+                <div className="fc-claude-live is-working" data-hpd-smoke="fc-claude-live" data-kind="now" role="status" aria-live="polite">
+                  <button type="button" className="fc-claude-live-main" onClick={() => goTo("requests", "")}>
+                    <b><i className="fc-claude-live-dot" aria-hidden="true" />🤖 Claude · working now</b>
+                    {nowOn.task ? <span className="fc-claude-live-req">“{nowOn.task.slice(0, 70)}”</span> : null}
+                    <ClaudeNowLines now={nowOn} />
+                  </button>
+                  <button type="button" className="fc-claude-live-x" aria-label="Hide until the next job" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`now|${nowOn.task}`)}>×</button>
+                </div>
+              );
+            }
+            if (!t || claudeLiveHidden === `${t.id}|${activity(t)}`) return null;
             const done = t.steps.filter((s) => s.done).length;
             const nowStep = t.steps.find((s) => !s.done);
             const working = t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000;
@@ -5755,7 +5803,7 @@ export default function FieldCommandClient() {
                     </span>
                   ) : null}
                   {state === "working" ? <WorkingClock since={t.workingAt} /> : null}
-                  {state === "working" && t.now ? <span className="fc-claude-live-now" data-hpd-smoke="fc-claude-live-now">⚡ {t.now.text.slice(0, 120)} <SecondsAgo at={t.now.at} /></span> : null}
+                  {nowOn && state !== "done" ? <ClaudeNowLines now={nowOn} /> : state === "working" && t.now ? <span className="fc-claude-live-now" data-hpd-smoke="fc-claude-live-now">⚡ {t.now.text.slice(0, 120)} <SecondsAgo at={t.now.at} /></span> : null}
                   {state === "working" && changeCheckedAt ? <span className="fc-claude-live-checked" data-hpd-smoke="fc-claude-live-checked">🔄 Live: checked <SecondsAgo at={new Date(changeCheckedAt).toISOString()} bare /></span> : null}
                   {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
                 </button>
@@ -6672,7 +6720,9 @@ export default function FieldCommandClient() {
             </section>
             <section className="fc-change-threads" data-hpd-smoke="fc-change-threads">
               <h4>💬 Your requests and progress</h4>
-              <p className={`fc-claude-online is-${claudeIsOn(claudeSeenAt) ? "on" : "off"}`} data-hpd-smoke="fc-claude-online"><i aria-hidden="true" />{claudeIsOn(claudeSeenAt) ? "Claude is on: checking for requests every 20 seconds. This list updates by itself." : pickupLabel(claudeSeenAt)}</p>
+              <p className={`fc-claude-online is-${claudeIsOn(claudeSeenAt) ? "on" : "off"}`} data-hpd-smoke="fc-claude-online"><i aria-hidden="true" />{claudeIsOn(claudeSeenAt) || claudeNowFresh(claudeNow) ? "Claude is on: checking for requests every 20 seconds. This list updates by itself." : pickupLabel(claudeSeenAt)}</p>
+              {claudeNowFresh(claudeNow) && claudeNow ? <div className="fc-claude-now-box" data-hpd-smoke="fc-claude-now-box"><small>🤖 Claude right now{claudeNow.task ? ` · ${claudeNow.task}` : ""}</small><ClaudeNowLines now={claudeNow} /></div>
+                : claudeNow?.state === "idle" && Date.now() - Date.parse(claudeNow.at) < 6 * 3600000 ? <p className="fc-follow-note" data-hpd-smoke="fc-claude-now-idle">✅ Claude: {claudeNow.text} <SecondsAgo at={claudeNow.at} /></p> : null}
               {changeThreads === null ? <p className="fc-follow-note">Couldn&apos;t load them right now.</p>
                 : !changeThreads.length ? (myRequests.length ? <ul>{myRequests.slice(0, 5).map((r) => <li key={r.at}>{r.text}</li>)}</ul> : <p className="fc-follow-note">No requests yet.</p>)
                 : changeThreads.map((t) => (

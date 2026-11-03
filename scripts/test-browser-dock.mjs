@@ -23,7 +23,7 @@ try {
   const dock = page.locator('[data-hpd-smoke="fc-dock"]');
   await dock.waitFor({ timeout: 20000 });
   const labels = (await dock.locator(".fc-fab-label").allInnerTexts()).map((t) => t.trim());
-  assert.deepEqual(labels, ["Jobs", "Bids", "AI", "Notices", "All"]);
+  assert.deepEqual(labels, ["Jobs", "Bids", "Claude", "Notices", "All"]);
   const box = await dock.boundingBox();
   assert.ok(Math.abs(box.y + box.height - 844) < 2 && box.width >= 389, `dock along the bottom: ${JSON.stringify(box)}`);
   // Round buttons like Map / Locate (owner, 28 Oct): dark text on a white label, under a colored circle.
@@ -51,7 +51,7 @@ try {
   assert.ok(tileBox.width >= 100 && tileBox.height >= 100, `big tiles: ${JSON.stringify(tileBox)}`);
   assert.match(await sheet.locator('[data-hpd-smoke="fc-follow-open"]').innerText(), /Follow-up\s*\d+/, "Follow-up shows its count");
   const rows = (await sheet.locator(".fc-more-row b").allInnerTexts()).map((t) => t.trim());
-  for (const want of ["Weather", "Parking (ASP)", "Year and dates", "Talk to the AI", "Bottom buttons", "Map style", "Where am I"]) assert.ok(rows.includes(want), `All has ${want}: ${rows.join(", ")}`);
+  for (const want of ["Weather", "Parking (street cleaning)", "Year and dates", "Talk to the AI", "Bottom buttons", "Map style", "Where am I"]) assert.ok(rows.includes(want), `All has ${want}: ${rows.join(", ")}`);
   for (const gone of ["Today's route", "My stats", "What's new"]) assert.ok(!rows.includes(gone), `${gone} is a tile, not a row too`);
   await sheet.locator('[data-hpd-smoke="fc-stats-open"]').click();
   await page.locator('[data-hpd-smoke="fc-stats-sheet"]').waitFor({ timeout: 10000 });
@@ -79,7 +79,7 @@ try {
   }
   assert.deepEqual(errors, []);
   await c.close();
-  console.log(`PASS dock: one row Jobs · Bids · AI · Notices · All at the bottom (readable), no strip; All has 6 big round colored tiles that open their screens plus ${rows.length} rows (weather, parking, year too), Map / Locate / Year still on the map, a job card hides the dock`);
+  console.log(`PASS dock: one row Jobs · Bids · Claude · Notices · All at the bottom (readable), no strip; All has 6 big round colored tiles that open their screens plus ${rows.length} rows (weather, parking, year too), Map / Locate / Year still on the map, a job card hides the dock`);
 } finally {
   await browser.close();
 }

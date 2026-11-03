@@ -42,7 +42,7 @@ try {
     const { c, page, errors } = await open({ at: `${holiday}T17:00:00Z` });
     const chip = page.locator('[data-hpd-smoke="fc-asp-chip"]');
     await chip.waitFor({ timeout: 20000 });
-    assert.match(await chip.innerText(), /No ASP/);
+    assert.match(await chip.innerText(), /No street cleaning/);
     await chip.click();
     await page.waitForFunction((name) => (document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").includes(`suspended (${name})`), ASP_2026[holiday], { timeout: 15000 });
     assert.deepEqual(errors, []);
@@ -62,7 +62,7 @@ try {
     assert.deepEqual(errors, []);
     await c.close();
   }
-  console.log(`PASS ASP chip + drive time: ${holiday ? `${ASP_2026[holiday]} (${holiday}) shows 🅿️ No ASP (tap: suspended, the holiday named)` : "no holiday left in the 2026 calendar (chip part skipped)"}, a normal Wednesday none; the Next pill says 🚗 N min from the phone's location`);
+  console.log(`PASS ASP chip + drive time: ${holiday ? `${ASP_2026[holiday]} (${holiday}) shows 🅿️ No street cleaning (tap: suspended, the holiday named)` : "no holiday left in the 2026 calendar (chip part skipped)"}, a normal Wednesday none; the Next pill says 🚗 N min from the phone's location`);
 } finally {
   await browser.close();
 }

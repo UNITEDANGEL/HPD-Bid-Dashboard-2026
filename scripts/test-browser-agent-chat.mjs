@@ -42,22 +42,21 @@ try {
   await wx.waitFor({ timeout: 15000 });
   assert.match(await wx.innerText(), /60°/);
 
-  // 0. ✨ The AI on the map: one tap opens the helper already listening, most pressing thing first; what you say is answered.
-  const orb = page.locator('[data-hpd-smoke="fc-ai-orb"]');
-  assert.ok(await orb.isVisible(), "AI button on the map");
-  const box = await orb.boundingBox();
-  assert.ok(box && box.x >= 0 && box.y > 300 && box.y + box.height < 844, `AI button on screen: ${JSON.stringify(box)}`);
+  // 0. 🎙 in the chat bar (the one way to talk to the AI; 3 Nov the middle button became 🤖 Claude): one tap opens the
+  // helper already listening, most pressing thing first; what you say is answered.
+  assert.ok(await page.locator('[data-hpd-smoke="fc-claude-orb"]').isVisible(), "🤖 Claude in the middle of the bottom row");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-ai-orb"]').count(), 0, "no second AI button");
+  const orb = page.locator('[data-hpd-smoke="fc-chatbar-mic"]');
+  assert.ok(await orb.isVisible(), "🎙 in the chat bar");
   await page.evaluate(() => { window.__hear = "what do I have today"; window.__hearDelay = 1500; });
   await orb.click();
-  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-heard"]').innerText(), "✨ Your AI helper");
   assert.match(await reply.innerText(), /^Hi! /);
-  assert.equal(await orb.count(), 0, "the button hides while the helper is open");
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-talk"]').getAttribute("aria-pressed"), "true", "conversation mode on");
   await page.waitForFunction(() => /what do I have today/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
   if (shots) await page.screenshot({ path: `${shots}/agent-orb.png` });
   await page.evaluate(() => { window.__hear = ""; window.__hearDelay = 0; });
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
-  assert.ok(await orb.isVisible(), "AI button back after closing");
+  assert.ok(await orb.isVisible(), "🎙 back after closing");
 
   // 1. Said: "Tell cloud to …" (how the iPhone often hears Claude).
   await page.evaluate(() => { window.__hear = "Tell cloud to make the zoom smoother when I close a job card"; });
