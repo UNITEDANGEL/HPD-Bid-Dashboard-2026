@@ -43,7 +43,7 @@ try {
   // 1) Done while the app is open.
   overrides[`CHANGE-REPLY-${id}`] = { status: "Done", workingAt: "", now: null, updates: [...overrides[`CHANGE-REPLY-${id}`].updates, { at: new Date().toISOString(), text: "The pins are bigger now. Pull down to update." }], steps: [{ text: "Build", done: true }, { text: "Test", done: true }] };
   const t0 = Date.now();
-  await page.waitForFunction(() => /Claude finished your request/.test(document.querySelector('[data-hpd-smoke="fc-hpd-ping"]')?.textContent || ""), null, { timeout: 12000 });
+  await page.waitForFunction(() => /Claude finished your request/.test(document.querySelector('[data-hpd-smoke="fc-hpd-ping"]')?.textContent || ""), null, { timeout: 30000 }); // another alert can hold the banner for a few seconds first
   const lag = Date.now() - t0;
   assert.match(await page.locator('[data-hpd-smoke="fc-hpd-ping"]').innerText(), /pins are bigger now/);
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/claude-done.png` }).catch(() => {});
