@@ -29,7 +29,7 @@ try {
   // No black bar: the dock itself is see-through.
   const bg = await page.locator('[data-hpd-smoke="fc-dock"]').evaluate((el) => getComputedStyle(el).backgroundColor);
   assert.match(bg, /rgba\(0, 0, 0, 0\)|transparent/, `dock background see-through: ${bg}`);
-  assert.deepEqual(await dockLabels(), ["Jobs", "Bids", "AI", "Notices", "All"]);
+  assert.deepEqual(await dockLabels(), ["Jobs", "Bids", "Claude", "Notices", "All"]);
 
   // Hold Bids: the picker opens on its slot, the bids list does not open.
   const bids = page.locator('[data-hpd-smoke="fc-dock"] [data-hpd-smoke="fc-bids-open"]');
@@ -51,7 +51,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-dock-pick-1-follow"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-done"]').click();
   await edit.waitFor({ state: "detached" });
-  assert.deepEqual(await dockLabels(), ["Jobs", "Follow-up", "AI", "Notices", "All"]);
+  assert.deepEqual(await dockLabels(), ["Jobs", "Follow-up", "Claude", "Notices", "All"]);
   const tiles = await tileLabels();
   assert.ok(tiles.includes("Bids") && !tiles.includes("Follow-up"), `Bids moved under All: ${tiles}`);
   // Bids still works from its tile; Follow-up works from the dock.
@@ -69,16 +69,16 @@ try {
   await edit.waitFor({ timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-dock-pick-0-notices"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-done"]').click();
-  assert.deepEqual(await dockLabels(), ["Notices", "Follow-up", "AI", "Jobs", "All"]);
+  assert.deepEqual(await dockLabels(), ["Notices", "Follow-up", "Claude", "Jobs", "All"]);
 
   // Stays after a reload.
   await load();
-  assert.deepEqual(await dockLabels(), ["Notices", "Follow-up", "AI", "Jobs", "All"]);
+  assert.deepEqual(await dockLabels(), ["Notices", "Follow-up", "Claude", "Jobs", "All"]);
   assert.match(await (await page.locator('[data-hpd-smoke="fc-more-open"]').click(), page.locator('[data-hpd-smoke="fc-more-dock"]')).innerText(), /Notices · Follow-up · Jobs/);
   await page.locator('[data-hpd-smoke="fc-more-dock"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-reset"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-done"]').click();
-  assert.deepEqual(await dockLabels(), ["Jobs", "Bids", "AI", "Notices", "All"]);
+  assert.deepEqual(await dockLabels(), ["Jobs", "Bids", "Claude", "Notices", "All"]);
   assert.deepEqual(errors, []);
   await c.close();
   console.log("PASS dock swap: see-through bottom; hold a bottom button -> picker on that slot (no screen opens); swap to Follow-up, Bids moves under All and still opens; swapping between slots; kept after reload; All -> Bottom buttons; reset");
