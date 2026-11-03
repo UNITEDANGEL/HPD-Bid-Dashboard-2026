@@ -367,6 +367,7 @@ jobs:
             scripts/test-browser-app-errors.mjs \
             scripts/test-browser-claude-done.mjs \
             scripts/test-browser-claude-answer.mjs \
+            scripts/test-browser-catch-up.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \
