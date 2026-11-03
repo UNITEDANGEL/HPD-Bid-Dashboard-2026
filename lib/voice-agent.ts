@@ -5,6 +5,7 @@
 import { spokenSearch } from "./job-search";
 
 import { parseWhen, parsePastDay } from "./voice-when";
+import { isNotesQuestion, parseRemember } from "./voice-notes";
 
 export type AgentCommand =
   | { intent: "forecast" }
@@ -18,6 +19,8 @@ export type AgentCommand =
   | { intent: "bid-advice" }
   | { intent: "tenants-waiting" }
   | { intent: "help" }
+  | { intent: "remember"; text: string }
+  | { intent: "my-notes" }
   | { intent: "whats-next" }
   | { intent: "claude-status" }
   | { intent: "claude-works" }
@@ -114,6 +117,12 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t) && !/driving|hands[- ]free/.test(t)) return { intent: "no" };
+  // 🧠 Notes the chat keeps for you (3 Nov idea): "remember the super at 123 Main is in the basement".
+  if (isNotesQuestion(t)) return { intent: "my-notes" };
+  {
+    const note = parseRemember(String(heard || "").trim().replace(/[.!?]+$/, ""));
+    if (note && !/^(?:to|for) (?:claude|cloud)\b/i.test(note)) return { intent: "remember", text: note };
+  }
   // Checking Claude's finished upgrade by voice (2 Nov): "it works", "looks good", "the fix works" -> 👍; "not right, the
   // button is still small", "it doesn't work, …" -> sent to Claude on that request.
   if (/^(?:(?:yes,? )?(?:it|that|this) works|(?:it'?s|that'?s) working|works (?:great|now|fine|perfect(?:ly)?)|(?:it |that |this )?looks (?:good|great)|(?:the )?(?:upgrade|update|fix|change) (?:works|is (?:good|working|great)))(?: now| great| fine| perfect(?:ly)?)?(?:,? (?:thanks|thank you)(?: claude)?)?$/.test(t)) return { intent: "claude-works" };

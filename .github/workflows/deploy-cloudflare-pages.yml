@@ -97,6 +97,7 @@ jobs:
           node scripts/test-phone-storage.mjs
           node scripts/test-weather.mjs
           node scripts/test-voice-next-tenant.mjs
+          node scripts/test-voice-notes.mjs
           node scripts/test-voice-route.mjs
           node scripts/test-voice-chat-map.mjs
           node scripts/test-voice-chat-live.mjs

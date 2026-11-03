@@ -67,6 +67,7 @@ import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
+import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
 import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
 import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater } from "../../lib/weather";
 import { aspAnswer, aspOff } from "../../lib/asp";
@@ -4405,6 +4406,16 @@ export default function FieldCommandClient() {
       speak(reply, 200, () => { if (convoRef.current) startListening(); });
       return;
     }
+    if (cmd.intent === "remember") {
+      saveNote(cmd.text);
+      answer(`🧠 Got it, I'll remember: ${cmd.text}. It stays on this phone, and I'll bring it up when that address comes up.`);
+      return;
+    }
+    if (cmd.intent === "my-notes") {
+      const list = loadNotes().slice(-8).reverse();
+      answer(list.length ? `Your notes:\n${list.map((n) => `• ${n.text}`).join("\n")}` : "You haven't told me to remember anything yet. Say: remember the super at 123 Main is in the basement.");
+      return;
+    }
     if (cmd.intent === "ideas") {
       void loadIdeas().then((list) => {
         const open = openIdeas(list).slice(0, 3);
@@ -4773,7 +4784,8 @@ export default function FieldCommandClient() {
         const sum = jobSummary(scope);
         const plain = sum.lines.map(lineText).join(". ");
         const where = [...sum.where, ...sum.rooms].join(", ");
-        answer(`${jobAddress(job)}. ${plain ? `The job: ${plain}.` : ""}${where ? ` Where: ${where}.` : ""} HPD says: ${scope.replace(/\s+/g, " ").slice(0, 400)}`);
+        const mine = notesFor(jobAddress(job), loadNotes());
+        answer(`${jobAddress(job)}. ${mine.length ? `You told me: ${mine.map((n) => n.text).join("; ")}. ` : ""}${plain ? `The job: ${plain}.` : ""}${where ? ` Where: ${where}.` : ""} HPD says: ${scope.replace(/\s+/g, " ").slice(0, 400)}`);
         return;
       }
       // The day it happened and who refused, as on the job card (31 Oct): a refusal needs the description first.

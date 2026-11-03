@@ -10,13 +10,6 @@
       "why": "No phone alerts after 9 PM or before 7 AM, except 24-hour notices and emergencies."
     },
     {
-      "id": "chat-remembers",
-      "icon": "🧠",
-      "kind": "upgrade",
-      "title": "The chat remembers what you tell it",
-      "why": "Say \"remember the super at 123 Main is in the basement\" and it tells you next time you go there. Kept on your phone only."
-    },
-    {
       "id": "next-paperwork",
       "icon": "🧭",
       "kind": "upgrade",
@@ -106,6 +99,13 @@
       "kind": "upgrade",
       "title": "Quick answer buttons in chat",
       "why": "Tap one button like 'what is due today' instead of typing."
+    },
+    {
+      "id": "notes-on-card",
+      "icon": "📌",
+      "kind": "upgrade",
+      "title": "Chat notes show on the job card",
+      "why": "What you told the chat to remember about an address also shows on that job's card, so you see it before you knock."
     }
   ]
 }
