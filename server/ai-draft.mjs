@@ -139,3 +139,37 @@ export async function aiAnswer(env, ask, fetcher = fetch) {
   }
   return { ai: false, reason: "not-set-up" };
 }
+
+// 📷 Read a photo (owner, 3 Nov, pick 5 of making the chat smarter): a picture of a notice, invoice, work order or
+// sign, read by Cloudflare's own vision model (the free daily allowance; the phone allows 15 a day). Nothing is kept.
+// The model asks for its license to be accepted once ("agree"), done here when it says so.
+export const PHOTO_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+const PHOTO_SYSTEM = [
+  "You read photos for a NYC contractor who does HPD (Housing Preservation and Development) emergency repair jobs.",
+  "The photo is usually an HPD notice, a work order, an invoice, an affidavit, a building sign or the work itself.",
+  "Answer in plain short sentences: what it is, the job number (OMO, like EQ12345 or ER08092) if you see one,",
+  "dates and deadlines, amounts, and what to do next. If it's a photo of work, say what work it shows.",
+  "Never write people's names or phone numbers. Don't guess what you can't read: say it's unclear. At most 5 sentences.",
+].join("\n");
+export function photoFacts(body) {
+  const b64 = String(body?.image || "").replace(/^data:image\/[a-z]+;base64,/, "");
+  if (b64.length < 200 || b64.length > 2_000_000 || /[^A-Za-z0-9+/=]/.test(b64)) return null;
+  return { image: b64, question: clip(body?.question, 200).trim() || "What is this, and what should I do?" };
+}
+export const cleanPhoto = (t) => String(t || "").replace(/[*#`_]/g, "").replace(/(?:\+?1[\s.-]?)?\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g, "[number]").replace(/\s+/g, " ").trim().slice(0, 700);
+export async function aiReadPhoto(env, photo) {
+  if (!env?.AI) return { ai: false, reason: "not-set-up" };
+  const bin = atob(photo.image);
+  const bytes = new Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const input = { messages: [{ role: "system", content: PHOTO_SYSTEM }, { role: "user", content: photo.question }], image: bytes, max_tokens: 400 };
+  let result;
+  try { result = await env.AI.run(PHOTO_MODEL, input); }
+  catch (e) {
+    if (!/agree|licen[cs]e|5016/i.test(String(e?.message || e))) throw e;
+    await env.AI.run(PHOTO_MODEL, { prompt: "agree" });
+    result = await env.AI.run(PHOTO_MODEL, input);
+  }
+  const text = cleanPhoto(typeof result?.response === "string" ? result.response : "");
+  return text ? { ai: true, model: PHOTO_MODEL, text } : { ai: false, reason: "The AI couldn't read the photo." };
+}

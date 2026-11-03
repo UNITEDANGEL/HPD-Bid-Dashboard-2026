@@ -3,7 +3,7 @@
 // Only reachable through handleDriveAuth, after the owner/session/Google identity checks.
 
 import { readReplies, sendSms, smsReady } from "./tenant-sms.mjs";
-import { aiAnswer, aiDraft, askFacts, draftFacts } from "./ai-draft.mjs";
+import { aiAnswer, aiDraft, aiReadPhoto, askFacts, draftFacts, photoFacts } from "./ai-draft.mjs";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -395,6 +395,16 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       const b = await request.json().catch(() => ({}));
       if (!smsReady(env)) return reply({ ready: false, replies: [] });
       return reply({ ready: true, replies: env.HPD_DRIVE_SESSIONS ? await readReplies(env.HPD_DRIVE_SESSIONS, String(b?.since || "")) : [] });
+    }
+    if (action === "hpd-photo") {
+      // 📷 A photo for the helper to read (signed in only). Never kept, never changes anything.
+      const photo = photoFacts(await request.json().catch(() => null));
+      if (!photo) fail("Invalid photo.", 400);
+      try {
+        return reply(await aiReadPhoto(env, photo));
+      } catch (e) {
+        return reply({ ai: false, reason: `The AI didn’t read it (${e instanceof Error ? e.message.slice(0, 120) : "error"}).` });
+      }
     }
     if (action === "hpd-ask") {
       // A question to the voice helper: a short answer from the facts the phone sends. Never changes anything.

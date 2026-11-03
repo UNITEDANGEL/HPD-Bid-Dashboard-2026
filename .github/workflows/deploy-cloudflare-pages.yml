@@ -155,6 +155,7 @@ jobs:
           node scripts/test-tenant-sms.mjs
           node scripts/test-old-job-dates.mjs
           node scripts/test-ai-draft.mjs
+          node scripts/test-photo-ai.mjs
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs
           node scripts/test-notice-findings.mjs
@@ -371,6 +372,7 @@ jobs:
             scripts/test-browser-did-you-mean.mjs \
             scripts/test-browser-bid-usual.mjs \
             scripts/test-browser-driving.mjs \
+            scripts/test-browser-photo.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

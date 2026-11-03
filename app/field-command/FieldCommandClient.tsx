@@ -651,7 +651,7 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
   ["Out and about", ["what's the weather", "is it going to rain tomorrow", "how's the traffic", "how long to the next job", "is alternate side on today", "where's the nearest Home Depot", "how old is this building", "should I do the roof job today"]],
-  ["The app", ["tell Claude to make the buttons bigger", "send to Claude: add a dark mode"]],
+  ["The app", ["tell Claude to make the buttons bigger", "send to Claude: add a dark mode", "what's new", "what did I miss", "I'm driving", "read a photo"]],
 ];
 
 // Everything the helper knows how to do, for "Did you mean…?" (free questions for the AI left out).
@@ -1755,6 +1755,47 @@ export default function FieldCommandClient() {
       convoRef.current = false; setConvo(false); listenRef.current?.stop();
       if (say) { setAgent((a) => (a ? { ...a, heard: "🚗", reply: "Driving mode off. Tap ✨ or the chat when you need me." } : a)); speak("Driving mode off.", 200); }
     }
+  };
+  // 📷 Read a photo (3 Nov, owner's pick 5): the picture is made smaller on the phone (longest side 1280, JPEG),
+  // read by Cloudflare's own vision model (server/ai-draft aiReadPhoto, signed in only, nothing kept), and the answer
+  // is shown, said and turned into job cards. 15 a day on this phone keeps it inside the free allowance.
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const shrinkPhoto = async (file: File) => {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+      const k = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.naturalWidth * k); canvas.height = Math.round(img.naturalHeight * k);
+      canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/jpeg", 0.8);
+    } finally { URL.revokeObjectURL(url); }
+  };
+  const readPhoto = async (file?: File | null) => {
+    if (!file) return;
+    const heard = "📷 Photo";
+    const day = nyToday();
+    let used = { day: "", n: 0 };
+    try { used = { ...used, ...JSON.parse(localStorage.getItem("hpd-photo-reads") || "{}") }; } catch { /* private mode */ }
+    if (used.day === day && used.n >= 15) { setAgent({ heard, reply: "That's 15 photos today, the most I read in a day so it stays free. Try again tomorrow." }); return; }
+    setAgent({ heard, reply: "Reading the photo…" });
+    const again = () => { if (convoRef.current) startListening(); };
+    try {
+      const image = await shrinkPhoto(file);
+      const r = await fetch("/api/drive/hpd-photo", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401 || d.reconnectRequired) { setAgent({ heard, reply: "I read photos only when this phone is signed in with Google: tap Sign in below, then take the photo again.", signIn: true }); return; }
+      if (d.ai && d.text) {
+        try { localStorage.setItem("hpd-photo-reads", JSON.stringify({ day, n: (used.day === day ? used.n : 0) + 1 })); } catch { /* private mode */ }
+        const cards = omosIn(d.text).map((o) => chatCard(o)).filter((c): c is ChatCard => Boolean(c)).slice(0, 5);
+        if (cards.length) lastCardsRef.current = { cards, at: Date.now() };
+        chatRef.current = [...chatRef.current, { you: "(a photo)", helper: String(d.text).slice(0, 300), at: Date.now() }].slice(-8);
+        setAgent({ heard, reply: d.text, cards });
+        speak(d.text, 200, again);
+        return;
+      }
+      setAgent({ heard, reply: d.reason === "not-set-up" ? "Reading photos needs the AI switched on for the app." : `I couldn't read it. ${d.reason || ""} Try a closer, brighter photo.`.trim() });
+    } catch { setAgent({ heard, reply: "No connection right now (or the photo couldn't be opened). Try again in a minute." }); }
   };
   const setDrivingRef = useRef(setDrivingMode);
   setDrivingRef.current = setDrivingMode;
@@ -4701,6 +4742,11 @@ export default function FieldCommandClient() {
       window.dispatchEvent(new Event("hpd-bid-advice"));
       return;
     }
+    if (cmd.intent === "photo") {
+      setAgent({ heard, reply: "Tap 📷 below and take the photo: I'll say what it is, the job number, dates and what to do." });
+      speak("Tap the camera button below and take the photo.", 200);
+      return;
+    }
     if (cmd.intent === "driving") {
       if (cmd.on === drivingRef.current) { answer(cmd.on ? "Driving mode is already on: I'm listening." : "Driving mode is already off."); return; }
       setDrivingRef.current(cmd.on);
@@ -7351,6 +7397,8 @@ export default function FieldCommandClient() {
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
             <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => setAgentTypeOpen((o) => !o)}>⌨️</button>
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
+            <button type="button" aria-label="Read a photo" data-hpd-smoke="fc-agent-photo" onClick={() => photoInputRef.current?.click()}>📷</button>
+            <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="fc-agent-photo-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void readPhoto(f); }} />
             <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>
             <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>

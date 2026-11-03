@@ -24,6 +24,7 @@ export type AgentCommand =
   | { intent: "catch-up" }
   | { intent: "bid-usual" }
   | { intent: "driving"; on: boolean }
+  | { intent: "photo" }
   | { intent: "claude-not-right"; text: string }
   | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
@@ -128,6 +129,8 @@ export function parseCommand(heard: string): AgentCommand {
       || (/^(?:can you |could you |please |i want (?:you )?to |i'?d like (?:you )?to |i would like (?:you )?to |let'?s |we need to |i need (?:you )?to )?(?:make|add|change|fix|remove|move|put|upgrade|improve|build|create|redesign|dim|slow down|speed up)\b/.test(t)
         && ui.test(t) && !/\b(appointments?|reminders?|paperwork|invoice|affidavit|notice|bid for|tenant)\b/.test(t))) return { intent: "app-request", text: raw };
   }
+  // 📷 Read a photo (3 Nov, pick 5): the camera opens only from a tap on the phone, so this points to 📷.
+  if (/^(?:can you )?(?:read|scan|take|look at|check)(?: a| this| the| my)? (?:photo|picture|pic|notice|invoice|paper|document)(?: for me)?$|^read (?:a |this |the )?photo of (?:a |this |the )?\w+$/.test(t)) return { intent: "photo" };
   // 🚗 Driving mode (3 Nov, pick 4): short answers and it keeps listening. "I'm driving" / "I'm parked".
   if (/^(?:ok(?:ay)? )?(?:i'?m driving|i am driving|(?:turn on |start )?driving mode(?: on)?|(?:turn on )?hands[- ]free(?: mode)?(?: on)?)$/.test(t)) return { intent: "driving", on: true };
   if (/^(?:ok(?:ay)? )?(?:i'?m parked|i am parked|(?:turn off |stop |end )?driving mode(?: off)?|hands[- ]free(?: mode)? off|i'?m done driving|stop hands[- ]free)$/.test(t) && !/^(?:turn on |start )/.test(t)) return { intent: "driving", on: false };
