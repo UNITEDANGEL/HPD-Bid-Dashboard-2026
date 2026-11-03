@@ -22,6 +22,7 @@ export type AgentCommand =
   | { intent: "claude-works" }
   | { intent: "whats-new" }
   | { intent: "catch-up" }
+  | { intent: "bid-usual" }
   | { intent: "claude-not-right"; text: string }
   | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
@@ -126,6 +127,8 @@ export function parseCommand(heard: string): AgentCommand {
       || (/^(?:can you |could you |please |i want (?:you )?to |i'?d like (?:you )?to |i would like (?:you )?to |let'?s |we need to |i need (?:you )?to )?(?:make|add|change|fix|remove|move|put|upgrade|improve|build|create|redesign|dim|slow down|speed up)\b/.test(t)
         && ui.test(t) && !/\b(appointments?|reminders?|paperwork|invoice|affidavit|notice|bid for|tenant)\b/.test(t))) return { intent: "app-request", text: raw };
   }
+  // Your usual price (3 Nov, pick 3 "remember my habits"): "bid the usual", "my usual price", "same as last time".
+  if (/^(?:(?:bid|put|price it at|go with|use|give it|do)\s+)?(?:the usual|my usual(?: price)?|(?:the )?same (?:price )?as (?:last time|before|usual)|my last price|what i (?:usually|always) (?:bid|charge))(?: on (?:it|this(?: one)?))?$/.test(t)) return { intent: "bid-usual" };
   // While you were away (3 Nov, the owner's pick 1): "what did I miss", "catch me up", "what happened while I was out".
   if (/^(?:so |ok(?:ay)? |hey )?(?:what did i miss|what have i missed|catch me up|fill me in|what happened(?: while i was (?:away|gone|out)| today| this morning)?|did i miss anything|anything happen(?:ed)?(?: while i was (?:away|gone|out))?|while i was (?:away|gone|out))$/.test(t)) return { intent: "catch-up" };
   // What changed in the app (3 Nov, "keep upgrading"): "what's new", "what did you upgrade", "what changed in the app",

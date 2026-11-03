@@ -4672,6 +4672,13 @@ export default function FieldCommandClient() {
       window.dispatchEvent(new Event("hpd-bid-advice"));
       return;
     }
+    if (cmd.intent === "bid-usual") {
+      // The open bid's kind of work at your usual price (BidsMode works it out from your own bids and answers here).
+      const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
+      if (!bidsOpen || !omo) { answer(`Open the bid first, then say "bid the usual".`); return; }
+      window.dispatchEvent(new CustomEvent("hpd-bid-usual", { detail: (text: string) => answer(text) }));
+      return;
+    }
     if (cmd.intent === "bid-price") {
       const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
       if (!bidsOpen || !omo) { answer(`Open the bid first, then say "bid ${cmd.price}".`); return; }

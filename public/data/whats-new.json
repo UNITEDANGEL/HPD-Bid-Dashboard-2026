@@ -5,6 +5,7 @@
       "date": "Nov 3, 2026",
       "title": "Ask the app what changed",
       "items": [
+        "💰 On an open bid say \"bid the usual\" (or \"same as last time\"): it fills your usual price for that kind of work, the middle of your last 3 bids on it, says which bids it came from, and saves it. Send is still your two taps.",
         "🤔 The chat understands you better: if a word is misheard or mistyped (\"wats next\", \"reed me the new bits\") it does what you meant; if it isn't sure, it asks \"Did you mean…?\" with buttons to tap, or 🤖 Ask the AI instead.",
         "👋 Back in the app after 2 hours or more? One line over the chat says what came in while you were away: new bids, HPD emails, what Claude finished or asked. Tap Tell me, or ask \"what did I miss?\" any time.",
         "💬 The chat's \"Try:\" buttons now follow what you just asked: after the weather it offers \"should I do the roof job today\", after bids \"next bid\" and \"what should I bid\", after money \"which rejections do I have\". One tap, like saying it.",

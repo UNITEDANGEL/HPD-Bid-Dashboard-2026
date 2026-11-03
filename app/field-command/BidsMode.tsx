@@ -8,7 +8,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import SentBidStats from "./SentBidStats";
 import { priceHelp, readScope, winChance, type PricedJob, bestPrice } from "../../lib/bid-price";
-import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
+import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, workLabel, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { autoResendPlan, lineOf } from "../../lib/bid-records";
@@ -646,7 +646,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   }, [pulled, noBidsToCheck(noBids).map((n) => n.omo + n.faxedAt).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
-  const learned = useMemo(() => myPrices(Object.values(records), (omo) => descriptions.get(omo)), [records, descriptions]);
+  const learned = useMemo(() => myPrices(Object.values(records), (omo) => descriptions.get(omo) || records[omo]?.work), [records, descriptions]);
   const mineForThis = useMemo(() => (selected ? (learned.get(workKey(selected.description)) || []).filter((p) => p.omo !== selected.omo) : []), [selected, learned]);
   const draftValue = Number(String(draft).replace(/[^0-9.]/g, ""));
 
@@ -759,6 +759,30 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     window.addEventListener("hpd-bid-price", on);
     return () => window.removeEventListener("hpd-bid-price", on);
   }, []);
+  // "Bid the usual" (3 Nov, "remember my habits"): the middle of your last 3 prices on this kind of work (sent ones
+  // first), filled and saved like "bid 500"; with none yet, it says the app's best price instead of guessing.
+  const usualRef = useRef<(say: (t: string) => void) => void>(() => {});
+  usualRef.current = (say) => {
+    if (!selected) { say("Open the bid first."); return; }
+    const mine = (learned.get(workKey(selected.description)) || []).filter((p) => p.omo !== selected.omo);
+    const pick = (mine.some((p) => p.sent) ? mine.filter((p) => p.sent) : mine).slice(0, 3);
+    const label = workLabel(selected.description);
+    if (!pick.length) {
+      const best = help ? bestWithFloor(help, floors[floorKind(selected.description)]).price : 0;
+      say(`You haven't bid on ${label} before, so there's no usual yet.${best ? ` The app's best price is ${money(best)}: say "bid ${Math.round(best)}" to use it.` : ""}`);
+      return;
+    }
+    const sorted = pick.map((p) => p.price).sort((a, b) => a - b);
+    const usual = sorted[Math.floor(sorted.length / 2)];
+    setDraft(String(usual));
+    setVoiceSave(usual);
+    say(`Your usual for ${label}: ${money(usual)} (your last ${pick.length === 1 ? "bid" : `${pick.length} bids`}: ${pick.map((p) => `${money(p.price)} on ${p.omo}`).join(", ")}). Saving it on ${selected.omo}; tap Send twice when you're ready.`);
+  };
+  useEffect(() => {
+    const on = (e: Event) => { const say = (e as CustomEvent<(t: string) => void>).detail; if (typeof say === "function") usualRef.current(say); };
+    window.addEventListener("hpd-bid-usual", on);
+    return () => window.removeEventListener("hpd-bid-usual", on);
+  }, []);
   useEffect(() => {
     if (!voiceSave || draftValue !== voiceSave) return;
     setVoiceSave(0);
@@ -780,7 +804,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       ...(previous || newRound || { attempts: 0 }), omo: selected.omo, address: selected.address, borough: selected.borough,
       bidDue: selected.bidDue, bidDueTime: selected.bidDueTime, price: draftValue, savedAt: now,
       status: previous && previous.status !== "saved" ? previous.status : "saved", updatedAt: now,
-      reason: why,
+      reason: why, work: String(selected.description || "").slice(0, 240) || previous?.work,
     } as BidRecord;
     const what = previous && previous.price === draftValue ? `Reason saved: "${why || ""}"` : `Price saved ${money2(draftValue)}${why ? ` ("${why}")` : ""}`;
     await update(withLog(base, what, now));
