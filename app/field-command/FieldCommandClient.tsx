@@ -4138,6 +4138,21 @@ export default function FieldCommandClient() {
       void sendChangeAnswer(t, text).then((ok) => answer(ok ? `📥 Sent to Claude on "${q}": "${text}". It goes back to work on it.` : "Couldn't send it right now (no signal?). Try again in a minute."));
       return;
     }
+    if (cmd.intent === "whats-new") {
+      // The newest lines of What's new (public/data/whats-new.json), shortest first sentence each, read out.
+      void loadWhatsNew().then((v) => {
+        const top = Array.isArray(v) ? v[0] : null;
+        if (!top?.items?.length) { answer("I couldn't load the list of changes right now. Try again in a minute."); return; }
+        const first = (x: string) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return one.length > 170 ? `${one.slice(0, 168)}…` : one; };
+        const lines = top.items.slice(0, 3).map((x: string) => `• ${first(x)}`);
+        const more = top.items.length - 3;
+        const reply = `Newest in the app (${top.date}):\n${lines.join("\n")}${more > 0 ? `\n…and ${more} more on the list.` : ""}`;
+        if (multiRef.current) { answer(reply); return; }
+        showPanel({ heard, reply, actions: [{ label: "📋 All the changes", href: "#requests" }] });
+        speak(reply.replace(/\n…and[\s\S]*$/, ""), 200, () => { if (convoRef.current) startListening(); });
+      });
+      return;
+    }
     if (cmd.intent === "claude-status") {
       void loadChangeThreads();
       const reply = claudeStatusText();

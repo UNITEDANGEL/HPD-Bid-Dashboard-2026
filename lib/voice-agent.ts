@@ -20,6 +20,7 @@ export type AgentCommand =
   | { intent: "whats-next" }
   | { intent: "claude-status" }
   | { intent: "claude-works" }
+  | { intent: "whats-new" }
   | { intent: "claude-not-right"; text: string }
   | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
@@ -124,6 +125,9 @@ export function parseCommand(heard: string): AgentCommand {
       || (/^(?:can you |could you |please |i want (?:you )?to |i'?d like (?:you )?to |i would like (?:you )?to |let'?s |we need to |i need (?:you )?to )?(?:make|add|change|fix|remove|move|put|upgrade|improve|build|create|redesign|dim|slow down|speed up)\b/.test(t)
         && ui.test(t) && !/\b(appointments?|reminders?|paperwork|invoice|affidavit|notice|bid for|tenant)\b/.test(t))) return { intent: "app-request", text: raw };
   }
+  // What changed in the app (3 Nov, "keep upgrading"): "what's new", "what did you upgrade", "what changed in the app",
+  // "latest updates", "read me the new features" -> the newest lines of What's new, read out.
+  if (/^(?:so |ok(?:ay)? |hey )?(?:what'?s|what is|anything) new(?: in the app| today| with the app)?$|^what (?:did|have) (?:you|claude|cloud) (?:upgrade|upgraded|change|changed|add|added|build|built|fix|fixed)(?: today| lately| in the app)?$|^what (?:changed|got upgraded)(?: in the app| today)?$|^(?:read me |tell me |show me )?(?:the )?(?:latest|newest|new) (?:updates|upgrades|features|changes)(?: in the app)?$/.test(t)) return { intent: "whats-new" };
   // What Claude is doing on your requests (owner, 2 Nov: "I need to know exactly what's going on every second"):
   // "what's Claude doing", "is Claude done", "status of my request", "how's my request going".
   if ((/\b(claude|cloud|clod|claud)\b/.test(t) && /\b(doing|working|status|progress|updates?|done|finished|ready|busy|up to|on it|where)\b/.test(t))

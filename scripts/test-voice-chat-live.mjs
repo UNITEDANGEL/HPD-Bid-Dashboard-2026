@@ -21,4 +21,8 @@ assert.deepEqual(parseCommand("it doesn't work: Clear is hidden again"), { inten
 assert.deepEqual(parseCommand("not right"), { intent: "claude-not-right", text: "" });
 assert.equal(parseCommand("yes").intent, "yes");
 assert.equal(parseCommand("the gps is not working").intent === "claude-not-right", false);
-console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; it works / not right, … for a finished upgrade; "the second one" still reads it`);
+// What changed in the app, read out (3 Nov).
+for (const w of ["What's new?", "what's new in the app", "what did you upgrade", "What did Claude change today", "what changed", "read me the latest updates", "new features", "anything new"]) assert.deepEqual(parseCommand(w), { intent: "whats-new" }, w);
+assert.equal(parseCommand("what's new with ER08092").intent === "whats-new", false);
+assert.equal(parseCommand("what's next").intent, "whats-next");
+console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; it works / not right, … for a finished upgrade; "what's new" reads the newest changes; "the second one" still reads it`);

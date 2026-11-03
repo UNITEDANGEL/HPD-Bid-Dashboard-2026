@@ -101,8 +101,11 @@ try {
   await say("it works");
   await page.waitForFunction(() => /👍 Told Claude "Move the Clear route button up" works/.test(document.querySelector('[data-hpd-smoke="fc-agent"]')?.textContent || ""), null, { timeout: 15000 });
   assert.ok(posts.find((p) => p.key === `CHANGE-ANSWER-${clear}`)?.patch.ok);
+  // "what's new" reads the newest lines of What's new (3 Nov).
+  await say("what's new");
+  await page.waitForFunction(() => /Newest in the app \(\w+ \d+, \d{4}\):\s*•/.test(document.querySelector('[data-hpd-smoke="fc-agent"]')?.textContent || ""), null, { timeout: 15000 });
   assert.deepEqual(errors, []);
-  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one; \"it works\" 👍 the newest finished one");
+  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one; \"it works\" 👍 the newest finished one; \"what's new\" read the newest changes");
 } finally {
   await browser.close();
 }
