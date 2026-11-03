@@ -4126,6 +4126,18 @@ export default function FieldCommandClient() {
       return;
     }
     // "What's Claude doing?": the answer stays live in the chat, refreshed with every check (every 3 s while it works).
+    if (cmd.intent === "claude-works" || cmd.intent === "claude-not-right") {
+      // The newest finished request you haven't checked (last 3 days).
+      const lastAt = (t: ChangeThread) => t.updates[t.updates.length - 1]?.at || t.at;
+      const t = (changeThreads || []).filter((x) => x.status === "Done" && !x.ok && Date.now() - Date.parse(lastAt(x)) < 3 * 86400000).sort((a, b) => lastAt(b).localeCompare(lastAt(a)))[0];
+      if (!t) { answer("There's no finished request waiting for your check. Say \"what's Claude doing\" to hear where your requests are."); return; }
+      const q = t.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 60);
+      if (cmd.intent === "claude-works") { void confirmWorks(t); answer(`👍 Told Claude "${q}" works. It's off the map.`); return; }
+      const text = cmd.text.trim().replace(/^\w/, (c) => c.toUpperCase());
+      if (!text) { answer(`What's not right with "${q}"? Say it like "not right, the button is still too small".`); return; }
+      void sendChangeAnswer(t, text).then((ok) => answer(ok ? `📥 Sent to Claude on "${q}": "${text}". It goes back to work on it.` : "Couldn't send it right now (no signal?). Try again in a minute."));
+      return;
+    }
     if (cmd.intent === "claude-status") {
       void loadChangeThreads();
       const reply = claudeStatusText();
@@ -4989,7 +5001,7 @@ export default function FieldCommandClient() {
     const secs = (iso: string) => { const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return s < 60 ? `${s} s ago` : s < 3600 ? `${Math.floor(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`; };
     if (!open.length) {
       const last = [...list].sort((a, b) => act(b).localeCompare(act(a)))[0];
-      return last ? `No requests open: Claude finished your last one, ${ask(last)}${last.updates.length ? `. ${last.updates[last.updates.length - 1].text.slice(0, 160)}` : ""}.` : "You haven't asked Claude for anything yet. Say \"tell Claude to …\" and it starts on it.";
+      return last ? `No requests open: Claude finished your last one, ${ask(last)}${last.updates.length ? `. ${last.updates[last.updates.length - 1].text.slice(0, 160)}` : ""}.${last.ok ? "" : "\nTried it? Say \"it works\", or \"not right, …\" and what to fix."}` : "You haven't asked Claude for anything yet. Say \"tell Claude to …\" and it starts on it.";
     }
     const t = open[0];
     const working = Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000;

@@ -13,4 +13,12 @@ assert.deepEqual(parseCommand("the second one"), { intent: "read-job", ref: "", 
 assert.equal(parseCommand("tell Claude to make the buttons bigger").intent, "app-request");
 assert.equal(parseCommand("status of EQ15239").intent, "job-status");
 assert.equal(parseCommand("open ER08092").intent === "open-pick", false);
-console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; "the second one" still reads it`);
+// Checking a finished upgrade by voice: 👍 or what's not right (sent to Claude on that request).
+const works = ["it works", "It works now, thanks Claude", "looks good", "that works great", "the fix works", "it's working", "the upgrade is good", "works great"];
+for (const w of works) assert.deepEqual(parseCommand(w), { intent: "claude-works" }, w);
+assert.deepEqual(parseCommand("Not right, the button is still too small."), { intent: "claude-not-right", text: "the button is still too small" });
+assert.deepEqual(parseCommand("it doesn't work: Clear is hidden again"), { intent: "claude-not-right", text: "Clear is hidden again" });
+assert.deepEqual(parseCommand("not right"), { intent: "claude-not-right", text: "" });
+assert.equal(parseCommand("yes").intent, "yes");
+assert.equal(parseCommand("the gps is not working").intent === "claude-not-right", false);
+console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; it works / not right, … for a finished upgrade; "the second one" still reads it`);

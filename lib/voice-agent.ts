@@ -19,6 +19,8 @@ export type AgentCommand =
   | { intent: "help" }
   | { intent: "whats-next" }
   | { intent: "claude-status" }
+  | { intent: "claude-works" }
+  | { intent: "claude-not-right"; text: string }
   | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
   | { intent: "weather"; when: "today" | "tomorrow" }
@@ -102,6 +104,13 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t)) return { intent: "no" };
+  // Checking Claude's finished upgrade by voice (2 Nov): "it works", "looks good", "the fix works" -> 👍; "not right, the
+  // button is still small", "it doesn't work, …" -> sent to Claude on that request.
+  if (/^(?:(?:yes,? )?(?:it|that|this) works|(?:it'?s|that'?s) working|works (?:great|now|fine|perfect(?:ly)?)|(?:it |that |this )?looks (?:good|great)|(?:the )?(?:upgrade|update|fix|change) (?:works|is (?:good|working|great)))(?: now| great| fine| perfect(?:ly)?)?(?:,? (?:thanks|thank you)(?: claude)?)?$/.test(t)) return { intent: "claude-works" };
+  {
+    const m = /^(?:(?:it'?s|that'?s|it is) )?(?:not right|not working|still (?:broken|wrong|not working)|(?:it )?(?:doesn'?t|didn'?t) work)\b[,.:;]?\s*(.*)$/.exec(t);
+    if (m) { const said = String(heard).trim().replace(/[.?!]+$/, ""); return { intent: "claude-not-right", text: m[1] ? said.slice(said.length - m[1].length) : "" }; }
+  }
   // A change to the app itself, for Claude (27 Oct, owner: "say anything about the app and get it updated"):
   // "tell Claude to make the buttons bigger", "send to Claude: …", "I want the app to dim the other pins",
   // "can you make the map zoom smoother". The speech often hears Claude as "cloud".

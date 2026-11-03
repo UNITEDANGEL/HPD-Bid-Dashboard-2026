@@ -13,12 +13,15 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const ago = (m) => new Date(Date.now() - m * 60000).toISOString();
 const ask = "20261102210000";
 const done = "20261102200000";
+const clear = "20261102193000";
 const overrides = {
   "CLAUDE-HEARTBEAT": { at: ago(2), every: 9 },
   [`CHANGE-REQUEST-${ask}`]: { at: ago(30), text: "Make the bid pins a different color" },
   [`CHANGE-REPLY-${ask}`]: { status: "Waiting for you", workingAt: "", updates: [{ at: ago(20), text: "Which color do you want: blue or orange?" }], steps: [] },
   [`CHANGE-REQUEST-${done}`]: { at: ago(90), text: "Bigger text on notices" },
   [`CHANGE-REPLY-${done}`]: { status: "Done", workingAt: "", updates: [{ at: ago(60), text: "Notices use 17px now." }], steps: [{ text: "Build", done: true }], try: "/map/?view=all&map=1&bids=1" },
+  [`CHANGE-REQUEST-${clear}`]: { at: ago(120), text: "Move the Clear route button up" },
+  [`CHANGE-REPLY-${clear}`]: { status: "Done", workingAt: "", updates: [{ at: ago(10), text: "Clear route is at the top now." }], steps: [] },
 };
 const posts = [];
 try {
@@ -94,8 +97,12 @@ try {
   await page.waitForFunction(() => /Sent to Claude for the next upgrade/.test(document.querySelector('[data-hpd-smoke="fc-agent"]')?.textContent || ""), null, { timeout: 15000 });
   const req = posts.find((p) => p.key.startsWith("CHANGE-REQUEST-"));
   assert.match(req.patch.text, /^\(said to the helper\) Add a dark map at night$/);
+  // "it works" checks the newest finished request (Clear route; the notices one was answered above, so it's open again).
+  await say("it works");
+  await page.waitForFunction(() => /👍 Told Claude "Move the Clear route button up" works/.test(document.querySelector('[data-hpd-smoke="fc-agent"]')?.textContent || ""), null, { timeout: 15000 });
+  assert.ok(posts.find((p) => p.key === `CHANGE-ANSWER-${clear}`)?.patch.ok);
   assert.deepEqual(errors, []);
-  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one");
+  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one; \"it works\" 👍 the newest finished one");
 } finally {
   await browser.close();
 }
