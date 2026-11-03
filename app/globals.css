@@ -710,3 +710,9 @@ html, body { touch-action: pan-x pan-y; }
 .fc-ack-status.is-ok { color: #4ade80 !important; font-weight: 900; animation: hpd-pop 0.45s cubic-bezier(.2,1.6,.4,1); }
 button.is-sent { animation: hpd-pop 0.45s cubic-bezier(.2,1.6,.4,1); }
 @media (prefers-reduced-motion: reduce) { .hpd-pop, .is-armed, .fc-ack-status.is-ok, button.is-sent { animation: none; } }
+
+/* Bigger words switch (owner idea, 3 Nov): the phone makes every word about 20% bigger; set by the switch on More. */
+html[data-big-words] {
+  -webkit-text-size-adjust: 120%;
+  text-size-adjust: 120%;
+}

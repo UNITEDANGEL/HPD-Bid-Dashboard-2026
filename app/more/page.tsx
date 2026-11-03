@@ -2,6 +2,7 @@ import Link from "next/link";
 import "../ios-app.css";
 import "../field-command/field-command.css";
 import FieldTabBar from "../../components/FieldTabBar";
+import BigWordsSwitch from "../../components/BigWordsSwitch";
 
 const LINKS = [
   { href: "/storage", title: "Google Drive", detail: "Account and storage connection" },
@@ -25,6 +26,7 @@ export default function MorePage() {
 
       <div className="ios-content">
         <div className="ios-list-group">
+          <BigWordsSwitch />
           {LINKS.map((link) => (
             <Link className="ios-settings-row" href={link.href} key={link.href}>
               <span className="ios-list-icon">{link.title.slice(0, 2).toUpperCase()}</span>

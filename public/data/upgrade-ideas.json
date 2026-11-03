@@ -2,13 +2,68 @@
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data.",
   "updated": "2026-11-03",
   "ideas": [
-    { "id": "photo-check", "icon": "📸", "kind": "upgrade", "title": "Photo check before you send", "why": "The AI looks at your before and after photos and tells you if one is blurry, dark or missing, before HPD rejects it." },
-    { "id": "quiet-hours", "icon": "🌙", "kind": "upgrade", "title": "Quiet hours for alerts", "why": "No phone alerts after 9 PM or before 7 AM, except 24-hour notices and emergencies." },
-    { "id": "chat-remembers", "icon": "🧠", "kind": "upgrade", "title": "The chat remembers what you tell it", "why": "Say \"remember the super at 123 Main is in the basement\" and it tells you next time you go there. Kept on your phone only." },
-    { "id": "next-paperwork", "icon": "🧭", "kind": "upgrade", "title": "Next paperwork step after each job", "why": "When you finish a job, the app says what's left for it (photos, invoice, affidavit) and opens it with one tap." },
-    { "id": "win-rate", "icon": "📊", "kind": "upgrade", "title": "Which bids you win", "why": "Your win rate by borough and type of work, and the prices that won, so you know where to bid lower or higher." },
-    { "id": "big-text", "icon": "🔠", "kind": "upgrade", "title": "Bigger words switch", "why": "One switch makes all the words on every screen bigger, for reading in the truck or in the sun." },
-    { "id": "speed-check", "icon": "⚡", "kind": "check", "title": "Make the app open faster", "why": "Claude measures how long the map takes to open on a phone and speeds up the slow parts (jobs first, pictures later)." },
-    { "id": "weekly-checkup", "icon": "🔍", "kind": "check", "title": "Weekly app check-up", "why": "Once a week Claude taps every button, reads the errors from your phone and fixes what's broken or slow, then tells you what it fixed." }
+    {
+      "id": "photo-check",
+      "icon": "📸",
+      "kind": "upgrade",
+      "title": "Photo check before you send",
+      "why": "The AI looks at your before and after photos and tells you if one is blurry, dark or missing, before HPD rejects it."
+    },
+    {
+      "id": "quiet-hours",
+      "icon": "🌙",
+      "kind": "upgrade",
+      "title": "Quiet hours for alerts",
+      "why": "No phone alerts after 9 PM or before 7 AM, except 24-hour notices and emergencies."
+    },
+    {
+      "id": "chat-remembers",
+      "icon": "🧠",
+      "kind": "upgrade",
+      "title": "The chat remembers what you tell it",
+      "why": "Say \"remember the super at 123 Main is in the basement\" and it tells you next time you go there. Kept on your phone only."
+    },
+    {
+      "id": "next-paperwork",
+      "icon": "🧭",
+      "kind": "upgrade",
+      "title": "Next paperwork step after each job",
+      "why": "When you finish a job, the app says what's left for it (photos, invoice, affidavit) and opens it with one tap."
+    },
+    {
+      "id": "win-rate",
+      "icon": "📊",
+      "kind": "upgrade",
+      "title": "Which bids you win",
+      "why": "Your win rate by borough and type of work, and the prices that won, so you know where to bid lower or higher."
+    },
+    {
+      "id": "speed-check",
+      "icon": "⚡",
+      "kind": "check",
+      "title": "Make the app open faster",
+      "why": "Claude measures how long the map takes to open on a phone and speeds up the slow parts (jobs first, pictures later)."
+    },
+    {
+      "id": "weekly-checkup",
+      "icon": "🔍",
+      "kind": "check",
+      "title": "Weekly app check-up",
+      "why": "Once a week Claude taps every button, reads the errors from your phone and fixes what's broken or slow, then tells you what it fixed."
+    },
+    {
+      "id": "day-summary",
+      "icon": "🌆",
+      "kind": "upgrade",
+      "title": "End-of-day summary",
+      "why": "At 6 PM the app tells you in a few lines what got done today, what is still waiting, and what tomorrow's route looks like."
+    },
+    {
+      "id": "one-hand",
+      "icon": "🖐️",
+      "kind": "upgrade",
+      "title": "One-hand mode",
+      "why": "A switch that moves the main buttons to the bottom corner so you can reach everything with your thumb while holding tools."
+    }
   ]
 }
