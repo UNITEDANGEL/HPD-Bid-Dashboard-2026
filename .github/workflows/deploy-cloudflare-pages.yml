@@ -177,11 +177,61 @@ jobs:
       - name: Install browser for paperwork test
         run: npx playwright install --with-deps chromium
 
-      - name: Test paperwork, stats and route in a browser
+      # Live sooner (2 Nov, "keep upgrading": the full browser tests took ~17 minutes before anything went live, so an
+      # upgrade reached the phone 20-30 minutes after the push): a quick check first (privacy, every button, update
+      # recovery), then live, then all the browser tests; a failure there still turns the run red.
+      - name: Quick check in a browser before going live
         run: |
           python3 -m http.server 3000 --directory out > /tmp/static-server.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:3000/paperwork/ > /dev/null && break; sleep 1; done
           node scripts/test-public-privacy.mjs
+          BASE_URL=http://localhost:3000 node scripts/run-browser-tests.mjs --jobs 3 scripts/test-browser-privacy.mjs scripts/test-browser-all-buttons.mjs scripts/test-browser-buttons-visible.mjs scripts/test-browser-update-recovery.mjs
+
+      - name: Resolve Cloudflare production branch
+        id: pages-project
+        shell: bash
+        run: |
+          response="$(curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/hpd-bid-dashboard-2026")"
+
+          production_branch="$(printf '%s' "$response" | node -e "const fs = require('fs'); const body = JSON.parse(fs.readFileSync(0, 'utf8')); if (!body.success) { console.error(JSON.stringify(body.errors)); process.exit(1); } console.log(body.result.production_branch || 'main');")"
+          echo "production_branch=$production_branch" >> "$GITHUB_OUTPUT"
+          echo "Cloudflare Pages production branch: $production_branch"
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }} --commit-dirty=true
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # "Deployment complete" isn't proof: check the live address really serves this build, and fail
+      # loudly if it doesn't (a preview-only deploy once reported success for a day).
+      - name: Verify the live address serves this build
+        shell: bash
+        run: |
+          want="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("out/version.json","utf8")).commit)')"
+          for i in $(seq 1 18); do
+            got="$(curl -fsS -m 20 "https://hpd-bid-dashboard-2026.pages.dev/version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).commit)}catch{console.log("?")}})' || echo "?")"
+            echo "live: $got  want: $want"
+            if [ "$got" = "$want" ]; then
+              echo "Live address is serving $want."
+              # The "Add to Calendar" server function must answer with a calendar entry.
+              cal="$(curl -sS -m 20 -o /dev/null -w '%{http_code} %{content_type}' "https://hpd-bid-dashboard-2026.pages.dev/api/appointment-calendar?id=TEST-0001&address=Test&date=2099-01-05&start=10:00&end=11:00&state=confirmed&contact=Tenant&reminder=60")"
+              echo "calendar function: $cal"
+              case "$cal" in "200 text/calendar"*) exit 0 ;; *) echo "::error::The Add to Calendar function did not answer with a calendar entry ($cal)."; exit 1 ;; esac
+            fi
+            sleep 10
+          done
+          echo "::error::The live address still serves $got, not $want. The deploy did not go live (check the Cloudflare Pages project: production branch and automatic Git builds)."
+          exit 1
+
+      - name: Test paperwork, stats and route in a browser (after going live)
+        run: |
+          curl -sf http://localhost:3000/paperwork/ > /dev/null || { python3 -m http.server 3000 --directory out > /tmp/static-server.log 2>&1 & sleep 3; }
           # Three at a time (23 Oct: about 50 minutes one by one); a failure is retried once on its own.
           BASE_URL=http://localhost:3000 node scripts/run-browser-tests.mjs --jobs 3 \
             scripts/test-browser-paperwork.mjs \
@@ -196,11 +246,9 @@ jobs:
             scripts/test-browser-bid-voice.mjs \
             scripts/test-browser-bid-sync.mjs \
             scripts/test-browser-building-facts.mjs \
-            scripts/test-browser-update-recovery.mjs \
             scripts/test-browser-correction.mjs \
             scripts/test-browser-landscape.mjs \
             scripts/test-browser-checklist.mjs \
-            scripts/test-browser-privacy.mjs \
             scripts/test-browser-notice-view.mjs \
             scripts/test-browser-bid-pages.mjs \
             scripts/test-browser-price-check.mjs \
@@ -210,8 +258,6 @@ jobs:
             scripts/test-browser-morning.mjs \
             scripts/test-browser-evening.mjs \
             scripts/test-browser-my-price.mjs \
-            scripts/test-browser-all-buttons.mjs \
-            scripts/test-browser-buttons-visible.mjs \
             scripts/test-browser-bids-panel.mjs \
             scripts/test-browser-no-bid.mjs \
             scripts/test-browser-conversations.mjs \
@@ -293,45 +339,3 @@ jobs:
             scripts/test-browser-paperwork-lock.mjs \
             scripts/test-browser-paperwork-refused-date.mjs \
             scripts/test-browser-two-tap.mjs
-
-      - name: Resolve Cloudflare production branch
-        id: pages-project
-        shell: bash
-        run: |
-          response="$(curl -fsS \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/hpd-bid-dashboard-2026")"
-
-          production_branch="$(printf '%s' "$response" | node -e "const fs = require('fs'); const body = JSON.parse(fs.readFileSync(0, 'utf8')); if (!body.success) { console.error(JSON.stringify(body.errors)); process.exit(1); } console.log(body.result.production_branch || 'main');")"
-          echo "production_branch=$production_branch" >> "$GITHUB_OUTPUT"
-          echo "Cloudflare Pages production branch: $production_branch"
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }} --commit-dirty=true
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-
-      # "Deployment complete" isn't proof: check the live address really serves this build, and fail
-      # loudly if it doesn't (a preview-only deploy once reported success for a day).
-      - name: Verify the live address serves this build
-        shell: bash
-        run: |
-          want="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("out/version.json","utf8")).commit)')"
-          for i in $(seq 1 18); do
-            got="$(curl -fsS -m 20 "https://hpd-bid-dashboard-2026.pages.dev/version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).commit)}catch{console.log("?")}})' || echo "?")"
-            echo "live: $got  want: $want"
-            if [ "$got" = "$want" ]; then
-              echo "Live address is serving $want."
-              # The "Add to Calendar" server function must answer with a calendar entry.
-              cal="$(curl -sS -m 20 -o /dev/null -w '%{http_code} %{content_type}' "https://hpd-bid-dashboard-2026.pages.dev/api/appointment-calendar?id=TEST-0001&address=Test&date=2099-01-05&start=10:00&end=11:00&state=confirmed&contact=Tenant&reminder=60")"
-              echo "calendar function: $cal"
-              case "$cal" in "200 text/calendar"*) exit 0 ;; *) echo "::error::The Add to Calendar function did not answer with a calendar entry ($cal)."; exit 1 ;; esac
-            fi
-            sleep 10
-          done
-          echo "::error::The live address still serves $got, not $want. The deploy did not go live (check the Cloudflare Pages project: production branch and automatic Git builds)."
-          exit 1

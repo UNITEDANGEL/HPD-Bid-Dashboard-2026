@@ -3304,6 +3304,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-focus-chip.is-late { border-color: #ef4444; background: #3b0a0aee; }
 /* 🤖 Claude live (30 Oct): the open request's progress, under the top chips, clear of Map / Locate. */
 .fc-claude-live { position: absolute; z-index: 1450; top: calc(max(12px, env(safe-area-inset-top)) + 184px); left: 12px; width: min(420px, calc(100% - 96px)); display: flex; align-items: flex-start; border-radius: 16px; border: 2px solid #8b5cf6; background: #140b2bf2; color: #fff; box-shadow: 0 8px 22px #0008; overflow: hidden; }
+.fc-map-hints .fc-claude-live { position: relative; top: auto; left: auto; width: auto; max-width: 420px; pointer-events: auto; }
 .fc-claude-live.is-working { border-color: #22c55e; }
 .fc-claude-live.is-done { border-color: #16a34a; background: #052e16f2; }
 .fc-claude-live.is-ask { border-color: #f59e0b; }

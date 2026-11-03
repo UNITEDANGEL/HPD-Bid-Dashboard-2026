@@ -5,6 +5,7 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "⚡ Upgrades now reach your phone about 15 minutes sooner (a quick check, then live, then the long tests). And the 🤖 Claude card on the map sits under the other notes instead of on top of \"⚠ jobs need a check\", so both can be tapped.",
         "🗣 Tried Claude's upgrade? Just say it in the chat: \"it works\" (👍, off the map) or \"not right, the button is still too small\" (Claude goes back to work on it).",
         "▶ A finished request now has ▶ Try it (opens the screen that changed), 👍 Works (you checked it; it leaves the map) and ↩ Not right? (tell Claude what to fix).",
         "❓ When Claude asks you a question about a request, answer it right there: Your requests has a box under the question (➤ Send to Claude), or just say \"tell Claude …\" in the chat. Not happy with a finished one? Tap ↩ Not right? Tell Claude. For something new while Claude waits, say \"tell Claude new request …\".",
