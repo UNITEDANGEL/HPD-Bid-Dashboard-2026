@@ -21,6 +21,11 @@ assert.deepEqual(parseCommand("it doesn't work: Clear is hidden again"), { inten
 assert.deepEqual(parseCommand("not right"), { intent: "claude-not-right", text: "" });
 assert.equal(parseCommand("yes").intent, "yes");
 assert.equal(parseCommand("the gps is not working").intent === "claude-not-right", false);
+// Driving mode (3 Nov).
+for (const w of ["I'm driving", "driving mode", "turn on driving mode", "hands free", "hands-free mode on"]) assert.deepEqual(parseCommand(w), { intent: "driving", on: true }, w);
+for (const w of ["I'm parked", "driving mode off", "stop driving mode", "turn off driving mode", "I'm done driving", "stop hands free"]) assert.deepEqual(parseCommand(w), { intent: "driving", on: false }, w);
+assert.equal(parseCommand("stop").intent, "no");
+assert.equal(parseCommand("take me to the next stop").intent, "navigate");
 // Your usual price on the open bid (3 Nov).
 for (const w of ["bid the usual", "the usual", "my usual price", "same as last time", "bid my last price", "put the usual on it", "what I usually charge"]) assert.deepEqual(parseCommand(w), { intent: "bid-usual" }, w);
 assert.equal(parseCommand("bid 500").intent, "bid-price");
@@ -31,4 +36,4 @@ assert.equal(parseCommand("anything new").intent, "whats-new");
 for (const w of ["What's new?", "what's new in the app", "what did you upgrade", "What did Claude change today", "what changed", "read me the latest updates", "new features", "anything new"]) assert.deepEqual(parseCommand(w), { intent: "whats-new" }, w);
 assert.equal(parseCommand("what's new with ER08092").intent === "whats-new", false);
 assert.equal(parseCommand("what's next").intent, "whats-next");
-console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; it works / not right, … for a finished upgrade; "what's new" reads the newest changes; "what did I miss" catches you up; "bid the usual"; "the second one" still reads it`);
+console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; it works / not right, … for a finished upgrade; "what's new" reads the newest changes; "what did I miss" catches you up; "bid the usual"; driving mode on / off; "the second one" still reads it`);

@@ -51,7 +51,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { setVoiceOff, speak, stopSpeaking, voiceOff, voiceSupported } from "../../lib/speak";
+import { setBriefSpeech, setVoiceOff, speak, stopSpeaking, voiceOff, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -1410,12 +1410,13 @@ export default function FieldCommandClient() {
       rec.onend = () => {
         setListening(false); listenRef.current = null;
         // Conversation mode, nothing said: one more try, then it rests (tap 💬 to go on).
-        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < 1) window.setTimeout(() => { if (convoRef.current) startListening(); }, 400); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
+        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < (drivingRef.current ? 30 : 1)) window.setTimeout(() => { if (convoRef.current) startListening(); }, drivingRef.current ? 900 : 400); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
       };
       rec.onerror = (e) => {
         setListening(false); listenRef.current = null;
         const why = e?.error || "";
         if (why && why !== "no-speech" && why !== "aborted") reportVoice(`error ${why}`);
+        if (/not-allowed|service-not-allowed|audio-capture/.test(why)) convoMissRef.current = 99; // no mic: don't keep trying
         // Say what's wrong instead of nothing (owner, 23 Oct: "mic not working on my iPhone").
         if (why === "not-allowed" || why === "service-not-allowed") { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "The iPhone blocked listening for HPD Field. On the iPhone: Settings → Privacy & Security → Microphone and Speech Recognition: allow it; and Settings → General → Keyboard → Enable Dictation: on. Or tap the search box and use the keyboard's 🎙, then Go." }); }
         else if (why === "network") setAgent({ heard: "🎤", reply: "Listening needs internet: check the signal and tap 🎤 again." });
@@ -1587,6 +1588,11 @@ export default function FieldCommandClient() {
   // 💬 Conversation mode (23 Oct "a continue-conversation button, I don't want to keep clicking the mic"): after each
   // answer is said, it listens again by itself, until "stop" or ✕.
   const [convo, setConvo] = useState(false);
+  // 🚗 Driving mode (3 Nov, owner's pick 4): short spoken answers, it keeps listening (no "tap to keep talking"),
+  // bigger text. On by "I'm driving", 🚗 in the helper, or the offer when the phone moves at driving speed; off by
+  // "I'm parked", 🚗 again or closing the helper. Kept for the day on this phone.
+  const [driving, setDriving] = useState(false);
+  const drivingRef = useRef(false);
   const convoRef = useRef(false);
   const convoMissRef = useRef(0);
   // Several questions in one sentence (23 Oct): the parts still to answer and the answers so far.
@@ -1735,6 +1741,27 @@ export default function FieldCommandClient() {
     setAgent({ heard: "👋", reply: `${step ? `Hi! First thing: ${step.text.replace(/\.$/, "")}. ` : "Hi! "}What do you need? Talk to me, or tap ⌨️ to type.`, actions: step ? [{ label: "▶ Do it", href: "#next" }] : undefined });
     if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true);
   };
+  const setDrivingMode = (on: boolean, say = true) => {
+    setDriving(on); drivingRef.current = on; setBriefSpeech(on);
+    try { if (on) localStorage.setItem("hpd-driving", nyToday()); else localStorage.removeItem("hpd-driving"); } catch { /* private mode */ }
+    if (on) {
+      unlockChime();
+      const reply = canListen ? "🚗 Driving mode on: short answers, and I keep listening. Say \"I'm parked\" to stop." : "🚗 Driving mode on: short answers. On this phone, tap 🎙 on the keyboard to talk. Say \"I'm parked\" to stop.";
+      setAgent({ heard: "🚗", reply });
+      convoRef.current = canListen; convoMissRef.current = 0; setConvo(canListen);
+      if (say) speak(reply, 200, () => { if (convoRef.current && !listenRef.current) startListening(); });
+      else if (canListen) startListening();
+    } else {
+      convoRef.current = false; setConvo(false); listenRef.current?.stop();
+      if (say) { setAgent((a) => (a ? { ...a, heard: "🚗", reply: "Driving mode off. Tap ✨ or the chat when you need me." } : a)); speak("Driving mode off.", 200); }
+    }
+  };
+  const setDrivingRef = useRef(setDrivingMode);
+  setDrivingRef.current = setDrivingMode;
+  useEffect(() => { try { if (localStorage.getItem("hpd-driving") === nyToday()) { setDriving(true); drivingRef.current = true; setBriefSpeech(true); } } catch { /* private mode */ } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Moving at driving speed (over 15 mph on two readings in a row): offered once a day over the chat bar.
+  const [movingFast, setMovingFast] = useState(false);
+  const fastRef = useRef(0);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
   const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number } | null>(null);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
@@ -3318,6 +3345,8 @@ export default function FieldCommandClient() {
         placeUserMarker(latitude, longitude);
         lastPositionRef.current = { lat: latitude, lng: longitude };
         lastFixRef.current = { lat: latitude, lng: longitude, accuracy: position.coords.accuracy || 0, at: Date.now() };
+        fastRef.current = (position.coords.speed || 0) > 6.7 ? fastRef.current + 1 : 0;
+        if (fastRef.current >= 2) setMovingFast(true);
         autoArriveRef.current(latitude, longitude, position.coords.accuracy || 0);
         nearJobRef.current(latitude, longitude, position.coords.accuracy || 0);
         if (!mapRef.current) return;
@@ -4670,6 +4699,11 @@ export default function FieldCommandClient() {
       const on = (e: Event) => { window.removeEventListener("hpd-bid-advice-answer", on); answer(String((e as CustomEvent<string>).detail || "I couldn't work out a price for this one.")); };
       window.addEventListener("hpd-bid-advice-answer", on);
       window.dispatchEvent(new Event("hpd-bid-advice"));
+      return;
+    }
+    if (cmd.intent === "driving") {
+      if (cmd.on === drivingRef.current) { answer(cmd.on ? "Driving mode is already on: I'm listening." : "Driving mode is already off."); return; }
+      setDrivingRef.current(cmd.on);
       return;
     }
     if (cmd.intent === "bid-usual") {
@@ -7194,6 +7228,7 @@ export default function FieldCommandClient() {
           const mins = minOf(soon[0].bidDueTime) - nowMin;
           all.push({ key: `bids|${today}|${soon.map((b) => b.omo).join(",")}`, kind: "bids", text: `⏰ ${soon.length} bid${soon.length === 1 ? "" : "s"} due in ${mins} min${unpriced ? `, ${unpriced} not priced` : ""}. Start?`, label: "▶ Start", go: () => agentRef.current("next bid") });
         }
+        if (movingFast && !driving) all.push({ key: `drive|${today}`, kind: "drive", text: "🚗 Looks like you're driving. Talk hands-free?", label: "🚗 Turn on", go: () => setDrivingMode(true) });
         if (awaySince) {
           const lines = catchUp(awaySince);
           if (lines.length) all.push({ key: `away|${awaySince}`, kind: "away", text: `👋 While you were away: ${lines.map((l) => l.split(":")[0].replace(/ about .*/, "")).join(" · ")}`, label: "Tell me", go: () => agentRef.current("what did I miss") });
@@ -7238,7 +7273,8 @@ export default function FieldCommandClient() {
         </form>
       ) : null}
       {agent ? (
-        <div className="fc-agent" role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
+        <div className={`fc-agent${driving ? " is-driving" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent">
+          {driving ? <button type="button" className="fc-agent-driving" data-hpd-smoke="fc-agent-driving" onClick={() => setDrivingMode(false)}>🚗 Driving: short answers, I keep listening · tap to stop</button> : null}
           {/* Earlier turns only over the map: over a sheet (bid, job) the panel stays small so it doesn't hide its buttons. */}
           {!selectedJob && !bidsOpen && agentHistory.length > 3 ? (
             <button type="button" className="fc-agent-earlier" data-hpd-smoke="fc-agent-earlier" aria-expanded={chatAll} onClick={() => setChatAll((v) => !v)}>{chatAll ? "▼ Only the last few" : `▲ Earlier today (${agentHistory.length - 3})`}</button>
@@ -7315,7 +7351,8 @@ export default function FieldCommandClient() {
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
             <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => setAgentTypeOpen((o) => !o)}>⌨️</button>
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
+            <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
           </div>
         </div>
       ) : null}

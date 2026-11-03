@@ -2764,6 +2764,10 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-change-answer button:disabled { opacity: 0.45; }
 .fc-change-again { justify-self: start; padding: 0 14px; background: #334155; color: #e2e8f0; }
 /* A finished request: ▶ Try it (opens the screen that changed), 👍 Works, ↩ Not right? */
+/* 🚗 Driving mode: bigger answer, a clear way out. */
+.fc-agent.is-driving { border-color: #f59e0b; }
+.fc-agent.is-driving p[data-hpd-smoke="fc-agent-reply"] { font-size: 21px; line-height: 1.35; }
+.fc-agent-driving { min-height: 44px; border: 0; border-radius: 12px; background: #92400e; color: #fff7ed; font: 800 14.5px system-ui, sans-serif; }
 .fc-agent-choices button.is-ai { background: #312e81; color: #e0e7ff; }
 .fc-change-check { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .fc-change-try, .fc-change-works { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: 800 15px system-ui; text-decoration: none; }
@@ -3926,7 +3930,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-app:has(.fc-chatbar) .fc-focus-chip { bottom: calc(var(--fc-dock-total) + 74px) !important; }
 .fc-map-dragging .fc-chatbar { opacity: 0.4; }
 .fc-agent .fc-chat-card-n { float: left; display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 1px 8px 0 0; border-radius: 50%; background: #6366f1; color: #fff; font: 800 12px/1 system-ui, sans-serif; font-style: normal; }
-.fc-agent [data-hpd-smoke="fc-agent-reply"].is-live { white-space: pre-line; }
+.fc-agent [data-hpd-smoke="fc-agent-reply"] { white-space: pre-line; }
 .fc-agent-live { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font: 600 12px system-ui, sans-serif; color: #16a34a; }
 .fc-agent-live i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: fc-live-blink 1.2s ease-in-out infinite; }
 @keyframes fc-live-blink { 50% { opacity: 0.25; } }

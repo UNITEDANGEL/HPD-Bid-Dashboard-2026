@@ -23,6 +23,7 @@ export type AgentCommand =
   | { intent: "whats-new" }
   | { intent: "catch-up" }
   | { intent: "bid-usual" }
+  | { intent: "driving"; on: boolean }
   | { intent: "claude-not-right"; text: string }
   | { intent: "open-pick"; pick: number }
   | { intent: "next-tenant" }
@@ -106,7 +107,7 @@ export function parseCommand(heard: string): AgentCommand {
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
-  if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t)) return { intent: "no" };
+  if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t) && !/driving|hands[- ]free/.test(t)) return { intent: "no" };
   // Checking Claude's finished upgrade by voice (2 Nov): "it works", "looks good", "the fix works" -> 👍; "not right, the
   // button is still small", "it doesn't work, …" -> sent to Claude on that request.
   if (/^(?:(?:yes,? )?(?:it|that|this) works|(?:it'?s|that'?s) working|works (?:great|now|fine|perfect(?:ly)?)|(?:it |that |this )?looks (?:good|great)|(?:the )?(?:upgrade|update|fix|change) (?:works|is (?:good|working|great)))(?: now| great| fine| perfect(?:ly)?)?(?:,? (?:thanks|thank you)(?: claude)?)?$/.test(t)) return { intent: "claude-works" };
@@ -127,6 +128,9 @@ export function parseCommand(heard: string): AgentCommand {
       || (/^(?:can you |could you |please |i want (?:you )?to |i'?d like (?:you )?to |i would like (?:you )?to |let'?s |we need to |i need (?:you )?to )?(?:make|add|change|fix|remove|move|put|upgrade|improve|build|create|redesign|dim|slow down|speed up)\b/.test(t)
         && ui.test(t) && !/\b(appointments?|reminders?|paperwork|invoice|affidavit|notice|bid for|tenant)\b/.test(t))) return { intent: "app-request", text: raw };
   }
+  // 🚗 Driving mode (3 Nov, pick 4): short answers and it keeps listening. "I'm driving" / "I'm parked".
+  if (/^(?:ok(?:ay)? )?(?:i'?m driving|i am driving|(?:turn on |start )?driving mode(?: on)?|(?:turn on )?hands[- ]free(?: mode)?(?: on)?)$/.test(t)) return { intent: "driving", on: true };
+  if (/^(?:ok(?:ay)? )?(?:i'?m parked|i am parked|(?:turn off |stop |end )?driving mode(?: off)?|hands[- ]free(?: mode)? off|i'?m done driving|stop hands[- ]free)$/.test(t) && !/^(?:turn on |start )/.test(t)) return { intent: "driving", on: false };
   // Your usual price (3 Nov, pick 3 "remember my habits"): "bid the usual", "my usual price", "same as last time".
   if (/^(?:(?:bid|put|price it at|go with|use|give it|do)\s+)?(?:the usual|my usual(?: price)?|(?:the )?same (?:price )?as (?:last time|before|usual)|my last price|what i (?:usually|always) (?:bid|charge))(?: on (?:it|this(?: one)?))?$/.test(t)) return { intent: "bid-usual" };
   // While you were away (3 Nov, the owner's pick 1): "what did I miss", "catch me up", "what happened while I was out".

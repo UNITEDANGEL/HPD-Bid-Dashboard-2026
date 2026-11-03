@@ -82,6 +82,16 @@ export function playThroughSilent() {
   try { const nav = navigator as unknown as { audioSession?: { type: string } }; if (nav.audioSession && nav.audioSession.type !== "playback") nav.audioSession.type = "playback"; } catch { /* older iPhone */ }
 }
 
+// 🚗 Driving mode (3 Nov): only the first sentence or two are said (the whole answer stays on screen).
+let brief = false;
+export function setBriefSpeech(on: boolean) { brief = on; }
+export function briefText(text: string) {
+  const parts = speechText(text).split(/(?<=[.!?])\s+/);
+  let out = "";
+  for (const p of parts) { if (out && `${out} ${p}`.length > 160) break; out = out ? `${out} ${p}` : p; }
+  return out.length > 220 ? `${out.slice(0, 217)}…` : out;
+}
+
 export function speak(text: string, delay = 900, onEnd?: () => void) {
   if (!text || !voiceSupported() || voiceOff()) { if (onEnd) window.setTimeout(onEnd, 300); return false; }
   playThroughSilent();
@@ -89,7 +99,7 @@ export function speak(text: string, delay = 900, onEnd?: () => void) {
     window.setTimeout(() => {
       const synth = window.speechSynthesis;
       synth.cancel();
-      const u = new SpeechSynthesisUtterance(speechText(text));
+      const u = new SpeechSynthesisUtterance(brief ? briefText(text) : speechText(text));
       const v = pickVoice();
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
       u.rate = 0.98 * voiceRate();
