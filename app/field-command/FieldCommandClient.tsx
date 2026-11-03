@@ -1598,7 +1598,29 @@ export default function FieldCommandClient() {
   // The cards last shown in the chat, for "open the second one" (15 minutes).
   const lastCardsRef = useRef<{ cards: ChatCard[]; at: number } | null>(null);
   // The invitations last loaded (for bid cards and the "bids due soon" nudge).
-  const bidsListRef = useRef<{ omo?: string; bidDue: string; bidDueTime: string; address?: string; borough?: string; description?: string }[]>([]);
+  const bidsListRef = useRef<{ omo?: string; bidDue: string; bidDueTime: string; address?: string; borough?: string; description?: string; receivedAt?: string }[]>([]);
+  // 👋 While you were away (3 Nov, owner's pick 1 of "make the chat smarter"): the last time the app was on screen is
+  // kept on the phone (hpd-last-seen, every minute while open and on leaving); back after 2 hours or more, that time
+  // is the start of the catch-up line over the chat bar and of "what did I miss".
+  const [awaySince, setAwaySince] = useState("");
+  const lastSeenRef = useRef("");
+  useEffect(() => {
+    const KEY = "hpd-last-seen";
+    const mark = () => { try { localStorage.setItem(KEY, new Date().toISOString()); } catch { /* private mode */ } };
+    const back = () => {
+      if (document.visibilityState !== "visible") { mark(); return; }
+      let last = "";
+      try { last = localStorage.getItem(KEY) || ""; } catch { /* private mode */ }
+      if (last) lastSeenRef.current = last;
+      if (last && Date.now() - Date.parse(last) >= 2 * 3600000) setAwaySince(last);
+      mark();
+    };
+    back();
+    const t = window.setInterval(() => { if (document.visibilityState === "visible") mark(); }, 60000);
+    document.addEventListener("visibilitychange", back);
+    window.addEventListener("pagehide", mark);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", back); window.removeEventListener("pagehide", mark); };
+  }, []);
   // Nudges (2 Nov, part 4: "the chat starts the conversation when something matters"), checked every minute.
   const [nudgeSeen, setNudgeSeen] = useState<string[]>([]);
   const [, setNudgeTick] = useState(0);
@@ -1671,6 +1693,31 @@ export default function FieldCommandClient() {
   }, []);
   // ✨ The AI on the map (27 Oct, owner: "I want the AI agent on the map, click it and start a conversation"): one tap
   // opens the helper already listening, says the most pressing thing first, and keeps the conversation going.
+  // What came in since `since`: new invitations to bid, HPD's emails (by job), what Claude finished or asked. Data only
+  // the app already has; no names (the emails go by job number).
+  const catchUp = (since: string) => {
+    const t0 = Date.parse(since);
+    const after = (iso?: string) => Boolean(iso) && Date.parse(String(iso)) > t0;
+    const lines: string[] = [];
+    const bids = bidsListRef.current.filter((b) => b.omo && after(b.receivedAt));
+    if (bids.length) lines.push(`📨 ${bids.length} new invitation${bids.length === 1 ? "" : "s"} to bid: ${bids.slice(0, 3).map((b) => b.omo).join(", ")}${bids.length > 3 ? "…" : ""}`);
+    const hpd = (threads || []).filter((t) => t.messages.some((m) => m.hpd && !m.mine && after(m.at)));
+    if (hpd.length) { const omos = [...new Set(hpd.flatMap((t) => t.omos))]; lines.push(`📧 HPD wrote ${hpd.length} time${hpd.length === 1 ? "" : "s"}${omos.length ? ` about ${omos.slice(0, 3).join(", ")}${omos.length > 3 ? "…" : ""}` : ""}`); }
+    const ask = (t: ChangeThread) => `“${t.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 50)}${t.text.length > 50 ? "…" : ""}”`;
+    const moved = (changeThreads || []).filter((t) => t.updates.some((u) => after(u.at)));
+    const done = moved.filter((t) => t.status === "Done");
+    const asked = moved.filter((t) => t.status === "Waiting for you");
+    if (done.length) lines.push(`✅ Claude finished ${done.length === 1 ? ask(done[0]) : `${done.length} requests`}`);
+    if (asked.length) lines.push(`❓ Claude needs your answer on ${ask(asked[0])}`);
+    const working = moved.filter((t) => t.status !== "Done" && t.status !== "Waiting for you");
+    if (working.length) lines.push(`🔧 Claude worked on ${working.length === 1 ? ask(working[0]) : `${working.length} requests`}`);
+    return lines;
+  };
+  const sinceLabel = (iso: string) => {
+    const d = new Date(iso);
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d) === new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()) ? "" : `${d.toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} `;
+    return `${day}${d.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })}`;
+  };
   const startAgentChat = () => {
     unlockChime();
     const step = nextStepRef.current;
@@ -4155,6 +4202,17 @@ export default function FieldCommandClient() {
       const text = cmd.text.trim().replace(/^\w/, (c) => c.toUpperCase());
       if (!text) { answer(`What's not right with "${q}"? Say it like "not right, the button is still too small".`); return; }
       void sendChangeAnswer(t, text).then((ok) => answer(ok ? `📥 Sent to Claude on "${q}": "${text}". It goes back to work on it.` : "Couldn't send it right now (no signal?). Try again in a minute."));
+      return;
+    }
+    if (cmd.intent === "catch-up") {
+      // Since you were last here (back after 2 h+), else since the last time the app was open, at most the last 24 h.
+      const since = awaySince || (lastSeenRef.current && Date.now() - Date.parse(lastSeenRef.current) < 86400000 ? lastSeenRef.current : new Date(Date.now() - 12 * 3600000).toISOString());
+      const lines = catchUp(since);
+      setAwaySince("");
+      const reply = lines.length ? `Since ${sinceLabel(since)}:\n${lines.map((l) => `• ${l}`).join("\n")}` : `Nothing new since ${sinceLabel(since)}: no new bids, no HPD emails, nothing from Claude.`;
+      if (multiRef.current) { answer(reply); return; }
+      setAgent({ heard, reply, cards: takeCards(reply) });
+      speak(reply, 200, () => { if (convoRef.current) startListening(); });
       return;
     }
     if (cmd.intent === "whats-new") {
@@ -7100,6 +7158,10 @@ export default function FieldCommandClient() {
           const unpriced = soon.filter((b) => !(recs[b.omo!]?.price && recs[b.omo!]?.bidDue === b.bidDue)).length;
           const mins = minOf(soon[0].bidDueTime) - nowMin;
           all.push({ key: `bids|${today}|${soon.map((b) => b.omo).join(",")}`, kind: "bids", text: `⏰ ${soon.length} bid${soon.length === 1 ? "" : "s"} due in ${mins} min${unpriced ? `, ${unpriced} not priced` : ""}. Start?`, label: "▶ Start", go: () => agentRef.current("next bid") });
+        }
+        if (awaySince) {
+          const lines = catchUp(awaySince);
+          if (lines.length) all.push({ key: `away|${awaySince}`, kind: "away", text: `👋 While you were away: ${lines.map((l) => l.split(":")[0].replace(/ about .*/, "")).join(" · ")}`, label: "Tell me", go: () => agentRef.current("what did I miss") });
         }
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
