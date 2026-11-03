@@ -103,6 +103,9 @@ try {
   // Old PIP numbers are said so (PIP isn't read by itself; its exports are brought in).
   const pipAge = (Date.now() - Date.parse((await (await fetch(`${baseUrl}/data/pip_paid.json`)).json()).generatedAt)) / 86400000;
   if (pipAge > 8) assert.match(owed, /Note: PIP's numbers are \d+ days old/);
+  // Money forecast (3 Nov): PIP still owed + a usual month, said as a guess.
+  const forecast = await say("how much will HPD pay me this month", /PIP shows \$[\d,]+ still owed to you.*guess from PIP/);
+  console.log(`  forecast: ${forecast.slice(0, 200)}`);
   // Rejections holding money, the ones to fix first, with Fix buttons.
   const rej = await say("which rejections do I have", /rejections? hold \$[\d,]+|No payment rejections/);
   console.log(`  rejections: ${rej.slice(0, 160)}`);

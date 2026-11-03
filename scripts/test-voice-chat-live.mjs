@@ -39,3 +39,7 @@ for (const w of ["What's new?", "what's new in the app", "what did you upgrade",
 assert.equal(parseCommand("what's new with ER08092").intent === "whats-new", false);
 assert.equal(parseCommand("what's next").intent, "whats-next");
 console.log(`PASS chat live words: ${status.length} ways to ask what Claude is doing, ${picks.length} ways to open a numbered card; it works / not right, … for a finished upgrade; "what's new" reads the newest changes; "what did I miss" catches you up; "bid the usual"; driving mode on / off; "read a photo"; "the second one" still reads it`);
+// Money forecast (3 Nov): a guess from PIP, not the same as "what did HPD pay me".
+for (const w of ["how much will HPD pay me this month", "money forecast", "what should I expect to get paid this month", "how much am I going to get paid next month"]) assert.deepEqual(parseCommand(w), { intent: "forecast" }, w);
+assert.equal(parseCommand("how much did I get paid this month").intent, "paid-period");
+assert.equal(parseCommand("how much does HPD owe me").intent, "money");

@@ -7,6 +7,7 @@ import { spokenSearch } from "./job-search";
 import { parseWhen, parsePastDay } from "./voice-when";
 
 export type AgentCommand =
+  | { intent: "forecast" }
   | { intent: "paid-period"; period: "month" | "last-month" | "year" | "last-year" }
   | { intent: "rejections" }
   | { intent: "tenant-texts" }
@@ -194,7 +195,7 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(tenants?|who)\b.{0,30}\b(haven'?t|not|didn'?t|no) (answered|replied|answer|reply|texted back|called back)\b|\b(tenants? to call|who (do|should) i (call|need to call))\b/.test(t)) return { intent: "tenants-waiting" };
   // Weather and traffic (owner, 27 Oct: "I want the AI smarter: weather, traffic"): the forecast in plain words with what
   // it means for the jobs; rush hour and live traffic in Waze.
-  if (/\b(weather|forecast|going to rain|gonna rain|will it rain|is it raining|rain (today|tomorrow|later)|(going to|gonna|will it) snow|snow(ing)? (today|tomorrow)|how (cold|hot) (is it|will it be)|temperature (outside|today|tomorrow)|umbrella|is it (cold|hot) outside)\b/.test(t)) return { intent: "weather", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
+  if (!/\b(money|pay|paid|income|payments?)\b/.test(t) && /\b(weather|forecast|going to rain|gonna rain|will it rain|is it raining|rain (today|tomorrow|later)|(going to|gonna|will it) snow|snow(ing)? (today|tomorrow)|how (cold|hot) (is it|will it be)|temperature (outside|today|tomorrow)|umbrella|is it (cold|hot) outside)\b/.test(t)) return { intent: "weather", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
   if (/\b(traffic|rush hour|how('?s| is) the (drive|road|roads)|roads? (busy|bad|clear))\b/.test(t)) return { intent: "traffic" };
   // Parking, the building, drive time, supply runs (27 Oct, "do all of them").
   if (/\b(alternate[ -]side|a ?s ?p|street cleaning|move (my|the) (car|truck|van))\b/.test(t)) return { intent: "asp", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
@@ -288,6 +289,8 @@ export function parseCommand(heard: string): AgentCommand {
     const job = (/\b([a-z]{2})\s?(\d{5})\b/i.exec(t) || []).slice(1, 3).join("").toUpperCase();
     return { intent: "job-status", ref: job || refOf(t.replace(/\b(what'?s left|what is left|where are we|where do we stand|status of|how far along|track|what'?s next on|what is next on|with|on|for|the|this|job)\b/g, " ")) };
   }
+  // Money forecast (3 Nov): "how much will HPD pay me this month", "money forecast", "what should I expect to get paid".
+  if ((/\b(forecast|projection|projected)\b/.test(t) && /\b(money|pay|paid|income|payments?)\b/.test(t)) || (/\b(will|going to|gonna|expect|coming|should)\b/.test(t) && /\b(get paid|paid|pay me|payments?|money|make)\b/.test(t) && /\b(this month|next month|soon|coming|expect)\b/.test(t))) return { intent: "forecast" };
   // Money received (26 Oct): "how much did I get paid this month / last month / this year", "what did HPD pay me in 2025".
   if (/\b(paid|pay|payments?|received|got|made|make|earn(ed)?|income)\b/.test(t) && /\b(this|last) (month|year)\b|\b20[0-9]{2}\b/.test(t) && !/\b(owe|owed|outstanding|still)\b/.test(t)) return { intent: "paid-period", period: /last month/.test(t) ? "last-month" : /last year|\b2025\b/.test(t) ? "last-year" : /this year|\b2026\b/.test(t) ? "year" : "month" };
   // Payment rejections (24 Oct): "which rejections do I have", "what's rejected", "rejections to fix".

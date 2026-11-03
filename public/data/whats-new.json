@@ -5,6 +5,7 @@
       "date": "Nov 3, 2026",
       "title": "Ask the app what changed",
       "items": [
+        "💵 Ask the chat \"how much will HPD pay me this month?\" (or \"money forecast\"): it adds up what PIP still owes you, takes out what rejections are holding, and says what HPD usually pays you in a month. It says it is a guess, and points you to the rejections to fix.",
         "📷 Read a photo: tap 📷 in the helper and take a picture of a notice, invoice, work order or the work. It says what it is, the job number, dates, amounts and what to do next, with the job's card to tap. Signed in only; the photo isn't kept; up to 15 a day so it stays free.",
         "🚗 Driving mode: say \"I'm driving\" (or tap 🚗 in the helper; it also offers itself when the phone moves at driving speed). Answers are said short, the whole answer stays on screen in big letters, and it keeps listening so you never touch the phone. Say \"I'm parked\" to stop.",
         "💰 On an open bid say \"bid the usual\" (or \"same as last time\"): it fills your usual price for that kind of work, the middle of your last 3 bids on it, says which bids it came from, and saves it. Send is still your two taps.",

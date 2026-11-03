@@ -631,7 +631,7 @@ const FOLLOW_UPS: [RegExp, string[]][] = [
   [/^(traffic|drive-time|navigate|asp|store)$/, ["take me to the next stop", "how long to the next job", "is alternate side on today"]],
   [/^(bids|bids-show|next-bid|bid-advice|bid-price|no-bid)$/, ["next bid", "what should I bid", "read me the new bids"]],
   [/^(notices|reply-notice)$/, ["which notices are open", "which rejections do I have", "what's next"]],
-  [/^(money|paid-period|rejections|awards|week)$/, ["how much does HPD owe me", "which rejections do I have", "what did I win this week"]],
+  [/^(money|paid-period|forecast|rejections|awards|week)$/, ["how much does HPD owe me", "which rejections do I have", "what did I win this week"]],
   [/^(today|plan|whats-next|route-add|route-remove|tracker)$/, ["take me to the next stop", "what appointments do I have", "how's the traffic"]],
   [/^(appointments|appointment|where-appt|appt-confirmed|remind)$/, ["remind tomorrow's tenants", "which tenants haven't answered", "take me to the next stop"]],
   [/^(tenants-waiting|text-tenant|call-tenant|called|tell-tenant|next-tenant|tenant-texts)$/, ["which tenants haven't answered", "what appointments do I have", "what's next"]],
@@ -5070,6 +5070,23 @@ export default function FieldCommandClient() {
       else if (!pay && (fu?.sentAt || approved)) left.push("wait for it to show in PIP");
       openIssueJob(found, true);
       answer(`${id} at ${where}. Done: ${done.length ? done.join(", ") : "nothing yet"}. ${left.length ? `Left: ${left.join(", then ")}.` : "Nothing left: it's finished and paid."}`);
+      return;
+    }
+    if (cmd.intent === "forecast") {
+      // "How much will HPD pay me?" (3 Nov): what PIP shows still owed that isn't held by a rejection, next to what HPD
+      // paid in a usual month (the average of the last 3 full months). A guess from PIP's numbers, said as a guess.
+      void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
+        const months: Record<string, number> = pay?.byMonth || {};
+        const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+        const owed = Object.values(pipMap).filter((p) => p.outstanding > 0 && !p.closed).reduce((n, p) => n + p.outstanding, 0);
+        const held = payTrack.summary.held || 0;
+        const ready = Math.max(0, owed - held);
+        const ym = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
+        const last3 = Object.keys(months).filter((k) => k < ym).sort().slice(-3);
+        const usual = last3.length ? last3.reduce((n, k) => n + months[k], 0) / last3.length : 0;
+        if (!owed && !usual) { answer("I don't have enough of PIP's numbers to guess. Try again later."); return; }
+        answer(`PIP shows ${usd(owed)} still owed to you${held ? `, ${usd(held)} of it held by rejections to fix, so about ${usd(ready)} can be paid as it stands` : ""}. ${usual ? `HPD usually pays you about ${usd(usual)} a month (the last ${last3.length} months).` : ""} ${held ? "Fixing the rejections is the quickest way to add to it. Say \"which rejections do I have\"." : ""} This is a guess from PIP, not a promise from HPD.${pipAgeDays > 7 ? ` Note: PIP's numbers are ${pipAgeDays} days old.` : ""}`.replace(/\s+/g, " "));
+      });
       return;
     }
     if (cmd.intent === "paid-period") {
