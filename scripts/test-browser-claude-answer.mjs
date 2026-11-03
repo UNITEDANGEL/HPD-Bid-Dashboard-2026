@@ -104,8 +104,12 @@ try {
   // "what's new" reads the newest lines of What's new (3 Nov).
   await say("what's new");
   await page.waitForFunction(() => /Newest in the app \(\w+ \d+, \d{4}\):\s*•/.test(document.querySelector('[data-hpd-smoke="fc-agent"]')?.textContent || ""), null, { timeout: 15000 });
+  // The "Try:" chips follow the conversation (3 Nov): after "what's new", Claude's status is offered, not "what's new" again.
+  const chips = await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts();
+  assert.ok(chips.includes("what's Claude doing"), chips.join(" | "));
+  assert.ok(!chips.includes("what's new"), "not what was just asked");
   assert.deepEqual(errors, []);
-  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one; \"it works\" 👍 the newest finished one; \"what's new\" read the newest changes");
+  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one; \"it works\" 👍 the newest finished one; \"what's new\" read the newest changes, then Try: chips that follow on");
 } finally {
   await browser.close();
 }

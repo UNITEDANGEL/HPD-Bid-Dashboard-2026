@@ -623,6 +623,25 @@ function AutoNext({ seconds, label, onGo, onStay }: { seconds: number; label: st
   );
 }
 
+// What to say next after each kind of answer (3 Nov, "make the chat better, smarter"): the "Try:" chips follow the
+// conversation instead of always showing the same three. Every phrase is one the helper understands.
+const FOLLOW_UPS: [RegExp, string[]][] = [
+  [/^(weather)$/, ["should I do the roof job today", "is it going to rain tomorrow", "what do I have today and plan my day"]],
+  [/^(traffic|drive-time|navigate|asp|store)$/, ["take me to the next stop", "how long to the next job", "is alternate side on today"]],
+  [/^(bids|bids-show|next-bid|bid-advice|bid-price|no-bid)$/, ["next bid", "what should I bid", "read me the new bids"]],
+  [/^(notices|reply-notice)$/, ["which notices are open", "which rejections do I have", "what's next"]],
+  [/^(money|paid-period|rejections|awards|week)$/, ["how much does HPD owe me", "which rejections do I have", "what did I win this week"]],
+  [/^(today|plan|whats-next|route-add|route-remove|tracker)$/, ["take me to the next stop", "what appointments do I have", "how's the traffic"]],
+  [/^(appointments|appointment|where-appt|appt-confirmed|remind)$/, ["remind tomorrow's tenants", "which tenants haven't answered", "take me to the next stop"]],
+  [/^(tenants-waiting|text-tenant|call-tenant|called|tell-tenant|next-tenant|tenant-texts)$/, ["which tenants haven't answered", "what appointments do I have", "what's next"]],
+  [/^(claude-status|app-request|claude-works|claude-not-right|whats-new)$/, ["what's Claude doing", "what's new", "what's next"]],
+];
+function chatFollowUps(heard: string): string[] {
+  const said = heard.toLowerCase().replace(/[.?!]+$/, "").trim();
+  const hit = FOLLOW_UPS.find(([re]) => re.test(parseCommand(heard).intent));
+  return hit ? hit[1].filter((c) => c.toLowerCase() !== said) : [];
+}
+
 // What the helper understands, as examples to tap (23 Oct "what can I say").
 const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "the tenant confirmed", "what's next", "show my job tracker"]],
@@ -7160,7 +7179,7 @@ export default function FieldCommandClient() {
             const list = j
               ? (done ? ["make the paperwork", "what's left on this job"] : ["read the description", "take me there", ...(tenantInfo(j).phone ? ["text the tenant"] : []), "what's left on this job"])
               : bidsOpen ? ["next bid", "what should I bid", "what's next"]
-              : [...(nextStepRef.current ? ["what's next"] : []), "what do I have today", "where's my next appointment", ...(hour >= 15 && hour <= 21 ? ["remind tomorrow's tenants"] : []), "which notices are open"];
+              : (() => { const f = agent.heard === "👋" ? [] : chatFollowUps(agent.heard); return f.length ? f : [...(nextStepRef.current ? ["what's next"] : []), "what do I have today", "where's my next appointment", ...(hour >= 15 && hour <= 21 ? ["remind tomorrow's tenants"] : []), "which notices are open"]; })();
             const chips = list.filter((c) => c.toLowerCase() !== heard).slice(0, 3);
             return chips.length ? (
               <div className="fc-agent-try" data-hpd-smoke="fc-agent-try"><small>Try:</small>{chips.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-try-chip" onClick={() => agentRef.current(c)}>{c}</button>)}</div>

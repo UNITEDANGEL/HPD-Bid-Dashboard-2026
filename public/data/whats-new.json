@@ -5,6 +5,7 @@
       "date": "Nov 3, 2026",
       "title": "Ask the app what changed",
       "items": [
+        "💬 The chat's \"Try:\" buttons now follow what you just asked: after the weather it offers \"should I do the roof job today\", after bids \"next bid\" and \"what should I bid\", after money \"which rejections do I have\". One tap, like saying it.",
         "📰 Ask the chat \"what's new?\" (or \"what did you upgrade?\") and it reads you the newest changes out loud, with 📋 All the changes to see the whole list."
       ]
     },

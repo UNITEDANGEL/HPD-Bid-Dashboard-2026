@@ -83,10 +83,11 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/agent-chat.png` });
   // 👉 Try: what to say next, minus what was just said; one tap runs it like speaking.
   const chips = await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts();
-  assert.ok(chips.includes("what do I have today"), `chips: ${chips}`);
+  // They follow the conversation (3 Nov): after "what's next", the day's next moves.
+  assert.ok(chips.includes("what appointments do I have") && chips.includes("take me to the next stop"), `chips: ${chips}`);
   assert.ok(!chips.includes("what's next"), "the question just asked is not offered again");
-  await page.locator('[data-hpd-smoke="fc-agent-try-chip"]', { hasText: "what do I have today" }).click();
-  await page.waitForFunction(() => /what do I have today/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
+  await page.locator('[data-hpd-smoke="fc-agent-try-chip"]', { hasText: "what appointments do I have" }).click();
+  await page.waitForFunction(() => /what appointments do I have/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
   await page.waitForFunction(() => !/^(…|Thinking)/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "…"), null, { timeout: 20000 });
   assert.ok((await page.locator('[data-hpd-smoke="fc-agent-try-chip"]').allInnerTexts()).every((t) => t !== "what do I have today"));
 
