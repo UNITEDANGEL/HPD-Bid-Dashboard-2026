@@ -2763,6 +2763,12 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-change-answer button, .fc-change-again { min-height: 44px; border: 0; border-radius: 12px; background: #db2777; color: #fff; font: 800 15px system-ui; }
 .fc-change-answer button:disabled { opacity: 0.45; }
 .fc-change-again { justify-self: start; padding: 0 14px; background: #334155; color: #e2e8f0; }
+/* A finished request: ▶ Try it (opens the screen that changed), 👍 Works, ↩ Not right? */
+.fc-change-check { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fc-change-try, .fc-change-works { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: 800 15px system-ui; text-decoration: none; }
+.fc-change-try { background: #2563eb; color: #fff; }
+.fc-change-works { background: #16a34a; color: #fff; }
+.fc-change-ok { color: #86efac; font: 800 14px system-ui; }
 
 /* Bigger, livelier map buttons (owner's request, 16 Oct): on taller phone screens the bubbles are larger; each has
    a soft glow in its own color, pops when tapped and glows stronger while pressed (also Close out / 2nd try). */

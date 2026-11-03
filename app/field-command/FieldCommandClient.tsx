@@ -1424,7 +1424,7 @@ export default function FieldCommandClient() {
   useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
   // Your requests with their answers (status + dated progress notes), from the status server: CHANGE-REQUEST-<id>
   // and CHANGE-REPLY-<id> (scripts/reply-change-request.mjs). "New" = an update after you last opened the list.
-  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string; now: { at: string; text: string } | null; answers: { at: string; text: string }[]; asked: string };
+  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string; now: { at: string; text: string } | null; answers: { at: string; text: string }[]; asked: string; tryAt: string; ok: string };
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
@@ -1438,7 +1438,8 @@ export default function FieldCommandClient() {
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
         const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string; now?: { at?: string; text?: string } } | undefined;
         return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || ""), now: rep?.now?.text ? { at: String(rep.now.at || ""), text: String(rep.now.text) } : null,
-          answers: Array.isArray((all[`CHANGE-ANSWER-${id}`] as { answers?: unknown } | undefined)?.answers) ? (all[`CHANGE-ANSWER-${id}`] as { answers: { at: string; text: string }[] }).answers : [], asked: "" };
+          answers: Array.isArray((all[`CHANGE-ANSWER-${id}`] as { answers?: unknown } | undefined)?.answers) ? (all[`CHANGE-ANSWER-${id}`] as { answers: { at: string; text: string }[] }).answers : [], asked: "",
+          tryAt: /^\/[^/]/.test(String((rep as { try?: string } | undefined)?.try || "")) ? String((rep as { try?: string }).try) : "", ok: String((all[`CHANGE-ANSWER-${id}`] as { ok?: string } | undefined)?.ok || "") };
       }).map((t) => {
         // Your answer after Claude's last note (2 Nov): the request is open again ("Received") until Claude writes back;
         // asked keeps what it was (Waiting for you / Done) for the label.
@@ -1474,12 +1475,18 @@ export default function FieldCommandClient() {
     const text = raw.trim();
     if (!text) return false;
     const answers = [...t.answers, { at: new Date().toISOString(), text: text.slice(0, 2000) }].slice(-20);
-    setChangeThreads((list) => (list || []).map((x) => (x.id === t.id ? { ...x, answers, asked: x.asked || x.status, status: "Received" } : x)));
+    setChangeThreads((list) => (list || []).map((x) => (x.id === t.id ? { ...x, answers, ok: "", asked: x.asked || x.status, status: "Received" } : x)));
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-ANSWER-${t.id}`, patch: { answers } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-ANSWER-${t.id}`, patch: { answers, ok: "" } }) });
       if (r.ok) void loadChangeThreads();
       return r.ok;
     } catch { return false; }
+  };
+  // 👍 Works (2 Nov): you checked a finished request; it leaves the map card and Claude sees it (no new run).
+  const confirmWorks = async (t: ChangeThread) => {
+    const ok = new Date().toISOString();
+    setChangeThreads((list) => (list || []).map((x) => (x.id === t.id ? { ...x, ok } : x)));
+    try { await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-ANSWER-${t.id}`, patch: { ok } }) }); } catch { /* offline: shown on this phone */ }
   };
   const askForChange = async () => {
     const text = changeText.trim();
@@ -6428,7 +6435,12 @@ export default function FieldCommandClient() {
                         <button type="submit" data-hpd-smoke="fc-change-answer-send" disabled={answerFor !== t.id || !answerText.trim()}>➤ Send to Claude</button>
                       </form>
                     ) : t.status === "Done" ? (
-                      <button type="button" className="fc-change-again" data-hpd-smoke="fc-change-again" onClick={() => { setAnswerFor(t.id); setAnswerText(""); }}>↩ Not right? Tell Claude</button>
+                      <div className="fc-change-check" data-hpd-smoke="fc-change-check">
+                        {t.tryAt ? <a className="fc-change-try" data-hpd-smoke="fc-change-try" href={t.tryAt}>▶ Try it</a> : null}
+                        {t.ok ? <span className="fc-change-ok" data-hpd-smoke="fc-change-ok">👍 You checked it</span>
+                          : <button type="button" className="fc-change-works" data-hpd-smoke="fc-change-works" onClick={() => void confirmWorks(t)}>👍 Works</button>}
+                        <button type="button" className="fc-change-again" data-hpd-smoke="fc-change-again" onClick={() => { setAnswerFor(t.id); setAnswerText(""); }}>↩ Not right?</button>
+                      </div>
                     ) : null}
                   </article>
                 ))}
@@ -6900,7 +6912,7 @@ export default function FieldCommandClient() {
           the map with its status, steps, the step being done now and the last note; checked every 20 s while open. */}
       {(() => {
         const activity = (t: ChangeThread) => [t.at, t.workingAt, ...t.updates.map((u) => u.at)].filter(Boolean).sort().slice(-1)[0] || "";
-        const live = (changeThreads || []).filter((t) => (t.status !== "Done" ? Date.now() - Date.parse(activity(t)) < 7 * 86400000 : Date.now() - Date.parse(activity(t)) < 15 * 60000))
+        const live = (changeThreads || []).filter((t) => !(t.status === "Done" && t.ok)).filter((t) => (t.status !== "Done" ? Date.now() - Date.parse(activity(t)) < 7 * 86400000 : Date.now() - Date.parse(activity(t)) < 15 * 60000))
           .sort((a, b) => activity(b).localeCompare(activity(a)));
         claudeLiveRef.current = live.some((t) => t.status !== "Done" && t.status !== "Waiting for you");
         claudeWorkingRef.current = live.some((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);

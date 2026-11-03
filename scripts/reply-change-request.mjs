@@ -9,6 +9,7 @@
 //     node scripts/reply-change-request.mjs --id <id> --idle                       (no longer working on it right now)
 //     node scripts/reply-change-request.mjs --id <id> --now "Running the tests"    (the live "Now:" line; also keeps the green light on)
 //     --status "Waiting for you"   (needs the owner's answer: not picked up again until they write)
+//     --try "/map/?view=all&map=1&bids=1"   (with Done: the app's ▶ Try it opens that screen; a path on the site)
 //     Done or Waiting for you sends one phone alert (scripts/claude-alert.mjs); --no-alert leaves it out.
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -59,7 +60,7 @@ if (flag("list")) {
     const r = all[`CHANGE-REPLY-${id}`];
     const steps = r?.steps || [];
     const answers = (all[`CHANGE-ANSWER-${id}`]?.answers || []).slice(-3).map((a) => `\n   <- owner's answer (${a.at.slice(0, 16)}): ${a.text}`).join("");
-    console.log(`${id} | ${v.text}${answers}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
+    console.log(`${id} | ${v.text}${answers}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}${all[`CHANGE-ANSWER-${id}`]?.ok ? "\n   👍 owner checked it: works" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
   }
   process.exit(0);
 }
@@ -81,6 +82,7 @@ const reply = {
   workingAt: flag("idle") ? "" : flag("working") || arg("now") ? new Date().toISOString() : old.workingAt || "",
   // The live line the app shows under "working on it now" with its seconds (owner, 2 Nov: "every second").
   now: flag("idle") || done === "all" ? null : arg("now") ? { at: new Date().toISOString(), text: arg("now").slice(0, 200) } : old.now || null,
+  try: /^\/[^/]/.test(arg("try")) ? arg("try").slice(0, 300) : old.try || "",
   updates: [...(old.updates || []), ...(text ? [{ at: new Date().toISOString(), text: text.slice(0, 3000) }] : [])].slice(-30),
 };
 const res = await fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REPLY-${id}`, patch: reply }) });

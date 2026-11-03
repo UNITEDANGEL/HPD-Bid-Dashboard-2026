@@ -18,7 +18,7 @@ const overrides = {
   [`CHANGE-REQUEST-${ask}`]: { at: ago(30), text: "Make the bid pins a different color" },
   [`CHANGE-REPLY-${ask}`]: { status: "Waiting for you", workingAt: "", updates: [{ at: ago(20), text: "Which color do you want: blue or orange?" }], steps: [] },
   [`CHANGE-REQUEST-${done}`]: { at: ago(90), text: "Bigger text on notices" },
-  [`CHANGE-REPLY-${done}`]: { status: "Done", workingAt: "", updates: [{ at: ago(60), text: "Notices use 17px now." }], steps: [{ text: "Build", done: true }] },
+  [`CHANGE-REPLY-${done}`]: { status: "Done", workingAt: "", updates: [{ at: ago(60), text: "Notices use 17px now." }], steps: [{ text: "Build", done: true }], try: "/map/?view=all&map=1&bids=1" },
 };
 const posts = [];
 try {
@@ -57,12 +57,18 @@ try {
   // 2) A finished one: "Not right? Tell Claude".
   const fin = page.locator('[data-hpd-smoke="fc-change-thread"]', { hasText: "Bigger text on notices" });
   assert.equal(await fin.locator('[data-hpd-smoke="fc-change-answer"]').count(), 0);
+  // ▶ Try it opens the screen that changed; 👍 Works is saved and shown.
+  assert.equal(await fin.locator('[data-hpd-smoke="fc-change-try"]').getAttribute("href"), "/map/?view=all&map=1&bids=1");
+  await fin.locator('[data-hpd-smoke="fc-change-works"]').click();
+  await fin.locator('[data-hpd-smoke="fc-change-ok"]').waitFor({ timeout: 5000 });
+  assert.ok(posts.find((p) => p.key === `CHANGE-ANSWER-${done}`)?.patch.ok, "👍 saved as ok on CHANGE-ANSWER");
   await fin.locator('[data-hpd-smoke="fc-change-again"]').click();
   await fin.locator('[data-hpd-smoke="fc-change-answer-text"]').fill("Still too small on my iPhone");
   await fin.locator('[data-hpd-smoke="fc-change-answer-send"]').click();
   await page.waitForTimeout(800);
-  const a2 = posts.find((p) => p.key === `CHANGE-ANSWER-${done}`);
+  const a2 = posts.filter((p) => p.key === `CHANGE-ANSWER-${done}` && p.patch.answers).pop();
   assert.equal(a2?.patch.answers[0].text, "Still too small on my iPhone");
+  assert.equal(a2.patch.ok, "", "an answer after 👍 clears it");
   assert.match(await fin.locator('[data-hpd-smoke="fc-change-status"]').innerText(), /Your answer went to Claude/);
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/claude-answer.png` }).catch(() => {});
 
@@ -89,7 +95,7 @@ try {
   const req = posts.find((p) => p.key.startsWith("CHANGE-REQUEST-"));
   assert.match(req.patch.text, /^\(said to the helper\) Add a dark map at night$/);
   assert.deepEqual(errors, []);
-  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ↩ Not right? Tell Claude on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one");
+  console.log("PASS claude answer: ❓ waiting request answered in its box (CHANGE-ANSWER, your bubble, \"Your answer went to Claude\"); ▶ Try it link, 👍 Works saved, ↩ Not right? on a finished one; \"tell Claude blue please\" answered Claude's question in the chat; \"new request …\" made a new one");
 } finally {
   await browser.close();
 }

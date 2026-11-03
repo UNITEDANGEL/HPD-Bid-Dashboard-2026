@@ -5,6 +5,7 @@
       "date": "Nov 2, 2026",
       "title": "A chat on the map",
       "items": [
+        "▶ A finished request now has ▶ Try it (opens the screen that changed), 👍 Works (you checked it; it leaves the map) and ↩ Not right? (tell Claude what to fix).",
         "❓ When Claude asks you a question about a request, answer it right there: Your requests has a box under the question (➤ Send to Claude), or just say \"tell Claude …\" in the chat. Not happy with a finished one? Tap ↩ Not right? Tell Claude. For something new while Claude waits, say \"tell Claude new request …\".",
         "✅ When Claude finishes one of your requests, or needs your answer, your phone gets an alert even with the app closed: \"✅ Claude finished your request\" or \"❓ Claude needs your answer\". Tap it and Your requests opens. With the app open you see it and hear it within a few seconds.",
         "🛠️ When something breaks on your phone, Claude now gets a short note about it by itself (no names or phone numbers), so it gets fixed without you having to explain it. If a screen ever crashes, you see \"This screen hit a problem\" with ↻ Try again and 🗺 Back to the map instead of a blank page.",
