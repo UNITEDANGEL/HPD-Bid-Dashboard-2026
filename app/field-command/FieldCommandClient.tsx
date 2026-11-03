@@ -648,7 +648,8 @@ const FOLLOW_UPS: [RegExp, string[]][] = [
   [/^(today|plan|whats-next|route-add|route-remove|tracker)$/, ["take me to the next stop", "what appointments do I have", "how's the traffic"]],
   [/^(appointments|appointment|where-appt|appt-confirmed|remind)$/, ["remind tomorrow's tenants", "which tenants haven't answered", "take me to the next stop"]],
   [/^(tenants-waiting|text-tenant|call-tenant|called|tell-tenant|next-tenant|tenant-texts)$/, ["which tenants haven't answered", "what appointments do I have", "what's next"]],
-  [/^(claude-status|app-request|claude-works|claude-not-right|whats-new)$/, ["what's Claude doing", "what's new", "what's next"]],
+  [/^(claude-status|app-request|claude-works|claude-not-right|whats-new)$/, ["what's Claude doing", "give me ideas", "what's new"]],
+  [/^(ideas|idea-do|ideas-more|auto-upgrade)$/, ["do idea 1", "more ideas", "what's Claude doing"]],
 ];
 function chatFollowUps(heard: string): string[] {
   const said = heard.toLowerCase().replace(/[.?!]+$/, "").trim();
@@ -664,7 +665,7 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Money and bids", ["how much does HPD owe me", "how much did I get paid this month", "which rejections do I have", "read me the new bids", "what should I bid", "how did I do this week"]],
   ["Notices and reminders", ["which notices are open", "remind me to call the tenant at 3pm", "what did I win this week"]],
   ["Out and about", ["what's the weather", "is it going to rain tomorrow", "how's the traffic", "how long to the next job", "is alternate side on today", "where's the nearest Home Depot", "how old is this building", "should I do the roof job today"]],
-  ["The app", ["tell Claude to make the buttons bigger", "send to Claude: add a dark mode", "what's new", "what did I miss", "I'm driving", "read a photo"]],
+  ["The app", ["tell Claude to make the buttons bigger", "send to Claude: add a dark mode", "what's new", "what did I miss", "I'm driving", "read a photo", "give me ideas", "do idea 2", "keep upgrading on"]],
 ];
 
 // Everything the helper knows how to do, for "Did you mean…?" (free questions for the AI left out).
@@ -1468,10 +1469,22 @@ export default function FieldCommandClient() {
   // and CHANGE-REPLY-<id> (scripts/reply-change-request.mjs). "New" = an update after you last opened the list.
   type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string; now: { at: string; text: string } | null; answers: { at: string; text: string }[]; asked: string; tryAt: string; ok: string };
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
+  // Each request has its own key, even two sent in the same second (3 Nov: 👍 then "more ideas" overwrote the first).
+  const lastRequestIdRef = useRef(0);
+  const requestKey = (at: string) => {
+    const id = Math.max(Number(at.replace(/[^0-9]/g, "").slice(0, 14)), lastRequestIdRef.current + 1);
+    lastRequestIdRef.current = id;
+    return `CHANGE-REQUEST-${id}`;
+  };
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
   const [claudeSeenAt, setClaudeSeenAt] = useState("");
   const [claudeNow, setClaudeNow] = useState<ClaudeNow | null>(null);
+  // 💬 Talk to Claude from the live card (3 Nov): a few taps ("Stop", "Do this first", "Looks good") or your own words.
+  // With a request open it goes to that request; Claude reads it within about a minute (scripts/claude-now.mjs --inbox).
+  const [claudeTalk, setClaudeTalk] = useState(false);
+  const [claudeTalkText, setClaudeTalkText] = useState("");
+  const [claudeTalkSent, setClaudeTalkSent] = useState("");
   const claudeNowRef = useRef(false);
   const [changeCheckedAt, setChangeCheckedAt] = useState(0);
   const loadChangeThreads = async () => {
@@ -1482,6 +1495,7 @@ export default function FieldCommandClient() {
       const cn = all["CLAUDE-NOW"] as Partial<ClaudeNow> | undefined;
       const nowValue: ClaudeNow | null = cn?.text ? { at: String(cn.at || ""), text: String(cn.text).slice(0, 120), task: String(cn.task || "").slice(0, 120), state: String(cn.state || ""), log: Array.isArray(cn.log) ? cn.log.slice(-8).map((l) => ({ at: String(l?.at || ""), text: String(l?.text || "").slice(0, 120) })) : [] } : null;
       setClaudeNow(nowValue);
+      setAutoUpgrade(Boolean((all["AUTO-UPGRADE"] as { on?: boolean } | undefined)?.on));
       claudeNowRef.current = claudeNowFresh(nowValue);
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
         const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string; now?: { at?: string; text?: string } } | undefined;
@@ -1510,7 +1524,7 @@ export default function FieldCommandClient() {
     setMyRequests(list);
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
       if (r.ok) void loadChangeThreads();
       return r.ok;
     } catch { return false; }
@@ -1536,6 +1550,57 @@ export default function FieldCommandClient() {
     setChangeThreads((list) => (list || []).map((x) => (x.id === t.id ? { ...x, ok } : x)));
     try { await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-ANSWER-${t.id}`, patch: { ok } }) }); } catch { /* offline: shown on this phone */ }
   };
+  // 💡 Ideas from Claude (owner, 3 Nov: "a button I push and it recommends a bunch of suggestions ... keep recommending
+  // new things"): public/data/upgrade-ideas.json, kept fresh by Claude. 👍 Do it = a request; Not now = hidden on this
+  // phone. 🔁 Keep upgrading (AUTO-UPGRADE on the status server): with no requests open, Claude builds the next idea by
+  // itself (up to 3 a day, scheduled task hpd-requests-auto) and tells you.
+  type Idea = { id: string; icon: string; kind: string; title: string; why: string };
+  const [ideas, setIdeas] = useState<Idea[] | null>(null);
+  const [ideasPicked, setIdeasPicked] = useState<Record<string, string>>({});
+  const [autoUpgrade, setAutoUpgrade] = useState(false);
+  const [ideasNote, setIdeasNote] = useState("");
+  useEffect(() => { try { setIdeasPicked(JSON.parse(localStorage.getItem("hpd-ideas-picked") || "{}")); } catch { /* private mode */ } }, []);
+  const loadIdeas = async (): Promise<Idea[]> => {
+    try {
+      const r = await fetch("/data/upgrade-ideas.json", { cache: "no-cache" });
+      const d = r.ok ? await r.json() : null;
+      const list: Idea[] = Array.isArray(d?.ideas) ? d.ideas.filter((x: Idea) => x?.id && x?.title).map((x: Idea) => ({ id: String(x.id), icon: String(x.icon || "💡"), kind: String(x.kind || "upgrade"), title: String(x.title).slice(0, 80), why: String(x.why || "").slice(0, 240) })) : [];
+      setIdeas(list);
+      return list;
+    } catch { setIdeas([]); return []; }
+  };
+  const openIdeas = (list: Idea[] | null = ideas) => (list || []).filter((x) => !ideasPicked[x.id]);
+  const markIdea = (id: string, how: string) => {
+    setIdeasPicked((m) => { const next = { ...m, [id]: `${how}|${new Date().toISOString()}` }; try { localStorage.setItem("hpd-ideas-picked", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+  };
+  const sendRequest = async (raw: string) => {
+    const text = raw.trim();
+    if (!text) return false;
+    const at = new Date().toISOString();
+    const list = [{ at, text }, ...myRequests].slice(0, 50);
+    setMyRequests(list);
+    try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
+    try {
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      if (r.ok) void loadChangeThreads();
+      return r.ok;
+    } catch { return false; }
+  };
+  const pickIdea = async (x: Idea) => {
+    markIdea(x.id, "do");
+    const ok = await sendRequest(`(idea) ${x.title}: ${x.why}`);
+    setIdeasNote(ok ? `👍 Sent to Claude: “${x.title}”. ${pickupLabel(claudeSeenAt)}.` : "Saved on this phone; it goes to Claude when the server answers.");
+    return ok;
+  };
+  const askMoreIdeas = async () => {
+    const ok = await sendRequest("(idea) Give me more upgrade ideas: new things to add, and things in the app that should work differently, faster or better. Add them to the ideas list.");
+    setIdeasNote(ok ? `💬 Asked Claude for more ideas. They show here when ready. ${pickupLabel(claudeSeenAt)}.` : "Saved on this phone (offline).");
+    return ok;
+  };
+  const setAutoUpgradeOn = async (on: boolean) => {
+    setAutoUpgrade(on);
+    try { await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "AUTO-UPGRADE", patch: { on, at: new Date().toISOString() } }) }); } catch { /* offline */ }
+  };
   const askForChange = async () => {
     const text = changeText.trim();
     if (!text) return;
@@ -1545,7 +1610,7 @@ export default function FieldCommandClient() {
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
     setChangeText("");
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
       setChangeStatus(r.ok ? `📥 Received. ${pickupLabel(claudeSeenAt)}; progress shows below, live.` : "Saved on this phone; it will be sent when the server answers.");
       if (r.ok) void loadChangeThreads();
     } catch { setChangeStatus("Saved on this phone (offline)."); }
@@ -2439,6 +2504,7 @@ export default function FieldCommandClient() {
   const claudeLiveRef = useRef(false);
   const claudeWorkingRef = useRef(false);
   // Your requests open: refreshed every 15 s so the steps and the bar move while you watch (3 s while Claude works).
+  useEffect(() => { if (whatsNewOpen) void loadIdeas(); }, [whatsNewOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!whatsNewOpen) return;
     let last = Date.now();
@@ -2459,6 +2525,7 @@ export default function FieldCommandClient() {
     return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", look); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const claudeHeardRef = useRef<string | null>(null);
+  const lastIdeasRef = useRef<Idea[]>([]);
   // The "what's Claude doing" answer stays live in the chat: rewritten every 2 s from the last check (not said again),
   // and while it shows the requests are checked at least every 15 s (every 3 s when Claude works, as above).
   const agentLive = agent?.live === "claude";
@@ -4332,6 +4399,37 @@ export default function FieldCommandClient() {
       speak(reply, 200, () => { if (convoRef.current) startListening(); });
       return;
     }
+    if (cmd.intent === "ideas") {
+      void loadIdeas().then((list) => {
+        const open = openIdeas(list).slice(0, 3);
+        lastIdeasRef.current = open;
+        const reply = open.length
+          ? `Here are my top ideas:\n${open.map((x, i) => `${i + 1}. ${x.icon} ${x.title}: ${x.why}`).join("\n")}\nSay "do idea 1" (or 2, 3), "more ideas", or tell me your own.`
+          : "You've picked all my ideas. Say \"more ideas\" and I'll ask Claude for new ones, or tell me what you want.";
+        showPanel({ heard, reply, actions: [{ label: "💡 All the ideas", href: "#requests" }] });
+        speak(open.length ? `Here are my top ideas. ${open.map((x, i) => `${i + 1}: ${x.title}.`).join(" ")} Say do idea 1, 2 or 3.` : reply, 200, () => { if (convoRef.current) startListening(); });
+      });
+      return;
+    }
+    if (cmd.intent === "idea-do") {
+      const fromChat = lastIdeasRef.current.length ? lastIdeasRef.current : openIdeas().slice(0, 3);
+      const go = (list: Idea[]) => {
+        const x = list[cmd.n - 1];
+        if (!x) { answer(`I don't have an idea number ${cmd.n}. Say "give me ideas" to hear them.`); return; }
+        void pickIdea(x).then((ok) => answer(ok ? `👍 Sent to Claude: “${x.title}”. ${pickupLabel(claudeSeenAt)}. Watch the 🤖 button: it turns green while Claude builds it.` : "I saved it on this phone; it goes to Claude when the connection is back."));
+      };
+      if (fromChat.length) go(fromChat); else void loadIdeas().then((list) => go(openIdeas(list).slice(0, 3)));
+      return;
+    }
+    if (cmd.intent === "ideas-more") {
+      void askMoreIdeas().then((ok) => answer(ok ? `💬 I asked Claude for more ideas. ${pickupLabel(claudeSeenAt)}. They show under 💡 Ideas when ready.` : "Saved on this phone (offline)."));
+      return;
+    }
+    if (cmd.intent === "auto-upgrade") {
+      void setAutoUpgradeOn(cmd.on);
+      answer(cmd.on ? "🔁 Keep upgrading is on: when you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Say \"stop auto upgrade\" to turn it off." : "Keep upgrading is off. Claude only builds what you ask for.");
+      return;
+    }
     if (cmd.intent === "whats-new") {
       // The newest lines of What's new (public/data/whats-new.json), shortest first sentence each, read out.
       void loadWhatsNew().then((v) => {
@@ -5610,6 +5708,7 @@ export default function FieldCommandClient() {
               { key: "parking", icon: "🅿️", label: "Parking (street cleaning)", info: aspOffToday ? `No street cleaning today · ${aspOffToday}` : "Street cleaning rules today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
               { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
               { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
+              { key: "ideas", icon: "💡", label: "Upgrade ideas", info: "Claude's next ideas · tap 👍 to build", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); } },
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
               { key: "map", icon: "🗺", label: "Map style", info: darkTiles ? "Dark map" : "Light map", go: () => { setMoreOpen(false); toggleTileStyle(); } },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
@@ -5768,9 +5867,31 @@ export default function FieldCommandClient() {
               .sort((a, b) => activity(b).localeCompare(activity(a)));
             claudeLiveRef.current = live.some((t) => t.status !== "Done" && t.status !== "Waiting for you");
             claudeWorkingRef.current = live.some((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
-            const t = live[0];
+            // The one Claude is working on comes first (3 Nov: a 💬 goes to the request being built, not the newest one).
+            const t = live.find((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000) || live[0];
             const nowOn = claudeNowFresh(claudeNow) && claudeNow ? claudeNow : null;
             if (selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
+            const talkTo = t && t.status !== "Done" ? t : null;
+            const tell = async (raw: string) => {
+              const text = raw.trim();
+              if (!text) return;
+              const ok = talkTo ? await sendChangeAnswer(talkTo, text) : await sendRequest(`(while Claude works) ${text}`);
+              setClaudeTalkText("");
+              setClaudeTalkSent(ok ? `✓ Sent: “${text.slice(0, 60)}”. Claude reads it within a minute.` : "Saved on this phone; it goes when the connection is back.");
+            };
+            const talkBox = claudeTalk ? (
+              <div className="fc-claude-talk" data-hpd-smoke="fc-claude-talk">
+                <span className="fc-claude-talk-chips">
+                  {["⏸ Stop for now", "⬆ Do this one first", "👍 Looks good, keep going", "❓ What are you doing?"].map((c) => <button key={c} type="button" data-hpd-smoke="fc-claude-talk-chip" onClick={() => void tell(c)}>{c}</button>)}
+                </span>
+                <form onSubmit={(e) => { e.preventDefault(); void tell(claudeTalkText); }}>
+                  <input value={claudeTalkText} onChange={(e) => setClaudeTalkText(e.target.value)} placeholder="Or type to Claude…" aria-label="Message to Claude" data-hpd-smoke="fc-claude-talk-input" enterKeyHint="send" />
+                  <button type="submit" disabled={!claudeTalkText.trim()} data-hpd-smoke="fc-claude-talk-send">➤</button>
+                </form>
+                {claudeTalkSent ? <small data-hpd-smoke="fc-claude-talk-sent" role="status">{claudeTalkSent}</small> : null}
+              </div>
+            ) : null;
+            const talkBtn = <button type="button" className="fc-claude-live-x fc-claude-talk-btn" aria-label="Talk to Claude" aria-pressed={claudeTalk} data-hpd-smoke="fc-claude-talk-open" onClick={() => { setClaudeTalk((o) => !o); setClaudeTalkSent(""); }}>💬</button>;
             if ((!t || t.status === "Done") && nowOn) {
               if (claudeLiveHidden === `now|${nowOn.task}`) return null;
               return (
@@ -5780,7 +5901,8 @@ export default function FieldCommandClient() {
                     {nowOn.task ? <span className="fc-claude-live-req">“{nowOn.task.slice(0, 70)}”</span> : null}
                     <ClaudeNowLines now={nowOn} />
                   </button>
-                  <button type="button" className="fc-claude-live-x" aria-label="Hide until the next job" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`now|${nowOn.task}`)}>×</button>
+                  <span className="fc-claude-live-side">{talkBtn}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next job" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`now|${nowOn.task}`)}>×</button></span>
+                  {talkBox}
                 </div>
               );
             }
@@ -5807,7 +5929,8 @@ export default function FieldCommandClient() {
                   {state === "working" && changeCheckedAt ? <span className="fc-claude-live-checked" data-hpd-smoke="fc-claude-live-checked">🔄 Live: checked <SecondsAgo at={new Date(changeCheckedAt).toISOString()} bare /></span> : null}
                   {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
                 </button>
-                <button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>
+                <span className="fc-claude-live-side">{state !== "done" ? talkBtn : null}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button></span>
+                {state !== "done" ? talkBox : null}
               </div>
             );
           })()}
@@ -6690,7 +6813,9 @@ export default function FieldCommandClient() {
       {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>
-          <ul>{newItems.map((x) => <li key={x}>{x}</li>)}</ul>
+          {/* Short (3 Nov): the first 3 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
+          <ul>{newItems.slice(0, 3).map((x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return <li key={x}>{one.length > 150 ? `${one.slice(0, 148)}…` : one}</li>; })}</ul>
+          {newItems.length > 3 ? <small className="fc-newupdate-more-n" data-hpd-smoke="fc-newupdate-more-n">…and {newItems.length - 3} more: tap All changes</small> : null}
           <div>
             <button type="button" data-hpd-smoke="fc-newupdate-ok" onClick={seenNewItems}>Got it</button>
             <button type="button" data-hpd-smoke="fc-newupdate-more" onClick={() => { seenNewItems(); setWhatsNewOpen(true); }}>All changes</button>
@@ -6712,6 +6837,30 @@ export default function FieldCommandClient() {
           </header>
           <div className="fc-summary-body">
             <p className="fc-follow-note" data-hpd-smoke="fc-whatsnew-version">This version: {versionLabel() || `v${appVersion}`}{BUILT_COMMIT ? ` (${BUILT_COMMIT})` : ""}. Every version is kept.</p>
+            <section className="fc-ideas" data-hpd-smoke="fc-ideas">
+              <h4>💡 Ideas from Claude</h4>
+              <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
+              {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
+                <ol className="fc-idea-list">
+                  {openIdeas().slice(0, 6).map((x) => (
+                    <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
+                      <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}</b>
+                      <span>{x.why}</span>
+                      <span className="fc-idea-btns">
+                        <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
+                        <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <div className="fc-idea-row">
+                <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
+                <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
+              </div>
+              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
+              {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
+            </section>
             <section className="fc-ask-change" data-hpd-smoke="fc-ask-change">
               <h4>💡 Ask for a change</h4>
               <textarea rows={3} data-hpd-smoke="fc-ask-change-text" placeholder="What should be better? e.g. make the notice text bigger, add 15 days to the filter…" value={changeText} onChange={(e) => setChangeText(e.target.value)} />

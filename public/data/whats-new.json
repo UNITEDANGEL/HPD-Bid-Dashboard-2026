@@ -3,6 +3,18 @@
   "versions": [
     {
       "date": "Nov 3, 2026",
+      "title": "Ideas, keep upgrading, talk to Claude",
+      "items": [
+        "💡 Ideas from Claude: tap 🤖 Claude (or All > Upgrade ideas) and the top of the screen lists Claude's next upgrade ideas. Tap 👍 Do it and Claude builds it; Not now hides one; 💬 Ask Claude for more ideas. Or just tell the chat \"give me ideas\", then \"do idea 2\" or \"more ideas\".",
+        "🔁 Keep upgrading on its own: switch it on under 💡 Ideas (or say \"keep upgrading on\"). When you have no requests open, Claude builds the next idea by itself, up to 3 a day, tests it, puts it live and tells you. Your requests always go first.",
+        "💬 Talk to Claude while it works: tap 💬 on the Claude card on the map for Stop for now, Do this one first, Looks good, or type your own words. It goes to the request Claude is building.",
+        "🔔 Your phone now also tells you when Claude starts a request and when it's live to try, not only when it's done.",
+        "🗺 Tidier map top on the phone: weather and street cleaning on one line.",
+        "🛠 Fixed: two requests sent in the same second (like 👍 and then \"more ideas\") could overwrite each other. Each one is kept now."
+      ]
+    },
+    {
+      "date": "Nov 3, 2026",
       "title": "Claude in the middle, live every few seconds",
       "items": [
         "🤖 The middle button at the bottom is now Claude (it was a second ✨ AI button that did the same as the chat bar's 🎙). It turns green and says Working while Claude builds something, shows ❓ when Claude needs your answer, and is grey when the office computer is off. Tap it for your requests.",

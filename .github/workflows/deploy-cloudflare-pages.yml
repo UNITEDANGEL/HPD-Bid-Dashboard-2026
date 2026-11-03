@@ -375,6 +375,7 @@ jobs:
             scripts/test-browser-driving.mjs \
             scripts/test-browser-photo.mjs \
             scripts/test-browser-claude-now.mjs \
+            scripts/test-browser-ideas.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \

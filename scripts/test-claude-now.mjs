@@ -6,7 +6,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { phraseFor } from "./claude-now.mjs";
+import { ownerNotes, phraseFor } from "./claude-now.mjs";
 
 const W = "C:/dev/HPD-Bid-Dashboard-2026";
 assert.equal(phraseFor({ tool_name: "Edit", tool_input: { file_path: `${W}/app/field-command/FieldCommandClient.tsx` } }), "Changing the screen");
@@ -18,6 +18,11 @@ assert.equal(phraseFor({ tool_name: "Bash", tool_input: { command: `cd ${W} && r
 assert.equal(phraseFor({ tool_name: "mcp__Claude_Browser__navigate", tool_input: { url: "https://hpd-bid-dashboard-2026.pages.dev/map/" } }), "Checking it on the live app");
 assert.equal(phraseFor({ tool_name: "Bash", tool_input: { command: "ls D:/dev/ForexAgent" } }), "", "other projects say nothing");
 assert.equal(phraseFor({ tool_name: "Bash", tool_input: { command: `cd ${W} && echo "Ms Smith 718-555-0100"` } }), "Working on the computer", "the command's words never go out");
+
+// 👂 What the owner wrote since the last look: new requests, answers (also 💬 from the live card), the auto switch.
+const notes = ownerNotes({ "CHANGE-REQUEST-20261103190000": { at: "2026-11-03T19:00:00Z", text: "(idea) Quiet hours" }, "CHANGE-ANSWER-20261103163347": { answers: [{ at: "2026-11-03T18:00:00Z", text: "old" }, { at: "2026-11-03T19:01:00Z", text: "⏸ Stop for now" }] }, "AUTO-UPGRADE": { on: true, at: "2026-11-03T19:02:00Z" } }, "2026-11-03T18:30:00Z");
+assert.deepEqual(notes.map((n) => n.text), ["New request (20261103190000): (idea) Quiet hours", "Answer on request 20261103163347: ⏸ Stop for now", "Keep upgrading on its own turned ON"]);
+assert.deepEqual(ownerNotes({ "CHANGE-REQUEST-1": { at: "2026-11-03T18:00:00Z", text: "old" } }, "2026-11-03T18:30:00Z"), [], "nothing old");
 
 // The hook: a fake status server, a fresh state file.
 const got = [];
@@ -48,7 +53,7 @@ try {
   assert.equal(got[2].patch.state, "idle");
   await hook({ hook_event_name: "Stop" });
   assert.equal(got.length, 3, "once");
-  console.log("PASS claude-now: steps become plain phrases (HPD work only, never the command text); sent on a change at most every 20 s; finishing said once");
+  console.log("PASS claude-now: owner notes since the last look; steps become plain phrases (HPD work only, never the command text); sent on a change at most every 20 s; finishing said once");
 } finally {
   srv.close();
   if (saved) fs.writeFileSync(state, saved); else if (fs.existsSync(state)) fs.unlinkSync(state);

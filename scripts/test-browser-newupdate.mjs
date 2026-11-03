@@ -28,7 +28,8 @@ try {
     const card = p.locator('[data-hpd-smoke="fc-newupdate"]');
     await card.waitFor({ timeout: 20000 });
     const items = await card.locator("li").allInnerTexts();
-    assert.deepEqual(items, all.slice(0, 2), "only the two lines not seen yet");
+    const short = (x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return one.length > 150 ? `${one.slice(0, 148)}…` : one; };
+    assert.deepEqual(items, all.slice(0, Math.min(2, 3)).map(short), "only the lines not seen yet, first sentence each (3 at most)");
     assert.match(await card.innerText(), /🆕 New update includes/);
     if (shots) await p.screenshot({ path: `${shots}/newupdate.png` });
     await card.locator('[data-hpd-smoke="fc-newupdate-ok"]').click();

@@ -22,6 +22,10 @@ export type AgentCommand =
   | { intent: "claude-status" }
   | { intent: "claude-works" }
   | { intent: "whats-new" }
+  | { intent: "ideas" }
+  | { intent: "idea-do"; n: number }
+  | { intent: "ideas-more" }
+  | { intent: "auto-upgrade"; on: boolean }
   | { intent: "catch-up" }
   | { intent: "bid-usual" }
   | { intent: "driving"; on: boolean }
@@ -141,6 +145,16 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(?:so |ok(?:ay)? |hey )?(?:what did i miss|what have i missed|catch me up|fill me in|what happened(?: while i was (?:away|gone|out)| today| this morning)?|did i miss anything|anything happen(?:ed)?(?: while i was (?:away|gone|out))?|while i was (?:away|gone|out))$/.test(t)) return { intent: "catch-up" };
   // What changed in the app (3 Nov, "keep upgrading"): "what's new", "what did you upgrade", "what changed in the app",
   // "latest updates", "read me the new features" -> the newest lines of What's new, read out.
+  // 💡 Upgrade ideas (owner, 3 Nov: "a button I push and it recommends a bunch of suggestions, then we go from there").
+  if (/^(?:ok(?:ay)? |so |hey )?(?:(?:give|show|tell) me (?:some |more |your )?(?:upgrade |new )?(?:ideas|suggestions|recommendations)(?: for (?:the )?(?:app|upgrades?))?|(?:any |some )?(?:upgrade |new )?(?:ideas|suggestions)(?: for (?:the )?(?:app|upgrades?))?|what (?:should|can|else can|else should) (?:we|i|you) (?:upgrade|add|improve|build|change)(?: next)?(?: in the app)?|(?:recommend|suggest) (?:some |more )?(?:upgrades|ideas|things|improvements)|what'?s (?:the )?next upgrade|upgrade ideas)$/.test(t)) return { intent: "ideas" };
+  {
+    const words: Record<string, number> = { one: 1, first: 1, two: 2, second: 2, three: 3, third: 3, four: 4, fourth: 4, five: 5, fifth: 5, six: 6, sixth: 6 };
+    const m = t.match(/^(?:ok(?:ay)? |yes,? |let'?s )?(?:do|build|make|start|pick|go with|i want) (?:idea|number|suggestion|the idea|#)? ?(\d|one|two|three|four|five|six)$|^(?:ok(?:ay)? |yes,? |let'?s )?(?:do|build|make|start|pick|go with) the (first|second|third|fourth|fifth|sixth) (?:one|idea)$/);
+    if (m) { const k = m[1] || m[2]; const n = Number(k) || words[k] || 0; if (n >= 1 && n <= 6) return { intent: "idea-do", n }; }
+  }
+  if (/^(?:give me |get |ask (?:claude )?for |i want )?more (?:upgrade )?(?:ideas|suggestions|recommendations)(?: please)?$|^(?:ask claude|tell claude) (?:to |for )?(?:give me |come up with |suggest )?(?:more |new )?(?:ideas|suggestions|upgrades)$/.test(t)) return { intent: "ideas-more" };
+  if (/^(?:turn |switch )?(?:on |start )?(?:auto(?:matic)?[ -]?upgrades?|keep upgrading)(?: on| by itself| on its own)?$|^(?:turn on|start|switch on) (?:the )?(?:auto(?:matic)?[ -]?upgrades?|keep upgrading)$/.test(t)) return { intent: "auto-upgrade", on: true };
+  if (/^(?:turn |switch )?(?:off |stop )(?:the )?(?:auto(?:matic)?[ -]?upgrades?|upgrading on its own|keep upgrading)$|^(?:auto(?:matic)?[ -]?upgrades?|keep upgrading) off$/.test(t)) return { intent: "auto-upgrade", on: false };
   if (/^(?:so |ok(?:ay)? |hey )?(?:what'?s|what is|anything) new(?: in the app| today| with the app)?$|^what (?:did|have) (?:you|claude|cloud) (?:upgrade|upgraded|change|changed|add|added|build|built|fix|fixed)(?: today| lately| in the app)?$|^what (?:changed|got upgraded)(?: in the app| today)?$|^(?:read me |tell me |show me )?(?:the )?(?:latest|newest|new) (?:updates|upgrades|features|changes)(?: in the app)?$/.test(t)) return { intent: "whats-new" };
   // What Claude is doing on your requests (owner, 2 Nov: "I need to know exactly what's going on every second"):
   // "what's Claude doing", "is Claude done", "status of my request", "how's my request going".
