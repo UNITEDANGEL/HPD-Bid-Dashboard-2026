@@ -2764,6 +2764,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-change-answer button:disabled { opacity: 0.45; }
 .fc-change-again { justify-self: start; padding: 0 14px; background: #334155; color: #e2e8f0; }
 /* A finished request: ▶ Try it (opens the screen that changed), 👍 Works, ↩ Not right? */
+.fc-agent-choices button.is-ai { background: #312e81; color: #e0e7ff; }
 .fc-change-check { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .fc-change-try, .fc-change-works { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: 800 15px system-ui; text-decoration: none; }
 .fc-change-try { background: #2563eb; color: #fff; }

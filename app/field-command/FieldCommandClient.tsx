@@ -66,6 +66,7 @@ import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
+import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
 import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater } from "../../lib/weather";
 import { aspAnswer, aspOff } from "../../lib/asp";
 import { loadBuildingFacts } from "../../lib/building-facts";
@@ -652,6 +653,14 @@ const AGENT_EXAMPLES: [string, string[]][] = [
   ["Out and about", ["what's the weather", "is it going to rain tomorrow", "how's the traffic", "how long to the next job", "is alternate side on today", "where's the nearest Home Depot", "how old is this building", "should I do the roof job today"]],
   ["The app", ["tell Claude to make the buttons bigger", "send to Claude: add a dark mode"]],
 ];
+
+// Everything the helper knows how to do, for "Did you mean…?" (free questions for the AI left out).
+let knownCache: string[] | null = null;
+function knownPhrases() {
+  if (!knownCache) knownCache = [...AGENT_EXAMPLES.flatMap(([, l]) => l), ...FOLLOW_UPS.flatMap(([, l]) => l), "what's new", "what did I miss", "what's Claude doing", "next bid", "bids in Brooklyn", "bids in Queens", "bids in the Bronx", "bids in Manhattan", "what do I have today", "where's my next appointment", "it works"]
+    .filter((x) => { const i = parseCommand(x).intent; return i !== "ask" && i !== "search"; });
+  return knownCache;
+}
 
 function BellIcon() {
   return (
@@ -1571,7 +1580,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; choices?: string[]; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1586,6 +1595,8 @@ export default function FieldCommandClient() {
   const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
   // The helper as a conversation (27 Oct, owner: "a better interface for the AI"): the earlier turns stay on screen
   // for 15 minutes, and a box to type anything (questions, app actions, or a change for Claude).
+  // "Ask the AI instead" after "Did you mean…?": that sentence goes to the AI as said.
+  const askAnywayRef = useRef("");
   const [agentHistory, setAgentHistory] = useState<{ heard: string; reply: string; at: number }[]>([]);
   // The chat on the map (owner, 2 Nov: "build a chat on the map, better flow"): a bar over the map to type or talk,
   // and today's conversation kept on this phone until midnight (▲ Earlier today shows all of it).
@@ -4139,12 +4150,29 @@ export default function FieldCommandClient() {
   }
 
   agentRef.current = (heard: string, inner = false) => {
+    if (askAnywayRef.current && askAnywayRef.current !== heard) askAnywayRef.current = "";
     if (!inner) {
       multiRef.current = null;
       const parts = splitCommands(heard);
       if (parts.length > 1) { multiRef.current = { heard, queue: parts.slice(1), replies: [] }; setAgent({ heard, reply: "Working on it…" }); agentRef.current(parts[0], true); return; }
     }
     let cmd = parseCommand(heard);
+    // Not recognized (3 Nov, "did you mean"): very close to something the helper knows = do that; close = offer up to
+    // 3 to tap, with "Ask the AI instead"; else a real question for the AI. A search with a number stays a search.
+    if ((cmd.intent === "ask" || (cmd.intent === "search" && !/\d/.test(heard))) && askAnywayRef.current !== heard && !pendingWhoRef.current) {
+      const best = closest(heard, knownPhrases());
+      if (best[0] && best[0].score >= SURE) { agentRef.current(best[0].phrase, inner); return; }
+      if (cmd.intent === "ask" && best[0] && best[0].score >= MAYBE) {
+        const choices = best.filter((b) => b.score >= MAYBE - 0.1).map((b) => b.phrase);
+        const reply = `I'm not sure what you meant by "${heard.trim()}". Did you mean one of these?`;
+        if (inner && multiRef.current) { cmd = parseCommand(choices[0]); }
+        else {
+          setAgent({ heard, reply, choices });
+          speak(`Did you mean: ${choices[0]}?`, 200, () => { if (convoRef.current) startListening(); });
+          return;
+        }
+      }
+    }
     // "Who refused?" was just asked: what's said next is the description (unless it's no / cancel).
     const askedWho = pendingWhoRef.current;
     pendingWhoRef.current = null;
@@ -7217,6 +7245,12 @@ export default function FieldCommandClient() {
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
           ) : null}
           <p data-hpd-smoke="fc-agent-reply" className={agent.live ? "is-live" : undefined}>{agent.reply}</p>
+          {agent.choices?.length ? (
+            <div className="fc-agent-try fc-agent-choices" data-hpd-smoke="fc-agent-choices">
+              {agent.choices.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-choice" onClick={() => agentRef.current(c)}>{c}</button>)}
+              <button type="button" className="is-ai" data-hpd-smoke="fc-agent-ask-ai" onClick={() => { const h = agent.heard; askAnywayRef.current = h; agentRef.current(h); }}>🤖 Ask the AI instead</button>
+            </div>
+          ) : null}
           {agent.live ? <p className="fc-agent-live" data-hpd-smoke="fc-agent-live"><i aria-hidden="true" /> Live: this answer updates by itself</p> : null}
           {agent.cards?.length ? (
             <div className="fc-chat-cards" data-hpd-smoke="fc-chat-cards">
@@ -7233,7 +7267,7 @@ export default function FieldCommandClient() {
             </div>
           ) : null}
           {/* 👉 Try next (27 Oct, "more advanced helper"): what makes sense to say next here, one tap to run it. */}
-          {!agent.confirm && !helpOpen ? (() => {
+          {!agent.confirm && !helpOpen && !agent.choices?.length ? (() => {
             const heard = agent.heard.toLowerCase().replace(/[^a-z' ]/g, "").trim();
             const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
             const j = selectedJob;
