@@ -47,6 +47,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-auto-upgrade"]').getAttribute("aria-pressed"), "true");
   assert.equal(posted.find((b) => b.key === "AUTO-UPGRADE")?.patch.on, true);
   await page.locator('[data-hpd-smoke="fc-auto-upgrade-note"]').waitFor();
+  await page.locator('[data-hpd-smoke="fc-auto-upgrade-status"]').waitFor();
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/ideas.png` }).catch(() => {});
   await page.locator('[data-hpd-smoke="fc-whatsnew"] header button').first().click();
 

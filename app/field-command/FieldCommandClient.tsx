@@ -1497,6 +1497,7 @@ export default function FieldCommandClient() {
       const nowValue: ClaudeNow | null = cn?.text ? { at: String(cn.at || ""), text: String(cn.text).slice(0, 120), task: String(cn.task || "").slice(0, 120), state: String(cn.state || ""), log: Array.isArray(cn.log) ? cn.log.slice(-8).map((l) => ({ at: String(l?.at || ""), text: String(l?.text || "").slice(0, 120) })) : [] } : null;
       setClaudeNow(nowValue);
       setAutoUpgrade(Boolean((all["AUTO-UPGRADE"] as { on?: boolean } | undefined)?.on));
+      { const au = all["AUTO-UPGRADE"] as { on?: boolean; lastAt?: string; lastTitle?: string; doneToday?: number } | undefined; setAutoInfo({ lastAt: String(au?.lastAt || ""), lastTitle: String(au?.lastTitle || "").slice(0, 80), doneToday: Number(au?.doneToday || 0) }); }
       claudeNowRef.current = claudeNowFresh(nowValue);
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
         const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string; now?: { at?: string; text?: string } } | undefined;
@@ -1559,6 +1560,7 @@ export default function FieldCommandClient() {
   const [ideas, setIdeas] = useState<Idea[] | null>(null);
   const [ideasPicked, setIdeasPicked] = useState<Record<string, string>>({});
   const [autoUpgrade, setAutoUpgrade] = useState(false);
+  const [autoInfo, setAutoInfo] = useState<{ lastAt: string; lastTitle: string; doneToday: number }>({ lastAt: "", lastTitle: "", doneToday: 0 });
   const [ideasNote, setIdeasNote] = useState("");
   useEffect(() => { try { setIdeasPicked(JSON.parse(localStorage.getItem("hpd-ideas-picked") || "{}")); } catch { /* private mode */ } }, []);
   const loadIdeas = async (): Promise<Idea[]> => {
@@ -6863,6 +6865,7 @@ export default function FieldCommandClient() {
                 <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
               </div>
               {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
+              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
               {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
             </section>
             <section className="fc-ask-change" data-hpd-smoke="fc-ask-change">
