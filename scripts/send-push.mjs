@@ -53,6 +53,18 @@ export function workingHours(now = Date.now()) {
   return !["Sat", "Sun"].includes(p.weekday) && hour >= 8 && hour < 20;
 }
 
+// Quiet hours (owner idea, 3 Nov): no phone alerts 9 PM - 7 AM New York time, except 24-hour notices and emergencies.
+// Held alerts are not marked as sent, so they go out with the first run after 7 AM.
+export function quietHours(now = Date.now()) {
+  const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date(now)));
+  return hour >= 21 || hour < 7;
+}
+export const QUIET_EXEMPT = new Set(["urgent", "notice"]);
+export function holdQuiet(list, now = Date.now()) {
+  if (!quietHours(now)) return { send: list, held: [] };
+  return { send: list.filter((a) => QUIET_EXEMPT.has(a.kind)), held: list.filter((a) => !QUIET_EXEMPT.has(a.kind)) };
+}
+
 // What is new since last time: [{ key, title, body, url, tag }].
 export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {}, descriptions = {} }) {
   const out = [];
@@ -364,11 +376,14 @@ async function main() {
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
-  const fresh0 = alerts.filter((a) => !seen.has(a.key));
+  const fresh00 = alerts.filter((a) => !seen.has(a.key));
+  const quiet = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? { send: fresh00, held: [] } : holdQuiet(fresh00);
+  const fresh0 = quiet.send;
+  if (quiet.held.length) console.log(`Quiet hours: holding ${quiet.held.length} alert(s) until 7 AM.`);
   // Several new invitations at once: one alert with the count (owner, 22 Oct: "you have three new invitations to bid").
   const newBids = fresh0.filter((a) => a.kind === "bid");
   const fresh = newBids.length > 1 ? [...fresh0.filter((a) => a.kind !== "bid"), { key: `bids:${newBids.map((a) => a.key).join(",")}`, kind: "bid", title: `🧾 ${newBids.length} new invitations to bid`, body: newBids.slice(0, 4).map((a) => a.body.split(" · ").slice(-1)[0]).join(" · "), url: "/map/?bids=1", tag: "bids" }] : fresh0;
-  const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
+  const nextState = { note: "Phone alerts already sent (short hashes only). scripts/send-push.mjs", seen: [...new Set([...(state?.seen || []), ...alerts.filter((a) => !quiet.held.includes(a)).map((a) => a.key)])].slice(-3000), dead: state?.dead || [] };
   if (!TEST && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW && !state) { if (!DRY) fs.writeFileSync(STATE, JSON.stringify(nextState)); console.log(`First run: remembered ${alerts.length} things, nothing sent.`); return; }
   if (!TEST && !DRY && !BRIEF_NOW && !WRAP_NOW && !MONEY_NOW && smsReady(process.env)) {
     try {

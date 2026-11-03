@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { handlePushSubscribe } from "../server/drive-packages.mjs";
-import { eveningWrapup, findAlerts, moneyReport, morningBriefing, openSealed, workingHours } from "./send-push.mjs";
+import { eveningWrapup, findAlerts, moneyReport, morningBriefing, holdQuiet, openSealed, quietHours, workingHours } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const key = crypto.randomBytes(32);
@@ -385,4 +385,19 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(mon[0].body, /EQ15239: no access Fri 10\/23\. Knock again/);
   assert.equal((await at("2026-10-27T15:00:00Z")).find((x) => x.tag === "t2-EQ15239").key, mon[0].key, "same key: sent once");
   console.log("PASS 2nd try alert: '2nd try due · 1207 1 AVENUE' once from 10 AM on a weekday; weekend, before 10, saved or not yet due stay quiet");
+}
+
+// Quiet hours: no alerts 9 PM - 7 AM New York, except 24-hour notices and emergencies; held ones wait for morning.
+{
+  const at = (iso) => Date.parse(iso);
+  assert.equal(quietHours(at("2026-11-03T02:30:00Z")), true, "9:30 PM EST is quiet");
+  assert.equal(quietHours(at("2026-11-03T11:30:00Z")), true, "6:30 AM EST is quiet");
+  assert.equal(quietHours(at("2026-11-03T12:30:00Z")), false, "7:30 AM EST is not quiet");
+  assert.equal(quietHours(at("2026-11-03T20:00:00Z")), false, "3 PM EST is not quiet");
+  const list = [{ kind: "bid" }, { kind: "notice" }, { kind: "urgent" }, { kind: "message" }, { kind: "award" }];
+  const night = holdQuiet(list, at("2026-11-03T04:00:00Z"));
+  assert.deepEqual(night.send.map((a) => a.kind), ["notice", "urgent"]);
+  assert.equal(night.held.length, 3);
+  assert.equal(holdQuiet(list, at("2026-11-03T16:00:00Z")).send.length, 5, "daytime sends everything");
+  console.log("quiet hours ok");
 }
