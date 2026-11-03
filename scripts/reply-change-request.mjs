@@ -22,7 +22,10 @@ const all = await load();
 const requests = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).sort(([a], [b]) => a.localeCompare(b));
 
 // Open = not "Done" and not "Waiting for you". Busy = another run's green light is under 30 minutes old.
-const openOnes = (o) => Object.keys(o).filter((k) => k.startsWith("CHANGE-REQUEST-")).filter((k) => !["Done", "Waiting for you"].includes(o[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received"));
+// The owner's answer (CHANGE-ANSWER-<id>, from the app) after Claude's last note opens a request again.
+const lastAt = (list) => (Array.isArray(list) ? list.map((x) => x?.at || "").sort().slice(-1)[0] : "") || "";
+const answeredSince = (o, id) => lastAt(o[`CHANGE-ANSWER-${id}`]?.answers) > lastAt(o[`CHANGE-REPLY-${id}`]?.updates);
+const openOnes = (o) => Object.keys(o).filter((k) => k.startsWith("CHANGE-REQUEST-")).filter((k) => answeredSince(o, k.slice(15)) || !["Done", "Waiting for you"].includes(o[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received"));
 const busyNow = (o) => Object.entries(o).some(([k, v]) => k.startsWith("CHANGE-REPLY-") && v?.workingAt && Date.now() - Date.parse(v.workingAt) < 30 * 60000);
 
 // "Claude is on" for the app (owner, 2 Nov: "do I have to leave Claude open?"): every check and every wait writes the
@@ -55,7 +58,8 @@ if (flag("list")) {
     const id = k.slice("CHANGE-REQUEST-".length);
     const r = all[`CHANGE-REPLY-${id}`];
     const steps = r?.steps || [];
-    console.log(`${id} | ${v.text}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
+    const answers = (all[`CHANGE-ANSWER-${id}`]?.answers || []).slice(-3).map((a) => `\n   <- owner's answer (${a.at.slice(0, 16)}): ${a.text}`).join("");
+    console.log(`${id} | ${v.text}${answers}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
   }
   process.exit(0);
 }
@@ -68,8 +72,11 @@ const done = arg("done");
 if (done === "all") steps = steps.map((s) => ({ ...s, done: true }));
 else if (done) for (const n of done.split(",").map(Number)) if (steps[n - 1]) steps[n - 1] = { ...steps[n - 1], done: true };
 const text = arg("update");
+// Answered after the last note: back to work unless told otherwise (and the next Done / question alerts again).
+const answered = answeredSince(all, id);
+const reopened = answered && !text;
 const reply = {
-  status: arg("status") || (steps.length && steps.every((s) => s.done) ? "Done" : old.status || "Received"),
+  status: arg("status") || (steps.length && steps.every((s) => s.done) && !reopened ? "Done" : reopened ? "Working on it" : old.status || "Received"),
   steps,
   workingAt: flag("idle") ? "" : flag("working") || arg("now") ? new Date().toISOString() : old.workingAt || "",
   // The live line the app shows under "working on it now" with its seconds (owner, 2 Nov: "every second").
@@ -77,7 +84,7 @@ const reply = {
   updates: [...(old.updates || []), ...(text ? [{ at: new Date().toISOString(), text: text.slice(0, 3000) }] : [])].slice(-30),
 };
 const res = await fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REPLY-${id}`, patch: reply }) });
-const alert = res.ok && !flag("no-alert") ? claudeAlert(old.status, reply, all[`CHANGE-REQUEST-${id}`]?.text) : null;
+const alert = res.ok && !flag("no-alert") ? claudeAlert(answered ? "Received" : old.status, reply, all[`CHANGE-REQUEST-${id}`]?.text) : null;
 if (alert) {
   const out = spawnSync(process.execPath, ["scripts/send-push.mjs", "--alert", "--title", alert.title, "--body", alert.body, "--url", alert.url], { cwd: new URL("..", import.meta.url), encoding: "utf8" });
   console.log(`Phone alert: ${(out.stdout || out.stderr || "").trim().split("\n").pop()}`);

@@ -2756,6 +2756,13 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-change-progress li.is-done { color: #bbf7d0; }
 @media (prefers-reduced-motion: reduce) { .fc-change-working i { animation: none; } }
 .fc-change-pickup { color: #93c5fd; font: 700 12.5px system-ui; }
+/* Answer Claude on a request (Waiting for you), or "Not right? Tell Claude" on a finished one. */
+.fc-change-thread.is-waiting-for-you { border-color: #f472b6; }
+.fc-change-answer { display: grid; gap: 6px; }
+.fc-change-answer textarea { width: 100%; box-sizing: border-box; min-height: 52px; padding: 9px 11px; border-radius: 12px; border: 1.5px solid #f472b6; background: #0f172a; color: #f8fafc; font: 500 16px/1.4 system-ui; }
+.fc-change-answer button, .fc-change-again { min-height: 44px; border: 0; border-radius: 12px; background: #db2777; color: #fff; font: 800 15px system-ui; }
+.fc-change-answer button:disabled { opacity: 0.45; }
+.fc-change-again { justify-self: start; padding: 0 14px; background: #334155; color: #e2e8f0; }
 
 /* Bigger, livelier map buttons (owner's request, 16 Oct): on taller phone screens the bubbles are larger; each has
    a soft glow in its own color, pops when tapped and glows stronger while pressed (also Close out / 2nd try). */

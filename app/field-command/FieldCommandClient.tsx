@@ -1424,7 +1424,7 @@ export default function FieldCommandClient() {
   useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
   // Your requests with their answers (status + dated progress notes), from the status server: CHANGE-REQUEST-<id>
   // and CHANGE-REPLY-<id> (scripts/reply-change-request.mjs). "New" = an update after you last opened the list.
-  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string; now: { at: string; text: string } | null };
+  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string; now: { at: string; text: string } | null; answers: { at: string; text: string }[]; asked: string };
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
@@ -1437,7 +1437,14 @@ export default function FieldCommandClient() {
       setClaudeSeenAt(String((all["CLAUDE-HEARTBEAT"] as { at?: string } | undefined)?.at || ""));
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
         const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string; now?: { at?: string; text?: string } } | undefined;
-        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || ""), now: rep?.now?.text ? { at: String(rep.now.at || ""), text: String(rep.now.text) } : null };
+        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || ""), now: rep?.now?.text ? { at: String(rep.now.at || ""), text: String(rep.now.text) } : null,
+          answers: Array.isArray((all[`CHANGE-ANSWER-${id}`] as { answers?: unknown } | undefined)?.answers) ? (all[`CHANGE-ANSWER-${id}`] as { answers: { at: string; text: string }[] }).answers : [], asked: "" };
+      }).map((t) => {
+        // Your answer after Claude's last note (2 Nov): the request is open again ("Received") until Claude writes back;
+        // asked keeps what it was (Waiting for you / Done) for the label.
+        const lastNote = t.updates.map((u) => u.at).sort().slice(-1)[0] || "";
+        const lastAnswer = t.answers.map((a) => a.at).sort().slice(-1)[0] || "";
+        return lastAnswer > lastNote && (t.status === "Done" || t.status === "Waiting for you") ? { ...t, asked: t.status, status: "Received" } : t;
       }).sort((a, b) => b.at.localeCompare(a.at));
       setChangeThreads(list);
       setChangeCheckedAt(Date.now());
@@ -1455,6 +1462,21 @@ export default function FieldCommandClient() {
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      if (r.ok) void loadChangeThreads();
+      return r.ok;
+    } catch { return false; }
+  };
+  // Answer Claude on a request (2 Nov: "Waiting for you" had no way to answer; a new request left the old one stuck):
+  // saved as CHANGE-ANSWER-<same id> {answers}; the request opens again and the next run reads it with the question.
+  const [answerFor, setAnswerFor] = useState("");
+  const [answerText, setAnswerText] = useState("");
+  const sendChangeAnswer = async (t: ChangeThread, raw: string) => {
+    const text = raw.trim();
+    if (!text) return false;
+    const answers = [...t.answers, { at: new Date().toISOString(), text: text.slice(0, 2000) }].slice(-20);
+    setChangeThreads((list) => (list || []).map((x) => (x.id === t.id ? { ...x, answers, asked: x.asked || x.status, status: "Received" } : x)));
+    try {
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-ANSWER-${t.id}`, patch: { answers } }) });
       if (r.ok) void loadChangeThreads();
       return r.ok;
     } catch { return false; }
@@ -4629,7 +4651,18 @@ export default function FieldCommandClient() {
     }
     if (cmd.intent === "app-request") {
       // A change to the app itself (27 Oct): sent to Claude as a request; progress shows in What's new -> Your requests.
-      const text = cmd.text.replace(/^\w/, (c) => c.toUpperCase());
+      const fresh = /^(?:a\s+)?(?:new|another)\s+request\b[:,]?\s*/i;
+      const text = cmd.text.replace(fresh, "").replace(/^\w/, (c) => c.toUpperCase());
+      // Claude asked a question (last 7 days): what you say next is the answer, unless you say "new request …".
+      const waiting = fresh.test(cmd.text) ? undefined : (changeThreads || []).find((t) => t.status === "Waiting for you" && Date.now() - Date.parse(t.updates[t.updates.length - 1]?.at || t.at) < 7 * 86400000);
+      if (waiting) {
+        const q = waiting.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 60);
+        showPanel({ heard, reply: `Answering Claude on "${q}"…` });
+        void sendChangeAnswer(waiting, text).then((ok) => {
+          showPanel({ heard, reply: ok ? `📥 Sent to Claude as your answer on "${q}": "${text}". It picks it up with its question. (For something else, say "tell Claude new request …".)` : `Couldn't send it right now (no signal?). Try again in a minute.`, actions: [{ label: "📋 My requests", href: "#requests" }] });
+        });
+        return;
+      }
       showPanel({ heard, reply: `Sending to Claude: "${text}"…` });
       void sendChangeRequest(`(said to the helper) ${text}`).then((ok) => {
         showPanel({ heard, reply: ok ? `📥 Sent to Claude for the next upgrade: "${text}". Watch it live on the map: the 🤖 Claude card shows each step as it happens.` : `Saved on this phone; it goes to Claude when the internet is back: "${text}".`, actions: [{ label: "📋 My requests", href: "#requests" }] });
@@ -6364,7 +6397,7 @@ export default function FieldCommandClient() {
                 : changeThreads.map((t) => (
                   <article key={t.id} className={`fc-change-thread is-${t.status.toLowerCase().replace(/[^a-z]+/g, "-")}`} data-hpd-smoke="fc-change-thread">
                     <p className="fc-change-ask"><small>You · {new Date(t.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{t.text}</p>
-                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}{t.status === "Received" && !t.updates.length ? <small className="fc-change-pickup" data-hpd-smoke="fc-change-pickup"> · {pickupLabel(claudeSeenAt)}</small> : null}</b>
+                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : t.status === "Waiting for you" ? "❓" : "📥"} {t.asked ? "Your answer went to Claude" : t.status === "Waiting for you" ? "Claude needs your answer" : t.status}{t.asked ? <small className="fc-change-pickup"> · {pickupLabel(claudeSeenAt)}</small> : null}{t.status === "Received" && !t.updates.length && !t.asked ? <small className="fc-change-pickup" data-hpd-smoke="fc-change-pickup"> · {pickupLabel(claudeSeenAt)}</small> : null}</b>
                     {t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? <p className="fc-change-working" data-hpd-smoke="fc-change-working"><i aria-hidden="true" /> Claude is working on this right now (since {new Date(t.workingAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })})</p> : null}
                     {t.steps.length ? (() => {
                       const done = t.steps.filter((x) => x.done).length;
@@ -6381,12 +6414,22 @@ export default function FieldCommandClient() {
                         </div>
                       );
                     })() : null}
-                    {t.updates.map((u) => (
+                    {[...t.updates.map((u) => ({ ...u, you: false })), ...t.answers.map((a) => ({ ...a, you: true }))].sort((a, b) => a.at.localeCompare(b.at)).map((u) => u.you ? (
+                      <p key={`a${u.at}`} className="fc-change-ask fc-change-yours" data-hpd-smoke="fc-change-yours"><small>You · {new Date(u.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{u.text}</p>
+                    ) : (
                       <div key={u.at} className={`fc-change-update${u.at > repliesSeen ? " is-new" : ""}`} data-hpd-smoke="fc-change-update">
                         <small>Update · {new Date(u.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}{u.at > repliesSeen ? " · new" : ""}</small>
                         <p>{u.text}</p>
                       </div>
                     ))}
+                    {t.status === "Waiting for you" || answerFor === t.id ? (
+                      <form className="fc-change-answer" data-hpd-smoke="fc-change-answer" onSubmit={(e) => { e.preventDefault(); const v = answerText; setAnswerText(""); setAnswerFor(""); void sendChangeAnswer(t, v); }}>
+                        <textarea rows={2} data-hpd-smoke="fc-change-answer-text" aria-label="Your answer to Claude" placeholder={t.status === "Waiting for you" ? "Your answer to Claude…" : "What's not right? What should change?"} value={answerFor === t.id || t.status === "Waiting for you" ? (answerFor === t.id ? answerText : "") : ""} onFocus={() => { if (answerFor !== t.id) { setAnswerFor(t.id); setAnswerText(""); } }} onChange={(e) => { setAnswerFor(t.id); setAnswerText(e.target.value); }} />
+                        <button type="submit" data-hpd-smoke="fc-change-answer-send" disabled={answerFor !== t.id || !answerText.trim()}>➤ Send to Claude</button>
+                      </form>
+                    ) : t.status === "Done" ? (
+                      <button type="button" className="fc-change-again" data-hpd-smoke="fc-change-again" onClick={() => { setAnswerFor(t.id); setAnswerText(""); }}>↩ Not right? Tell Claude</button>
+                    ) : null}
                   </article>
                 ))}
             </section>
