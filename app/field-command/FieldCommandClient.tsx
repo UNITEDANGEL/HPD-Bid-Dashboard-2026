@@ -30,6 +30,7 @@ import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
 import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
+import { checkImageFile } from "../../lib/photo-quality";
 import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
@@ -4181,8 +4182,11 @@ export default function FieldCommandClient() {
         label: kind === "before" ? "Before Work Evidence" : "After Work Evidence",
       });
       await refreshMediaCounts(selectedJob);
+      const checks = await Promise.all(Array.from(files).map(checkImageFile));
+      const dark = checks.filter(c => c === "dark").length, blurry = checks.filter(c => c === "blurry").length;
+      const photoWarning = dark || blurry ? ` Check: ${[dark ? `${dark} too dark` : "", blurry ? `${blurry} blurry` : ""].filter(Boolean).join(", ")}. HPD may reject it: retake if you can.` : "";
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
-      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
+      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}${photoWarning}` : "No image or video was saved.");
       // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
       if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
       // After photos/videos = the work is done: the job finishes by itself (Work completed; switch

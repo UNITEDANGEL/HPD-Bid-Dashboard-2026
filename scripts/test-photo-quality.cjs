@@ -1,0 +1,11 @@
+const assert = require('node:assert/strict'), fs = require('node:fs'), ts = require('typescript');
+const mod = { exports: {} };
+new Function('exports', ts.transpileModule(fs.readFileSync('lib/photo-quality.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(mod.exports);
+const { photoFacts, photoProblem } = mod.exports;
+const W = 40, H = 40;
+const make = (fn) => { const d = new Uint8ClampedArray(W * H * 4); for (let i = 0; i < W * H; i++) { const v = fn(i % W, Math.floor(i / W)); d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255; } return d; };
+assert.equal(photoProblem(photoFacts(make(() => 10), W, H)), 'dark');
+assert.equal(photoProblem(photoFacts(make(() => 150), W, H)), 'blurry');
+assert.equal(photoProblem(photoFacts(make((x, y) => ((x + y) % 2 ? 200 : 90)), W, H)), '');
+assert.equal(photoProblem(photoFacts(make((x) => 120 + x), W, H)), 'blurry');
+console.log('photo-quality ok');

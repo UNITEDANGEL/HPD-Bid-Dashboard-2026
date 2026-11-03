@@ -82,6 +82,7 @@ jobs:
           node scripts/test-current-job.cjs
           node scripts/test-planner-location.cjs
           node scripts/test-building-photo.cjs
+          node scripts/test-photo-quality.cjs
           node scripts/test-saved-package.cjs
           node scripts/test-complete-package.cjs
           node scripts/test-video-choice.cjs
