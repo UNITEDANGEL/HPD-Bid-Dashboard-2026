@@ -4268,3 +4268,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @media (prefers-reduced-motion: reduce) { .fc-face-arms .fc-arm-r, .fc-face-outfit, .fc-goal-ring .is-done { animation: none !important; transition: none !important; } }
 /* 🔋 Battery saver: nothing moves. */
 html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation: none !important; transition: none !important; }
+
+/* 🚗 Driving mode: big buttons you can hit at a red light. */
+.fc-agent.is-driving .fc-agent-action, .fc-agent.is-driving [data-hpd-smoke="fc-agent-offer"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-choice"] { min-height: 56px; font-size: 18px; padding: 12px 18px; }
+.fc-agent.is-driving [data-hpd-smoke="fc-agent-talk"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-drive"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-close"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-yes"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-no"] { min-width: 52px; min-height: 52px; font-size: 20px; }

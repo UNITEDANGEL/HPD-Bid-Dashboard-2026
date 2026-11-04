@@ -1343,6 +1343,17 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     <button type="button" data-hpd-smoke="fc-bid-reco-use" onClick={() => pickPrice(String(best.price))}>Use</button>
                     {mineOk ? <><span className="fc-bid-reco-mine">🧮 My price <b>{money(calc.total)}</b> · wins about {Math.round(winChance(help, calc.total) * 100)}%</span><button type="button" data-hpd-smoke="fc-bid-reco-mine" onClick={() => pickPrice(String(calc.total))}>Use</button></> : null}
                     <small>You choose: tap Use or type your own price.</small>
+                    {/* 🎯 The win gauge (owner's pick, 4 Nov): the needle moves as you type the price. */}
+                    {draftNumber > 0 ? (() => {
+                      const pct = Math.round(winChance(help, draftNumber) * 100);
+                      return <div className="fc-bid-gauge" data-hpd-smoke="fc-bid-gauge" data-chance={pct} aria-label={`Chance to win at this price: about ${pct}%`}>
+                        <svg viewBox="0 0 120 70" aria-hidden="true">
+                          <path d="M10 62 A50 50 0 0 1 43 15" className="is-low" /><path d="M45 14 A50 50 0 0 1 75 14" className="is-mid" /><path d="M77 15 A50 50 0 0 1 110 62" className="is-high" />
+                          <g className="fc-bid-needle" style={{ transform: `rotate(${(-90 + 180 * pct / 100).toFixed(1)}deg)` }}><line x1="60" y1="62" x2="60" y2="20" /><circle cx="60" cy="62" r="5" /></g>
+                        </svg>
+                        <b>{pct}%</b><span>chance to win at {money(draftNumber)}</span>
+                      </div>;
+                    })() : null}
                   </div>
                 );
               })() : null}

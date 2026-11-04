@@ -47,6 +47,7 @@ import JobAssistant from "./JobAssistant";
 import PhotoCheck from "./PhotoCheck";
 import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
+import { materialsFor } from "../../lib/materials";
 import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HATS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
 import { suggestTenantReply } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
@@ -1788,6 +1789,15 @@ export default function FieldCommandClient() {
   // 😊 Feelings: smiles a while when something good comes in (Claude finished, a win, paid); 🔔 jumps on every alert
   // (a tap on the shoulder); 🎤 press and hold to talk, like a walkie-talkie (owner's picks, 3 Nov).
   const [orbHappy, setOrbHappy] = useState(false);
+  // 💤 Night (9 PM-7 AM) is checked after the page loads, every minute: the page is built ahead of time, so a clock in the
+  // first drawing would not match the phone's (React error 418).
+  const [orbNight, setOrbNight] = useState(false);
+  useEffect(() => {
+    const check = () => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); setOrbNight(h >= 21 || h < 7); };
+    check();
+    const t = window.setInterval(check, 60000);
+    return () => window.clearInterval(t);
+  }, []);
   // 🎨 Dress the helper: the picker in the chat.
   const [dressOpen, setDressOpen] = useState(false);
   const helperLook = useHelperLook();
@@ -4827,6 +4837,17 @@ export default function FieldCommandClient() {
       answer(cmd.on ? "🔁 Keep upgrading is on: when you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Say \"stop auto upgrade\" to turn it off." : "Keep upgrading is off. Claude only builds what you ask for.");
       return;
     }
+    if (cmd.intent === "materials") {
+      // 📦 Today's route (else the open card): what the work descriptions need.
+      const ids = todayRouteIds();
+      const list = (ids.length ? ids.map((id) => jobs.find((x) => jobId(x) === id)).filter(Boolean) as JobRecord[] : selectedJob ? [selectedJob] : []).filter((x) => !value(x, ["FieldOutcome", "fieldOutcome"]));
+      if (!list.length) { answer("Plan today's route first (say \"plan my day\"), or open a job, and I'll tell you what to bring."); return; }
+      const need = materialsFor(list.map((x) => ({ id: jobId(x), text: jobScope(x) })));
+      if (!need.length) { answer(`I couldn't tell the materials from the work descriptions of ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops`}. Read them on the cards.`); return; }
+      cardsRef.current = list.slice(0, 5).map((x) => chatCard(jobId(x))).filter((c): c is ChatCard => Boolean(c));
+      answer(`📦 To bring for ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops today`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`);
+      return;
+    }
     if (cmd.intent === "tour") {
       void loadWhatsNew().then((v) => {
         const top = Array.isArray(v) ? v[0] : null;
@@ -5849,7 +5870,7 @@ export default function FieldCommandClient() {
         {/* Every alert, kept to manage and keep track of (20 Oct). */}
         <button type="button" className={`fc-filter-btn fc-notif-btn${notifUnread ? " has-new" : ""}`} aria-label="Notifications" title="Notifications" data-hpd-smoke="fc-notif-open" aria-pressed={notifOpen} onClick={() => setNotifOpen((v) => !v)}>
           <span aria-hidden="true" className="fc-notif-bell">🔔</span>
-          {notifUnread ? <span key={notifUnread} className="fc-filter-badge fc-notif-badge hpd-pop" data-hpd-smoke="fc-notif-count">{notifUnread}</span> : null}
+          {notifUnread ? <span key={notifUnread} className="fc-filter-badge fc-notif-badge hpd-pop" data-hpd-smoke="fc-notif-count"><CountUp value={notifUnread} /></span> : null}
         </button>
       </div>
       {searchFocus && !search && recent.length && !selectedJob ? (
@@ -6085,9 +6106,9 @@ export default function FieldCommandClient() {
           // 29 Oct, owner: "too many buttons on the bottom" → picked layout A: one row (Jobs, Bids, ✨ AI, Notices, All), no strip.
           const make: Record<DockKey, (cls: string) => ReactElement> = {
             jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs${jobsNeedYou ? " is-glow" : ""}`} data-hpd-smoke="fc-jobs-open" data-glow={jobsNeedYou ? "1" : undefined} aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
-              <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count">{jobsTodo}</span> : null}
+              <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count"><CountUp value={jobsTodo} /></span> : null}
             </button>,
-            bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}${bidsDue.unsentToday ? " is-glow" : ""}`} data-hpd-smoke="fc-bids-open" data-glow={bidsDue.unsentToday ? "1" : undefined} aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>,
+            bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}${bidsDue.unsentToday ? " is-glow" : ""}`} data-hpd-smoke="fc-bids-open" data-glow={bidsDue.unsentToday ? "1" : undefined} aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}><CountUp value={bidsDue.open} /></span> : null}</button>,
             notices: (cls) => <button key="notices" type="button" className={`${cls} fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent is-glow" : ""}`} data-hpd-smoke="fc-notices-open" data-glow={boardUrgent.length ? "1" : undefined} data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
             // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
@@ -6171,9 +6192,9 @@ export default function FieldCommandClient() {
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })(), wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
-                    {orbSay ? (
+                    {orbSay && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
                     ) : null}
                     </>

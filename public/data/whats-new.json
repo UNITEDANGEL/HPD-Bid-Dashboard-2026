@@ -5,6 +5,11 @@
       "date": "Nov 3, 2026",
       "title": "Ideas, keep upgrading, talk to Claude",
       "items": [
+        "🎯 A win gauge on every bid: type the price and the needle swings to your chance of winning (red, yellow, green).",
+        "📦 Ask \"what do I need today?\": the robot lists the materials for today's stops from HPD's work descriptions (paint, plaster, smoke detectors, window guards…) and how many jobs need each.",
+        "🔢 The numbers on the Jobs, Bids and 🔔 buttons count up when they change.",
+        "🚗 Bigger buttons in driving mode, easy to hit at a red light.",
+        "🔧 Fixes: the robot's bubble no longer covers the Bids list handle; the nightcap no longer causes a page error at night.",
         "🔧 Walk me through the job: after 🔊 on a job, tap \"Walk me through it\" (or say it). The robot reads the work one item at a time; say \"done\" for the next. At the end it reminds you to take the after photos.",
         "🕐 Say \"I'm running late\": the robot writes the tenant a text with your new time (from the drive, or 30 minutes), one tap to send.",
         "🎬 A tour of what's new: after an update the robot offers it in its bubble, or say \"give me a tour\". Say \"done\" for the next, \"stop\" to end.",

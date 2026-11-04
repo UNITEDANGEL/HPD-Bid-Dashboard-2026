@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -62,8 +63,45 @@ try {
   await page.waitForFunction(() => /^🎬 New 2 of /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
   await offer("^▶ Stop$").click();
   await page.waitForFunction(() => /OK, stopped/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click().catch(() => {});
+
+  // 4) 📦 What to bring: today's route (the test job) and the materials its work needs.
+  await page.evaluate((j) => { localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings: { date: new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()) }, ids: [j] })); }, JOB);
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what do I need today");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  await page.waitForFunction(() => /📦 To bring for|couldn't tell the materials/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  const bring = (await reply.innerText()).split(/\n/).slice(0, 3).join(" | ");
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+
+  // 5) 🎯 The win gauge on a bid with enough past awards: the needle moves with the price.
+  await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load", timeout: 180000 });
+  await openBidList(page);
+  const rows = page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child');
+  await rows.first().waitFor({ timeout: 60000 });
+  let gaugeNote = "no bid with 5+ past awards in the first 6";
+  for (let k = 0; k < Math.min(6, await rows.count()); k++) {
+    await rows.nth(k).click();
+    const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
+    await sheet.waitFor({ timeout: 10000 });
+    if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+    if (await sheet.locator('[data-hpd-smoke="fc-bid-reco"]').count() && !(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').isDisabled())) {
+      const price = sheet.locator('[data-hpd-smoke="fc-bid-price"]');
+      await price.fill("100");
+      const g = sheet.locator('[data-hpd-smoke="fc-bid-gauge"]');
+      await g.waitFor({ timeout: 3000 });
+      const low = Number(await g.getAttribute("data-chance"));
+      await price.fill("99999");
+      await page.waitForFunction((lo) => Number(document.querySelector('[data-hpd-smoke="fc-bid-gauge"]')?.getAttribute("data-chance")) < lo || lo === 0, low, { timeout: 3000 });
+      const high = Number(await g.getAttribute("data-chance"));
+      assert.ok(high <= low, `a higher price never wins more (${low}% -> ${high}%)`);
+      await price.fill("");
+      gaugeNote = `$100 = ${low}%, $99,999 = ${high}%`;
+      break;
+    }
+    await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').first().click();
+  }
   assert.deepEqual(errors, []);
-  console.log(`PASS robot steps: walked through ${total} work items with "done", then the after-photo reminder; running late: ${lateNote}; the tour goes item by item and stops`);
+  console.log(`PASS robot steps: what to bring: ${bring}; win gauge: ${gaugeNote}; walked through ${total} work items with "done", then the after-photo reminder; running late: ${lateNote}; the tour goes item by item and stops`);
 } finally {
   await browser.close();
 }

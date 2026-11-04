@@ -27,6 +27,7 @@ export type AgentCommand =
   | { intent: "whats-new" }
   | { intent: "walkthrough"; ref: string }
   | { intent: "tour" }
+  | { intent: "materials" }
   | { intent: "late"; ref: string }
   | { intent: "ideas" }
   | { intent: "idea-do"; n: number }
@@ -169,6 +170,7 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(?:turn |switch )?(?:off |stop )(?:the )?(?:auto(?:matic)?[ -]?upgrades?|upgrading on its own|keep upgrading)$|^(?:auto(?:matic)?[ -]?upgrades?|keep upgrading) off$/.test(t)) return { intent: "auto-upgrade", on: false };
   // 🤖 Step by step (owner's picks, 4 Nov): "walk me through the job", "give me a tour", "I'm running late".
   if (/^(please )?(walk|talk|take) me through (it|the job|this job|the work|the steps)|^(read me )?(the )?(job )?step by step$|^walk me through$/.test(t)) return { intent: "walkthrough", ref: "" };
+  if (/\b(what (do|should) i (need|bring|buy|take)( today| tomorrow)?|shopping list|materials?( list)?( for today)?|what to (buy|bring))\b/.test(t)) return { intent: "materials" };
   if (/^(give me a |start the |take the |show me the )?tour$|^show me around( the app)?$|^(walk me through|show me) what'?s new$/.test(t)) return { intent: "tour" };
   if (/\b(i'?m|i am|we'?re|we are) (running |going to be |gonna be )?late\b|\brunning late\b/.test(t)) return { intent: "late", ref: refOf(t.replace(/\b(running|late|gonna|going to be)\b/g, " ")) };
   if (/^(?:so |ok(?:ay)? |hey )?(?:what'?s|what is|anything) new(?: in the app| today| with the app)?$|^what (?:did|have) (?:you|claude|cloud) (?:upgrade|upgraded|change|changed|add|added|build|built|fix|fixed)(?: today| lately| in the app)?$|^what (?:changed|got upgraded)(?: in the app| today)?$|^(?:read me |tell me |show me )?(?:the )?(?:latest|newest|new) (?:updates|upgrades|features|changes)(?: in the app)?$/.test(t)) return { intent: "whats-new" };
