@@ -5299,7 +5299,7 @@ export default function FieldCommandClient() {
               : undefined;
             const extras = () => { if (!multiRef.current && (nextAsks.length || trendChart)) setAgent((a) => (a ? { ...a, chart: trendChart, offers: a.offers?.length ? [...a.offers, ...nextAsks].slice(0, 4) : nextAsks.length ? nextAsks : a.offers, offersLabel: a.offers?.length ? a.offersLabel : nextAsks.length ? "Ask next:" : a.offersLabel } : a)); };
             const dos = lines.filter((l) => /^DO:/i.test(l)).map((l) => l.replace(/^DO:\s*/i, "").trim())
-              .filter((x) => { const c = parseCommand(x); return c.intent !== "ask" && c.intent !== "search"; }).slice(0, 3);
+              .filter((x) => { const c = parseCommand(x); return c.intent !== "ask" && c.intent !== "search" && !(c.intent === "navigate" && c.ref && !/[a-z]{2}\s?\d{5}|\d/i.test(c.ref)); }).slice(0, 3);
             chatRef.current = [...chatRef.current, { you: cmd.question.slice(0, 200), helper: `${said}${dos.length ? ` (did: ${dos.join("; ")})` : ""}`.slice(0, 300), at: Date.now() }].slice(-8);
             // A question gets the answer, and what the AI would do is offered to tap (owner, 3 Nov: "give me an answer,
             // then ask me to open the list or not"). An order ("text the tenant") still runs.

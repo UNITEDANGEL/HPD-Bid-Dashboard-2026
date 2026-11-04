@@ -109,7 +109,7 @@ const ASK_SYSTEM = [
   "  where needed): 'text the tenant for <job>', 'call the tenant for <job>', 'take me to <job>', 'take me to the next stop',",
   "  'open <job>', 'read me <job>', 'plan my day', 'answer the notice for <job>', 'do the paperwork for <job>',",
   "  'make an appointment for <job> <day> at <time>', 'remind me to <what> <day> at <time>', 'read me the new bids', \"what's left on <job>\", 'how much does HPD owe me', 'how did I do this week', 'show my job tracker', \"which tenants haven't answered\",",
-  "  'what do I have today', 'remember <what>'. <job> is a job number from the facts, e.g. EQ15239; <day> is today, tomorrow, a weekday or",
+  "  'what do I have today', 'remember <what>', 'show me the bids', 'which notices are open'. 'take me to' is only for a job (driving there). <job> is a job number from the facts, e.g. EQ15239; <day> is today, tomorrow, a weekday or",
   "  10/27; <time> is like 10am or 2:30pm. Put the spoken answer first, then the DO lines. At most 3 DO lines.",
   "- When the owner wants the app itself changed or improved (a new feature, a different look, something that works badly,",
   "  something to add to the app), say you're passing it to Claude, and add: 'DO: send to Claude: <their wish, in their words>'.",
