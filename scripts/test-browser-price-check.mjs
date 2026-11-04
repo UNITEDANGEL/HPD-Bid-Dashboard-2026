@@ -91,6 +91,8 @@ try {
   const head = await box.locator(".fc-vsbest-head").innerText();
   assert.ok(head.includes(`${v.bestWon} jobs (${money(v.bestAmount)})`) && head.includes(`${v.won} (${money(v.wonAmount)})`), `Stats headline matches the data: ${head}`);
   assert.equal(await box.locator('[data-hpd-smoke="fc-vsbest-months"] tbody tr').count(), Math.min(6, stats.vsBest.byMonth.length));
+  const boroRows = stats.byBoro.filter((g) => g.boro && g.bids >= 5).length;
+  assert.ok(boroRows > 0 && (await page.locator('[data-hpd-smoke="fc-sent-boro"] tbody tr').count()) === boroRows, "Stats lists win rate by borough");
   assert.deepEqual(errors, []);
   console.log(`PASS price check: best ${money(best)} no note; ${money(high)} (+20%) shows "${kind === "fc-bid-above" ? "20% above the best price" : "will probably lose"}" and Use ${money(best)} puts it back; under 15% no note; minimum ${money(best + 100)} raises the best price, a lower price gets "below your minimum", kept after reload, listed and removed in Stats; Stats: best price would have won ${v.bestWon} (${money(v.bestAmount)}) vs your ${v.won} (${money(v.wonAmount)})`);
   await context.close();

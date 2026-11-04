@@ -86,6 +86,12 @@ export default function SentBidStats() {
           <tr key={g.work}><td>{g.work}</td><td>{g.won}/{g.bids} · <b>{g.winRate}%</b></td><td>{g.lostAboveBy === null ? "-" : `${money(g.lostAboveBy)} above (${g.lostAbovePct}%)`}{g.closeLosses ? ` · ${g.closeLosses} close` : ""}</td></tr>
         ))}</tbody>
       </table>
+      <table className="fc-sent-table" data-hpd-smoke="fc-sent-boro">
+        <thead><tr><th>Borough</th><th>Won</th><th>Where to price</th></tr></thead>
+        <tbody>{s.byBoro.filter((g) => g.boro && g.bids >= 5).map((g) => (
+          <tr key={g.boro}><td>{g.boro}</td><td>{g.won}/{g.bids} · <b>{g.winRate}%</b></td><td>{(g.lostAbovePct ?? 0) >= 35 ? "Bid lower" : (g.winRate ?? 0) >= 50 ? "Holding: keep it" : "A little lower"}{g.lostAbovePct === null ? "" : ` (lost ${g.lostAbovePct}% above)`}</td></tr>
+        ))}</tbody>
+      </table>
     </section>
   );
 }
