@@ -7733,7 +7733,7 @@ export default function FieldCommandClient() {
           </button>
         );
       })()}
-      {!agent && !selectedJob && !moreOpen && dockEdit < 0 && !bidsOpen ? (() => {
+      {!agent && !selectedJob && !moreOpen && dockEdit < 0 && !bidsOpen && !routeOpen ? (() => {
         // What matters right now, once each (closing it or acting on it puts it away): bids due within the hour, HPD
         // answered a notice (last 24 h), an appointment in the next 3 hours the tenant hasn't confirmed.
         const now = Date.now();
