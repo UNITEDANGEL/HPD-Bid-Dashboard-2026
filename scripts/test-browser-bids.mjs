@@ -15,6 +15,13 @@ async function saveBid(scope) {
   await btn.click();
   if (/Tap again/.test(await btn.innerText().catch(() => ""))) await btn.click();
 }
+async function expect_table(wh, page) {
+  const table = page.locator('[data-hpd-smoke="fc-work-table"]');
+  for (let i = 0; i < 4 && !(await table.count()); i++) {
+    await wh.getByText("Show as a table").click({ timeout: 3000 }).catch(() => {});
+    await table.waitFor({ timeout: 2500 }).catch(() => {});
+  }
+}
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
@@ -346,7 +353,9 @@ try {
   const rects = wh.locator("svg rect");
   await rects.nth(await rects.count() - 2).click();
   assert.match(await page.locator('[data-hpd-smoke="fc-work-tip"]').innerText(), /other winners (\$[\d,]+ \(\d+ jobs?\)|none) · you (\$[\d,]+ \(\d+ wins?\)|none)/);
-  await wh.getByText("Show as a table").click();
+  // The price history can redraw once after a tap (the page reloads its data): tap again until the table shows.
+  await expect_table(wh, page);
+  await page.locator('[data-hpd-smoke="fc-work-table"]').waitFor({ timeout: 10000 });
   assert.ok(await page.locator('[data-hpd-smoke="fc-work-table"] tbody tr').count() >= 3, "table view of the months");
   assert.match(await wh.locator(".fc-workhist-jobs li").first().innerText(), /E[QR]\d{5} · \$[\d,]+ · (you won|other contractor)/);
 
