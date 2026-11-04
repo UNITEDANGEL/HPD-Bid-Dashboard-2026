@@ -3,7 +3,7 @@
 // first, with what each should bring in. PIP isn't read by itself (its exports are brought in): a job sent after PIP's
 // last download can't show as paid yet, and one PIP's download doesn't list is unknown; neither counts as late.
 
-export const TOO_LONG_DAYS = 90;
+export const TOO_LONG_DAYS = 30;
 export const PAID_RECENT_DAYS = 30;
 // No-work service charge (same rule as lib/paperwork.ts): $100 for a bid under $2,000, $300 from $2,000.
 const serviceCharge = (award: number) => (award >= 2000 ? 300 : 100);

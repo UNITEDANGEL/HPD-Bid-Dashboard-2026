@@ -34,7 +34,7 @@ try {
   await box.waitFor();
   assert.match(await box.locator("h4").innerText(), /Every job sent: waiting for HPD to pay/i);
   const sum = await box.locator('[data-hpd-smoke="fc-paywait-sum"]').innerText();
-  assert.match(sum, /1\s*late: PIP shows them open after 90 days · \$1,234/);
+  assert.match(sum, /1\s*late: PIP shows them open after 30 days · \$1,234/);
   assert.match(sum, /2\s*sent, not paid yet/);
   assert.match(await box.locator('[data-hpd-smoke="fc-paywait-note"]').innerText(), /1 was sent after that, so it can't show as paid yet/);
   const lateRows = box.locator('[data-hpd-smoke="fc-paywait-late"] [data-hpd-smoke="fc-paywait-row"]');
