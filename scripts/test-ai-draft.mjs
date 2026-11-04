@@ -90,7 +90,8 @@ console.log("PASS AI draft: facts only (OMO checked, their email clipped), Worke
   assert.equal(res.status, 200);
   const d = await res.json();
   assert.equal(d.omo, "EP27382");
-  assert.deepEqual(d.emails.map((e) => [e.id, e.files.map((f) => f.name)]), [["bbbbbbbbbb2", ["EP27382 corrected.PDF"]], ["aaaaaaaaaa1", ["EP27382 AFF INVOICE.pdf"]]], "newest first, PDFs only, photo-only email left out");
+  assert.deepEqual(d.emails.map((e) => [e.id, e.files.map((f) => f.name)]), [["bbbbbbbbbb2", ["EP27382 corrected.PDF"]], ["aaaaaaaaaa1", ["EP27382 AFF INVOICE.pdf"]], ["cccccccccc3", ["photo.png"]]], "newest first; photos count too (4 Nov: a copy of everything that was sent)");
+  assert.equal(d.emails[2].files[0].mime, "image/png");
   assert.match(d.emails[0].to, /GafurD@hpd\.nyc\.gov/);
   assert.equal(d.emails[0].threadId, "t-bbbbbbbbbb2");
   assert.ok(calls.some((u) => decodeURIComponent(u).includes("in:sent EP27382 has:attachment")));
@@ -100,6 +101,8 @@ console.log("PASS AI draft: facts only (OMO checked, their email clipped), Worke
   assert.equal(Buffer.from(await pdf.arrayBuffer()).toString(), "%PDF-1.4 test pdf");
   assert.equal((await call("hpd-sent", { omo: "../x" })).status, 400);
   assert.equal((await call("hpd-sent-pdf", { id: "aaaaaaaaaa1", i: 3 })).status, 404);
+  const photo = await call("hpd-sent-pdf", { id: "cccccccccc3", i: 0 });
+  assert.equal(photo.headers.get("Content-Type"), "image/png", "a photo comes back as a photo");
   assert.ok(calls.every((u) => !/\/send/.test(u)), "read-only");
   console.log("PASS hpd-sent: your sent emails naming the job with PDFs (newest first, to whom, thread for Gmail), one PDF's bytes, bad input refused, read-only");
 }
