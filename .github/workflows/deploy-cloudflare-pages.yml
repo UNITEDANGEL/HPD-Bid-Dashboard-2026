@@ -134,6 +134,7 @@ jobs:
           node scripts/test-tenant-contact-clean.cjs
           node scripts/test-road-route.cjs
           node scripts/test-daily-report.mjs
+          node scripts/test-weekly-checkup.mjs
           python3 scripts/test-upcoming-bids.py
           python3 scripts/test-bid-fax-watch.py
           node scripts/test-bid-price.cjs

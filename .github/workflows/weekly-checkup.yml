@@ -1,0 +1,23 @@
+name: Weekly App Check-up
+
+# Every Monday morning: open the live app's pages, count last week's phone errors, save the result (WEEKLY-CHECKUP).
+on:
+  schedule:
+    - cron: "15 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: node scripts/weekly-checkup.mjs

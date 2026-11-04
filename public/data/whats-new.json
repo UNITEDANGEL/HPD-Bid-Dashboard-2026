@@ -5,6 +5,7 @@
       "date": "Nov 3, 2026",
       "title": "Ideas, keep upgrading, talk to Claude",
       "items": [
+        "🔍 Weekly app check-up. Every Monday the app opens its own pages, counts the errors your phone had that week and keeps a short result. Anything it lists, Claude fixes in the next upgrade.",
         "⚡ Quick questions in the chat. Tap ⚡ next to the chat bar and one-tap buttons appear: Today, Next bid, Notices, Owed, What's next. The helper answers without typing.",
         "🗺 The evening note (\"Today: … Tomorrow: …\") no longer covers Today's route: it waits while the route is open.",
         "⏰ Late payment warning after 30 days. In Money, a job HPD has not paid 30 days after you sent the paperwork now shows under Late, so you can follow up sooner (it used to wait 90 days).",
