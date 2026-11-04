@@ -46,6 +46,8 @@ import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import JobAssistant from "./JobAssistant";
 import PhotoCheck from "./PhotoCheck";
 import HelperFace from "./HelperFace";
+import { suggestTenantReply } from "../../lib/tenant-reply";
+import { moodSound } from "../../lib/chime";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
@@ -1677,7 +1679,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; choices?: string[]; offers?: string[]; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1760,6 +1762,38 @@ export default function FieldCommandClient() {
   // 💬 The chat moves to the side when you're done with it and comes back up by itself with its next answer or idea
   // (owner, 3 Nov: "chat should just move to the side, and automatically zoom back up when it wants to give me an idea").
   const [agentTucked, setAgentTucked] = useState(false);
+  // 🤖 One helper (owner, 3 Nov: "the working bot should turn into the talking bot, and disappear into the working
+  // mode; when I click on him, the bot should open up"): the dock's 🤖 grows into the chat, and shrinks back into it.
+  const [agentFromDock, setAgentFromDock] = useState(false);
+  const [orbBack, setOrbBack] = useState(0);
+  // 😊 Feelings: smiles a while when something good comes in (Claude finished, a win, paid); 🔔 jumps on every alert
+  // (a tap on the shoulder); 🎤 press and hold to talk, like a walkie-talkie (owner's picks, 3 Nov).
+  const [orbHappy, setOrbHappy] = useState(false);
+  // ✨ The magic: tapping the little 🤖 makes sparkles burst out of it and the big helper rise up and say hello out loud.
+  const [magicAt, setMagicAt] = useState(0);
+  // 👀 The 🤖's eyes look toward where you last tapped.
+  const [orbLook, setOrbLook] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    let t = 0;
+    const on = (e: PointerEvent) => {
+      const orbEl = document.querySelector('[data-hpd-smoke="fc-claude-orb"]');
+      if (!orbEl || orbEl.contains(e.target as Node)) return;
+      const r = orbEl.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      const d = Math.max(1, Math.hypot(dx, dy));
+      setOrbLook({ x: dx / d, y: dy / d });
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setOrbLook(null), 2500);
+    };
+    document.addEventListener("pointerdown", on, { passive: true });
+    return () => { document.removeEventListener("pointerdown", on); window.clearTimeout(t); };
+  }, []);
+  const [orbTap, setOrbTap] = useState(false);
+  const holdTimerRef = useRef(0);
+  const holdingRef = useRef(false);
+  const holdEndedRef = useRef(0);
+  // 🗺 The helper points: a light flies from its face to the pin of the job it names.
+  const [pointAt, setPointAt] = useState<{ x0: number; y0: number; x1: number; y1: number; key: string } | null>(null);
   const [tuckPoke, setTuckPoke] = useState(0);
   // 🔇 Stop talking (27 Oct): while the helper is speaking, one tap hushes it; talking to it hushes it too.
   const [speakingNow, setSpeakingNow] = useState(false);
@@ -1771,6 +1805,25 @@ export default function FieldCommandClient() {
     const t = window.setTimeout(() => setAgentTucked(true), 15000);
     return () => window.clearTimeout(t);
   }, [agent, selectedJob, bidsOpen, listening, speakingNow, convo, driving, agentTypeOpen, tuckPoke]);
+  useEffect(() => { if (!agent) setAgentFromDock(false); }, [agent]);
+  useEffect(() => {
+    const card = agent?.cards?.find((c) => c.kind !== "bid");
+    const job = card ? jobs.find((j) => jobId(j) === card.id) : null;
+    const ll = job ? jobLatLng(job) : null;
+    const map = mapRef.current;
+    if (!ll || !map?.latLngToContainerPoint) return;
+    const t = window.setTimeout(() => {
+      const face = document.querySelector('[data-hpd-smoke="fc-agent-who"] .fc-face')?.getBoundingClientRect();
+      const box = map.getContainer?.()?.getBoundingClientRect();
+      if (!face || !box) return;
+      const pt = map.latLngToContainerPoint([ll.lat, ll.lng]);
+      const x1 = box.left + pt.x, y1 = box.top + pt.y;
+      if (x1 < 0 || y1 < 60 || x1 > window.innerWidth || y1 > window.innerHeight) return;
+      setPointAt({ x0: face.left + face.width / 2, y0: face.top + face.height / 2, x1, y1, key: `${card!.id}${Date.now()}` });
+      window.setTimeout(() => setPointAt(null), 1800);
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [agent?.cards]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const on = (e: Event) => setSpeakingNow(Boolean((e as CustomEvent<boolean>).detail));
     window.addEventListener("hpd-speaking", on);
@@ -1843,9 +1896,23 @@ export default function FieldCommandClient() {
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d) === new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()) ? "" : `${d.toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} `;
     return `${day}${d.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })}`;
   };
-  const startAgentChat = () => {
+  const startAgentChat = (magic = false) => {
     unlockChime();
     const step = nextStepRef.current;
+    if (magic) {
+      // ✨ From the 🤖 (owner, 3 Nov: "when I click the small robot it should magically emerge and start talking"):
+      // sparkles, the big face rises, it greets you by name and time of day out loud, then it listens.
+      const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+      const name = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
+      const todo = jobRows.filter((r) => r.group === "todo").length;
+      const parts = [todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "", bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : ""].filter(Boolean);
+      const hello = `Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      setMagicAt(Date.now());
+      moodSound("magic");
+      setAgent({ heard: "👋", reply: hello, actions: step ? [{ label: "▶ Do it", href: "#next" }] : undefined });
+      speak(hello.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
+      return;
+    }
     setAgent({ heard: "👋", reply: `${step ? `Hi! First thing: ${step.text.replace(/\.$/, "")}. ` : "Hi! "}What do you need? Talk to me, or tap ⌨️ to type.`, actions: step ? [{ label: "▶ Do it", href: "#next" }] : undefined });
     if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true);
   };
@@ -2434,6 +2501,8 @@ export default function FieldCommandClient() {
     const on = (e: Event) => {
       const n = (e as CustomEvent<AppNotice>).detail;
       if (!n?.title) return;
+      setOrbTap(true); window.setTimeout(() => setOrbTap(false), 1500);
+      if (/✅|finished|\bwon\b|award|paid|confirmed/i.test(n.title)) { setOrbHappy(true); window.setTimeout(() => setOrbHappy(false), 9000); window.setTimeout(() => moodSound("happy"), 1800); }
       addToLog(n);
       ring(n);
       // Overdue notices and failed faxes can't be missed (owner, 21 Oct: "better visual and sound alerts").
@@ -2967,6 +3036,22 @@ export default function FieldCommandClient() {
         contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone, lastAt: cs.lastAt, triesToday: cs.triesToday, reachedToday: cs.reachedToday }; })() };
     });
   }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🏆 The helper cheers when the day's work is done (owner's pick, 3 Nov): every bid due today sent, or no job left to do.
+  const cheerRef = useRef<{ bids: number; todo: number; day: string }>({ bids: -1, todo: -1, day: "" });
+  const todoNow = jobRows.filter((r) => r.group === "todo").length;
+  useEffect(() => {
+    const day = nyToday();
+    const c = cheerRef.current;
+    if (c.day !== day) { cheerRef.current = { bids: bidsDue.unsentToday || 0, todo: todoNow, day }; return; }
+    const lines: string[] = [];
+    if (c.bids > 0 && !(bidsDue.unsentToday || 0)) lines.push("Every bid due today is sent!");
+    if (c.todo > 0 && todoNow === 0) lines.push("All of today's jobs are done!");
+    cheerRef.current = { bids: bidsDue.unsentToday || 0, todo: todoNow, day };
+    if (!lines.length) return;
+    setOrbHappy(true); window.setTimeout(() => setOrbHappy(false), 9000);
+    moodSound("happy");
+    window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "claude", title: `🎉 ${lines.join(" ")}`, text: "Great work today." } }));
+  }, [bidsDue.unsentToday, todoNow]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
   // The bottom buttons glow when something there needs you now (owner, 2 Nov: "bids, notices, jobs: glowing a little so I
   // know to pay attention"): a 2nd try due or a job ready to close out (same as the red Jobs badge); a bid due today not
@@ -3730,6 +3815,13 @@ export default function FieldCommandClient() {
             pendingRef.current = { id: jobId(job), outcome: "APPOINTMENT", at: Date.now() };
             setAgent({ heard: `💬 ${t.name?.split(/\s+/)[0] || "The tenant"}: "${m.body.slice(0, 160)}"`, reply: `Make the appointment at ${jobAddress(job).replace(/,\s*\d{5}$/, "")} on ${appointmentLabel(appt)}? Say yes, or tap Yes.`, confirm: { id: jobId(job), outcome: "APPOINTMENT" } });
           } catch { /* a time that doesn't work: the reply alert is enough */ }
+        } else if (job && !pendingRef.current) {
+          // No day and time in it: the helper reads it to you and offers an answer, one tap to send (owner idea, 3 Nov).
+          const who = tenantInfo(job).name?.split(/\s+/)[0] || "The tenant";
+          const answerText = suggestTenantReply(m.body);
+          const where = jobAddress(job).replace(/,\s*\d{5}$/, "");
+          setAgent({ heard: `💬 ${who}: "${m.body.slice(0, 160)}"`, reply: `${who} texted back about ${where} (${jobId(job)}).${answerText ? ` I can answer: "${answerText}"` : " It sounds like they don't want texts: I won't answer."}`, offers: answerText ? [`text the tenant at ${jobId(job)} ${answerText}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: answerText ? "Send it?" : "Open the job?" });
+          speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 200);
         }
         window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));
       }
@@ -5739,8 +5831,26 @@ export default function FieldCommandClient() {
                   const busy = claudeNowFresh(claudeNow) || (changeThreads || []).some((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000);
                   const mode = asks ? "ask" : busy ? "working" : claudeIsOn(claudeSeenAt) || claudeNowFresh(claudeNow) ? "on" : "off";
                   return (
-                    <button type="button" className={`fc-ai-orb fc-dock-ai fc-claude-orb is-${mode}`} data-hpd-smoke="fc-claude-orb" data-mode={mode} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. Tap for your requests`} onClick={() => { unlockChime(); goTo("requests", ""); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace mode={mode === "working" ? "working" : mode === "ask" ? "ask" : mode === "off" ? "off" : "idle"} size={38} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                    <button type="button" className={`fc-ai-orb fc-dock-ai fc-claude-orb is-${mode}${orbTap ? " is-tap" : ""}`} data-hpd-smoke="fc-claude-orb" data-mode={mode} data-tap={orbTap ? "1" : undefined}
+                      onContextMenu={(e) => e.preventDefault()}
+                      onPointerDown={() => {
+                        if (asks || !canListen) return;
+                        window.clearTimeout(holdTimerRef.current);
+                        holdTimerRef.current = window.setTimeout(() => {
+                          // Held: listen right away, stop when the finger lets go (the orb is gone by then: the whole page listens).
+                          holdingRef.current = true;
+                          unlockChime();
+                          setAgentFromDock(true);
+                          setAgent({ heard: "🎤", reply: "Listening… let go when you're done." });
+                          startListening();
+                          const up = () => { window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); holdingRef.current = false; holdEndedRef.current = Date.now(); listenRef.current?.stop(); };
+                          window.addEventListener("pointerup", up);
+                          window.addEventListener("pointercancel", up);
+                        }, 450);
+                      }}
+                      onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
+                      onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Tap to answer Claude" : "Tap to talk"}`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); if (asks) { goTo("requests", ""); return; } setAgentFromDock(true); startAgentChat(true); }}>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} look={orbLook} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : mode === "off" ? "off" : "idle"} size={44} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                   );
                 })() : <span className="fc-dock-gap" aria-hidden="true" />}
@@ -7635,8 +7745,11 @@ export default function FieldCommandClient() {
             }}>🎙️</button>}
         </form>
       ) : null}
+      {magicAt && Date.now() - magicAt < 1600 ? <div key={magicAt} className="fc-magic" data-hpd-smoke="fc-magic" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ "--a": `${i * 36}deg`, "--d": `${70 + (i % 3) * 26}px` } as React.CSSProperties}>✦</i>)}</div> : null}
+      {pointAt ? <i key={pointAt.key} className="fc-point-light" data-hpd-smoke="fc-point-light" aria-hidden="true" style={{ "--x0": `${pointAt.x0}px`, "--y0": `${pointAt.y0}px`, "--x1": `${pointAt.x1}px`, "--y1": `${pointAt.y1}px` } as React.CSSProperties} /> : null}
+      {pointAt ? <i key={`r${pointAt.key}`} className="fc-point-ring" aria-hidden="true" style={{ left: pointAt.x1, top: pointAt.y1 }} /> : null}
       {agent ? (
-        <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
+        <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}${agentFromDock ? " is-from-dock" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
           onPointerDown={() => setTuckPoke((n) => n + 1)} onKeyDown={() => setTuckPoke((n) => n + 1)}>
           {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => setAgentTucked(false)}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} /><small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small></button> : null}
           {driving ? <button type="button" className="fc-agent-driving" data-hpd-smoke="fc-agent-driving" onClick={() => setDrivingMode(false)}>🚗 Driving: short answers, I keep listening · tap to stop</button> : null}
@@ -7650,7 +7763,7 @@ export default function FieldCommandClient() {
           {/* The helper's face: it listens, talks (the mouth moves while it speaks), and blinks in between. */}
           {/* Over a bid or a job the panel stays small: the face sits in the first line instead. */}
           <div className={`fc-agent-who${speakingNow ? " is-talking" : listening ? " is-listening" : ""}${selectedJob || bidsOpen ? " is-small" : ""}`} data-hpd-smoke="fc-agent-who">
-            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={46} />
+            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock && Date.now() - magicAt < 20000 ? 84 : 60} />
             <b>{speakingNow ? "Talking to you…" : listening ? "Listening…" : agent.reply === "Thinking…" ? "Thinking…" : "Your helper"}</b>
           </div>
           {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ Your AI helper</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}
@@ -7669,7 +7782,7 @@ export default function FieldCommandClient() {
           ) : null}
           {agent.offers?.length && !agent.choices?.length ? (
             <div className="fc-agent-try fc-agent-offers" data-hpd-smoke="fc-agent-offers">
-              <span>Want me to open it?</span>
+              <span>{agent.offersLabel || "Want me to open it?"}</span>
               {agent.offers.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-offer" onClick={() => agentRef.current(c)}>▶ {c.replace(/^\w/, (x) => x.toUpperCase())}</button>)}
             </div>
           ) : null}
@@ -7731,10 +7844,11 @@ export default function FieldCommandClient() {
             <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => setAgentTypeOpen((o) => !o)}>⌨️</button>
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
             <button type="button" aria-label="Read a photo" data-hpd-smoke="fc-agent-photo" onClick={() => photoInputRef.current?.click()}>📷</button>
+            <button type="button" aria-label="Your requests to Claude" data-hpd-smoke="fc-agent-requests" onClick={() => { stopSpeaking(); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); goTo("requests", ""); }}>📋</button>
             <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="fc-agent-photo-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void readPhoto(f); }} />
             <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>
             <button type="button" aria-label="Move the chat to the side" data-hpd-smoke="fc-agent-tuck" onClick={(e) => { e.stopPropagation(); setAgentTucked(true); }}>⇥</button>
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); }}>✕</button>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); setAgentFromDock(false); setOrbBack(Date.now()); }}>✕</button>
           </div>
         </div>
       ) : null}

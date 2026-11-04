@@ -30,6 +30,7 @@ try {
 
   // 1) 💡 Ideas on top of Your requests.
   await page.locator('[data-hpd-smoke="fc-claude-orb"]').click();
+  await page.locator('[data-hpd-smoke="fc-agent-requests"]').click();
   const idea = page.locator('[data-hpd-smoke="fc-idea"]');
   await idea.first().waitFor({ timeout: 15000 });
   const n0 = await idea.count();

@@ -29,7 +29,7 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - A face for the helper: blinks, head moves, mouth talks, ears listen; slim Claude line; chat tucks to the side and comes back; dock folder shakes, numbers bob; 6 new ideas (210).
 
 ### Now (owner said "do all 6", 3 Nov), in this order
-1. 🗣 The chat speaks up by itself: DONE 211 (new notice, bids due, driving, HPD answered, appointment). Still to add: tenant texted back.
+1. 🗣 The chat speaks up by itself: DONE 211 + 213 (new notice, bids due, driving, HPD answered, appointment, tenant texted back).
 2. ➡️ The chat asks the next step after every answer ("Text the tenant?", "Open the affidavit?").
 3. ☀️ Morning plan in 20 seconds: at 7 AM, out loud, today's jobs in order, bids due, notices, weather; one tap starts the route.
 4. 🎯 Price coach on every bid: mostly there already (best price, chance, similar, trend); next: a moving gauge for the chance to win.
@@ -37,14 +37,18 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 6. 🚗 Hands-free while driving: the app already asks when the phone moves fast; next: bigger buttons in driving mode.
 7. ✨ Animate every item: started 211 (words fade in, buttons spring, lists slide in). Next: numbers count up, map pins drop in, sheets slide.
 
+- 🤖 One helper: the 🤖 button grows into the talking helper and back (214). 💬 Tenant answers in the chat (213).
+
 ### Picked in the app, the automatic helper is building them
 - 📝 Chat notes show on the job card. (🧠 The chat remembers: DONE 206; 💬 More ideas in the All menu: DONE 207.)
 - 💵 Money coming in; ⏰ late payment warning (30 days); 📶 photos work with no signal; ⏰ bid due reminders; ⚡ quick answer buttons in chat.
 
+- 🎤 Hold 🤖 to talk; 😊 feelings; 🔔 shoulder tap; 🗺 the helper points (215).
+- ✨ The magic helper (sparkles, rises, says hello out loud); 👀 eyes follow taps; 🎵 mood sounds; 🏆 daily cheer (216).
+
 ### Ideas (not started; the app's 💡 list is public/data/upgrade-ideas.json)
 - 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up.
 - 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job.
-- 💬 Tenant answers in the chat (reads the text, suggests the reply and the appointment).
 - 🎙 The helper's voice: pick a voice and speed; it says your name.
 - 🗺 Route that learns: remembers how long each building really takes and plans the day with it.
 - 📅 Week view: jobs, bids due and notices for the next 7 days on one screen.
@@ -52,6 +56,10 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - 🧾 Invoice check before sending: amounts match the award and the COA.
 - 🏢 Building history: every past job at this address, photos and notes, one tap from the card.
 - 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF.
+- 🎨 Dress the helper: pick its color and a hard hat or a cap.
+- 💤 The helper naps at night (eyes closed, little Zzz) and wakes up with a stretch in the morning.
+- 🗺 The helper rides along: during a route a tiny 🤖 moves on the map toward the next stop.
+- 📣 Read it to me: tap any card (notice, bid, job) and the helper reads it out loud with its mouth moving.
 
 ## What the owner asked for (this conversation)
 
@@ -875,3 +883,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 210. **A helper that feels alive** (owner, 3 Nov: "the bot should look real: blink, move around ... when he's talking to me it should have a talking thing"; "like a real helper on the side"; "chat should just move to the side and zoom back up when it wants to give me an idea"; "the folder should shake a little, the 99 should move a little"; "give me more ideas"). Done: app/field-command/HelperFace.tsx (SVG face; modes idle/working/listening/talking/ask/off; CSS .fc-face blink, head tilt, talking mouth, ear glow) on the Claude dock button, fc-agent-who at the top of the chat (talking while speakingNow), the slim line and the tucked bubble. Claude card slim by default (fc-claude-slim: step slides in, moving bar, %; fc-claude-expand -> whole card, fc-claude-smaller back; localStorage hpd-claude-card). Chat tuck: agentTucked after 15 s idle (not while listening/talking/driving/confirm/choices/typing), ⇥ fc-agent-tuck, fc-agent-bubble; any new answer brings it back. Dock: jobs folder wiggle, badges bob (reduce-motion off). upgrade-ideas.json: +6 ideas (chat-speaks-up, morning-plan, chat-next-question, claude-screenshot, tenant-reply-chat, price-coach), quiet-hours removed (built). Tests: claude-now (slim + face), agent-chat (face, tuck), claude-live / voice-live / ideas / claude-done use the whole card; page-zoom taps Later on the bids hello.
 211. **The helper speaks up; more movement** (owner, 3 Nov: "do all 6 ideas", "everything needs to be animated, every single item"). Done: chat nudges come from a talking HelperFace (fc-nudge-face) and pop in; new nudge for a fresh 24/72-hour notice (last 6 h, nothing sent) -> "answer the notice for OMO". Answers fade in word by word (fc-agent-words, text complete at once); buttons spring (scale on :active); ideas, More rows, chat cards, Try chips slide in staggered; the chat panel glides up. Reduce-motion turns it off. Price coach (idea 4) was already on the bid card (best, chance, similar, trend, lost-by). Driving (idea 6) was already detected (movingFast nudge).
 212. **Next paperwork step after each job** (owner idea, 3 Nov). Done: lib/paperwork-left.ts (photos / affidavit / invoice, done or missing, next step) and a "📋 N things left for this job" section on the job card with a Next button to the first missing step (photos and affidavit go to the paperwork page, invoice to the invoice generator). Tests: test-paperwork-left.mjs, test-browser-paperwork-left.mjs.
+213. **The helper on the map; tenant answers in the chat** (owner, 3 Nov: "where is my helper, a real robot that talks, I want to see his face"; ideas "the chat speaks up by itself" and "tenant answers in the chat"). Done: fc-buddy, a 66 px HelperFace over the chat bar (floats; working while CLAUDE-NOW is fresh, talking while it speaks; tap = startAgentChat); Next leaves it room. Chat face 60 px on the map. lib/tenant-reply.ts suggestTenantReply; a tenant text without a day/time opens the helper: reads it out, offers "text the tenant at OMO <answer>" (offersLabel "Send it?") and open; no answer to "stop texting". Tests: test-tenant-reply.cjs (new), test-browser-reply-appt (text without a time -> offer -> yes -> sent), test-browser-claude-now (buddy).
+214. **One helper: the working bot turns into the talking bot** (owner, 3 Nov: "the working bot should be able to turn into the talking bot ... and disappear into the working mode; when I click on him, the bot should open up"). Done: the floating fc-buddy from 212 is gone (one bot only); the dock 🤖 (fc-claude-orb) now opens the helper chat (startAgentChat) with fc-agent.is-from-dock (grows from the button, the big face arrives); its face listens/talks while the chat is open; ✕ pops it back into the button (fc-face.is-back). A question from Claude (❓) still opens Your requests; 📋 fc-agent-requests in the chat opens them any time. Tests: claude-now, ideas.
+215. **The helper feels alive: hold to talk, feelings, shoulder tap, pointing** (owner, 3 Nov: "do all 4 ideas"). Done: press and hold the dock 🤖 450 ms -> helper opens listening ("let go when you're done"), a window pointerup stops listening (push to talk); a quick tap opens it as before. HelperFace modes happy (smile, squint, bounce) and worried (brows, small mouth); the orb smiles 9 s after a good alert (✅ / finished / won / award / paid / confirmed) and worries while a board notice is past due. Every hpd-notify makes the orb jump with a red antenna blink (data-tap). fc-point-light flies from the chat face to the first job card's pin (latLngToContainerPoint) with a ring there. Test: test-browser-helper-alive.mjs (new).
+216. **The magic helper, eyes that look, sounds, the daily cheer** (owner, 3 Nov: "the talking robot is the most important thing; when I click the small robot it should magically emerge and start talking"; "do all 4 ideas"). Done: tapping the dock 🤖 calls startAgentChat(true): fc-magic sparkle burst from the button, the chat face rises 84 px with a glow (fc-face-magic), moodSound("magic"), and the hello is said out loud (by name, localStorage hpd-owner-name, default "Jot"; time of day; jobs to do and bids due today; the first thing), then it listens. HelperFace look prop: the orb's eyes move toward the last tap anywhere (fc-face-look). lib/chime moodSound magic/happy/worried (not muted, not 9 PM-7 AM). Daily cheer: bids due today all sent or the to-do list emptied -> happy face, chirp, "🎉 ..." alert. Test: test-browser-helper-alive (eyes, sparkles, big face, spoken hello).

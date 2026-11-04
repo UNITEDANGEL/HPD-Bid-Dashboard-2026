@@ -96,3 +96,30 @@ export function notify(n: AppNotice) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent<AppNotice>("hpd-notify", { detail: n }));
 }
+
+// 🎵 The helper's own little sounds (owner's pick, 3 Nov): a sparkle when it appears, a chirp for good news, a soft
+// low beep when worried. Not with the sound off, and not in quiet hours (9 PM-7 AM New York).
+const MOODS: Record<"magic" | "happy" | "worried", [number, number, number][]> = {
+  magic: [[1568, 0, 0.12], [2093, 0.07, 0.12], [2637, 0.14, 0.14], [3136, 0.21, 0.3]],
+  happy: [[1175, 0, 0.1], [1568, 0.09, 0.1], [2093, 0.18, 0.22]],
+  worried: [[440, 0, 0.18], [392, 0.2, 0.3]],
+};
+export function moodSound(mood: "magic" | "happy" | "worried") {
+  if (chimeMuted() || typeof window === "undefined") return false;
+  const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+  if (h >= 21 || h < 7) return false;
+  try {
+    if (!ctx) unlockChime();
+    if (!ctx) return false;
+    const t0 = ctx.currentTime + 0.02;
+    for (const [freq, at, len] of MOODS[mood]) {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.type = mood === "worried" ? "triangle" : "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0 + at);
+      g.gain.exponentialRampToValueAtTime(0.22, t0 + at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + len);
+      o.connect(g).connect(ctx.destination); o.start(t0 + at); o.stop(t0 + at + len + 0.02);
+    }
+    return true;
+  } catch { return false; }
+}

@@ -53,8 +53,13 @@ try {
   overrides["CLAUDE-NOW"] = { ...overrides["CLAUDE-NOW"], at: ago(0), text: "Testing on my computer", log: [...overrides["CLAUDE-NOW"].log, { at: ago(0), text: "Testing on my computer" }] };
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-now-text"]')?.textContent === "Testing on my computer", null, { timeout: 12000 });
 
-  // 3) 🤖 opens Your requests with the live step.
+  // 3) 🤖 grows into the talking helper (face at the top); 📋 in it opens Your requests with the live step.
   await orb.click();
+  const helper = page.locator('[data-hpd-smoke="fc-agent"]');
+  await helper.waitFor({ timeout: 10000 });
+  assert.match(await helper.getAttribute("class"), /is-from-dock/, "it grows out of the 🤖 button");
+  await helper.locator('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]').waitFor();
+  await page.locator('[data-hpd-smoke="fc-agent-requests"]').click();
   const box = page.locator('[data-hpd-smoke="fc-claude-now-box"]');
   await box.waitFor({ timeout: 10000 });
   assert.match(await box.innerText(), /Claude right now · Make the chat better[\s\S]*Testing on my computer/);

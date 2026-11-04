@@ -71,6 +71,21 @@ try {
   await page.waitForFunction(() => /^Sent\./.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 20000 });
   assert.equal(sent.length, 2, "your words went once");
   assert.match(sent[1].text, /this is Jot from United Angel Construction about .*: We'll call when we're on the way\./);
+  // A text without a day and time: the helper reads it and offers an answer; one tap, then yes, sends it.
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  inbox = [...inbox, { from: `+1${digits}`, body: "Who is this?", at: new Date(Date.now() + 2000).toISOString() }];
+  await page.clock.runFor(125000);
+  await page.waitForFunction(() => /texted back about/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  assert.match(await reply.innerText(), /I can answer: "This is United Angel Construction/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-offers"]').innerText(), /Send it\?/);
+  assert.equal(sent.length, 2, "nothing sent without your tap");
+  await page.locator('[data-hpd-smoke="fc-agent-offer"]').first().click();
+  await page.clock.runFor(500);
+  await page.waitForFunction(() => /Say yes to send it/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  await page.locator('[data-hpd-smoke="fc-agent-yes"]').click();
+  await page.waitForFunction(() => /^Sent\./.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 20000 });
+  assert.equal(sent.length, 3);
+  assert.match(sent[2].text, /This is United Angel Construction/);
   // "Any texts from tenants?" reads their words with the job.
   await page.evaluate(() => { window.__hear = "any texts from tenants"; });
   if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
