@@ -57,10 +57,10 @@ try {
   await page.waitForTimeout(900); // a tap right after letting go of a hold doesn't count (the app waits 0.8 s)
   await orb.click();
   await page.locator('[data-hpd-smoke="fc-magic"]').waitFor({ state: "attached", timeout: 3000 });
-  await page.waitForFunction(() => /^Good (morning|afternoon|evening), Jot!.*What can I do for you\?$/.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 5000 });
+  await page.waitForFunction(() => /^(Yawn… you.re up late! )?Good (morning|afternoon|evening), Jot!.*What can I do for you\?$/.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 5000 });
   const big = await page.locator('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]').getAttribute("width");
-  assert.equal(big, "84", "the big face");
-  await page.waitForFunction(() => window.__said.some((t) => /^Good (morning|afternoon|evening), Jot!/.test(t)), null, { timeout: 5000 });
+  assert.equal(big, "112", "the big face");
+  await page.waitForFunction(() => window.__said.some((t) => /^(Yawn… you.re up late! )?Good (morning|afternoon|evening), Jot!/.test(t)), null, { timeout: 5000 });
 
   // 5) 🎨 Dress it: a hard hat and green, on every face (the 🤖 button too), remembered on the phone.
   await page.locator('[data-hpd-smoke="fc-agent-dress"]').click();

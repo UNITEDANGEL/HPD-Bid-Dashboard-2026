@@ -37,6 +37,15 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
 
+  // 0) 👋 Hello on open (asked for in this test): the robot says hi in its bubble.
+  await page.evaluate(() => { localStorage.setItem("hpd-test-hello", "1"); localStorage.removeItem("hpd-robot-hello"); });
+  await page.reload({ waitUntil: "load" });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+  await page.waitForFunction(() => /^👋 (Good morning|Hi|Good evening), Jot!/.test(document.querySelector('[data-hpd-smoke="fc-orb-say"]')?.textContent || ""), null, { timeout: 8000 });
+  await page.evaluate(() => localStorage.removeItem("hpd-test-hello"));
+  // 😄 First bid fax of the day: a cheer in the bubble.
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "fax-ok", title: "Bid fax went through · ER09999", text: "$1,200.00" } })));
+  await page.waitForFunction(() => /First bid of the day/.test(document.querySelector('[data-hpd-smoke="fc-orb-say"]')?.textContent || ""), null, { timeout: 3000 });
   // 1) 🗨 The bubble.
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "fax-ok", title: "📠 Fax to HPD went through for ER06362", text: "HPD has the bid now." } })));
   const bubble = page.locator('[data-hpd-smoke="fc-orb-say"]');
@@ -72,6 +81,9 @@ try {
   await page.locator('[data-hpd-smoke="jc-read"]').click();
   await page.waitForFunction((j) => (document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || "").includes(`📣 Job ${j}`), JOB, { timeout: 5000 });
   assert.ok(await page.getByRole("link", { name: /Take me there/ }).count(), "a Take me there button with the reading");
+  // 🚶 The robot walks over to the job's pin and waves.
+  await page.locator(`[data-hpd-smoke="fc-walk-bot"][data-omo="${JOB}"]`).waitFor({ state: "attached", timeout: 3000 });
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-walk-bot"]')?.classList.contains("is-there"), null, { timeout: 5000 });
   // Close the card so "there" can only mean the job just read.
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   await page.locator(".fc-job-sheet-close").click();
@@ -82,7 +94,7 @@ try {
   assert.match(waze, /navigate=yes/);
   assert.ok(errors.length === 0, errors.join(" | "));
 
-  console.log("PASS helper talks: short news in a speech bubble over the 🤖 (tap: read out loud); 👩/👨 voices and speed in 🎨 with a sample, kept on the phone; a job read, then \"take me there\" starts Waze to it");
+  console.log("PASS helper talks: a hello bubble on open; a cheer at the first bid; the robot walks to the job read; short news in a speech bubble over the 🤖 (tap: read out loud); 👩/👨 voices and speed in 🎨 with a sample, kept on the phone; a job read, then \"take me there\" starts Waze to it");
 } finally {
   await browser.close();
 }

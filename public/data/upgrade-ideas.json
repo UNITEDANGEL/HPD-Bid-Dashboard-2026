@@ -3,32 +3,11 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "robot-full-screen",
-      "icon": "🤖",
-      "kind": "new",
-      "title": "A big robot that talks with you",
-      "why": "Tap the robot and it fills half the screen: big face, big words, and it keeps the conversation going until you say \"bye\"."
-    },
-    {
-      "id": "robot-walks-map",
-      "icon": "🚶",
-      "kind": "new",
-      "title": "The robot walks to the job on the map",
-      "why": "When it talks about a job, the little robot walks across the map to that pin and points at it."
-    },
-    {
       "id": "robot-knows-you",
       "icon": "🧠",
       "kind": "new",
       "title": "The robot learns your day",
       "why": "It notices what you do each morning (bids first, or calls first) and offers that first, without you asking."
-    },
-    {
-      "id": "robot-jokes",
-      "icon": "😄",
-      "kind": "new",
-      "title": "The robot has a little personality",
-      "why": "A short cheer when you send 10 bids, a joke on a slow day, a high five when you win a job."
     },
     {
       "id": "quick-price-voice",

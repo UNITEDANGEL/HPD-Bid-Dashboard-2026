@@ -1819,7 +1819,7 @@ export default function FieldCommandClient() {
       if (!d?.text) return;
       unlockChime();
       // 🧭 "Take me there" after it: the job just read is the one "there" means.
-      if (d.omo) lastJobsRef.current = { ids: [d.omo], at: Date.now() };
+      if (d.omo) { lastJobsRef.current = { ids: [d.omo], at: Date.now() }; const omo = d.omo; window.setTimeout(() => robotWalkRef.current(omo), 250); }
       setAgent({ heard: `📣 ${d.title}`, reply: d.text, actions: d.go ? [{ label: "🧭 Take me there (Waze)", href: d.go, id: d.omo, via: "Waze" }] : undefined });
       speak(d.text.replace(/\bHPD\b/g, "H P D").replace(/\b([A-Z]{2})(\d{5})\b/g, (_m, a: string, n: string) => `${a.split("").join(" ")} ${n.split("").join(" ")}`), 200);
     };
@@ -1970,7 +1970,7 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
       const acts = [...(ask ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
@@ -2574,6 +2574,20 @@ export default function FieldCommandClient() {
       // (Test browsers get it only when a test asks: real overdue notices would cover every other test.)
       const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-critical") !== "1"; } catch { return true; } })();
       if ((n.kind === "urgent" || n.kind === "fax-bad") && !snoozed(n) && !testing) { setCritical({ ...n, at: Date.now(), rings: 1 }); return; }
+      // 😄 A little personality (owner's pick, 4 Nov): a high five for a win, a cheer at the 1st, 5th and 10th bid of the day.
+      const cheer = (() => {
+        if (/\bwon\b|award/i.test(n.title)) return "🙌 High five! ";
+        if (!/^Bid fax went through/.test(n.title)) return "";
+        try {
+          const day = nyToday();
+          const c = JSON.parse(localStorage.getItem("hpd-bid-cheer") || "{}");
+          const count = c.day === day ? Number(c.n || 0) + 1 : 1;
+          localStorage.setItem("hpd-bid-cheer", JSON.stringify({ day, n: count }));
+          if (count === 1 || count === 5 || count === 10 || count === 20) { setOrbHappy(true); window.setTimeout(() => setOrbHappy(false), 9000); return count === 1 ? "💪 First bid of the day is in! " : count === 5 ? "👏 5 bids sent today! " : count === 10 ? "🔥 10 bids! You're on fire! " : "🏆 20 bids today! "; }
+        } catch { /* private mode */ }
+        return "";
+      })();
+      if (cheer) { setOrbSay({ text: cheer.trim(), full: `${cheer}${n.title}.`, at: Date.now() }); setPing({ ...n, at: Date.now() }); return; }
       { const short = n.title.replace(/\s+/g, " ").trim(); setOrbSay({ text: short.length > 48 ? `${short.slice(0, 46).replace(/\s+\S*$/, "")}…` : short, full: n.text ? `${n.title}. ${n.text}` : n.title, at: Date.now() }); }
       setPing({ ...n, at: Date.now() });
     };
@@ -3851,6 +3865,60 @@ export default function FieldCommandClient() {
   jobsRef.current = jobs;
   // 🗺 The helper rides along (owner's pick, 3 Nov): with a route for today, a little 🤖 travels on the map from where
   // you are to the next stop not done yet (or bobs at that stop when the phone's location is off), again and again.
+  // 🚶 The robot walks to the job it's talking about (owner's pick, 4 Nov): a little robot steps out at the bottom of the
+  // map, walks over to the pin and waves there for a few seconds (read it to me, take me there).
+  const robotWalkRef = useRef<(omo: string) => void>(() => {});
+  useEffect(() => {
+    let marker: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+    let timer = 0;
+    let raf = 0;
+    robotWalkRef.current = (omo: string) => {
+      const map = mapRef.current;
+      const j = jobsRef.current.find((x) => jobId(x) === omo);
+      const to = j ? jobLatLng(j) : null;
+      if (!map || !to) return;
+      void import("leaflet").then((leafletModule) => {
+        const L = (leafletModule as any).default || leafletModule; // eslint-disable-line @typescript-eslint/no-explicit-any
+        marker?.remove(); window.clearTimeout(timer); window.cancelAnimationFrame(raf);
+        const size = map.getSize();
+        const from = map.containerPointToLatLng([size.x / 2, Math.max(80, size.y - 170)]);
+        marker = L.marker(from, { icon: L.divIcon({ className: "fc-walk-marker", html: `<div class="fc-walk-bot is-walking" data-hpd-smoke="fc-walk-bot" data-omo="${omo}">${helperFaceHtml(getHelperLook().color, 34)}<i class="fc-walk-legs"><b></b><b></b></i></div>`, iconSize: [38, 50], iconAnchor: [19, 92] }), interactive: false, zIndexOffset: 2600 }).addTo(map);
+        const t0 = performance.now();
+        const dur = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 1700;
+        const step = (now: number) => {
+          const f = dur ? Math.min(1, (now - t0) / dur) : 1;
+          const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+          marker?.setLatLng([from.lat + (to.lat - from.lat) * e, from.lng + (to.lng - from.lng) * e]);
+          if (f < 1) { raf = window.requestAnimationFrame(step); return; }
+          const el = marker?.getElement()?.querySelector(".fc-walk-bot");
+          el?.classList.remove("is-walking"); el?.classList.add("is-there");
+          timer = window.setTimeout(() => { marker?.remove(); marker = null; }, 5000);
+        };
+        raf = window.requestAnimationFrame(step);
+      });
+    };
+    return () => { marker?.remove(); window.clearTimeout(timer); window.cancelAnimationFrame(raf); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 👋 Hello when the app opens (owner's pick, 4 Nov): once every 3 hours, the robot says hi in its bubble with what's
+  // waiting (silent: phones don't let a page talk before a tap). Tap the bubble to talk.
+  const helloDoneRef = useRef(false);
+  useEffect(() => {
+    if (helloDoneRef.current || !jobs.length) return;
+    helloDoneRef.current = true;
+    // (Test browsers only when a test asks: the bubble would sit over other tests' buttons.)
+    try { if (navigator.webdriver && localStorage.getItem("hpd-test-hello") !== "1") return; } catch { return; }
+    try { if (Date.now() - Number(localStorage.getItem("hpd-robot-hello") || 0) < 3 * 3600000) return; localStorage.setItem("hpd-robot-hello", String(Date.now())); } catch { return; }
+    const t = window.setTimeout(() => {
+      const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+      const name = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
+      const todo = jobRows.filter((r) => r.group === "todo").length;
+      const what = bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "Tap me to talk";
+      const hi = `👋 ${h < 12 ? "Good morning" : h < 17 ? "Hi" : "Good evening"}, ${name}! ${what}.`;
+      setOrbTap(true); window.setTimeout(() => setOrbTap(false), 1500);
+      setOrbSay({ text: hi, full: `${hi} What can I do for you?`, at: Date.now() });
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, [jobs.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!routeMapReady) return;
     let marker: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -4806,6 +4874,7 @@ export default function FieldCommandClient() {
         // 🧭 "Take me there": one word, Waze opens (the Waze / Google buttons stay in the chat in case it doesn't).
         showPanel({ heard, reply: `Taking you to ${where} (${jobId(j)}) in Waze…`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }] });
         recordTravel(j, "Waze");
+        robotWalkRef.current(jobId(j));
         speak(sayOmo(`Taking you to ${where}.`), 100, () => { window.location.href = wazeHref(j); });
         return;
       }
@@ -7878,7 +7947,7 @@ export default function FieldCommandClient() {
       {pointAt ? <i key={pointAt.key} className="fc-point-light" data-hpd-smoke="fc-point-light" aria-hidden="true" style={{ "--x0": `${pointAt.x0}px`, "--y0": `${pointAt.y0}px`, "--x1": `${pointAt.x1}px`, "--y1": `${pointAt.y1}px` } as React.CSSProperties} /> : null}
       {pointAt ? <i key={`r${pointAt.key}`} className="fc-point-ring" aria-hidden="true" style={{ left: pointAt.x1, top: pointAt.y1 }} /> : null}
       {agent ? (
-        <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}${agentFromDock ? " is-from-dock" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
+        <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}${agentFromDock ? " is-from-dock" : ""}${agentFromDock && !selectedJob && !bidsOpen && !driving ? " is-big" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
           onPointerDown={() => setTuckPoke((n) => n + 1)} onKeyDown={() => setTuckPoke((n) => n + 1)}>
           {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => setAgentTucked(false)}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} /><small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small></button> : null}
           {driving ? <button type="button" className="fc-agent-driving" data-hpd-smoke="fc-agent-driving" onClick={() => setDrivingMode(false)}>🚗 Driving: short answers, I keep listening · tap to stop</button> : null}
@@ -7892,7 +7961,7 @@ export default function FieldCommandClient() {
           {/* The helper's face: it listens, talks (the mouth moves while it speaks), and blinks in between. */}
           {/* Over a bid or a job the panel stays small: the face sits in the first line instead. */}
           <div className={`fc-agent-who${speakingNow ? " is-talking" : listening ? " is-listening" : ""}${selectedJob || bidsOpen ? " is-small" : ""}`} data-hpd-smoke="fc-agent-who">
-            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock && Date.now() - magicAt < 20000 ? 84 : 60} />
+            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock ? 112 : 60} />
             <b>{speakingNow ? "Talking to you…" : listening ? "Listening…" : agent.reply === "Thinking…" ? "Thinking…" : "Your helper"}</b>
           </div>
           {dressOpen ? (
