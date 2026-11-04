@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-04T16:28:35.074287+00:00",
+"generatedAt": "2026-11-04T16:39:38.625918+00:00",
 "since": "2026/10/21",
 "jobs": {
 "EN04541": [
@@ -20283,6 +20283,14 @@
 "file": "VIDEO-2026-07-09-17-10-15.mp4",
 "outcome": "",
 "subject": "OMO No: EQ30047 Issuer: VLADIMIR GORODNICHENKO Boro: Brooklyn Bldg Address: 593, LEXINGTON AVENUE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-04",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ30047 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] OMO No: EQ30047 Issuer: VLADIMIR GORODNICHENKO Boro: Brooklyn Bldg Address: 593, LEXINGTON AVENUE",
 "via": "hpd-staff"
 }
 ],
