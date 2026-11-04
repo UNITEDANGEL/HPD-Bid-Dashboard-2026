@@ -51,7 +51,7 @@ import { onSiteNote } from "../../lib/job-time";
 import { leftWithoutAfterPhoto } from "../../lib/leave-reminder";
 import { materialsFor } from "../../lib/materials";
 import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HATS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
-import { suggestTenantReply } from "../../lib/tenant-reply";
+import { isSpanishText, spanishToEnglish, suggestTenantReply, suggestTenantReplyEs } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -4145,9 +4145,10 @@ export default function FieldCommandClient() {
         } else if (job && !pendingRef.current) {
           // No day and time in it: the helper reads it to you and offers an answer, one tap to send (owner idea, 3 Nov).
           const who = tenantInfo(job).name?.split(/\s+/)[0] || "The tenant";
-          const answerText = suggestTenantReply(m.body);
+          const spanish = isSpanishText(m.body);
+          const answerText = spanish ? suggestTenantReplyEs(m.body) : suggestTenantReply(m.body);
           const where = jobAddress(job).replace(/,\s*\d{5}$/, "");
-          setAgent({ heard: `💬 ${who}: "${m.body.slice(0, 160)}"`, reply: `${who} texted back about ${where} (${jobId(job)}).${answerText ? ` I can answer: "${answerText}"` : " It sounds like they don't want texts: I won't answer."}`, offers: answerText ? [`text the tenant at ${jobId(job)} ${answerText}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: answerText ? "Send it?" : "Open the job?" });
+          setAgent({ heard: `💬 ${who}: "${m.body.slice(0, 160)}"`, reply: `${who} texted back about ${where} (${jobId(job)}).${spanish ? ` In Spanish. It says: ${spanishToEnglish(m.body)}.` : ""}${answerText ? ` I can answer${spanish ? " in Spanish" : ""}: "${answerText}"` : " It sounds like they don't want texts: I won't answer."}`, offers: answerText ? [`text the tenant at ${jobId(job)} ${answerText}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: answerText ? "Send it?" : "Open the job?" });
           speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 200);
         }
         window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));

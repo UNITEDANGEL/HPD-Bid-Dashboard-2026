@@ -5,6 +5,7 @@
       "date": "Nov 4, 2026",
       "title": "Time at each job",
       "items": [
+        "🌎 When a tenant texts you in Spanish, the robot says it is Spanish, tells you in English what it says, and offers your answer in Spanish (you still tap to send).",
         "💬 Talking to the chat is smoother: if your phone cuts the mic off before it is sure you finished, the chat still answers what it heard, and after quiet moments it keeps listening a few more times before it rests.",
         "⏱ After you tap I'm here and then save the result, the job card shows how long you were on site (\"42 min on site\"), and once 3 jobs are timed, your usual time too.",
         "📸 If you drive away from a job you arrived at with no after photo and no result saved, the robot tells you once, so HPD does not reject the paperwork."
