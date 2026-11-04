@@ -169,6 +169,19 @@ function savedMapView(): { lat: number; lng: number; zoom: number } | null {
 }
 const JOBS_CACHE = "hpd-jobs-v1";
 
+// Opening speed (owner idea, 3 Nov): the extra lists (paid, older jobs, notice status) wait until the pins are drawn,
+// so the phone's first seconds go to the jobs. They still load within about 2 seconds.
+function afterFirstPaint(run: () => void): () => void {
+  let done = false;
+  const go = () => { if (!done) { done = true; run(); } };
+  const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+  if (w.requestIdleCallback) {
+    const id = w.requestIdleCallback(go, { timeout: 2000 });
+    return () => { done = true; w.cancelIdleCallback?.(id); };
+  }
+  const t = window.setTimeout(go, 800);
+  return () => { done = true; window.clearTimeout(t); };
+}
 function jobId(job: JobRecord) {
   return value(job, ["OMO", "omo", "OMONumber", "id", "Id"]) || "HPD JOB";
 }
@@ -1283,13 +1296,13 @@ export default function FieldCommandClient() {
   const [pipAsOf, setPipAsOf] = useState("");
   const pipAgeDays = pipAsOf ? Math.floor((Date.now() - Date.parse(pipAsOf)) / 86400000) : 0;
   const pipAsOfText = pipAsOf ? new Date(pipAsOf).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-  useEffect(() => {
+  useEffect(() => afterFirstPaint(() => {
     fetch("/data/pip_paid.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { setPipMap(d?.jobs || {}); setPipAsOf(String(d?.generatedAt || "")); }).catch(() => {});
-  }, []);
-  useEffect(() => {
+  }), []);
+  useEffect(() => afterFirstPaint(() => {
     fetch("/data/COA_older.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : [])).then((rows) => setOlderJobs(Array.isArray(rows) ? rows : [])).catch(() => {});
-  }, []);
-  useEffect(() => {
+  }), []);
+  useEffect(() => afterFirstPaint(() => {
     Promise.all([
       fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch("/data/sent_paperwork.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -1299,7 +1312,7 @@ export default function FieldCommandClient() {
       setAskedMap(asked?.jobs || {});
       reapplyFollowRef.current?.();
     });
-  }, []);
+  }), []);
   const [calendarDate, setCalendarDate] = useState(nyToday);
 
   useEffect(() => {

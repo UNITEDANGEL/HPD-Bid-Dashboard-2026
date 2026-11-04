@@ -326,6 +326,7 @@ jobs:
             scripts/test-browser-board-next.mjs \
             scripts/test-browser-scan.mjs \
             scripts/test-browser-bid-icons.mjs \
+            scripts/test-browser-open-fast.mjs \
             scripts/test-browser-auto-resend.mjs \
             scripts/test-browser-vt-send.mjs \
             scripts/test-browser-money.mjs \

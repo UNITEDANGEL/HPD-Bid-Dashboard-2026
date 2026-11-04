@@ -52,13 +52,6 @@
       "why": "Your win rate by borough and type of work, and the prices that won, so you know where to bid lower or higher."
     },
     {
-      "id": "speed-check",
-      "icon": "⚡",
-      "kind": "check",
-      "title": "Make the app open faster",
-      "why": "Claude measures how long the map takes to open on a phone and speeds up the slow parts (jobs first, pictures later)."
-    },
-    {
       "id": "weekly-checkup",
       "icon": "🔍",
       "kind": "check",

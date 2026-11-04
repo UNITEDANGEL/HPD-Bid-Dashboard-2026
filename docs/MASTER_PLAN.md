@@ -26,6 +26,7 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - Straight answers ("should I do a roof job tomorrow?": yes / no / only early, then offers the list) (208).
 - Next line no longer covers the Claude card; × leaves a Show tab (208).
 - Bids open with a hello: how many still need a price, the next one, ▶ Start, 🎯 all in a row, auto next after each send (209).
+- Opens faster: jobs load first, the extra lists (paid, older jobs, notice status) wait until the pins are drawn (idea speed-check, request 211010).
 - A face for the helper: blinks, head moves, mouth talks, ears listen; slim Claude line; chat tucks to the side and comes back; dock folder shakes, numbers bob; 6 new ideas (210).
 
 ### Now (owner said "do all 6", 3 Nov), in this order
