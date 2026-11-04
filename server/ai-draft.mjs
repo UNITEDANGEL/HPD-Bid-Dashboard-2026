@@ -95,6 +95,8 @@ const ASK_SYSTEM = [
   "- facts.hpdEmails (when he asks about emails) has the full text of HPD's newest emails: quote the part that answers.",
   "- If the question could mean more than one job, notice, bid or person in the facts and you can't tell which, don't",
   "  guess: ask one short question naming the choices ('The one on 90th Street, EQ15239, or on Adams, ER01987?').",
+  "- At the very end add up to 2 lines 'ASK: <the next question he'd likely want>' (short, specific, with job numbers when",
+  "  it helps, e.g. 'ASK: Which bids did I lose this month?'). They become buttons; skip them if nothing obvious follows.",
   "- Be smart and helpful like a sharp office manager: give the straight answer first (a number, yes / no, a job number),",
   "  then the one detail that matters. Never answer a question with only 'open the list'.",
   "- Never invent jobs, dates, amounts, people or documents. Say job numbers exactly as given.",
@@ -149,8 +151,9 @@ export async function aiAnswer(env, ask, fetcher = fetch) {
   const clean = (t) => {
     const lines = String(t || "").replace(/[*#`_]/g, "").split(/\r?\n/);
     const dos = lines.map((l) => l.trim()).filter((l) => /^DO:\s*\S/i.test(l)).slice(0, 3).map((l) => `DO: ${l.replace(/^DO:\s*/i, "").slice(0, 160)}`);
-    const said = lines.filter((l) => !/^\s*DO:/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 900);
-    return [said, ...dos].filter(Boolean).join("\n");
+    const asks = lines.map((l) => l.trim()).filter((l) => /^ASK:\s*\S/i.test(l)).slice(0, 2).map((l) => `ASK: ${l.replace(/^ASK:\s*/i, "").slice(0, 90)}`);
+    const said = lines.filter((l) => !/^\s*(DO|ASK):/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 900);
+    return [said, ...dos, ...asks].filter(Boolean).join("\n");
   };
   if (env?.AI) {
     const model = env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";

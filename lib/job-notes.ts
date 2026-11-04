@@ -14,6 +14,9 @@ function write(map: Record<string, ChatNote[]>) {
   try { window.localStorage.setItem(KEY, JSON.stringify(map)); } catch { /* storage full or blocked */ }
 }
 
+// Every job's notes (🔍 search everything).
+export function allJobNotes(): Record<string, ChatNote[]> { return all(); }
+
 export function loadJobNotes(jobId: string): ChatNote[] {
   const list = all()[jobId];
   return Array.isArray(list) ? list.filter((n) => n && typeof n.text === "string") : [];

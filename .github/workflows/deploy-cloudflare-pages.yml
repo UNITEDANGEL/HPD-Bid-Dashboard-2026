@@ -166,6 +166,7 @@ jobs:
           node scripts/test-helper-look.cjs
           node scripts/test-materials.cjs
           node scripts/test-ai-ask.mjs
+          node scripts/test-search-tip.cjs
           node scripts/test-tenant-reply.cjs
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs

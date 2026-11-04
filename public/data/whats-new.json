@@ -5,6 +5,10 @@
       "date": "Nov 3, 2026",
       "title": "Ideas, keep upgrading, talk to Claude",
       "items": [
+        "💬 After each answer the robot suggests the next question as buttons (\"Which bids did I lose this month?\"). One tap asks it.",
+        "📊 Ask \"how am I doing?\": a small chart in the chat shows bids sent and jobs won for the last 3 months.",
+        "🔍 Search everything: \"find the job where the tenant said the dog bites\" looks through your notes, the job cards' notes, the visit history, HPD's work descriptions and emails.",
+        "💡 One tip a day in the robot's bubble, from your own numbers (what kind of work won most, your bid pace, overdue notices).",
         "🧠 The robot remembers you: what you tell it to remember (\"I always bid door closers at 450\", \"Lewis wants photos first\") is used in its answers, and it offers to remember things you say that are worth keeping.",
         "📈 Ask \"how am I doing?\" or \"is my win rate going down?\": it compares the last 3 months (bids sent, jobs won, money awarded, win rate, what kind of work wins).",
         "📩 Ask what HPD wrote (\"what did Lewis say in her last email?\"): it reads the full text of HPD's newest emails and tells you the part that matters.",

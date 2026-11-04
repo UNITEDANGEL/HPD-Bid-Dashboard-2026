@@ -4272,3 +4272,18 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 /* 🚗 Driving mode: big buttons you can hit at a red light. */
 .fc-agent.is-driving .fc-agent-action, .fc-agent.is-driving [data-hpd-smoke="fc-agent-offer"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-choice"] { min-height: 56px; font-size: 18px; padding: 12px 18px; }
 .fc-agent.is-driving [data-hpd-smoke="fc-agent-talk"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-drive"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-close"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-yes"], .fc-agent.is-driving [data-hpd-smoke="fc-agent-no"] { min-width: 52px; min-height: 52px; font-size: 20px; }
+
+/* 📊 Small charts in the chat (4 Nov). */
+.fc-agent-chart { margin: 8px 0 4px; padding: 10px 12px; border-radius: 14px; background: #1e293b; }
+.fc-agent-chart figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: 13px; font-weight: 800; color: #e9d5ff; }
+.fc-agent-chart figcaption span { font-weight: 600; color: #cbd5e1; font-size: 12px; }
+.fc-agent-chart i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-left: 6px; }
+.fc-agent-chart .is-a { background: #8b5cf6; } .fc-agent-chart .is-b { background: #22c55e; }
+.fc-agent .fc-agent-chart > div { display: flex; flex-direction: row; gap: 14px; align-items: flex-end; margin-top: 14px; }
+.fc-agent .fc-agent-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.fc-agent .fc-agent-chart-bars { display: flex; flex-direction: row; gap: 4px; align-items: flex-end; justify-content: center; height: 96px; width: 100%; }
+.fc-agent-chart-bars b { position: relative; width: 22px; border-radius: 4px 4px 0 0; transform-origin: 50% 100%; animation: fc-chart-grow 0.6s cubic-bezier(.2, 1.2, .4, 1) both; }
+.fc-agent-chart-bars em { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); font-style: normal; font-size: 11px; font-weight: 800; color: #e2e8f0; padding-bottom: 2px; }
+.fc-agent .fc-agent-chart small { display: block; font-size: 11.5px; color: #cbd5e1; }
+@keyframes fc-chart-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .fc-agent-chart-bars b { animation: none; } }

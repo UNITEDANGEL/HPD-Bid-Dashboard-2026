@@ -76,6 +76,9 @@ import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
+import { allJobNotes } from "../../lib/job-notes";
+import { searchAll, searchQuery, type SearchDoc } from "../../lib/search-all";
+import { dailyTip } from "../../lib/daily-tip";
 import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
 import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater, workAnswer } from "../../lib/weather";
 import { aspAnswer, aspOff } from "../../lib/asp";
@@ -1698,7 +1701,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -3929,6 +3932,27 @@ export default function FieldCommandClient() {
   // mark on the bottom. Why?"), once per question.
   // 🎯 Today's goal ring around the 🤖 (owner's pick, 4 Nov): today's bids, filling up as each one is faxed.
   const goal = { total: (bidsDue.sentToday || 0) + (bidsDue.unsentToday || 0), sent: bidsDue.sentToday || 0 };
+  // 💡 One tip a day (owner's pick, 4 Nov): a finding from your own numbers in the robot's bubble, 7 AM-8 PM, once.
+  useEffect(() => {
+    if (!jobs.length) return;
+    const t = window.setTimeout(() => {
+      const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+      const today = nyToday();
+      try {
+        if (navigator.webdriver && localStorage.getItem("hpd-test-tip") !== "1") return;
+        if (h < 7 || h >= 20 || localStorage.getItem("hpd-tip-day") === today) return;
+      } catch { return; }
+      const wins = jobs.filter((j) => value(j, ["AwardDate"]) && !isTestJob(jobId(j))).map((j) => { const d = new Date(String(value(j, ["AwardDate"]))); const first = jobSummary(jobScope(j)).lines[0]; return { kind: (first ? lineText(first) : "Other work").split(/[·(,]/)[0].trim().slice(0, 30) || "Other work", amount: Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, date: Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d) }; }).filter((w) => w.date);
+      let recs: { sentAt?: string }[] = [];
+      try { recs = Object.values(JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}")); } catch { /* private mode */ }
+      const ago = (r: { sentAt?: string }) => (r.sentAt ? (Date.now() - Date.parse(r.sentAt)) / 86400000 : 99);
+      const tip = dailyTip({ wins, sentThisWeek: recs.filter((r) => ago(r) < 7).length, sentLastWeek: recs.filter((r) => ago(r) >= 7 && ago(r) < 14).length, overdueNotices: boardUrgent.filter((r) => r.dueAt && hoursLeft(r, Date.now()) < 0).length, today });
+      if (!tip) return;
+      try { localStorage.setItem("hpd-tip-day", today); } catch { /* private mode */ }
+      setOrbSay({ text: tip.length > 70 ? `${tip.slice(0, 66).replace(/\s+\S*$/, "")}…` : tip, full: tip, at: Date.now() });
+    }, 30000);
+    return () => window.clearTimeout(t);
+  }, [jobs.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
   const goalSentRef = useRef(-1);
   useEffect(() => {
     const prev = goalSentRef.current;
@@ -4842,6 +4866,26 @@ export default function FieldCommandClient() {
       answer(cmd.on ? "🔁 Keep upgrading is on: when you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Say \"stop auto upgrade\" to turn it off." : "Keep upgrading is off. Claude only builds what you ask for.");
       return;
     }
+    if (cmd.intent === "find") {
+      // 🔍 Your notes, the job cards' notes, the visit history, HPD's work descriptions and emails.
+      const docs: SearchDoc[] = [];
+      for (const n of loadNotes()) docs.push({ job: "", kind: "note", text: n.text, at: n.at });
+      for (const [id, list] of Object.entries(allJobNotes())) for (const n of list) docs.push({ job: id, kind: "job note", text: n.text, at: n.at });
+      for (const j of jobs) {
+        const id = jobId(j);
+        const visits = Array.isArray(j.FieldVisitHistory) ? (j.FieldVisitHistory as { recordedAt?: string; note?: string }[]) : [];
+        for (const v of visits) if (v?.note) docs.push({ job: id, kind: "visit", text: String(v.note), at: v.recordedAt });
+        docs.push({ job: id, kind: "work", text: jobScope(j) });
+      }
+      for (const t of threads || []) for (const m of t.messages) if (t.omos[0] && m.text) docs.push({ job: t.omos[0], kind: "email", text: String(m.text).slice(0, 4000), at: m.at });
+      const hits = searchAll(searchQuery(cmd.query), docs);
+      if (!hits.length) { answer(`I didn't find "${searchQuery(cmd.query)}" in your notes, the jobs or HPD's emails.`); return; }
+      const where: Record<string, string> = { note: "your note", "job note": "the job card's notes", visit: "the visit history", work: "HPD's work description", email: "HPD's email" };
+      cardsRef.current = hits.filter((h) => h.job).map((h) => chatCard(h.job)).filter((c): c is ChatCard => Boolean(c));
+      lastJobsRef.current = hits.find((h) => h.job) ? { ids: hits.filter((h) => h.job).map((h) => h.job), at: Date.now() } : lastJobsRef.current;
+      answer(`🔍 Found ${hits.length === 1 ? "it" : `${hits.length}`}:\n${hits.map((h) => `• ${h.job ? `${h.job} (${addressOf(h.job) || "job"})` : "Your notes"}, in ${where[h.kind] || h.kind}: "${h.snippet}"`).join("\n")}`);
+      return;
+    }
     if (cmd.intent === "materials") {
       // 📦 Today's route (else the open card): what the work descriptions need.
       const ids = todayRouteIds();
@@ -5196,16 +5240,23 @@ export default function FieldCommandClient() {
             // The AI can also pick app actions (DO: lines, 23 Oct "combine all AI"): each runs like you said it, so a
             // save still asks for your yes and a text still opens Messages for you to send.
             const lines = String(d.text).split(/\r?\n/);
-            const said = lines.filter((l) => !/^DO:/i.test(l)).join(" ").trim();
+            const said = lines.filter((l) => !/^(DO|ASK):/i.test(l)).join(" ").trim();
+            // 💬 The next question it suggests (ASK: lines) becomes buttons; 📊 "how am I doing" gets bars for 3 months.
+            const nextAsks = lines.filter((l) => /^ASK:/i.test(l)).map((l) => l.replace(/^ASK:\s*/i, "").trim()).filter(Boolean).slice(0, 2);
+            const trendChart = /\b(how am i doing|how'?s business|win rate|trend|trends|compare|compared|month|months|going (down|up)|doing better|doing worse)\b/i.test(cmd.question) && Array.isArray(facts.trends) && facts.trends.length
+              ? { title: "Bids sent and jobs won", aName: "Bids sent", bName: "Jobs won", rows: [...facts.trends].reverse().map((m) => ({ label: new Date(`${m.month}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "short" }) + (m.daysCounted === "whole month" ? "" : " (so far)"), a: m.bidsSent, b: m.jobsWon })) }
+              : undefined;
+            const extras = () => { if (!multiRef.current && (nextAsks.length || trendChart)) setAgent((a) => (a ? { ...a, chart: trendChart, offers: a.offers?.length ? [...a.offers, ...nextAsks].slice(0, 4) : nextAsks.length ? nextAsks : a.offers, offersLabel: a.offers?.length ? a.offersLabel : nextAsks.length ? "Ask next:" : a.offersLabel } : a)); };
             const dos = lines.filter((l) => /^DO:/i.test(l)).map((l) => l.replace(/^DO:\s*/i, "").trim())
               .filter((x) => { const c = parseCommand(x); return c.intent !== "ask" && c.intent !== "search"; }).slice(0, 3);
             chatRef.current = [...chatRef.current, { you: cmd.question.slice(0, 200), helper: `${said}${dos.length ? ` (did: ${dos.join("; ")})` : ""}`.slice(0, 300), at: Date.now() }].slice(-8);
             // A question gets the answer, and what the AI would do is offered to tap (owner, 3 Nov: "give me an answer,
             // then ask me to open the list or not"). An order ("text the tenant") still runs.
             const question = /\?\s*$|^\s*(should|shall|can|could|is|are|was|will|would|do|does|did|what|which|when|where|why|how|who|any)\b/i.test(cmd.question);
-            if (dos.length && question && said) { answer(said); if (!multiRef.current) setAgent((a) => (a ? { ...a, offers: dos } : a)); return; }
+            if (dos.length && question && said) { answer(said); if (!multiRef.current) setAgent((a) => (a ? { ...a, offers: dos } : a)); extras(); return; }
             if (dos.length) { multiRef.current = { heard, queue: dos.slice(1), replies: said ? [said] : [] }; agentRef.current(dos[0], true); return; }
             answer(said || d.text);
+            extras();
             return;
           }
           // Signed out: the AI is on, but it answers only for your account (owner, 22 Oct: "switch on AI").
@@ -8214,6 +8265,14 @@ export default function FieldCommandClient() {
           {/* The answer appears word by word (owner, 3 Nov: "everything animated"; the words are all there at once for
               reading and tests, each fades in a moment after the one before). */}
           <p key={agent.reply} data-hpd-smoke="fc-agent-reply" className={`fc-agent-words${agent.live ? " is-live" : ""}`}>{agent.reply.length > 500 || agent.live ? agent.reply : agent.reply.split(/(\s+)/).map((w, i) => (/^\s+$/.test(w) || !w ? w : <span key={i} style={{ animationDelay: `${Math.min(i, 120) * 22}ms` }}>{w}</span>))}</p>
+          {agent.chart ? (() => {
+            const ch = agent.chart;
+            const top = Math.max(1, ...ch.rows.flatMap((r) => [r.a, r.b]));
+            return <figure className="fc-agent-chart" data-hpd-smoke="fc-agent-chart" aria-label={`${ch.title}: ${ch.rows.map((r) => `${r.label} ${r.a} ${ch.aName.toLowerCase()}, ${r.b} ${ch.bName.toLowerCase()}`).join("; ")}`}>
+              <figcaption>{ch.title} <span><i className="is-a" /> {ch.aName} <i className="is-b" /> {ch.bName}</span></figcaption>
+              <div>{ch.rows.map((r, k) => <div key={r.label} className="fc-agent-chart-col"><div className="fc-agent-chart-bars"><b className="is-a" style={{ height: `${Math.max(2, (r.a / top) * 100)}%`, animationDelay: `${k * 120}ms` }}><em>{r.a}</em></b><b className="is-b" style={{ height: `${Math.max(2, (r.b / top) * 100)}%`, animationDelay: `${k * 120 + 60}ms` }}><em>{r.b}</em></b></div><small>{r.label}</small></div>)}</div>
+            </figure>;
+          })() : null}
           {agent.choices?.length ? (
             <div className="fc-agent-try fc-agent-choices" data-hpd-smoke="fc-agent-choices">
               {agent.choices.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-choice" onClick={() => agentRef.current(c)}>{c}</button>)}
