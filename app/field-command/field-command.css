@@ -4194,3 +4194,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-ride-bot { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(20, 11, 43, .85); border: 2px solid #22c55e; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); animation: fc-ride-bob .6s ease-in-out infinite alternate; }
 @keyframes fc-ride-bob { from { translate: 0 0; } to { translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .fc-face.is-sleep .fc-face-zzz, .fc-face.is-sleep .fc-face-head, .fc-face.is-waking .fc-face-head, .fc-ride-bot { animation: none; } }
+
+.fc-chatbar-quick { position: absolute; left: 0; right: 0; bottom: 52px; display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: none; }
+.fc-chatbar-quick::-webkit-scrollbar { display: none; }
+.fc-chatbar button.fc-chatbar-quick button, .fc-chatbar .fc-chatbar-quick button { flex: none; width: auto; height: 34px; padding: 0 12px; border-radius: 17px; background: rgba(15, 23, 42, 0.94); border: 1.5px solid #8b5cf6; color: #e0e7ff; font: 700 14px/1 system-ui, sans-serif; white-space: nowrap; }

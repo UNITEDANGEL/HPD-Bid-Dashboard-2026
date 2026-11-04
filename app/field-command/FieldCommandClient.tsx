@@ -679,6 +679,9 @@ function chatFollowUps(heard: string): string[] {
   return hit ? hit[1].filter((c) => c.toLowerCase() !== said) : [];
 }
 
+// The one-tap questions above the chat bar (each is something the helper already understands).
+const QUICK_QUESTIONS: [string, string][] = [["📅 Today", "what do I have today and plan my day"], ["📨 Next bid", "next bid"], ["⏰ Notices", "which notices are open"], ["💰 Owed", "how much does HPD owe me"], ["➡️ What's next", "what's next"]];
+
 // What the helper understands, as examples to tap (23 Oct "what can I say").
 const AGENT_EXAMPLES: [string, string[]][] = [
   ["Your day", ["what do I have today and plan my day", "take me to the next stop", "what appointments do I have", "remind tomorrow's tenants", "the tenant confirmed", "what's next", "show my job tracker"]],
@@ -1774,6 +1777,7 @@ export default function FieldCommandClient() {
   const prevAgentRef = useRef<{ heard: string; reply: string } | null>(null);
   const [agentTyped, setAgentTyped] = useState("");
   const [agentTypeOpen, setAgentTypeOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
   // 💬 The chat moves to the side when you're done with it and comes back up by itself with its next answer or idea
   // (owner, 3 Nov: "chat should just move to the side, and automatically zoom back up when it wants to give me an idea").
   const [agentTucked, setAgentTucked] = useState(false);
@@ -7805,6 +7809,13 @@ export default function FieldCommandClient() {
           setAgentTypeOpen(true);
           agentRef.current(t);
         }}>
+          {/* Quick answer buttons (owner idea, 3 Nov): one tap instead of typing. */}
+          {quickOpen && !chatBarText.trim() ? (
+            <div className="fc-chatbar-quick" data-hpd-smoke="fc-chatbar-quick" role="group" aria-label="Quick questions">
+              {QUICK_QUESTIONS.map(([label, ask]) => <button key={ask} type="button" data-hpd-smoke="fc-quick-q" data-ask={ask} onClick={() => { unlockChime(); setChatTip(""); setQuickOpen(false); setAgentTypeOpen(true); agentRef.current(ask); }}>{label}</button>)}
+            </div>
+          ) : null}
+          <button type="button" className="fc-chatbar-bolt" aria-label="Quick questions" aria-expanded={quickOpen} data-hpd-smoke="fc-chatbar-bolt" onClick={() => setQuickOpen((v) => !v)}>⚡</button>
           {/* 💡 always here (owner, 3 Nov: "always have a more ideas button available"): Claude's ideas, one tap. */}
           <button type="button" className="fc-chatbar-ideas" aria-label="Ideas from Claude" data-hpd-smoke="fc-chatbar-ideas" onClick={() => { unlockChime(); goTo("requests", ""); setTimeout(() => document.querySelector('[data-hpd-smoke="fc-ideas"]')?.scrollIntoView({ block: "start", behavior: "smooth" }), 400); }}>💡</button>
           {chatTip ? <p className="fc-chatbar-tip" data-hpd-smoke="fc-chatbar-tip" role="status">{chatTip}<button type="button" aria-label="Close the tip" onClick={() => setChatTip("")}>✕</button></p> : null}
