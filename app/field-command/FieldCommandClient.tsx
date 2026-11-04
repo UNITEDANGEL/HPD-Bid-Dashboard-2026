@@ -7721,6 +7721,19 @@ export default function FieldCommandClient() {
         for (const r of fresh.slice(0, 2)) all.push({ key: `notice|${r.key}`, kind: "notice", text: `📨 New ${r.hours}-hour notice for ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}${r.want ? `: HPD wants ${r.want.toLowerCase()}` : ""}. Answer it now?`, label: "✍️ Answer", go: () => agentRef.current(`answer the notice for ${r.omo}`) });
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
+        // 🌆 End of day (owner idea, 3 Nov): after 6 PM, once a day, a few lines on what got done and what is waiting.
+        if (nowMin >= 18 * 60 && !nudgeSeen.includes(`day|${today}`)) {
+          const sum = daySummary(jobs, { id: jobId, address: jobAddress });
+          const bits = [
+            sum.counts.visited ? `${sum.counts.visited} visited` : "",
+            sum.counts.finished ? `${sum.counts.finished} finished` : "",
+            sum.counts.noAccess ? `${sum.counts.noAccess} no access` : "",
+            sum.counts.closeOut ? `${sum.counts.closeOut} to close out` : "",
+          ].filter(Boolean);
+          if (bits.length || sum.tomorrow.length) {
+            all.push({ key: `day|${today}`, kind: "day", text: `🌆 Today: ${bits.length ? bits.join(", ") : "no visits"}. Tomorrow: ${sum.tomorrow.length ? `${sum.tomorrow.length} job${sum.tomorrow.length === 1 ? "" : "s"}` : "nothing booked"}.`, label: "Open", go: () => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); } });
+          }
+        }
         const nudge = all.find((n) => !nudgeSeen.includes(n.key));
         if (!nudge) return null;
         const done = () => setNudgeSeen(markNudgeSeen(nudge.key));

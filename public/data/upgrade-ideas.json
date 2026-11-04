@@ -59,13 +59,6 @@
       "why": "Once a week Claude taps every button, reads the errors from your phone and fixes what's broken or slow, then tells you what it fixed."
     },
     {
-      "id": "day-summary",
-      "icon": "🌆",
-      "kind": "upgrade",
-      "title": "End-of-day summary",
-      "why": "At 6 PM the app tells you in a few lines what got done today, what is still waiting, and what tomorrow's route looks like."
-    },
-    {
       "id": "one-hand",
       "icon": "🖐️",
       "kind": "upgrade",

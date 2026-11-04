@@ -107,6 +107,9 @@ try {
   for (const [btn, sheet] of [['[data-hpd-smoke="fc-jobs-open"]', '[data-hpd-smoke="fc-jobs"]']]) {
     if (await page.locator(btn).first().count()) { await tap(`map button ${btn}`, btn); await checkLinks(`list ${sheet}`); await tap(`list close ${sheet}`, `${sheet} [data-hpd-smoke="fc-jobs-close"]`, 300); }
   }
+  // The chat may speak up (e.g. the 6 PM day line) over the pill: put it away like the owner would.
+  if (await page.locator('[data-hpd-smoke="fc-newupdate-ok"]').count()) await page.locator('[data-hpd-smoke="fc-newupdate-ok"]').click().catch(() => {});
+  while (await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click().catch(() => {});
   for (const pill of ['[data-hpd-smoke="fc-data-check"] button']) {
     if (await page.locator(pill).first().count()) { await tap(`map pill ${pill}`, pill); await checkLinks(`map pill ${pill}`); await tap(`map pill close ${pill}`, pill, 300); }
   }
