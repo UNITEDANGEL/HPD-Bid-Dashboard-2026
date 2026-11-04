@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { HELPER_COLORS, useHelperLook } from "../../lib/helper-look";
+import { HELPER_COLORS, useHelperLook, type HelperHat, type HelperOutfit } from "../../lib/helper-look";
 
 // 🤖 The helper's face (owner, 3 Nov: "the bot should look real: blink, move around, and when it's talking to me it
 // should have a talking thing"). One small drawing: the eyes blink, the head tilts while it works, the mouth moves while
@@ -11,8 +11,12 @@ import { HELPER_COLORS, useHelperLook } from "../../lib/helper-look";
 export type FaceMode = "idle" | "working" | "listening" | "talking" | "ask" | "off" | "happy" | "worried" | "sleep";
 
 // look: where the eyes look, -1..1 each way (👀 they follow your finger on the map).
-export default function HelperFace({ mode = "idle", size = 34, className = "", look }: { mode?: FaceMode; size?: number; className?: string; look?: { x: number; y: number } | null }) {
-  const dress = useHelperLook();
+// outfit: what it wears right now (lib/helper-look robotOutfit); arms: 👋 wave, 👉 point, 👍 thumbs up; hat: a hat for
+// the moment (⛑ at a job site) over the owner's pick.
+export type HelperArms = "wave" | "point" | "thumbs" | "";
+export default function HelperFace({ mode = "idle", size = 34, className = "", look, outfit = "", arms = "", hat }: { mode?: FaceMode; size?: number; className?: string; look?: { x: number; y: number } | null; outfit?: HelperOutfit; arms?: HelperArms; hat?: HelperHat }) {
+  const picked = useHelperLook();
+  const dress = { ...picked, hat: outfit === "party" || outfit === "pajamas" ? ("none" as HelperHat) : hat || picked.hat };
   const c = HELPER_COLORS[dress.color];
   // Waking up: a stretch for a moment after a nap.
   const prev = useRef(mode);
@@ -22,9 +26,15 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
     prev.current = mode;
   }, [mode]);
   return (
-    <svg className={`fc-face is-${mode}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-hat={dress.hat} width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+    <svg className={`fc-face is-${mode}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-hat={dress.hat} data-outfit={outfit || undefined} data-arms={arms || undefined} width={size} height={size} viewBox="0 0 48 48" overflow="visible" aria-hidden="true">
+      {arms ? <g className={`fc-face-arms is-${arms}`} stroke={c.line} strokeWidth="2.6" strokeLinecap="round" fill="none">
+        <path className="fc-arm-l" d="M4 30 Q-2 34 -1 40" />
+        {arms === "wave" ? <g className="fc-arm-r"><path d="M44 28 Q50 22 50 14" /><circle cx="50" cy="12" r="2.8" fill={c.ear} stroke="none" /></g>
+          : arms === "point" ? <g className="fc-arm-r"><path d="M44 28 L54 26" /><path d="M54 26 l3 -1" strokeWidth="2" /></g>
+          : <g className="fc-arm-r"><path d="M44 30 Q50 30 50 24" /><text x="45" y="22" fontSize="10" stroke="none">👍</text></g>}
+      </g> : null}
       <g className="fc-face-head">
-        {dress.hat === "none" ? <>
+        {dress.hat === "none" && outfit !== "party" && outfit !== "pajamas" ? <>
           <line x1="24" y1="4" x2="24" y2="10" stroke="#c4b5fd" strokeWidth="2.5" strokeLinecap="round" />
           <circle className="fc-face-antenna" cx="24" cy="4" r="3" fill="#22d3ee" />
         </> : null}
@@ -53,8 +63,13 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
           <path d="M30 11.5 L46 13 L45 16 L30 14.5 Z" fill="#1e40af" />
           <circle cx="24" cy="3.6" r="1.6" fill="#93c5fd" />
         </g> : null}
+        {outfit === "sunglasses" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="12" y="19" width="10.5" height="7" rx="3" fill="#0f172a" /><rect x="25.5" y="19" width="10.5" height="7" rx="3" fill="#0f172a" /><line x1="22" y1="21.5" x2="26" y2="21.5" stroke="#0f172a" strokeWidth="1.6" /></g> : null}
+        {outfit === "scarf" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="8" y="37" width="32" height="6" rx="3" fill="#dc2626" /><rect x="28" y="40" width="6" height="9" rx="2" fill="#b91c1c" /></g> : null}
+        {outfit === "party" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M17 11 L24 -6 L31 11 Z" fill="#f472b6" stroke="#be185d" strokeWidth="1.2" /><circle cx="24" cy="-6" r="2.6" fill="#facc15" /><circle cx="21.5" cy="5" r="1.2" fill="#fff" /><circle cx="26" cy="1" r="1.2" fill="#fff" /></g> : null}
+        {outfit === "pajamas" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M10 12 Q22 -4 36 6 Q40 10 44 16 L40 17 Q36 12 34 12 Z" fill="#3b82f6" stroke="#1e40af" strokeWidth="1.2" /><circle cx="43" cy="17" r="2.6" fill="#fff" /></g> : null}
         <text className="fc-face-zzz" x="36" y="10" fontSize="9" fontWeight="900" fill="#a5b4fc">z</text>
       </g>
+      {outfit === "umbrella" ? <g className="fc-face-outfit fc-face-umbrella" data-hpd-smoke="fc-face-outfit"><path d="M30 2 Q42 -10 54 2 Z" fill="#0ea5e9" stroke="#0369a1" strokeWidth="1.2" /><path d="M42 2 L42 16 Q42 19 39.5 19" stroke="#334155" strokeWidth="1.8" fill="none" strokeLinecap="round" /></g> : null}
     </svg>
   );
 }

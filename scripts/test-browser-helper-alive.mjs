@@ -70,7 +70,10 @@ try {
   assert.equal(await chatFace.getAttribute("data-hat"), "hardhat");
   assert.equal(await chatFace.getAttribute("data-color"), "green");
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
-  assert.equal(await orb.locator('[data-hpd-smoke="fc-face"]').getAttribute("data-hat"), "hardhat", "the 🤖 button wears it too");
+  // (At night it wears its nightcap instead, and a party hat for good news: the color stays.)
+  const orbFace = orb.locator('[data-hpd-smoke="fc-face"]');
+  assert.equal(await orbFace.getAttribute("data-color"), "green", "the 🤖 button wears it too");
+  if (!/pajamas|party/.test((await orbFace.getAttribute("data-outfit")) || "")) assert.equal(await orbFace.getAttribute("data-hat"), "hardhat", "the 🤖 button wears it too");
 
   // 6) 📣 Read it to me: the job card's 🔊 opens the helper and says the job out loud.
   const JOB = "ER06362";

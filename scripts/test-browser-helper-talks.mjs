@@ -72,7 +72,33 @@ try {
   await page.locator('[data-hpd-smoke="fc-dress-rate"][data-rate="1.15"]').click();
   await page.waitForFunction(() => window.__rate > 1.1, null, { timeout: 3000 });
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-voice-rate")), "1.15");
+  // 🔋 Battery saver in 🎨: nothing moves while it's on.
+  await page.locator('[data-hpd-smoke="fc-dress-saver"]').click();
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains("hpd-saver")), true);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent"]').evaluate((el) => getComputedStyle(el).animationName), "none");
+  await page.locator('[data-hpd-smoke="fc-dress-saver"]').click();
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains("hpd-saver")), false);
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+
+  // 🎯 The goal ring: a bid due later today marked sent on this phone fills part of the ring.
+  const bid = await page.evaluate(async () => {
+    const d = await (await fetch("/data/upcoming_bids.json")).json();
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    const now = new Date().toLocaleTimeString("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number);
+    const min = (t) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 1440; };
+    const b = (d.bids || []).find((x) => x.omo && x.bidDue === today && min(x.bidDueTime) > now[0] * 60 + now[1]);
+    if (!b) return null;
+    const recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}");
+    recs[b.omo] = { ...(recs[b.omo] || {}), status: "sent", bidDue: b.bidDue };
+    localStorage.setItem("hpd-bid-records-v1", JSON.stringify(recs));
+    return b.omo;
+  });
+  if (bid) {
+    await page.reload({ waitUntil: "load" });
+    await page.waitForFunction(() => Number(document.querySelector('[data-hpd-smoke="fc-goal-ring"]')?.getAttribute("data-sent") || 0) >= 1, null, { timeout: 30000 });
+    const ring = page.locator('[data-hpd-smoke="fc-goal-ring"]');
+    assert.ok(Number(await ring.getAttribute("data-total")) >= Number(await ring.getAttribute("data-sent")), "sent never more than the total");
+  }
 
   // 3) 🧭 Read a job, then "take me there".
   const JOB = "ER06362";
@@ -94,7 +120,7 @@ try {
   assert.match(waze, /navigate=yes/);
   assert.ok(errors.length === 0, errors.join(" | "));
 
-  console.log("PASS helper talks: a hello bubble on open; a cheer at the first bid; the robot walks to the job read; short news in a speech bubble over the 🤖 (tap: read out loud); 👩/👨 voices and speed in 🎨 with a sample, kept on the phone; a job read, then \"take me there\" starts Waze to it");
+  console.log(`PASS helper talks: battery saver stops the motion; goal ring ${bid ? "fills with a sent bid" : "(no bid due later today)"}; ` + "a hello bubble on open; a cheer at the first bid; the robot walks to the job read; short news in a speech bubble over the 🤖 (tap: read out loud); 👩/👨 voices and speed in 🎨 with a sample, kept on the phone; a job read, then \"take me there\" starts Waze to it");
 } finally {
   await browser.close();
 }

@@ -163,6 +163,7 @@ jobs:
           node scripts/test-photo-ai.mjs
           node scripts/test-claude-now.mjs
           node scripts/test-photo-check.cjs
+          node scripts/test-helper-look.cjs
           node scripts/test-tenant-reply.cjs
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs

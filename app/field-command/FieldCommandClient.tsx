@@ -47,7 +47,7 @@ import JobAssistant from "./JobAssistant";
 import PhotoCheck from "./PhotoCheck";
 import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
-import { getHelperLook, HELPER_COLORS, HELPER_HATS, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
+import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HATS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
 import { suggestTenantReply } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
 import "../map/plan-my-day.css";
@@ -1693,7 +1693,7 @@ export default function FieldCommandClient() {
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
   // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
-  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number; unsentToday?: number; firstTime?: string }>({ today: 0, tomorrow: 0, open: 0 });
+  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number; unsentToday?: number; sentToday?: number; firstTime?: string }>({ today: 0, tomorrow: 0, open: 0 });
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
@@ -2123,6 +2123,7 @@ export default function FieldCommandClient() {
         .sort((a, b) => minutes(a.bidDueTime) - minutes(b.bidDueTime));
       setBidsDue({
         unsentToday: unsent.length, firstTime: unsent[0]?.bidDueTime || "",
+        sentToday: bids.filter((b) => b.bidDue === day(0) && b.omo && ["sent", "confirmed"].includes(String(recs[b.omo]?.status)) && recs[b.omo]?.bidDue === b.bidDue).length,
         today: bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin).length,
         tomorrow: bids.filter((b) => b.bidDue === day(1)).length,
         open: bids.filter((b) => b.bidDue > day(0) || (b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin)).length,
@@ -3903,6 +3904,32 @@ export default function FieldCommandClient() {
   // waiting (silent: phones don't let a page talk before a tap). Tap the bubble to talk.
   // ❓ When Claude asks you something, the robot says so in its bubble (owner, 4 Nov: "I see Claude with a question
   // mark on the bottom. Why?"), once per question.
+  // 🎯 Today's goal ring around the 🤖 (owner's pick, 4 Nov): today's bids, filling up as each one is faxed.
+  const goal = { total: (bidsDue.sentToday || 0) + (bidsDue.unsentToday || 0), sent: bidsDue.sentToday || 0 };
+  const goalSentRef = useRef(-1);
+  useEffect(() => {
+    const prev = goalSentRef.current;
+    goalSentRef.current = goal.sent;
+    if (prev >= 0 && goal.sent > prev && goal.sent < goal.total) setOrbSay({ text: `🎯 ${goal.sent} of ${goal.total} bids sent today`, full: `${goal.sent} of ${goal.total} bids sent today. ${goal.total - goal.sent} to go.`, at: Date.now() });
+  }, [goal.sent]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🔋 Battery saver: by hand in 🎨, or by itself under 20% battery (phones that tell; not the iPhone).
+  const [saver, setSaver] = useState(false);
+  useEffect(() => {
+    const on = batterySaverOn();
+    setSaver(on); applyBatterySaver(on);
+    const nav = navigator as unknown as { getBattery?: () => Promise<{ level: number; charging: boolean; addEventListener: (e: string, f: () => void) => void }> };
+    void nav.getBattery?.().then((b) => {
+      const check = () => {
+        const low = b.level < 0.2 && !b.charging;
+        const was = document.documentElement.classList.contains("hpd-saver");
+        if (low && !was) { applyBatterySaver(true); setOrbSay({ text: "🔋 Battery low: I stopped the moving pictures.", full: "Your battery is low, so I stopped the moving pictures to make it last. They come back when you charge.", at: Date.now() }); }
+        else if (!low && was && !batterySaverOn()) applyBatterySaver(false);
+      };
+      check();
+      b.addEventListener("levelchange", check);
+      b.addEventListener("chargingchange", check);
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const askSeenRef = useRef("");
   useEffect(() => {
     const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
@@ -6034,7 +6061,7 @@ export default function FieldCommandClient() {
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })(), wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                     {orbSay ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
@@ -7973,7 +8000,7 @@ export default function FieldCommandClient() {
           {/* The helper's face: it listens, talks (the mouth moves while it speaks), and blinks in between. */}
           {/* Over a bid or a job the panel stays small: the face sits in the first line instead. */}
           <div className={`fc-agent-who${speakingNow ? " is-talking" : listening ? " is-listening" : ""}${selectedJob || bidsOpen ? " is-small" : ""}`} data-hpd-smoke="fc-agent-who">
-            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock ? 112 : 60} />
+            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock ? 112 : 60} outfit={robotOutfit({ wx: wxChip })} arms={magicOn ? "wave" : pointAt ? "point" : /^(✅|Sent|Done|Saved|Marked)/.test(agent.reply) ? "thumbs" : ""} hat={selectedJob && Date.now() - Date.parse(String(value(selectedJob, ["FieldArrivedAt"]) || "")) < 8 * 3600000 ? "hardhat" : undefined} />
             <b>{speakingNow ? "Talking to you…" : listening ? "Listening…" : agent.reply === "Thinking…" ? "Thinking…" : "Your helper"}</b>
           </div>
           {dressOpen ? (
@@ -7991,6 +8018,7 @@ export default function FieldCommandClient() {
                 return <>
                   {list.length ? <span className="fc-dress-voices">{list.map((v) => <button key={v.name} type="button" className={`fc-dress-voice${pick === v.name ? " is-on" : ""}`} data-hpd-smoke="fc-dress-voice" data-voice={v.name} aria-pressed={pick === v.name} onClick={() => { setChosenVoice(v.name); setVoiceTick((n) => n + 1); sample(); }}>{who(v.name)} {v.name.replace(/\s+-\s.*$/, "").replace(/\s*\(.*\)$/, "").replace(/^(Microsoft|Google|Apple)\s+/i, "").split(/\s+/).slice(0, 2).join(" ")}</button>)}</span> : null}
                   <span className="fc-dress-voices">{([[0.85, "🐢 Slower"], [1, "Normal"], [1.15, "🐇 Faster"]] as const).map(([r, label]) => <button key={label} type="button" className={`fc-dress-voice${rate === r ? " is-on" : ""}`} data-hpd-smoke="fc-dress-rate" data-rate={r} aria-pressed={rate === r} onClick={() => { setVoiceRate(r); setVoiceTick((n) => n + 1); sample(); }}>{label}</button>)}<button type="button" className="fc-dress-voice" data-hpd-smoke="fc-dress-sample" onClick={sample}>▶ Hear it</button></span>
+                  <span className="fc-dress-voices"><button type="button" className={`fc-dress-voice${saver ? " is-on" : ""}`} data-hpd-smoke="fc-dress-saver" aria-pressed={saver} onClick={() => { const next = !saver; setSaver(next); setBatterySaver(next); }}>🔋 Battery saver: {saver ? "on (nothing moves)" : "off"}</button></span>
                 </>;
               })() : null}
             </div>

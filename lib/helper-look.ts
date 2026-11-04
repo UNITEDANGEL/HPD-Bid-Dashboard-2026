@@ -42,3 +42,28 @@ export function useHelperLook() {
   }, []);
   return look;
 }
+
+// 🌤 What the robot wears right now (owner's picks, 4 Nov): a party hat for good news, a nightcap when it naps, an
+// umbrella when rain or snow is on the way, a scarf when it's cold, sunglasses on a hot sunny day.
+export type HelperOutfit = "party" | "pajamas" | "umbrella" | "scarf" | "sunglasses" | "";
+export function robotOutfit(o: { happy?: boolean; sleep?: boolean; wx?: { temp: number; icon: string; note: string } | null }): HelperOutfit {
+  if (o.happy) return "party";
+  if (o.sleep) return "pajamas";
+  const wx = o.wx;
+  if (!wx) return "";
+  if (/rain|snow/i.test(wx.note)) return "umbrella";
+  if (wx.temp <= 40) return "scarf";
+  if (wx.temp >= 80 && /☀/.test(wx.icon)) return "sunglasses";
+  return "";
+}
+
+// 🔋 Battery saver: no moving pictures (on by hand in 🎨, or by itself under 20% battery where the phone tells).
+const SAVER = "hpd-battery-saver";
+export function batterySaverOn() { try { return localStorage.getItem(SAVER) === "1"; } catch { return false; } }
+export function setBatterySaver(on: boolean) {
+  try { if (on) localStorage.setItem(SAVER, "1"); else localStorage.removeItem(SAVER); } catch { /* private mode */ }
+  applyBatterySaver(on);
+}
+export function applyBatterySaver(on: boolean) {
+  try { document.documentElement.classList.toggle("hpd-saver", on); } catch { /* server */ }
+}
