@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-03T23:59:20.850Z
+Fetcher run started: 2026-11-04T00:07:32.408Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,19 +15,19 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/10/20 before:2026/11/04
-COA items parsed (latest per OMO): 8
-ITB items parsed (latest per OMO): 8
-Final JobRows: 8
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/10/21 before:2026/11/05
+COA items parsed (latest per OMO): 5
+ITB items parsed (latest per OMO): 5
+Final JobRows: 5
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/8 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 2/8 [00:00<00:00, 13.19it/s]Downloading COA messages:  50%|█████     | 4/8 [00:00<00:00, 15.15it/s]Downloading COA messages:  75%|███████▌  | 6/8 [00:00<00:00, 13.77it/s]Downloading COA messages: 100%|██████████| 8/8 [00:00<00:00, 13.92it/s]Downloading COA messages: 100%|██████████| 8/8 [00:00<00:00, 13.98it/s]
-Geocoding COA addresses:   0%|          | 0/8 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 8/8 [00:00<00:00, 248551.35it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/8 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 1/8 [00:00<00:03,  2.21it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 2/8 [00:00<00:02,  2.89it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 3/8 [00:00<00:01,  3.30it/s]Fetching ITBs for COA OMOs:  50%|█████     | 4/8 [00:01<00:01,  3.44it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 5/8 [00:01<00:00,  3.10it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 6/8 [00:01<00:00,  3.28it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 7/8 [00:02<00:00,  3.45it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:02<00:00,  3.05it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:02<00:00,  3.12it/s]
+Downloading COA messages:   0%|          | 0/5 [00:00<?, ?it/s]Downloading COA messages:  20%|██        | 1/5 [00:00<00:00,  6.34it/s]Downloading COA messages:  40%|████      | 2/5 [00:00<00:00,  7.86it/s]Downloading COA messages:  60%|██████    | 3/5 [00:00<00:00,  7.38it/s]Downloading COA messages:  80%|████████  | 4/5 [00:00<00:00,  6.21it/s]Downloading COA messages: 100%|██████████| 5/5 [00:00<00:00,  6.66it/s]Downloading COA messages: 100%|██████████| 5/5 [00:00<00:00,  6.76it/s]
+Geocoding COA addresses:   0%|          | 0/5 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 5/5 [00:00<00:00, 127100.12it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/5 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  20%|██        | 1/5 [00:00<00:03,  1.28it/s]Fetching ITBs for COA OMOs:  40%|████      | 2/5 [00:01<00:01,  1.60it/s]Fetching ITBs for COA OMOs:  60%|██████    | 3/5 [00:01<00:01,  1.73it/s]Fetching ITBs for COA OMOs:  80%|████████  | 4/5 [00:02<00:00,  1.69it/s]Fetching ITBs for COA OMOs: 100%|██████████| 5/5 [00:02<00:00,  1.82it/s]Fetching ITBs for COA OMOs: 100%|██████████| 5/5 [00:02<00:00,  1.72it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -37,14 +37,11 @@ Award amount check ER08170: stored 577.00, COA 577.00
 Award amount check ER08552: stored 690.00, COA 690.00
 Award amount check ER07749: stored 417.00, COA 417.00
 Award amount check ER07640: stored 1190.00, COA 1190.00
-Award amount check ER07980: stored 590.00, COA 590.00
-Award amount check ER08182: stored 465.00, COA 465.00
-Award amount check ER07315: stored 540.00, COA 540.00
 Safe merge complete
 Master before: 698
-Incoming rows: 8
+Incoming rows: 5
 Added new OMOs: 0
-Skipped existing OMOs: 8
+Skipped existing OMOs: 5
 Updated existing OMOs: 0
 Need geocode: 0
 Missing ITB: 0
@@ -109,9 +106,9 @@ $ python scripts/sync-itb-page3-descriptions.py
 {
   "jobs": 698,
   "manifestEntries": 698,
-  "descriptionsAdded": 6,
+  "descriptionsAdded": 4,
   "legacyDescriptionReplaced": 0,
-  "missingManifestEntry": 692,
+  "missingManifestEntry": 694,
   "extractFailed": 0
 }
 
@@ -128,11 +125,26 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/20
-Upcoming bids: 23 not awarded yet (23 on the map), 0 received today, from 124 emails
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
+Traceback (most recent call last):
+  File "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/fetch_upcoming_bids.py", line 348, in <module>
+    fetch(opts.days)
+  File "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/fetch_upcoming_bids.py", line 278, in fetch
+    data = service.users().messages().get(userId="me", id=msg["id"]).execute(num_retries=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/gmail_transport.py", line 11, in execute
+    return super().execute(http=http, num_retries=num_retries)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/.local/lib/python3.12/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/.local/lib/python3.12/site-packages/googleapiclient/http.py", line 1018, in execute
+    raise HttpError(resp, content, uri=self.uri)
+googleapiclient.errors.HttpError: <HttpError 400 when requesting https://gmail.googleapis.com/gmail/v1/users/me/messages/1a18deb67b73df76?alt=json returned "Precondition check failed.". Details: "[{'message': 'Precondition check failed.', 'domain': 'global', 'reason': 'failedPrecondition'}]">
 
+WARNING: Upcoming invitations were not refreshed: Read upcoming invitations to bid failed with exit code 1
 
 ========== Read award emails ==========
 $ python scripts/fetch_award_history.py --since 2026/09/20
@@ -269,13 +281,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-04T00:04:31.086Z
+Fetcher run finished: 2026-11-04T00:10:15.223Z
 {
-  "fetchedCoaItems": 8,
-  "fetchedItbItems": 8,
-  "fetchedFinalJobRows": 8,
+  "fetchedCoaItems": 5,
+  "fetchedItbItems": 5,
+  "fetchedFinalJobRows": 5,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 8,
+  "skippedExistingOmos": 5,
   "rawRows": 698,
   "rows2026": 647,
   "mapped2026": 647,
