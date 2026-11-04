@@ -21,6 +21,9 @@ assert.equal(maskText("SUPER MARK TEST (212) 555-0100"), `SUPER MARK TEST ${PHON
 assert.equal(maskText("CALL HPD 212 863 6046 OR (212) 863-5262"), "CALL HPD 212 863 6046 OR (212) 863-5262", "HPD office lines stay");
 assert.equal(maskText("VIOLATION 16351128 BIN 1059533"), "VIOLATION 16351128 BIN 1059533", "violation / building numbers untouched");
 assert.ok(PRIVATE_FIELDS.has("itbTenantPhone"));
+// A tenant name with no phone after it (4 Nov: "TENANT CONTACT: DOE, JANE AKA: ...") is masked in the notes too.
+const noPhone = splitRecord({ omo: "EQ3", notes: "CALL HPD. TENANT CONTACT: DOE, JANE AKA: 1 TEST AVENUE" });
+assert.ok(!/DOE, JANE/.test(noPhone.pub.notes) && noPhone.pub.notes.includes(MASK), noPhone.pub.notes); assert.ok(/DOE, JANE/.test(noPhone.priv.notes), "original kept in the encrypted bundle");
 // File names keep their 12-digit stamps (they can look like a phone number).
 const filed = splitRecord({ OMO: "EQ2", ITBFile: "ER07755_101326212345.pdf", COAFile: "EQ17038_091626718555.pdf" });
 assert.equal(filed.pub.ITBFile, "ER07755_101326212345.pdf"); assert.equal(filed.pub.COAFile, "EQ17038_091626718555.pdf");

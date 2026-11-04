@@ -90,7 +90,7 @@ export function splitRecord(rec) {
       if (v !== "" && v !== null && v !== undefined) priv[k] = v;
       pub[k] = "";
     } else {
-      const masked = maskText(v);
+      const masked = scrubPublic(v); // also the name after "TENANT CONTACT:" when HPD gave no phone (4 Nov)
       if (masked !== v) { priv[k] = v; pub[k] = masked; }
     }
   }
