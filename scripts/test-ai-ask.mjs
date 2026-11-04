@@ -32,4 +32,25 @@ assert.match(system, /facts\.trends/);
 assert.match(system, /'remember <what>'/);
 assert.match(sent.body.messages[1].content, /"bidsSent":\{"today":4\}/);
 assert.match(APP_GUIDE, /Bottom buttons: Jobs, Bids, the 🤖 robot/);
-console.log("ai ask ok: long facts shortened per list (never cut mid-way), the app guide and general knowledge in the instructions, facts and question sent");
+// 🧠 The conversation goes as real turns (not inside the facts), so "why?" follows on from the last answer.
+let turns = null;
+const env2 = { AI: { run: async (model, body) => { turns = body.messages; return { response: "Because most of them are small plumbing jobs." }; } } };
+const ask2 = askFacts({ question: "why?", facts: { a: 1, recentConversation: [{ you: "how many bids did I win this week", helper: "You won 3 bids this week." }, { you: "", helper: "dropped" }] } });
+assert.equal(ask2.facts.recentConversation, undefined, "the conversation is not sent twice");
+const r2 = await aiAnswer(env2, ask2);
+assert.equal(r2.ai, true);
+assert.deepEqual(turns.slice(1, 3), [{ role: "user", content: "how many bids did I win this week" }, { role: "assistant", content: "You won 3 bids this week." }]);
+assert.match(turns[3].content, /Question: why\?$/);
+assert.equal(turns.length, 4);
+// ⛑ The big model busy or out of today's allowance: the free backup model answers.
+const tried = [];
+const env3 = { AI: { run: async (model) => { tried.push(model); if (tried.length === 1) throw new Error("3040: Capacity temporarily exceeded"); return { response: "You have 2 jobs today." }; } } };
+const r3 = await aiAnswer(env3, askFacts({ question: "what do I have today", facts: {} }));
+assert.equal(r3.ai, true);
+assert.equal(r3.model, "@cf/meta/llama-3.1-8b-instruct-fast");
+assert.equal(tried.length, 2);
+const env4 = { AI: { run: async () => { throw new Error("down"); } } };
+const r4 = await aiAnswer(env4, askFacts({ question: "what do I have today", facts: {} }));
+assert.equal(r4.ai, false);
+assert.match(r4.reason, /busy right now/);
+console.log("ai ask ok: the conversation as real turns, a backup model when the big one is busy; long facts shortened per list (never cut mid-way), the app guide and general knowledge in the instructions, facts and question sent");

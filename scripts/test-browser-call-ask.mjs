@@ -21,10 +21,13 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   // A to-do job with a tenant phone.
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
+  // The list settles first (the jobs keep loading for a moment after it opens).
+  await page.waitForTimeout(1500);
   const ids = await page.locator('[data-hpd-smoke="fc-jobs-row"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
   let JOB = "";
   for (const id of ids.slice(0, 40)) {
     if (!(await page.locator('[data-hpd-smoke="fc-jobs"]').count())) await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
+    if (!(await page.locator(`[data-hpd-smoke="fc-jobs-row"][data-omo="${id}"] button`).count())) continue;
     await page.locator(`[data-hpd-smoke="fc-jobs-row"][data-omo="${id}"] button`).first().click();
     await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
     await page.waitForTimeout(400);

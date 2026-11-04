@@ -82,6 +82,26 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
   await page.waitForFunction(() => /Answer 7\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   assert.equal(asked[6].question, "que trabajos tengo para mañana");
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  // 🧠 A follow-up ("why?") goes to the AI with what was just said, not to a list or "did you mean".
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("why?");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  await page.waitForFunction(() => /Answer 8\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
+  assert.equal(asked[7].question, "why?");
+  assert.deepEqual(asked[7].facts.recentConversation.at(-1), { you: "que trabajos tengo para mañana", helper: "Answer 7." });
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  // A built-in answer is remembered too: "what are my notes" (answered on the phone), then "and the oldest one?".
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("which notices are open");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  await page.waitForFunction(() => (document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").length > 10 && !/Answer \d/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
+  const builtIn = (await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText()).replace(/\s+/g, " ").slice(0, 40);
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("and which one is the oldest?");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  await page.waitForFunction(() => /Answer 9\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
+  const last = asked[8].facts.recentConversation.at(-1);
+  assert.equal(last.you, "which notices are open");
+  assert.ok(last.helper.replace(/\s+/g, " ").startsWith(builtIn.slice(0, 20)), `the phone's own answer goes along: ${last.helper.slice(0, 60)} vs ${builtIn}`);
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
 
   // 🔍 Search everything: a job card note.
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("find the job where the tenant said the dog bites");
@@ -89,9 +109,9 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
   await page.waitForFunction(() => /🔍 Found/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   const found = await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText();
   assert.match(found, /ER06362 .*the job card's notes: "Tenant said the dog bites, call first\."/);
-  assert.equal(asked.length, 7, "search runs on the phone, no AI call");
+  assert.equal(asked.length, 9, "search runs on the phone, no AI call");
   assert.deepEqual(errors, []);
-  console.log(`PASS smart ask: Spanish goes to the AI; 3-month bars and "ask next" buttons; search found the dog note on ER06362; a real question near a known phrase went to the AI with bids sent (${f1.bidsSent.last7Days} this week), the week's numbers and all jobs by stage; a named job in full (${named[0].address}); app questions carry the newest ${asked[3].facts.appChanges.length} changes; notes, 3-month trends and emails go along`);
+  console.log(`PASS smart ask: Spanish goes to the AI; follow-ups ("why?", "and which one is the oldest?") go to the AI with what was just said, the phone's own answers included; 3-month bars and "ask next" buttons; search found the dog note on ER06362; a real question near a known phrase went to the AI with bids sent (${f1.bidsSent.last7Days} this week), the week's numbers and all jobs by stage; a named job in full (${named[0].address}); app questions carry the newest ${asked[3].facts.appChanges.length} changes; notes, 3-month trends and emails go along`);
 } finally {
   await browser.close();
 }

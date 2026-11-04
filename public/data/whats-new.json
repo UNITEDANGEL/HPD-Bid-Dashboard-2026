@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "A smarter robot",
+      "items": [
+        "🧠 The robot remembers what you just talked about, including its own quick answers, so you can follow up like a real chat: \"why?\", \"and tomorrow?\", \"what about Queens?\", \"tell me more\", \"which one?\".",
+        "⛑ It keeps answering: if the AI is busy or out of today's free allowance, a second free AI answers instead, and a failed try is tried once more by itself."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "The package waits for you",
       "items": [
         "📦 The package never sends by itself any more. Taking an after photo or video no longer opens the package: take all of them, then tap 📦 I'm done: review & send on the job card.",

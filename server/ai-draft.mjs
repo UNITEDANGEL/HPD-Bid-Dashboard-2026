@@ -103,7 +103,7 @@ const ASK_SYSTEM = [
   "  then the one detail that matters. Never answer a question with only 'open the list'.",
   "- Never invent jobs, dates, amounts, people or documents. Say job numbers exactly as given.",
   "- Short: 1 to 5 sentences, plain spoken English, no lists, no markdown, no emojis.",
-  "- recentConversation (in the facts) is what the owner and you just said: use it for follow-ups like 'that one', 'text them' or 'and the other job'.",
+  "- The earlier messages are what the owner and you just said: use them for follow-ups like 'why?', 'and tomorrow?', 'that one', 'text them' or 'and the other job'. A short follow-up is about the last answer.",
   "- You never send, save or change anything yourself. When the owner wants the app to do something, add one line per",
   "  action that starts with 'DO: ' followed by exactly one of these commands (the app runs it and asks for a yes or a tap",
   "  where needed): 'text the tenant for <job>', 'call the tenant for <job>', 'take me to <job>', 'take me to the next stop',",
@@ -143,12 +143,22 @@ export function fitFacts(facts, max = 20000) {
 export function askFacts(body) {
   const q = clip(body?.question, 300).trim();
   if (q.length < 3) return null;
-  const facts = fitFacts(body?.facts && typeof body.facts === "object" ? body.facts : {});
-  return { question: q, facts };
+  const raw = body?.facts && typeof body.facts === "object" ? { ...body.facts } : {};
+  // The conversation so far goes to the AI as real turns (owner, 4 Nov: "much smarter... like a real chat"), so
+  // "why?", "and tomorrow?" or "text him" follow on from what was just said.
+  const history = (Array.isArray(raw.recentConversation) ? raw.recentConversation : []).slice(-6)
+    .map((t) => ({ you: clip(t?.you, 300).trim(), helper: clip(t?.helper, 600).trim() }))
+    .filter((t) => t.you && t.helper);
+  delete raw.recentConversation;
+  return { question: q, facts: fitFacts(raw), history };
 }
+
+// The backup model (also free on Workers AI) answers when the big one is busy or out of today's allowance.
+export const ASK_BACKUP_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 
 export async function aiAnswer(env, ask, fetcher = fetch) {
   const user = `Facts from the app (JSON):\n${JSON.stringify(ask.facts)}\n\nQuestion: ${ask.question}`;
+  const history = Array.isArray(ask.history) ? ask.history : [];
   // DO lines (app actions the AI chose) stay on their own lines; the rest is one spoken paragraph.
   const clean = (t) => {
     const lines = String(t || "").replace(/[*#`_]/g, "").split(/\r?\n/);
@@ -158,17 +168,24 @@ export async function aiAnswer(env, ask, fetcher = fetch) {
     return [said, ...dos, ...asks].filter(Boolean).join("\n");
   };
   if (env?.AI) {
-    const model = env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-    const result = await env.AI.run(model, { messages: [{ role: "system", content: ASK_SYSTEM }, { role: "user", content: user }], max_tokens: 450 });
-    const text = clean(typeof result?.response === "string" ? result.response : "");
-    return text ? { ai: true, model, text } : { ai: false, reason: "The AI gave no answer." };
+    const messages = [{ role: "system", content: ASK_SYSTEM }, ...history.flatMap((t) => [{ role: "user", content: t.you }, { role: "assistant", content: t.helper }]), { role: "user", content: user }];
+    const models = [env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast", ASK_BACKUP_MODEL];
+    let reason = "The AI gave no answer.";
+    for (const model of models) {
+      try {
+        const result = await env.AI.run(model, { messages, max_tokens: 450 });
+        const text = clean(typeof result?.response === "string" ? result.response : "");
+        if (text) return { ai: true, model, text };
+      } catch (e) { reason = `The AI is busy right now (${String(e?.message || e).slice(0, 80)}).`; }
+    }
+    return { ai: false, reason };
   }
   if (env?.ANTHROPIC_API_KEY) {
     const model = env.ANTHROPIC_MODEL || "claude-haiku-5-5";
     const r = await fetcher("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model, max_tokens: 350, system: ASK_SYSTEM, messages: [{ role: "user", content: user }] }),
+      body: JSON.stringify({ model, max_tokens: 350, system: ASK_SYSTEM, messages: [...history.flatMap((t) => [{ role: "user", content: t.you }, { role: "assistant", content: t.helper }]), { role: "user", content: user }] }),
       signal: AbortSignal.timeout(30000),
     });
     if (!r.ok) return { ai: false, reason: `The AI didn't answer (HTTP ${r.status}).` };

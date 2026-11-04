@@ -4830,7 +4830,16 @@ export default function FieldCommandClient() {
     // A real question (5+ words, how / why / what… or a ?) goes to the AI unless it's almost word for word a known one
     // (owner, 4 Nov: "make the bot smarter": near-miss phrases were answering questions they didn't fit).
     const realQuestion = heard.trim().split(/\s+/).length >= 5 && (/\?\s*$/.test(heard) || /^\s*(how|why|what|which|when|where|who|should|can|could|would|will|is|are|do|does|did|tell me|explain|give me)\b/i.test(heard));
-    if ((cmd.intent === "ask" || (cmd.intent === "search" && !/\d/.test(heard))) && askAnywayRef.current !== heard && !pendingWhoRef.current && !(realQuestion && cmd.intent === "ask" && closest(heard, knownPhrases())[0]?.score < 0.92)) {
+    // 🧠 A follow-up right after an answer ("why?", "and tomorrow?", "what about Queens", "tell me more") goes to the AI
+    // with the conversation, instead of starting over (owner, 4 Nov: "much smarter... like a real chat").
+    const lastTurn = chatRef.current[chatRef.current.length - 1];
+    const followUp = Boolean(lastTurn) && Date.now() - lastTurn.at < 180000 && !inner && !pendingRef.current && !pendingWhoRef.current
+      && heard.trim().split(/\s+/).length <= 8 && !/[a-z]{2}\s?\d{5}/i.test(heard)
+      && (/^\s*(and|but|why|how come|what about|how about|really|so|ok so|okay so|then what|tell me more|more|explain|what else|anything else|is that|are you sure|what do you mean|compared to)\b/i.test(heard) || /^\s*(which one|how much|how many|who|when|where|for what|like what)\s*\?*\s*$/i.test(heard))
+      && !/\b(read me|text|call|take me|navigate|open|plan|remind|send|weather|ideas?)\b/i.test(heard)
+      && (closest(heard, knownPhrases())[0]?.score || 0) < SURE;
+    if (followUp) cmd = { intent: "ask", question: heard.trim() };
+    if (!followUp && (cmd.intent === "ask" || (cmd.intent === "search" && !/\d/.test(heard))) && askAnywayRef.current !== heard && !pendingWhoRef.current && !(realQuestion && cmd.intent === "ask" && closest(heard, knownPhrases())[0]?.score < 0.92)) {
       const best = closest(heard, knownPhrases());
       if (best[0] && best[0].score >= SURE) { agentRef.current(best[0].phrase, inner); return; }
       if (cmd.intent === "ask" && best[0] && best[0].score >= MAYBE) {
@@ -4865,6 +4874,8 @@ export default function FieldCommandClient() {
         return;
       }
       setAgent({ heard, reply, confirm, cards: takeCards(reply) });
+      // 🧠 Remembered for follow-ups (the AI's own answers are added where they come back).
+      { const last = chatRef.current[chatRef.current.length - 1]; if (!(last && Date.now() - last.at < 3000 && last.helper.startsWith(reply.slice(0, 40)))) chatRef.current = [...chatRef.current, { you: String(heard).slice(0, 200), helper: reply.replace(/\s+/g, " ").slice(0, 400), at: Date.now() }].slice(-8); }
       // 💬 Conversation mode: listen again once the answer has been said.
       const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200, again); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
@@ -5347,11 +5358,15 @@ export default function FieldCommandClient() {
           // 📩 Asked about emails: the full text of HPD's 10 newest (last 14 days).
           hpdEmails: /\b(email|e-mail|emails|wrote|write|said|say|message|messages|lewis|gafur|hpd asked|asked for|inspector|vendor tracking)\b/i.test(cmd.question) ? (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 14 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", subject: t.subject.slice(0, 120), text: String(m.text || "").replace(/\s+/g, " ").slice(0, 1200) }))).sort((a, b) => b.ts - a.ts).slice(0, 10).map(({ ts: _ts, ...e }) => e) : [],
           // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.
-          recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 15 * 60000).slice(-4).map(({ you, helper }) => ({ you, helper })),
+          recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 30 * 60000).slice(-6).map(({ you, helper }) => ({ you, helper })),
         };
         try {
-          const r = await fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
-          const d = await r.json().catch(() => ({}));
+          // Always answers (owner, 4 Nov: "it needs to be working all the time"): a failed try is tried once more.
+          const ask = () => fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
+          let r = await ask().catch(() => null);
+          if (!r || (r.status >= 500 && r.status !== 501)) { if (!multiRef.current) setAgent({ heard, reply: "Trying once more…" }); await new Promise((ok) => window.setTimeout(ok, 1500)); r = await ask(); }
+          let d = await r.json().catch(() => ({}));
+          if (r.ok && !d.ai && d.reason && d.reason !== "not-set-up") { await new Promise((ok) => window.setTimeout(ok, 1200)); const again = await ask().catch(() => null); if (again) { const d2 = await again.json().catch(() => ({})); if (again.ok && d2.ai) { r = again; d = d2; } } }
           if (r.ok && d.ai && d.text) {
             // The AI can also pick app actions (DO: lines, 23 Oct "combine all AI"): each runs like you said it, so a
             // save still asks for your yes and a text still opens Messages for you to send.
