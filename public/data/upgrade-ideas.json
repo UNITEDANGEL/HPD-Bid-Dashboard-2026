@@ -176,6 +176,48 @@
       "kind": "upgrade",
       "title": "Bids with no price yet",
       "why": "A small count on the Bids button of invitations still waiting for your price."
+    },
+    {
+      "id": "weather-route",
+      "icon": "🌦️",
+      "kind": "upgrade",
+      "title": "Rain check on the route",
+      "why": "If rain or snow is coming, the route plan puts indoor jobs first and warns you about outdoor ones."
+    },
+    {
+      "id": "voice-job-note",
+      "icon": "🎙️",
+      "kind": "upgrade",
+      "title": "Say a note after each job",
+      "why": "Tap the mic on a finished job and say what you did; the app writes it down on that job."
+    },
+    {
+      "id": "rejected-fix",
+      "icon": "🛠️",
+      "kind": "upgrade",
+      "title": "Rejected job fixer",
+      "why": "When HPD rejects a job, the app lists exactly what to redo and puts it first on tomorrow's route."
+    },
+    {
+      "id": "month-totals",
+      "icon": "🗓️",
+      "kind": "upgrade",
+      "title": "Month at a glance",
+      "why": "One card with jobs done, invoices paid and money still waiting this month."
+    },
+    {
+      "id": "dark-mode",
+      "icon": "🌙",
+      "kind": "upgrade",
+      "title": "Dark screen at night",
+      "why": "A switch for a dark screen that is easier on the eyes in a dark truck."
+    },
+    {
+      "id": "big-buttons",
+      "icon": "🔘",
+      "kind": "upgrade",
+      "title": "Bigger buttons with gloves on",
+      "why": "A switch that makes every button bigger so you can tap it with work gloves."
     }
   ]
 }
