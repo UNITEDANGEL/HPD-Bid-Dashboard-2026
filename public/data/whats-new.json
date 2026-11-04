@@ -5,6 +5,7 @@
       "date": "Nov 4, 2026",
       "title": "Time at each job",
       "items": [
+        "🎙 Smoother talking: in a conversation the chat starts listening again sooner after each answer and waits a bit longer for you before it rests.",
         "🎙 The chat keeps listening after the robot speaks up by itself too (a new notice, a job read out loud): if you are in a conversation, just answer, no tap needed.",
         "🌎 When a tenant texts you in Spanish, the robot says it is Spanish, tells you in English what it says, and offers your answer in Spanish (you still tap to send).",
         "💬 Talking to the chat is smoother: if your phone cuts the mic off before it is sure you finished, the chat still answers what it heard, and after quiet moments it keeps listening a few more times before it rests.",
