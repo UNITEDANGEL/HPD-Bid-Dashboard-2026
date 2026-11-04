@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "The package waits for you",
+      "items": [
+        "📦 The package never sends by itself any more. Taking an after photo or video no longer opens the package: take all of them, then tap 📦 I'm done: review & send on the job card.",
+        "📋 Before it goes, the package shows a checklist: signed affidavit + invoice, before photos, after photos, before videos, after videos, with a ⚠️ on anything missing. Tap 📤 Everything's in: send package, or ➕ Not done to go back to the job.",
+        "📎 A photo or video taken after the package was sent shows on the job card (\"1 video taken after it was sent: send it\"). One tap puts it in the same Google Drive package folder and emails it to you, ready to forward to HPD.",
+        "👋 The robot says good morning once a day, and the Start my day card shows once. After that, when you come back it offers to pick up where you left off (the last job you had open) instead of greeting you again."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "Time at each job",
       "items": [
         "🎙 Smoother talking: in a conversation the chat starts listening again sooner after each answer and waits a bit longer for you before it rests.",

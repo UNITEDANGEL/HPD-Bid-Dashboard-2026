@@ -79,6 +79,8 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
+  // The second open shows the "New update" card (what changed since the first open): close it like the owner would.
+  await page.locator('[data-hpd-smoke="fc-newupdate-ok"]').click({ timeout: 4000 }).catch(() => {});
   overrides[`CHANGE-REPLY-${id}`] = { ...overrides[`CHANGE-REPLY-${id}`], status: "Done", updates: [...overrides[`CHANGE-REPLY-${id}`].updates, { at: ago(60), text: "Live." }] };
   overrides[`CHANGE-REPLY-${id}`].updates.sort((a, b) => a.at.localeCompare(b.at));
   await page.evaluate(() => { window.__hear = "tell Claude to make the map buttons bigger"; });

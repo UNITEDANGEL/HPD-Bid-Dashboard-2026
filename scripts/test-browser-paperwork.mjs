@@ -221,9 +221,14 @@ try {
     await page.locator('[data-hpd-smoke="paperwork-notary-auto"]').waitFor({ timeout: 15000 });
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
-    // No review/approve tap either: once built, the signed package emails itself and files in Drive.
+    // Built, but NOT sent by itself (owner, 4 Nov, ER07663): the checklist shows, and only the Send tap emails it.
+    await page.locator('[data-hpd-smoke="paperwork-checklist"]').waitFor({ timeout: 30000 });
+    await page.waitForTimeout(2500);
+    assert.equal(emails.length, 0, `${job}: nothing is emailed before the Send tap, got ${emails.length}`);
+    assert.match(await page.locator('[data-hpd-smoke="paperwork-check-after-photos"]').innerText(), /After photos: 0 \(none yet\)/);
+    await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
-    assert.equal(emails.length, 1, `${job}: the signed package must email itself once, got ${emails.length}`);
+    assert.equal(emails.length, 1, `${job}: the Send tap emails the signed package once, got ${emails.length}`);
     const firstEmail = emails[0];
     // Edit a date from the review screen and rebuild: no signing again, new date in the signed PDF.
     await page.locator('[data-hpd-smoke="paperwork-package-edit"]').click();
@@ -241,7 +246,10 @@ try {
     assert.ok(extractPdfText(editedBytes).includes("09/30/26"), `${job}: edited Work Completed date must be in the rebuilt PDF`);
     const editedImages = (editedBytes.toString("latin1").match(/\/Subtype \/Image/g) || []).length;
     assert.ok(editedImages >= 6, `${job}: rebuilt package keeps the signer and notary signatures (found ${editedImages} images)`);
-    // The corrected package sends itself again.
+    // The corrected package goes out again with one Send tap.
+    await page.locator('[data-hpd-smoke="paperwork-checklist"]').waitFor({ timeout: 30000 });
+    assert.equal(emails.length, 1, `${job}: the rebuilt package waits for Send`);
+    await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
     for (let i = 0; i < 40 && emails.length < 2; i++) await page.waitForTimeout(250);
     assert.equal(emails.length, 2, `${job}: the updated package must email itself again`);
@@ -267,17 +275,20 @@ try {
     assert.ok(signedText.startsWith("SIGNED COPY"), `${job}: could not read the SIGNED email text`);
     assert.ok(!/drive\.example|Google Drive/i.test(signedText), `${job}: SIGNED email must not include the Google Drive link`);
     assert.deepEqual(errors, [], `${job}: page errors`);
-    // The next affidavit from the job card: signatures saved, so no tap at all: it builds, emails and files by itself.
+    // The next affidavit from the job card: signatures saved, so it builds by itself; one Send tap emails and files it.
     const next = "ER06362"; // awarded 10/13/26: today is a believable work date (an older job stops at the date check)
     const sentBefore = emails.length;
     await page.goto(`${baseUrl}/paperwork?job=${next}&outcome=work_completed&doc=package&auto=package&media=all`, { waitUntil: "networkidle" });
+    await page.locator('[data-hpd-smoke="paperwork-checklist"]').waitFor({ timeout: 90000 });
+    assert.equal(emails.length, sentBefore, `${next}: built, not emailed before Send`);
+    await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 90000 });
     for (let i = 0; i < 40 && emails.length <= sentBefore; i++) await page.waitForTimeout(250);
-    assert.equal(emails.length, sentBefore + 1, `${next}: emailed by itself with no tap`);
+    assert.equal(emails.length, sentBefore + 1, `${next}: emailed once after the Send tap`);
     assert.ok(emails.at(-1).subject.startsWith(`SIGNED - ${next} - `), emails.at(-1).subject);
     assert.ok(uploads.includes(`SIGNED - ${next} - Work Completed.pdf`) && uploads.includes(`NOT SIGNED - print copy - ${next} - Work Completed.pdf`), `${next}: both copies in Drive`);
     assert.deepEqual(errors, [], `${next}: page errors`);
-    console.log(`PASS ${job} job-card flow: sign once, the saved notary signature goes on by itself, builds, emails only the SIGNED copy, files signed + unsigned in Drive ${filing.path.join(" / ")} / ${filing.name}; ${next} next: no tap at all`);
+    console.log(`PASS ${job} job-card flow: sign once, the saved notary signature goes on by itself, builds, waits with its checklist, Send emails only the SIGNED copy, files signed + unsigned in Drive ${filing.path.join(" / ")} / ${filing.name}; ${next} next: one Send tap`);
     await page.close();
   }
 

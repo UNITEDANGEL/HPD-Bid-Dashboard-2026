@@ -15,7 +15,7 @@ import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
 import "./paperwork.css";
 import { paperworkLock, revisionPatch } from "../../lib/paperwork-lock";
-import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type EmailAttachmentSummary, type GoogleStatus } from "../../lib/package-delivery";
+import { deliverPackage, googleStatus, sendAddedFiles, sendPackageEmail, type DeliveryFile, type EmailAttachmentSummary, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { isTestJob, withTestJob } from "../../lib/test-job";
 import { isJunkDescription } from "../../lib/description-quality";
@@ -1108,6 +1108,18 @@ async function renderPdfFirstPageImage(bytes: Uint8Array): Promise<{ imageUrl: s
   return renderer.renderPdfFirstPageImage(bytes);
 }
 
+// When a photo/video was saved on this phone (its id carries the save time; a hand-changed date doesn't move it).
+function mediaSavedAt(media: FieldMedia) {
+  return /\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z/.exec(media.id || "")?.[0] || media.originalCapturedAt || media.capturedAt || "";
+}
+
+// "1 after video", "2 after photos and 1 after video"
+function lateSummary(rows: FieldMedia[]) {
+  const groups: Record<string, number> = {};
+  for (const m of rows) { const k = `${m.kind} ${m.mediaType === "video" ? "video" : "photo"}`; groups[k] = (groups[k] || 0) + 1; }
+  return Object.entries(groups).map(([k, n]) => `${n} ${k}${n === 1 ? "" : "s"}`).join(" and ");
+}
+
 function mediaHasPackageBytes(media: FieldMedia) {
   const dataUrl = String(media.dataUrl || "");
   const commaIndex = dataUrl.indexOf(",");
@@ -1517,6 +1529,60 @@ export default function PaperworkPage() {
   // The lock and the kept version come from the job as saved, not from the outcome in the page's link.
   const savedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
   const lock = paperworkLock(savedJob);
+  // Photos/videos saved on this phone after the package was emailed (and not sent since): offered as one tap.
+  const [lateMedia, setLateMedia] = useState<FieldMedia[]>([]);
+  const [lateSend, setLateSend] = useState<{ working: boolean; message: string; error: string } | null>(null);
+  const [lateSentAt, setLateSentAt] = useState("");
+  const lateCutoff = [String(lock.emailedAt || ""), String((savedJob as Record<string, unknown> | null | undefined)?.AddedMediaSentAt || ""), lateSentAt].sort().pop() || "";
+  useEffect(() => {
+    if (!lock.locked || !selectedId || !lock.emailedAt) { setLateMedia([]); return; }
+    let live = true;
+    listFieldEvidence(selectedId).then((rows) => {
+      if (live) setLateMedia(rows.filter((m) => (m.kind === "before" || m.kind === "after") && mediaSavedAt(m) > lateCutoff && mediaHasPackageBytes(m)));
+    }).catch(() => undefined);
+    return () => { live = false; };
+  }, [lock.locked, lock.emailedAt, selectedId, lateCutoff]);
+  async function sendLateMedia() {
+    if (!lateMedia.length || !selectedId || lateSend?.working) return;
+    const id = selectedId.toUpperCase();
+    setLateSend({ working: true, message: "Getting ready...", error: "" });
+    try {
+      const status = await googleStatus();
+      if (!status.connected) throw new Error("Google isn't connected on this phone: connect it in Storage, then tap Send again.");
+      const counters: Record<string, number> = {};
+      const files: DeliveryFile[] = lateMedia.map((m) => {
+        const video = m.mediaType === "video";
+        const key = `${m.kind}-${video ? "video" : "photo"}`;
+        counters[key] = (counters[key] || 0) + 1;
+        const ext = (/\.[a-z0-9]{2,4}$/i.exec(m.name || "")?.[0] || (video ? ".mp4" : ".jpg")).toLowerCase();
+        const label = `${m.kind === "before" ? "BEFORE" : "AFTER"} ${video ? "VIDEO" : "PHOTO"}-ADDED-${String(counters[key]).padStart(2, "0")}`;
+        const mimeType = video && !String(m.type || "").startsWith("video/") ? (ext === ".mov" ? "video/quicktime" : "video/mp4") : m.type || (video ? "video/mp4" : "image/jpeg");
+        return { name: `${label} - ${id}${ext}`, mimeType, bytes: dataUrlToBytes(m.dataUrl), subfolder: `${m.kind === "before" ? "Before" : "After"} ${video ? "videos" : "photos"}` };
+      });
+      const what = lateSummary(lateMedia);
+      const text = (_link: string, _attached: boolean, summary: EmailAttachmentSummary) => [
+        `ADDED TO THE PACKAGE - ${id}: ${what} taken after the signed package was sent.`,
+        "",
+        `HPD package: ${id}`,
+        `Address: ${[form.address, form.location, form.borough].filter(Boolean).join(", ") || "not listed"}`,
+        "",
+        `Attached: ${[summary.photos ? `${summary.photos} photo(s)` : "", summary.videos ? `${summary.videos} video(s)` : ""].filter(Boolean).join(", ") || "none"}.`,
+        ...(summary.linked.length ? ["", "Too large to attach (open with the link):", ...summary.linked.map((f) => `- ${f.name}: ${f.url || "saved in the package folder"}`)] : []),
+      ].join("\n");
+      const subject = `${isTestJob(id) ? "TEST - " : ""}ADDED - ${id} - ${what} - ${form.address || "HPD package"}`;
+      const onProgress = (message: string) => setLateSend({ working: true, message, error: "" });
+      const result = lock.driveLink
+        ? await sendAddedFiles({ folderLink: lock.driveLink, files, emailSubject: subject, emailText: text, onProgress })
+        : await (async () => { const filing = driveFiling(form, id, outcome); return deliverPackage({ folderName: `${filing.folderName} - ADDED`, folderPath: filing.path, files, emailSubject: subject, emailText: text, sendEmail: true, onProgress }); })();
+      if (!result.emailed) throw new Error(result.emailError || "The email could not be sent.");
+      const sentAt = new Date().toISOString();
+      saveLocalPackageOverride(selectedId, { AddedMediaSentAt: sentAt });
+      setLateSentAt(sentAt);
+      setLateSend({ working: false, message: `Sent ${what} to ${result.emailTo.join(", ") || "your email"} and saved it in the package's Drive folder. Forward that email to HPD.`, error: "" });
+    } catch (error) {
+      setLateSend({ working: false, message: "", error: error instanceof Error ? error.message : "Could not send them. They are still on this phone." });
+    }
+  }
   // A correction is a new version by definition: the "sent" lock doesn't apply to it.
   const locked = lock.locked && revisedFor !== selectedJobId && !correction;
   useEffect(() => {
@@ -1650,26 +1716,11 @@ export default function PaperworkPage() {
     })();
   }, [notaryApproved, signerReady, canGeneratePackage]);
 
-  // Signed package built after the notary confirmed: email it and file it in Drive right away, no
-  // extra review/approve tap. The package stays on screen to view, edit and resend.
-  const autoSentRef = useRef<CompletePackagePreview | null>(null);
+  // Signed package built: it waits on screen with its checklist (before/after photos and videos) until you tap Send.
+  // Owner, 4 Nov (ER07663): it used to email itself while he was still taking after videos; nothing goes out by itself now.
   useEffect(() => {
-    // packageNotaryRef: the notary approval this package was built with (the live one is used up by the build).
-    if (!packagePreview || packagePreview.printCopy || !packagePreview.unsigned || packageApproved || !packageNotaryRef.current) return;
-    // Wait until the build has fully finished (it's still busy right as the preview appears).
-    if (packageBusy || packageBusyRef.current || autoSentRef.current === packagePreview) return;
-    autoSentRef.current = packagePreview;
-    void (async () => {
-      const status = await googleStatus();
-      setGoogle(status);
-      if (!status.connected) {
-        setPdfStatus("Package ready. Google Drive isn't connected on this phone, so it can't email by itself: tap Approve & Save, or connect Google in Storage.");
-        return;
-      }
-      setPackageReviewed(true);
-      await approveAndSavePackage();
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!packagePreview || packagePreview.printCopy || packageApproved || packageBusy) return;
+    setPdfStatus("Package ready, not sent. Check the list below, then tap 📤 Send package. Still taking photos or videos? Go back to the job first.");
   }, [packagePreview, packageApproved, packageBusy]);
 
   // Review -> Edit: back to the details with the signatures kept, then one tap rebuilds both copies.
@@ -1705,6 +1756,17 @@ export default function PaperworkPage() {
     clearPackagePreview();
     setPdfStatus("Rejected: the fixed copy was deleted and the old details are back. Change what's needed and preview again, or tap Auto-fix to try again.");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Still taking photos/videos: nothing is sent; back to the job card (or the map) to finish.
+  function notDoneYet() {
+    clearPackagePreview();
+    setPdfStatus("Not sent. Take the rest of your photos and videos, then open the package again.");
+    if (embedded) {
+      try { window.parent.postMessage({ type: "hpd-package-back", job: form.jobId }, window.location.origin); } catch {}
+      return;
+    }
+    window.location.href = mapBackHref;
   }
 
   function editPackageDetails() {
@@ -4314,6 +4376,16 @@ export default function PaperworkPage() {
           overflow-wrap: anywhere;
         }
 
+        .pkg-checklist { display: grid; gap: 6px; padding: 12px 14px; border-radius: 14px; background: #0f172a; border: 1px solid rgba(148, 163, 184, 0.35); color: #e2e8f0; animation: pkgIn 0.35s ease-out; }
+        .pkg-checklist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 700 16px/1.35 system-ui, sans-serif; }
+        .pkg-checklist li.is-missing { color: #fbbf24; }
+        .pkg-checklist li.is-none { color: #94a3b8; font-weight: 600; }
+        .pkg-checklist small { color: #cbd5e1; }
+        .pkg-send-row { display: grid; gap: 8px; }
+        .pkg-not-done { min-height: 48px; }
+        .paperwork-late-media { display: grid; gap: 6px; padding: 12px; border-radius: 12px; background: #422006; border: 1px solid #f59e0b; color: #fef3c7; animation: pkgIn 0.35s ease-out; }
+        .paperwork-late-media .is-error { color: #fca5a5; }
+        @keyframes pkgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
         .pkg-confirm {
           display: flex;
           align-items: center;
@@ -5245,6 +5317,18 @@ export default function PaperworkPage() {
                 {form.secondAttempt ? <div><dt>2nd attempt / refusal</dt><dd>{form.secondAttempt}</dd></div> : null}
               </dl>
               {lock.driveLink ? <a href={lock.driveLink} target="_blank" rel="noreferrer" data-hpd-smoke="paperwork-locked-drive">Open the sent package in Google Drive</a> : null}
+              {lateMedia.length || lateSend ? (
+                <div className="paperwork-late-media" data-hpd-smoke="paperwork-late-media">
+                  {lateMedia.length ? <>
+                    <b>📎 Taken after the package was sent: {lateSummary(lateMedia)}</b>
+                    <small>They are on this phone, not in the email HPD has. Send them now: they go into the same Drive package folder and to your email, ready to forward.</small>
+                    <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-late-send" disabled={Boolean(lateSend?.working)} onClick={() => void sendLateMedia()}>
+                      {lateSend?.working ? lateSend.message : `📤 Send the ${lateMedia.length === 1 ? (lateMedia[0].mediaType === "video" ? "video" : "photo") : `${lateMedia.length} files`}`}
+                    </button>
+                  </> : null}
+                  {lateSend && !lateSend.working ? <span className={lateSend.error ? "is-error" : ""} data-hpd-smoke="paperwork-late-result">{lateSend.error || `✓ ${lateSend.message}`}</span> : null}
+                </div>
+              ) : null}
               {lock.revisions.length ? <small>Revised {lock.revisions.length}x before: {lock.revisions.map((r) => `${r.revisedAt.slice(0, 10)} (${r.reason})`).join("; ")}</small> : null}
               {!revise ? <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-revise" onClick={() => setRevise({ reason: "", outcome: "", armed: false })}>Revise paperwork</button> : (
                 <div className="paperwork-revise" data-hpd-smoke="paperwork-revise-box">
@@ -6040,23 +6124,49 @@ export default function PaperworkPage() {
                 </div>
               ) : (
                 <>
-                  <label className="pkg-confirm">
-                    <input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={(event) => setPackageReviewed(event.target.checked)} />
-                    {packagePreview.unsigned ? "I checked the signed and unsigned pages and every photo." : "I checked every page and photo."}
-                  </label>
-                  <button
-                    type="button"
-                    className="paperwork-print pkg-approve"
-                    data-hpd-smoke="paperwork-approve-save"
-                    disabled={(!packageReviewed && !packageApproved) || packageBusy || Boolean(packageApproved && delivery?.folderLink)}
-                    onClick={approveAndSavePackage}
-                  >
-                    {delivery?.working
-                      ? delivery.message
-                      : packageApproved
-                        ? google?.connected ? "Saved" : "Save Copy Again"
-                        : google?.connected ? "Approve, Email & Save to Drive" : "Approve & Save"}
-                  </button>
+                  {(() => {
+                    const links = packagePreview.folderLinks;
+                    const n = (section: string, stage: string) => links.filter((l) => l.section === section && l.path.startsWith(`${section === "video" ? "videos" : "images"}/${stage}/`)).length;
+                    const needsPhotos = outcome === "work_completed" || outcome === "partial_work_completed";
+                    const rows: [string, string, number, boolean][] = [
+                      ["pdf", "Signed affidavit + invoice", 1, true],
+                      ["before-photos", "Before photos", n("image", "before"), needsPhotos],
+                      ["after-photos", "After photos", n("image", "after"), needsPhotos],
+                      ["before-videos", "Before videos", n("video", "before"), false],
+                      ["after-videos", "After videos", n("video", "after"), false],
+                    ];
+                    return (
+                      <div className="pkg-checklist" data-hpd-smoke="paperwork-checklist">
+                        <strong>📋 What goes in this package</strong>
+                        <ul>
+                          {rows.map(([key, label, count, needed]) => (
+                            <li key={key} className={count ? "is-ok" : needed ? "is-missing" : "is-none"} data-hpd-smoke={`paperwork-check-${key}`}>
+                              <span aria-hidden="true">{count ? "✅" : needed ? "⚠️" : "–"}</span> {label}{key === "pdf" ? "" : `: ${count}`}{!count && needed ? " (none yet)" : ""}
+                            </li>
+                          ))}
+                        </ul>
+                        {!packageApproved ? <small>Missing a photo or video? Tap <b>Not done</b>, take it on the job card, then open the package again: it rebuilds with everything.</small> : null}
+                      </div>
+                    );
+                  })()}
+                  <div className="pkg-send-row">
+                    <button
+                      type="button"
+                      className="paperwork-print pkg-approve"
+                      data-hpd-smoke="paperwork-approve-save"
+                      disabled={packageBusy || Boolean(packageApproved && delivery?.folderLink)}
+                      onClick={() => { setPackageReviewed(true); void approveAndSavePackage(); }}
+                    >
+                      {delivery?.working
+                        ? delivery.message
+                        : packageApproved
+                          ? google?.connected ? "✓ Sent" : "Save Copy Again"
+                          : google?.connected ? "📤 Everything's in: send package" : "Approve & Save"}
+                    </button>
+                    {!packageApproved && !delivery?.working ? (
+                      <button type="button" className="paperwork-secondary pkg-not-done" data-hpd-smoke="paperwork-not-done" onClick={notDoneYet}>➕ Not done: back to the job</button>
+                    ) : null}
+                  </div>
                 </>
               )}
               {!packagePreview.printCopy && delivery && !delivery.working ? (

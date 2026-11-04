@@ -398,6 +398,7 @@ jobs:
             scripts/test-browser-bids-welcome.mjs \
             scripts/test-browser-helper-alive.mjs \
             scripts/test-browser-helper-talks.mjs \
+            scripts/test-browser-package-send.mjs \
             scripts/test-browser-robot-steps.mjs \
             scripts/test-browser-smart-ask.mjs \
             scripts/test-browser-go-anyway.mjs \

@@ -1,8 +1,9 @@
 // The affidavit the way the owner does it (2 Nov: "make sure you test the affidavits: a very smooth transaction"), at
 // iPhone size on a phone that has never signed here (the Home Screen app), with the signatures already in the owner's
 // Drive: the job card -> "Just the affidavit" -> Work completed -> Save -> the package button -> and then no
-// other tap: both signatures go on by themselves, the package builds, the signed copy is emailed (to the owner only)
-// and the signed + print copies are filed in Drive. Google is faked here; nothing is sent.
+// sign tap: both signatures go on by themselves and the package builds, then it WAITS with its checklist (owner, 4 Nov,
+// ER07663: it used to email itself while he was still taking after videos). One Send tap emails the signed copy (to the
+// owner only) and files the signed + print copies in Drive. Google is faked here; nothing is sent.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
@@ -44,11 +45,17 @@ try {
   await tap('[data-hpd-smoke="jc-affidavit-work_completed"]');
   await tap('[data-hpd-smoke="jc-affidavit-only"] [data-hpd-smoke="jc-step-save-outcome"]');
   await page.waitForFunction((j) => (JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j] || {}).FieldOutcome === "WORK_COMPLETED", JOB, { timeout: 10000 });
-  // Saved: the package opens by itself and goes out with no other tap (signatures from Drive, notary's on by itself).
+  // Saved: the package opens and builds by itself (signatures from Drive, notary's on by itself), then waits for Send.
+  const sheet = page.frameLocator('[data-hpd-smoke="fc-package-sheet"] iframe');
+  await sheet.locator('[data-hpd-smoke="paperwork-checklist"]').waitFor({ timeout: 120000 });
+  await page.waitForTimeout(2500);
+  assert.equal(emails.length, 0, "nothing is emailed before the Send tap");
+  await sheet.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
+  taps++;
   for (let i = 0; i < 240 && !(emails.length && uploads.some((u) => u.startsWith("NOT SIGNED"))); i++) await page.waitForTimeout(500);
   if (!emails.length && shots) await page.screenshot({ path: `${shots}/affidavit-smooth-stuck.png` });
-  assert.equal(emails.length, 1, `the signed package emailed once by itself after Save (got ${emails.length})`);
-  assert.equal(taps, 3, "the job, Work completed, Save: nothing else");
+  assert.equal(emails.length, 1, `the signed package emailed once after Send (got ${emails.length})`);
+  assert.equal(taps, 4, "the job, Work completed, Save, Send: nothing else");
   assert.match(emails[0], new RegExp(`^SIGNED - ${JOB} - Work Completed`));
   assert.ok(uploads.includes(`SIGNED - ${JOB} - Work Completed.pdf`), `signed copy in Drive (${uploads.join(", ")})`);
   assert.ok(uploads.includes(`NOT SIGNED - print copy - ${JOB} - Work Completed.pdf`), "print copy in Drive");
@@ -63,7 +70,7 @@ try {
   await page.waitForFunction(() => /Paperwork sent to HPD on[\s\S]*Locked: this is the version HPD has/.test(document.body.innerText), null, { timeout: 60000 });
   await page.waitForTimeout(4000);
   assert.equal(emails.length, 1, "opened again: locked, not emailed a second time");
-  console.log(`PASS affidavit, smooth: ${JOB} from the job card in 3 taps (job, Work completed, Save) -> package opens and goes out by itself (signatures from Drive) -> signed copy emailed once, signed + print copies in Drive, sheet closes; opened again: locked as sent, nothing sent twice`);
+  console.log(`PASS affidavit, smooth: ${JOB} from the job card in 4 taps (job, Work completed, Save, Send) -> package opens and builds by itself (signatures from Drive), waits with its checklist until Send -> signed copy emailed once, signed + print copies in Drive, sheet closes; opened again: locked as sent, nothing sent twice`);
 } finally {
   await browser.close();
 }

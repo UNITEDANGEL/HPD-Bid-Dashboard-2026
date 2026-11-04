@@ -38,10 +38,22 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
 
   // 0) 👋 Hello on open (asked for in this test): the robot says hi in its bubble.
-  await page.evaluate(() => { localStorage.setItem("hpd-test-hello", "1"); localStorage.removeItem("hpd-robot-hello"); });
+  await page.evaluate(() => { localStorage.setItem("hpd-test-hello", "1"); localStorage.removeItem("hpd-robot-hello"); localStorage.removeItem("hpd-robot-hello-day"); localStorage.removeItem("hpd-last-job"); });
   await page.reload({ waitUntil: "load" });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   await page.waitForFunction(() => /^👋 (Good morning|Hi|Good evening), Jot!/.test(document.querySelector('[data-hpd-smoke="fc-orb-say"]')?.textContent || ""), null, { timeout: 8000 });
+  // 👋 Once a day: coming back later the same day, no second "Good morning"; with an open job from before, it offers to
+  // pick up where you left off (owner, 4 Nov).
+  await page.evaluate(() => { localStorage.setItem("hpd-robot-hello", "0"); localStorage.setItem("hpd-last-job", JSON.stringify({ omo: "ER06362", at: Date.now() - 600000 })); });
+  await page.reload({ waitUntil: "load" });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+  await page.waitForFunction(() => /^↩️ Welcome back\. Pick up where you left off\? ER06362/.test(document.querySelector('[data-hpd-smoke="fc-orb-say"]')?.textContent || ""), null, { timeout: 8000 });
+  assert.ok(!/Good morning|Good evening|^👋/.test(await page.locator('[data-hpd-smoke="fc-orb-say"]').innerText()), "no second greeting the same day");
+  await page.evaluate(() => { localStorage.setItem("hpd-robot-hello", "0"); localStorage.removeItem("hpd-last-job"); });
+  await page.reload({ waitUntil: "load" });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+  await page.waitForTimeout(3500);
+  assert.ok(!/Good morning|Good evening|Welcome back/.test(await page.locator('[data-hpd-smoke="fc-orb-say"]').innerText().catch(() => "")), "nothing left off: no bubble at all");
   await page.evaluate(() => localStorage.removeItem("hpd-test-hello"));
   // 😄 First bid fax of the day: a cheer in the bubble.
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "fax-ok", title: "Bid fax went through · ER09999", text: "$1,200.00" } })));
@@ -120,7 +132,7 @@ try {
   assert.match(waze, /navigate=yes/);
   assert.ok(errors.length === 0, errors.join(" | "));
 
-  console.log(`PASS helper talks: battery saver stops the motion; goal ring ${bid ? "fills with a sent bid" : "(no bid due later today)"}; ` + "a hello bubble on open; a cheer at the first bid; the robot walks to the job read; short news in a speech bubble over the 🤖 (tap: read out loud); 👩/👨 voices and speed in 🎨 with a sample, kept on the phone; a job read, then \"take me there\" starts Waze to it");
+  console.log(`PASS (greets once a day, then "pick up where you left off") helper talks: battery saver stops the motion; goal ring ${bid ? "fills with a sent bid" : "(no bid due later today)"}; ` + "a hello bubble on open; a cheer at the first bid; the robot walks to the job read; short news in a speech bubble over the 🤖 (tap: read out loud); 👩/👨 voices and speed in 🎨 with a sample, kept on the phone; a job read, then \"take me there\" starts Waze to it");
 } finally {
   await browser.close();
 }

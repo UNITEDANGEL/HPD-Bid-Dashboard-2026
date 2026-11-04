@@ -138,6 +138,44 @@ export async function deliverPackage(
   return { ...result, ...(await sendPackageEmail({ ...options, folderLink: link, fileLinks }, fetcher)) };
 }
 
+// Photos/videos taken after the package went out (owner, 4 Nov, ER07663: an after video was missing): they go into
+// the SAME Drive package folder (from its link) and are emailed on their own, so the package becomes complete.
+export async function sendAddedFiles(
+  options: {
+    folderLink: string;
+    files: DeliveryFile[];
+    emailSubject: string;
+    emailText: (folderLink: string, attachedPhotos: boolean, summary: EmailAttachmentSummary) => string;
+    onProgress?: (message: string) => void;
+  },
+  fetcher: Fetcher = fetch
+) {
+  const folderId = /\/folders\/([A-Za-z0-9_-]{10,200})/.exec(options.folderLink || "")?.[1] || "";
+  if (!folderId) throw new Error("The sent package's Drive folder is not known on this phone.");
+  const fileLinks: Record<string, string> = {};
+  let uploaded = 0;
+  for (const file of options.files) {
+    options.onProgress?.(`Saving to the package in Google Drive: ${uploaded + 1} of ${options.files.length}...`);
+    const response = await fetcher("/api/drive/package-file", {
+      method: "POST",
+      headers: {
+        "Content-Type": file.mimeType || "application/octet-stream",
+        "X-HPD-Folder": folderId,
+        "X-HPD-Name": encodeURIComponent(file.name),
+        ...(file.subfolder ? { "X-HPD-Subfolder": encodeURIComponent(file.subfolder) } : {}),
+      },
+      body: new Blob([file.bytes as BlobPart], { type: file.mimeType }),
+    });
+    if (!response.ok) throw new Error(await readError(response, `Could not save ${file.name} to Google Drive.`));
+    try {
+      const saved = await response.json();
+      if (saved?.id) fileLinks[file.name] = `https://drive.google.com/file/d/${encodeURIComponent(saved.id)}/view`;
+    } catch {}
+    uploaded += 1;
+  }
+  return { uploaded, ...(await sendPackageEmail({ ...options, fileLinks }, fetcher)) };
+}
+
 // Email only (also used to retry after Gmail refused, without uploading to Drive again).
 export async function sendPackageEmail(
   options: {

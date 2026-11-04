@@ -2195,6 +2195,8 @@ export default function FieldCommandClient() {
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number; beforeVideos?: number; afterVideos?: number; beforeDay?: string; afterDay?: string }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
+  // When each before/after photo/video was saved on this phone (from its id): finds ones taken after the package went out.
+  const [mediaSavedTimes, setMediaSavedTimes] = useState<Record<string, { at: string; video: boolean }[]>>({});
   const [mediaBusy, setMediaBusy] = useState("");
   useEffect(() => { if (!mediaBusy) refreshBackupRef.current(); }, [mediaBusy]);
   const [mediaMessage, setMediaMessage] = useState("");
@@ -2310,7 +2312,13 @@ export default function FieldCommandClient() {
   closePackageSheetRef.current = closePackageSheet;
   useEffect(() => {
     function onMessage(event: MessageEvent) {
-      if (event.origin !== window.location.origin || !event.data || event.data.type !== "hpd-package-approved") return;
+      if (event.origin !== window.location.origin || !event.data) return;
+      if (event.data.type === "hpd-package-back") {
+        closePackageSheetRef.current();
+        setMediaMessage(`📷 ${event.data.job || "Job"}: nothing was sent. Take the rest of your photos and videos, then tap 📦 I'm done: review & send.`);
+        return;
+      }
+      if (event.data.type !== "hpd-package-approved") return;
       closePackageSheetRef.current();
       setMediaMessage(event.data.emailed ? `${event.data.job || "Job"} package approved and emailed ✓` : `${event.data.job || "Job"} package approved ✓`);
     }
@@ -3775,7 +3783,8 @@ export default function FieldCommandClient() {
       const hour = Number(p.hour);
       let shown = "";
       try { shown = localStorage.getItem("hpd-morning-shown") || ""; } catch { /* private mode */ }
-      if (hour >= 5 && hour < 11 && shown !== today) setMorning(true);
+      // Once a day: marked as shown when it shows, so a reload or coming back doesn't bring it again (owner, 4 Nov).
+      if (hour >= 5 && hour < 11 && shown !== today) { setMorning(true); try { localStorage.setItem("hpd-morning-shown", today); } catch { /* private mode */ } }
     };
     check();
     document.addEventListener("visibilitychange", check);
@@ -3792,7 +3801,7 @@ export default function FieldCommandClient() {
       const today = `${p.year}-${p.month}-${p.day}`;
       let shown = "";
       try { shown = localStorage.getItem("hpd-evening-shown") || ""; } catch { /* private mode */ }
-      if (Number(p.hour) >= 17 && Number(p.hour) < 21 && shown !== today) setEvening(true);
+      if (Number(p.hour) >= 17 && Number(p.hour) < 21 && shown !== today) { setEvening(true); try { localStorage.setItem("hpd-evening-shown", today); } catch { /* private mode */ } }
     };
     check();
     document.addEventListener("visibilitychange", check);
@@ -4070,19 +4079,47 @@ export default function FieldCommandClient() {
   }, [changeThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   const helloDoneRef = useRef(false);
   useEffect(() => {
+    if (!selectedJob) return;
+    try { localStorage.setItem("hpd-last-job", JSON.stringify({ omo: jobId(selectedJob), at: Date.now() })); } catch { /* private mode */ }
+  }, [selectedJob ? jobId(selectedJob) : ""]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
     if (helloDoneRef.current || !jobs.length) return;
     helloDoneRef.current = true;
     // (Test browsers only when a test asks: the bubble would sit over other tests' buttons.)
     try { if (navigator.webdriver && localStorage.getItem("hpd-test-hello") !== "1") return; } catch { return; }
-    try { if (Date.now() - Number(localStorage.getItem("hpd-robot-hello") || 0) < 3 * 3600000) return; localStorage.setItem("hpd-robot-hello", String(Date.now())); } catch { return; }
+    // Owner, 4 Nov: "I already got greeted good morning once... we need to pick up where we left off." The greeting is
+    // once a day; after that, coming back only brings a bubble when there's an unfinished job to pick up.
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    let greeted = false;
+    let last: { omo: string; at: number } | null = null;
+    try {
+      greeted = localStorage.getItem("hpd-robot-hello-day") === day;
+      if (!greeted) localStorage.setItem("hpd-robot-hello-day", day);
+      else if (Date.now() - Number(localStorage.getItem("hpd-robot-hello") || 0) < 2 * 3600000) return;
+      localStorage.setItem("hpd-robot-hello", String(Date.now()));
+      last = JSON.parse(localStorage.getItem("hpd-last-job") || "null");
+    } catch { return; }
     const t = window.setTimeout(() => {
+      // Where you left off: the last job you had open in the last 12 hours, if it isn't finished and sent.
+      const lastJob = last && Date.now() - last.at < 12 * 3600000 ? findAnyJob(last.omo) : null;
+      const sent = lastJob ? Boolean(value(lastJob, ["PackageApprovedAt"])) || /approved/i.test(value(lastJob, ["PackageReviewStatus"])) : true;
+      const outcome = lastJob ? value(lastJob, ["FieldOutcome", "fieldOutcome"]) : "";
+      const pickUp = lastJob && !sent && !/APPOINTMENT_REQUESTED|NO_ACCESS_1/.test(outcome)
+        ? `${jobId(lastJob)}${jobAddress(lastJob) ? ` (${jobAddress(lastJob)})` : ""}: ${FIELD_OUTCOMES[outcome] ? "the package isn't sent yet" : "still open"}`
+        : "";
+      if (greeted) {
+        if (!pickUp) return;
+        const say = `↩️ Welcome back. Pick up where you left off? ${pickUp}.`;
+        setOrbSay({ text: say, full: say, at: Date.now(), run: `open ${jobId(lastJob!)}` });
+        return;
+      }
       const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
       const name = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
       const todo = jobRows.filter((r) => r.group === "todo").length;
-      const what = bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "Tap me to talk";
+      const what = pickUp ? `Last time: ${pickUp}` : bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "Tap me to talk";
       const hi = `👋 ${h < 12 ? "Good morning" : h < 17 ? "Hi" : "Good evening"}, ${name}! ${what}.`;
       setOrbTap(true); window.setTimeout(() => setOrbTap(false), 1500);
-      setOrbSay({ text: hi, full: `${hi} What can I do for you?`, at: Date.now() });
+      setOrbSay({ text: hi, full: `${hi} What can I do for you?`, at: Date.now(), ...(pickUp ? { run: `open ${jobId(lastJob!)}` } : {}) });
     }, 2500);
     return () => window.clearTimeout(t);
   }, [jobs.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4474,7 +4511,7 @@ export default function FieldCommandClient() {
   }
 
   // Records an outcome right away (no draft, no page change).
-  function setJobOutcome(job: JobRecord, outcome: string, note: string) {
+  function setJobOutcome(job: JobRecord, outcome: string, note: string, openPackage = true) {
     if (paperworkLock(job).locked && !isTestJob(jobId(job))) { setOutcomeMessage(lockedMessage(jobId(job), paperworkLock(job))); return; }
     const id = jobId(job);
     try {
@@ -4483,6 +4520,7 @@ export default function FieldCommandClient() {
       mergeWorkflowPatchIntoScreen(id, patch);
       setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
       const waiting = secondTryState({ ...job, ...patch });
+      if (!openPackage) return;
       setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : `✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`);
       if (outcome !== "APPOINTMENT_REQUESTED" && !waiting) setAutoPackage({ id, outcome, seconds: 6 });
     } catch (error) {
@@ -4565,6 +4603,7 @@ export default function FieldCommandClient() {
       .filter(Boolean)
       .slice(-3);
     setMediaThumbs((prev) => ({ ...prev, [id]: { before: thumbs("before"), after: thumbs("after") } }));
+    setMediaSavedTimes((prev) => ({ ...prev, [id]: rows.filter((m) => m.kind === "before" || m.kind === "after").map((m) => ({ at: /\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z/.exec(m.id)?.[0] || m.capturedAt, video: m.mediaType === "video" })) }));
   }
 
   // From a guided step the photo/video buttons open right inside that step, glowing.
@@ -4632,13 +4671,14 @@ export default function FieldCommandClient() {
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}${photoWarning}` : "No image or video was saved.");
       // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
       if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
-      // After photos/videos = the work is done: the job finishes by itself (Work completed; switch
-      // to Partial on the card if needed) and waits on the map to be closed out with the package.
+      // After photos/videos: the job is marked Work completed (switch to Partial on the card if needed), but the
+      // package does NOT open or send by itself (owner, 4 Nov, ER07663: it went out while he was still taking after
+      // videos). Take every after photo and video, then tap "📦 I'm done: review & send".
       if (kind === "after" && saved.length) {
         const current = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
-        if (!["WORK_COMPLETED", "PARTIAL_WORK"].includes(current)) setJobOutcome(selectedJob, "WORK_COMPLETED", "Finished: after photos/videos taken");
-        // Already finished and you added more after shots: offer the package again.
-        else if (!value(selectedJob, ["PackageApprovedAt"])) setAutoPackage({ id, outcome: current, seconds: 6 });
+        if (!["WORK_COMPLETED", "PARTIAL_WORK"].includes(current)) setJobOutcome(selectedJob, "WORK_COMPLETED", "Finished: after photos/videos taken", false);
+        setAutoPackage(null);
+        if (!value(selectedJob, ["PackageApprovedAt"])) setMediaMessage((m) => `${m} Take all your after photos and videos; nothing is sent until you tap 📦 I'm done: review & send.`);
         setMediaChoice(null);
       }
     } catch (error) {
@@ -7165,8 +7205,17 @@ export default function FieldCommandClient() {
                   return (
                     <div className={`jc-status-line ${approved ? "is-approved" : "is-closeout"}`} data-hpd-smoke="jc-status-line">
                       <strong>{icon} {label}</strong>
-                      <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : "Outcome saved · ready to close out"}</span>
-                      {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)} onClick={packageLinkClick(id, paperworkGenerateHref(id, outcome))}>Review package →</a> : null}
+                      <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : `Not sent yet · ${counts.before} before, ${counts.after} after${counts.afterVideos || counts.beforeVideos ? ` (${(counts.beforeVideos || 0) + (counts.afterVideos || 0)} video${(counts.beforeVideos || 0) + (counts.afterVideos || 0) === 1 ? "" : "s"})` : ""}`}</span>
+                      {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)} onClick={packageLinkClick(id, paperworkGenerateHref(id, outcome))}>📦 I&apos;m done: review &amp; send →</a> : null}
+                      {approved ? (() => {
+                        const cutoff = [value(selectedJob, ["PackageEmailedAt"]), value(selectedJob, ["AddedMediaSentAt"])].sort().pop() || "";
+                        const late = cutoff ? (mediaSavedTimes[id] || []).filter((m) => m.at > cutoff) : [];
+                        if (!late.length) return null;
+                        const videos = late.filter((m) => m.video).length, photos = late.length - videos;
+                        const what = [videos ? `${videos} video${videos === 1 ? "" : "s"}` : "", photos ? `${photos} photo${photos === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ");
+                        const href = `/paperwork/?job=${encodeURIComponent(id)}`;
+                        return <a className="jc-status-go is-late" data-hpd-smoke="jc-late-media" href={href} onClick={packageLinkClick(id, href)}>📎 {what} taken after it was sent: send {late.length === 1 ? "it" : "them"} →</a>;
+                      })() : null}
                       {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>{armedTap === `clear:${jobId(selectedJob)}` ? "✅ Tap again: clear the outcome" : "Change outcome"}</button> : null}
                     </div>
                   );

@@ -1134,3 +1134,5 @@
 @media (prefers-reduced-motion: reduce) { .jc-photo-say { animation: none; } }
 
 .jc-on-site { margin: 6px 0 0; font-size: 15px; font-weight: 700; color: #475569; }
+.jc-status-go.is-late { background: #f59e0b; color: #1c1002; animation: jcLatePulse 1.6s ease-in-out infinite; }
+@keyframes jcLatePulse { 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.25); } }
