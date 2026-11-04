@@ -168,6 +168,7 @@ jobs:
           node scripts/test-helper-look.cjs
           node scripts/test-materials.cjs
           node scripts/test-ai-ask.mjs
+          node scripts/test-robot-insights.cjs
           node scripts/test-search-tip.cjs
           node scripts/test-lang.cjs
           node scripts/test-tenant-reply.cjs
@@ -399,6 +400,7 @@ jobs:
             scripts/test-browser-helper-alive.mjs \
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-package-send.mjs \
+            scripts/test-browser-robot-ideas.mjs \
             scripts/test-browser-robot-steps.mjs \
             scripts/test-browser-smart-ask.mjs \
             scripts/test-browser-go-anyway.mjs \

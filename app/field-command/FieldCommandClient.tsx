@@ -25,6 +25,8 @@ import { markCorrectedCopy } from "../../lib/correction-copy";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { paperworkLeft } from "../../lib/paperwork-left";
+import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory, timeInsight } from "../../lib/robot-insights";
+import { onSiteMinutes } from "../../lib/job-time";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
@@ -1712,7 +1714,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1730,6 +1732,8 @@ export default function FieldCommandClient() {
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
   // The last things said to the AI and its answers (this session), for follow-up questions.
   const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
+  // 🧠 The conversation is kept on the phone for 3 days, so the robot remembers yesterday (owner, 4 Nov).
+  useEffect(() => { chatRef.current = loadChatMemory().slice(-8); }, []);
   // The helper as a conversation (27 Oct, owner: "a better interface for the AI"): the earlier turns stay on screen
   // for 15 minutes, and a box to type anything (questions, app actions, or a change for Claude).
   // "Ask the AI instead" after "Did you mean…?": that sentence goes to the AI as said.
@@ -4881,7 +4885,7 @@ export default function FieldCommandClient() {
       }
       setAgent({ heard, reply, confirm, cards: takeCards(reply) });
       // 🧠 Remembered for follow-ups (the AI's own answers are added where they come back).
-      { const last = chatRef.current[chatRef.current.length - 1]; if (!(last && Date.now() - last.at < 3000 && last.helper.startsWith(reply.slice(0, 40)))) chatRef.current = [...chatRef.current, { you: String(heard).slice(0, 200), helper: reply.replace(/\s+/g, " ").slice(0, 400), at: Date.now() }].slice(-8); }
+      { const last = chatRef.current[chatRef.current.length - 1]; if (!(last && Date.now() - last.at < 3000 && last.helper.startsWith(reply.slice(0, 40)))) chatRef.current = [...chatRef.current, { you: String(heard).slice(0, 200), helper: reply.replace(/\s+/g, " ").slice(0, 400), at: Date.now() }].slice(-8); saveChatMemory(chatRef.current); }
       // 💬 Conversation mode: listen again once the answer has been said.
       const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200, again); };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
@@ -5017,6 +5021,60 @@ export default function FieldCommandClient() {
       cardsRef.current = hits.filter((h) => h.job).map((h) => chatCard(h.job)).filter((c): c is ChatCard => Boolean(c));
       lastJobsRef.current = hits.find((h) => h.job) ? { ids: hits.filter((h) => h.job).map((h) => h.job), at: Date.now() } : lastJobsRef.current;
       answer(`🔍 Found ${hits.length === 1 ? "it" : `${hits.length}`}:\n${hits.map((h) => `• ${h.job ? `${h.job} (${addressOf(h.job) || "job"})` : "Your notes"}, in ${where[h.kind] || h.kind}: "${h.snippet}"`).join("\n")}`);
+      return;
+    }
+    if (cmd.intent === "missing-paperwork") {
+      // 🧾 Finished jobs (last 90 days) whose paperwork isn't all done, oldest first.
+      void (async () => {
+        const since = Date.now() - 90 * 86400000;
+        const done = jobs.filter((j) => !isTestJob(jobId(j)) && FIELD_OUTCOMES[value(j, ["FieldOutcome", "fieldOutcome"])] && Date.parse(String(value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || "")) > since).slice(0, 60);
+        const rows = await Promise.all(done.map(async (j) => {
+          const id = jobId(j);
+          const media = await listFieldEvidenceLite(id).catch(() => []);
+          return { id, address: jobAddress(j), outcome: value(j, ["FieldOutcome", "fieldOutcome"]), finishedAt: String(value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || ""),
+            before: media.filter((m) => m.kind === "before").length, after: media.filter((m) => m.kind === "after").length,
+            approved: Boolean(value(j, ["PackageApprovedAt"])) || /approved/i.test(value(j, ["PackageReviewStatus"])),
+            invoiceDone: Boolean(followRef.current?.sent[id]) || Boolean(value(j, ["InvoiceSentAt", "invoiceSentAt"])) };
+        }));
+        const gaps = missingPaperwork(rows);
+        if (!gaps.length) { answer(done.length ? `🧾 Nothing missing: all ${done.length} finished job${done.length === 1 ? " has" : "s have"} photos, the affidavit and the invoice.` : "🧾 No finished jobs in the last 90 days on this phone."); return; }
+        cardsRef.current = gaps.slice(0, 5).map((g) => chatCard(g.id)).filter((c): c is ChatCard => Boolean(c));
+        answer(`🧾 ${gaps.length} finished job${gaps.length === 1 ? " is" : "s are"} missing paperwork, oldest first:\n${gaps.slice(0, 5).map((g) => `• ${g.id} ${g.address}: ${g.missing.join(", ")}`).join("\n")}${gaps.length > 5 ? `\n…and ${gaps.length - 5} more.` : ""}`);
+      })();
+      return;
+    }
+    if (cmd.intent === "losing-time") {
+      const timed = jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ j, minutes: onSiteMinutes(j as unknown as Record<string, unknown>) }))
+        .filter((x): x is { j: JobRecord; minutes: number } => x.minutes !== null)
+        .map(({ j, minutes }) => ({ minutes, borough: ({ MN: "Manhattan", BK: "Brooklyn", QN: "Queens", BX: "the Bronx", SI: "Staten Island" } as Record<string, string>)[String(jobBorough(j))] || String(jobBorough(j)), kind: (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "").split(/[·(,:]/)[0].trim().slice(0, 30) }));
+      answer(`🗺 ${timeInsight(timed)}`);
+      return;
+    }
+    if (cmd.intent === "good-news") {
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+      const dayOf = (v: string) => { const t = Date.parse(v); return Number.isFinite(t) ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(t)) : ""; };
+      const real = jobs.filter((j) => !isTestJob(jobId(j)));
+      const won = real.filter((j) => dayOf(String(value(j, ["AwardDate"]) || "")) === today);
+      const st = fieldStats(real, "today", { skip: (job) => isTestJob(jobId(job)) });
+      const name = (() => { try { return localStorage.getItem("hpd-owner-name") || ""; } catch { return ""; } })();
+      const text = goodNews({ wins: won.length, winMoney: won.reduce((a, j) => a + (Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0), 0), bidsSent: bidsDue.sentToday || 0, finished: st.counts.completed + st.counts.partial, packagesSent: real.filter((j) => dayOf(String(value(j, ["PackageEmailedAt"]) || "")) === today).length, name });
+      setMagicOn(true); window.setTimeout(() => setMagicOn(false), 2500);
+      answer(text);
+      return;
+    }
+    if (cmd.intent === "before-after") {
+      // 📸 The newest before and after photo of a job, side by side, ready to share.
+      const named = cmd.ref ? pick(cmd.ref) : null;
+      const j = (named && named !== "many" ? named : null) || selectedJob || (lastJobsRef.current && Date.now() - lastJobsRef.current.at < 30 * 60000 ? jobs.find((x) => jobId(x) === lastJobsRef.current!.ids[0]) || null : null);
+      if (!j) { answer("Which job? Say \"show me the before and after for\" and the job number, or open its card first."); return; }
+      void listFieldEvidenceLite(jobId(j)).then((rows) => {
+        const pic = (kind: string) => [...rows].filter((m) => m.kind === kind && m.mediaType === "image" && m.dataUrl).sort((a, b) => a.capturedAt.localeCompare(b.capturedAt)).pop()?.dataUrl || "";
+        const before = pic("before"), after = pic("after");
+        if (!before && !after) { answer(`📸 No photos of ${jobId(j)} on this phone yet.`); return; }
+        if (!before || !after) { answer(`📸 ${jobId(j)} has ${before ? "a before photo but no after photo" : "an after photo but no before photo"} yet.`); return; }
+        answer(`📸 ${jobId(j)} ${jobAddress(j)}: before and after.`);
+        setAgent((a) => (a ? { ...a, photos: { id: jobId(j), before, after } } : a));
+      });
       return;
     }
     if (cmd.intent === "materials") {
@@ -5368,13 +5426,18 @@ export default function FieldCommandClient() {
           hpdEmails: /\b(email|e-mail|emails|wrote|write|said|say|message|messages|lewis|gafur|hpd asked|asked for|inspector|vendor tracking)\b/i.test(cmd.question) ? (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 14 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", subject: t.subject.slice(0, 120), text: String(m.text || "").replace(/\s+/g, " ").slice(0, 1200) }))).sort((a, b) => b.ts - a.ts).slice(0, 10).map(({ ts: _ts, ...e }) => e) : [],
           // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.
           recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 30 * 60000).slice(-6).map(({ you, helper }) => ({ you, helper })),
+          // What was talked about on the last days (kept on this phone 3 days).
+          earlierDays: earlierDays(loadChatMemory()),
         };
         try {
           // Always answers (owner, 4 Nov: "it needs to be working all the time"): a failed try is tried once more.
+          // Like a person (owner, 4 Nov: "flow like a real person"): a slow answer gets a short "let me check" first.
+          const filler = window.setTimeout(() => { if (!multiRef.current && !inner) speak(["Let me check.", "One sec.", "Let me look.", "Hmm, let me see."][Math.floor(Date.now() / 1000) % 4], 0); }, 1300);
           const ask = () => fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
           let r = await ask().catch(() => null);
           if (!r || (r.status >= 500 && r.status !== 501)) { if (!multiRef.current) setAgent({ heard, reply: "Trying once more…" }); await new Promise((ok) => window.setTimeout(ok, 1500)); r = await ask(); }
           let d = await r.json().catch(() => ({}));
+          window.clearTimeout(filler);
           if (r.ok && !d.ai && d.reason && d.reason !== "not-set-up") { await new Promise((ok) => window.setTimeout(ok, 1200)); const again = await ask().catch(() => null); if (again) { const d2 = await again.json().catch(() => ({})); if (again.ok && d2.ai) { r = again; d = d2; } } }
           if (r.ok && d.ai && d.text) {
             // The AI can also pick app actions (DO: lines, 23 Oct "combine all AI"): each runs like you said it, so a
@@ -5390,6 +5453,7 @@ export default function FieldCommandClient() {
             const dos = lines.filter((l) => /^DO:/i.test(l)).map((l) => l.replace(/^DO:\s*/i, "").trim())
               .filter((x) => { const c = parseCommand(x); return c.intent !== "ask" && c.intent !== "search" && !(c.intent === "navigate" && c.ref && !/[a-z]{2}\s?\d{5}|\d/i.test(c.ref)); }).slice(0, 3);
             chatRef.current = [...chatRef.current, { you: cmd.question.slice(0, 200), helper: `${said}${dos.length ? ` (did: ${dos.join("; ")})` : ""}`.slice(0, 300), at: Date.now() }].slice(-8);
+            saveChatMemory(chatRef.current);
             // A question gets the answer, and what the AI would do is offered to tap (owner, 3 Nov: "give me an answer,
             // then ask me to open the list or not"). An order ("text the tenant") still runs.
             const question = /\?\s*$|^\s*(should|shall|can|could|is|are|was|will|would|do|does|did|what|which|when|where|why|how|who|any)\b/i.test(cmd.question);
@@ -7240,6 +7304,7 @@ export default function FieldCommandClient() {
                         const href = `/paperwork/?job=${encodeURIComponent(id)}`;
                         return <a className="jc-status-go is-late" data-hpd-smoke="jc-late-media" href={href} onClick={packageLinkClick(id, href)}>📎 {what} taken after it was sent: send {late.length === 1 ? "it" : "them"} →</a>;
                       })() : null}
+                      {approved ? <SentPaperworkLink omo={id} /> : null}
                       {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>{armedTap === `clear:${jobId(selectedJob)}` ? "✅ Tap again: clear the outcome" : "Change outcome"}</button> : null}
                     </div>
                   );
@@ -8415,6 +8480,21 @@ export default function FieldCommandClient() {
           {/* The answer appears word by word (owner, 3 Nov: "everything animated"; the words are all there at once for
               reading and tests, each fades in a moment after the one before). */}
           <p key={agent.reply} data-hpd-smoke="fc-agent-reply" className={`fc-agent-words${agent.live ? " is-live" : ""}`}>{agent.reply.length > 500 || agent.live ? agent.reply : agent.reply.split(/(\s+)/).map((w, i) => (/^\s+$/.test(w) || !w ? w : <span key={i} style={{ animationDelay: `${Math.min(i, 120) * 22}ms` }}>{w}</span>))}</p>
+          {agent.photos ? (
+            <div className="fc-agent-ba" data-hpd-smoke="fc-agent-ba">
+              <figure><img src={agent.photos.before} alt={`${agent.photos.id} before`} /><figcaption>Before</figcaption></figure>
+              <figure><img src={agent.photos.after} alt={`${agent.photos.id} after`} /><figcaption>After</figcaption></figure>
+              <button type="button" data-hpd-smoke="fc-agent-ba-share" onClick={async () => {
+                const p = agent.photos!;
+                try {
+                  const file = async (url: string, name: string) => new File([await (await fetch(url)).blob()], name, { type: "image/jpeg" });
+                  const files = [await file(p.before, `${p.id} BEFORE.jpg`), await file(p.after, `${p.id} AFTER.jpg`)];
+                  if (navigator.canShare?.({ files })) await navigator.share({ files, title: `${p.id} before and after` });
+                  else setAgent((a) => (a ? { ...a, reply: `${a.reply}\n(This phone can't share photos from here: open the job card's photos.)` } : a));
+                } catch { /* closed the share sheet */ }
+              }}>📤 Share both</button>
+            </div>
+          ) : null}
           {agent.week ? (
             <div className="fc-agent-week" data-hpd-smoke="fc-agent-week">
               {agent.week.map((w, k) => <div key={w.date} className={w.n.appt || w.n.bids || w.n.notices ? "has" : ""} style={{ animationDelay: `${k * 60}ms` }}>

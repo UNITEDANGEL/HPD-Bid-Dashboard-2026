@@ -10,6 +10,7 @@ import { removeCorrection, saveCorrection } from "../../lib/correction-store";
 import { autoFix, type FixResult } from "../../lib/auto-fix";
 import { loadPrivate, withPrivate } from "../../lib/private-data";
 import { checkPaperwork } from "../../lib/paperwork-check";
+import SentPaperworkLink from "../field-command/SentPaperwork";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
@@ -5317,6 +5318,7 @@ export default function PaperworkPage() {
                 {form.secondAttempt ? <div><dt>2nd attempt / refusal</dt><dd>{form.secondAttempt}</dd></div> : null}
               </dl>
               {lock.driveLink ? <a href={lock.driveLink} target="_blank" rel="noreferrer" data-hpd-smoke="paperwork-locked-drive">Open the sent package in Google Drive</a> : null}
+              {selectedJobId ? <SentPaperworkLink omo={selectedJobId.toUpperCase()} /> : null}
               {lateMedia.length || lateSend ? (
                 <div className="paperwork-late-media" data-hpd-smoke="paperwork-late-media">
                   {lateMedia.length ? <>

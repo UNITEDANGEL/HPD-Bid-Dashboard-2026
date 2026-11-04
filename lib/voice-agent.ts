@@ -28,6 +28,10 @@ export type AgentCommand =
   | { intent: "walkthrough"; ref: string }
   | { intent: "tour" }
   | { intent: "materials" }
+  | { intent: "missing-paperwork" }
+  | { intent: "losing-time" }
+  | { intent: "good-news" }
+  | { intent: "before-after"; ref: string }
   | { intent: "find"; query: string }
   | { intent: "price-check"; price: number }
   | { intent: "week-ahead" }
@@ -203,6 +207,11 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(what'?s|what does|how does) my (week|next 7 days|next week) look\b|\b(my )?week ahead\b|\bnext 7 days\b|\bwhat'?s coming up( this week)?\b|\b(this|next) week'?s (schedule|plan)\b/.test(t)) return { intent: "week-ahead" };
   // 🔍 "find the job where the tenant said the dog bites" (a number or an address stays the map search).
   if (!/\d/.test(t) && /^(please )?(find|search( for)?|look for|look up)\b|^(which|what) job (had|has|was|is|where)\b|^where was the job\b/.test(t)) return { intent: "find", query: String(heard).trim() };
+  // 🧾 / 🗺 / 🎉 / 📸 (owner, 4 Nov: "do all ideas").
+  if (/\b(am i missing|missing (any )?paperwork|paperwork (i'?m )?missing|what paperwork (is )?(left|missing)|unfinished paperwork|paperwork (still )?(left|to do))\b/.test(t)) return { intent: "missing-paperwork" };
+  if (/\b(losing time|where (does|do) (my|the) time go|what takes (the )?longest|which jobs take (the )?longest|slowest (jobs?|borough)|how long do (my )?jobs take)\b/.test(t)) return { intent: "losing-time" };
+  if (/\b(good news|how did (today|my day) go|my wins today|replay (my|the) day|celebrate)\b/.test(t) && !/\b(week|month)\b/.test(t)) return { intent: "good-news" };
+  if (/\bbefore (and|&|\+) after\b|\bbefore\/after\b/.test(t) && /\b(show|see|send|photos?|pictures?|pics?)\b/.test(t)) return { intent: "before-after", ref: refOf(t) };
   if (/\b(what (do|should) i (need|bring|buy|take)( today| tomorrow)?|shopping list|materials?( list)?( for today)?|what to (buy|bring))\b/.test(t)) return { intent: "materials" };
   if (/^(give me a |start the |take the |show me the )?tour$|^show me around( the app)?$|^(walk me through|show me) what'?s new$/.test(t)) return { intent: "tour" };
   if (/\b(i'?m|i am|we'?re|we are) (running |going to be |gonna be )?late\b|\brunning late\b/.test(t)) return { intent: "late", ref: refOf(t.replace(/\b(running|late|gonna|going to be)\b/g, " ")) };

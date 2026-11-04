@@ -336,7 +336,13 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       const walk = (p) => {
         if (!p) return;
         const name = String(p.filename || "");
-        if ((p.mimeType === "application/pdf" || /\.pdf$/i.test(name)) && (p.body?.attachmentId || p.body?.data)) out.push({ name: name || "document.pdf", size: Number(p.body?.size) || 0, attachmentId: p.body?.attachmentId || "", data: p.body?.data || "" });
+        // The PDFs, and (owner, 4 Nov, ER07663: "a copy of all the before, after and the affidavit, everything that was
+        // sent") the photos and videos too.
+        const kind = p.mimeType === "application/pdf" || /\.pdf$/i.test(name) ? "application/pdf"
+          : /^(image|video)\//.test(String(p.mimeType || "")) ? String(p.mimeType)
+          : /\.(jpe?g|png|heic)$/i.test(name) ? "image/jpeg" : /\.(mp4|mov|m4v)$/i.test(name) ? (/\.mov$/i.test(name) ? "video/quicktime" : "video/mp4") : "";
+        // (Signature images inside the email's own text have no file name: skipped.)
+        if (kind && name && !/^Outlook-[a-z0-9]+\.png$/i.test(name) && (p.body?.attachmentId || p.body?.data)) out.push({ mime: /^[\w.+-]+\/[\w.+-]+$/.test(kind) ? kind : "application/octet-stream", name: name || "document.pdf", size: Number(p.body?.size) || 0, attachmentId: p.body?.attachmentId || "", data: p.body?.data || "" });
         for (const c of p.parts || []) walk(c);
       };
       walk(payload);
@@ -356,7 +362,7 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
         if (!got.ok) continue;
         const m = await got.json();
         const header = (name) => String((m.payload?.headers || []).find((h) => String(h.name).toLowerCase() === name)?.value || "");
-        const files = pdfParts(m.payload).map((f, i) => ({ i, name: f.name.slice(0, 120), size: f.size }));
+        const files = pdfParts(m.payload).map((f, i) => ({ i, name: f.name.slice(0, 120), size: f.size, mime: f.mime }));
         if (!files.length) continue;
         emails.push({ id, threadId: String(m.threadId || ""), at: new Date(Number(m.internalDate) || Date.parse(header("date")) || 0).toISOString(), to: header("to").slice(0, 200), subject: header("subject").slice(0, 200), files });
       }
@@ -372,7 +378,7 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       if (got.status === 403) fail("Seeing what you sent needs read access to email.", 403);
       if (!got.ok) fail(`Couldn't read that email (HTTP ${got.status}).`);
       const part = pdfParts((await got.json()).payload)[i];
-      if (!part) fail("That PDF is not in the email.", 404);
+      if (!part) fail("That file is not in the email.", 404);
       let data = part.data;
       if (!data) {
         const a = await call(`${GMAIL_API}/${encodeURIComponent(id)}/attachments/${encodeURIComponent(part.attachmentId)}`);
@@ -382,7 +388,7 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       const bin = atob(data.replace(/-/g, "+").replace(/_/g, "/"));
       const bytes = new Uint8Array(bin.length);
       for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
-      return new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
+      return new Response(bytes, { status: 200, headers: { "Content-Type": part.mime || "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
     }
 
     // 📱 Text a tenant from the business number (Twilio), and the tenants' replies (signed in only).

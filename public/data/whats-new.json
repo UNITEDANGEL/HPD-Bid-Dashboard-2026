@@ -3,6 +3,19 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "A copy of everything you sent",
+      "items": [
+        "📤 \"See what you sent\" now shows every file of the email (the signed affidavit and invoice, the before and after photos and the videos), and \"Get a copy of everything\" opens the iPhone share sheet: pick Mail to send them again, or Save to Files to keep a copy. It's on the job card of a sent job and on its package page.",
+        "🧾 Ask \"am I missing paperwork?\": every finished job still missing photos, the affidavit or the invoice, oldest first.",
+        "🗺 Ask \"where am I losing time?\": your usual time on site, the slowest borough and kind of work, and one tip.",
+        "🎉 Say \"good news\": today's wins, bids sent, jobs finished and packages sent, with a cheer.",
+        "📸 Say \"show me the before and after for ER…\": the newest before and after photo side by side in the chat, with 📤 Share both.",
+        "🧠 The robot remembers the last 3 days of talk on your phone, and brings up something left open from yesterday.",
+        "🗣 When an answer takes a moment, the robot says \"Let me check\" first, like a person."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "A smarter robot",
       "items": [
         "🧠 The robot remembers what you just talked about, including its own quick answers, so you can follow up like a real chat: \"why?\", \"and tomorrow?\", \"what about Queens?\", \"tell me more\", \"which one?\".",

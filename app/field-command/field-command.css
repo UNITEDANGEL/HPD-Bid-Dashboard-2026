@@ -3175,23 +3175,6 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-hpd-ping.is-new { border-color: #f59e0b !important; }
 .fc-hpd-ping.is-urgent { border-color: #f97316 !important; }
 
-/* See what you sent (20 Oct): the PDFs you emailed for the job, opened right here. */
-.fc-sent-open { display: block; width: 100%; min-height: 46px; margin: 8px 0 4px; border-radius: 12px; border: 2px solid #60a5fa; background: #0b1b33; color: #dbeafe; font: 900 15.5px system-ui, sans-serif; }
-.fc-sent-open.is-light { background: #eff6ff; color: #1e3a8a; }
-.fc-sent { margin: 8px 0; padding: 10px; border-radius: 12px; border: 1px solid #60a5fa; background: #0b1b33; color: #e2e8f0; }
-.fc-sent.is-light { background: #f8fafc; color: #0f172a; }
-.fc-sent-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.fc-sent-head button { min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #94a3b8; background: transparent; color: inherit; font: 800 13px system-ui; }
-.fc-sent ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
-.fc-sent li p { margin: 0; font: 700 14px system-ui, sans-serif; }
-.fc-sent li small { display: block; opacity: .8; font: 600 12.5px system-ui, sans-serif; }
-.fc-sent-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.fc-sent-files button, .fc-sent-files a { min-height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid #60a5fa; background: #1d4ed8; color: #fff; font: 800 13.5px system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; }
-.fc-sent-files a { background: transparent; color: inherit; }
-.fc-sent-files button.is-on { background: #16a34a; border-color: #16a34a; }
-.fc-sent-msg { margin: 6px 0 0; font: 700 13.5px system-ui, sans-serif; }
-.fc-sent-pdf { margin-top: 8px; }
-.fc-sent-pdf > a { display: inline-block; margin-top: 4px; color: inherit; font: 800 13px system-ui; }
 
 /* Phone alerts switch (20 Oct). */
 .fc-push { display: grid; gap: 8px; margin: 0 0 12px; padding: 14px; border-radius: 16px; background: #0b1b33; border: 2px solid #60a5fa; color: #e2e8f0; }
@@ -4297,3 +4280,10 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-agent .fc-agent-week span { font-size: 11px; font-weight: 800; white-space: nowrap; }
 @keyframes fc-week-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .fc-agent .fc-agent-week > div { animation: none; } }
+/* 📸 Before and after side by side in the chat (4 Nov). */
+.fc-agent .fc-agent-ba { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 4px; }
+.fc-agent .fc-agent-ba figure { margin: 0; position: relative; border-radius: 12px; overflow: hidden; background: #0f172a; animation: fc-week-in 0.4s ease both; }
+.fc-agent .fc-agent-ba figure + figure { animation-delay: 0.15s; }
+.fc-agent .fc-agent-ba img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.fc-agent .fc-agent-ba figcaption { position: absolute; left: 6px; bottom: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.85); color: #fff; font: 800 12px system-ui, sans-serif; }
+.fc-agent .fc-agent-ba button { grid-column: 1 / -1; min-height: 44px; border-radius: 12px; border: 0; background: #2563eb; color: #fff; font-weight: 800; }

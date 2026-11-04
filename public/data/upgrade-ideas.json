@@ -3,46 +3,39 @@
   "updated": "2026-11-04",
   "ideas": [
     {
+      "id": "weekly-report-pdf",
+      "icon": "📈",
+      "kind": "new",
+      "title": "Month on one page",
+      "why": "A one-page PDF each month: money in, jobs done, win rate and best boroughs, ready to send to your accountant."
+    },
+    {
+      "id": "photo-retake",
+      "icon": "📷",
+      "kind": "new",
+      "title": "Retake before you leave",
+      "why": "If a before or after photo is dark or blurry, the robot tells you right there, while you are still in the apartment."
+    },
+    {
+      "id": "hpd-reply-draft",
+      "icon": "✉️",
+      "kind": "new",
+      "title": "Answer HPD's email for you",
+      "why": "When HPD asks for something, the robot writes the reply with the right files attached; you read it and tap Send."
+    },
+    {
+      "id": "voice-only-day",
+      "icon": "🚗",
+      "kind": "new",
+      "title": "A whole day hands-free",
+      "why": "From \"start my day\" to the last package: the robot leads every step by voice while you drive and work."
+    },
+    {
       "id": "talk-right-away",
       "icon": "🗣",
       "kind": "new",
       "title": "The robot starts talking right away",
       "why": "It says the first sentence while the rest of the answer is still coming, like a person, so you don't wait in silence."
-    },
-    {
-      "id": "remember-days",
-      "icon": "🧠",
-      "kind": "new",
-      "title": "The robot remembers yesterday",
-      "why": "It remembers what you asked on other days: \"Yesterday you asked about ER07663: did the video go out?\""
-    },
-    {
-      "id": "before-after-chat",
-      "icon": "📸",
-      "kind": "new",
-      "title": "Before and after side by side",
-      "why": "Say \"show me ER… before and after\": the two photos side by side in the chat, ready to send."
-    },
-    {
-      "id": "missing-paperwork",
-      "icon": "🧾",
-      "kind": "new",
-      "title": "Am I missing paperwork?",
-      "why": "Every finished job still missing photos, the affidavit or the invoice, oldest first, one tap to fix each."
-    },
-    {
-      "id": "losing-time",
-      "icon": "🗺",
-      "kind": "new",
-      "title": "Where am I losing time?",
-      "why": "From your visits: which boroughs or buildings take longest, with one tip to save time."
-    },
-    {
-      "id": "good-news",
-      "icon": "🎉",
-      "kind": "new",
-      "title": "Good-news replay",
-      "why": "At the end of the day the robot says your wins, sent bids and finished jobs in 15 seconds, with a cheer."
     },
     {
       "id": "weekly-score",

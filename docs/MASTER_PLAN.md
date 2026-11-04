@@ -42,6 +42,11 @@ The owner's words today, in order, and what was done with each:
 9. "add all to md file all we spoke about; make AI more better flow like a real person" -> this section; the AI now
    talks like a person riding along (contractions, short natural sentences, reacts, uses his name now and then, asks
    one natural question back, never "based on the facts") and knows his name and the time (236).
+10. "do all ideas and keep upgrading" -> missing paperwork, where the time goes, good news, before / after side by side,
+   3 days of memory, "let me check" (237).
+11. ER07663: "I want to be able to have a copy so I can send it... all the before, after and the affidavit, everything
+   that was sent to the email. I don't know where they're downloaded" -> "See what you sent" on the job card shows every
+   file of the sent email and "📤 Get a copy of everything" opens the share sheet (Mail / Save to Files) (237).
 
 ### Still to do from today
 - Keep making the robot more like a real person: answer while it is still thinking (first words fast), remember
@@ -53,11 +58,10 @@ The owner's words today, in order, and what was done with each:
 
 ### Ideas from today (not started)
 - 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person.
-- 🧠 Remembers across days: "yesterday you asked about ER07663: the video went out?"
-- 📸 Before / after side by side in the chat, ready to send.
-- 🧾 "Am I missing paperwork?": every finished job still missing photos, the affidavit or the invoice, oldest first.
-- 🗺 "Where am I losing time?": which boroughs or buildings take longest, with one tip.
-- 🎉 Good-news replay at the end of the day: wins, bids sent, jobs finished, in 15 seconds.
+- 📈 Month on one page: money in, jobs done, win rate, best boroughs, as a PDF.
+- 📷 Retake before you leave: a dark or blurry photo flagged while still in the apartment.
+- ✉️ Answer HPD's email for you: the reply written with the right files attached; read and tap Send.
+- 🚗 A whole day hands-free: the robot leads every step by voice.
 
 ## 3 Nov 2026: everything the owner asked in the chat, and the idea list (keep this up to date)
 
@@ -67,6 +71,7 @@ giving me more ideas"; "everything we talk about goes in the master file". Claud
 Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 
 ### Done today (live or going live)
+- 4 Nov: a copy of everything you sent (share sheet), missing paperwork, where the time goes, good news, before / after in the chat, 3 days of memory, "let me check" (237).
 - 4 Nov: the robot remembers the conversation, answers follow-ups ("why?", "and tomorrow?"), a backup AI and one retry so it always answers (235).
 - 4 Nov: the package never sends by itself (checklist + Send), late photos/videos sent with one tap, greet once a day then pick up where you left off (234).
 - Live steps on the phone (hook) and the listening hook: what the owner writes in the app reaches the working Claude (201, 208).
@@ -969,6 +974,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 234. **Time at each job, by itself** (owner idea, 4 Nov; done: lib/job-time.ts onSiteMinutes = from FieldArrivedAt to the last saved outcome in FieldVisitHistory, same New York day and under 10 hours only; the job card shows "⏱ 42 min on site" (jc-on-site) and, with 3 other timed jobs, "your usual: N min"; test-job-time).
 235. **A smarter robot: real conversation memory, follow-ups, always answers** (owner, 4 Nov: "The bot to be much better, much more smarter... much more interactive. It needs to be working all the time... like a real ChatGPT"; "make the robot smarter and keep upgrading"). Done: every answer (the phone's own and the AI's) goes into the conversation (chatRef, last 6 turns / 30 min); server/ai-draft askFacts takes recentConversation out of the facts and sends it as real user/assistant turns before the question. Follow-ups within 3 min ("why?", "and tomorrow?", "what about Queens", "tell me more", "which one?", up to 8 words, no job number, not a command or a near-exact known phrase) go to the AI instead of a list or "did you mean". A backup free model (@cf/meta/llama-3.1-8b-instruct-fast) answers when the 70B one throws; the phone retries once on a failed or empty answer ("Trying once more…"). Tests: test-ai-ask (turns, backup model), smart-ask (why? and a follow-up on a phone answer), call-ask / voice-sms wait for the jobs list to settle; 48 chat / job tests.
 236. **The robot talks like a real person; the mic tries again by itself** (owner, 4 Nov: "make AI more better flow like a real person"; his phone's voice log showed "error audio-capture"). Done: ASK_SYSTEM style rule: a friendly sharp coworker riding along, contractions, 1-4 short natural sentences, reacts ("Nice, that's 3 wins this week."), uses facts.ownerName now and then, varies openings, never repeats the question or says "based on the facts" / "as an AI", may end with one natural question back. Facts carry ownerName and timeNow. iPhone "audio-capture" on starting the mic: stop the voice, wait 0.7 s and try once more before the "No microphone" message. Tests: test-ai-ask (style rule), mic (an audio-capture hiccup retried by itself).
+237. **A copy of everything you sent; missing paperwork; where the time goes; good news; before / after; memory across days; "let me check"** (owner, 4 Nov: "do all ideas and keep upgrading"; ER07663: "I want to be able to have a copy so I can send it. I wasn't able to get a copy of all the before, after and the affidavit, everything that was sent to the email. I don't know where they're downloaded"). Done: server hpd-sent / hpd-sent-pdf return every attachment of the sent email (PDF, images, videos; no Outlook signature images) with its type; SentPaperwork shows them (📄 / 📷 / 🎥, size), opens a photo or video right there, and "📤 Get a copy of everything" fetches all and opens the share sheet (Mail, Save to Files), with download links where sharing isn't possible; shown on a sent job's card and on the locked package page (styles moved to sent-paperwork.css). lib/robot-insights: missingPaperwork (finished jobs, last 90 days, what's missing, oldest first), timeInsight (onSiteMinutes by borough / kind, slowest vs usual, one tip), goodNews (wins, bids sent, finished, packages, a cheer), chat memory kept 3 days (hpd-chat-memory) and earlierDays sent to the AI with a rule to bring up something left open once. Intents missing-paperwork, losing-time, good-news, before-after (newest before + after photo side by side, 📤 Share both). A slow AI answer gets a short "Let me check." first. Tests: test-robot-insights.cjs, robot-ideas (new).
 - **Quick questions in the chat** (owner idea, 3 Nov; done: ⚡ button in the chat bar opens one-tap questions (Today, Next bid, Notices, Owed, What's next); test-browser-quick-questions).
 918. **Don't leave without the after photo** (owner idea, 4 Nov; done: lib/leave-reminder.ts leftWithoutAfterPhoto = arrived today (FieldArrivedAt, under 10 h), no after photo, no outcome saved, and the phone more than 150 m from the job; the GPS watch in FieldCommandClient calls leavingRef once per job: orb bubble "📸 No after photo yet" + tone/voice; test-leave-reminder).
 919. **Smoother talking with the chat** (owner, 4 Nov, on the insurance/license idea: "make the fluid conversation more fluid, listen for the user after each response"; done: in FieldCommandClient startListening, if the mic ends with words heard but never marked final, the chat answers them; silent turns in 💬 mode retry 3 times (was 1); it already listened again after every spoken answer; test: scripts/test-browser-fluid-talk.mjs).
