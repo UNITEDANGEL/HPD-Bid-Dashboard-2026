@@ -126,7 +126,7 @@ export function thinkingQuestion(heard: string) {
   // A chain of things to do ("how did I do today and what's the weather tomorrow and read me the new bids") stays a chain.
   if (/\band (also |then )?(read me|what'?s the weather|is alternate|is it|text|call|take me|plan|open|show me|remind|tell me)\b/.test(t)) return false;
   const question = /\?\s*$/.test(t) || /^(how|why|what|which|when|where|who|should|can|could|would|will|is|are|do|does|did|have|has|tell me|explain|give me|compare)\b/.test(t);
-  return question && /\b(send|sent|fax|faxed|lost|lose|average|total|compare|oldest|newest|biggest|smallest|cheapest|highest|lowest|most|least|why|should i|worth|percent|rate|since|so far|left to do|still|longest|last time|how long)\b/.test(t);
+  return question && /\b(send|sent|fax|faxed|lost|lose|average|total|compare|oldest|newest|biggest|smallest|cheapest|highest|lowest|most|least|why|should i|worth|percent|rate|since|so far|left to do|still|longest|last time|how long|say|said|wrote|email|emails|e-mail|mean|means)\b/.test(t);
 }
 
 export function parseCommand(heard: string): AgentCommand {

@@ -17,6 +17,7 @@ try {
   await c.addInitScript(() => {
     window.__said = [];
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 20); };
+    localStorage.setItem("hpd-chat-notes", JSON.stringify([{ text: "I always bid door closers at 450", at: "2026-11-01T12:00:00Z" }]));
     localStorage.setItem("hpd-bid-records-v1", JSON.stringify({ ER77777: { omo: "ER77777", address: "1 Test St", bidDue: "2026-11-04", price: 1200, sentPrice: 1200, status: "confirmed", sentAt: new Date().toISOString(), savedAt: new Date().toISOString(), attempts: 1, updatedAt: new Date().toISOString() } }));
   });
   const page = await c.newPage();
@@ -41,6 +42,12 @@ try {
   assert.ok(Object.keys(f1.allJobsByStage).length > 0, "all jobs by stage");
   assert.ok("stillToSend" in f1.bidsDueToday);
 
+  // 🧠 What it was told to remember and 📈 the last 3 months go along.
+  assert.equal(f1.myNotes[0].note, "I always bid door closers at 450");
+  assert.equal(f1.trends.length, 3);
+  assert.ok(f1.trends.every((m) => /^\d{4}-\d{2}$/.test(m.month) && typeof m.jobsWon === "number" && typeof m.bidsSent === "number"));
+  assert.equal(f1.trends[0].bidsSent, 1, "this month's sent bid");
+  assert.deepEqual(f1.hpdEmails, [], "no email text unless asked about emails");
   // 2) A job named in the question goes in full.
   await ask("Is ER06362 finished yet, and what is left to do there?", 2);
   const named = asked[1].facts.jobsNamed;
@@ -48,12 +55,15 @@ try {
   assert.equal(named[0].found !== false, true);
   assert.ok(named[0].address && named[0].work, "address and work");
 
-  // 3) About the app: the newest changes go along.
-  await ask("How do I change the robot's voice in the app?", 3);
-  assert.ok(asked[2].facts.appChanges.length > 5, "the newest changes");
-  assert.ok(await page.evaluate(() => window.__said.some((t) => /Answer 3/.test(t))), "said out loud");
+  // 📩 About emails: HPD's newest emails go along in full (a list, empty when there are none on this phone).
+  await ask("What did Lewis say in her last email about my notices?", 3);
+  assert.ok(Array.isArray(asked[2].facts.hpdEmails));
+  // 4) About the app: the newest changes go along.
+  await ask("How do I change the robot's voice in the app?", 4);
+  assert.ok(asked[3].facts.appChanges.length > 5, "the newest changes");
+  assert.ok(await page.evaluate(() => window.__said.some((t) => /Answer 4/.test(t))), "said out loud");
   assert.deepEqual(errors, []);
-  console.log(`PASS smart ask: a real question near a known phrase went to the AI with bids sent (${f1.bidsSent.last7Days} this week), the week's numbers and all jobs by stage; a named job in full (${named[0].address}); app questions carry the newest ${asked[2].facts.appChanges.length} changes`);
+  console.log(`PASS smart ask: a real question near a known phrase went to the AI with bids sent (${f1.bidsSent.last7Days} this week), the week's numbers and all jobs by stage; a named job in full (${named[0].address}); app questions carry the newest ${asked[3].facts.appChanges.length} changes; notes, 3-month trends and emails go along`);
 } finally {
   await browser.close();
 }

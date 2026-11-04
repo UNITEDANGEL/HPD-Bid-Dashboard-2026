@@ -5165,6 +5165,26 @@ export default function FieldCommandClient() {
           allJobsByStage: jobRows.reduce((m: Record<string, number>, r) => { m[r.group] = (m[r.group] || 0) + 1; return m; }, {}),
           bidsDueToday: { stillToSend: bidsDue.unsentToday || 0, sentToday: bidsDue.sentToday || 0, firstDue: bidsDue.firstTime || "", tomorrow: bidsDue.tomorrow },
           appChanges: /\b(app|button|screen|where is|how do i|how can i|can i|does it|feature|setting|robot|claude|update|new)\b/i.test(cmd.question) ? await loadWhatsNew().then((v) => (Array.isArray(v) ? v.slice(0, 3).flatMap((x: { items?: string[] }) => x.items || []).slice(0, 30).map((t: string) => t.split(/(?<=[.!?])\s/)[0].slice(0, 160)) : [])).catch(() => []) : [],
+          // 🧠 What you told it to remember (last 30), so answers use your own rules.
+          myNotes: loadNotes().slice(-30).map((n) => ({ note: n.text, saved: String(n.at || "").slice(0, 10) })),
+          // 📈 The last 3 months: bids sent (this phone), jobs won and money awarded (HPD's award dates), the win rate and
+          // what kind of work won.
+          trends: (() => {
+            const month = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(new Date(iso));
+            const months = [0, 1, 2].map((k) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - k); return month(d.toISOString()); });
+            let recs: { sentAt?: string; sentPrice?: number; price?: number; status?: string }[] = [];
+            try { recs = Object.values(JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}")); } catch { /* private mode */ }
+            return months.map((m) => {
+              const sent = recs.filter((r) => r && r.sentAt && month(r.sentAt) === m);
+              const won = jobs.filter((j) => { const d = String(value(j, ["AwardDate"]) || ""); return d && !isTestJob(jobId(j)) && !Number.isNaN(Date.parse(d)) && month(new Date(d).toISOString()) === m; });
+              const amounts = won.map((j) => Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, ""))).filter((n) => n > 0);
+              const kinds: Record<string, number> = {};
+              for (const j of won) { const k = (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "other").split(/[·(,]/)[0].trim().slice(0, 30) || "other"; kinds[k] = (kinds[k] || 0) + 1; }
+              return { month: m, bidsSent: sent.length, avgBidSent: sent.length ? Math.round(sent.reduce((a, r) => a + Number(r.sentPrice || r.price || 0), 0) / sent.length) : 0, jobsWon: won.length, moneyAwarded: Math.round(amounts.reduce((a, n) => a + n, 0)), avgAward: amounts.length ? Math.round(amounts.reduce((a, n) => a + n, 0) / amounts.length) : 0, winRate: sent.length ? `${Math.round((won.length / sent.length) * 100)}%` : "", wonMost: Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} (${n})`) };
+            });
+          })(),
+          // 📩 Asked about emails: the full text of HPD's 10 newest (last 14 days).
+          hpdEmails: /\b(email|e-mail|emails|wrote|write|said|say|message|messages|lewis|gafur|hpd asked|asked for|inspector|vendor tracking)\b/i.test(cmd.question) ? (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 14 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", subject: t.subject.slice(0, 120), text: String(m.text || "").replace(/\s+/g, " ").slice(0, 1200) }))).sort((a, b) => b.ts - a.ts).slice(0, 10).map(({ ts: _ts, ...e }) => e) : [],
           // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.
           recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 15 * 60000).slice(-4).map(({ you, helper }) => ({ you, helper })),
         };

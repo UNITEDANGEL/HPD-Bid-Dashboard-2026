@@ -5,6 +5,10 @@
       "date": "Nov 3, 2026",
       "title": "Ideas, keep upgrading, talk to Claude",
       "items": [
+        "🧠 The robot remembers you: what you tell it to remember (\"I always bid door closers at 450\", \"Lewis wants photos first\") is used in its answers, and it offers to remember things you say that are worth keeping.",
+        "📈 Ask \"how am I doing?\" or \"is my win rate going down?\": it compares the last 3 months (bids sent, jobs won, money awarded, win rate, what kind of work wins).",
+        "📩 Ask what HPD wrote (\"what did Lewis say in her last email?\"): it reads the full text of HPD's newest emails and tells you the part that matters.",
+        "🗣 When a question could mean two jobs or two notices, it asks you which one instead of guessing.",
         "🧠 A much smarter robot. It now knows how the whole app works (every screen and button), so \"how do I…\" and \"where is…\" get a real answer.",
         "🧠 It thinks with your numbers: \"how many bids did I send this week?\", \"which notice is the oldest?\", \"why was ER… rejected?\" go to the AI with your bids sent, this week's and this month's numbers, appointments, all jobs by stage, and any job you name in full.",
         "🧠 It answers general questions too (repairs, materials, HPD rules in general) and gives the straight answer first. Questions no longer get grabbed by a quick list that doesn't fit.",
