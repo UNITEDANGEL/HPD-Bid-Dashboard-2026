@@ -3,6 +3,48 @@
   "updated": "2026-11-04",
   "ideas": [
     {
+      "id": "robot-goal-ring",
+      "icon": "🎯",
+      "kind": "new",
+      "title": "A goal ring around the robot",
+      "why": "The robot sets today's goal (like 8 bids or 3 jobs) and a ring around it fills up as you go, with a cheer when it's full."
+    },
+    {
+      "id": "robot-tour",
+      "icon": "🎬",
+      "kind": "new",
+      "title": "The robot shows you what's new",
+      "why": "After an update the robot walks you through the new things in 20 seconds, pointing at each button."
+    },
+    {
+      "id": "robot-job-hat",
+      "icon": "⛑",
+      "kind": "new",
+      "title": "The robot dresses for the job",
+      "why": "At a job site it puts on its hard hat by itself; at night it wears pajamas; on a win a party hat."
+    },
+    {
+      "id": "robot-arms",
+      "icon": "🙋",
+      "kind": "new",
+      "title": "The robot gets arms",
+      "why": "It waves hello, points at the button you need and gives a thumbs up when something is sent."
+    },
+    {
+      "id": "robot-moods-day",
+      "icon": "🌤",
+      "kind": "new",
+      "title": "The robot shows the weather",
+      "why": "Rain: it holds an umbrella. Cold: a scarf. Hot: sunglasses. You know the weather with one look."
+    },
+    {
+      "id": "say-done",
+      "icon": "✅",
+      "kind": "upgrade",
+      "title": "Say \"done\" to finish a job",
+      "why": "At the building say \"done\" and the job is marked finished, the time saved and the after photo asked for."
+    },
+    {
       "id": "robot-knows-you",
       "icon": "🧠",
       "kind": "new",

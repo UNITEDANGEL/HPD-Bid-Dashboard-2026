@@ -4231,3 +4231,17 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @keyframes fc-walk-wave { from { rotate: -8deg; } to { rotate: 8deg; } }
 @keyframes fc-walk-hand { from { rotate: -20deg; } to { rotate: 20deg; } }
 @media (prefers-reduced-motion: reduce) { .fc-walk-bot, .fc-walk-bot *, .fc-walk-bot::after, .fc-agent.is-big .fc-agent-who .fc-face { animation: none !important; } }
+
+/* 🤖 See the robot better (owner, 4 Nov): a bigger, raised 🤖 with a bigger face; Claude's question is a little "?"
+   speech bubble by its head instead of a silent badge. */
+.fc-dock .fc-ai-orb.fc-dock-ai { margin-top: -24px; }
+.fc-dock .fc-ai-orb.fc-dock-ai .fc-ai-orb-core { width: 64px; height: 64px; }
+.fc-claude-orb .fc-ai-orb-core .fc-face { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35)); }
+.fc-claude-orb .fc-claude-orb-badge:not(.is-auto) { top: 6px; right: -30px; padding: 3px 7px; border-radius: 12px 12px 12px 3px; background: #fff; font-size: 14px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); animation: fc-ask-bob 1.2s ease-in-out infinite alternate; }
+@keyframes fc-ask-bob { from { translate: 0 0; } to { translate: 0 -4px; } }
+@media (max-height: 500px) {
+  .fc-dock .fc-ai-orb.fc-dock-ai { margin-top: -6px; }
+  .fc-dock .fc-ai-orb.fc-dock-ai .fc-ai-orb-core { width: 40px; height: 40px; }
+  .fc-claude-orb .fc-ai-orb-core .fc-face { width: 36px; height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { .fc-claude-orb .fc-claude-orb-badge { animation: none; } }

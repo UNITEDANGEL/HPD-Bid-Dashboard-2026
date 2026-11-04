@@ -3901,6 +3901,18 @@ export default function FieldCommandClient() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 👋 Hello when the app opens (owner's pick, 4 Nov): once every 3 hours, the robot says hi in its bubble with what's
   // waiting (silent: phones don't let a page talk before a tap). Tap the bubble to talk.
+  // ❓ When Claude asks you something, the robot says so in its bubble (owner, 4 Nov: "I see Claude with a question
+  // mark on the bottom. Why?"), once per question.
+  const askSeenRef = useRef("");
+  useEffect(() => {
+    const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
+    const key = ask ? `${ask.id}|${ask.updates.length}` : "";
+    if (!ask || key === askSeenRef.current) { if (!ask) askSeenRef.current = ""; return; }
+    askSeenRef.current = key;
+    const what = ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 40);
+    const q = ask.updates[ask.updates.length - 1]?.text || "";
+    setOrbSay({ text: `❓ Claude has a question about ${what}. Tap me.`, full: `Claude has a question about ${what}: ${q} Tap ❓ Answer Claude to reply.`, at: Date.now() });
+  }, [changeThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   const helloDoneRef = useRef(false);
   useEffect(() => {
     if (helloDoneRef.current || !jobs.length) return;
@@ -6022,7 +6034,7 @@ export default function FieldCommandClient() {
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={44} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                     {orbSay ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
