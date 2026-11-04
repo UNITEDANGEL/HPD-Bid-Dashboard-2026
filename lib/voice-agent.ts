@@ -116,6 +116,19 @@ function outcomeCommand(t: string, outcome: Extract<AgentCommand, { intent: "out
 
 const BORO_CODE: Record<string, string> = { manhattan: "MN", bronx: "BX", brooklyn: "BK", queens: "QN", "staten island": "SI" };
 
+// 🧠 A question that needs thinking, not a list (owner, 4 Nov: "make the bot super smart"): "how many bids did I send this
+// week", "which job is the oldest", "should I…". The app's quick lists answer what they show; these go to the AI with the
+// facts (counting, comparing, adding up). Orders ("text the tenant", "take me…") are never this.
+export function thinkingQuestion(heard: string) {
+  const t = String(heard || "").toLowerCase().trim();
+  if (t.split(/\s+/).length < 6) return false;
+  if (/^(please )?(text|call|take me|navigate|drive|mark|make an appointment|remind|open|plan|bid \d|send|answer the notice|reply|read me|tell (claude|cloud))\b/.test(t)) return false;
+  // A chain of things to do ("how did I do today and what's the weather tomorrow and read me the new bids") stays a chain.
+  if (/\band (also |then )?(read me|what'?s the weather|is alternate|is it|text|call|take me|plan|open|show me|remind|tell me)\b/.test(t)) return false;
+  const question = /\?\s*$/.test(t) || /^(how|why|what|which|when|where|who|should|can|could|would|will|is|are|do|does|did|have|has|tell me|explain|give me|compare)\b/.test(t);
+  return question && /\b(send|sent|fax|faxed|lost|lose|average|total|compare|oldest|newest|biggest|smallest|cheapest|highest|lowest|most|least|why|should i|worth|percent|rate|since|so far|left to do|still|longest|last time|how long)\b/.test(t);
+}
+
 export function parseCommand(heard: string): AgentCommand {
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;

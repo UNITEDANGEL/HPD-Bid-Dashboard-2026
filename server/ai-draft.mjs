@@ -2,6 +2,7 @@
 // the text, and sending still takes two taps. The AI is told the facts on record and must not invent anything.
 // Providers, first one set up wins: Cloudflare Workers AI (binding "AI"; stays inside Cloudflare, free tier) or
 // Anthropic (secret ANTHROPIC_API_KEY). Neither set up: { ai: false } and the app keeps its ready-made reply.
+import { APP_GUIDE } from "../lib/app-guide.mjs";
 
 const SYSTEM = [
   "You write short email replies for United Angel Construction Corp, an NYC HPD emergency repair contractor,",
@@ -77,9 +78,17 @@ const ASK_SYSTEM = [
   "You are the voice helper inside HPD Field, the app of United Angel Construction Corp (an NYC HPD emergency repair contractor).",
   "The owner asks you a question out loud; you answer out loud.",
   "Rules:",
-  "- Use only the facts given (JSON). If the answer isn't in them, say you don't have that in the app yet.",
+  "- Three kinds of questions: (1) about the owner's work (jobs, bids, notices, money, appointments, the day): answer from",
+  "  the facts (JSON) only, and do the math for them (count, add up, compare, find the soonest / oldest / biggest). If the",
+  "  answer isn't in the facts, say exactly what's missing and where in the app to look. (2) how to use the app (where is,",
+  "  how do I, what does this button do, can the app…): answer from the APP GUIDE below, naming the exact buttons. If the",
+  "  app can't do it yet, say so and offer to pass it to Claude. (3) general questions (construction and repair know-how,",
+  "  NYC HPD / housing rules in general, materials, prices of supplies, math, words): answer from general knowledge in",
+  "  plain words, and say 'check with HPD' where rules matter.",
+  "- Be smart and helpful like a sharp office manager: give the straight answer first (a number, yes / no, a job number),",
+  "  then the one detail that matters. Never answer a question with only 'open the list'.",
   "- Never invent jobs, dates, amounts, people or documents. Say job numbers exactly as given.",
-  "- Short: 1 to 4 sentences, plain spoken English, no lists, no markdown, no emojis.",
+  "- Short: 1 to 5 sentences, plain spoken English, no lists, no markdown, no emojis.",
   "- recentConversation (in the facts) is what the owner and you just said: use it for follow-ups like 'that one', 'text them' or 'and the other job'.",
   "- You never send, save or change anything yourself. When the owner wants the app to do something, add one line per",
   "  action that starts with 'DO: ' followed by exactly one of these commands (the app runs it and asks for a yes or a tap",
@@ -98,14 +107,29 @@ const ASK_SYSTEM = [
   "- facts.weather is New York's forecast (today and tomorrow) and facts.traffic the rush-hour note. Use them when they",
   "  matter for the work: rain or wind on roof / outside jobs, freezing on plaster or paint, getting dark before photos,",
   "  rush hour on the drive. Mention them only when they help.",
+  "",
+  "APP GUIDE (how HPD Field works):",
+  APP_GUIDE,
 ].join("\n");
+
+// The facts fit the AI (about 20,000 characters): the longest lists are shortened, never cut mid-way (a cut JSON
+// string was garbage to the AI, 4 Nov).
+export function fitFacts(facts, max = 20000) {
+  let f = facts;
+  for (let round = 0; round < 12 && JSON.stringify(f).length > max; round++) {
+    const lists = Object.entries(f).filter(([, v]) => Array.isArray(v) && v.length > 3).sort((a, b) => JSON.stringify(b[1]).length - JSON.stringify(a[1]).length);
+    if (!lists.length) break;
+    const [k, v] = lists[0];
+    f = { ...f, [k]: v.slice(0, Math.ceil(v.length / 2)), [`${k}Note`]: `only the first ${Math.ceil(v.length / 2)} of ${(f[`${k}Total`] || v.length)} shown` , [`${k}Total`]: f[`${k}Total`] || v.length };
+  }
+  if (JSON.stringify(f).length > max) f = { note: "too many facts; ask about one job or one list", nextStep: facts.nextStep || "", now: facts.now || "" };
+  return f;
+}
 
 export function askFacts(body) {
   const q = clip(body?.question, 300).trim();
   if (q.length < 3) return null;
-  let facts = body?.facts && typeof body.facts === "object" ? body.facts : {};
-  let json = JSON.stringify(facts);
-  if (json.length > 12000) { json = json.slice(0, 12000); facts = { note: "facts cut to fit", partial: json }; }
+  const facts = fitFacts(body?.facts && typeof body.facts === "object" ? body.facts : {});
   return { question: q, facts };
 }
 
@@ -115,12 +139,12 @@ export async function aiAnswer(env, ask, fetcher = fetch) {
   const clean = (t) => {
     const lines = String(t || "").replace(/[*#`_]/g, "").split(/\r?\n/);
     const dos = lines.map((l) => l.trim()).filter((l) => /^DO:\s*\S/i.test(l)).slice(0, 3).map((l) => `DO: ${l.replace(/^DO:\s*/i, "").slice(0, 160)}`);
-    const said = lines.filter((l) => !/^\s*DO:/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 700);
+    const said = lines.filter((l) => !/^\s*DO:/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 900);
     return [said, ...dos].filter(Boolean).join("\n");
   };
   if (env?.AI) {
     const model = env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-    const result = await env.AI.run(model, { messages: [{ role: "system", content: ASK_SYSTEM }, { role: "user", content: user }], max_tokens: 350 });
+    const result = await env.AI.run(model, { messages: [{ role: "system", content: ASK_SYSTEM }, { role: "user", content: user }], max_tokens: 450 });
     const text = clean(typeof result?.response === "string" ? result.response : "");
     return text ? { ai: true, model, text } : { ai: false, reason: "The AI gave no answer." };
   }

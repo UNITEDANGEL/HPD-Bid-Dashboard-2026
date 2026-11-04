@@ -74,7 +74,7 @@ import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
-import { findJobRef, parseCommand, splitCommands } from "../../lib/voice-agent";
+import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
 import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
 import { OUTSIDE_WORK, fetchWeather, trafficNote, weatherNow, weatherReport, wetLater, workAnswer } from "../../lib/weather";
@@ -4706,13 +4706,18 @@ export default function FieldCommandClient() {
     }
     if (!inner) {
       multiRef.current = null;
-      const parts = splitCommands(heard);
+      const parts = thinkingQuestion(heard) ? [heard] : splitCommands(heard);
       if (parts.length > 1) { multiRef.current = { heard, queue: parts.slice(1), replies: [] }; setAgent({ heard, reply: "Working on it…" }); agentRef.current(parts[0], true); return; }
     }
     let cmd = parseCommand(heard);
+    // A question that needs counting / comparing goes to the AI, not to a quick list that only shows things.
+    if (thinkingQuestion(heard) && ["bids", "bids-show", "notices", "today", "week", "money", "awards", "tracker", "tenants-waiting", "catch-up", "whats-next", "job-status", "read-job", "my-notes", "help"].includes(cmd.intent) && (closest(heard, knownPhrases())[0]?.score || 0) < 0.9) cmd = { intent: "ask", question: heard.trim() };
     // Not recognized (3 Nov, "did you mean"): very close to something the helper knows = do that; close = offer up to
     // 3 to tap, with "Ask the AI instead"; else a real question for the AI. A search with a number stays a search.
-    if ((cmd.intent === "ask" || (cmd.intent === "search" && !/\d/.test(heard))) && askAnywayRef.current !== heard && !pendingWhoRef.current) {
+    // A real question (5+ words, how / why / what… or a ?) goes to the AI unless it's almost word for word a known one
+    // (owner, 4 Nov: "make the bot smarter": near-miss phrases were answering questions they didn't fit).
+    const realQuestion = heard.trim().split(/\s+/).length >= 5 && (/\?\s*$/.test(heard) || /^\s*(how|why|what|which|when|where|who|should|can|could|would|will|is|are|do|does|did|tell me|explain|give me)\b/i.test(heard));
+    if ((cmd.intent === "ask" || (cmd.intent === "search" && !/\d/.test(heard))) && askAnywayRef.current !== heard && !pendingWhoRef.current && !(realQuestion && cmd.intent === "ask" && closest(heard, knownPhrases())[0]?.score < 0.92)) {
       const best = closest(heard, knownPhrases());
       if (best[0] && best[0].score >= SURE) { agentRef.current(best[0].phrase, inner); return; }
       if (cmd.intent === "ask" && best[0] && best[0].score >= MAYBE) {
@@ -5134,6 +5139,32 @@ export default function FieldCommandClient() {
             tenantContacts: (Array.isArray(selectedJob.FieldVisitHistory) ? selectedJob.FieldVisitHistory as { recordedAt?: string; outcome?: string | null; note?: string }[] : [])
               .filter((v) => /tenant/i.test(String(v?.note || "")) || /^APPOINTMENT_/.test(String(v?.outcome || ""))).slice(-6)
               .map((v) => ({ at: v.recordedAt ? new Date(v.recordedAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "", what: String(v.outcome && /^APPOINTMENT_/.test(v.outcome) ? `${v.outcome} ${v.note || ""}` : v.note || "").replace(/\(?\d{3}\)?[ -]?\d{3}-\d{4}/g, "").slice(0, 140) })) } : null,
+          // 🧠 Smarter (owner, 4 Nov: "answer any questions I have for my app"): any job named in the question in full,
+          // the bids you sent, upcoming appointments, this week's and month's numbers, all jobs by stage, and when the
+          // question is about the app, the newest changes.
+          jobsNamed: [...new Set((cmd.question.toUpperCase().match(/\b[A-Z]{2}\s?\d{5}\b/g) || []).map((x) => x.replace(/\s/g, "")))].slice(0, 4).map((id) => {
+            const j = findAnyJob(id);
+            if (!j) return { job: id, found: false };
+            const ap = activeAppointment(j as unknown as Record<string, unknown>);
+            return { job: id, address: jobAddress(j), status: jobStatus(j), stage: jobQueue(j), work: jobSummary(jobScope(j)).lines.map(lineText).join("; ") || jobScope(j).slice(0, 300), outcome: String(value(j, ["FieldOutcome", "fieldOutcome"]) || ""), arrivedAt: String(value(j, ["FieldArrivedAt"]) || ""), appointment: ap ? appointmentLabel(ap) : "" };
+          }),
+          bidsSent: (() => {
+            try {
+              const recs = Object.values(JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}")) as { omo: string; address?: string; bidDue?: string; price?: number; sentPrice?: number; status?: string; sentAt?: string }[];
+              const sent = recs.filter((r) => r && r.sentAt && ["sent", "confirmed", "failed", "unconfirmed"].includes(String(r.status))).sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+              const day = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(iso));
+              const weekAgo = Date.now() - 7 * 86400000;
+              return { today: sent.filter((r) => day(String(r.sentAt)) === nyDay).length, last7Days: sent.filter((r) => Date.parse(String(r.sentAt)) > weekAgo).length, total: sent.length, latest: sent.slice(0, 25).map((r) => ({ job: r.omo, address: r.address || "", due: r.bidDue || "", price: Number(r.sentPrice || r.price || 0), fax: r.status, sent: new Date(String(r.sentAt)).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) })) };
+            } catch { return null; }
+          })(),
+          appointments: jobs.map((j) => ({ j, a: activeAppointment(j as unknown as Record<string, unknown>) })).filter((x) => x.a && x.a.date >= nyDay).sort((x, y) => `${x.a!.date}${x.a!.start}`.localeCompare(`${y.a!.date}${y.a!.start}`)).slice(0, 12).map((x) => ({ job: jobId(x.j), address: jobAddress(x.j), when: appointmentLabel(x.a!), confirmed: x.a!.state === "confirmed" })),
+          numbers: (() => {
+            const pick = (p: "today" | "week" | "month") => { const st = fieldStats(jobs, p, { skip: (job) => isTestJob(jobId(job)) }); return { ...st.counts, earned: Math.round(st.earned) }; };
+            return { today: pick("today"), thisWeek: pick("week"), thisMonth: pick("month") };
+          })(),
+          allJobsByStage: jobRows.reduce((m: Record<string, number>, r) => { m[r.group] = (m[r.group] || 0) + 1; return m; }, {}),
+          bidsDueToday: { stillToSend: bidsDue.unsentToday || 0, sentToday: bidsDue.sentToday || 0, firstDue: bidsDue.firstTime || "", tomorrow: bidsDue.tomorrow },
+          appChanges: /\b(app|button|screen|where is|how do i|how can i|can i|does it|feature|setting|robot|claude|update|new)\b/i.test(cmd.question) ? await loadWhatsNew().then((v) => (Array.isArray(v) ? v.slice(0, 3).flatMap((x: { items?: string[] }) => x.items || []).slice(0, 30).map((t: string) => t.split(/(?<=[.!?])\s/)[0].slice(0, 160)) : [])).catch(() => []) : [],
           // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.
           recentConversation: chatRef.current.filter((c) => Date.now() - c.at < 15 * 60000).slice(-4).map(({ you, helper }) => ({ you, helper })),
         };

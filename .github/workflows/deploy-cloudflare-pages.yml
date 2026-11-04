@@ -165,6 +165,7 @@ jobs:
           node scripts/test-photo-check.cjs
           node scripts/test-helper-look.cjs
           node scripts/test-materials.cjs
+          node scripts/test-ai-ask.mjs
           node scripts/test-tenant-reply.cjs
           node scripts/test-payment-track.mjs
           node scripts/test-correction-copy.mjs
@@ -393,6 +394,7 @@ jobs:
             scripts/test-browser-helper-alive.mjs \
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-robot-steps.mjs \
+            scripts/test-browser-smart-ask.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \
