@@ -13,6 +13,11 @@ try {
   await routePrivate(c);
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } })));
   await c.addInitScript(() => {
+    window.SpeechRecognition = window.webkitSpeechRecognition = class {
+      start() { setTimeout(() => { const text = window.__hpdAsk || ""; window.__hpdAsk = ""; if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 50); }
+      stop() { this.onend?.(); }
+      abort() { this.onend?.(); }
+    };
     window.__said = [];
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 20); };
   });
@@ -65,6 +70,14 @@ try {
   await page.waitForFunction(() => /OK, stopped/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click().catch(() => {});
 
+  // 📅 The week ahead: 7 days in the chat.
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what's my week look like");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  await page.locator('[data-hpd-smoke="fc-agent-week"]').waitFor({ timeout: 8000 });
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-week"] > div').count(), 7);
+  assert.match(await reply.innerText(), /^📅 (Your next 7 days:|Nothing on your next 7 days)/);
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+
   // 4) 📦 What to bring: today's route (the test job) and the materials its work needs.
   await page.evaluate((j) => { localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings: { date: new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()) }, ids: [j] })); }, JOB);
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what do I need today");
@@ -96,12 +109,18 @@ try {
       assert.ok(high <= low, `a higher price never wins more (${low}% -> ${high}%)`);
       await price.fill("");
       gaugeNote = `$100 = ${low}%, $99,999 = ${high}%`;
+      // 💲 "Is 99,999 too high?" said on the bid: the same numbers, said straight.
+      await page.evaluate(() => { window.__hpdAsk = "is 99,999 too high?"; });
+      await sheet.locator('[data-hpd-smoke="fc-bid-mic"]').click();
+      await page.waitForFunction(() => /Too high: \$99,999(\.00)? on [A-Z]{2}\d{5} would have won about \d+% of \d+ recent jobs like this\. The best price is about/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 8000 });
+      gaugeNote += "; \"is 99,999 too high?\" = Too high, with the best price";
+      await page.locator('[data-hpd-smoke="fc-agent-close"]').click().catch(() => {});
       break;
     }
     await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').first().click();
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS robot steps: what to bring: ${bring}; win gauge: ${gaugeNote}; walked through ${total} work items with "done", then the after-photo reminder; running late: ${lateNote}; the tour goes item by item and stops`);
+  console.log(`PASS robot steps: the week ahead in 7 days; what to bring: ${bring}; win gauge: ${gaugeNote}; walked through ${total} work items with "done", then the after-photo reminder; running late: ${lateNote}; the tour goes item by item and stops`);
 } finally {
   await browser.close();
 }

@@ -29,6 +29,8 @@ export type AgentCommand =
   | { intent: "tour" }
   | { intent: "materials" }
   | { intent: "find"; query: string }
+  | { intent: "price-check"; price: number }
+  | { intent: "week-ahead" }
   | { intent: "late"; ref: string }
   | { intent: "ideas" }
   | { intent: "idea-do"; n: number }
@@ -130,7 +132,16 @@ export function thinkingQuestion(heard: string) {
   return question && /\b(send|sent|fax|faxed|lost|lose|average|total|compare|oldest|newest|biggest|smallest|cheapest|highest|lowest|most|least|why|should i|worth|percent|rate|since|so far|left to do|still|longest|last time|how long|say|said|wrote|email|emails|e-mail|mean|means)\b/.test(t);
 }
 
+// 🌎 A question in Spanish goes to the AI, which answers in Spanish (same check as lib/speak langOf).
+function spanish(text: string) {
+  const t = ` ${String(text || "").toLowerCase()} `;
+  if (/[¿¡ñ]/.test(t)) return true;
+  const hits = (t.match(/ (qué|que|cuántos|cuántas|cuantos|cuantas|cuándo|cuando|dónde|donde|tengo|tienes|hoy|mañana|trabajo|trabajos|el|la|los|las|por|para|está|esta|estoy|hay|mis|mi|del|una|uno|cómo|como|semana|ofertas|avisos|necesito|puedo|dime|gracias|sí|ayer|lunes|martes)(?=[ ,.?!])/g) || []).length;
+  return hits >= 2 && hits / Math.max(1, t.trim().split(/\s+/).length) >= 0.2;
+}
+
 export function parseCommand(heard: string): AgentCommand {
+  if (spanish(heard)) return { intent: "ask", question: String(heard).trim() };
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
@@ -184,6 +195,12 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(?:turn |switch )?(?:off |stop )(?:the )?(?:auto(?:matic)?[ -]?upgrades?|upgrading on its own|keep upgrading)$|^(?:auto(?:matic)?[ -]?upgrades?|keep upgrading) off$/.test(t)) return { intent: "auto-upgrade", on: false };
   // 🤖 Step by step (owner's picks, 4 Nov): "walk me through the job", "give me a tour", "I'm running late".
   if (/^(please )?(walk|talk|take) me through (it|the job|this job|the work|the steps)|^(read me )?(the )?(job )?step by step$|^walk me through$/.test(t)) return { intent: "walkthrough", ref: "" };
+  // 💲 "is 3,200 too high?" / "what are my chances at 2500" on the open bid; 📅 "what's my week look like".
+  {
+    const m = /\b(?:is|would|will|if i (?:bid|put))\s+\$?\s*(\d[\d,]*)(?:\s*dollars?)?(?:\s+be)?\s+(?:too (?:high|low|much|cheap)|a good (?:price|bid)|ok(?:ay)?|good|fair|right|enough|competitive)\b/.exec(t) || /\bchances?\b.*?\$?\s*(\d[\d,]{2,})/.exec(t);
+    if (m) { const price = Number(m[1].replace(/,/g, "")); if (price >= 50 && price <= 100000) return { intent: "price-check", price }; }
+  }
+  if (/\b(what'?s|what does|how does) my (week|next 7 days|next week) look\b|\b(my )?week ahead\b|\bnext 7 days\b|\bwhat'?s coming up( this week)?\b|\b(this|next) week'?s (schedule|plan)\b/.test(t)) return { intent: "week-ahead" };
   // 🔍 "find the job where the tenant said the dog bites" (a number or an address stays the map search).
   if (!/\d/.test(t) && /^(please )?(find|search( for)?|look for|look up)\b|^(which|what) job (had|has|was|is|where)\b|^where was the job\b/.test(t)) return { intent: "find", query: String(heard).trim() };
   if (/\b(what (do|should) i (need|bring|buy|take)( today| tomorrow)?|shopping list|materials?( list)?( for today)?|what to (buy|bring))\b/.test(t)) return { intent: "materials" };

@@ -60,7 +60,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { chosenVoiceName, englishVoices, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
+import { chosenVoiceName, englishVoices, langOf, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -1438,7 +1438,7 @@ export default function FieldCommandClient() {
     let heardSomething = false;
     try {
       const rec = new Ctor();
-      rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
+      rec.lang = lastLangRef.current === "es" ? "es-US" : "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
       rec.onresult = (e) => {
         const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
         const final = Array.from(e.results).every((r) => r.isFinal);
@@ -1701,7 +1701,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -3979,6 +3979,29 @@ export default function FieldCommandClient() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 🪜 Step by step in the chat (owner's picks, 4 Nov): the job's work one item at a time ("walk me through the job"), or
   // what's new in the app (the robot's tour). "done" / "next" goes on, "stop" ends.
+  // 🌎 The language of the last question (the mic listens in it next time).
+  const lastLangRef = useRef<"es" | "en">("en");
+  // 🔔 The robot follows up (owner's pick, 4 Nov): the most urgent notice still open 2 hours after it first showed gets
+  // one kind reminder in the bubble (tap = answer it), not between 9 PM and 7 AM.
+  useEffect(() => {
+    const top = boardUrgent[0];
+    if (!top) return;
+    const check = () => {
+      const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+      try {
+        if (navigator.webdriver && localStorage.getItem("hpd-test-followup") !== "1") return;
+        const o: { omo?: string; at?: number; asked?: boolean } = JSON.parse(localStorage.getItem("hpd-followup") || "{}");
+        if (o.omo !== top.omo) { localStorage.setItem("hpd-followup", JSON.stringify({ omo: top.omo, at: Date.now(), asked: false })); return; }
+        if (o.asked || Date.now() - Number(o.at || 0) < 2 * 3600000 || h < 7 || h >= 21) return;
+        localStorage.setItem("hpd-followup", JSON.stringify({ ...o, asked: true }));
+      } catch { return; }
+      const hl = Math.round(hoursLeft(top, Date.now()));
+      setOrbSay({ text: `🔔 Still open: ${top.omo} (${hl < 0 ? `overdue ${-hl} h` : `${hl} h left`}). Answer it now?`, full: "", run: `answer the notice for ${top.omo}`, at: Date.now() });
+    };
+    check();
+    const t = window.setInterval(check, 10 * 60000);
+    return () => window.clearInterval(t);
+  }, [boardUrgent[0]?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
   const stepsRef = useRef<{ title: string; items: string[]; i: number; at: number; end: string } | null>(null);
   // 🧠 The robot learns your day: the first screen you open each morning (before 11), kept for 14 days.
   useEffect(() => {
@@ -4733,6 +4756,7 @@ export default function FieldCommandClient() {
       const parts = thinkingQuestion(heard) ? [heard] : splitCommands(heard);
       if (parts.length > 1) { multiRef.current = { heard, queue: parts.slice(1), replies: [] }; setAgent({ heard, reply: "Working on it…" }); agentRef.current(parts[0], true); return; }
     }
+    lastLangRef.current = langOf(heard);
     let cmd = parseCommand(heard);
     // A question that needs counting / comparing goes to the AI, not to a quick list that only shows things.
     if (thinkingQuestion(heard) && ["bids", "bids-show", "notices", "today", "week", "money", "awards", "tracker", "tenants-waiting", "catch-up", "whats-next", "job-status", "read-job", "my-notes", "help"].includes(cmd.intent) && (closest(heard, knownPhrases())[0]?.score || 0) < 0.9) cmd = { intent: "ask", question: heard.trim() };
@@ -4864,6 +4888,33 @@ export default function FieldCommandClient() {
     if (cmd.intent === "auto-upgrade") {
       void setAutoUpgradeOn(cmd.on);
       answer(cmd.on ? "🔁 Keep upgrading is on: when you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Say \"stop auto upgrade\" to turn it off." : "Keep upgrading is off. Claude only builds what you ask for.");
+      return;
+    }
+    if (cmd.intent === "price-check") {
+      const omo = document.querySelector('[data-hpd-smoke="fc-bid-sheet"] header strong')?.textContent?.trim();
+      if (!bidsOpen || !omo) { answer(`Open the bid first, then ask "is ${cmd.price} too high?".`); return; }
+      const on = (e: Event) => { window.removeEventListener("hpd-bid-check-answer", on); answer(String((e as CustomEvent<string>).detail || "I couldn't judge that price.")); };
+      window.addEventListener("hpd-bid-check-answer", on);
+      window.dispatchEvent(new CustomEvent("hpd-bid-check", { detail: cmd.price }));
+      return;
+    }
+    if (cmd.intent === "week-ahead") {
+      // 📅 The next 7 days: appointments, bids still to send, notices coming due.
+      const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
+      const days = Array.from({ length: 7 }, (_, k) => fmt.format(new Date(Date.now() + k * 86400000)));
+      let recs: Record<string, { status?: string; bidDue?: string }> = {};
+      try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+      const week = days.map((date, k) => {
+        const appts = jobs.map((j) => ({ j, a: activeAppointment(j as unknown as Record<string, unknown>) })).filter((x) => x.a && x.a.date === date);
+        const bids = bidsListRef.current.filter((b) => b.bidDue === date && !(b.omo && ["sent", "confirmed"].includes(String(recs[b.omo]?.status)) && recs[b.omo]?.bidDue === b.bidDue));
+        const notices = boardOpenRows.filter((r) => r.dueAt && fmt.format(new Date(r.dueAt)) === date);
+        const day = k === 0 ? "Today" : k === 1 ? "Tomorrow" : new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { weekday: "long" });
+        return { day, date, n: { appt: appts.length, bids: bids.length, notices: notices.length }, appts, notices };
+      });
+      const lines = week.filter((w) => w.n.appt || w.n.bids || w.n.notices).map((w) => `• ${w.day}: ${[w.n.appt ? `${w.n.appt} appointment${w.n.appt === 1 ? "" : "s"}${w.appts[0] ? ` (first ${appointmentLabel(w.appts[0].a!).replace(/^.*?(\d{1,2}(:\d\d)?\s?(AM|PM)).*$/i, "$1")}, ${jobAddress(w.appts[0].j).replace(/,\s*\d{5}$/, "")})` : ""}` : "", w.n.bids ? `${w.n.bids} bid${w.n.bids === 1 ? "" : "s"} due` : "", w.n.notices ? `${w.n.notices} notice${w.n.notices === 1 ? "" : "s"} due (${w.notices.slice(0, 2).map((r) => r.omo).join(", ")})` : ""].filter(Boolean).join(", ")}`);
+      const reply = lines.length ? `📅 Your next 7 days:\n${lines.join("\n")}` : "📅 Nothing on your next 7 days yet: no appointments, bids due or notices coming due.";
+      answer(reply);
+      if (!multiRef.current) setAgent((a) => (a ? { ...a, week: week.map(({ day, date, n }) => ({ day, date, n })) } : a));
       return;
     }
     if (cmd.intent === "find") {
@@ -8265,6 +8316,16 @@ export default function FieldCommandClient() {
           {/* The answer appears word by word (owner, 3 Nov: "everything animated"; the words are all there at once for
               reading and tests, each fades in a moment after the one before). */}
           <p key={agent.reply} data-hpd-smoke="fc-agent-reply" className={`fc-agent-words${agent.live ? " is-live" : ""}`}>{agent.reply.length > 500 || agent.live ? agent.reply : agent.reply.split(/(\s+)/).map((w, i) => (/^\s+$/.test(w) || !w ? w : <span key={i} style={{ animationDelay: `${Math.min(i, 120) * 22}ms` }}>{w}</span>))}</p>
+          {agent.week ? (
+            <div className="fc-agent-week" data-hpd-smoke="fc-agent-week">
+              {agent.week.map((w, k) => <div key={w.date} className={w.n.appt || w.n.bids || w.n.notices ? "has" : ""} style={{ animationDelay: `${k * 60}ms` }}>
+                <b>{w.day === "Today" || w.day === "Tomorrow" ? w.day : w.day.slice(0, 3)}</b><small>{Number(w.date.slice(8, 10))}</small>
+                {w.n.appt ? <span title="Appointments">📅 {w.n.appt}</span> : null}
+                {w.n.bids ? <span title="Bids due">🧾 {w.n.bids}</span> : null}
+                {w.n.notices ? <span title="Notices due">⏰ {w.n.notices}</span> : null}
+              </div>)}
+            </div>
+          ) : null}
           {agent.chart ? (() => {
             const ch = agent.chart;
             const top = Math.max(1, ...ch.rows.flatMap((r) => [r.a, r.b]));

@@ -76,15 +76,22 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
   assert.equal(asked[5].question, "Which bids did I lose this month?");
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
 
+  // 🌎 Spanish goes to the AI as said.
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("que trabajos tengo para mañana");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  await page.waitForFunction(() => /Answer 7\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
+  assert.equal(asked[6].question, "que trabajos tengo para mañana");
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+
   // 🔍 Search everything: a job card note.
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("find the job where the tenant said the dog bites");
   await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
   await page.waitForFunction(() => /🔍 Found/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   const found = await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText();
   assert.match(found, /ER06362 .*the job card's notes: "Tenant said the dog bites, call first\."/);
-  assert.equal(asked.length, 6, "search runs on the phone, no AI call");
+  assert.equal(asked.length, 7, "search runs on the phone, no AI call");
   assert.deepEqual(errors, []);
-  console.log(`PASS smart ask: 3-month bars and "ask next" buttons; search found the dog note on ER06362; a real question near a known phrase went to the AI with bids sent (${f1.bidsSent.last7Days} this week), the week's numbers and all jobs by stage; a named job in full (${named[0].address}); app questions carry the newest ${asked[3].facts.appChanges.length} changes; notes, 3-month trends and emails go along`);
+  console.log(`PASS smart ask: Spanish goes to the AI; 3-month bars and "ask next" buttons; search found the dog note on ER06362; a real question near a known phrase went to the AI with bids sent (${f1.bidsSent.last7Days} this week), the week's numbers and all jobs by stage; a named job in full (${named[0].address}); app questions carry the newest ${asked[3].facts.appChanges.length} changes; notes, 3-month trends and emails go along`);
 } finally {
   await browser.close();
 }

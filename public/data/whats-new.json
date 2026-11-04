@@ -5,6 +5,10 @@
       "date": "Nov 3, 2026",
       "title": "Ideas, keep upgrading, talk to Claude",
       "items": [
+        "💲 Price check by voice: on a bid, ask \"is 3,200 too high?\" and the robot says your chance to win at that price and the best price, from recent awards.",
+        "📅 Ask \"what's my week look like?\": the next 7 days in the chat (appointments, bids due, notices coming due), day by day.",
+        "🔔 The robot follows up once: if the most urgent notice is still open 2 hours later, its bubble asks if you want to answer it now (not at night).",
+        "🌎 Talk to it in Spanish: ask in Spanish and it answers in Spanish, with a Spanish voice when the phone has one; the mic listens in Spanish after that.",
         "💬 After each answer the robot suggests the next question as buttons (\"Which bids did I lose this month?\"). One tap asks it.",
         "📊 Ask \"how am I doing?\": a small chart in the chat shows bids sent and jobs won for the last 3 months.",
         "🔍 Search everything: \"find the job where the tenant said the dog bites\" looks through your notes, the job cards' notes, the visit history, HPD's work descriptions and emails.",

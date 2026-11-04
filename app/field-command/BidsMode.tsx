@@ -523,6 +523,21 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     const best = bestWithFloor(help, selFloor);
     return `For ${selected.omo}, I'd bid about ${money(best.price)}${best.floored ? ", your minimum," : ""}: that would have won about ${Math.round(best.chance * 100)}% of ${help.prices.length} recent jobs like this.${draftValue > 0 && Math.abs(draftValue - best.price) > 1 ? ` Your price now is ${money(draftValue)}.` : ""} Say "bid ${Math.round(best.price)}" to use it.`;
   };
+  // 💲 "Is 3,200 too high?" (owner's pick, 4 Nov): the chance at that price from the same recent awards, and the best price.
+  const checkRef = useRef<(price: number) => string>(() => "");
+  checkRef.current = (price: number) => {
+    if (!selected) return "";
+    if (!help || help.prices.length < 5) return `There aren't enough recent awards for jobs like ${selected.omo} to judge ${money(price)}. Use your own numbers.`;
+    const best = bestWithFloor(help, selFloor);
+    const pct = Math.round(winChance(help, price) * 100);
+    const verdict = pct >= 50 ? "Good price" : pct >= 25 ? "It could win" : price > best.price ? "Too high" : "Hard to win";
+    return `${verdict}: ${money(price)} on ${selected.omo} would have won about ${pct}% of ${help.prices.length} recent jobs like this. The best price is about ${money(best.price)} (wins about ${Math.round(best.chance * 100)}%)${selFloor ? `, your minimum is ${money(selFloor)}` : ""}.`;
+  };
+  useEffect(() => {
+    const on = (e: Event) => window.dispatchEvent(new CustomEvent("hpd-bid-check-answer", { detail: checkRef.current(Number((e as CustomEvent<number>).detail) || 0) }));
+    window.addEventListener("hpd-bid-check", on);
+    return () => window.removeEventListener("hpd-bid-check", on);
+  }, []);
   useEffect(() => {
     const on = () => window.dispatchEvent(new CustomEvent("hpd-bid-advice-answer", { detail: adviceRef.current() }));
     window.addEventListener("hpd-bid-advice", on);

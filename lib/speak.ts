@@ -40,7 +40,19 @@ export function chosenVoiceName() { try { return localStorage.getItem(VOICE_KEY)
 export function setChosenVoice(name: string) { try { if (name) localStorage.setItem(VOICE_KEY, name); else localStorage.removeItem(VOICE_KEY); } catch { /* private mode */ } }
 export function voiceRate() { try { const r = Number(localStorage.getItem(RATE_KEY)); return r >= 0.7 && r <= 1.4 ? r : 1; } catch { return 1; } }
 export function setVoiceRate(r: number) { try { localStorage.setItem(RATE_KEY, String(r)); } catch { /* private mode */ } }
-function pickVoice() {
+// 🌎 Spanish (owner's pick, 4 Nov: "talk to it in Spanish"): the language of what's said, from its words and accents.
+export function langOf(text: string): "es" | "en" {
+  const t = ` ${String(text || "").toLowerCase()} `;
+  if (/[¿¡ñ]/.test(t)) return "es";
+  const hits = (t.match(/ (qué|que|cuántos|cuántas|cuantos|cuantas|cuándo|cuando|dónde|donde|tengo|tienes|hoy|mañana|trabajo|trabajos|el|la|los|las|por|para|está|esta|estoy|hay|mis|mi|del|una|uno|cómo|como|semana|ofertas|avisos|necesito|puedo|dime|gracias|sí|ayer|lunes|martes)(?=[ ,.?!])/g) || []).length;
+  const words = t.trim().split(/\s+/).length;
+  return hits >= 2 && hits / Math.max(1, words) >= 0.2 ? "es" : "en";
+}
+function pickVoice(lang: "es" | "en" = "en") {
+  if (lang === "es") {
+    const es = window.speechSynthesis.getVoices().filter((v) => /^es/i.test(v.lang)).sort((a, b) => Number(/US|MX/i.test(b.lang)) - Number(/US|MX/i.test(a.lang)));
+    if (es[0]) return es[0];
+  }
   const all = englishVoices();
   const chosen = chosenVoiceName();
   return (chosen && all.find((v) => v.name === chosen)) || all[0];
@@ -100,8 +112,9 @@ export function speak(text: string, delay = 900, onEnd?: () => void) {
       const synth = window.speechSynthesis;
       synth.cancel();
       const u = new SpeechSynthesisUtterance(brief ? briefText(text) : speechText(text));
-      const v = pickVoice();
-      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+      const lang = langOf(text);
+      const v = pickVoice(lang);
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === "es" ? "es-US" : "en-US";
       u.rate = 0.98 * voiceRate();
       u.pitch = 1;
       u.volume = 1;
