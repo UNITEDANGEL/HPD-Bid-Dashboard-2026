@@ -1116,3 +1116,12 @@
   font-weight: 800;
   text-decoration: none;
 }
+
+.jc-notes { display: grid; gap: 6px; margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(15, 23, 42, 0.6); color: #e2e8f0; font: 600 15px/1.35 system-ui, sans-serif; }
+.jc-notes strong { font-size: 16px; color: #f8fafc; }
+.jc-note { margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+.jc-note button { min-width: 36px; min-height: 36px; border: 0; border-radius: 10px; background: rgba(148, 163, 184, 0.2); color: inherit; font-size: 18px; }
+.jc-note-empty { font-weight: 500; color: #94a3b8; }
+.jc-note-add { display: flex; gap: 8px; }
+.jc-note-add input { flex: 1; min-width: 0; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.5); background: #0f172a; color: #f8fafc; font-size: 16px; }
+.jc-note-add button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: #2563eb; color: #fff; font-weight: 700; font-size: 16px; }

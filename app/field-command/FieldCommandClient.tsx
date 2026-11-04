@@ -45,6 +45,7 @@ import { FREED_KEY } from "../../lib/free-space";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import JobAssistant from "./JobAssistant";
 import PhotoCheck from "./PhotoCheck";
+import JobNotes from "./JobNotes";
 import HelperFace from "./HelperFace";
 import { suggestTenantReply } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
@@ -6743,6 +6744,7 @@ export default function FieldCommandClient() {
                   </div>
                 ) : null}
                 <PhotoCheck jobId={id} before={counts.before} after={counts.after} total={counts.total} work={["WORK_STARTED", "WORK_COMPLETED", "PARTIAL_WORK"].includes(value(selectedJob, ["FieldOutcome", "fieldOutcome"]))} />
+                <JobNotes jobId={id} address={jobAddress(selectedJob)} />
               </div>
 
               {(() => {

@@ -98,6 +98,7 @@ jobs:
           node scripts/test-weather.mjs
           node scripts/test-voice-next-tenant.mjs
           node scripts/test-voice-notes.mjs
+          node scripts/test-job-notes.mjs
           node scripts/test-voice-route.mjs
           node scripts/test-voice-chat-map.mjs
           node scripts/test-voice-chat-live.mjs
@@ -382,6 +383,7 @@ jobs:
             scripts/test-browser-claude-now.mjs \
             scripts/test-browser-ideas.mjs \
             scripts/test-browser-photo-check.mjs \
+            scripts/test-browser-job-notes.mjs \
             scripts/test-browser-bids-welcome.mjs \
             scripts/test-browser-helper-alive.mjs \
             scripts/test-browser-go-anyway.mjs \
