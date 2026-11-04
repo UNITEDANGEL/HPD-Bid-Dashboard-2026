@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T17:55:45.542480+00:00",
+  "generatedAt": "2026-11-04T18:08:47.957283+00:00",
   "days": 14,
   "bids": [
     {
@@ -3514,6 +3514,136 @@
       },
       "lat": 40.83803,
       "lng": -73.90665
+    },
+    {
+      "omo": "ER09096",
+      "bidDue": "2026-11-06",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-08",
+      "workCompletion": "2026-11-22",
+      "address": "277 7 STREET",
+      "borough": "BK",
+      "itbFile": "ER09096_110426125902.pdf",
+      "description": "DEFECTIVE CERAMIC MOSAIC FLOOR TILES AT INTERMEDIATE LANDING PUBLIC HALL STAIRS, 4th STORY. DEFECTIVE CERAMIC MOSAIC FLOOR TILES AT INTERMEDIATE LANDING PUBLIC HALL STAIRS, 3rd STORY. DEFECTIVE MARBLE WAINSCOTING AT INTERMEDIATE LANDING AT WEST WALL AT PUBLIC HALL STAIRS, 2nd STORY PROPERLY REMOVE THE LOOSE CERAMIC MOSAIC FLOOR TILES APPROX 15SQ. FT. REINFORCE/ REPLACE LOOSE SUB-FLOOR IF NECESSARY. REPLACE WITH NEW CERAMIC MOSAIC FLOOR TILES SIMILAR TO EXISTING APPROXIMATELY 15SQ.FT.AT 4TH STORYAND 3RD STORY INTERMEDIATE LANDING PUBLIC HALL. PROPERLY REMOVE THE CRACK MARBLE WAINCOTING APPX 5FT AND REPLACE WITH NEW MARBLE WAINCOTING SIMILAR TO EXISTING APPX 5FT AND RESTORE WALLTO A SAFE/APPROPRIATE ORDER.AT 2ND STORY INTERMEDIATE LANDING PUBLIC HALL. REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT H.P.D. @ (212) 863-6161, 6135, 6231, 6175 OR 6046 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (phone: sign in to see). ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793815146000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.671425,
+      "lng": -73.987026
     },
     {
       "omo": "ER09386",
