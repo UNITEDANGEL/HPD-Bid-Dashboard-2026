@@ -116,6 +116,7 @@ jobs:
           node scripts/test-appointment-calendar.mjs
           node scripts/test-day-summary.mjs
           node scripts/test-job-time.mjs
+          node scripts/test-leave-reminder.mjs
 
       - name: Test paperwork, packages, sync and stats
         run: |

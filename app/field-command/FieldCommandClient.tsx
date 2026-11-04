@@ -48,6 +48,7 @@ import PhotoCheck from "./PhotoCheck";
 import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
 import { onSiteNote } from "../../lib/job-time";
+import { leftWithoutAfterPhoto } from "../../lib/leave-reminder";
 import { materialsFor } from "../../lib/materials";
 import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HATS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
 import { suggestTenantReply } from "../../lib/tenant-reply";
@@ -3680,6 +3681,24 @@ export default function FieldCommandClient() {
     userMarkerRef.current = L.marker([latitude, longitude], { icon, interactive: false, zIndexOffset: 1000 }).addTo(mapRef.current);
   }
 
+  // 📸 Leaving a job you arrived at today with no after photo and no outcome saved: say so once (owner idea, 4 Nov).
+  const leavingRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
+  const warnedLeaveRef = useRef<Set<string>>(new Set());
+  leavingRef.current = (lat, lng, accuracy) => {
+    if (accuracy > 100) return;
+    for (const job of jobs) {
+      const id = jobId(job);
+      if (warnedLeaveRef.current.has(id) || !value(job, ["FieldArrivedAt"])) continue;
+      const at = jobLatLng(job);
+      if (!at) continue;
+      if (!leftWithoutAfterPhoto(job as Record<string, unknown>, (mediaCounts[id] || { after: 0 }).after, distanceMiles({ lat, lng }, at) * 1609.34)) continue;
+      warnedLeaveRef.current.add(id);
+      const short = jobAddress(job).replace(/,s*d{5}$/, "");
+      setOrbSay({ text: "📸 No after photo yet", full: `You are leaving ${short} and there is no after photo. HPD needs one. Go back, or save why you have none.`, at: Date.now() });
+      ring({ kind: "message", title: "📸 No after photo yet", text: `You are leaving ${short}. HPD needs an after photo.` });
+    }
+  };
+
   useEffect(() => {
     if (!routeMapReady || !navigator.geolocation) return;
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -3693,6 +3712,7 @@ export default function FieldCommandClient() {
         if (fastRef.current >= 2) setMovingFast(true);
         autoArriveRef.current(latitude, longitude, position.coords.accuracy || 0);
         nearJobRef.current(latitude, longitude, position.coords.accuracy || 0);
+        leavingRef.current(latitude, longitude, position.coords.accuracy || 0);
         if (!mapRef.current) return;
         if (!centeredOnMeRef.current) {
           // Opening the app: go straight to where you are.

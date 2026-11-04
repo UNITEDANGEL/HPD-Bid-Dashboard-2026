@@ -52,13 +52,6 @@
       "why": "The tenant gets a link: tap Yes / Change time. The map shows confirmed in green by itself."
     },
     {
-      "id": "after-photo-reminder",
-      "icon": "📷",
-      "kind": "upgrade",
-      "title": "Don't leave without the after photo",
-      "why": "When you drive away from a job without an after photo, the phone reminds you before you're gone."
-    },
-    {
       "id": "lost-bids",
       "icon": "📉",
       "kind": "new",
@@ -302,6 +295,20 @@
       "kind": "new",
       "title": "Job is taking long",
       "why": "If you are on a job much longer than your usual time, the robot asks if you want to text the next tenant that you are running late."
+    },
+    {
+      "id": "photo-reason",
+      "icon": "📝",
+      "kind": "upgrade",
+      "title": "Say why there is no photo",
+      "why": "When the robot warns about a missing after photo, one tap saves a reason (no access, tenant refused) on the job."
+    },
+    {
+      "id": "forgot-tools",
+      "icon": "🧰",
+      "kind": "new",
+      "title": "Did you bring everything?",
+      "why": "Before you leave the office, the robot reads the shopping list for today's jobs and asks if the truck has it all."
     }
   ]
 }
