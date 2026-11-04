@@ -1430,6 +1430,7 @@ export default function FieldCommandClient() {
     window.addEventListener("hpd-listen", on);
     return () => window.removeEventListener("hpd-listen", on);
   }, []);
+  const micRetryRef = useRef(false);
   function startListening() {
     stopSpeaking();
     type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
@@ -1445,6 +1446,7 @@ export default function FieldCommandClient() {
       rec.onresult = (e) => {
         const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
         const final = Array.from(e.results).every((r) => r.isFinal);
+        micRetryRef.current = false;
         heardSomething = true; lastSaid = said;
         if (final && convoRef.current && /^(stop|bye|goodbye|thanks|thank you|that'?s all|i'?m done|done|end)\b/i.test(said.trim())) { convoRef.current = false; setConvo(false); setAgent({ heard: said, reply: "OK. Tap 💬 when you want to talk again." }); speak("OK, talk later.", 100); return; }
         const cmd = parseCommand(said);
@@ -1464,6 +1466,10 @@ export default function FieldCommandClient() {
         setListening(false); listenRef.current = null;
         const why = e?.error || "";
         if (why && why !== "no-speech" && why !== "aborted") reportVoice(`error ${why}`);
+        // The iPhone often says audio-capture when the mic is asked for while the robot's voice is still finishing (owner's
+        // phone, 4 Nov): wait a moment and try once more by itself before saying anything.
+        if (why === "audio-capture" && !micRetryRef.current) { micRetryRef.current = true; stopSpeaking(); window.setTimeout(() => startListening(), 700); return; }
+        micRetryRef.current = false;
         if (/not-allowed|service-not-allowed|audio-capture/.test(why)) convoMissRef.current = 99; // no mic: don't keep trying
         // Say what's wrong instead of nothing (owner, 23 Oct: "mic not working on my iPhone").
         if (why === "not-allowed" || why === "service-not-allowed") { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "The iPhone blocked listening for HPD Field. On the iPhone: Settings → Privacy & Security → Microphone and Speech Recognition: allow it; and Settings → General → Keyboard → Enable Dictation: on. Or tap the search box and use the keyboard's 🎙, then Go." }); }
@@ -5288,6 +5294,9 @@ export default function FieldCommandClient() {
         const wx = await fetchWeather();
         const clockNow = nyNow();
         const facts = {
+          // Who it's talking to and when, so it talks like a person (owner, 4 Nov: "flow like a real person").
+          ownerName: (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })(),
+          timeNow: new Date().toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", hour: "numeric", minute: "2-digit" }),
           // Weather and traffic (27 Oct), so "should I do the roof today?" or "plan my day" can use them.
           weather: wx ? `${weatherReport(wx, "today", clockNow.iso).text} ${weatherReport(wx, "tomorrow", clockNow.iso).text}`.trim() : "",
           traffic: trafficNote(clockNow.iso, clockNow.weekday),

@@ -6,7 +6,9 @@
       "title": "A smarter robot",
       "items": [
         "🧠 The robot remembers what you just talked about, including its own quick answers, so you can follow up like a real chat: \"why?\", \"and tomorrow?\", \"what about Queens?\", \"tell me more\", \"which one?\".",
-        "⛑ It keeps answering: if the AI is busy or out of today's free allowance, a second free AI answers instead, and a failed try is tried once more by itself."
+        "⛑ It keeps answering: if the AI is busy or out of today's free allowance, a second free AI answers instead, and a failed try is tried once more by itself.",
+        "🗣 The robot talks more like a real person: short natural sentences, it reacts (\"Nice, that's 3 wins this week.\"), uses your name now and then and asks one natural question back.",
+        "🎤 If the iPhone says the microphone is busy right after the robot spoke, the mic tries once more by itself instead of showing an error."
       ]
     },
     {

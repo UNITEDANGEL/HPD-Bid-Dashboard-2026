@@ -20,7 +20,7 @@ try {
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 60); };
     window.SpeechRecognition = window.webkitSpeechRecognition = class {
       // Hears window.__hear, or the next of window.__queue (conversation mode); nothing -> just ends.
-      start() { window.__starts = (window.__starts || 0) + 1; setTimeout(() => { const text = Array.isArray(window.__queue) ? (window.__queue.shift() || "") : (window.__hear || ""); if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 150); }
+      start() { window.__starts = (window.__starts || 0) + 1; if (window.__micFail > 0) { window.__micFail -= 1; setTimeout(() => this.onerror?.({ error: "audio-capture" }), 30); return; } setTimeout(() => { const text = Array.isArray(window.__queue) ? (window.__queue.shift() || "") : (window.__hear || ""); if (text) this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.onend?.(); }, 150); }
       stop() { this.onend?.(); }
     };
   });
@@ -156,7 +156,14 @@ try {
   results.push(["mini split", (await find.innerText()).split("\n").slice(0, 2).join(" ")]);
   assert.deepEqual(errors, []);
   for (const [s, r] of results) console.log(`  🎤 "${s}" -> ${r.slice(0, 110)}`);
-  console.log(`PASS mic: ${results.length} sentences said through the 🎤 (wins today / this week, bids, today, notices, a free question, I finished + yes, a search) each answered on screen and out loud; the search list is below the borough buttons`);
+  // 🎤 The iPhone's "audio-capture" hiccup (mic asked for while the voice was finishing): it tries once more by itself.
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.evaluate(() => { window.__micFail = 1; window.__queue = null; window.__hear = "which notices are open"; });
+  await mic.click();
+  await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""; return t.length > 10 && !/No microphone/.test(t); }, null, { timeout: 10000 });
+  assert.doesNotMatch(await reply.innerText(), /No microphone/);
+  assert.equal(await page.evaluate(() => window.__micFail), 0);
+  console.log(`PASS mic (an audio-capture hiccup is retried by itself): ${results.length} sentences said through the 🎤 (wins today / this week, bids, today, notices, a free question, I finished + yes, a search) each answered on screen and out loud; the search list is below the borough buttons`);
   await c.close();
 } finally {
   await browser.close();

@@ -10,6 +10,55 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 4 Nov 2026: everything the owner asked in the chat today (keep this up to date)
+
+The owner's words today, in order, and what was done with each:
+
+1. "do all 4 ideas and keep upgrading" (speech bubble, voice pick, take me there, photo comment) -> done (223-228).
+2. "I'm not happy with the robot... give me more ideas than what you have... why ❓ on Claude... I need to see the
+   robot even better" -> bigger robot face, the tap always brings the talking robot, the ❓ explained (it was Claude
+   waiting for the insurance / license dates), many new ideas (229).
+3. "make the bot more smarter. It should be able to answer any questions I have for my app... super smart" -> the AI
+   knows the whole app (APP GUIDE), thinks with the numbers, general questions, notes, 3-month trends, HPD emails,
+   asks back when unsure (230-232).
+4. "do all ideas and keep upgrading" -> price check by voice, the week ahead, one follow-up on an open notice,
+   Spanish (233).
+5. ER07663: "I don't like the flow of the job card when I was still doing the before and after pictures. You
+   automatically sent in the email without verifying that I was finished... one of the after videos is missing. I got
+   it downloaded, but where is it now?... I should be able to send the complete package" -> the package never sends
+   by itself, a checklist and a Send tap, photos / videos taken after sending go out with one tap into the same Drive
+   folder (234). The missing after video is on the phone (ER07663 job card) and in Drive "HPD Video Backup / ER07663";
+   the orange "📎 1 video taken after it was sent" button sends it.
+6. "Sent to Claude answer... It needs to be much more better than that. There's a lot of things that need to be
+   updated as I'm using the app" -> keep reading the in-app "Ask for a change" list every session and fix what he
+   notices; he adds each thing there as he uses the app.
+7. "I already got greeted good morning once, and the daily briefing once. Don't need to keep doing the same thing...
+   We need to pick up where we left off" -> good morning once a day, Start my day once a day, then "↩️ Welcome back.
+   Pick up where you left off?" with the last open job (234).
+8. "The bot to be much better, much more smarter... much more interactive. It needs to be working all the time. I
+   want it to be like a real ChatGPT" and "make the robot smarter and keep upgrading" -> remembers the conversation,
+   follow-ups ("why?", "and tomorrow?"), a backup AI and one retry, the mic retries the iPhone's audio-capture
+   hiccup by itself (235, 236).
+9. "add all to md file all we spoke about; make AI more better flow like a real person" -> this section; the AI now
+   talks like a person riding along (contractions, short natural sentences, reacts, uses his name now and then, asks
+   one natural question back, never "based on the facts") and knows his name and the time (236).
+
+### Still to do from today
+- Keep making the robot more like a real person: answer while it is still thinking (first words fast), remember
+  across days (what he asked yesterday), talk without tapping while the app is open (where the iPhone allows it).
+- Go through every in-app request and phone error each session (reply-change-request.mjs, app-errors.mjs).
+- Owner's in-app picks the auto helper is building: say the price, tenants confirm with one tap, don't leave without
+  the after photo, why you lost a bid, a cleaner screen, tenant texts in Spanish, the robot says what it sees, traffic
+  colors, time at each job, store stop on the way.
+
+### Ideas from today (not started)
+- 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person.
+- 🧠 Remembers across days: "yesterday you asked about ER07663: the video went out?"
+- 📸 Before / after side by side in the chat, ready to send.
+- 🧾 "Am I missing paperwork?": every finished job still missing photos, the affidavit or the invoice, oldest first.
+- 🗺 "Where am I losing time?": which boroughs or buildings take longest, with one tip.
+- 🎉 Good-news replay at the end of the day: wins, bids sent, jobs finished, in 15 seconds.
+
 ## 3 Nov 2026: everything the owner asked in the chat, and the idea list (keep this up to date)
 
 The owner's words (3 Nov): "make this app high quality, very user friendly and very interactive"; "everything needs to be
@@ -919,6 +968,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 234. **The package waits for you; send what was taken after; greet once, then pick up where you left off** (owner, 4 Nov, ER07663: "You automatically sent in the email without verifying that I was finished with the before and after picture. Now one of the after videos is missing... I should be able to send the complete package"; "I already got greeted good morning once... we need to pick up where we left off"). Done: after photos/videos still mark Work completed but no longer start the 6 s package countdown; the job card says "Not sent yet · N before, N after (N videos)" with "📦 I'm done: review & send". The paperwork page no longer emails by itself after the build (the auto-send effect is gone): a checklist (signed PDF, before/after photos, before/after videos, ⚠️ on missing) above "📤 Everything's in: send package" and "➕ Not done: back to the job" (hpd-package-back closes the sheet). Media saved after PackageEmailedAt (time from the media id) shows on the card (jc-late-media) and on the locked package page (paperwork-late-media): one tap uploads only those files into the sent package's Drive folder (lib/package-delivery sendAddedFiles, folder id from PackageDriveLink) and emails them ("ADDED - <OMO> - 1 after video"); AddedMediaSentAt stops a second offer. Robot hello once a day (hpd-robot-hello-day); later the same day only "↩️ Welcome back. Pick up where you left off? <OMO>: the package isn't sent yet" for the last job opened (hpd-last-job, 12 h), at most every 2 h; the Start my day and Wrap up cards are marked shown when shown. Tests: package-send (new), affidavit-smooth (4 taps with Send), paperwork (no email before Send), helper-talks (once a day + pick up).
 234. **Time at each job, by itself** (owner idea, 4 Nov; done: lib/job-time.ts onSiteMinutes = from FieldArrivedAt to the last saved outcome in FieldVisitHistory, same New York day and under 10 hours only; the job card shows "⏱ 42 min on site" (jc-on-site) and, with 3 other timed jobs, "your usual: N min"; test-job-time).
 235. **A smarter robot: real conversation memory, follow-ups, always answers** (owner, 4 Nov: "The bot to be much better, much more smarter... much more interactive. It needs to be working all the time... like a real ChatGPT"; "make the robot smarter and keep upgrading"). Done: every answer (the phone's own and the AI's) goes into the conversation (chatRef, last 6 turns / 30 min); server/ai-draft askFacts takes recentConversation out of the facts and sends it as real user/assistant turns before the question. Follow-ups within 3 min ("why?", "and tomorrow?", "what about Queens", "tell me more", "which one?", up to 8 words, no job number, not a command or a near-exact known phrase) go to the AI instead of a list or "did you mean". A backup free model (@cf/meta/llama-3.1-8b-instruct-fast) answers when the 70B one throws; the phone retries once on a failed or empty answer ("Trying once more…"). Tests: test-ai-ask (turns, backup model), smart-ask (why? and a follow-up on a phone answer), call-ask / voice-sms wait for the jobs list to settle; 48 chat / job tests.
+236. **The robot talks like a real person; the mic tries again by itself** (owner, 4 Nov: "make AI more better flow like a real person"; his phone's voice log showed "error audio-capture"). Done: ASK_SYSTEM style rule: a friendly sharp coworker riding along, contractions, 1-4 short natural sentences, reacts ("Nice, that's 3 wins this week."), uses facts.ownerName now and then, varies openings, never repeats the question or says "based on the facts" / "as an AI", may end with one natural question back. Facts carry ownerName and timeNow. iPhone "audio-capture" on starting the mic: stop the voice, wait 0.7 s and try once more before the "No microphone" message. Tests: test-ai-ask (style rule), mic (an audio-capture hiccup retried by itself).
 - **Quick questions in the chat** (owner idea, 3 Nov; done: ⚡ button in the chat bar opens one-tap questions (Today, Next bid, Notices, Owed, What's next); test-browser-quick-questions).
 918. **Don't leave without the after photo** (owner idea, 4 Nov; done: lib/leave-reminder.ts leftWithoutAfterPhoto = arrived today (FieldArrivedAt, under 10 h), no after photo, no outcome saved, and the phone more than 150 m from the job; the GPS watch in FieldCommandClient calls leavingRef once per job: orb bubble "📸 No after photo yet" + tone/voice; test-leave-reminder).
 919. **Smoother talking with the chat** (owner, 4 Nov, on the insurance/license idea: "make the fluid conversation more fluid, listen for the user after each response"; done: in FieldCommandClient startListening, if the mic ends with words heard but never marked final, the chat answers them; silent turns in 💬 mode retry 3 times (was 1); it already listened again after every spoken answer; test: scripts/test-browser-fluid-talk.mjs).

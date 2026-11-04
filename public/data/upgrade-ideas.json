@@ -3,6 +3,48 @@
   "updated": "2026-11-04",
   "ideas": [
     {
+      "id": "talk-right-away",
+      "icon": "🗣",
+      "kind": "new",
+      "title": "The robot starts talking right away",
+      "why": "It says the first sentence while the rest of the answer is still coming, like a person, so you don't wait in silence."
+    },
+    {
+      "id": "remember-days",
+      "icon": "🧠",
+      "kind": "new",
+      "title": "The robot remembers yesterday",
+      "why": "It remembers what you asked on other days: \"Yesterday you asked about ER07663: did the video go out?\""
+    },
+    {
+      "id": "before-after-chat",
+      "icon": "📸",
+      "kind": "new",
+      "title": "Before and after side by side",
+      "why": "Say \"show me ER… before and after\": the two photos side by side in the chat, ready to send."
+    },
+    {
+      "id": "missing-paperwork",
+      "icon": "🧾",
+      "kind": "new",
+      "title": "Am I missing paperwork?",
+      "why": "Every finished job still missing photos, the affidavit or the invoice, oldest first, one tap to fix each."
+    },
+    {
+      "id": "losing-time",
+      "icon": "🗺",
+      "kind": "new",
+      "title": "Where am I losing time?",
+      "why": "From your visits: which boroughs or buildings take longest, with one tip to save time."
+    },
+    {
+      "id": "good-news",
+      "icon": "🎉",
+      "kind": "new",
+      "title": "Good-news replay",
+      "why": "At the end of the day the robot says your wins, sent bids and finished jobs in 15 seconds, with a cheer."
+    },
+    {
       "id": "weekly-score",
       "icon": "🏆",
       "kind": "new",

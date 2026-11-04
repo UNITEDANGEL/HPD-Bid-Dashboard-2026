@@ -28,6 +28,8 @@ assert.match(system, /how to use the app/);
 assert.match(system, /general knowledge/);
 assert.match(system, /don't\s+guess/, "asks back when unsure");
 assert.match(system, /facts\.myNotes/);
+assert.match(system, /Talk like a real person/);
+assert.match(system, /never say .based on the facts/);
 assert.match(system, /facts\.trends/);
 assert.match(system, /'remember <what>'/);
 assert.match(sent.body.messages[1].content, /"bidsSent":\{"today":4\}/);
