@@ -230,7 +230,8 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   const a = await aiAnswer(env, ask);
   assert.equal(a.ai, true);
   assert.equal(a.text, "ER1, the door closer, is your easiest one.", "no markdown in what's spoken");
-  assert.match(sent.messages[0].content, /Use only the facts given/);
+  assert.match(sent.messages[0].content, /the facts \(JSON\) only/);
+  assert.match(sent.messages[0].content, /APP GUIDE/);
   assert.match(sent.messages[1].content, /Door closer/);
   assert.deepEqual(await aiAnswer({}, ask), { ai: false, reason: "not-set-up" });
   console.log("PASS free questions: questions -> AI with the app's facts (facts only, short, no markdown), commands and plain words stay; not set up -> says so");
