@@ -10,13 +10,6 @@
       "why": "Friday afternoon the robot gives you the week: bids sent, jobs finished, jobs won, money in, with a trophy for a good week."
     },
     {
-      "id": "time-at-job",
-      "icon": "⏱",
-      "kind": "new",
-      "title": "Time at each job, by itself",
-      "why": "From \"I'm here\" to \"done\" the app keeps the time, so you see how long each kind of job really takes."
-    },
-    {
       "id": "store-stop",
       "icon": "🏪",
       "kind": "new",
@@ -295,6 +288,20 @@
       "kind": "upgrade",
       "title": "Invoice check before sending",
       "why": "Before the invoice goes out, the app checks the amount matches the award and the COA, and says what doesn't."
+    },
+    {
+      "id": "time-by-kind",
+      "icon": "📊",
+      "kind": "new",
+      "title": "How long each kind of work takes",
+      "why": "The robot tells you, from your timed jobs, how long doors, plaster or locks usually take, so you can plan the day and price bids."
+    },
+    {
+      "id": "late-job-nudge",
+      "icon": "⏰",
+      "kind": "new",
+      "title": "Job is taking long",
+      "why": "If you are on a job much longer than your usual time, the robot asks if you want to text the next tenant that you are running late."
     }
   ]
 }

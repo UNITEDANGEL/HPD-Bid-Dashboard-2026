@@ -47,6 +47,7 @@ import JobAssistant from "./JobAssistant";
 import PhotoCheck from "./PhotoCheck";
 import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
+import { onSiteNote } from "../../lib/job-time";
 import { materialsFor } from "../../lib/materials";
 import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HATS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
 import { suggestTenantReply } from "../../lib/tenant-reply";
@@ -6842,6 +6843,7 @@ export default function FieldCommandClient() {
               <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
                 {/* The job first, in plain words (owner, 22 Oct: "the job description very nice and clear right there on top,
                     and a summary"): what to do, how much, where in the building; HPD's own text below. */}
+                {(() => { const note = onSiteNote(selectedJob, jobs); return note ? <p className="jc-on-site" data-hpd-smoke="jc-on-site">{note}</p> : null; })()}
                 {hasScope ? (() => {
                   const sum = jobSummary(scope);
                   const where = [...sum.where, ...sum.rooms];

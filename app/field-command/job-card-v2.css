@@ -1132,3 +1132,5 @@
 .jc-photo-say.is-bad { background: #fef3c7; color: #78350f; }
 @keyframes jc-photo-say-in { from { opacity: 0; transform: translateY(8px) scale(0.92); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .jc-photo-say { animation: none; } }
+
+.jc-on-site { margin: 6px 0 0; font-size: 15px; font-weight: 700; color: #475569; }
