@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-04T18:38:54.412Z
+Fetcher run started: 2026-11-04T18:50:18.978Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,27 +25,28 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/6 [00:00<?, ?it/s]Downloading COA messages:  17%|█▋        | 1/6 [00:00<00:00,  8.29it/s]Downloading COA messages:  33%|███▎      | 2/6 [00:00<00:00,  8.77it/s]Downloading COA messages:  50%|█████     | 3/6 [00:00<00:00,  8.49it/s]Downloading COA messages:  83%|████████▎ | 5/6 [00:00<00:00,  9.39it/s]Downloading COA messages: 100%|██████████| 6/6 [00:00<00:00,  9.30it/s]Downloading COA messages: 100%|██████████| 6/6 [00:00<00:00,  9.11it/s]
-Geocoding COA addresses:   0%|          | 0/6 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 6/6 [00:00<00:00, 143804.71it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/6 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 1/6 [00:00<00:02,  1.67it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 2/6 [00:01<00:01,  2.04it/s]Fetching ITBs for COA OMOs:  50%|█████     | 3/6 [00:01<00:01,  2.26it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 4/6 [00:01<00:00,  2.40it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 5/6 [00:02<00:00,  2.47it/s]Fetching ITBs for COA OMOs: 100%|██████████| 6/6 [00:02<00:00,  2.45it/s]Fetching ITBs for COA OMOs: 100%|██████████| 6/6 [00:02<00:00,  2.33it/s]
+Downloading COA messages:   0%|          | 0/6 [00:00<?, ?it/s]Downloading COA messages:  17%|█▋        | 1/6 [00:00<00:00,  9.07it/s]Downloading COA messages:  33%|███▎      | 2/6 [00:00<00:00,  9.15it/s]Downloading COA messages:  50%|█████     | 3/6 [00:00<00:00,  9.28it/s]Downloading COA messages:  67%|██████▋   | 4/6 [00:00<00:00,  8.14it/s]Downloading COA messages:  83%|████████▎ | 5/6 [00:00<00:00,  8.60it/s]Downloading COA messages: 100%|██████████| 6/6 [00:00<00:00,  8.26it/s]Downloading COA messages: 100%|██████████| 6/6 [00:00<00:00,  8.50it/s]
+Geocoding COA addresses:   0%|          | 0/6 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 6/6 [00:00<00:00, 127745.30it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/6 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 1/6 [00:00<00:03,  1.43it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 2/6 [00:01<00:02,  1.73it/s]Fetching ITBs for COA OMOs:  50%|█████     | 3/6 [00:01<00:01,  1.92it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 4/6 [00:02<00:00,  2.00it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 5/6 [00:02<00:00,  1.98it/s]Fetching ITBs for COA OMOs: 100%|██████████| 6/6 [00:03<00:00,  1.96it/s]Fetching ITBs for COA OMOs: 100%|██████████| 6/6 [00:03<00:00,  1.91it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER08570: stored 415.00, COA 415.00
 Award amount check ER07663: stored 406.00, COA 406.00
 Award amount check ER08170: stored 577.00, COA 577.00
 Award amount check ER08552: stored 690.00, COA 690.00
 Award amount check ER07749: stored 417.00, COA 417.00
 Award amount check ER07640: stored 1190.00, COA 1190.00
 Safe merge complete
-Master before: 698
+Master before: 699
 Incoming rows: 6
-Added new OMOs: 1
-Skipped existing OMOs: 5
+Added new OMOs: 0
+Skipped existing OMOs: 6
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 699
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -53,9 +54,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER08570 2170 RYER AVENUE, 10457 40.854687 -73.899849 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -80,23 +80,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER08570 ER08570_110226012419.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER08570', 'Address': '2170 RYER AVENUE, 10457', 'RecoveredFrom': 'ER08570_110226012419.pdf', 'Preview': ': DOOR ( APT # AB ENTRANCE ) INSTALL HINGES SERVICE WORK “ LOCATION: APT # AB ENTRANCE INSTALL SELF-CLSOING HINGES, REMOVE SLIDE BOLTS, AN D MAKE ALL NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR ENSURE DOORS IS PROP ERLY SEL'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 698,
+  "rendered": 0,
+  "reused": 699,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -128,7 +126,7 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/21
-Upcoming bids: 30 not awarded yet (30 on the map), 11 received today, from 110 emails
+Upcoming bids: 32 not awarded yet (32 on the map), 13 received today, from 112 emails
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
@@ -269,13 +267,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-04T18:46:37.432Z
+Fetcher run finished: 2026-11-04T18:58:10.316Z
 {
   "fetchedCoaItems": 6,
   "fetchedItbItems": 6,
   "fetchedFinalJobRows": 6,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 5,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 6,
   "rawRows": 699,
   "rows2026": 648,
   "mapped2026": 648,
