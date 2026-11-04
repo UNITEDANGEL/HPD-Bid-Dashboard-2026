@@ -47,6 +47,7 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 
 - 🎤 Hold 🤖 to talk; 😊 feelings; 🔔 shoulder tap; 🗺 the helper points (215).
 - ✨ The magic helper (sparkles, rises, says hello out loud); 👀 eyes follow taps; 🎵 mood sounds; 🏆 daily cheer (216).
+- 🎨 Dress the helper; 💤 naps at night; 🗺 rides along on the route; 📣 read it to me (219). Fix: the eyes no longer redraw the screen on every tap (pin taps were lost).
 
 ### Ideas (not started; the app's 💡 list is public/data/upgrade-ideas.json)
 - 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up.
@@ -58,10 +59,10 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - 🧾 Invoice check before sending: amounts match the award and the COA.
 - 🏢 Building history: every past job at this address, photos and notes, one tap from the card.
 - 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF.
-- 🎨 Dress the helper: pick its color and a hard hat or a cap.
-- 💤 The helper naps at night (eyes closed, little Zzz) and wakes up with a stretch in the morning.
-- 🗺 The helper rides along: during a route a tiny 🤖 moves on the map toward the next stop.
-- 📣 Read it to me: tap any card (notice, bid, job) and the helper reads it out loud with its mouth moving.
+- 🗨 The helper talks in a speech bubble over the map for short news, without opening the chat.
+- 🎙 Pick the helper's voice (man / woman, faster / slower) and hear a sample.
+- 🧭 "Take me there": the helper starts Waze to the job it just talked about, with one word.
+- 📸 The helper looks at the photo you just took and says "looks good" or "a bit dark, take another".
 
 ## What the owner asked for (this conversation)
 
@@ -891,3 +892,4 @@ them. The owner enters any payment details and API keys themselves (keys go into
 216. **The magic helper, eyes that look, sounds, the daily cheer** (owner, 3 Nov: "the talking robot is the most important thing; when I click the small robot it should magically emerge and start talking"; "do all 4 ideas"). Done: tapping the dock 🤖 calls startAgentChat(true): fc-magic sparkle burst from the button, the chat face rises 84 px with a glow (fc-face-magic), moodSound("magic"), and the hello is said out loud (by name, localStorage hpd-owner-name, default "Jot"; time of day; jobs to do and bids due today; the first thing), then it listens. HelperFace look prop: the orb's eyes move toward the last tap anywhere (fc-face-look). lib/chime moodSound magic/happy/worried (not muted, not 9 PM-7 AM). Daily cheer: bids due today all sent or the to-do list emptied -> happy face, chirp, "🎉 ..." alert. Test: test-browser-helper-alive (eyes, sparkles, big face, spoken hello).
 217. **Notes on every job card** (owner ideas, 3 Nov: "Notes on every job", "Chat notes show on the job card"). Done: app/field-command/JobNotes.tsx + lib/job-notes.ts: a 📝 Notes box under the photo check; type a note (gate code, who to ask for), kept per job on the phone, × removes it; notes told to the chat about that address show in the same box. Tests: scripts/test-job-notes.mjs, scripts/test-browser-job-notes.mjs.
 218. **Win rate by borough** (owner idea, 3 Nov: "Which bids you win"). Done: SentBidStats.tsx adds a borough table (won/bids, win %, hint Bid lower / A little lower / Holding) from bid_win_stats.json byBoro; kind of work and monthly were already there. Totals only, no job prices. Test: test-browser-price-check.mjs (fc-sent-boro).
+219. **Dress the helper, naps, rides along, read it to me** (owner, 3 Nov: "do all 4 ideas"). Done: lib/helper-look.ts (color purple/blue/green/orange, hat none/hardhat/cap, localStorage hpd-helper-look, event) used by HelperFace on every face; 🎨 fc-agent-dress in the chat. HelperFace mode sleep (closed eyes, z, slow nod) on the dock 🤖 from 9 PM to 7 AM when not working/asking/happy/worried, and a stretch when it wakes (is-waking). Ride along: with today's route (hpd-today-route-v1) a Leaflet marker fc-ride-bot (helperFaceHtml) moves from your position to the first stop without an outcome, every 5 s (bobs at the stop without GPS). 📣 hpd-read-aloud event: 🔊 jc-read on the job card and fc-bid-read on the bid sheet open the helper and say it. The magic sparkles now stay 1.6 s (magicOn). Test: test-browser-helper-alive (dress, read a job, ride-along marker).

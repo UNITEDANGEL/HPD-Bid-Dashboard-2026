@@ -4167,3 +4167,30 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @keyframes fc-magic-glow { 0% { opacity: 0; transform: scale(.3); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
 .fc-face .fc-face-look { transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
 @media (prefers-reduced-motion: reduce) { .fc-magic, .fc-agent.is-from-dock .fc-agent-who::before { display: none; } .fc-agent.is-from-dock .fc-agent-who .fc-face { animation: none; } }
+
+/* 💤 Naps at night: eyes closed, a little z floats up; a stretch when it wakes. */
+.fc-face .fc-face-zzz { display: none; }
+.fc-face.is-sleep .fc-face-zzz { display: inline; animation: fc-zzz 2.4s ease-in-out infinite; }
+.fc-face.is-sleep .fc-face-eyes { animation: none; transform: scaleY(.12); }
+.fc-face.is-sleep .fc-face-head { animation: fc-head-sleep 4s ease-in-out infinite; }
+.fc-face.is-sleep .fc-face-antenna { opacity: .4; }
+.fc-face.is-waking .fc-face-head { animation: fc-stretch 1.3s cubic-bezier(.3,1.4,.5,1); }
+@keyframes fc-zzz { 0% { opacity: 0; transform: translate(0, 4px) scale(.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(4px, -6px) scale(1.2); } }
+@keyframes fc-head-sleep { 0%, 100% { transform: rotate(8deg) translateY(1px); } 50% { transform: rotate(10deg) translateY(2px); } }
+@keyframes fc-stretch { 0% { transform: scale(1, .85); } 35% { transform: scale(.92, 1.18) translateY(-3px); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(6deg); } 100% { transform: none; } }
+/* 🎨 Dress the helper. */
+.fc-agent-dress { display: grid; gap: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(30, 27, 75, .7); border: 1px solid rgba(167, 139, 250, .4); }
+.fc-agent-dress span { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-dress-color { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+.fc-dress-color.is-on { border-color: #fff; box-shadow: 0 0 0 2px #a78bfa; }
+.fc-dress-hat { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1.5px solid #475569; background: #1e293b; color: #f8fafc; font: 800 14px system-ui, sans-serif; cursor: pointer; }
+.fc-dress-hat.is-on { border-color: #facc15; color: #fde047; }
+/* 📣 Read it to me. */
+.fc-job-read, .fc-bid-read { min-width: 40px; min-height: 40px; border: 0; border-radius: 50%; background: rgba(139, 92, 246, .22); font-size: 18px; cursor: pointer; }
+#fc-job-card .fc-job-read { position: sticky; top: 8px; z-index: 30; display: block; width: 44px; height: 44px; margin: 4px 56px -48px auto; border: 2px solid rgba(167, 139, 250, .8); background: rgba(30, 27, 75, .9); }
+/* 🗺 The little helper riding along on the route. */
+.fc-ride-marker { background: none; border: 0; }
+.fc-ride-marker, .fc-ride-marker * { pointer-events: none !important; }
+.fc-ride-bot { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(20, 11, 43, .85); border: 2px solid #22c55e; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); animation: fc-ride-bob .6s ease-in-out infinite alternate; }
+@keyframes fc-ride-bob { from { translate: 0 0; } to { translate: 0 -4px; } }
+@media (prefers-reduced-motion: reduce) { .fc-face.is-sleep .fc-face-zzz, .fc-face.is-sleep .fc-face-head, .fc-face.is-waking .fc-face-head, .fc-ride-bot { animation: none; } }
