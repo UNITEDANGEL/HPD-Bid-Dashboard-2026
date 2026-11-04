@@ -71,6 +71,13 @@ try {
   overrides["CHANGE-REPLY-20261103100000"] = { status: "Waiting for you", updates: [{ at: ago(60), text: "Which one first?" }] };
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-orb"]')?.getAttribute("data-mode") === "ask", null, { timeout: 15000 });
   assert.equal(await orb.locator(".fc-claude-orb-badge").innerText(), "❓");
+  if (await page.locator('[data-hpd-smoke="fc-whatsnew"]').count()) await page.locator('[data-hpd-smoke="fc-whatsnew"]').getByRole("button", { name: "Close", exact: true }).first().click();
+  await page.locator('[data-hpd-smoke="fc-whatsnew"]').waitFor({ state: "detached", timeout: 5000 });
+  // A tap still brings the talking robot; it says Claude has a question, with a button to answer it.
+  await orb.click();
+  await page.waitForFunction(() => /Claude has a question for you about Make the chat better/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Answer Claude" }).count(), 1);
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
 
   // 5) Finished.
   delete overrides["CHANGE-REQUEST-20261103100000"]; delete overrides["CHANGE-REPLY-20261103100000"];

@@ -3,11 +3,102 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "chat-speaks-up",
-      "icon": "🗣",
+      "id": "robot-full-screen",
+      "icon": "🤖",
+      "kind": "new",
+      "title": "A big robot that talks with you",
+      "why": "Tap the robot and it fills half the screen: big face, big words, and it keeps the conversation going until you say \"bye\"."
+    },
+    {
+      "id": "robot-walks-map",
+      "icon": "🚶",
+      "kind": "new",
+      "title": "The robot walks to the job on the map",
+      "why": "When it talks about a job, the little robot walks across the map to that pin and points at it."
+    },
+    {
+      "id": "robot-knows-you",
+      "icon": "🧠",
+      "kind": "new",
+      "title": "The robot learns your day",
+      "why": "It notices what you do each morning (bids first, or calls first) and offers that first, without you asking."
+    },
+    {
+      "id": "robot-jokes",
+      "icon": "😄",
+      "kind": "new",
+      "title": "The robot has a little personality",
+      "why": "A short cheer when you send 10 bids, a joke on a slow day, a high five when you win a job."
+    },
+    {
+      "id": "quick-price-voice",
+      "icon": "💲",
+      "kind": "new",
+      "title": "Say the price, the bid fills itself",
+      "why": "On a bid say \"2,400\" and the price goes on page 1, page 2 and the work form at once."
+    },
+    {
+      "id": "tenant-confirm-auto",
+      "icon": "📲",
+      "kind": "new",
+      "title": "Tenants confirm with one tap",
+      "why": "The tenant gets a link: tap Yes / Change time. The map shows confirmed in green by itself."
+    },
+    {
+      "id": "after-photo-reminder",
+      "icon": "📷",
       "kind": "upgrade",
-      "title": "The chat speaks up by itself",
-      "why": "When something changes (a new notice, a bid due in an hour, a tenant answered), the chat pops up with one short line and a button, then tucks away again."
+      "title": "Don't leave without the after photo",
+      "why": "When you drive away from a job without an after photo, the phone reminds you before you're gone."
+    },
+    {
+      "id": "lost-bids",
+      "icon": "📉",
+      "kind": "new",
+      "title": "Why you lost a bid",
+      "why": "For each bid you lost, the winning price next to yours, so the next price is right."
+    },
+    {
+      "id": "day-money",
+      "icon": "💵",
+      "kind": "new",
+      "title": "Today's money",
+      "why": "At the top: money earned today and this week from finished jobs, counting up as you finish."
+    },
+    {
+      "id": "open-in-1s",
+      "icon": "⚡",
+      "kind": "upgrade",
+      "title": "Open in one second",
+      "why": "The app shows the last screen right away and fills in new numbers after, instead of \"Loading jobs\"."
+    },
+    {
+      "id": "simpler-dock",
+      "icon": "🧹",
+      "kind": "upgrade",
+      "title": "A cleaner screen",
+      "why": "Hide the buttons you never use; the map gets more room and the robot stands out."
+    },
+    {
+      "id": "notice-autodraft",
+      "icon": "✍️",
+      "kind": "upgrade",
+      "title": "Notice answers written for you",
+      "why": "When a 24/72-hour notice comes in, the answer is already written with the dates; you check it and tap twice to send."
+    },
+    {
+      "id": "crew-share",
+      "icon": "👷",
+      "kind": "new",
+      "title": "Send a job to your worker",
+      "why": "One tap texts a worker the address, the work and the photos needed."
+    },
+    {
+      "id": "spanish",
+      "icon": "🌎",
+      "kind": "new",
+      "title": "Tenant texts in Spanish",
+      "why": "When the tenant writes in Spanish, the app shows it in English and writes your answer in Spanish."
     },
     {
       "id": "morning-plan",
@@ -31,13 +122,6 @@
       "why": "When Claude finishes a request it puts a picture of the new screen in Your requests, so you see what changed at a glance."
     },
     {
-      "id": "tenant-reply-chat",
-      "icon": "💬",
-      "kind": "upgrade",
-      "title": "Tenant answers in the chat",
-      "why": "When a tenant texts back, the chat reads it to you and suggests the reply and the appointment, one tap to send."
-    },
-    {
       "id": "price-coach",
       "icon": "🎯",
       "kind": "upgrade",
@@ -52,32 +136,11 @@
       "why": "Your win rate by borough and type of work, and the prices that won, so you know where to bid lower or higher."
     },
     {
-      "id": "weekly-checkup",
-      "icon": "🔍",
-      "kind": "check",
-      "title": "Weekly app check-up",
-      "why": "Once a week Claude taps every button, reads the errors from your phone and fixes what's broken or slow, then tells you what it fixed."
-    },
-    {
       "id": "one-hand",
       "icon": "🖐️",
       "kind": "upgrade",
       "title": "One-hand mode",
       "why": "A switch that moves the main buttons to the bottom corner so you can reach everything with your thumb while holding tools."
-    },
-    {
-      "id": "photo-count-warning",
-      "icon": "🖼️",
-      "kind": "upgrade",
-      "title": "Enough photos per job",
-      "why": "The job card tells you when a job has before photos but no after photos (or the other way round) before you close it."
-    },
-    {
-      "id": "bid-reminder",
-      "icon": "⏰",
-      "kind": "upgrade",
-      "title": "Bid due reminders",
-      "why": "The morning of a bid due date the app reminds you which invitations still have no price, so none are missed."
     },
     {
       "id": "job-notes",
@@ -94,25 +157,11 @@
       "why": "One screen with invoices sent, paid and still waiting, with the oldest unpaid first."
     },
     {
-      "id": "pay-late",
-      "icon": "🚦",
-      "kind": "upgrade",
-      "title": "Late payment warning",
-      "why": "If HPD has not paid an invoice after 30 days, the app flags it so you can follow up."
-    },
-    {
       "id": "offline-photos",
       "icon": "📶",
       "kind": "upgrade",
       "title": "Photos work with no signal",
       "why": "Take before and after photos in a basement with no signal; they send by themselves when you are back online."
-    },
-    {
-      "id": "faster-chat",
-      "icon": "💬",
-      "kind": "upgrade",
-      "title": "Quick answer buttons in chat",
-      "why": "Tap one button like 'what is due today' instead of typing."
     },
     {
       "id": "notes-on-card",

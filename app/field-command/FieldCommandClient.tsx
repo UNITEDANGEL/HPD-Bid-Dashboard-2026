@@ -1966,10 +1966,15 @@ export default function FieldCommandClient() {
       const name = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
       const todo = jobRows.filter((r) => r.group === "todo").length;
       const parts = [todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "", bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : ""].filter(Boolean);
-      const hello = `Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      // ❓ Claude waiting for your answer: the robot still comes out and talks, and says so with a button (owner, 4 Nov:
+      // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
+      const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
+      const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
+      const hello = `Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
-      setAgent({ heard: "👋", reply: hello, actions: step ? [{ label: "▶ Do it", href: "#next" }] : undefined });
+      const acts = [...(ask ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
+      setAgent({ heard: "👋", reply: hello, actions: acts.length ? acts : undefined });
       speak(hello.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
       return;
     }
@@ -5932,7 +5937,7 @@ export default function FieldCommandClient() {
                     <button type="button" className={`fc-ai-orb fc-dock-ai fc-claude-orb is-${mode}${orbTap ? " is-tap" : ""}`} data-hpd-smoke="fc-claude-orb" data-mode={mode} data-tap={orbTap ? "1" : undefined}
                       onContextMenu={(e) => e.preventDefault()}
                       onPointerDown={() => {
-                        if (asks || !canListen) return;
+                        if (!canListen) return;
                         window.clearTimeout(holdTimerRef.current);
                         holdTimerRef.current = window.setTimeout(() => {
                           // Held: listen right away, stop when the finger lets go (the orb is gone by then: the whole page listens).
@@ -5947,7 +5952,7 @@ export default function FieldCommandClient() {
                         }, 450);
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
-                      onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Tap to answer Claude" : "Tap to talk"}`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); if (asks) { goTo("requests", ""); return; } setAgentFromDock(true); startAgentChat(true); }}>
+                      onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
                       <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={44} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                     {orbSay ? (
