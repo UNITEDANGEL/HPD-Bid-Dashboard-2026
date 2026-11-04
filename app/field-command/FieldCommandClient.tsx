@@ -1438,24 +1438,27 @@ export default function FieldCommandClient() {
     // No speech recognition here (some iPhone Home Screen apps): the keyboard's own 🎙 works (owner, 23 Oct "mic not working").
     if (!Ctor) { reportVoice("no listening on this phone"); convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "This phone doesn't let the app listen by itself. Tap the search box, tap the 🎙 on the keyboard, say it, then tap Go: I answer the same way." }); return; }
     let heardSomething = false;
+    let lastSaid = ""; let handled = false;
     try {
       const rec = new Ctor();
       rec.lang = lastLangRef.current === "es" ? "es-US" : "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
       rec.onresult = (e) => {
         const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
         const final = Array.from(e.results).every((r) => r.isFinal);
-        heardSomething = true;
+        heardSomething = true; lastSaid = said;
         if (final && convoRef.current && /^(stop|bye|goodbye|thanks|thank you|that'?s all|i'?m done|done|end)\b/i.test(said.trim())) { convoRef.current = false; setConvo(false); setAgent({ heard: said, reply: "OK. Tap 💬 when you want to talk again." }); speak("OK, talk later.", 100); return; }
         const cmd = parseCommand(said);
         // Right after "Who refused?" the description goes to the helper, not the search box.
         const answeringWho = Boolean(pendingWhoRef.current && Date.now() - pendingWhoRef.current.at < 120000);
         if (cmd.intent === "search" && !convoRef.current && !answeringWho) { setFindHidden(""); setSearch(cmd.text); return; }
-        if (final) { setSearch(""); convoMissRef.current = 0; agentRef.current(said); }
+        if (final) { handled = true; setSearch(""); convoMissRef.current = 0; agentRef.current(said); }
       };
       rec.onend = () => {
         setListening(false); listenRef.current = null;
-        // Conversation mode, nothing said: one more try, then it rests (tap 💬 to go on).
-        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < (drivingRef.current ? 30 : 1)) window.setTimeout(() => { if (convoRef.current) startListening(); }, drivingRef.current ? 900 : 400); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
+        // Phone cut the mic before it called the words final (4 Nov: "make the conversation more fluid"): answer what it heard instead of going quiet.
+        if (convoRef.current && heardSomething && !handled && lastSaid.trim()) { handled = true; setSearch(""); convoMissRef.current = 0; agentRef.current(lastSaid); return; }
+        // Conversation mode, nothing said: a few more tries, then it rests (tap 💬 to go on).
+        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < (drivingRef.current ? 30 : 3)) window.setTimeout(() => { if (convoRef.current) startListening(); }, drivingRef.current ? 900 : 400); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
       };
       rec.onerror = (e) => {
         setListening(false); listenRef.current = null;
