@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-04T17:27:20.552Z
+Fetcher run started: 2026-11-04T17:51:24.354Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/5 [00:00<?, ?it/s]Downloading COA messages:  40%|████      | 2/5 [00:00<00:00, 13.71it/s]Downloading COA messages:  80%|████████  | 4/5 [00:00<00:00, 12.25it/s]Downloading COA messages: 100%|██████████| 5/5 [00:00<00:00, 11.87it/s]
+Downloading COA messages:   0%|          | 0/5 [00:00<?, ?it/s]Downloading COA messages:  40%|████      | 2/5 [00:00<00:00, 14.61it/s]Downloading COA messages:  80%|████████  | 4/5 [00:00<00:00, 14.91it/s]Downloading COA messages: 100%|██████████| 5/5 [00:00<00:00, 14.99it/s]
 Geocoding COA addresses:   0%|          | 0/5 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 5/5 [00:00<00:00, 158875.15it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/5 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  20%|██        | 1/5 [00:00<00:01,  2.20it/s]Fetching ITBs for COA OMOs:  40%|████      | 2/5 [00:00<00:01,  2.74it/s]Fetching ITBs for COA OMOs:  60%|██████    | 3/5 [00:01<00:00,  2.98it/s]Fetching ITBs for COA OMOs:  80%|████████  | 4/5 [00:01<00:00,  3.20it/s]Fetching ITBs for COA OMOs: 100%|██████████| 5/5 [00:01<00:00,  3.23it/s]Fetching ITBs for COA OMOs: 100%|██████████| 5/5 [00:01<00:00,  3.05it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/5 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  20%|██        | 1/5 [00:00<00:02,  1.57it/s]Fetching ITBs for COA OMOs:  40%|████      | 2/5 [00:01<00:02,  1.45it/s]Fetching ITBs for COA OMOs:  60%|██████    | 3/5 [00:01<00:01,  1.79it/s]Fetching ITBs for COA OMOs:  80%|████████  | 4/5 [00:02<00:00,  2.06it/s]Fetching ITBs for COA OMOs: 100%|██████████| 5/5 [00:02<00:00,  2.00it/s]Fetching ITBs for COA OMOs: 100%|██████████| 5/5 [00:02<00:00,  1.88it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -125,7 +125,7 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/21
-Upcoming bids: 29 not awarded yet (29 on the map), 8 received today, from 107 emails
+Upcoming bids: 29 not awarded yet (29 on the map), 9 received today, from 108 emails
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
@@ -149,10 +149,10 @@ $ python scripts/fetch_sent_paperwork.py --since 2026/10/21
 
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
-Reading 197 sent emails with attachments...
-  0/197
-  100/197
-Sent paperwork: 973 OMOs with an affidavit / invoice sent (40 with the affidavit type read) from 197 emails since 2026/10/21
+Reading 199 sent emails with attachments...
+  0/199
+  100/199
+Sent paperwork: 976 OMOs with an affidavit / invoice sent (40 with the affidavit type read) from 199 emails since 2026/10/21
 
 
 ========== Read HPD requests for paperwork ==========
@@ -162,9 +162,9 @@ $ python scripts/fetch_hpd_requests.py --since 2026/10/21
 
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
-Reading 49 emails from HPD staff...
-Reading 46 emails you sent HPD staff...
-HPD requests: 28 OMOs HPD asked about (paperwork / status) from 49 staff emails since 2026/10/21
+Reading 52 emails from HPD staff...
+Reading 48 emails you sent HPD staff...
+HPD requests: 31 OMOs HPD asked about (paperwork / status) from 52 staff emails since 2026/10/21
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
@@ -266,7 +266,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-04T17:32:23.642Z
+Fetcher run finished: 2026-11-04T17:56:42.449Z
 {
   "fetchedCoaItems": 5,
   "fetchedItbItems": 5,

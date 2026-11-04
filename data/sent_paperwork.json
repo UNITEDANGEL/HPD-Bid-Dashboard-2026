@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-04T17:31:47.035659+00:00",
+"generatedAt": "2026-11-04T17:56:16.677954+00:00",
 "since": "2026/10/21",
 "jobs": {
 "EN04541": [
@@ -21709,6 +21709,14 @@
 "outcome": "work_completed",
 "subject": "Re: [EXTERNAL] Fwd: SIGNED - ER07663 - Work Completed - 2760 WEST 33 STREET, 11224",
 "via": "hpd-staff"
+},
+{
+"date": "2026-11-04",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-xj4v4uwg.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER07749, OMO#ER08552, OMO#ER07663",
+"via": "hpd-staff"
 }
 ],
 "ER07717": [
@@ -21718,6 +21726,16 @@
 "file": "Outlook-bgsqasze.png",
 "outcome": "",
 "subject": "Re: OMO#ER07717- STATUS UPDATE REQUEST",
+"via": "hpd-staff"
+}
+],
+"ER07749": [
+{
+"date": "2026-11-04",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-xj4v4uwg.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER07749, OMO#ER08552, OMO#ER07663",
 "via": "hpd-staff"
 }
 ],
@@ -21738,6 +21756,26 @@
 "file": "Outlook-ptdptunb.png",
 "outcome": "",
 "subject": "Re: STATUS UPDATE REQUEST- OMO#ER07980, OMO#ER07640, OMO#ER07315",
+"via": "hpd-staff"
+}
+],
+"ER08170": [
+{
+"date": "2026-11-04",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-dec5olyn.png",
+"outcome": "",
+"subject": "Re: OMO#ER08170- STATUS UPDATE REQUEST",
+"via": "hpd-staff"
+}
+],
+"ER08552": [
+{
+"date": "2026-11-04",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-xj4v4uwg.png",
+"outcome": "",
+"subject": "Re: STATUS UPDATE REQUEST- OMO#ER07749, OMO#ER08552, OMO#ER07663",
 "via": "hpd-staff"
 }
 ]
