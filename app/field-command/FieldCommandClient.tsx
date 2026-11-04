@@ -1825,7 +1825,7 @@ export default function FieldCommandClient() {
       const d = (e as CustomEvent<{ text: string; full?: string; speak?: boolean }>).detail;
       if (!d?.text) return;
       setOrbSay({ text: d.text, full: d.full || d.text, at: Date.now() });
-      if (d.speak) speak(d.full || d.text, 150);
+      if (d.speak) speak(d.full || d.text, 150, () => { if (convoRef.current && !listenRef.current) startListeningRef.current(); });
     };
     window.addEventListener("hpd-helper-say", on);
     return () => window.removeEventListener("hpd-helper-say", on);
@@ -1839,7 +1839,7 @@ export default function FieldCommandClient() {
       // 🧭 "Take me there" after it: the job just read is the one "there" means.
       if (d.omo) { lastJobsRef.current = { ids: [d.omo], at: Date.now() }; const omo = d.omo; window.setTimeout(() => robotWalkRef.current(omo), 250); }
       setAgent({ heard: `📣 ${d.title}`, reply: d.text, actions: d.go ? [{ label: "🧭 Take me there (Waze)", href: d.go, id: d.omo, via: "Waze" }] : undefined, offers: d.omo ? ["walk me through it"] : undefined, offersLabel: d.omo ? "At the building?" : undefined });
-      speak(d.text.replace(/\bHPD\b/g, "H P D").replace(/\b([A-Z]{2})(\d{5})\b/g, (_m, a: string, n: string) => `${a.split("").join(" ")} ${n.split("").join(" ")}`), 200);
+      speak(d.text.replace(/\bHPD\b/g, "H P D").replace(/\b([A-Z]{2})(\d{5})\b/g, (_m, a: string, n: string) => `${a.split("").join(" ")} ${n.split("").join(" ")}`), 200, () => { if (convoRef.current && !listenRef.current) startListeningRef.current(); });
     };
     window.addEventListener("hpd-read-aloud", on);
     return () => window.removeEventListener("hpd-read-aloud", on);
@@ -2020,7 +2020,7 @@ export default function FieldCommandClient() {
       const reply = canListen ? "🚗 Driving mode on: short answers, and I keep listening. Say \"I'm parked\" to stop." : "🚗 Driving mode on: short answers. On this phone, tap 🎙 on the keyboard to talk. Say \"I'm parked\" to stop.";
       setAgent({ heard: "🚗", reply });
       convoRef.current = canListen; convoMissRef.current = 0; setConvo(canListen);
-      if (say) speak(reply, 200, () => { if (convoRef.current && !listenRef.current) startListening(); });
+      if (say) speak(reply, 200, () => { if (convoRef.current && !listenRef.current) startListeningRef.current(); });
       else if (canListen) startListening();
     } else {
       convoRef.current = false; setConvo(false); listenRef.current?.stop();
