@@ -3,27 +3,6 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "robot-tour",
-      "icon": "🎬",
-      "kind": "new",
-      "title": "The robot shows you what's new",
-      "why": "After an update the robot walks you through the new things in 20 seconds, pointing at each button."
-    },
-    {
-      "id": "say-done",
-      "icon": "✅",
-      "kind": "upgrade",
-      "title": "Say \"done\" to finish a job",
-      "why": "At the building say \"done\" and the job is marked finished, the time saved and the after photo asked for."
-    },
-    {
-      "id": "robot-knows-you",
-      "icon": "🧠",
-      "kind": "new",
-      "title": "The robot learns your day",
-      "why": "It notices what you do each morning (bids first, or calls first) and offers that first, without you asking."
-    },
-    {
       "id": "quick-price-voice",
       "icon": "💲",
       "kind": "new",
@@ -253,20 +232,6 @@
       "kind": "upgrade",
       "title": "All jobs with paperwork left",
       "why": "One list on the home screen of every finished job that still has photos, an affidavit or an invoice missing, oldest first."
-    },
-    {
-      "id": "job-walkthrough",
-      "icon": "🤖",
-      "kind": "new",
-      "title": "The helper walks you through the job",
-      "why": "At the building it reads the work items one at a time; say \"done\" to tick each one, then it asks for the after photo."
-    },
-    {
-      "id": "late-text",
-      "icon": "🕐",
-      "kind": "new",
-      "title": "\"I'm running late\" text",
-      "why": "Say \"I'm running late\" and the helper writes the tenant a text with your new time (from the drive time); you tap Send."
     },
     {
       "id": "building-history",

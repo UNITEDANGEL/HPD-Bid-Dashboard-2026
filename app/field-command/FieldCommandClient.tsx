@@ -1795,7 +1795,7 @@ export default function FieldCommandClient() {
   const [voiceTick, setVoiceTick] = useState(0);
   // 🗨 The helper says short news in a speech bubble over the 🤖 (owner's pick, 4 Nov), without opening the chat; a
   // tap opens it in the chat and reads it out loud. Any screen can ask with the "hpd-helper-say" event.
-  const [orbSay, setOrbSay] = useState<{ text: string; full: string; at: number } | null>(null);
+  const [orbSay, setOrbSay] = useState<{ text: string; full: string; at: number; run?: string } | null>(null);
   useEffect(() => {
     if (!orbSay) return;
     const at = orbSay.at;
@@ -1820,7 +1820,7 @@ export default function FieldCommandClient() {
       unlockChime();
       // 🧭 "Take me there" after it: the job just read is the one "there" means.
       if (d.omo) { lastJobsRef.current = { ids: [d.omo], at: Date.now() }; const omo = d.omo; window.setTimeout(() => robotWalkRef.current(omo), 250); }
-      setAgent({ heard: `📣 ${d.title}`, reply: d.text, actions: d.go ? [{ label: "🧭 Take me there (Waze)", href: d.go, id: d.omo, via: "Waze" }] : undefined });
+      setAgent({ heard: `📣 ${d.title}`, reply: d.text, actions: d.go ? [{ label: "🧭 Take me there (Waze)", href: d.go, id: d.omo, via: "Waze" }] : undefined, offers: d.omo ? ["walk me through it"] : undefined, offersLabel: d.omo ? "At the building?" : undefined });
       speak(d.text.replace(/\bHPD\b/g, "H P D").replace(/\b([A-Z]{2})(\d{5})\b/g, (_m, a: string, n: string) => `${a.split("").join(" ")} ${n.split("").join(" ")}`), 200);
     };
     window.addEventListener("hpd-read-aloud", on);
@@ -1970,10 +1970,23 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
-      const acts = [...(ask ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
+      // 🧠 Your usual start (3 of the last 14 mornings), offered before 11 if you haven't opened it yet today.
+      const habit = (() => {
+        if (h < 5 || h >= 11) return "";
+        try {
+          const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}");
+          if (o[nyToday()]) return "";
+          const n: Record<string, number> = {};
+          for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1;
+          const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+          return best && best[1] >= 3 ? best[0] : "";
+        } catch { return ""; }
+      })();
+      const habitName: Record<string, string> = { bids: "Bids", notices: "Notices", board: "the notice board" };
+      const acts = [...(ask ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(habit ? [{ label: `▶ ${habitName[habit]} (your usual start)`, href: `#go:${habit}` }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
       setAgent({ heard: "👋", reply: hello, actions: acts.length ? acts : undefined });
       speak(hello.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
       return;
@@ -3930,6 +3943,40 @@ export default function FieldCommandClient() {
       b.addEventListener("chargingchange", check);
     }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🪜 Step by step in the chat (owner's picks, 4 Nov): the job's work one item at a time ("walk me through the job"), or
+  // what's new in the app (the robot's tour). "done" / "next" goes on, "stop" ends.
+  const stepsRef = useRef<{ title: string; items: string[]; i: number; at: number; end: string } | null>(null);
+  // 🧠 The robot learns your day: the first screen you open each morning (before 11), kept for 14 days.
+  useEffect(() => {
+    const key = bidsOpen ? "bids" : noticesOpen ? "notices" : boardOpen ? "board" : "";
+    if (!key) return;
+    const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+    if (h < 5 || h >= 11) return;
+    try {
+      const day = nyToday();
+      const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}");
+      if (o[day]) return;
+      o[day] = key;
+      localStorage.setItem("hpd-habits", JSON.stringify(Object.fromEntries(Object.entries(o).sort().slice(-14))));
+    } catch { /* private mode */ }
+  }, [bidsOpen, noticesOpen, boardOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🎬 After an update, the robot offers a tour of what's new (once per version).
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      void loadWhatsNew().then((v) => {
+        const top = Array.isArray(v) ? v[0] : null;
+        const id = top ? `${top.date}|${(top.items || []).length}|${String(top.items?.[0] || "").slice(0, 40)}` : "";
+        if (!id) return;
+        try {
+          const seen = localStorage.getItem("hpd-tour-seen");
+          localStorage.setItem("hpd-tour-seen", id);
+          if (!seen || seen === id || (navigator.webdriver && localStorage.getItem("hpd-test-tour") !== "1")) return;
+        } catch { return; }
+        setOrbSay({ text: "🎬 New things in the app! Tap me for a tour.", full: "", run: "give me a tour", at: Date.now() });
+      });
+    }, 9000);
+    return () => window.clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const askSeenRef = useRef("");
   useEffect(() => {
     const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
@@ -4623,8 +4670,30 @@ export default function FieldCommandClient() {
     setOutcomeMessage("");
   }
 
+  const showStep = (heard: string) => {
+    const st = stepsRef.current;
+    if (!st) return;
+    st.at = Date.now();
+    if (st.i >= st.items.length) {
+      stepsRef.current = null;
+      setAgent({ heard, reply: st.end });
+      speak(st.end, 150, () => { if (convoRef.current) startListening(); });
+      return;
+    }
+    const reply = `${st.title} ${st.i + 1} of ${st.items.length}: ${st.items[st.i]}`;
+    setAgent({ heard, reply, offers: ["done", "stop"], offersLabel: st.i + 1 < st.items.length ? "Say \"done\" for the next one, or tap:" : "Say \"done\" when it's done, or tap:" });
+    speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 150, () => { if (convoRef.current) startListening(); });
+  };
   agentRef.current = (heard: string, inner = false) => {
     if (askAnywayRef.current && askAnywayRef.current !== heard) askAnywayRef.current = "";
+    {
+      const st = stepsRef.current;
+      const t = heard.trim().toLowerCase().replace(/[.!]+$/, "");
+      if (st && Date.now() - st.at < 30 * 60000) {
+        if (/^(✅ )?(done|next|next one|ok|okay|got it|finished|finished that|yes|go on|continue)$/.test(t)) { st.i += 1; showStep(heard); return; }
+        if (/^(stop|cancel|exit|quit|end|that'?s enough|no more)( (it|the tour|the steps))?$/.test(t)) { stepsRef.current = null; setAgent({ heard, reply: "OK, stopped. Ask me anything." }); speak("OK, stopped.", 100); return; }
+      }
+    }
     if (!inner) {
       multiRef.current = null;
       const parts = splitCommands(heard);
@@ -4758,6 +4827,26 @@ export default function FieldCommandClient() {
       answer(cmd.on ? "🔁 Keep upgrading is on: when you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Say \"stop auto upgrade\" to turn it off." : "Keep upgrading is off. Claude only builds what you ask for.");
       return;
     }
+    if (cmd.intent === "tour") {
+      void loadWhatsNew().then((v) => {
+        const top = Array.isArray(v) ? v[0] : null;
+        const items = (top?.items || []).slice(0, 6).map((x: string) => x.replace(/\s+/g, " ").trim());
+        if (!items.length) { answer("I couldn't load what's new right now. Try again in a minute."); return; }
+        stepsRef.current = { title: "🎬 New", items, i: 0, at: Date.now(), end: "That's the tour! Ask me to try any of them." };
+        showStep(heard);
+      });
+      return;
+    }
+    if (cmd.intent === "walkthrough") {
+      const j = selectedJob || (lastJobsRef.current && Date.now() - lastJobsRef.current.at < 30 * 60000 ? jobs.find((x) => jobId(x) === lastJobsRef.current!.ids[0]) || null : null);
+      if (!j) { answer("Which job? Open its card (or say \"read this job to me\"), then say \"walk me through it\"."); return; }
+      const items = jobSummary(jobScope(j)).lines.map(lineText).filter(Boolean);
+      if (!items.length) { answer(`There's no work list on ${jobId(j)}: read HPD's description on the card.`); return; }
+      lastJobsRef.current = { ids: [jobId(j)], at: Date.now() };
+      stepsRef.current = { title: "🔧 Item", items, i: 0, at: Date.now(), end: `That's all ${items.length} item${items.length === 1 ? "" : "s"} on ${jobId(j)}. Now take the after photos, then say "done" to mark the job finished.` };
+      showStep(heard);
+      return;
+    }
     if (cmd.intent === "whats-new") {
       // The newest lines of What's new (public/data/whats-new.json), shortest first sentence each, read out.
       void loadWhatsNew().then((v) => {
@@ -4860,9 +4949,14 @@ export default function FieldCommandClient() {
       window.setTimeout(readBack, 600);
       return;
     }
-    if (cmd.intent === "text-tenant" || cmd.intent === "call-tenant" || cmd.intent === "navigate" || cmd.intent === "arrived" || cmd.intent === "open") {
+    if (cmd.intent === "text-tenant" || cmd.intent === "call-tenant" || cmd.intent === "navigate" || cmd.intent === "arrived" || cmd.intent === "open" || cmd.intent === "late") {
       // Which job: the one named, else the one on screen; "next stop": Today's route, else the closest open job.
       let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (!job && cmd.intent === "late") {
+        // Running late to: the job just talked about, else today's next stop on the route.
+        const recent = lastJobsRef.current && Date.now() - lastJobsRef.current.at < 60 * 60000 ? jobs.find((x) => jobId(x) === lastJobsRef.current!.ids[0]) : null;
+        job = recent || todayRouteIds().map((id) => jobs.find((x) => jobId(x) === id)).find((x) => x && jobQueue(x) === "pending" && !value(x, ["FieldArrivedAt"])) || null;
+      }
       if (!job && cmd.intent === "navigate" && cmd.there && lastJobsRef.current && Date.now() - lastJobsRef.current.at < 20 * 60000) {
         const id = lastJobsRef.current.ids[0];
         job = jobs.find((x) => jobId(x) === id) || null;
@@ -4907,6 +5001,22 @@ export default function FieldCommandClient() {
         lastCallRef.current = jobId(j);
         showPanel({ heard, reply: `${t.name || "The tenant"} at ${where}: ${t.phone}. Tap Call.`, actions: [{ label: `📞 Call ${t.name ? t.name.split(/\s+/)[0] : "the tenant"}`, href: `tel:${t.phone.replace(/[^\d+]/g, "")}` }] });
         speak(`${t.name || "The tenant"} at ${where}. Tap call.`, 200);
+        return;
+      }
+      if (cmd.intent === "late") {
+        // 🕐 "I'm running late" (owner's pick, 4 Nov): a text with your new time (the drive from where you are, else 30
+        // minutes from now, rounded up to 5), ready to send with one tap.
+        if (!t.phone || t.commonArea) { answer(`There's no tenant phone on file for ${where}${t.commonArea ? " (common area)" : ""}.`); return; }
+        const fix = lastFixRef.current;
+        const to = jobLatLng(j);
+        const mins = fix && to && Date.now() - fix.at < 15 * 60000 ? Math.max(10, Math.round(distanceMiles(fix, to) * 1.35 / 15 * 60)) : 30;
+        const at = new Date(Math.ceil((Date.now() + mins * 60000) / 300000) * 300000);
+        const time = at.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
+        const raw = (t.name || "").split(/\s+/)[0];
+        const hi = raw && raw.length > 1 ? `Hi ${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "Hello";
+        const text = `${hi}, this is Jot from United Angel Construction. I'm running a little late for the HPD repair at ${where}. I'll be there around ${time}. Sorry for the wait.`;
+        showPanel({ heard, reply: `I wrote the tenant at ${where}: "${text}" Tap to send it.`, actions: [{ label: `💬 Send: there around ${time}`, href: smsHref(t.phone, text) }] });
+        speak(`I wrote the tenant: you'll be there around ${time}. Tap send.`, 150);
         return;
       }
       if (cmd.intent === "navigate" && cmd.there) {
@@ -6064,7 +6174,7 @@ export default function FieldCommandClient() {
                       <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })(), wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                     {orbSay ? (
-                      <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
+                      <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
                     ) : null}
                     </>
                   );
@@ -8091,7 +8201,7 @@ export default function FieldCommandClient() {
           </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
-            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={(ev) => { if (a.href === "#next") { ev.preventDefault(); setAgent(null); nextStepRef.current?.go(); return; } if (a.href === "#requests") { ev.preventDefault(); setAgent(null); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); return; } const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
+            {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={(ev) => { if (a.href === "#next") { ev.preventDefault(); setAgent(null); nextStepRef.current?.go(); return; } if (a.href === "#requests") { ev.preventDefault(); setAgent(null); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); return; } if (a.href.startsWith("#go:")) { ev.preventDefault(); setAgent(null); const k = a.href.slice(4); if (k === "notices") { closeScreens("notices"); setNoticesOpen(true); } else goTo(k); return; } const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>
               <button type="button" data-hpd-smoke="fc-agent-no" onClick={() => agentRef.current("no")}>No</button>

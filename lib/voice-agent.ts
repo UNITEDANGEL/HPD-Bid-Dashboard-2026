@@ -25,6 +25,9 @@ export type AgentCommand =
   | { intent: "claude-status" }
   | { intent: "claude-works" }
   | { intent: "whats-new" }
+  | { intent: "walkthrough"; ref: string }
+  | { intent: "tour" }
+  | { intent: "late"; ref: string }
   | { intent: "ideas" }
   | { intent: "idea-do"; n: number }
   | { intent: "ideas-more" }
@@ -164,6 +167,10 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(?:give me |get |ask (?:claude )?for |i want )?more (?:upgrade )?(?:ideas|suggestions|recommendations)(?: please)?$|^(?:ask claude|tell claude) (?:to |for )?(?:give me |come up with |suggest )?(?:more |new )?(?:ideas|suggestions|upgrades)$/.test(t)) return { intent: "ideas-more" };
   if (/^(?:turn |switch )?(?:on |start )?(?:auto(?:matic)?[ -]?upgrades?|keep upgrading)(?: on| by itself| on its own)?$|^(?:turn on|start|switch on) (?:the )?(?:auto(?:matic)?[ -]?upgrades?|keep upgrading)$/.test(t)) return { intent: "auto-upgrade", on: true };
   if (/^(?:turn |switch )?(?:off |stop )(?:the )?(?:auto(?:matic)?[ -]?upgrades?|upgrading on its own|keep upgrading)$|^(?:auto(?:matic)?[ -]?upgrades?|keep upgrading) off$/.test(t)) return { intent: "auto-upgrade", on: false };
+  // 🤖 Step by step (owner's picks, 4 Nov): "walk me through the job", "give me a tour", "I'm running late".
+  if (/^(please )?(walk|talk|take) me through (it|the job|this job|the work|the steps)|^(read me )?(the )?(job )?step by step$|^walk me through$/.test(t)) return { intent: "walkthrough", ref: "" };
+  if (/^(give me a |start the |take the |show me the )?tour$|^show me around( the app)?$|^(walk me through|show me) what'?s new$/.test(t)) return { intent: "tour" };
+  if (/\b(i'?m|i am|we'?re|we are) (running |going to be |gonna be )?late\b|\brunning late\b/.test(t)) return { intent: "late", ref: refOf(t.replace(/\b(running|late|gonna|going to be)\b/g, " ")) };
   if (/^(?:so |ok(?:ay)? |hey )?(?:what'?s|what is|anything) new(?: in the app| today| with the app)?$|^what (?:did|have) (?:you|claude|cloud) (?:upgrade|upgraded|change|changed|add|added|build|built|fix|fixed)(?: today| lately| in the app)?$|^what (?:changed|got upgraded)(?: in the app| today)?$|^(?:read me |tell me |show me )?(?:the )?(?:latest|newest|new) (?:updates|upgrades|features|changes)(?: in the app)?$/.test(t)) return { intent: "whats-new" };
   // What Claude is doing on your requests (owner, 2 Nov: "I need to know exactly what's going on every second"):
   // "what's Claude doing", "is Claude done", "status of my request", "how's my request going".
