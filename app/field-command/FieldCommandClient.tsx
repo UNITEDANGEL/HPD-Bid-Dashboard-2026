@@ -24,6 +24,7 @@ import { listCorrections, removeCorrection, type SavedCorrection, updateCorrecti
 import { markCorrectedCopy } from "../../lib/correction-copy";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
+import { paperworkLeft } from "../../lib/paperwork-left";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
@@ -6634,6 +6635,23 @@ export default function FieldCommandClient() {
                 <PhotoCheck jobId={id} before={counts.before} after={counts.after} total={counts.total} work={["WORK_STARTED", "WORK_COMPLETED", "PARTIAL_WORK"].includes(value(selectedJob, ["FieldOutcome", "fieldOutcome"]))} />
               </div>
 
+              {(() => {
+                // What is left for this job (3 Nov idea): photos, affidavit, invoice, next one opens with one tap.
+                const left = paperworkLeft({
+                  id, outcome: value(selectedJob, ["FieldOutcome", "fieldOutcome"]), before: counts.before, after: counts.after,
+                  approved: Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])),
+                  invoiceDone: Boolean(followRef.current?.sent[jobId(selectedJob)]) || Boolean(value(selectedJob, ["InvoiceSentAt", "invoiceSentAt"])),
+                  paperworkHref,
+                });
+                if (!left || jobQueue(selectedJob) === "archived") return null;
+                return (
+                  <section className="jc-left" data-hpd-smoke="jc-left" aria-label="Paperwork left for this job">
+                    <strong>{left.allDone ? "✅ All paperwork done for this job" : `📋 ${left.left} thing${left.left === 1 ? "" : "s"} left for this job`}</strong>
+                    <ul>{left.items.map((item) => <li key={item.key} className={item.done ? "is-done" : ""}><span aria-hidden="true">{item.done ? "✓" : "○"}</span> {item.label}: {item.detail}</li>)}</ul>
+                    {left.next ? <a className="jc-left-go" data-hpd-smoke="jc-left-go" href={left.next.href} onClick={left.next.key === "affidavit" ? packageLinkClick(id, left.next.href) : undefined}>Next: {left.next.label} →</a> : null}
+                  </section>
+                );
+              })()}
               {jobQueue(selectedJob) === "completed" ? (
                 <section className="jc-done" data-hpd-smoke="jc-completed" aria-label="Job completed">
                   <strong>✓ Completed. No need to come back.</strong>

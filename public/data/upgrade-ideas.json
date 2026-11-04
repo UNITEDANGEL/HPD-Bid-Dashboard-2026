@@ -45,13 +45,6 @@
       "why": "Next to the price box: the prices that won this kind of job in the last 6 months, and how likely your price is to win."
     },
     {
-      "id": "next-paperwork",
-      "icon": "🧭",
-      "kind": "upgrade",
-      "title": "Next paperwork step after each job",
-      "why": "When you finish a job, the app says what's left for it (photos, invoice, affidavit) and opens it with one tap."
-    },
-    {
       "id": "win-rate",
       "icon": "📊",
       "kind": "upgrade",
@@ -218,6 +211,20 @@
       "kind": "upgrade",
       "title": "Bigger buttons with gloves on",
       "why": "A switch that makes every button bigger so you can tap it with work gloves."
+    },
+    {
+      "id": "invoice-auto-fill",
+      "icon": "🧾",
+      "kind": "upgrade",
+      "title": "Invoice already filled in",
+      "why": "When the affidavit is approved, the invoice opens with the job, the amount and the OMO already filled, so you only check it and send."
+    },
+    {
+      "id": "left-list-home",
+      "icon": "📋",
+      "kind": "upgrade",
+      "title": "All jobs with paperwork left",
+      "why": "One list on the home screen of every finished job that still has photos, an affidavit or an invoice missing, oldest first."
     }
   ]
 }

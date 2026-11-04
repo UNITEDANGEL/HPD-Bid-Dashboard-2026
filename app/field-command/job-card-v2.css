@@ -1074,3 +1074,45 @@
 /* Free Google pictures counter (2 Nov). */
 .jc-hero-count { position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 9px; background: rgba(2, 6, 23, .7); color: #cbd5e1; font: 700 11.5px/18px system-ui; pointer-events: none; }
 .jc-hero-count.is-out { background: rgba(127, 29, 29, .85); color: #fecaca; }
+
+/* What is left for a finished job: photos, affidavit, invoice. */
+#fc-job-card .jc-left {
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(37, 99, 235, 0.16);
+  border: 1px solid rgba(96, 165, 250, 0.55);
+  color: #dbeafe;
+}
+
+#fc-job-card .jc-left strong {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+#fc-job-card .jc-left ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 16px;
+}
+
+#fc-job-card .jc-left li.is-done {
+  color: #bbf7d0;
+}
+
+#fc-job-card .jc-left .jc-left-go {
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(96, 165, 250, 0.7);
+  background: rgba(30, 64, 175, 0.6);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+}

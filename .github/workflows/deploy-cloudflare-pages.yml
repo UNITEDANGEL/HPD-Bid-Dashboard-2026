@@ -141,6 +141,7 @@ jobs:
           node scripts/test-market-awards.mjs
           node scripts/test-bid-stats.mjs
           node scripts/test-job-followup.mjs
+          node scripts/test-paperwork-left.mjs
           node scripts/test-paperwork-lock.mjs
           node scripts/test-paperwork-check.mjs
           node scripts/test-job-stages.mjs
@@ -397,5 +398,6 @@ jobs:
             scripts/test-browser-today.mjs \
             scripts/test-browser-followup.mjs \
             scripts/test-browser-paperwork-lock.mjs \
+            scripts/test-browser-paperwork-left.mjs \
             scripts/test-browser-paperwork-refused-date.mjs \
             scripts/test-browser-two-tap.mjs
