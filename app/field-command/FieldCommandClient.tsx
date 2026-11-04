@@ -5180,7 +5180,8 @@ export default function FieldCommandClient() {
               const amounts = won.map((j) => Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, ""))).filter((n) => n > 0);
               const kinds: Record<string, number> = {};
               for (const j of won) { const k = (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "other").split(/[·(,]/)[0].trim().slice(0, 30) || "other"; kinds[k] = (kinds[k] || 0) + 1; }
-              return { month: m, bidsSent: sent.length, avgBidSent: sent.length ? Math.round(sent.reduce((a, r) => a + Number(r.sentPrice || r.price || 0), 0) / sent.length) : 0, jobsWon: won.length, moneyAwarded: Math.round(amounts.reduce((a, n) => a + n, 0)), avgAward: amounts.length ? Math.round(amounts.reduce((a, n) => a + n, 0) / amounts.length) : 0, winRate: sent.length ? `${Math.round((won.length / sent.length) * 100)}%` : "", wonMost: Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} (${n})`) };
+              const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+              return { month: m, daysCounted: m === months[0] ? Number(today.slice(8, 10)) : "whole month", bidsSent: sent.length, avgBidSent: sent.length ? Math.round(sent.reduce((a, r) => a + Number(r.sentPrice || r.price || 0), 0) / sent.length) : 0, jobsWon: won.length, moneyAwarded: Math.round(amounts.reduce((a, n) => a + n, 0)), avgAward: amounts.length ? Math.round(amounts.reduce((a, n) => a + n, 0) / amounts.length) : 0, winRate: sent.length ? `${Math.round((won.length / sent.length) * 100)}%` : "", wonMost: Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} (${n})`) };
             });
           })(),
           // 📩 Asked about emails: the full text of HPD's 10 newest (last 14 days).
