@@ -1458,7 +1458,7 @@ export default function FieldCommandClient() {
         // Phone cut the mic before it called the words final (4 Nov: "make the conversation more fluid"): answer what it heard instead of going quiet.
         if (convoRef.current && heardSomething && !handled && lastSaid.trim()) { handled = true; setSearch(""); convoMissRef.current = 0; agentRef.current(lastSaid); return; }
         // Conversation mode, nothing said: a few more tries, then it rests (tap 💬 to go on).
-        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < (drivingRef.current ? 30 : 3)) window.setTimeout(() => { if (convoRef.current) startListening(); }, drivingRef.current ? 900 : 400); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
+        if (convoRef.current && !heardSomething) { if (convoMissRef.current++ < (drivingRef.current ? 30 : 5)) window.setTimeout(() => { if (convoRef.current) startListening(); }, drivingRef.current ? 900 : 250); else { convoRef.current = false; setConvo(false); setAgent((a) => (a ? { ...a, reply: `${a.reply}\n\n(Stopped listening: tap 💬 to keep talking.)` } : a)); } }
       };
       rec.onerror = (e) => {
         setListening(false); listenRef.current = null;
