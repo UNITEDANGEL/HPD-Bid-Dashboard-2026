@@ -78,6 +78,38 @@ try {
   assert.ok(/^(Let me check\.|One sec\.|Let me look\.|Hmm, let me see\.)$/.test((await page.evaluate(() => window.__said))[0] || ""), `a short "let me check" first: ${JSON.stringify(await page.evaluate(() => window.__said))}`);
   assert.match(asked[0].facts.ownerName, /\S/);
 
+  // 📈 The month on one page: a real PDF, opened or shared from the chat.
+  await page.evaluate(() => { window.__shared = null; });
+  const month = await say("month report", /^📈 \w+ \d{4} so far: \d+ jobs? won/);
+  await page.locator('[data-hpd-smoke="fc-agent-file"]').waitFor({ timeout: 10000 });
+  const pdfHead = await page.evaluate(async () => { const a = document.querySelector('[data-hpd-smoke="fc-agent-file-open"]'); const b = new Uint8Array(await (await fetch(a.href)).arrayBuffer()); return String.fromCharCode(...b.slice(0, 5)) + "|" + b.length; });
+  assert.match(pdfHead, /^%PDF-\|\d{4,}$/);
+  await page.locator('[data-hpd-smoke="fc-agent-file-share"]').click();
+  await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
+  assert.match((await page.evaluate(() => window.__shared)).files[0], /^HPD Field - \w+ \d{4} \(so far\)\.pdf\|application\/pdf$/);
+
+  // 📷 Retake before you leave: a black photo is said out loud with one big Retake button that opens the camera again.
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.goto(`${baseUrl}/map/?omo=${JOB}&view=all&map=1`, { waitUntil: "load", timeout: 180000 });
+  await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
+  while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
+  const black = await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 400; c.height = 300; const g = c.getContext("2d"); g.fillStyle = "#020202"; g.fillRect(0, 0, 400, 300); return c.toDataURL("image/jpeg", 0.9).split(",")[1]; });
+  const startBtn = page.locator("#fc-job-card button", { hasText: /Before\s*(Tap to add|\d)/ }).first();
+  await startBtn.click();
+  const take = page.locator("#fc-job-card button", { hasText: /Take (before )?photo/ }).first();
+  await take.waitFor({ timeout: 10000 });
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), take.click()]);
+  await page.evaluate(() => { window.__said = []; });
+  await chooser.setFiles({ name: "dark.jpg", mimeType: "image/jpeg", buffer: Buffer.from(black, "base64") });
+  const retake = page.locator('[data-hpd-smoke="jc-retake"]');
+  await retake.waitFor({ timeout: 30000 });
+  assert.match(await retake.innerText(), /That before photo looks too dark/);
+  await page.waitForFunction(() => window.__said.some((t) => /photo looks too dark/.test(t)), null, { timeout: 5000 });
+  const [again] = await Promise.all([page.waitForEvent("filechooser", { timeout: 5000 }), page.locator('[data-hpd-smoke="jc-retake-go"]').click()]);
+  assert.ok(again, "Retake opens the camera again");
+  assert.equal(await retake.count(), 0);
+  await page.locator(".fc-job-sheet-close").click().catch(() => {});
+
   // 📤 Everything that was sent, as a copy: from the job card's "See what you sent".
   if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   await page.evaluate((job) => {
@@ -103,7 +135,7 @@ try {
   assert.deepEqual((await page.evaluate(() => window.__shared)).files, [`SIGNED - ${JOB} - Work Completed.pdf|application/pdf`, `BEFORE-01 - ${JOB}.jpg|image/jpeg`, `AFTER-01 - ${JOB}.jpg|image/jpeg`, `AFTER VIDEO-01 - ${JOB}.mp4|video/mp4`]);
   await page.waitForFunction(() => /4 files ready: pick Mail to send them, or Save to Files/.test(document.querySelector('[data-hpd-smoke="fc-sent-copy-msg"]')?.textContent || ""), null, { timeout: 5000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS robot ideas: "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
+  console.log(`PASS robot ideas: the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
 } finally {
   await browser.close();
 }

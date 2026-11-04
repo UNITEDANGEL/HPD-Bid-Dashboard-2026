@@ -27,6 +27,7 @@ import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job
 import { paperworkLeft } from "../../lib/paperwork-left";
 import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory, timeInsight } from "../../lib/robot-insights";
 import { onSiteMinutes } from "../../lib/job-time";
+import { monthReportPdf, monthSummary } from "../../lib/month-report";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
@@ -1714,7 +1715,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -4640,6 +4641,16 @@ export default function FieldCommandClient() {
     }
   }
 
+  // 📷 Retake before you leave (owner idea, 4 Nov): a dark or blurry photo is said out loud with one big Retake button,
+  // while you're still in the apartment.
+  const [retake, setRetake] = useState<{ id: string; kind: FieldMediaKind; why: string } | null>(null);
+  function retakeNow() {
+    if (!retake) return;
+    pendingMediaKindRef.current = retake.kind;
+    setRetake(null);
+    cameraInputRef.current?.click();
+  }
+
   function requestMediaUpload(kind: FieldMediaKind, fromStep = false) {
     setAutoPackage(null);
     setMediaChoice(kind);
@@ -4677,6 +4688,11 @@ export default function FieldCommandClient() {
       const checks = await Promise.all(Array.from(files).map(checkImageFile));
       const dark = checks.filter(c => c === "dark").length, blurry = checks.filter(c => c === "blurry").length;
       const photoWarning = dark || blurry ? ` Check: ${[dark ? `${dark} too dark` : "", blurry ? `${blurry} blurry` : ""].filter(Boolean).join(", ")}. HPD may reject it: retake if you can.` : "";
+      if (dark || blurry) {
+        const why = dark && blurry ? "dark and blurry" : dark ? "too dark" : "blurry";
+        setRetake({ id, kind, why });
+        speak(`That ${kind === "before" || kind === "after" ? `${kind} ` : ""}photo looks ${why}. HPD may reject it. Tap Retake while you're still there.`, 400);
+      } else setRetake(null);
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}${photoWarning}` : "No image or video was saved.");
       // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
@@ -5021,6 +5037,38 @@ export default function FieldCommandClient() {
       cardsRef.current = hits.filter((h) => h.job).map((h) => chatCard(h.job)).filter((c): c is ChatCard => Boolean(c));
       lastJobsRef.current = hits.find((h) => h.job) ? { ids: hits.filter((h) => h.job).map((h) => h.job), at: Date.now() } : lastJobsRef.current;
       answer(`🔍 Found ${hits.length === 1 ? "it" : `${hits.length}`}:\n${hits.map((h) => `• ${h.job ? `${h.job} (${addressOf(h.job) || "job"})` : "Your notes"}, in ${where[h.kind] || h.kind}: "${h.snippet}"`).join("\n")}`);
+      return;
+    }
+    if (cmd.intent === "month-report") {
+      // 📈 This month (or last month) on one page.
+      const nyMonth = (v: string) => { const t = Date.parse(v); return Number.isFinite(t) ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(new Date(t)) : ""; };
+      const d = new Date(); d.setDate(15); if (cmd.last) d.setMonth(d.getMonth() - 1);
+      const month = nyMonth(d.toISOString());
+      const real = jobs.filter((j) => !isTestJob(jobId(j)));
+      const amount = (j: JobRecord) => Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0;
+      const won = real.filter((j) => nyMonth(String(value(j, ["AwardDate"]) || "")) === month);
+      const finishedJobs = real.filter((j) => ["WORK_COMPLETED", "PARTIAL_WORK"].includes(value(j, ["FieldOutcome", "fieldOutcome"])) && nyMonth(String(value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || "")) === month);
+      const noAccess = real.filter((j) => /NO_ACCESS|REFUSED/.test(value(j, ["FieldOutcome", "fieldOutcome"])) && nyMonth(String(value(j, ["LastFieldVisitAt", "lastFieldVisitAt", "NoAccessFirstAttemptAt"]) || "")) === month).length;
+      let recs: { sentAt?: string }[] = [];
+      try { recs = Object.values(JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}")); } catch { /* private mode */ }
+      const group = <K extends string>(list: JobRecord[], key: (j: JobRecord) => K) => { const m: Record<string, { won: number; awarded: number }> = {}; for (const j of list) { const k = key(j); if (!k) continue; m[k] = m[k] || { won: 0, awarded: 0 }; m[k].won += 1; m[k].awarded += amount(j); } return Object.entries(m).sort((a, b) => b[1].won - a[1].won || b[1].awarded - a[1].awarded); };
+      const boroughName = (j: JobRecord) => ({ MN: "Manhattan", BK: "Brooklyn", QN: "Queens", BX: "Bronx", SI: "Staten Island" } as Record<string, string>)[String(jobBorough(j))] || "Other";
+      const kindOf = (j: JobRecord) => (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "Other").split(/[·(,:]/)[0].trim().slice(0, 30) || "Other";
+      const report = {
+        month: new Date(`${month}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        soFar: !cmd.last,
+        won: won.length, awarded: won.reduce((a, j) => a + amount(j), 0),
+        finished: finishedJobs.length, noAccess, earned: finishedJobs.reduce((a, j) => a + amount(j), 0),
+        bidsSent: recs.filter((r) => r && r.sentAt && nyMonth(r.sentAt) === month).length,
+        boroughs: group(won, boroughName).map(([name, v]) => ({ name, ...v })),
+        kinds: group(won, kindOf).map(([name, v]) => ({ name, won: v.won })),
+      };
+      void monthReportPdf(report).then((bytes) => {
+        const name = `HPD Field - ${report.month}${report.soFar ? " (so far)" : ""}.pdf`;
+        const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+        answer(monthSummary(report));
+        setAgent((a) => (a ? { ...a, file: { name, url } } : a));
+      }).catch(() => answer("I couldn't make the report on this phone right now. Try again in a minute."));
       return;
     }
     if (cmd.intent === "missing-paperwork") {
@@ -7259,6 +7307,16 @@ export default function FieldCommandClient() {
                       </div>
                     </li>
                     {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+                    {retake && retake.id === id ? (
+                      <div className="jc-retake" role="alert" data-hpd-smoke="jc-retake">
+                        <b>📷 That {retake.kind === "before" || retake.kind === "after" ? `${retake.kind} ` : ""}photo looks {retake.why}</b>
+                        <span>HPD may reject it. Take it again while you&apos;re still here.</span>
+                        <div>
+                          <button type="button" className="jc-glow" data-hpd-smoke="jc-retake-go" onClick={retakeNow}>📷 Retake</button>
+                          <button type="button" data-hpd-smoke="jc-retake-keep" onClick={() => setRetake(null)}>Keep it</button>
+                        </div>
+                      </div>
+                    ) : null}
                     {mediaMessage ? <p className={`fc-save-message ${/fail|too |could not|couldn|error|not saved|no image/i.test(mediaMessage) ? "is-error" : ""}`} role="status" data-hpd-smoke="jc-media-message">{mediaBusy ? "Saving... keep this screen open. " : ""}{mediaMessage}</p> : mediaBusy ? <p className="fc-save-message" role="status">Saving {mediaBusy} photos/videos... keep this screen open.</p> : null}
                   </ol>
                 );
@@ -8480,6 +8538,19 @@ export default function FieldCommandClient() {
           {/* The answer appears word by word (owner, 3 Nov: "everything animated"; the words are all there at once for
               reading and tests, each fades in a moment after the one before). */}
           <p key={agent.reply} data-hpd-smoke="fc-agent-reply" className={`fc-agent-words${agent.live ? " is-live" : ""}`}>{agent.reply.length > 500 || agent.live ? agent.reply : agent.reply.split(/(\s+)/).map((w, i) => (/^\s+$/.test(w) || !w ? w : <span key={i} style={{ animationDelay: `${Math.min(i, 120) * 22}ms` }}>{w}</span>))}</p>
+          {agent.file ? (
+            <div className="fc-agent-file" data-hpd-smoke="fc-agent-file">
+              <a href={agent.file.url} target="_blank" rel="noreferrer" data-hpd-smoke="fc-agent-file-open">📄 Open the report</a>
+              <button type="button" data-hpd-smoke="fc-agent-file-share" onClick={async () => {
+                const f = agent.file!;
+                try {
+                  const file = new File([await (await fetch(f.url)).blob()], f.name, { type: "application/pdf" });
+                  if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: f.name });
+                  else window.open(f.url, "_blank");
+                } catch { /* closed the share sheet */ }
+              }}>📤 Share</button>
+            </div>
+          ) : null}
           {agent.photos ? (
             <div className="fc-agent-ba" data-hpd-smoke="fc-agent-ba">
               <figure><img src={agent.photos.before} alt={`${agent.photos.id} before`} /><figcaption>Before</figcaption></figure>

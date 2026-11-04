@@ -29,6 +29,7 @@ export type AgentCommand =
   | { intent: "tour" }
   | { intent: "materials" }
   | { intent: "missing-paperwork" }
+  | { intent: "month-report"; last?: boolean }
   | { intent: "losing-time" }
   | { intent: "good-news" }
   | { intent: "before-after"; ref: string }
@@ -207,6 +208,8 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(what'?s|what does|how does) my (week|next 7 days|next week) look\b|\b(my )?week ahead\b|\bnext 7 days\b|\bwhat'?s coming up( this week)?\b|\b(this|next) week'?s (schedule|plan)\b/.test(t)) return { intent: "week-ahead" };
   // 🔍 "find the job where the tenant said the dog bites" (a number or an address stays the map search).
   if (!/\d/.test(t) && /^(please )?(find|search( for)?|look for|look up)\b|^(which|what) job (had|has|was|is|where)\b|^where was the job\b/.test(t)) return { intent: "find", query: String(heard).trim() };
+  // 📈 "month report", "my month on one page", "last month's report".
+  if (/\b(month(ly)? report|report (for|of) (the|this|last) month|month on one page|one page (report|for the month)|how was my month|(this|last) month'?s report)\b/.test(t)) return { intent: "month-report", ...(/\blast month\b/.test(t) ? { last: true } : {}) };
   // 🧾 / 🗺 / 🎉 / 📸 (owner, 4 Nov: "do all ideas").
   if (/\b(am i missing|missing (any )?paperwork|paperwork (i'?m )?missing|what paperwork (is )?(left|missing)|unfinished paperwork|paperwork (still )?(left|to do))\b/.test(t)) return { intent: "missing-paperwork" };
   if (/\b(losing time|where (does|do) (my|the) time go|what takes (the )?longest|which jobs take (the )?longest|slowest (jobs?|borough)|how long do (my )?jobs take)\b/.test(t)) return { intent: "losing-time" };

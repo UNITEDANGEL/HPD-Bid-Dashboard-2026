@@ -3,25 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "weekly-report-pdf",
-      "icon": "📈",
+      "id": "paid-check",
+      "icon": "💵",
       "kind": "new",
-      "title": "Month on one page",
-      "why": "A one-page PDF each month: money in, jobs done, win rate and best boroughs, ready to send to your accountant."
+      "title": "Did HPD pay me?",
+      "why": "Ask \"did HPD pay ER…\": the robot checks the payment list and tells you paid, how much and when, or how long it's been waiting."
     },
     {
-      "id": "photo-retake",
-      "icon": "📷",
+      "id": "tenant-eta",
+      "icon": "🕒",
       "kind": "new",
-      "title": "Retake before you leave",
-      "why": "If a before or after photo is dark or blurry, the robot tells you right there, while you are still in the apartment."
+      "title": "Tell the tenant you're on the way",
+      "why": "One tap texts the tenant \"on my way, about 20 minutes\", with the time from your drive."
     },
     {
-      "id": "hpd-reply-draft",
-      "icon": "✉️",
+      "id": "job-checklist",
+      "icon": "✅",
       "kind": "new",
-      "title": "Answer HPD's email for you",
-      "why": "When HPD asks for something, the robot writes the reply with the right files attached; you read it and tap Send."
+      "title": "Job checklist from HPD's description",
+      "why": "Before you leave a job, the robot reads back each line of HPD's work list and you say done to each one."
     },
     {
       "id": "voice-only-day",

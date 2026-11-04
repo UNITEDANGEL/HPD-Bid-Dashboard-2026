@@ -1136,3 +1136,10 @@
 .jc-on-site { margin: 6px 0 0; font-size: 15px; font-weight: 700; color: #475569; }
 .jc-status-go.is-late { background: #f59e0b; color: #1c1002; animation: jcLatePulse 1.6s ease-in-out infinite; }
 @keyframes jcLatePulse { 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.25); } }
+/* 📷 Retake before you leave (4 Nov). */
+.jc-retake { display: grid; gap: 6px; margin: 8px 0; padding: 12px; border-radius: 14px; background: #422006; border: 2px solid #f59e0b; color: #fef3c7; animation: jcRetakeIn 0.35s ease-out; }
+.jc-retake b { font: 900 16px system-ui, sans-serif; }
+.jc-retake div { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+.jc-retake button { min-height: 48px; border-radius: 12px; border: 1px solid #f59e0b; background: transparent; color: inherit; font: 800 15px system-ui, sans-serif; }
+.jc-retake button.jc-glow { background: #f59e0b; color: #1c1002; }
+@keyframes jcRetakeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
