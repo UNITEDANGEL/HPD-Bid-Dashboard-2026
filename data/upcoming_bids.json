@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T21:19:06.607412+00:00",
+  "generatedAt": "2026-11-04T21:36:41.898117+00:00",
   "days": 14,
   "bids": [
     {
@@ -4555,6 +4555,137 @@
       },
       "lat": 40.702817,
       "lng": -73.919255
+    },
+    {
+      "omo": "ER09544",
+      "bidDue": "2026-11-06",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-06",
+      "workCompletion": "2026-11-30",
+      "address": "56 WINTHROP STREET",
+      "borough": "BK",
+      "itbFile": "ER09544_110426043046.pdf",
+      "description": "AEP AT APT 2A TRACE AND REPAIR LEAK, REPAIR CEILING, PAINT CEILING AND ALL WALLS, AND REPLACE LEAKING FAUCET AT WASH BASIN AT BATHROOM. AT APT 2A, 2ND STORY BATHROOM 1….TRACE, LOCATE AND REPAIR SOURCE OF LEAK AT BATHROOM CEILING, INCLUDING FROM AREAS AND APARTMENTS ABOVE. STOP LEAK BEFORE CLOSING CEILING. 2….REMOVE LOOSE AND DAMAGED PLASTER AT CEILING, APPROX. 6 SQ.FT., TO SOUND SURFACE. INSTALL NEW 5/8\" MOISTURE RESISTANT SHEETROCK FLUSH WITH CEILING. TAPE AND PLASTER SMOOTH. 3….PRIME WITH STAIN KILLING PRIMER AND PAINT 2 COATS ENTIRE CEILING AND ALL WALLS, APPROX. 150 SQ.FT., IN A UNIFORM COLOR TO MATCH EXISTING. 4….AT WASH BASIN, REPLACE LEAKY FAUCET WITH NEW FAUCET, NEW SUPPLY LINES AND NEW SHUT-OFF VALVES. FIX ANY LEAK AT WATER SUPPLY PIPE UNDER BASIN. TEST HOT AND COLD WATER: BOTH TO RUN PROPERLY WITH NO LEAKS. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM LIJO RAJU CHACKO AT CELL (phone: sign in to see) AND EMAIL CHACKOL@HPD.NYC.GOV ALSO EMAIL SUPERVISORS PASQUALE DELLITURRI AT 212 863 5111, (phone: sign in to see) DELLITUP@HPD.NYC.GOV, OR ASAAD EMAD 212 863 8346 CELL (phone: sign in to see) TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT 4499 TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWING PLAN. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 (TENANT:- (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793827846000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.656398,
+      "lng": -73.958275
     },
     {
       "omo": "ER09763",
