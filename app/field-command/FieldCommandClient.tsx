@@ -59,7 +59,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { setBriefSpeech, setVoiceOff, speak, stopSpeaking, voiceOff, voiceSupported } from "../../lib/speak";
+import { chosenVoiceName, englishVoices, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -1791,13 +1791,36 @@ export default function FieldCommandClient() {
   // 🎨 Dress the helper: the picker in the chat.
   const [dressOpen, setDressOpen] = useState(false);
   const helperLook = useHelperLook();
+  // 🎙 Its voice (owner's pick, 4 Nov): the phone's best voices as 👩 / 👨 buttons and a speed, with a sample.
+  const [voiceTick, setVoiceTick] = useState(0);
+  // 🗨 The helper says short news in a speech bubble over the 🤖 (owner's pick, 4 Nov), without opening the chat; a
+  // tap opens it in the chat and reads it out loud. Any screen can ask with the "hpd-helper-say" event.
+  const [orbSay, setOrbSay] = useState<{ text: string; full: string; at: number } | null>(null);
+  useEffect(() => {
+    if (!orbSay) return;
+    const at = orbSay.at;
+    const t = window.setTimeout(() => setOrbSay((o) => (o && o.at === at ? null : o)), 7000);
+    return () => window.clearTimeout(t);
+  }, [orbSay]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ text: string; full?: string; speak?: boolean }>).detail;
+      if (!d?.text) return;
+      setOrbSay({ text: d.text, full: d.full || d.text, at: Date.now() });
+      if (d.speak) speak(d.full || d.text, 150);
+    };
+    window.addEventListener("hpd-helper-say", on);
+    return () => window.removeEventListener("hpd-helper-say", on);
+  }, []);
   // 📣 Read it to me (owner's pick, 3 Nov): any screen asks the helper to read something out loud (job card, bid).
   useEffect(() => {
     const on = (e: Event) => {
-      const d = (e as CustomEvent<{ title: string; text: string }>).detail;
+      const d = (e as CustomEvent<{ title: string; text: string; omo?: string; go?: string }>).detail;
       if (!d?.text) return;
       unlockChime();
-      setAgent({ heard: `📣 ${d.title}`, reply: d.text });
+      // 🧭 "Take me there" after it: the job just read is the one "there" means.
+      if (d.omo) lastJobsRef.current = { ids: [d.omo], at: Date.now() };
+      setAgent({ heard: `📣 ${d.title}`, reply: d.text, actions: d.go ? [{ label: "🧭 Take me there (Waze)", href: d.go, id: d.omo, via: "Waze" }] : undefined });
       speak(d.text.replace(/\bHPD\b/g, "H P D").replace(/\b([A-Z]{2})(\d{5})\b/g, (_m, a: string, n: string) => `${a.split("").join(" ")} ${n.split("").join(" ")}`), 200);
     };
     window.addEventListener("hpd-read-aloud", on);
@@ -2546,6 +2569,7 @@ export default function FieldCommandClient() {
       // (Test browsers get it only when a test asks: real overdue notices would cover every other test.)
       const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-critical") !== "1"; } catch { return true; } })();
       if ((n.kind === "urgent" || n.kind === "fax-bad") && !snoozed(n) && !testing) { setCritical({ ...n, at: Date.now(), rings: 1 }); return; }
+      { const short = n.title.replace(/\s+/g, " ").trim(); setOrbSay({ text: short.length > 48 ? `${short.slice(0, 46).replace(/\s+\S*$/, "")}…` : short, full: n.text ? `${n.title}. ${n.text}` : n.title, at: Date.now() }); }
       setPing({ ...n, at: Date.now() });
     };
     window.addEventListener("hpd-notify", on);
@@ -4727,6 +4751,10 @@ export default function FieldCommandClient() {
     if (cmd.intent === "text-tenant" || cmd.intent === "call-tenant" || cmd.intent === "navigate" || cmd.intent === "arrived" || cmd.intent === "open") {
       // Which job: the one named, else the one on screen; "next stop": Today's route, else the closest open job.
       let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      if (!job && cmd.intent === "navigate" && cmd.there && lastJobsRef.current && Date.now() - lastJobsRef.current.at < 20 * 60000) {
+        const id = lastJobsRef.current.ids[0];
+        job = jobs.find((x) => jobId(x) === id) || null;
+      }
       if (cmd.intent === "navigate" && (cmd.next || !job) && !cmd.ref) {
         const open = (j: JobRecord) => jobQueue(j) === "pending" && !value(j, ["FieldArrivedAt"]) && !isTestJob(jobId(j));
         const onRoute = todayRouteIds().map((id) => jobs.find((j) => jobId(j) === id)).find((j) => j && open(j)) || null;
@@ -4767,6 +4795,13 @@ export default function FieldCommandClient() {
         lastCallRef.current = jobId(j);
         showPanel({ heard, reply: `${t.name || "The tenant"} at ${where}: ${t.phone}. Tap Call.`, actions: [{ label: `📞 Call ${t.name ? t.name.split(/\s+/)[0] : "the tenant"}`, href: `tel:${t.phone.replace(/[^\d+]/g, "")}` }] });
         speak(`${t.name || "The tenant"} at ${where}. Tap call.`, 200);
+        return;
+      }
+      if (cmd.intent === "navigate" && cmd.there) {
+        // 🧭 "Take me there": one word, Waze opens (the Waze / Google buttons stay in the chat in case it doesn't).
+        showPanel({ heard, reply: `Taking you to ${where} (${jobId(j)}) in Waze…`, actions: [{ label: "Waze", href: wazeHref(j), id: jobId(j), via: "Waze" }, { label: "Google Maps", href: directionsHref(j), id: jobId(j), via: "Google" }] });
+        recordTravel(j, "Waze");
+        speak(sayOmo(`Taking you to ${where}.`), 100, () => { window.location.href = wazeHref(j); });
         return;
       }
       if (cmd.intent === "navigate") {
@@ -5893,7 +5928,7 @@ export default function FieldCommandClient() {
                   const asks = (changeThreads || []).filter((x) => x.status === "Waiting for you").length;
                   const busy = claudeNowFresh(claudeNow) || (changeThreads || []).some((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000);
                   const mode = asks ? "ask" : busy ? "working" : claudeIsOn(claudeSeenAt) || claudeNowFresh(claudeNow) ? "on" : "off";
-                  return (
+                  return (<>
                     <button type="button" className={`fc-ai-orb fc-dock-ai fc-claude-orb is-${mode}${orbTap ? " is-tap" : ""}`} data-hpd-smoke="fc-claude-orb" data-mode={mode} data-tap={orbTap ? "1" : undefined}
                       onContextMenu={(e) => e.preventDefault()}
                       onPointerDown={() => {
@@ -5915,6 +5950,10 @@ export default function FieldCommandClient() {
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Tap to answer Claude" : "Tap to talk"}`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); if (asks) { goTo("requests", ""); return; } setAgentFromDock(true); startAgentChat(true); }}>
                       <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : (() => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date())); return h >= 21 || h < 7; })() ? "sleep" : mode === "off" ? "off" : "idle"} size={44} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} />{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
+                    {orbSay ? (
+                      <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
+                    ) : null}
+                    </>
                   );
                 })() : <span className="fc-dock-gap" aria-hidden="true" />}
                 {make[dockSlots[2]]("fc-dock-btn")}
@@ -6235,7 +6274,7 @@ export default function FieldCommandClient() {
                   setSheetExpanded(event.changedTouches[0].clientY < start);
                 }
               }} onTouchCancel={() => { sheetTouchStart.current = null; }} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
-              <button type="button" className="fc-job-read" aria-label="Read this job to me" data-hpd-smoke="jc-read" onClick={(e) => { e.stopPropagation(); const j = selectedJob; window.dispatchEvent(new CustomEvent("hpd-read-aloud", { detail: { title: `Job ${jobId(j)}`, text: `${jobId(j)}, ${jobAddress(j).replace(/,\s*\d{5}$/, "")}. ${jobStatus(j)}. The work: ${jobSummary(jobScope(j)).lines.map(lineText).join("; ") || "no description"}.` } })); }}>🔊</button>
+              <button type="button" className="fc-job-read" aria-label="Read this job to me" data-hpd-smoke="jc-read" onClick={(e) => { e.stopPropagation(); const j = selectedJob; window.dispatchEvent(new CustomEvent("hpd-read-aloud", { detail: { title: `Job ${jobId(j)}`, omo: jobId(j), go: wazeHref(j), text: `${jobId(j)}, ${jobAddress(j).replace(/,\s*\d{5}$/, "")}. ${jobStatus(j)}. The work: ${jobSummary(jobScope(j)).lines.map(lineText).join("; ") || "no description"}.` } })); }}>🔊</button>
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -7855,6 +7894,19 @@ export default function FieldCommandClient() {
             <div className="fc-agent-dress" data-hpd-smoke="fc-agent-dress-box" role="group" aria-label="Dress the helper">
               <span>{(Object.keys(HELPER_COLORS) as HelperColor[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.color === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-color" data-color={k} aria-label={HELPER_COLORS[k].label} aria-pressed={helperLook.color === k} style={{ background: HELPER_COLORS[k].line }} onClick={() => setHelperLook({ color: k })} />)}</span>
               <span>{(Object.keys(HELPER_HATS) as HelperHat[]).map((k) => <button key={k} type="button" className={`fc-dress-hat${helperLook.hat === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-hat" data-hat={k} aria-pressed={helperLook.hat === k} onClick={() => setHelperLook({ hat: k })}>{HELPER_HATS[k]}</button>)}</span>
+              {voiceSupported() ? (() => {
+                // 🎙 Its voice: a woman's or a man's, slower or faster; each tap says a sample with the mouth moving.
+                void voiceTick;
+                const list = englishVoices().slice(0, 4);
+                const pick = chosenVoiceName() || list[0]?.name || "";
+                const rate = voiceRate();
+                const who = (n: string) => (/\b(ava|zoe|samantha|allison|aria|jenny|karen|moira|tessa|victoria|susan|serena|fiona|kate|nicky|joelle|female|woman|zira|libby|sonia|emma|michelle)\b/i.test(n) ? "👩" : /\b(evan|nathan|daniel|alex|guy|tom|aaron|arthur|oliver|rishi|male|man|david|mark|ryan|eric|christopher|reed|gordon)\b/i.test(n) ? "👨" : "🗣");
+                const sample = () => { unlockChime(); speak(`Hi ${(() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })()}, this is how I sound now.`, 100); };
+                return <>
+                  {list.length ? <span className="fc-dress-voices">{list.map((v) => <button key={v.name} type="button" className={`fc-dress-voice${pick === v.name ? " is-on" : ""}`} data-hpd-smoke="fc-dress-voice" data-voice={v.name} aria-pressed={pick === v.name} onClick={() => { setChosenVoice(v.name); setVoiceTick((n) => n + 1); sample(); }}>{who(v.name)} {v.name.replace(/\s+-\s.*$/, "").replace(/\s*\(.*\)$/, "").replace(/^(Microsoft|Google|Apple)\s+/i, "").split(/\s+/).slice(0, 2).join(" ")}</button>)}</span> : null}
+                  <span className="fc-dress-voices">{([[0.85, "🐢 Slower"], [1, "Normal"], [1.15, "🐇 Faster"]] as const).map(([r, label]) => <button key={label} type="button" className={`fc-dress-voice${rate === r ? " is-on" : ""}`} data-hpd-smoke="fc-dress-rate" data-rate={r} aria-pressed={rate === r} onClick={() => { setVoiceRate(r); setVoiceTick((n) => n + 1); sample(); }}>{label}</button>)}<button type="button" className="fc-dress-voice" data-hpd-smoke="fc-dress-sample" onClick={sample}>▶ Hear it</button></span>
+                </>;
+              })() : null}
             </div>
           ) : null}
           {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ Your AI helper</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}

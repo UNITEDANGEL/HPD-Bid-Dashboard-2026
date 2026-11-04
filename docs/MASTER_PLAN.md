@@ -48,21 +48,21 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - 🎤 Hold 🤖 to talk; 😊 feelings; 🔔 shoulder tap; 🗺 the helper points (215).
 - ✨ The magic helper (sparkles, rises, says hello out loud); 👀 eyes follow taps; 🎵 mood sounds; 🏆 daily cheer (216).
 - 🎨 Dress the helper; 💤 naps at night; 🗺 rides along on the route; 📣 read it to me (219). Fix: the eyes no longer redraw the screen on every tap (pin taps were lost).
+- 🗨 Speech bubble over the 🤖; 🎙 pick its voice; 🧭 "take me there"; 📸 it says what it thinks of your photo (223).
 
 ### Ideas (not started; the app's 💡 list is public/data/upgrade-ideas.json)
 - 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up.
 - 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job.
-- 🎙 The helper's voice: pick a voice and speed; it says your name.
 - 🗺 Route that learns: remembers how long each building really takes and plans the day with it.
 - 📅 Week view: jobs, bids due and notices for the next 7 days on one screen.
 - 🔔 One alert a day at 6 PM with what's due tomorrow, instead of many small ones.
 - 🧾 Invoice check before sending: amounts match the award and the COA.
 - 🏢 Building history: every past job at this address, photos and notes, one tap from the card.
 - 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF.
-- 🗨 The helper talks in a speech bubble over the map for short news, without opening the chat.
-- 🎙 Pick the helper's voice (man / woman, faster / slower) and hear a sample.
-- 🧭 "Take me there": the helper starts Waze to the job it just talked about, with one word.
-- 📸 The helper looks at the photo you just took and says "looks good" or "a bit dark, take another".
+- 🤖 The helper walks you through the job: reads the work items one by one, you say "done", then it asks for the after photo.
+- 🕐 "I'm running late": the helper writes the tenant a text with your new time; you tap Send.
+- 🔋 Battery saver: low battery = no moving pictures, fewer location checks.
+- 🗣 The helper answers in the bubble too: short answers ("58°, dry") show in the bubble without opening the chat.
 
 ## What the owner asked for (this conversation)
 
@@ -896,4 +896,5 @@ them. The owner enters any payment details and API keys themselves (keys go into
 220. **Late payment warning** (owner idea, 3 Nov). Done: lib/pay-waiting.ts TOO_LONG_DAYS 90 -> 30; the Money tab (PaymentWaits.tsx, already listing every sent job with amounts, oldest first) flags unpaid-after-30-days under Late. "Money coming in" is that same Money tab.
 221. **Chat notes wait while the route is open** (found by the full test run at night, 3 Nov). Fix: the map nudges (incl. the after-6 PM "Today / Tomorrow" line) are not shown while Today's route panel is open; they covered its buttons. Test: test-browser-route-progress.
 222. **Weekly app check-up** (owner idea, 3 Nov). Done: scripts/weekly-checkup.mjs opens the live pages, counts the week's phone errors (emails/numbers removed) and saves WEEKLY-CHECKUP on the status server; .github/workflows/weekly-checkup.yml runs it every Monday; test-weekly-checkup.mjs. Claude fixes what it lists in the next upgrade run.
+223. **The helper talks more: speech bubble, its voice, take me there, it looks at your photo** (owner, 4 Nov: "do all 4 ideas"). Done: 🗨 fc-orb-say bubble over the dock 🤖 for each hpd-notify (not the big urgent box) and any "hpd-helper-say" event, 7 s, tap = opens the chat with the whole text and says it. 🎙 in 🎨 (fc-dress-voice / fc-dress-rate / fc-dress-sample): the phone's 4 best English voices as 👩/👨 buttons and slower/normal/faster, each says a sample; uses lib/speak (same pick as Phone alerts). 🧭 voice-agent intent navigate with there:true for "take me there" / "let's go" / "go there": the job just read (lastJobsRef from hpd-read-aloud with omo) or the open card, says "Taking you to …" and opens Waze (the Waze / Google buttons stay); the read-aloud panel has 🧭 Take me there (jobs and bids). 📸 PhotoCheck: a photo added while the card is open gets photoComment (lib/photo-check) on the card (jc-photo-say, happy or worried face) and out loud. Tests: test-browser-helper-talks, test-photo-check.cjs.
 - **Quick questions in the chat** (owner idea, 3 Nov; done: ⚡ button in the chat bar opens one-tap questions (Today, Next bid, Notices, Owed, What's next); test-browser-quick-questions).

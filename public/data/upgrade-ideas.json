@@ -1,6 +1,6 @@
 {
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data.",
-  "updated": "2026-11-03",
+  "updated": "2026-11-04",
   "ideas": [
     {
       "id": "chat-speaks-up",
@@ -211,6 +211,48 @@
       "kind": "upgrade",
       "title": "All jobs with paperwork left",
       "why": "One list on the home screen of every finished job that still has photos, an affidavit or an invoice missing, oldest first."
+    },
+    {
+      "id": "job-walkthrough",
+      "icon": "🤖",
+      "kind": "new",
+      "title": "The helper walks you through the job",
+      "why": "At the building it reads the work items one at a time; say \"done\" to tick each one, then it asks for the after photo."
+    },
+    {
+      "id": "late-text",
+      "icon": "🕐",
+      "kind": "new",
+      "title": "\"I'm running late\" text",
+      "why": "Say \"I'm running late\" and the helper writes the tenant a text with your new time (from the drive time); you tap Send."
+    },
+    {
+      "id": "battery-saver",
+      "icon": "🔋",
+      "kind": "upgrade",
+      "title": "Battery saver",
+      "why": "When the phone battery is low, the app stops the moving pictures and checks your location less, so the phone lasts the whole day."
+    },
+    {
+      "id": "building-history",
+      "icon": "🏢",
+      "kind": "new",
+      "title": "Building history",
+      "why": "Every past job at this address with its photos and notes, one tap from the job card."
+    },
+    {
+      "id": "week-view",
+      "icon": "📅",
+      "kind": "new",
+      "title": "Week view",
+      "why": "Jobs, appointments, bids due and notices for the next 7 days on one screen."
+    },
+    {
+      "id": "invoice-check",
+      "icon": "🧾",
+      "kind": "upgrade",
+      "title": "Invoice check before sending",
+      "why": "Before the invoice goes out, the app checks the amount matches the award and the COA, and says what doesn't."
     }
   ]
 }

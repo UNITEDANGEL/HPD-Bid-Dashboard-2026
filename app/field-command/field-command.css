@@ -4198,3 +4198,15 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-chatbar-quick { position: absolute; left: 0; right: 0; bottom: 52px; display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: none; }
 .fc-chatbar-quick::-webkit-scrollbar { display: none; }
 .fc-chatbar button.fc-chatbar-quick button, .fc-chatbar .fc-chatbar-quick button { flex: none; width: auto; height: 34px; padding: 0 12px; border-radius: 17px; background: rgba(15, 23, 42, 0.94); border: 1.5px solid #8b5cf6; color: #e0e7ff; font: 700 14px/1 system-ui, sans-serif; white-space: nowrap; }
+
+/* 🗨 The helper's speech bubble over the 🤖 (4 Nov): short news without opening the chat; tap it to hear the rest. */
+.fc-dock .fc-orb-say { position: absolute; left: 50%; bottom: calc(100% + 64px); transform: translateX(-50%); max-width: min(260px, 78vw); pointer-events: auto; z-index: 3; padding: 8px 12px; border: 0; border-radius: 16px; background: #fff; color: #1e1b4b; font-family: inherit; font-size: 13px; font-weight: 800; line-height: 1.3; opacity: 1; text-align: center; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.35); white-space: normal; animation: fc-orb-say-in 0.42s cubic-bezier(.2, 1.4, .4, 1) both, fc-orb-say-out 0.4s ease 6.6s forwards; }
+.fc-dock .fc-orb-say::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 8px solid transparent; border-top-color: #fff; }
+@keyframes fc-orb-say-in { from { opacity: 0; transform: translate(-50%, 14px) scale(0.6); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes fc-orb-say-out { to { opacity: 0; transform: translate(-50%, 8px) scale(0.9); } }
+/* 🎙 Its voice in the 🎨 picker. */
+.fc-dress-voices { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-dress-voice { min-height: 34px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.45); background: rgba(255, 255, 255, 0.08); color: inherit; font: inherit; font-size: 12.5px; font-weight: 700; transition: transform 0.15s ease, background 0.2s ease; }
+.fc-dress-voice.is-on { background: #7c3aed; border-color: #7c3aed; color: #fff; transform: scale(1.04); }
+.fc-dress-voice:active { transform: scale(0.94); }
+@media (prefers-reduced-motion: reduce) { .fc-dock .fc-orb-say { animation: none; } .fc-dress-voice { transition: none; } }

@@ -5,6 +5,10 @@
       "date": "Nov 3, 2026",
       "title": "Ideas, keep upgrading, talk to Claude",
       "items": [
+        "🗨 The helper's speech bubble. Short news pops up in a bubble over the 🤖 without opening the chat. Tap the bubble and it reads you the rest.",
+        "🎙 Pick its voice. In the chat tap 🎨: 👩 or 👨 voices and 🐢 slower / 🐇 faster. Each tap, it says a sample.",
+        "🧭 Take me there. After the helper reads a job (🔊), say or type \"take me there\" and Waze opens to it. A 🧭 button comes with every reading too.",
+        "📸 It looks at your photo. Take a before or after photo and the helper says right away: looks good, or a bit dark / blurry, take another.",
         "🔍 Weekly app check-up. Every Monday the app opens its own pages, counts the errors your phone had that week and keeps a short result. Anything it lists, Claude fixes in the next upgrade.",
         "⚡ Quick questions in the chat. Tap ⚡ next to the chat bar and one-tap buttons appear: Today, Next bid, Notices, Owed, What's next. The helper answers without typing.",
         "🗺 The evening note (\"Today: … Tomorrow: …\") no longer covers Today's route: it waits while the route is open.",

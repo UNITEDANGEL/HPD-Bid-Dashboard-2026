@@ -75,3 +75,12 @@ export function summarizePhotoCheck(items: PhotoCheckItem[], counts: { before: n
   }
   return { problems, bad, checked: items.length, good: !problems.length && items.length > 0 };
 }
+
+// 📸 What the helper says about the photo you just took (owner's pick, 4 Nov).
+export function photoComment(verdict: PhotoVerdict, kind: "before" | "after") {
+  const what = kind === "before" ? "before photo" : "after photo";
+  return verdict === "ok" ? `Nice ${what}, that one looks good.`
+    : verdict === "blurry" ? `That ${what} looks a bit blurry. Hold the phone still and take another.`
+    : verdict === "dark" ? `That ${what} is a bit dark. Turn on a light or the flash and take another.`
+    : `That ${what} is too bright. Step out of the glare and take another.`;
+}

@@ -1125,3 +1125,10 @@
 .jc-note-add { display: flex; gap: 8px; }
 .jc-note-add input { flex: 1; min-width: 0; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.5); background: #0f172a; color: #f8fafc; font-size: 16px; }
 .jc-note-add button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: #2563eb; color: #fff; font-weight: 700; font-size: 16px; }
+
+/* 📸 The helper's word on the photo you just took (4 Nov). */
+.jc-photo-say { display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 7px 10px; border-radius: 14px; font-weight: 700; animation: jc-photo-say-in 0.4s cubic-bezier(.2, 1.4, .4, 1) both; }
+.jc-photo-say.is-good { background: #dcfce7; color: #14532d; }
+.jc-photo-say.is-bad { background: #fef3c7; color: #78350f; }
+@keyframes jc-photo-say-in { from { opacity: 0; transform: translateY(8px) scale(0.92); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .jc-photo-say { animation: none; } }

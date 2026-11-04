@@ -65,7 +65,7 @@ export type AgentCommand =
   | { intent: "awards"; days: number; label: string; describe?: boolean }
   | { intent: "text-tenant"; ref: string }
   | { intent: "call-tenant"; ref: string }
-  | { intent: "navigate"; ref: string; next: boolean }
+  | { intent: "navigate"; ref: string; next: boolean; there?: boolean }
   | { intent: "arrived"; ref: string }
   | { intent: "open"; ref: string }
   | { intent: "plan" }
@@ -295,6 +295,8 @@ export function parseCommand(heard: string): AgentCommand {
   // Doing things by voice (in-app request 22 Oct: "I should be able to talk and get everything done").
   if (/\b(text|message|sms)\b.*\b(tenant|them|her|him|resident)\b|\bsend (a |the )?(text|message|sms)\b/.test(t)) return { intent: "text-tenant", ref: refOf(t) };
   if (/\bcall\b.*\b(tenant|them|her|him|resident)\b|\b(tenant'?s?|resident'?s?) (phone|number)\b/.test(t)) return { intent: "call-tenant", ref: refOf(t) };
+  // 🧭 "Take me there" / "let's go" (owner's pick, 4 Nov): straight to Waze for the job the helper just talked about.
+  if (/^(ok(ay)?,? )?(let'?s go( there)?|go there|drive there|take me there|bring me there|navigate there)( now| please)?$/.test(t)) return { intent: "navigate", ref: "", next: false, there: true };
   if (/\b(navigate|directions|take me|drive me|get me to|route me|go to|how do i get to)\b/.test(t)) return { intent: "navigate", ref: refOf(t), next: /\bnext\b/.test(t) };
   if (/\b(i'?m here|i am here|i'?ve arrived|i arrived|i'?m at the (job|site|building|address)|start (the |this )?job|starting (the |this )?job)\b/.test(t)) return { intent: "arrived", ref: refOf(t) };
   if (/^(open|show( me)?|pull up)\b.*\b([a-z]{2}\s*\d{5}|job)\b/.test(t) && refOf(t)) return { intent: "open", ref: refOf(t) };

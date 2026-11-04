@@ -6,7 +6,7 @@ const ts = require('typescript');
 const code = ts.transpileModule(fs.readFileSync(path.resolve('lib/photo-check.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
 const mod = { exports: {} };
 new Function('require', 'module', 'exports', code)(require, mod, mod.exports);
-const { judgePixels, summarizePhotoCheck } = mod.exports;
+const { judgePixels, summarizePhotoCheck, photoComment } = mod.exports;
 
 const W = 120, H = 90;
 let seed = 7;
@@ -45,4 +45,9 @@ s = summarizePhotoCheck([ok('before', 1), { id: 2, kind: 'after', verdict: 'blur
 assert.deepEqual(s.problems, ['1 before photo is too dark: take it again.', '2 after photos look blurry: take them again.']);
 assert.equal(s.bad.length, 3);
 assert.equal(s.good, false);
+// What the helper says about the photo just taken (4 Nov).
+assert.match(photoComment('ok', 'after'), /^Nice after photo, that one looks good\.$/);
+assert.match(photoComment('blurry', 'before'), /before photo looks a bit blurry.*take another/);
+assert.match(photoComment('dark', 'after'), /a bit dark.*flash/);
+assert.match(photoComment('bright', 'after'), /too bright/);
 console.log('photo check ok');

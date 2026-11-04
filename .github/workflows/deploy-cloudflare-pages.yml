@@ -389,6 +389,7 @@ jobs:
             scripts/test-browser-job-notes.mjs \
             scripts/test-browser-bids-welcome.mjs \
             scripts/test-browser-helper-alive.mjs \
+            scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-go-anyway.mjs \
             scripts/test-browser-newupdate.mjs \
             scripts/test-browser-agent-chat.mjs \
