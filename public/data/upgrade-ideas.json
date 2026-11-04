@@ -3,6 +3,48 @@
   "updated": "2026-11-04",
   "ideas": [
     {
+      "id": "weekly-score",
+      "icon": "🏆",
+      "kind": "new",
+      "title": "Friday score from the robot",
+      "why": "Friday afternoon the robot gives you the week: bids sent, jobs finished, jobs won, money in, with a trophy for a good week."
+    },
+    {
+      "id": "time-at-job",
+      "icon": "⏱",
+      "kind": "new",
+      "title": "Time at each job, by itself",
+      "why": "From \"I'm here\" to \"done\" the app keeps the time, so you see how long each kind of job really takes."
+    },
+    {
+      "id": "store-stop",
+      "icon": "🏪",
+      "kind": "new",
+      "title": "Store stop on the way",
+      "why": "When today's list needs materials, the robot adds the closest Home Depot or supply store on your route."
+    },
+    {
+      "id": "photo-sees",
+      "icon": "🔎",
+      "kind": "new",
+      "title": "The robot says what it sees",
+      "why": "Take a before photo and the robot names the problem (leak stain, mold, broken plaster) and adds it to the job notes."
+    },
+    {
+      "id": "hpd-email-brief",
+      "icon": "📩",
+      "kind": "new",
+      "title": "HPD emails in 20 seconds",
+      "why": "When you open the app, the robot sums up new HPD emails out loud: who wrote, which job, what they want."
+    },
+    {
+      "id": "route-traffic",
+      "icon": "🚦",
+      "kind": "upgrade",
+      "title": "Traffic colors on the route",
+      "why": "The route line on the map turns red where traffic is slow, so you know before you leave."
+    },
+    {
       "id": "quick-price-voice",
       "icon": "💲",
       "kind": "new",
