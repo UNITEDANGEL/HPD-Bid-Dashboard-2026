@@ -6,7 +6,7 @@ function visit(node) { if (ts.isFunctionDeclaration(node) && node.name?.text ===
 visit(ast);
 assert.ok(fn);
 const calls = [];
-const context = { mediaChoice:'before', mediaBusy:'', pendingMediaKindRef:{current:null}, setMediaChoice: value => calls.push(['choice',value]) };
+const context = { selectedJob:null, mediaChoice:'before', mediaBusy:'', pendingMediaKindRef:{current:null}, setMediaChoice: value => calls.push(['choice',value]) };
 for (const name of ['cameraInputRef','mediaInputRef','videoCameraInputRef','videoLibraryInputRef']) context[name] = {current:{click:()=>calls.push(name)}};
 vm.createContext(context);
 vm.runInContext(ts.transpileModule(fn.getText(ast), {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,context);
