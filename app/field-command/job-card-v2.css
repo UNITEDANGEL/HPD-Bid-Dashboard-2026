@@ -1154,3 +1154,6 @@
 .jc-safety button.jc-glow { background: #22c55e; color: #052e16; }
 .jc-hello { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; font: 800 13px system-ui, sans-serif; }
 .jc-hello button { min-height: 38px; padding: 0 12px; border-radius: 999px; border: 1px solid #60a5fa; background: #eff6ff; color: #1e3a8a; font: 800 14px system-ui, sans-serif; }
+/* 🔁 Talk both ways; ☎️ HPD calling (5 Nov). */
+.jc-hello button.jc-hello-both { border-color: #0ea5e9; background: #0ea5e9; color: #fff; }
+.jc-hpd-say { white-space: nowrap; }

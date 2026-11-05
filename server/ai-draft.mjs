@@ -207,6 +207,23 @@ export async function aiAnswer(env, ask, fetcher = fetch) {
   return { ai: false, reason: "not-set-up" };
 }
 
+// 🔁 Talk with the tenant in their language (owner idea, 4 Nov): Cloudflare's own translation model (free daily
+// allowance). English <-> Spanish, Chinese, Russian; one spoken line at a time, nothing kept.
+export const TRANSLATE_MODEL = "@cf/meta/m2m100-1.2b";
+export const TRANSLATE_LANGS = ["en", "es", "zh", "ru"];
+export function translateFacts(body) {
+  const text = clip(body?.text, 600).replace(/\s+/g, " ").trim();
+  const from = String(body?.from || "").slice(0, 2).toLowerCase(), to = String(body?.to || "").slice(0, 2).toLowerCase();
+  if (!text || !TRANSLATE_LANGS.includes(from) || !TRANSLATE_LANGS.includes(to) || from === to) return null;
+  return { text, from, to };
+}
+export async function aiTranslate(env, t) {
+  if (!env?.AI) return { ai: false, reason: "not-set-up" };
+  const result = await env.AI.run(TRANSLATE_MODEL, { text: t.text, source_lang: t.from, target_lang: t.to });
+  const text = String(result?.translated_text || "").replace(/\s+/g, " ").trim().slice(0, 900);
+  return text ? { ai: true, model: TRANSLATE_MODEL, text } : { ai: false, reason: "The AI gave no translation." };
+}
+
 // 📷 Read a photo (owner, 3 Nov, pick 5 of making the chat smarter): a picture of a notice, invoice, work order or
 // sign, read by Cloudflare's own vision model (the free daily allowance; the phone allows 15 a day). Nothing is kept.
 // The model asks for its license to be accepted once ("agree"), done here when it says so.

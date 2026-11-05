@@ -47,6 +47,16 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-orb-ask"]')?.textContent === "1 question", null, { timeout: 10000 });
   // The next one: the whole question shows, and "Yes, do it" sends the exact words it asked for.
   await page.waitForFunction(() => /type 'yes, use the free picture AI' here/.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || ""), null, { timeout: 10000 });
+  // The card is never under the ask bar or the Next bar (owner's screenshot, 5 Nov): its buttons can be tapped.
+  const clash = await page.evaluate(() => {
+    const box = (sel) => document.querySelector(sel)?.getBoundingClientRect();
+    const cardBox = box('[data-hpd-smoke="fc-claude-live"]');
+    const hit = (o) => o && cardBox && !(o.bottom <= cardBox.top || o.top >= cardBox.bottom || o.right <= cardBox.left || o.left >= cardBox.right);
+    const btn = document.querySelector('[data-hpd-smoke="fc-claude-live"] button:last-of-type')?.getBoundingClientRect();
+    const top = btn ? document.elementFromPoint(btn.left + btn.width / 2, btn.top + btn.height / 2) : null;
+    return { chat: Boolean(hit(box(".fc-chatbar"))), next: Boolean(hit(box(".fc-focus-chip"))), tappable: Boolean(top?.closest('[data-hpd-smoke="fc-claude-live"]')) };
+  });
+  assert.deepEqual(clash, { chat: false, next: false, tappable: true }, JSON.stringify(clash));
   await card.locator('[data-hpd-smoke="fc-claude-ask-yes"]').click();
   await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-claude-orb-ask"]'), null, { timeout: 10000 });
   assert.equal(posts.find((p) => p.key === `CHANGE-ANSWER-${id2}`).patch.answers[0].text, "yes, use the free picture AI");

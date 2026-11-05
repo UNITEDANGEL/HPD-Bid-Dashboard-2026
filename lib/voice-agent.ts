@@ -56,6 +56,10 @@ export type AgentCommand =
   | { intent: "traffic" }
   | { intent: "asp"; when: "today" | "tomorrow" }
   | { intent: "store"; store: string }
+  | { intent: "store-stop" }
+  | { intent: "translate"; lang: string }
+  | { intent: "hpd-call"; ref: string }
+  | { intent: "streaks" }
   | { intent: "building"; ref: string }
   | { intent: "drive-time"; ref: string }
   | { intent: "app-request"; text: string }
@@ -219,6 +223,12 @@ export function parseCommand(heard: string): AgentCommand {
   // 🕒 "tell the tenant I'm on my way", "on my way to ER07663", "text them I'm coming".
   // Only said as itself ("tell the tenant we'll call when we're on the way" stays your own words to the tenant).
   if (/^(i'?m |we'?re )?(on (my|our) way|coming|heading (there|over))( to [a-z]{2}\s?\d{5})?( now)?$/.test(t) || /^(tell|text|let) (the tenant|them|him|her)( know)? (that )?(i'?m|we'?re) (on (my|our) way|coming)( now)?$/.test(t)) return { intent: "on-my-way", ref: (/[a-z]{2}\s?\d{5}/.exec(t)?.[0] || "").replace(/\s/g, "").toUpperCase() };
+  // 🔁 "translate", "talk to the tenant in Spanish", "interpreter" (4 Nov): both ways with the tenant.
+  if (/^(open |start )?(the )?(translat(e|or|ion)|interpreter)( for (the )?tenant)?( (in|to) (spanish|chinese|mandarin|cantonese|russian))?( please)?$|\b(translate|interpret) (for|with) (the|my) tenant\b|\btalk (to|with) the tenant in (spanish|chinese|mandarin|cantonese|russian)\b|\bthe tenant (only )?speaks (spanish|chinese|mandarin|cantonese|russian)\b/.test(t)) return { intent: "translate", lang: /chinese|mandarin|cantonese/.test(t) ? "zh" : /russian/.test(t) ? "ru" : "es" };
+  // ☎️ "what do I say to HPD", "HPD is calling about ER07663", "before I call HPD back" (4 Nov): the 3 things to say.
+  if (/\b(what (do|should) i (say|tell)( to)? hpd|hpd('?s| is) calling|hpd called|call(ing)? hpd back|before i call hpd|talk(ing)? to hpd|what to (say|tell) (to )?hpd)\b/.test(t)) return { intent: "hpd-call", ref: (/[a-z]{2}\s?\d{5}/.exec(t)?.[0] || "").replace(/\s/g, "").toUpperCase() };
+  // 🔥 "my streak", "streaks", "my records" (4 Nov).
+  if (/\b(my )?streaks?\b|\bmy records?\b|\bhow many days in a row\b/.test(t)) return { intent: "streaks" };
   // 📈 "month report", "my month on one page", "last month's report".
   if (/\b(month(ly)? report|report (for|of) (the|this|last) month|month on one page|one page (report|for the month)|how was my month|(this|last) month'?s report)\b/.test(t)) return { intent: "month-report", ...(/\blast month\b/.test(t) ? { last: true } : {}) };
   // 🧾 / 🗺 / 🎉 / 📸 (owner, 4 Nov: "do all ideas").
@@ -297,6 +307,8 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(traffic|rush hour|how('?s| is) the (drive|road|roads)|roads? (busy|bad|clear))\b/.test(t)) return { intent: "traffic" };
   // Parking, the building, drive time, supply runs (27 Oct, "do all of them").
   if (/\b(alternate[ -]side|a ?s ?p|street cleaning|move (my|the) (car|truck|van))\b/.test(t)) return { intent: "asp", when: /\btomorrow\b/.test(t) ? "tomorrow" : "today" };
+  // 🛒 "store on my way", "stop at Home Depot on the way", "store stop" (4 Nov): the store with the fewest extra minutes.
+  if (/\b(store stop|supply run on the way|(store|home depot|lowe'?s|supply|hardware)( store| house)? on (my|the) way|on (my|the) way\b.{0,25}\b(store|home depot|lowe'?s|supply|hardware)|stop at (the |a )?(home depot|lowe'?s|store|hardware store|supply)\b.{0,15}\bway)\b/.test(t)) return { intent: "store-stop" };
   const store = /\b(home depot|lowe'?s|hardware store|plumbing supply|electrical supply|supply (?:store|house)|lumber ?yard|gas station|paint store|sherwin[- ]williams|locksmith)\b/.exec(t);
   if (store && /\b(nearest|closest|near me|nearby|find|where|take me|go to|need|get to)\b/.test(t)) return { intent: "store", store: store[1] };
   if (/\b(how old is|when was .{0,20}built|year built|building (facts|info|age)|how many (floors|stories|units)|(open )?violations (on|at|in|for))\b/.test(t)) return { intent: "building", ref: refOf(t.replace(/\b(how old is|when was|built|year|building|facts|info|age|how many|floors|stories|units|violations)\b/g, " ")) };

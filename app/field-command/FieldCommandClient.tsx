@@ -5,7 +5,11 @@ import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, typ
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import BidsMode, { type BidsChat } from "./BidsMode";
-import { fetchRoadRoute, type RoadRoute } from "../../lib/road-route";
+import { fetchRoadRoute, rushLevel, trafficLevels, trafficRuns, type RoadRoute } from "../../lib/road-route";
+import { findStore, storeLine, type Store } from "../../lib/store-stop";
+import { bumpBest, streakLine, streaks } from "../../lib/streaks";
+import { drivingLink, routeLink, wazeLink } from "../../lib/driving-link";
+import TranslatePanel from "./TranslatePanel";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
 import JobSafeLine from "./JobSafeLine";
@@ -4081,6 +4085,8 @@ export default function FieldCommandClient() {
   const stepsRef = useRef<{ title: string; items: string[]; i: number; at: number; end: string } | null>(null);
   // 🎓 Teach me the app (owner idea, 4 Nov): a short coach at the top, the button it talks about glowing, said out loud.
   const [teach, setTeach] = useState(-1);
+  // 🔁 Talk with the tenant both ways: the language it opens in ("" = closed).
+  const [translateLang, setTranslateLang] = useState("");
   const TEACH: { sel: string; text: string }[] = [
     { sel: '[data-hpd-smoke="fc-claude-orb"]', text: "This is me, your helper. Tap me to talk, or hold me and just speak." },
     { sel: '[data-hpd-smoke="fc-chatbar-input"]', text: "Type or say anything here: a job number, an address, or a question like what's due today." },
@@ -4143,6 +4149,32 @@ export default function FieldCommandClient() {
     setOrbSay({ text: `❓ Claude has a question about ${what}. Tap me.`, full: `Claude has a question about ${what}: ${q} Tap ❓ Answer Claude to reply.`, at: Date.now() });
   }, [changeThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   const helloDoneRef = useRef(false);
+  // 🔥 Streaks: work days in a row with bids sent (this phone's bid records), finished jobs in a row with the paperwork
+  // out the same day. A new record gets one cheer.
+  function streakNow() {
+    let recs: Record<string, { sentAt?: string }> = {};
+    try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+    const finished = jobs.filter((j) => !isTestJob(jobId(j)) && value(j, ["FieldOutcome", "fieldOutcome"]) === "WORK_COMPLETED").map((j) => ({
+      finishedAt: String(value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || ""),
+      paperworkAt: String(value(j, ["PackageEmailedAt", "InvoiceSentAt"]) || ""),
+    }));
+    return streaks({ bidSentAt: Object.values(recs).map((r) => String(r?.sentAt || "")).filter(Boolean), finished, today: nyToday() });
+  }
+  useEffect(() => {
+    if (!jobs.length) return;
+    const check = () => {
+      try { if (navigator.webdriver && localStorage.getItem("hpd-test-streak") !== "1") return; } catch { return; }
+      const { beat } = bumpBest(streakNow(), localStorage);
+      if (!beat.length) return;
+      setOrbHappy(true); window.setTimeout(() => setOrbHappy(false), 4000);
+      setOrbSay({ text: beat[0], full: beat.join(" "), at: Date.now(), run: "my streaks" });
+      speak(beat[0].replace(/^\S+\s/, ""), 600);
+    };
+    const t = window.setTimeout(check, 4000);
+    // A bid sent or a package out shows up in this phone's records: look again every 2 minutes.
+    const iv = window.setInterval(check, 120000);
+    return () => { window.clearTimeout(t); window.clearInterval(iv); };
+  }, [jobs.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
   // 📊 Friday after 2 PM, once a week: the helper offers the check-in in its bubble.
   useEffect(() => {
     if (!jobs.length) return;
@@ -4421,9 +4453,12 @@ export default function FieldCommandClient() {
       const angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
       return [L.marker(leg.path[mid], { pane: "fc-route-stops", interactive: false, icon: L.divIcon({ className: "fc-route-direction", html: `<span style="transform:rotate(${angle}deg)"></span>`, iconSize: [18, 18], iconAnchor: [9, 9] }) })];
     });
+    // 🚦 Where it's usually slow at this hour: orange / red over the blue line (no free live feed; Google shows live).
+    const slow = road.speeds ? trafficRuns(road.path, trafficLevels(road.speeds, rushLevel(new Date()))) : [];
     show([
       L.polyline(road.path, { pane: "fc-route-path", color: "#ffffff", weight: 9, opacity: 0.95, lineJoin: "round", interactive: false }),
       L.polyline(road.path, { pane: "fc-route-path", color: "#1267df", weight: 5, opacity: 1, lineJoin: "round", interactive: false }),
+      ...slow.map((run) => L.polyline(run.path, { pane: "fc-route-path", className: `fc-route-traffic is-${run.level === 2 ? "red" : "orange"}`, color: run.level === 2 ? "#dc2626" : "#f59e0b", weight: 5, opacity: 1, lineJoin: "round", interactive: false })),
       ...arrows,
       ...stopMarkers(),
     ]);
@@ -5310,6 +5345,63 @@ export default function FieldCommandClient() {
       });
       return;
     }
+    // 🛒 The store with the fewest extra minutes between you and the next stop (OpenStreetMap, free).
+    function storeOffer(onFound: (s: Store, actions: { label: string; href: string }[]) => void, onNone?: () => void) {
+      const fix = lastFixRef.current;
+      const from = fix && Date.now() - fix.at < 15 * 60000 ? { lat: fix.lat, lng: fix.lng } : OFFICE_LOCATION;
+      const nextId = todayRouteIds().find((x) => { const r = jobs.find((y) => jobId(y) === x); return r && !value(r, ["FieldOutcome", "fieldOutcome"]); });
+      const nextJob = selectedJob || (nextId ? jobs.find((y) => jobId(y) === nextId) : undefined);
+      const to = nextJob ? jobLatLng(nextJob) : null;
+      void findStore(from, to).then((s) => {
+        if (!s) { onNone?.(); return; }
+        const both = to ? routeLink([from, s, to]) : null;
+        onFound(s, [
+          ...(both && nextJob ? [{ label: `🚗 Store, then ${jobId(nextJob)}`, href: both }] : []),
+          ...(drivingLink(s) ? [{ label: "🛒 Just the store (Google)", href: drivingLink(s)! }] : []),
+          ...(wazeLink(s) ? [{ label: "🛒 Waze", href: wazeLink(s)! }] : []),
+        ]);
+      });
+    }
+    if (cmd.intent === "store-stop") {
+      if (!multiRef.current) setAgent({ heard, reply: "🛒 Finding the store on your way…" });
+      storeOffer((s, actions) => showPanel({ heard, reply: `${storeLine(s)}${s.big ? "" : " It's a smaller store: call first if you need something special."}`, actions }),
+        () => answer("I couldn't find a store on your way right now (no signal?). Say \"nearest Home Depot\" and Waze will find one."));
+      return;
+    }
+    if (cmd.intent === "translate") {
+      setAgent(null); setAgentFromDock(false);
+      setTranslateLang(cmd.lang || "es");
+      speak("Hand the phone to the tenant: they hold their button and speak. Then you hold English.", 300);
+      return;
+    }
+    if (cmd.intent === "hpd-call") {
+      // ☎️ Before you talk to HPD: the job, what was done, and when. The job named, the open card, or the most urgent notice.
+      const named = cmd.ref ? pick(cmd.ref) : null;
+      const urgentJob = boardUrgent[0] ? jobs.find((x) => jobId(x) === boardUrgent[0].omo) : undefined;
+      const j = (named && named !== "many" ? named : null) || selectedJob || urgentJob || null;
+      if (!j) { answer("Which job is HPD calling about? Say \"what do I say to HPD about\" and the job number."); return; }
+      const id = jobId(j);
+      const day = (v: unknown) => { const t = Date.parse(String(v || "")); return Number.isFinite(t) ? new Date(t).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/New_York" }) : ""; };
+      const work = jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "the repair";
+      const outcome = value(j, ["FieldOutcome", "fieldOutcome"]);
+      const visited = day(value(j, ["LastFieldVisitAt", "lastFieldVisitAt"]));
+      const sent = day(value(j, ["PackageEmailedAt", "InvoiceSentAt"]));
+      const appt = activeAppointment(j as unknown as Record<string, unknown>);
+      const notice = boardOpenRows.find((r) => r.omo === id && r.dueAt);
+      const done = outcome ? `${FIELD_OUTCOMES[outcome] || outcome}${visited ? ` on ${visited}` : ""}${sent ? `, and the paperwork went to HPD on ${sent}` : outcome === "WORK_COMPLETED" ? ": the paperwork isn't sent yet, say it's going out today" : ""}` : "We haven't been out yet";
+      const when = appt ? `The visit is ${appointmentLabel(appt)}${appt.state === "requested" ? " (the tenant hasn't confirmed yet)" : ""}.` : outcome === "WORK_COMPLETED" ? "The work is finished." : /NO_ACCESS|REFUSED/.test(outcome) ? "We'll try again: give them the next day you can go." : "Give them the day you'll go: say a day you can keep.";
+      const lines = [`1️⃣ The job: ${id} at ${jobAddress(j).replace(/,\s*\d{5}$/, "")}, ${work}.`, `2️⃣ What was done: ${done}.`, `3️⃣ When: ${when}`];
+      cardsRef.current = [chatCard(id)].filter((c): c is ChatCard => Boolean(c));
+      answer(`☎️ What to say to HPD about ${id}${notice ? ` (their notice: ${Math.round(hoursLeft(notice, Date.now())) < 0 ? "overdue" : `${Math.round(hoursLeft(notice, Date.now()))} hours left`})` : ""}:\n${lines.join("\n")}\nKeep it short and say the job number first.`);
+      return;
+    }
+    if (cmd.intent === "streaks") {
+      const s = streakNow();
+      const { beat, next } = bumpBest(s, typeof localStorage === "undefined" ? null : localStorage);
+      answer(`${streakLine(s, next)}${beat.length ? `\n\n🎉 ${beat.join(" ")}` : ""}`);
+      if (beat.length) { setOrbHappy(true); window.setTimeout(() => setOrbHappy(false), 4000); }
+      return;
+    }
     if (cmd.intent === "materials") {
       // 📦 Today's route (else the open card): what the work descriptions need.
       const ids = todayRouteIds();
@@ -5318,7 +5410,10 @@ export default function FieldCommandClient() {
       const need = materialsFor(list.map((x) => ({ id: jobId(x), text: jobScope(x) })));
       if (!need.length) { answer(`I couldn't tell the materials from the work descriptions of ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops`}. Read them on the cards.`); return; }
       cardsRef.current = list.slice(0, 5).map((x) => chatCard(jobId(x))).filter((c): c is ChatCard => Boolean(c));
-      answer(`📦 To bring for ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops today`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`);
+      const said = `📦 To bring for ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops today`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`;
+      answer(said);
+      // 🛒 Then the store on the way, added under the list when it's found.
+      if (!multiRef.current) storeOffer((s, actions) => setAgent((a) => (a && a.heard === heard ? { ...a, reply: `${a.reply}\n\nNeed to buy any of it? ${storeLine(s)}`, actions: [...(a.actions || []), ...actions] } : a)));
       return;
     }
     if (cmd.intent === "teach") {
@@ -7195,6 +7290,7 @@ export default function FieldCommandClient() {
                       {([["es-US", "Español", "Hola, somos de United Angel Construction. Venimos de parte de HPD, la oficina de vivienda de la ciudad, para hacer la reparación en su apartamento. ¿Podemos pasar?"], ["zh-CN", "中文", "您好，我们是 United Angel Construction 的工人。纽约市房屋保护局（HPD）派我们来维修您的公寓。我们可以进来吗？"], ["ru-RU", "Русский", "Здравствуйте, мы из компании United Angel Construction. Нас прислал HPD, жилищный департамент города, чтобы сделать ремонт в вашей квартире. Можно войти?"]] as const).map(([lang, label, text]) => (
                         <button key={lang} type="button" data-hpd-smoke="jc-hello-lang" data-lang={lang} onClick={() => { unlockChime(); if (!speakIn(text, lang)) setOutcomeMessage(`This phone has no ${label} voice yet: Settings → Accessibility → Spoken Content → Voices → add ${label}. The words are: ${text}`); }}>{label}</button>
                       ))}
+                      <button type="button" className="jc-hello-both" data-hpd-smoke="jc-translate" onClick={() => { unlockChime(); setTranslateLang("es"); }}>🔁 Talk both ways</button>
                     </div>
                     {tenant.phone ? (
                       <div className={`jc-contact-btns${cs.tone === "none" && !tenant.commonArea ? " is-text-first" : ""}`}>
@@ -7610,6 +7706,7 @@ export default function FieldCommandClient() {
                         return <a className="jc-status-go is-late" data-hpd-smoke="jc-late-media" href={href} onClick={packageLinkClick(id, href)}>📎 {what} taken after it was sent: send {late.length === 1 ? "it" : "them"} →</a>;
                       })() : null}
                       {approved ? <SentPaperworkLink omo={id} /> : null}
+                      <button type="button" className="jc-status-change jc-hpd-say" data-hpd-smoke="jc-hpd-say" onClick={() => agentRef.current(`what do I say to HPD about ${id}`)}>☎️ HPD calling? What to say</button>
                       {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>{armedTap === `clear:${jobId(selectedJob)}` ? "✅ Tap again: clear the outcome" : "Change outcome"}</button> : null}
                     </div>
                   );
@@ -8703,6 +8800,7 @@ export default function FieldCommandClient() {
           </div>
         );
       })() : null}
+      {translateLang ? <TranslatePanel startLang={translateLang} onClose={() => setTranslateLang("")} /> : null}
       {!agent && !selectedJob && !moreOpen && dockEdit < 0 ? (
         <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
           e.preventDefault();

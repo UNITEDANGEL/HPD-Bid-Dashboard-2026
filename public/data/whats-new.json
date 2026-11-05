@@ -2,6 +2,18 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 5, 2026",
+      "title": "Talk with the tenant both ways",
+      "items": [
+        "🔁 Say \"translate\" (or tap 🔁 Talk both ways on a job card): the tenant holds their button and speaks Spanish, Chinese or Russian and the helper says it in English; you hold English and it says it back in theirs, big on the screen too. You can also type.",
+        "☎️ HPD calling? Say \"what do I say to HPD about\" and the job (or tap ☎️ on the job card): the 3 things to say, the job, what was done, and when.",
+        "🔥 Say \"my streak\": work days in a row with bids sent, and finished jobs in a row with the paperwork out the same day. The helper cheers when you beat your record.",
+        "🛒 Store stop on the way: say \"store on my way\", or tap 🛒 on Today's route. It finds the hardware store that costs the fewest extra minutes before your next stop, and \"what do I need today\" offers it too.",
+        "🚦 The route line turns orange and red where traffic is usually slow at this hour (rush hour, midday). Google Maps still shows live traffic.",
+        "🤖 Claude's question card no longer hides under the ask bar or the Next bar."
+      ]
+    },
+    {
       "date": "Nov 4, 2026",
       "title": "Friday check-in",
       "items": [

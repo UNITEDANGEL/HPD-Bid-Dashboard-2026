@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { nyToday } from '../../lib/appointments';
 import { drivingLink, routeLink, wazeLink } from '../../lib/driving-link';
-import type { RoadRoute } from '../../lib/road-route';
+import { rushLevel, type RoadRoute } from '../../lib/road-route';
+import { findStore, storeLine, type Store } from '../../lib/store-stop';
 import { eligibleRouteJobs, planDay, routeTime, scheduleStops, validRouteSettings, type RouteJob, type RoutePoint, type RouteSettings } from '../../lib/day-route';
 
 const KEY='hpd-today-route-v1';
@@ -18,6 +19,8 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
   const [message,setMessage]=useState('');
   // The street route for the current stops: real driving time per leg (null: no signal, straight estimate).
   const [road,setRoad]=useState<RoadRoute|null|'loading'>(null);
+  // 🛒 Store stop on the way (4 Nov): the store with the fewest extra minutes before the next stop.
+  const [store,setStore]=useState<Store|null|'loading'|'none'>(null);
   const bodyRef=useRef<HTMLDivElement>(null);
   const lastSaved=useRef('');
   const preview=useRef(onPreview); preview.current=onPreview;
@@ -62,8 +65,9 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
       <button type="button" className="fc-route-toggle" onClick={()=>setOrigin(getOrigin())}>Update start from location / map</button>
       <p>Starts from {origin?.label || 'map center'} · New York time · {settings.minutes} min per job</p>
       </details>
-      {ids.length>0&&<p className="fc-route-total" data-hpd-smoke="fc-route-total">{roadRoute?`🚗 Road route · ${roadRoute.miles.toFixed(1)} mi · ${roadRoute.minutes} min driving (no live traffic)`:road==='loading'?'Finding the road route…':'No signal for the road route right now · times are estimates · Google Maps still gives turn-by-turn'}</p>}
+      {ids.length>0&&<p className="fc-route-total" data-hpd-smoke="fc-route-total">{roadRoute?`🚗 Road route · ${roadRoute.miles.toFixed(1)} mi · ${roadRoute.minutes} min driving${roadRoute.speeds&&rushLevel(new Date())>0?` · 🚦 ${rushLevel(new Date())===2?'rush hour: red and orange are':'orange is'} usually slow now (live traffic in Google Maps)`:' (no live traffic)'}`:road==='loading'?'Finding the road route…':'No signal for the road route right now · times are estimates · Google Maps still gives turn-by-turn'}</p>}
       {origin&&selected.length>0&&routeLink([origin.point,...selected])&&<a className="fc-route-drive fc-route-all" data-hpd-smoke="fc-route-all" href={routeLink([origin.point,...selected])!} target="_blank" rel="noreferrer">Open whole route in Google Maps<small>All {selected.length} stops in this order</small></a>}
+      {origin&&selected.length>0&&<div className="fc-route-store" data-hpd-smoke="fc-route-store">{store&&store!=='loading'&&store!=='none'?<><p data-hpd-smoke="fc-route-store-line">{storeLine(store)}</p><div><a className="fc-route-drive" data-hpd-smoke="fc-route-store-go" href={routeLink([origin.point,store,...selected])||drivingLink(store)||'#'} target="_blank" rel="noreferrer">🚗 Store first, then the route</a><button type="button" className="fc-route-toggle" onClick={()=>setStore(null)}>Not today</button></div></>:<button type="button" className="fc-route-toggle" data-hpd-smoke="fc-route-store-find" disabled={store==='loading'} onClick={()=>{setStore('loading');void findStore(origin.point,selected[0]).then(s=>setStore(s||'none'));}}>{store==='loading'?'🛒 Finding the store on your way…':store==='none'?'🛒 No store found on the way (no signal?): try again':'🛒 Need materials? Store stop on the way'}</button>}</div>}
       {selected[0]&&drivingLink(selected[0])&&<div className="fc-route-next" data-hpd-smoke="fc-route-next"><p>Next stop · {selected[0].id}</p><div><a className="fc-route-drive fc-route-waze" data-hpd-smoke="fc-route-next-waze" href={wazeLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Waze</a><a className="fc-route-drive" data-hpd-smoke="fc-route-next-google" href={drivingLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Google Maps</a></div></div>}
       {stops.some(s=>s.warning)&&<p role="alert">Route needs review: appointment or workday conflicts below.</p>}
       {done.length>0&&<p className="fc-route-progress" data-hpd-smoke="fc-route-progress">✓ {done.length} of {selected.length+done.length} done{selected.length?` · ${selected.length} to go`:' · route finished'}</p>}

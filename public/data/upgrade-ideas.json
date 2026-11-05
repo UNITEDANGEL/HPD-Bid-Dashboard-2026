@@ -1,27 +1,27 @@
 {
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data.",
-  "updated": "2026-11-04",
+  "updated": "2026-11-05",
   "ideas": [
     {
-      "id": "helper-translate-tenant",
-      "icon": "🔁",
+      "id": "tenant-texts-translated",
+      "icon": "💬",
       "kind": "new",
-      "title": "Talk with the tenant in their language",
-      "why": "Hold the mic, the tenant speaks Spanish, Chinese or Russian, and the helper says it in English (and your answer back in theirs)."
+      "title": "Tenant texts in their language",
+      "why": "When a tenant texts in Spanish, Chinese or Russian, the app shows it in English and writes your answer back in their language."
     },
     {
-      "id": "helper-what-to-say-hpd",
-      "icon": "☎️",
+      "id": "store-list-to-cart",
+      "icon": "🧾",
       "kind": "new",
-      "title": "What to say when HPD calls",
-      "why": "Before you call HPD back about a notice, the helper gives you the 3 things to say: the job, what was done, and when."
+      "title": "Shopping list to the store",
+      "why": "The materials list for today, sorted the way the store's aisles go, with a check box for each thing."
     },
     {
-      "id": "helper-streaks",
-      "icon": "🔥",
+      "id": "hpd-call-notes",
+      "icon": "📝",
       "kind": "new",
-      "title": "Streaks",
-      "why": "The helper keeps your streaks: days in a row with every bid sent, weeks with no overdue notice, and cheers when you beat a record."
+      "title": "Notes from the HPD call",
+      "why": "After you talk to HPD, say what they said; it goes on the job with the date, so the next call starts from there."
     },
     {
       "id": "helper-call-tenant",

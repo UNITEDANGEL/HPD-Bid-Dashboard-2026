@@ -4,7 +4,7 @@
 
 export type LatLng = { lat: number; lng: number };
 export type RoadLeg = { minutes: number; miles: number; path: [number, number][] };
-export type RoadRoute = { legs: RoadLeg[]; miles: number; minutes: number; path: [number, number][] };
+export type RoadRoute = { legs: RoadLeg[]; miles: number; minutes: number; path: [number, number][]; speeds?: number[] };
 
 export const ROAD_ROUTE_SERVICE = "https://router.project-osrm.org/route/v1/driving/";
 const METERS_PER_MILE = 1609.344;
@@ -12,7 +12,7 @@ const cache = new Map<string, RoadRoute>();
 
 export function roadRouteUrl(points: LatLng[]) {
   const coords = points.map((p) => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(";");
-  return `${ROAD_ROUTE_SERVICE}${coords}?overview=full&geometries=geojson&steps=false`;
+  return `${ROAD_ROUTE_SERVICE}${coords}?overview=full&geometries=geojson&steps=false&annotations=speed`;
 }
 
 function nearestIndex(path: [number, number][], target: [number, number], from: number) {
@@ -43,7 +43,9 @@ export function parseRoadRoute(body: unknown, stops: number): RoadRoute | null {
     miles: Number(leg.distance) / METERS_PER_MILE,
     path: path.slice(cuts[i], cuts[i + 1] + 1),
   }));
-  return { legs, path, miles: Number(route.distance) / METERS_PER_MILE, minutes: Math.round(Number(route.duration) / 60) };
+  // The road's usual speed for each piece of the line (m/s), for the traffic colors.
+  const speeds = route.legs.flatMap((leg: { annotation?: { speed?: number[] } }) => (Array.isArray(leg.annotation?.speed) ? leg.annotation!.speed! : []));
+  return { legs, path, miles: Number(route.distance) / METERS_PER_MILE, minutes: Math.round(Number(route.duration) / 60), ...(speeds.length === path.length - 1 ? { speeds: speeds.map(Number) } : {}) };
 }
 
 export async function fetchRoadRoute(points: LatLng[], fetcher: typeof fetch = fetch, timeoutMs = 8000): Promise<RoadRoute | null> {
@@ -64,4 +66,29 @@ export async function fetchRoadRoute(points: LatLng[], fetcher: typeof fetch = f
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+// 🚦 Traffic colors (owner, 4 Nov: "yes, do it"): no free live-traffic feed, so the colors are what NYC traffic usually
+// does at this hour: weekday rush hours (7-10 AM, 4-7 PM) the highways go red and the fast avenues orange; weekday
+// midday the highways go orange. Google Maps' button still shows the live traffic. Level 0 = blue, 1 = orange, 2 = red.
+export function rushLevel(when: Date) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", hourCycle: "h23" }).formatToParts(when).map((x) => [x.type, x.value]));
+  const h = Number(p.hour), weekday = !["Sat", "Sun"].includes(p.weekday);
+  if (weekday && ((h >= 7 && h < 10) || (h >= 16 && h < 19))) return 2;
+  if ((weekday && h >= 10 && h < 16) || (!weekday && h >= 12 && h < 18)) return 1;
+  return 0;
+}
+export function trafficLevels(speeds: number[], rush: number) {
+  return speeds.map((s) => (rush === 2 ? (s >= 15 ? 2 : s >= 10 ? 1 : 0) : rush === 1 ? (s >= 15 ? 1 : 0) : 0));
+}
+// The line cut into runs of the same color: [{ level, path }], only the orange and red ones.
+export function trafficRuns(path: [number, number][], levels: number[]) {
+  const runs: { level: number; path: [number, number][]; end: number }[] = [];
+  levels.forEach((lv, i) => {
+    if (!lv || !path[i + 1]) return;
+    const last = runs[runs.length - 1];
+    if (last && last.level === lv && last.end === i) { last.path.push(path[i + 1]); last.end = i + 1; }
+    else runs.push({ level: lv, path: [path[i], path[i + 1]], end: i + 1 });
+  });
+  return runs.map(({ level, path: p }) => ({ level, path: p }));
 }

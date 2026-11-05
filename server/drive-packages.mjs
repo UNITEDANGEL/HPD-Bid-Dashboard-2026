@@ -3,7 +3,7 @@
 // Only reachable through handleDriveAuth, after the owner/session/Google identity checks.
 
 import { readReplies, sendSms, smsReady } from "./tenant-sms.mjs";
-import { aiAnswer, aiDraft, aiReadPhoto, askFacts, draftFacts, photoFacts } from "./ai-draft.mjs";
+import { aiAnswer, aiDraft, aiReadPhoto, aiTranslate, askFacts, draftFacts, photoFacts, translateFacts } from "./ai-draft.mjs";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -410,6 +410,17 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
         return reply(await aiReadPhoto(env, photo));
       } catch (e) {
         return reply({ ai: false, reason: `The AI didn’t read it (${e instanceof Error ? e.message.slice(0, 120) : "error"}).` });
+      }
+    }
+    if (action === "hpd-translate") {
+      // 🔁 Talk with the tenant (4 Nov): one line said in English, Spanish, Chinese or Russian, put in the other language.
+      // Never kept.
+      const t = translateFacts(await request.json().catch(() => null));
+      if (!t) fail("Invalid text.", 400);
+      try {
+        return reply(await aiTranslate(env, t));
+      } catch (e) {
+        return reply({ ai: false, reason: `The AI didn’t translate it (${e instanceof Error ? e.message.slice(0, 120) : "error"}).` });
       }
     }
     if (action === "hpd-ask") {
