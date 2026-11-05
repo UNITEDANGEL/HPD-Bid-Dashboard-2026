@@ -9,10 +9,14 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const ago = (min) => new Date(Date.now() - min * 60000).toISOString();
 const id = "20261104120000";
+const id2 = "20261104110000";
 const overrides = {
   "CLAUDE-HEARTBEAT": { at: ago(2), every: 9 },
   [`CHANGE-REQUEST-${id}`]: { at: ago(30), text: "(idea) Insurance and license dates: The app warns you 30 days before a paper runs out." },
   [`CHANGE-REPLY-${id}`]: { status: "Waiting for you", workingAt: "", updates: [{ at: ago(20), text: "When do your insurance and license papers run out?" }], steps: [] },
+  // A second one that asks you to type an exact phrase: its Yes button sends that phrase.
+  [`CHANGE-REQUEST-${id2}`]: { at: ago(45), text: "(idea) The robot says what it sees" },
+  [`CHANGE-REPLY-${id2}`]: { status: "Waiting for you", workingAt: "", updates: [{ at: ago(40), text: "It needs the free picture AI with a daily cap. When you want it, type 'yes, use the free picture AI' here and I will build it." }], steps: [] },
 };
 const posts = [];
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -35,17 +39,22 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   const badge = page.locator('[data-hpd-smoke="fc-claude-orb-ask"]');
   await badge.waitFor({ timeout: 30000 });
-  assert.equal(await badge.innerText(), "1 question");
+  assert.equal(await badge.innerText(), "2 questions", "the real count");
   const card = page.locator('[data-hpd-smoke="fc-claude-live"]');
   await card.waitFor({ timeout: 30000 });
   assert.match(await card.innerText(), /Claude · has one question for you[\s\S]*When do your insurance and license papers run out\?/);
   await card.locator('[data-hpd-smoke="fc-claude-ask-decide"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-orb-ask"]')?.textContent === "1 question", null, { timeout: 10000 });
+  // The next one: the whole question shows, and "Yes, do it" sends the exact words it asked for.
+  await page.waitForFunction(() => /type 'yes, use the free picture AI' here/.test(document.querySelector('[data-hpd-smoke="fc-claude-live"]')?.textContent || ""), null, { timeout: 10000 });
+  await card.locator('[data-hpd-smoke="fc-claude-ask-yes"]').click();
   await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-claude-orb-ask"]'), null, { timeout: 10000 });
+  assert.equal(posts.find((p) => p.key === `CHANGE-ANSWER-${id2}`).patch.answers[0].text, "yes, use the free picture AI");
   const a = posts.find((p) => p.key === `CHANGE-ANSWER-${id}`);
   assert.ok(a, "saved for Claude");
   assert.match(a.patch.answers[0].text, /^You decide/);
   assert.deepEqual(errors, []);
-  console.log('PASS Claude asks in words: "1 question" on the button (not ❓), the card says the question with You decide / Skip it / Answer; You decide goes to Claude and the question goes away');
+  console.log('PASS Claude asks in words: "2 questions" on the button (not ❓); a question that asks for exact words gets ✅ Yes, do it, which sends them, the card says the question with You decide / Skip it / Answer; You decide goes to Claude and the question goes away');
 } finally {
   await browser.close();
 }

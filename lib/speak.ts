@@ -36,6 +36,8 @@ export function englishVoices(): SpeechSynthesisVoice[] {
   if (!voiceSupported()) return [];
   return window.speechSynthesis.getVoices().filter((v) => voiceScore(v) > 0).sort((a, b) => voiceScore(b) - voiceScore(a));
 }
+// A natural-sounding voice (the iPhone's free Premium / Enhanced downloads, Siri, neural voices).
+export const isNaturalVoice = (name: string) => /premium|enhanced|neural|natural|siri/i.test(name);
 export function chosenVoiceName() { try { return localStorage.getItem(VOICE_KEY) || ""; } catch { return ""; } }
 export function setChosenVoice(name: string) { try { if (name) localStorage.setItem(VOICE_KEY, name); else localStorage.removeItem(VOICE_KEY); } catch { /* private mode */ } }
 export function voiceRate() { try { const r = Number(localStorage.getItem(RATE_KEY)); return r >= 0.7 && r <= 1.4 ? r : 1; } catch { return 1; } }
@@ -125,22 +127,23 @@ export function speak(text: string, delay = 900, onEnd?: () => void) {
       const synth = window.speechSynthesis;
       synth.cancel();
       const said = brief ? briefText(text) : speechText(text);
+      const lang = langOf(text);
+      const v = pickVoice(lang);
+      let done = false;
+      const fin = () => { if (!done) { done = true; setTalking(false); onEnd?.(); } };
       const u = new SpeechSynthesisUtterance(said);
       // 👄 Each word as it's said, so the helper's mouth follows the words (owner idea, 4 Nov).
       u.onboundary = (e) => { if (e.name && e.name !== "word") return; const word = /^[^\s]+/.exec(said.slice(e.charIndex || 0))?.[0] || ""; if (word) window.dispatchEvent(new CustomEvent(SPEAK_WORD_EVENT, { detail: { word } })); };
-      const lang = langOf(text);
-      const v = pickVoice(lang);
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === "es" ? "es-US" : "en-US";
       u.rate = 0.98 * voiceRate();
-      u.pitch = 1;
+      // A question lifts a little, like a person asking (owner, 4 Nov: "make him sound like a real person").
+      u.pitch = /\?\s*$/.test(said) ? 1.05 : 1;
       u.volume = 1;
-      let done = false;
-      const fin = () => { if (!done) { done = true; setTalking(false); onEnd?.(); } };
       u.onend = fin; u.onerror = fin;
+      synth.speak(u);
       // Some phones never say "done": give up after the time it would take to say it.
       window.setTimeout(fin, Math.min(60000, 2500 + text.length * 80));
       setTalking(true);
-      synth.speak(u);
     }, delay);
     return true;
   } catch { return false; }

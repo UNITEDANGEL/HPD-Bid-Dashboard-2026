@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "Claude's questions, fixed; a more real voice",
+      "items": [
+        "❓ Claude's questions: the button shows how many are waiting (\"6 questions\"), the card shows the whole question, and the buttons fit it: ✅ Yes, do it / No when it asks yes or no (or wants exact words), 👍 You decide when there's a choice. After you answer one, the next one shows.",
+        "🗣 A voice that sounds like a real person: in 🎨 the natural voices have a ⭐. If your iPhone has none yet, 🎨 shows how to download one for free: Settings → Accessibility → Spoken Content → Voices → English → a Premium voice (Ava, Zoe, Evan or Nathan).",
+        "🧠 Your helper now knows every open job (number, address, borough, stage, dates, amount), so it can answer about any job: the oldest in Queens, what's waiting on HPD, the biggest one.",
+        "🗣 Its voice lifts a little at the end of a question, like a person asking."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "How did it go?",
       "items": [
         "💬 After a job's package goes out, your helper asks \"How did it go at 90th Street?\". Say a few words (or tap one) and it keeps them as the job's note; say skip to leave it.",

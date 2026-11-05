@@ -78,7 +78,7 @@ try {
   assert.match(await voices.filter({ hasText: "Evan" }).innerText(), /👨/);
   await page.evaluate(() => { window.__said = []; });
   await voices.filter({ hasText: "Evan" }).click();
-  await page.waitForFunction(() => window.__said.some((t) => /this is how I sound now/.test(t)), null, { timeout: 3000 });
+  await page.waitForFunction(() => window.__said.some((t) => /how I sound now/i.test(t)), null, { timeout: 3000 });
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-voice-name")), "Evan (Enhanced)");
   assert.equal(await voices.filter({ hasText: "Evan" }).getAttribute("aria-pressed"), "true");
   await page.locator('[data-hpd-smoke="fc-dress-rate"][data-rate="1.15"]').click();

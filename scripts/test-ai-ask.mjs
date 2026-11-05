@@ -31,6 +31,7 @@ assert.match(system, /facts\.myNotes/);
 assert.match(system, /Talk like a real person/);
 assert.match(system, /never say .based on the facts/);
 assert.match(system, /facts\.trends/);
+assert.match(system, /facts\.allJobs is every open job/);
 assert.match(system, /'remember <what>'/);
 assert.match(sent.body.messages[1].content, /"bidsSent":\{"today":4\}/);
 assert.match(APP_GUIDE, /Bottom buttons: Jobs, Bids, the 🤖 robot/);

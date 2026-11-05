@@ -38,6 +38,9 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
   // 1) Close to "how did I do this week", but a real question: the AI answers it, with the numbers.
   await ask("How many bids did I send to HPD this week and how many jobs did I finish?", 1);
   const f1 = asked[0].facts;
+  // 🧠 Every open job in short goes along, with no tenant names or phones.
+  assert.ok(Array.isArray(f1.allJobs) && f1.allJobs.length > 10 && /^[A-Z]{2}\d{5}$/.test(f1.allJobs[0].job), "all open jobs in short");
+  assert.ok(f1.allJobs.every((j) => !("tenant" in j) && !("phone" in j)), "no tenant data");
   assert.equal(f1.bidsSent.last7Days, 1);
   assert.equal(f1.bidsSent.latest[0].job, "ER77777");
   assert.equal(f1.bidsSent.latest[0].price, 1200);

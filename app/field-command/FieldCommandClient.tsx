@@ -65,7 +65,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { chosenVoiceName, englishVoices, langOf, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
+import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -239,6 +239,16 @@ function SecondsAgo({ at, bare }: { at: string; bare?: boolean }) {
 // computer, written by scripts/claude-now.mjs as it works (CLAUDE-NOW). Fresh = said in the last 10 minutes.
 type ClaudeNow = { at: string; text: string; task: string; state: string; log: { at: string; text: string }[] };
 const claudeNowFresh = (n: ClaudeNow | null) => Boolean(n && n.state === "working" && n.text && Date.now() - Date.parse(n.at) < 10 * 60000);
+// One-tap answers that fit Claude's question (owner, 4 Nov: "it gives me 2 options, it doesn't let me pick"): when it
+// asks you to type something exact, that's the Yes button; a "Want me to…?" gets Yes / No; a choice gets You decide.
+export function quickAnswers(question: string): { key: string; label: string; text: string }[] {
+  const q = String(question || "");
+  const exact = /\btype\s+['"‘“]([^'"’”]{2,80})['"’”]/i.exec(q)?.[1];
+  if (exact) return [{ key: "yes", label: "✅ Yes, do it", text: exact }, { key: "skip", label: "⏭ Not now", text: "Not now, skip this one." }];
+  if (/\b(want me to|should i|shall i|do you want|ok to|okay to)\b[^?]*\?/i.test(q)) return [{ key: "yes", label: "✅ Yes", text: "Yes, do it." }, { key: "skip", label: "⏭ No, skip it", text: "No, skip this one." }];
+  return [{ key: "decide", label: "👍 You decide", text: "You decide: pick what makes the most sense and build it; don't ask me again. If you need a date or a number from me, let me type it in the app later." }, { key: "skip", label: "⏭ Skip it", text: "Skip this one for now." }];
+}
+
 function ClaudeNowLines({ now }: { now: ClaudeNow }) {
   const before = now.log.filter((l) => l.text !== now.text).slice(-3).reverse();
   return (
@@ -5545,6 +5555,8 @@ export default function FieldCommandClient() {
             const pick = (p: "today" | "week" | "month") => { const st = fieldStats(jobs, p, { skip: (job) => isTestJob(jobId(job)) }); return { ...st.counts, earned: Math.round(st.earned) }; };
             return { today: pick("today"), thisWeek: pick("week"), thisMonth: pick("month") };
           })(),
+          // 🧠 Every open job in short (owner, 4 Nov: "I want the helper to know all the answers"): no tenant names or phones.
+          allJobs: jobRows.slice(0, 160).map((r) => ({ job: r.id, address: r.address.replace(/,\s*\d{5}$/, ""), boro: r.borough, stage: r.group, status: r.status, awarded: r.award.slice(0, 10), due: r.due.slice(0, 10), note: (r.note || "").slice(0, 60), amount: Number(String(value(jobs.find((j) => jobId(j) === r.id) || {}, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || undefined })),
           allJobsByStage: jobRows.reduce((m: Record<string, number>, r) => { m[r.group] = (m[r.group] || 0) + 1; return m; }, {}),
           bidsDueToday: { stillToSend: bidsDue.unsentToday || 0, sentToday: bidsDue.sentToday || 0, firstDue: bidsDue.firstTime || "", tomorrow: bidsDue.tomorrow },
           appChanges: /\b(app|button|screen|where is|how do i|how can i|can i|does it|feature|setting|robot|claude|update|new)\b/i.test(cmd.question) ? await loadWhatsNew().then((v) => (Array.isArray(v) ? v.slice(0, 3).flatMap((x: { items?: string[] }) => x.items || []).slice(0, 30).map((t: string) => t.split(/(?<=[.!?])\s/)[0].slice(0, 160)) : [])).catch(() => []) : [],
@@ -6652,7 +6664,7 @@ export default function FieldCommandClient() {
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : wonToday ? "proud" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">1 question</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : wonToday ? "proud" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">{asks} question{asks === 1 ? "" : "s"}</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                     {orbSay && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
@@ -6833,7 +6845,8 @@ export default function FieldCommandClient() {
             claudeLiveRef.current = live.some((t) => t.status !== "Done" && t.status !== "Waiting for you");
             claudeWorkingRef.current = live.some((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
             // The one Claude is working on comes first (3 Nov: a 💬 goes to the request being built, not the newest one).
-            const t = live.find((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000) || live[0];
+            // A question waiting for the owner comes before anything else (4 Nov: answered one, the next one stayed hidden).
+            const t = live.find((x) => x.status === "Waiting for you") || live.find((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000) || live[0];
             const nowOn = claudeNowFresh(claudeNow) && claudeNow ? claudeNow : null;
             if (selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
             const talkTo = t && t.status !== "Done" ? t : null;
@@ -6916,14 +6929,13 @@ export default function FieldCommandClient() {
                   {state === "working" ? <WorkingClock since={t.workingAt} /> : null}
                   {nowOn && state !== "done" ? <ClaudeNowLines now={nowOn} /> : state === "working" && t.now ? <span className="fc-claude-live-now" data-hpd-smoke="fc-claude-live-now">⚡ {t.now.text.slice(0, 120)} <SecondsAgo at={t.now.at} /></span> : null}
                   {state === "working" && changeCheckedAt ? <span className="fc-claude-live-checked" data-hpd-smoke="fc-claude-live-checked">🔄 Live: checked <SecondsAgo at={new Date(changeCheckedAt).toISOString()} bare /></span> : null}
-                  {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
+                  {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{state === "ask" ? lastNote.text.slice(0, 600) : lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
                 </button>
                 <span className="fc-claude-live-side">{state !== "done" ? talkBtn : null}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>{smaller}</span>
                 {state === "ask" ? (
                   // One tap answers (owner, 4 Nov: "it should auto know, I need better flow"): Claude decides, or skips it.
                   <span className="fc-claude-ask-quick" data-hpd-smoke="fc-claude-ask-quick">
-                    <button type="button" data-hpd-smoke="fc-claude-ask-decide" onClick={() => void sendChangeAnswer(t, "You decide: do what makes the most sense and don't wait for me. If you need a date or a number from me, let me type it in the app later.")}>👍 You decide</button>
-                    <button type="button" data-hpd-smoke="fc-claude-ask-skip" onClick={() => void sendChangeAnswer(t, "Skip this one for now.")}>⏭ Skip it</button>
+                    {quickAnswers(lastNote?.text || "").map((q) => <button key={q.label} type="button" data-hpd-smoke={`fc-claude-ask-${q.key}`} onClick={() => void sendChangeAnswer(t, q.text)}>{q.label}</button>)}
                     <button type="button" data-hpd-smoke="fc-claude-ask-answer" onClick={() => goTo("requests", "")}>✍️ Answer</button>
                   </span>
                 ) : null}
@@ -8634,13 +8646,16 @@ export default function FieldCommandClient() {
               {voiceSupported() ? (() => {
                 // 🎙 Its voice: a woman's or a man's, slower or faster; each tap says a sample with the mouth moving.
                 void voiceTick;
-                const list = englishVoices().slice(0, 4);
+                const list = englishVoices().slice(0, 8);
+                const natural = list.some((v) => isNaturalVoice(v.name));
                 const pick = chosenVoiceName() || list[0]?.name || "";
                 const rate = voiceRate();
                 const who = (n: string) => (/\b(ava|zoe|samantha|allison|aria|jenny|karen|moira|tessa|victoria|susan|serena|fiona|kate|nicky|joelle|female|woman|zira|libby|sonia|emma|michelle)\b/i.test(n) ? "👩" : /\b(evan|nathan|daniel|alex|guy|tom|aaron|arthur|oliver|rishi|male|man|david|mark|ryan|eric|christopher|reed|gordon)\b/i.test(n) ? "👨" : "🗣");
-                const sample = () => { unlockChime(); speak(`Hi ${(() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })()}, this is how I sound now.`, 100); };
+                const sample = () => { unlockChime(); speak(`Hi ${(() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })()}! This is how I sound now. Want me to read you today's jobs?`, 100); };
                 return <>
-                  {list.length ? <span className="fc-dress-voices">{list.map((v) => <button key={v.name} type="button" className={`fc-dress-voice${pick === v.name ? " is-on" : ""}`} data-hpd-smoke="fc-dress-voice" data-voice={v.name} aria-pressed={pick === v.name} onClick={() => { setChosenVoice(v.name); setVoiceTick((n) => n + 1); sample(); }}>{who(v.name)} {v.name.replace(/\s+-\s.*$/, "").replace(/\s*\(.*\)$/, "").replace(/^(Microsoft|Google|Apple)\s+/i, "").split(/\s+/).slice(0, 2).join(" ")}</button>)}</span> : null}
+                  {/* 🗣 A more real voice (owner, 4 Nov: "how can I change voices and make him sound like a real person"). */}
+                  {natural ? null : <small className="fc-dress-voice-help" data-hpd-smoke="fc-dress-voice-help">🗣 For a voice that sounds like a real person: on the iPhone open Settings → Accessibility → Spoken Content → Voices → English, download a <b>Premium</b> voice (Ava, Zoe, Evan or Nathan), then come back and pick it here (⭐).</small>}
+                  {list.length ? <span className="fc-dress-voices">{list.map((v) => <button key={v.name} type="button" className={`fc-dress-voice${pick === v.name ? " is-on" : ""}`} data-hpd-smoke="fc-dress-voice" data-voice={v.name} aria-pressed={pick === v.name} onClick={() => { setChosenVoice(v.name); setVoiceTick((n) => n + 1); sample(); }}>{isNaturalVoice(v.name) ? "⭐" : ""}{who(v.name)} {v.name.replace(/\s+-\s.*$/, "").replace(/\s*\(.*\)$/, "").replace(/^(Microsoft|Google|Apple)\s+/i, "").split(/\s+/).slice(0, 2).join(" ")}</button>)}</span> : null}
                   <span className="fc-dress-voices">{([[0.85, "🐢 Slower"], [1, "Normal"], [1.15, "🐇 Faster"]] as const).map(([r, label]) => <button key={label} type="button" className={`fc-dress-voice${rate === r ? " is-on" : ""}`} data-hpd-smoke="fc-dress-rate" data-rate={r} aria-pressed={rate === r} onClick={() => { setVoiceRate(r); setVoiceTick((n) => n + 1); sample(); }}>{label}</button>)}<button type="button" className="fc-dress-voice" data-hpd-smoke="fc-dress-sample" onClick={sample}>▶ Hear it</button></span>
                   <span className="fc-dress-voices"><button type="button" className={`fc-dress-voice${saver ? " is-on" : ""}`} data-hpd-smoke="fc-dress-saver" aria-pressed={saver} onClick={() => { const next = !saver; setSaver(next); setBatterySaver(next); }}>🔋 Battery saver: {saver ? "on (nothing moves)" : "off"}</button></span>
                 </>;

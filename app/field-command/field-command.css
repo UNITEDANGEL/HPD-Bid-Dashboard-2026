@@ -4339,3 +4339,4 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 @keyframes fc-shrug { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
 .fc-face.is-human .fc-face-arms.is-count .fc-arm-r { animation: fc-arm-thumb 0.5s cubic-bezier(.2, 1.4, .4, 1) both; }
 @media (prefers-reduced-motion: reduce) { .fc-agent.is-from-dock .fc-agent-who .fc-face.is-human { animation: none; } }
+.fc-dress-voice-help { display: block; margin: 4px 0; padding: 8px 10px; border-radius: 10px; background: #1e293b; color: #e2e8f0; font: 600 13px/1.4 system-ui, sans-serif; }
