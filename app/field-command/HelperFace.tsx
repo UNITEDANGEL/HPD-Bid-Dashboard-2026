@@ -16,7 +16,8 @@ export type FaceMode = "idle" | "working" | "listening" | "talking" | "ask" | "o
 // look: where the eyes look, -1..1 each way (👀 they follow your finger on the map).
 // outfit: what it wears right now (lib/helper-look robotOutfit); arms: 👋 wave, 👉 point, 👍 thumbs up; hat: a hat for
 // the moment (⛑ at a job site) over the owner's pick.
-export type HelperArms = "wave" | "point" | "thumbs" | "";
+// 🙌 shrug: both hands up (not sure); count: one finger up (a list of things).
+export type HelperArms = "wave" | "point" | "thumbs" | "shrug" | "count" | "";
 
 // A hand: palm and four fingers (open), or a fist with the index finger out (point) or the thumb up.
 function Hand({ kind, skin, shade }: { kind: "open" | "point" | "thumb"; skin: string; shade: string }) {
@@ -138,7 +139,15 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
       {/* Hands: 👋 a wave by the head, 👉 pointing, 👍 a thumbs up; the sleeve in the shirt color. */}
       {arms ? <g className={`fc-face-arms is-${arms}`} data-hpd-smoke="fc-face-hands">
         <g className="fc-arm-r">
-          {arms === "wave" ? <>
+          {arms === "shrug" ? <>
+            <path d="M40 40 Q45 38 46.5 33" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
+            <g transform="translate(47 31) rotate(70)"><Hand kind="open" skin={skin} shade={shade} /></g>
+            <path d="M8 40 Q3 38 1.5 33" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
+            <g transform="translate(1 31) rotate(-70)"><Hand kind="open" skin={skin} shade={shade} /></g>
+          </> : arms === "count" ? <>
+            <path d="M40 40 Q44.5 35 45 29" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
+            <g transform="translate(45 27) rotate(-90)"><Hand kind="point" skin={skin} shade={shade} /></g>
+          </> : arms === "wave" ? <>
             <path d="M40 40 Q44.5 34 45 27.5" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
             <g transform="translate(45 24.5) rotate(12)"><Hand kind="open" skin={skin} shade={shade} /></g>
           </> : arms === "point" ? <>

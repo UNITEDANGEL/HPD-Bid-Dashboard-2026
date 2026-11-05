@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "Name your helper",
+      "items": [
+        "🏷 Give your helper a name in 🎨 (like Mike). The chat shows it, and it answers to it: \"Hey Mike, what's next?\". Just \"Hey Mike\" and it says \"Yes?\" and listens.",
+        "🙌 It talks with its hands: it shrugs when it isn't sure, raises a finger when it lists things, and points at the buttons it offers.",
+        "🧍 When you open the chat from the dock, the helper walks in with a few steps and waves."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "The helper's mouth follows the words",
       "items": [
         "👄 When the helper talks, its mouth follows each word: closed on m, b and p, round on o and u, wide on e and i, open on a, like a real person.",

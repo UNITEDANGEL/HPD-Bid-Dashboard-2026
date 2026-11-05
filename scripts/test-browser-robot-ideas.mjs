@@ -15,7 +15,7 @@ try {
   await routePrivate(c);
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } })));
   const asked = [];
-  await c.route(/\/api\/drive\/hpd-ask/, async (r) => { const b = JSON.parse(r.request().postData() || "{}"); asked.push(b); await new Promise((ok) => setTimeout(ok, 2200)); return r.fulfill({ json: { ai: true, text: "Yes, it went out yesterday at 3 PM." } }); });
+  await c.route(/\/api\/drive\/hpd-ask/, async (r) => { const b = JSON.parse(r.request().postData() || "{}"); asked.push(b); await new Promise((ok) => setTimeout(ok, 2200)); return r.fulfill({ json: { ai: true, text: /shrug test/.test(b.question) ? "I'm not sure: nothing in the app says that." : "Yes, it went out yesterday at 3 PM." } }); });
   const JPG = Buffer.from("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==", "base64");
   await c.route("**/api/drive/hpd-sent", (r) => r.fulfill({ json: { omo: JOB, emails: [{ id: "m0000000001", threadId: "19a0b1c2d3e4f5a6", at: "2026-11-04T14:05:00Z", to: "owner@example.com", subject: `SIGNED - ${JOB} - Work Completed`, files: [
     { i: 0, name: `SIGNED - ${JOB} - Work Completed.pdf`, size: 1000, mime: "application/pdf" },
@@ -55,6 +55,16 @@ try {
   const good = await say("good news", /^🎉 /);
   await page.waitForFunction(() => window.__visemes.size >= 3, null, { timeout: 8000 });
   const shapes = [...(await page.evaluate(() => [...window.__visemes]))].sort().join(", ");
+  // 🏷 Its name (🎨): shown on the chat, and it answers to it; "Hey Mike" alone -> "Yes?".
+  await page.locator('[data-hpd-smoke="fc-agent-dress"]').click();
+  await page.locator('[data-hpd-smoke="fc-dress-name"]').fill("Mike");
+  await page.locator('[data-hpd-smoke="fc-dress-name"]').blur();
+  await page.waitForFunction(() => /"name":"Mike"/.test(localStorage.getItem("hpd-helper-look") || ""), null, { timeout: 3000 });
+  const named = await say("hey Mike, good news", /^🎉 /);
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-who"]').innerText(), /Mike|Talking to you/);
+  await say("Hey Mike", /^Yes\? I'm listening\.$/);
+  // 🙌 Not sure -> it shrugs (both hands up).
+  await page.evaluate(() => { window.__shrug = false; new MutationObserver(() => { if (document.querySelector('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]')?.getAttribute("data-arms") === "shrug") window.__shrug = true; }).observe(document.body, { subtree: true, attributes: true, childList: true }); });
   // 💵 One job's payment, from HPD's payment list (or how long it's been waiting).
   const paid = await say(`did HPD pay me for ${JOB}`, new RegExp(`^💵 (Yes: HPD paid|Partly|Not yet|${JOB} isn't in HPD's payment list)`));
   // 🕒 On my way: the tenant text, read back for a yes (or the reason it can't).
@@ -83,10 +93,12 @@ try {
   // 🧠 + 🗣 A question for the AI: yesterday's talk goes along; the slow answer gets "let me check" first.
   await page.evaluate(() => { window.__said = []; });
   await say("did the video for ER07663 go out yesterday?", /went out yesterday/);
-  assert.deepEqual(asked[0].facts.earlierDays.map((t) => t.you), ["did the ER07663 video go out"]);
+  assert.deepEqual(asked.find((x) => /video for ER07663/.test(x.question)).facts.earlierDays.map((t) => t.you), ["did the ER07663 video go out"]);
   assert.ok(/^(Let me check\.|One sec\.|Let me look\.|Hmm, let me see\.)$/.test((await page.evaluate(() => window.__said))[0] || ""), `a short "let me check" first: ${JSON.stringify(await page.evaluate(() => window.__said))}`);
-  assert.match(asked[0].facts.ownerName, /\S/);
+  assert.match(asked.find((x) => /video for ER07663/.test(x.question)).facts.ownerName, /\S/);
 
+  await say("why did the shrug test happen today?", /I'm not sure/);
+  await page.waitForFunction(() => window.__shrug, null, { timeout: 8000 });
   // 📈 The month on one page: a real PDF, opened or shared from the chat.
   await page.evaluate(() => { window.__shared = null; });
   const month = await say("month report", /^📈 \w+ \d{4} so far: \d+ jobs? won/);
@@ -147,7 +159,7 @@ try {
   assert.deepEqual((await page.evaluate(() => window.__shared)).files, [`SIGNED - ${JOB} - Work Completed.pdf|application/pdf`, `BEFORE-01 - ${JOB}.jpg|image/jpeg`, `AFTER-01 - ${JOB}.jpg|image/jpeg`, `AFTER VIDEO-01 - ${JOB}.mp4|video/mp4`]);
   await page.waitForFunction(() => /4 files ready: pick Mail to send them, or Save to Files/.test(document.querySelector('[data-hpd-smoke="fc-sent-copy-msg"]')?.textContent || ""), null, { timeout: 5000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS robot ideas: the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
+  console.log(`PASS robot ideas: named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
 } finally {
   await browser.close();
 }

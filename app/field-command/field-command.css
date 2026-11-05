@@ -4330,3 +4330,12 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-face.is-human.is-focused .fc-face-head { animation: fc-head-focus 5s ease-in-out infinite; }
 @keyframes fc-head-focus { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-2deg) translateY(0.5px); } }
 @media (prefers-reduced-motion: reduce) { .fc-face.is-human.is-proud .fc-face-head, .fc-face.is-human.is-focused .fc-face-head { animation: none; } }
+/* 🧍 The helper walks in from the side (a few steps, a little bob) when the chat opens from the dock (4 Nov). */
+.fc-agent.is-from-dock .fc-agent-who .fc-face.is-human { animation: fc-walk-in 0.9s cubic-bezier(.3, 1.2, .5, 1) both; }
+@keyframes fc-walk-in { 0% { transform: translateX(-70px) translateY(0) rotate(-6deg); opacity: 0; } 20% { opacity: 1; transform: translateX(-52px) translateY(-4px) rotate(4deg); } 40% { transform: translateX(-34px) translateY(0) rotate(-4deg); } 60% { transform: translateX(-17px) translateY(-4px) rotate(3deg); } 80% { transform: translateX(-4px) translateY(0) rotate(-1deg); } 100% { transform: none; opacity: 1; } }
+.fc-dress-name { display: flex; align-items: center; gap: 8px; font: 800 14px system-ui, sans-serif; color: #e2e8f0; }
+.fc-dress-name input { flex: 1; min-width: 0; min-height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid #a78bfa; background: #0f172a; color: #fff; font: 700 16px system-ui, sans-serif; }
+.fc-face.is-human .fc-face-arms.is-shrug .fc-arm-r { animation: fc-shrug 1.2s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes fc-shrug { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+.fc-face.is-human .fc-face-arms.is-count .fc-arm-r { animation: fc-arm-thumb 0.5s cubic-bezier(.2, 1.4, .4, 1) both; }
+@media (prefers-reduced-motion: reduce) { .fc-agent.is-from-dock .fc-agent-who .fc-face.is-human { animation: none; } }

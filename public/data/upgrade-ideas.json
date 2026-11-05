@@ -3,25 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "helper-gestures",
-      "icon": "🙌",
+      "id": "helper-remembers-you",
+      "icon": "💬",
       "kind": "new",
-      "title": "The helper talks with its hands",
-      "why": "It points at the button it's talking about, counts on its fingers when it lists things, and shrugs when it doesn't know."
+      "title": "The helper asks how it went",
+      "why": "After a job it asks \"How did it go at 90th Street?\" and keeps your answer as the job's note."
     },
     {
-      "id": "helper-full-body",
-      "icon": "🧍",
+      "id": "helper-weather-dress",
+      "icon": "🧥",
       "kind": "new",
-      "title": "The helper walks in",
-      "why": "When you open the app it walks in from the side and waves; when you close the chat it walks off."
+      "title": "Dressed for the weather",
+      "why": "A coat and hat in the cold, a raincoat in the rain, short sleeves in the heat."
     },
     {
-      "id": "helper-name",
-      "icon": "🏷",
+      "id": "hands-free-day",
+      "icon": "🚗",
       "kind": "new",
-      "title": "Name your helper",
-      "why": "Give the helper a name and a voice; it answers to its name (\"Hey Mike, what's next?\")."
+      "title": "A whole day hands-free",
+      "why": "From \"start my day\" to the last package, the helper leads every step by voice while you drive and work."
     },
     {
       "id": "papers-list",

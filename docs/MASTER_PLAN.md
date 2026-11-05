@@ -54,6 +54,7 @@ The owner's words today, in order, and what was done with each:
    question" in words, the question on the card with You decide / Skip it / Answer; his waiting question answered (239).
 15. "do all ideas and keep upgrading, open app on right always" -> the mouth follows the words, proud / focused moods;
    the live app kept open in the right pane (240).
+16. "do all ideas and keep upgrading" -> name your helper, it talks with its hands, it walks in (241).
 
 ### Still to do from today
 - Keep making the robot more like a real person: answer while it is still thinking (first words fast), remember
@@ -65,9 +66,9 @@ The owner's words today, in order, and what was done with each:
 
 ### Ideas from today (not started)
 - 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person.
-- 🙌 The helper talks with its hands: points at the button, counts on its fingers, shrugs.
-- 🧍 The helper walks in and waves when you open the app.
-- 🏷 Name your helper; it answers to its name.
+- 💬 The helper asks how a job went and keeps the answer as the job's note.
+- 🧥 Dressed for the weather: coat in the cold, raincoat in the rain.
+- 🚗 A whole day hands-free.
 - 🗂 Your papers in one place with dates and a 30-day warning.
 - 🚗 A whole day hands-free: the robot leads every step by voice.
 
@@ -79,6 +80,7 @@ giving me more ideas"; "everything we talk about goes in the master file". Claud
 Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 
 ### Done today (live or going live)
+- 4 Nov: name your helper (it answers to it), it shrugs / counts / points, it walks in (241).
 - 4 Nov: the helper's mouth follows the words; proud and focused moods (240).
 - 4 Nov: the helper is a person (face, mouth, hands, skin and hair picks); Claude's question in words with one-tap answers; report opens in the chat; did HPD pay me; on my way (239).
 - 4 Nov: a dark or blurry photo -> Retake on the spot; the month on one page as a PDF (238).
@@ -989,6 +991,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 238. **Retake on the spot; the month on one page** (owner, 4 Nov: "next upgrade"). Done: a photo the photo check finds dark or blurry is said out loud and shows jc-retake ("📷 That before photo looks too dark", 📷 Retake opens the camera again for the same kind, Keep it). lib/month-report: monthReportPdf (pdf-lib, one page: money awarded, jobs won, win rate, jobs finished, bids sent, earned; jobs won by borough and kind of work, bars) and monthSummary; intent month-report ("month report", "how was my month", "last month's report"); the chat shows 📄 Open the report and 📤 Share (fc-agent-file). Not redone: answering HPD's email (the notice board already drafts the reply, with attachments, for your tap). Tests: robot-ideas (month PDF opens and shares; a black photo -> Retake opens the camera).
 239. **The helper is a person; Claude's question in words; the report opens in the chat; did HPD pay me; on my way** (owner, 4 Nov: "The report did not open... the AI, the mouth, hands and everything. I want it to look like a whole person, not a robot"; "why is there a question mark next to Claude, I do not understand, it should auto know, I need better flow"; "do all ideas and keep upgrading"). Done: HelperFace redrawn as a person (head and shoulders, shirt in the picked color with a collar, skin and hair picks HELPER_SKINS / HELPER_HAIRS in 🎨, eyes with irises that blink and follow, brows, nose, cheeks, lips, a mouth that opens while talking (fc-talk-h), ears that perk while listening, a big smile, worried brows, sleep, and hands: open wave, pointing finger, thumbs up); the map marker the same person. The Claude button says "1 question" instead of ❓; a waiting question always shows the full card with the question and 👍 You decide / ⏭ Skip it / ✍️ Answer (CHANGE-ANSWER). The owner's waiting question (insurance / license dates, request 20261103235759) answered from his words: build an add-a-paper place, don't wait for the dates (saved after the status server's daily limit reset). Month report opens inside the chat (ItbPages), no new tab. Intents paid-check (PIP status of one job, days since the paperwork) and on-my-way (ETA from the last GPS fix, the tenant text after a yes). Not redone: job checklist (walk me through it already does it). Tests: claude-ask-quick (new), robot-ideas (paid, on my way, report opens), claude-now (1 question).
 240. **The mouth follows the words; proud and focused moods** (owner, 4 Nov: "do all ideas and keep upgrading, open app on right always"). Done: lib/speak sends each spoken word (SpeechSynthesisUtterance onboundary -> hpd-speak-word) and visemesOf(word) gives the mouth shapes (closed on m/b/p, round on o/u, wide on e/i, open on a); HelperFace sets data-viseme shape by shape while talking (the steady talking motion stays where a phone reports no words). New moods: proud (a win today: smile, chin up) on the dock and in the chat; focused (at a job after "I'm here": brows down, steady eyes) in the chat. Not built here: 🗂 papers (the auto helper builds it from the owner's answer on request 20261103235759). Tests: test-lang (mouth shapes), robot-ideas (the mouth follows a voice that reports words).
+241. **Name your helper; it talks with its hands; it walks in** (owner, 4 Nov: "do all ideas and keep upgrading"). Done: helper-look name (🎨 "🏷 Its name", up to 20 letters); the chat header and the welcome line use it; agentRef strips "hey <name>," from what's said and answers "Yes? I'm listening." (then listens) to the name alone. HelperFace arms "shrug" (both hands up) and "count" (one finger up); the chat face shrugs on "not sure / I couldn't / I don't know", counts on a list (• or 1.), points at offered buttons. The chat face walks in from the side with steps and a bob when opened from the dock (fc-walk-in). Tests: robot-ideas (name, "Hey Mike" -> Yes?, a shrug on "I'm not sure").
 - **Quick questions in the chat** (owner idea, 3 Nov; done: ⚡ button in the chat bar opens one-tap questions (Today, Next bid, Notices, Owed, What's next); test-browser-quick-questions).
 918. **Don't leave without the after photo** (owner idea, 4 Nov; done: lib/leave-reminder.ts leftWithoutAfterPhoto = arrived today (FieldArrivedAt, under 10 h), no after photo, no outcome saved, and the phone more than 150 m from the job; the GPS watch in FieldCommandClient calls leavingRef once per job: orb bubble "📸 No after photo yet" + tone/voice; test-leave-reminder).
 919. **Smoother talking with the chat** (owner, 4 Nov, on the insurance/license idea: "make the fluid conversation more fluid, listen for the user after each response"; done: in FieldCommandClient startListening, if the mic ends with words heard but never marked final, the chat answers them; silent turns in 💬 mode retry 3 times (was 1); it already listened again after every spoken answer; test: scripts/test-browser-fluid-talk.mjs).

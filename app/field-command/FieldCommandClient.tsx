@@ -53,7 +53,7 @@ import HelperFace, { helperFaceHtml } from "./HelperFace";
 import { onSiteNote } from "../../lib/job-time";
 import { leftWithoutAfterPhoto } from "../../lib/leave-reminder";
 import { materialsFor } from "../../lib/materials";
-import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HAIRS, HELPER_HATS, HELPER_SKINS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHair, type HelperHat, type HelperSkin } from "../../lib/helper-look";
+import { applyBatterySaver, batterySaverOn, cleanHelperName, getHelperLook, HELPER_COLORS, HELPER_HAIRS, HELPER_HATS, HELPER_SKINS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHair, type HelperHat, type HelperSkin } from "../../lib/helper-look";
 import { isSpanishText, spanishToEnglish, suggestTenantReply, suggestTenantReplyEs } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
 import "../map/plan-my-day.css";
@@ -4840,6 +4840,19 @@ export default function FieldCommandClient() {
     speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 150, () => { if (convoRef.current) startListening(); });
   };
   agentRef.current = (heard: string, inner = false) => {
+    // 🏷 It answers to its name (4 Nov): "Hey Mike, what's next?" -> "what's next?"; just "Hey Mike" -> "Yes?".
+    {
+      const name = getHelperLook().name;
+      if (name && !inner) {
+        const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`^\\s*(?:(?:hey|hi|hello|ok|okay|yo)[,\\s]+)?${esc}\\b[,.!?\\s]*`, "i");
+        if (re.test(heard)) {
+          const rest = heard.replace(re, "").trim();
+          if (!rest) { setAgent({ heard, reply: `Yes? I'm listening.` }); speak("Yes?", 0, () => startListening()); return; }
+          heard = rest;
+        }
+      }
+    }
     if (askAnywayRef.current && askAnywayRef.current !== heard) askAnywayRef.current = "";
     {
       const st = stepsRef.current;
@@ -8559,13 +8572,14 @@ export default function FieldCommandClient() {
           {/* The helper's face: it listens, talks (the mouth moves while it speaks), and blinks in between. */}
           {/* Over a bid or a job the panel stays small: the face sits in the first line instead. */}
           <div className={`fc-agent-who${speakingNow ? " is-talking" : listening ? " is-listening" : ""}${selectedJob || bidsOpen ? " is-small" : ""}`} data-hpd-smoke="fc-agent-who">
-            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : selectedJob && Date.now() - Date.parse(String(value(selectedJob, ["FieldArrivedAt"]) || "")) < 8 * 3600000 ? "focused" : wonToday ? "proud" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock ? 112 : 60} outfit={robotOutfit({ wx: wxChip })} arms={magicOn ? "wave" : pointAt ? "point" : /^(✅|Sent|Done|Saved|Marked)/.test(agent.reply) ? "thumbs" : ""} hat={selectedJob && Date.now() - Date.parse(String(value(selectedJob, ["FieldArrivedAt"]) || "")) < 8 * 3600000 ? "hardhat" : undefined} />
-            <b>{speakingNow ? "Talking to you…" : listening ? "Listening…" : agent.reply === "Thinking…" ? "Thinking…" : "Your helper"}</b>
+            <HelperFace mode={speakingNow ? "talking" : listening ? "listening" : agent.reply === "Thinking…" || /…$/.test(agent.reply) ? "working" : selectedJob && Date.now() - Date.parse(String(value(selectedJob, ["FieldArrivedAt"]) || "")) < 8 * 3600000 ? "focused" : wonToday ? "proud" : "idle"} size={selectedJob || bidsOpen ? 46 : agentFromDock ? 112 : 60} outfit={robotOutfit({ wx: wxChip })} arms={magicOn ? "wave" : pointAt ? "point" : /^(✅|Sent|Done|Saved|Marked)/.test(agent.reply) ? "thumbs" : /\b(I couldn't|I can't tell|I don't know|not sure|no idea|I'm not sure)\b/i.test(agent.reply) ? "shrug" : /\n\s*(•|\d+\.)\s/.test(agent.reply) ? "count" : (agent.actions?.length || agent.offers?.length) && !speakingNow ? "point" : ""} hat={selectedJob && Date.now() - Date.parse(String(value(selectedJob, ["FieldArrivedAt"]) || "")) < 8 * 3600000 ? "hardhat" : undefined} />
+            <b>{speakingNow ? "Talking to you…" : listening ? "Listening…" : agent.reply === "Thinking…" ? "Thinking…" : helperLook.name || "Your helper"}</b>
           </div>
           {dressOpen ? (
             <div className="fc-agent-dress" data-hpd-smoke="fc-agent-dress-box" role="group" aria-label="Dress the helper">
               <span>{(Object.keys(HELPER_COLORS) as HelperColor[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.color === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-color" data-color={k} aria-label={HELPER_COLORS[k].label} aria-pressed={helperLook.color === k} style={{ background: HELPER_COLORS[k].line }} onClick={() => setHelperLook({ color: k })} />)}</span>
               <span data-hpd-smoke="fc-dress-skins">{(Object.keys(HELPER_SKINS) as HelperSkin[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.skin === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-skin" data-skin={k} aria-label={`Skin: ${HELPER_SKINS[k].label}`} aria-pressed={helperLook.skin === k} style={{ background: HELPER_SKINS[k].skin }} onClick={() => setHelperLook({ skin: k })} />)}</span>
+              <label className="fc-dress-name">🏷 Its name <input data-hpd-smoke="fc-dress-name" value={helperLook.name} maxLength={20} placeholder="e.g. Mike" onChange={(e) => setHelperLook({ name: e.target.value.replace(/[^\p{L}\p{N} '-]/gu, "").slice(0, 20) })} onBlur={(e) => setHelperLook({ name: cleanHelperName(e.target.value) })} /></label>
               <span data-hpd-smoke="fc-dress-hairs">{(Object.keys(HELPER_HAIRS) as HelperHair[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.hair === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-hair" data-hair={k} aria-label={`Hair: ${HELPER_HAIRS[k].label}`} aria-pressed={helperLook.hair === k} style={{ background: HELPER_HAIRS[k].hair }} onClick={() => setHelperLook({ hair: k })} />)}</span>
               <span>{(Object.keys(HELPER_HATS) as HelperHat[]).map((k) => <button key={k} type="button" className={`fc-dress-hat${helperLook.hat === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-hat" data-hat={k} aria-pressed={helperLook.hat === k} onClick={() => setHelperLook({ hat: k })}>{HELPER_HATS[k]}</button>)}</span>
               {voiceSupported() ? (() => {
@@ -8584,7 +8598,7 @@ export default function FieldCommandClient() {
               })() : null}
             </div>
           ) : null}
-          {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ Your AI helper</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}
+          {agent.heard === "👋" ? <small className="fc-agent-me" data-hpd-smoke="fc-agent-heard">✨ {helperLook.name || "Your AI helper"}</small> : <small data-hpd-smoke="fc-agent-heard">🎤 &ldquo;{agent.heard}&rdquo;</small>}
           {/* 💡 Before you ask (27 Oct, owner: "figure it out by itself beforehand"): the most pressing thing right now. */}
           {nextStepRef.current && !agent.reply.startsWith("Next:") && !agent.confirm ? (
             <button type="button" className="fc-agent-hint" data-hpd-smoke="fc-agent-hint" onClick={() => { const step = nextStepRef.current; setAgent(null); step?.go(); }}>💡 {nextStepRef.current.text.replace(/^\w/, (c) => c.toUpperCase())} <b>▶</b></button>
