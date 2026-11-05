@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-05T17:56:09.895Z
+Fetcher run started: 2026-11-05T18:05:03.193Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/8 [00:00<?, ?it/s]Downloading COA messages:  12%|█▎        | 1/8 [00:00<00:01,  3.99it/s]Downloading COA messages:  25%|██▌       | 2/8 [00:00<00:01,  5.87it/s]Downloading COA messages:  38%|███▊      | 3/8 [00:00<00:00,  7.14it/s]Downloading COA messages:  62%|██████▎   | 5/8 [00:00<00:00,  7.83it/s]Downloading COA messages:  75%|███████▌  | 6/8 [00:00<00:00,  8.24it/s]Downloading COA messages:  88%|████████▊ | 7/8 [00:00<00:00,  8.65it/s]Downloading COA messages: 100%|██████████| 8/8 [00:01<00:00,  8.78it/s]Downloading COA messages: 100%|██████████| 8/8 [00:01<00:00,  7.82it/s]
-Geocoding COA addresses:   0%|          | 0/8 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 8/8 [00:00<00:00, 260111.88it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/8 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 1/8 [00:00<00:04,  1.59it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 2/8 [00:01<00:03,  1.56it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 3/8 [00:01<00:03,  1.67it/s]Fetching ITBs for COA OMOs:  50%|█████     | 4/8 [00:02<00:02,  1.66it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 5/8 [00:02<00:01,  1.89it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 6/8 [00:03<00:00,  2.08it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 7/8 [00:03<00:00,  2.23it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:03<00:00,  2.34it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:03<00:00,  2.01it/s]
+Downloading COA messages:   0%|          | 0/8 [00:00<?, ?it/s]Downloading COA messages:  12%|█▎        | 1/8 [00:00<00:00,  9.08it/s]Downloading COA messages:  25%|██▌       | 2/8 [00:00<00:00,  9.31it/s]Downloading COA messages:  38%|███▊      | 3/8 [00:00<00:00,  9.50it/s]Downloading COA messages:  50%|█████     | 4/8 [00:00<00:00,  8.85it/s]Downloading COA messages:  62%|██████▎   | 5/8 [00:00<00:00,  8.33it/s]Downloading COA messages:  75%|███████▌  | 6/8 [00:00<00:00,  7.83it/s]Downloading COA messages:  88%|████████▊ | 7/8 [00:00<00:00,  7.90it/s]Downloading COA messages: 100%|██████████| 8/8 [00:00<00:00,  7.80it/s]Downloading COA messages: 100%|██████████| 8/8 [00:00<00:00,  8.21it/s]
+Geocoding COA addresses:   0%|          | 0/8 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 8/8 [00:00<00:00, 185383.60it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/8 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 1/8 [00:00<00:05,  1.28it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 2/8 [00:01<00:04,  1.32it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 3/8 [00:02<00:03,  1.42it/s]Fetching ITBs for COA OMOs:  50%|█████     | 4/8 [00:02<00:02,  1.42it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 5/8 [00:03<00:01,  1.53it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 6/8 [00:03<00:01,  1.72it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 7/8 [00:04<00:00,  1.78it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:04<00:00,  1.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:04<00:00,  1.63it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -175,9 +175,8 @@ HPD requests: 26 OMOs HPD asked about (paperwork / status) from 41 staff emails 
 
 ========== Update HPD job status from NYC Open Data ==========
 $ node scripts/update-hpd-job-status.mjs
-HPD job status not updated: NYC Open Data answered 503
+HPD job status: 910 of 946 jobs found, 176 still open at HPD, 734 closed
 
-WARNING: HPD job status was not refreshed: Update HPD job status from NYC Open Data failed with exit code 1
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
@@ -270,7 +269,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-05T18:00:50.739Z
+Fetcher run finished: 2026-11-05T18:12:45.635Z
 {
   "fetchedCoaItems": 8,
   "fetchedItbItems": 8,
