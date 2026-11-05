@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-05T20:33:11.752Z
+Fetcher run started: 2026-11-05T20:44:11.024Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,14 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 16.83it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 16.48it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 11.06it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 12.49it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 13.20it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 200791.15it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:03,  2.38it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:02,  2.52it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.66it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  2.75it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:01<00:01,  3.03it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:00,  3.18it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  3.32it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:02<00:00,  3.41it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.52it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.14it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 10.24it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  9.60it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00,  9.50it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  9.18it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.33it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  8.93it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  9.25it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 222051.39it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.62it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:04,  1.75it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:03,  1.73it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:02<00:02,  1.71it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:02,  1.94it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:03<00:01,  2.13it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.27it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.36it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.46it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.12it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER09516: stored 372.00, COA 372.00
 Award amount check ER09330: stored 370.00, COA 370.00
 Award amount check ER09460: stored 375.00, COA 375.00
 Award amount check ER08795: stored 465.00, COA 465.00
@@ -41,14 +42,14 @@ Award amount check ER08170: stored 577.00, COA 577.00
 Award amount check ER08552: stored 690.00, COA 690.00
 Award amount check ER07749: stored 417.00, COA 417.00
 Safe merge complete
-Master before: 702
+Master before: 703
 Incoming rows: 9
-Added new OMOs: 1
-Skipped existing OMOs: 8
+Added new OMOs: 0
+Skipped existing OMOs: 9
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 703
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -56,9 +57,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER09516 93 GREENE STREET, 10012 40.724362 -74.000178 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -83,23 +83,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER09516 ER09516_110226042347.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER09516', 'Address': '93 GREENE STREET, 10012', 'RecoveredFrom': 'ER09516_110226042347.pdf', 'Preview': ': MAKE DOOR SELF CLOSING AT DOOR TO SOUTH STAIR TO BA SEMENT AT PUBLIC HALL, 1st STORY. AT DOOR TO SOUTH STAIR TO BASEMENT AT PUBLIC HALL , 1st STORY. MAKE ALL NECESSARY REPAIRS TO FIX DEFECTIVE DOOR AL IGNMENT/ ADJSUTME'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 702,
+  "rendered": 0,
+  "reused": 703,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -131,7 +129,7 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/22
-Upcoming bids: 31 not awarded yet (31 on the map), 6 received today, from 109 emails
+Upcoming bids: 31 not awarded yet (31 on the map), 7 received today, from 110 emails
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
@@ -272,13 +270,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-05T20:40:11.881Z
+Fetcher run finished: 2026-11-05T20:50:19.050Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,
   "fetchedFinalJobRows": 9,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 8,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 9,
   "rawRows": 703,
   "rows2026": 652,
   "mapped2026": 652,
