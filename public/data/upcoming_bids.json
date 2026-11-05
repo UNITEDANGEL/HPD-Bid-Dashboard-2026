@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T19:40:23.415072+00:00",
+  "generatedAt": "2026-11-05T19:55:17.493727+00:00",
   "days": 14,
   "bids": [
     {
@@ -1954,136 +1954,6 @@
       },
       "lat": 40.813023,
       "lng": -73.937044
-    },
-    {
-      "omo": "ER09686",
-      "bidDue": "2026-11-05",
-      "bidDueTime": "12:00 PM",
-      "workStart": "2026-11-05",
-      "workCompletion": "2026-11-15",
-      "address": "29 7 AVENUE SOUTH",
-      "borough": "MN",
-      "itbFile": "ER09686_110226042233.pdf",
-      "description": "AT 1ST FIRE DOOR FROM SOUTH 4TH STORY, INSTALL PASSAGE LOCK AT 4TH STORY PUBLIC HALL, REPLACE BASEBOARD COVER NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT 1ST FIRE DOOR FROM SOUTH 4TH STORY, INSTALL PASSAGE LOCK.DOOR IS LOCATED NEXT TO APT 4A. AT 4TH STORY PUBLIC HALL, REPLACE BASEBOARD COVER. COVER IS LOCATED NEXT TO APT 4D. DIMENSIONS ARE 7 lf TOTAL DOORS= (1) TOTAL BASEBOARD COVERS= (1) REMOVE ALL WORK-RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. 10-31-2026....NO ER REQUIRED...DEFECTIVE STOVE....GAS ON AT BLDG AND APT....",
-      "notes": "",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1793654556000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "lat": 40.730749,
-      "lng": -74.004143
     },
     {
       "omo": "ER09825",
@@ -4168,6 +4038,136 @@
       },
       "lat": 40.875152,
       "lng": -73.874368
+    },
+    {
+      "omo": "ER09686",
+      "bidDue": "2026-11-09",
+      "bidDueTime": "12:00 PM",
+      "workStart": "2026-11-09",
+      "workCompletion": "2026-11-19",
+      "address": "29 7 AVENUE SOUTH",
+      "borough": "MN",
+      "itbFile": "ER09686_110526023937.pdf",
+      "description": "AT 1ST FIRE DOOR FROM SOUTH 4TH STORY, INSTALL PASSAGE LOCK AT 4TH STORY PUBLIC HALL, REPLACE BASEBOARD COVER NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT 1ST FIRE DOOR FROM SOUTH 4TH STORY, INSTALL PASSAGE LOCK.DOOR IS LOCATED NEXT TO APT 4A. AT 4TH STORY PUBLIC HALL, REPLACE BASEBOARD COVER. COVER IS LOCATED NEXT TO APT 4D. DIMENSIONS ARE 7 lf TOTAL DOORS= (1) TOTAL BASEBOARD COVERS= (1) REMOVE ALL WORK-RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. 10-31-2026....NO ER REQUIRED...DEFECTIVE STOVE....GAS ON AT BLDG AND APT....",
+      "notes": "",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793907579000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.730749,
+      "lng": -74.004143
     }
   ],
   "unread": []
