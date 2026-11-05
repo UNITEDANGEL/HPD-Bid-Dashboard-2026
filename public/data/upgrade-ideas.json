@@ -3,25 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "helper-remembers-you",
-      "icon": "💬",
+      "id": "helper-sits-on-map",
+      "icon": "🗺",
       "kind": "new",
-      "title": "The helper asks how it went",
-      "why": "After a job it asks \"How did it go at 90th Street?\" and keeps your answer as the job's note."
+      "title": "The helper rides on the map",
+      "why": "A tiny version of your helper rides along your route on the map and waves at each stop you finish."
     },
     {
-      "id": "helper-weather-dress",
-      "icon": "🧥",
+      "id": "helper-reads-card",
+      "icon": "📖",
       "kind": "new",
-      "title": "Dressed for the weather",
-      "why": "A coat and hat in the cold, a raincoat in the rain, short sleeves in the heat."
+      "title": "The helper reads the job card with you",
+      "why": "Open a job and the helper points at each part as it reads it: the address, the work, the tenant, the due date."
     },
     {
-      "id": "hands-free-day",
-      "icon": "🚗",
+      "id": "helper-day-recap",
+      "icon": "🌙",
       "kind": "new",
-      "title": "A whole day hands-free",
-      "why": "From \"start my day\" to the last package, the helper leads every step by voice while you drive and work."
+      "title": "Goodnight from the helper",
+      "why": "At the end of the day the helper says goodnight with tomorrow's first stop and the weather, then puts on its pajamas."
     },
     {
       "id": "papers-list",

@@ -29,6 +29,7 @@ export type AgentCommand =
   | { intent: "tour" }
   | { intent: "materials" }
   | { intent: "missing-paperwork" }
+  | { intent: "hands-free-day" }
   | { intent: "paid-check"; ref: string }
   | { intent: "on-my-way"; ref: string }
   | { intent: "month-report"; last?: boolean }
@@ -181,6 +182,8 @@ export function parseCommand(heard: string): AgentCommand {
   }
   // 📷 Read a photo (3 Nov, pick 5): the camera opens only from a tap on the phone, so this points to 📷.
   if (/^(?:can you )?(?:read|scan|take|look at|check)(?: a| this| the| my)? (?:photo|picture|pic|notice|invoice|paper|document)(?: for me)?$|^read (?:a |this |the )?photo of (?:a |this |the )?\w+$/.test(t)) return { intent: "photo" };
+  // 🚗 A whole day hands-free (4 Nov): driving mode on, your day read out, then it leads step by step ("go" for the next).
+  if (/\b(hands[- ]free (day|all day)|start (my|the) day hands[- ]free|lead (me through )?(my|the) day|drive me through (my|the) day|walk me through (my|the) day)\b/.test(t)) return { intent: "hands-free-day" };
   // 🚗 Driving mode (3 Nov, pick 4): short answers and it keeps listening. "I'm driving" / "I'm parked".
   if (/^(?:ok(?:ay)? )?(?:i'?m driving|i am driving|(?:turn on |start )?driving mode(?: on)?|(?:turn on )?hands[- ]free(?: mode)?(?: on)?)$/.test(t)) return { intent: "driving", on: true };
   if (/^(?:ok(?:ay)? )?(?:i'?m parked|i am parked|(?:turn off |stop |end )?driving mode(?: off)?|hands[- ]free(?: mode)? off|i'?m done driving|stop hands[- ]free)$/.test(t) && !/^(?:turn on |start )/.test(t)) return { intent: "driving", on: false };

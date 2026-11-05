@@ -10,11 +10,12 @@ new Function('require', 'module', 'exports', code)((m) => (m === 'react' ? { use
 const { robotOutfit } = mod.exports;
 assert.equal(robotOutfit({ happy: true, sleep: true, wx: { temp: 30, icon: '☀️', note: 'rain 2 PM' } }), 'party');
 assert.equal(robotOutfit({ sleep: true, wx: { temp: 30, icon: '☀️', note: '' } }), 'pajamas');
-assert.equal(robotOutfit({ wx: { temp: 58, icon: '🌧', note: 'rain 2 PM' } }), 'umbrella');
-assert.equal(robotOutfit({ wx: { temp: 28, icon: '❄️', note: 'snow now' } }), 'umbrella');
-assert.equal(robotOutfit({ wx: { temp: 36, icon: '☁️', note: 'H 41° L 30°' } }), 'scarf');
-assert.equal(robotOutfit({ wx: { temp: 88, icon: '☀️', note: 'H 90° L 72°' } }), 'sunglasses');
-assert.equal(robotOutfit({ wx: { temp: 88, icon: '☁️', note: 'H 90° L 72°' } }), '');
+assert.equal(robotOutfit({ wx: { temp: 58, icon: '🌧', note: 'rain 2 PM' } }), 'raincoat');
+assert.equal(robotOutfit({ wx: { temp: 28, icon: '❄️', note: 'snow now' } }), 'winter');
+assert.equal(robotOutfit({ wx: { temp: 36, icon: '☁️', note: 'H 41° L 30°' } }), 'winter');
+assert.equal(robotOutfit({ wx: { temp: 50, icon: '☁️', note: 'H 52° L 44°' } }), 'jacket');
+assert.equal(robotOutfit({ wx: { temp: 88, icon: '☀️', note: 'H 90° L 72°' } }), 'summer');
+assert.equal(robotOutfit({ wx: { temp: 88, icon: '☁️', note: 'H 90° L 72°' } }), 'tshirt');
 assert.equal(robotOutfit({ wx: { temp: 62, icon: '⛅', note: 'H 66° L 55°' } }), '');
 assert.equal(robotOutfit({ wx: null }), '');
-console.log('helper look ok: party, nightcap, umbrella (rain/snow), scarf (≤40°), sunglasses (≥80° and sunny)');
+console.log('helper look ok: party, nightcap, raincoat in rain, winter coat in snow or ≤40°, jacket ≤55°, T-shirt ≥80° (sunglasses when sunny)');

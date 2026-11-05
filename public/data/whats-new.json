@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "How did it go?",
+      "items": [
+        "💬 After a job's package goes out, your helper asks \"How did it go at 90th Street?\". Say a few words (or tap one) and it keeps them as the job's note; say skip to leave it.",
+        "🧥 Your helper dresses for the weather: a raincoat and umbrella in rain, a winter coat, hat and scarf in snow or cold, a jacket when it's cool, a T-shirt in the heat (sunglasses when sunny).",
+        "🚗 Say \"hands free day\": driving mode turns on, your day is read out, and after each answer the helper says the next step. Say \"go\" to do it. Say \"I'm parked\" to stop."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "Name your helper",
       "items": [
         "🏷 Give your helper a name in 🎨 (like Mike). The chat shows it, and it answers to it: \"Hey Mike, what's next?\". Just \"Hey Mike\" and it says \"Yes?\" and listens.",

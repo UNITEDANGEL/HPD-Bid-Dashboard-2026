@@ -81,7 +81,7 @@ import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
-import { allJobNotes } from "../../lib/job-notes";
+import { addJobNote, allJobNotes } from "../../lib/job-notes";
 import { searchAll, searchQuery, type SearchDoc } from "../../lib/search-all";
 import { dailyTip } from "../../lib/daily-tip";
 import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
@@ -1025,6 +1025,10 @@ export default function FieldCommandClient() {
   const lastFixRef = useRef<GpsFix | null>(null);
   // The pill at the bottom of the map as last shown (it hides while the helper is open): "what's next?" reads it (27 Oct).
   const nextStepRef = useRef<{ text: string; go: () => void } | null>(null);
+  // 💬 "How did it go?" after a job (4 Nov): what's said next becomes the job's note. 🚗 leadDayRef: the hands-free day.
+  const pendingNoteRef = useRef<{ id: string; at: number } | null>(null);
+  const leadDayRef = useRef(false);
+  const howWentRef = useRef<(id: string) => void>(() => {});
   // The map follows you from the moment it opens; dragging the map pauses it, Me resumes it.
   const followMeRef = useRef(true);
   const centeredOnMeRef = useRef(false);
@@ -2338,6 +2342,7 @@ export default function FieldCommandClient() {
       }
       if (event.data.type !== "hpd-package-approved") return;
       closePackageSheetRef.current();
+      if (event.data.job) window.setTimeout(() => howWentRef.current(String(event.data.job)), 1800);
       setMediaMessage(event.data.emailed ? `${event.data.job || "Job"} package approved and emailed ✓` : `${event.data.job || "Job"} package approved ✓`);
     }
     window.addEventListener("message", onMessage);
@@ -4839,6 +4844,16 @@ export default function FieldCommandClient() {
     setAgent({ heard, reply, offers: ["done", "stop"], offersLabel: st.i + 1 < st.items.length ? "Say \"done\" for the next one, or tap:" : "Say \"done\" when it's done, or tap:" });
     speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D"), 150, () => { if (convoRef.current) startListening(); });
   };
+  // 💬 Asked once per job, after its package went out: what's said next is kept as the job's note.
+  howWentRef.current = (id: string) => {
+    try { if (localStorage.getItem(`hpd-how-went-${id}`)) return; localStorage.setItem(`hpd-how-went-${id}`, "1"); } catch { /* private mode */ }
+    const j = jobs.find((x) => jobId(x) === id);
+    const where = j ? jobAddress(j).replace(/,\s*\d{5}$/, "").replace(/^(\d+[-\d]*)\s+/, "") : id;
+    pendingNoteRef.current = { id, at: Date.now() };
+    setAgentFromDock(false);
+    setAgent({ heard: "💬", reply: `How did it go at ${where}? Tell me in a few words and I'll keep it as the job's note (or say skip).`, offers: ["It went fine", "The tenant wasn't happy", "I need to come back", "skip"], offersLabel: "Or tap:" });
+    speak(`How did it go at ${where}?`, 300, () => startListening());
+  };
   agentRef.current = (heard: string, inner = false) => {
     // 🏷 It answers to its name (4 Nov): "Hey Mike, what's next?" -> "what's next?"; just "Hey Mike" -> "Yes?".
     {
@@ -4851,6 +4866,30 @@ export default function FieldCommandClient() {
           if (!rest) { setAgent({ heard, reply: `Yes? I'm listening.` }); speak("Yes?", 0, () => startListening()); return; }
           heard = rest;
         }
+      }
+    }
+    {
+      // 💬 The answer to "How did it go?" (3 minutes): kept as the job's note; "skip" / "no" leaves it.
+      const pn = pendingNoteRef.current;
+      if (pn && !inner && Date.now() - pn.at < 180000) {
+        pendingNoteRef.current = null;
+        const said = heard.trim();
+        if (/^(skip|no|nope|nothing|never ?mind|cancel|not now)\b/i.test(said)) { setAgent({ heard, reply: "OK, nothing saved." }); speak("OK.", 0); return; }
+        const c = parseCommand(said);
+        if (c.intent === "ask" || c.intent === "search" || c.intent === "yes") {
+          addJobNote(pn.id, said);
+          setAgent({ heard, reply: `📝 Saved on ${pn.id}'s card: "${said}"` });
+          speak("Got it, saved on the job.", 0, () => { if (convoRef.current) startListening(); });
+          return;
+        }
+      }
+      // 🚗 Hands-free day: "go" / "next" / "ok" does the next step.
+      if (leadDayRef.current && drivingRef.current && /^(go|next|ok(ay)?|yes|do it|let'?s go)[.!]?$/i.test(heard.trim()) && nextStepRef.current) {
+        const step = nextStepRef.current;
+        setAgent({ heard, reply: `➡ ${step.text}` });
+        speak(`OK: ${step.text}.`, 0);
+        step.go();
+        return;
       }
     }
     if (askAnywayRef.current && askAnywayRef.current !== heard) askAnywayRef.current = "";
@@ -4919,6 +4958,8 @@ export default function FieldCommandClient() {
         speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200, () => { if (convoRef.current) startListening(); });
         return;
       }
+      // 🚗 Hands-free day: after each answer, the next step to do ("go" does it).
+      if (leadDayRef.current && drivingRef.current && !confirm && nextStepRef.current && !reply.includes(nextStepRef.current.text)) reply = `${reply}\n\nNext: ${nextStepRef.current.text}. Say "go", or ask me anything.`;
       setAgent({ heard, reply, confirm, cards: takeCards(reply) });
       // 🧠 Remembered for follow-ups (the AI's own answers are added where they come back).
       { const last = chatRef.current[chatRef.current.length - 1]; if (!(last && Date.now() - last.at < 3000 && last.helper.startsWith(reply.slice(0, 40)))) chatRef.current = [...chatRef.current, { you: String(heard).slice(0, 200), helper: reply.replace(/\s+/g, " ").slice(0, 400), at: Date.now() }].slice(-8); saveChatMemory(chatRef.current); }
@@ -5751,7 +5792,15 @@ export default function FieldCommandClient() {
       speak("Tap the camera button below and take the photo.", 200);
       return;
     }
+    if (cmd.intent === "hands-free-day") {
+      leadDayRef.current = true;
+      if (!drivingRef.current) setDrivingRef.current(true);
+      convoRef.current = true; setConvo(true);
+      window.setTimeout(() => agentRef.current("what do I have today and plan my day", true), 600);
+      return;
+    }
     if (cmd.intent === "driving") {
+      if (!cmd.on) leadDayRef.current = false;
       if (cmd.on === drivingRef.current) { answer(cmd.on ? "Driving mode is already on: I'm listening." : "Driving mode is already off."); return; }
       setDrivingRef.current(cmd.on);
       return;

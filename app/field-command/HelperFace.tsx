@@ -79,14 +79,24 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
     <svg className={`fc-face is-human is-${mode}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-skin={dress.skin} data-hair={dress.hair} data-hat={dress.hat} data-outfit={outfit || undefined} data-arms={arms || undefined} data-viseme={viseme || undefined} width={size} height={size} viewBox="0 0 48 48" overflow="visible" aria-hidden="true">
       {/* Shoulders in a work shirt (the owner's color), the neck. */}
       <path d="M3 49 Q3.5 38.5 14.5 36.2 L33.5 36.2 Q44.5 38.5 45 49 Z" fill={shirt.line} />
-      <path d="M18.5 36.2 L24 43 L29.5 36.2 Z" fill={shirt.face} />
-      <path d="M16 36.6 L24 43 M32 36.6 L24 43" stroke={shirt.ear} strokeWidth="1.2" strokeLinecap="round" />
+      {outfit === "tshirt" || outfit === "summer" ? null : <>
+        <path d="M18.5 36.2 L24 43 L29.5 36.2 Z" fill={shirt.face} />
+        <path d="M16 36.6 L24 43 M32 36.6 L24 43" stroke={shirt.ear} strokeWidth="1.2" strokeLinecap="round" />
+      </>}
       <rect x="20.4" y="29.5" width="7.2" height="8" rx="3" fill={shade} />
-      {outfit === "scarf" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="14.5" y="33" width="19" height="5" rx="2.5" fill="#dc2626" /><rect x="27" y="35.5" width="5" height="9" rx="2" fill="#b91c1c" /></g> : null}
+      {/* 🧥 Clothes for the weather over the shirt. */}
+      {outfit === "jacket" || outfit === "winter" || outfit === "raincoat" ? <g className="fc-face-outfit fc-face-coat" data-hpd-smoke="fc-face-outfit">
+        <path d="M3 49 Q3.5 38.2 14.5 35.8 L20 35.8 L24 44 L28 35.8 L33.5 35.8 Q44.5 38.2 45 49 Z" fill={outfit === "raincoat" ? "#facc15" : outfit === "winter" ? "#1e3a8a" : "#57534e"} stroke={outfit === "raincoat" ? "#ca8a04" : "#0f172a"} strokeWidth="0.8" />
+        <line x1="24" y1="44" x2="24" y2="49" stroke={outfit === "raincoat" ? "#a16207" : "#cbd5e1"} strokeWidth="0.9" />
+        {outfit === "winter" ? <path d="M6 43 H18 M30 43 H42" stroke="#3b5bdb" strokeWidth="0.8" /> : null}
+      </g> : null}
+      {outfit === "tshirt" || outfit === "summer" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M17.5 36.2 Q24 41.5 30.5 36.2 Z" fill={skin} /><path d="M17.5 36.2 Q24 41.5 30.5 36.2" stroke={shirt.ear} strokeWidth="1.1" fill="none" /></g> : null}
+      {outfit === "scarf" || outfit === "winter" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="14.5" y="33" width="19" height="5" rx="2.5" fill="#dc2626" /><rect x="27" y="35.5" width="5" height="9" rx="2" fill="#b91c1c" /></g> : null}
       <g className="fc-face-head">
         {/* Ears (they perk up while it listens). */}
         <ellipse className="fc-face-ear" cx="12.7" cy="21.5" rx="2.1" ry="3.1" fill={skin} stroke={shade} strokeWidth="0.6" />
         <ellipse className="fc-face-ear" cx="35.3" cy="21.5" rx="2.1" ry="3.1" fill={skin} stroke={shade} strokeWidth="0.6" />
+        {outfit === "raincoat" ? <path className="fc-face-outfit" d="M10.5 24 Q9 4.5 24 4 Q39 4.5 37.5 24 Q37 32 33 35 L15 35 Q11 32 10.5 24 Z" fill="#facc15" stroke="#ca8a04" strokeWidth="0.8" /> : null}
         {/* The face, then the hair over it. */}
         <ellipse cx="24" cy="21" rx="11" ry="12.6" fill={skin} />
         <path d="M24 33.4 Q30.5 33.2 33.6 27.5 Q31.5 32 24 32.6 Q16.5 32 14.4 27.5 Q17.5 33.2 24 33.4 Z" fill={shade} opacity="0.35" />
@@ -131,7 +141,8 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
           <path d="M28 14.4 L42 15.6 L41 18 L28 16.8 Z" fill="#1e40af" />
           <circle cx="24" cy="6.6" r="1.4" fill="#93c5fd" />
         </g> : null}
-        {outfit === "sunglasses" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="15.6" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><rect x="25" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><line x1="23" y1="19.6" x2="25" y2="19.6" stroke="#0f172a" strokeWidth="1.2" /></g> : null}
+        {outfit === "winter" && dress.hat === "none" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M12.4 15.5 Q12.5 3.5 24 3.4 Q35.5 3.5 35.6 15.5 Z" fill="#dc2626" /><rect x="11.6" y="13.4" width="24.8" height="3.6" rx="1.8" fill="#b91c1c" /><circle cx="24" cy="3" r="2.2" fill="#fff" /></g> : null}
+        {outfit === "sunglasses" || outfit === "summer" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="15.6" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><rect x="25" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><line x1="23" y1="19.6" x2="25" y2="19.6" stroke="#0f172a" strokeWidth="1.2" /></g> : null}
         {outfit === "party" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M18 9.5 L24 -7 L30 9.5 Z" fill="#f472b6" stroke="#be185d" strokeWidth="1" /><circle cx="24" cy="-7" r="2.4" fill="#facc15" /><circle cx="22" cy="3.5" r="1.1" fill="#fff" /><circle cx="26" cy="0" r="1.1" fill="#fff" /></g> : null}
         {outfit === "pajamas" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M12.4 13 Q22 -2 35 6 Q39 9 42 15 L38.5 16 Q35 11.5 33 12 Q24 8 12.4 13 Z" fill="#3b82f6" stroke="#1e40af" strokeWidth="1" /><circle cx="41.5" cy="16" r="2.4" fill="#fff" /></g> : null}
         <text className="fc-face-zzz" x="36" y="9" fontSize="9" fontWeight="900" fill="#a5b4fc">z</text>
@@ -159,7 +170,7 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
           </>}
         </g>
       </g> : null}
-      {outfit === "umbrella" ? <g className="fc-face-outfit fc-face-umbrella" data-hpd-smoke="fc-face-outfit"><path d="M30 2 Q42 -10 54 2 Z" fill="#0ea5e9" stroke="#0369a1" strokeWidth="1.2" /><path d="M42 2 L42 16 Q42 19 39.5 19" stroke="#334155" strokeWidth="1.8" fill="none" strokeLinecap="round" /></g> : null}
+      {outfit === "umbrella" || outfit === "raincoat" ? <g className="fc-face-outfit fc-face-umbrella" data-hpd-smoke="fc-face-outfit"><path d="M30 2 Q42 -10 54 2 Z" fill="#0ea5e9" stroke="#0369a1" strokeWidth="1.2" /><path d="M42 2 L42 16 Q42 19 39.5 19" stroke="#334155" strokeWidth="1.8" fill="none" strokeLinecap="round" /></g> : null}
     </svg>
   );
 }

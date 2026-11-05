@@ -64,15 +64,19 @@ export function useHelperLook() {
 
 // 🌤 What the robot wears right now (owner's picks, 4 Nov): a party hat for good news, a nightcap when it naps, an
 // umbrella when rain or snow is on the way, a scarf when it's cold, sunglasses on a hot sunny day.
-export type HelperOutfit = "party" | "pajamas" | "umbrella" | "scarf" | "sunglasses" | "";
+// 🧥 Dressed for the weather (4 Nov): raincoat + umbrella in rain, a winter coat, hat and scarf in snow or at 40° and
+// under, a jacket up to 55°, a T-shirt in the heat (with sunglasses when it's sunny).
+export type HelperOutfit = "party" | "pajamas" | "umbrella" | "scarf" | "sunglasses" | "raincoat" | "winter" | "jacket" | "tshirt" | "summer" | "";
 export function robotOutfit(o: { happy?: boolean; sleep?: boolean; wx?: { temp: number; icon: string; note: string } | null }): HelperOutfit {
   if (o.happy) return "party";
   if (o.sleep) return "pajamas";
   const wx = o.wx;
   if (!wx) return "";
-  if (/rain|snow/i.test(wx.note)) return "umbrella";
-  if (wx.temp <= 40) return "scarf";
-  if (wx.temp >= 80 && /☀/.test(wx.icon)) return "sunglasses";
+  if (/snow/i.test(wx.note)) return "winter";
+  if (/rain/i.test(wx.note)) return "raincoat";
+  if (wx.temp <= 40) return "winter";
+  if (wx.temp <= 55) return "jacket";
+  if (wx.temp >= 80) return /☀/.test(wx.icon) ? "summer" : "tshirt";
   return "";
 }
 

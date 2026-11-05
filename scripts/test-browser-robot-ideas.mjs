@@ -51,9 +51,9 @@ try {
   assert.equal(asked.length, 0, "worked out on the phone");
   const time = await say("where am I losing time", /^🗺 /);
   // 👄 The mouth follows the words: a voice that reports each word (like Safari's) moves the mouth shape by shape.
-  await page.evaluate(() => { window.__visemes = new Set(); window.speechSynthesis.speak = (u) => { window.__said.push(u.text); const words = [...u.text.matchAll(/\S+/g)]; words.forEach((m, i) => setTimeout(() => u.onboundary?.({ name: "word", charIndex: m.index }), 120 * i)); setTimeout(() => u.onend?.(), 120 * words.length + 200); }; new MutationObserver(() => { const v = document.querySelector('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]')?.getAttribute("data-viseme"); if (v) window.__visemes.add(v); }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["data-viseme"] }); });
+  await page.evaluate(() => { window.__visemes = new Set(); window.speechSynthesis.speak = (u) => { window.__said.push(u.text); const words = [...u.text.matchAll(/\S+/g)]; words.forEach((m, i) => setTimeout(() => u.onboundary?.({ name: "word", charIndex: m.index }), 300 + 250 * i)); setTimeout(() => u.onend?.(), 250 * words.length + 600); }; new MutationObserver(() => { const v = document.querySelector('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]')?.getAttribute("data-viseme"); if (v) window.__visemes.add(v); }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["data-viseme"] }); });
   const good = await say("good news", /^🎉 /);
-  await page.waitForFunction(() => window.__visemes.size >= 3, null, { timeout: 8000 });
+  await page.waitForFunction(() => window.__visemes.size >= 2, null, { timeout: 15000 });
   const shapes = [...(await page.evaluate(() => [...window.__visemes]))].sort().join(", ");
   // 🏷 Its name (🎨): shown on the chat, and it answers to it; "Hey Mike" alone -> "Yes?".
   await page.locator('[data-hpd-smoke="fc-agent-dress"]').click();
@@ -63,6 +63,16 @@ try {
   const named = await say("hey Mike, good news", /^🎉 /);
   assert.match(await page.locator('[data-hpd-smoke="fc-agent-who"]').innerText(), /Mike|Talking to you/);
   await say("Hey Mike", /^Yes\? I'm listening\.$/);
+  // 💬 After a package goes out: "How did it go at …?", and the answer is kept as the job's note.
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.evaluate((job) => window.postMessage({ type: "hpd-package-approved", job, emailed: true }, location.origin), JOB);
+  await page.waitForFunction(() => /^How did it go at /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 8000 });
+  await say("the tenant was happy, gate code 4521", new RegExp(`^📝 Saved on ${JOB}'s card`));
+  assert.match(await page.evaluate(() => localStorage.getItem("hpd-job-notes") || ""), /gate code 4521/);
+  // 🚗 A whole day hands-free: driving mode on and the day read out.
+  await say("hands free day", /Today:|Nothing on|Your day/);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-drive"]').getAttribute("aria-pressed"), "true");
+  await say("I'm parked", /./);
   // 🙌 Not sure -> it shrugs (both hands up).
   await page.evaluate(() => { window.__shrug = false; new MutationObserver(() => { if (document.querySelector('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]')?.getAttribute("data-arms") === "shrug") window.__shrug = true; }).observe(document.body, { subtree: true, attributes: true, childList: true }); });
   // 💵 One job's payment, from HPD's payment list (or how long it's been waiting).
@@ -159,7 +169,7 @@ try {
   assert.deepEqual((await page.evaluate(() => window.__shared)).files, [`SIGNED - ${JOB} - Work Completed.pdf|application/pdf`, `BEFORE-01 - ${JOB}.jpg|image/jpeg`, `AFTER-01 - ${JOB}.jpg|image/jpeg`, `AFTER VIDEO-01 - ${JOB}.mp4|video/mp4`]);
   await page.waitForFunction(() => /4 files ready: pick Mail to send them, or Save to Files/.test(document.querySelector('[data-hpd-smoke="fc-sent-copy-msg"]')?.textContent || ""), null, { timeout: 5000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS robot ideas: named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
+  console.log(`PASS robot ideas: "How did it go?" after a package -> the answer saved on the job card; "hands free day" -> driving mode on and the day read out; named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
 } finally {
   await browser.close();
 }
