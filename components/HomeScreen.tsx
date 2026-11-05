@@ -3,6 +3,7 @@
 // The home screen: only what's used every day, with real numbers. Invitations to bid (open, due today,
 // arrived today), the map with the jobs, paperwork, and bid stats. The old full dashboard is at /overview/.
 import { useEffect, useState } from "react";
+import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string };
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const [unread, setUnread] = useState(0);
   const [awards, setAwards] = useState<Award[] | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [soon, setSoon] = useState<{ name: string; days: number }[]>([]);
   const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function HomeScreen() {
     }).catch(() => setBids([]));
     fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).then((d) => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([]));
     fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPay(d?.totals || null)).catch(() => {});
+    setSoon(expiringSoon(loadPapers(), Date.now()).map((p) => ({ name: p.name, days: daysLeft(p.expires, Date.now()) })));
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
@@ -105,6 +108,14 @@ export default function HomeScreen() {
         <span className="home-text">
           <strong>Payments</strong>
           {pay ? <em>{pay.staleCount ? `⚠️ ${pay.staleCount} checks never cashed ($${Math.round(pay.stale).toLocaleString()}) · ` : ""}{pay.disbursedCount} on the way ($${Math.round(pay.disbursed).toLocaleString()})</em> : <em>From PIP: paid, on the way, uncashed checks</em>}
+        </span>
+      </a>
+
+      <a className={`home-card${soon.length ? " home-pay-alert" : ""}`} href="/papers/" data-hpd-smoke="home-papers">
+        <span className="home-icon">🗂</span>
+        <span className="home-text">
+          <strong>Your papers</strong>
+          <em>{soon.length ? `⚠️ ${soon[0].name}: ${soon[0].days < 0 ? "ran out" : `${soon[0].days} days left`}${soon.length > 1 ? ` (+${soon.length - 1} more)` : ""}` : "Insurance and license dates, warned 30 days before"}</em>
         </span>
       </a>
 
