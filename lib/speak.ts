@@ -104,6 +104,19 @@ export function briefText(text: string) {
   return out.length > 220 ? `${out.slice(0, 217)}…` : out;
 }
 
+export const SPEAK_WORD_EVENT = "hpd-speak-word";
+// The mouth shape for a word: closed for m / b / p, round for o / u, wide for e / i, open for a.
+export type Viseme = "closed" | "mid" | "open" | "wide" | "round";
+export function visemesOf(word: string): Viseme[] {
+  const w = String(word || "").toLowerCase().replace(/[^a-záéíóúñ]/g, "");
+  if (!w) return ["mid"];
+  const vowel = (/[aeiouáéíóú]/.exec(w) || [""])[0];
+  const shape: Viseme = /[oóuú]/.test(vowel) ? "round" : /[eéiíy]/.test(vowel) ? "wide" : vowel ? "open" : "mid";
+  const start: Viseme = /^[mbp]/.test(w) ? "closed" : "mid";
+  const end: Viseme = /[mbp]$/.test(w) ? "closed" : "mid";
+  return [start, shape, end];
+}
+
 export function speak(text: string, delay = 900, onEnd?: () => void) {
   if (!text || !voiceSupported() || voiceOff()) { if (onEnd) window.setTimeout(onEnd, 300); return false; }
   playThroughSilent();
@@ -111,7 +124,10 @@ export function speak(text: string, delay = 900, onEnd?: () => void) {
     window.setTimeout(() => {
       const synth = window.speechSynthesis;
       synth.cancel();
-      const u = new SpeechSynthesisUtterance(brief ? briefText(text) : speechText(text));
+      const said = brief ? briefText(text) : speechText(text);
+      const u = new SpeechSynthesisUtterance(said);
+      // 👄 Each word as it's said, so the helper's mouth follows the words (owner idea, 4 Nov).
+      u.onboundary = (e) => { if (e.name && e.name !== "word") return; const word = /^[^\s]+/.exec(said.slice(e.charIndex || 0))?.[0] || ""; if (word) window.dispatchEvent(new CustomEvent(SPEAK_WORD_EVENT, { detail: { word } })); };
       const lang = langOf(text);
       const v = pickVoice(lang);
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === "es" ? "es-US" : "en-US";

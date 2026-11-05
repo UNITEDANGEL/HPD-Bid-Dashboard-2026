@@ -3,18 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "helper-voice-lips",
-      "icon": "👄",
+      "id": "helper-gestures",
+      "icon": "🙌",
       "kind": "new",
-      "title": "The mouth follows the words",
-      "why": "The helper's mouth moves with each word it says (open on vowels, closed on m and b), like a real person talking."
+      "title": "The helper talks with its hands",
+      "why": "It points at the button it's talking about, counts on its fingers when it lists things, and shrugs when it doesn't know."
     },
     {
-      "id": "helper-moods",
-      "icon": "😊",
+      "id": "helper-full-body",
+      "icon": "🧍",
       "kind": "new",
-      "title": "The helper reacts to your day",
-      "why": "It looks proud after a win, sleepy late at night, focused while you work a job."
+      "title": "The helper walks in",
+      "why": "When you open the app it walks in from the side and waves; when you close the chat it walks off."
+    },
+    {
+      "id": "helper-name",
+      "icon": "🏷",
+      "kind": "new",
+      "title": "Name your helper",
+      "why": "Give the helper a name and a voice; it answers to its name (\"Hey Mike, what's next?\")."
     },
     {
       "id": "papers-list",
