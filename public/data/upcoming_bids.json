@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T14:59:11.743215+00:00",
+  "generatedAt": "2026-11-05T15:09:32.638015+00:00",
   "days": 14,
   "bids": [
     {
@@ -3646,6 +3646,137 @@
       },
       "lat": 40.670224,
       "lng": -73.92927
+    },
+    {
+      "omo": "ER09847",
+      "bidDue": "2026-11-09",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-09",
+      "workCompletion": "2026-11-19",
+      "address": "3242 DECATUR AVENUE",
+      "borough": "BX",
+      "itbFile": "ER09847_110526100407.pdf",
+      "description": "ALL WORK UNDER THIS OMO MUST BE DONE USING SAFE WORK PROCEDURES. INCONCLUSIVE READING FOR LEAD PAINT AT CEILING. PROPERLY REPAIR THE BROKEN OR DEFECTIVE PLASTERED SURFACES AND PAINT IN A UNIFORM COLOR AT CEILING IN THE BATHROOM, LOCATED AT APT 43, 4th STORY, 1st APARTMENT FROM SOUTH AT WEST. LOCATION OF WORK: BATHROOM TRACE, LOCATE AND REPAIR THE WATER LEAK. (THE PROBABLE SOURCE IS FROM THE BATHROOM ABOVE). TAPE, PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN / DEFECTIVE CEILING AND WALLS. ENSURE THAT THE LEAK DOES NOT RE-OCCUR. DEMOLISH EXISTING LOOSE PLASTER AND SHEET ROCK. SQUARE OFF DAMAGED SECTION OF CEILING, AND WALLS. PROVIDE AND PROPERLY INSTALL NEW SHEETROCK OR SIMILAR MATERIAL (APPROX. 30 SQ. FT.) TAPE AND PLASTER, PRIME WITH STAIN KILLER AND APPLY TWO COATS OF PAINT OVER ENTIRE CEILING (APPROX. 46 SQ. FT), AND OVER ALL WALLS (APPROX. 130 SQ. FT.) IN COLOUR AND FINISH SIMILAR TO EXISTING. SCRAPE AND PAINT THE METAL RISER. PAINT DOOR AND DOOR FRAME BOTH SIDES AND PROVIDE A NEW LOCK FOR THE DOOR. PROVIDE AND INSTALL: A NEW WOOD BASE SINK CABINET, AND A NEW SINK FAUCET. CLEANING AND REGROUTING THE BATHTUB, ALL WALLS AND FLOOR TILE SURFACES. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT H.P.D. @ (212) 863-6161, 6135, 6231, 6175 OR 6046 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212) 863-6009 ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. NOTE: CONTRACTOR MUST CONTACT HPD / EHU via e mail Camille Campbell CAMPBELC@HPD.NYC.GOV, Serene To TOS@hpd.nyc,gov, Isolina Ramos RAMOSIS@hpd.nyc.gov, Shen Lan Ping Shenl@hpd.nyc.gov, Sharon Lamazon Lamazons@hpd.nyc.gov EHUDELEAD@hpd.nyc.gov with OMO Start Date. ***IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE EMAILED*** TENANT CONTACT: (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793891051000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.875152,
+      "lng": -73.874368
     }
   ],
   "unread": []
