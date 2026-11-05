@@ -59,6 +59,7 @@ export type AgentCommand =
   | { intent: "store-stop" }
   | { intent: "translate"; lang: string }
   | { intent: "hpd-call"; ref: string }
+  | { intent: "hpd-note"; ref: string; text: string }
   | { intent: "streaks" }
   | { intent: "building"; ref: string }
   | { intent: "drive-time"; ref: string }
@@ -227,6 +228,8 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(open |start )?(the )?(translat(e|or|ion)|interpreter)( for (the )?tenant)?( (in|to) (spanish|chinese|mandarin|cantonese|russian))?( please)?$|\b(translate|interpret) (for|with) (the|my) tenant\b|\btalk (to|with) the tenant in (spanish|chinese|mandarin|cantonese|russian)\b|\bthe tenant (only )?speaks (spanish|chinese|mandarin|cantonese|russian)\b/.test(t)) return { intent: "translate", lang: /chinese|mandarin|cantonese/.test(t) ? "zh" : /russian/.test(t) ? "ru" : "es" };
   // ☎️ "what do I say to HPD", "HPD is calling about ER07663", "before I call HPD back" (4 Nov): the 3 things to say.
   if (/\b(what (do|should) i (say|tell)( to)? hpd|hpd('?s| is) calling|hpd called|call(ing)? hpd back|before i call hpd|talk(ing)? to hpd|what to (say|tell) (to )?hpd)\b/.test(t)) return { intent: "hpd-call", ref: (/[a-z]{2}\s?\d{5}/.exec(t)?.[0] || "").replace(/\s/g, "").toUpperCase() };
+  // 📝 "HPD said they need the after photos by Friday" (5 Nov): kept on the job (named, open, or the one just asked about).
+  { const m = /^(?:hpd (?:said|told me|wants|asked(?: for)?)|the hpd call:?)\s*(?:(?:about|on|for) ([a-z]{2}\s?\d{5})[,:]?\s*)?(?:that )?(.{3,})$/.exec(t); if (m) return { intent: "hpd-note", ref: (m[1] || "").replace(/\s/g, "").toUpperCase(), text: String(heard).trim().replace(/^(?:hpd (?:said|told me|wants|asked(?: for)?)|the hpd call:?)\s*(?:(?:about|on|for) [a-z]{2}\s?\d{5}[,:]?\s*)?(?:that )?/i, "") }; }
   // 🔥 "my streak", "streaks", "my records" (4 Nov).
   if (/\b(my )?streaks?\b|\bmy records?\b|\bhow many days in a row\b/.test(t)) return { intent: "streaks" };
   // 📈 "month report", "my month on one page", "last month's report".

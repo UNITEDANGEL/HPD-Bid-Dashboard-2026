@@ -34,3 +34,14 @@ export function materialsFor(jobs: { id: string; text: string }[]): MaterialLine
   }
   return [...out.entries()].map(([item, ids]) => ({ item, jobs: [...new Set(ids)] })).sort((a, b) => b.jobs.length - a.jobs.length);
 }
+
+// 🧾 The list in the order you walk a big hardware store (owner idea, 5 Nov): paint by the entrance, then building
+// materials, flooring and tile, plumbing, electrical, hardware and doors, windows, heating, cleaning and pest, roofing.
+// Each line gets a check box in the chat (ticks kept on this phone for the day: hpd-shop-<day>).
+const AISLE = ["🎨", "🧱", "🟫", "🔲", "🧴", "🔧", "♨️", "🔌", "🚨", "🚪", "🗄", "🪟", "🧽", "🪤", "🏠"];
+const AISLE_NAME: Record<string, string> = { "🎨": "Paint", "🧱": "Building materials", "🟫": "Flooring", "🔲": "Flooring & tile", "🧴": "Paint & caulk", "🔧": "Plumbing", "♨️": "Plumbing & heating", "🔌": "Electrical", "🚨": "Electrical", "🚪": "Hardware & doors", "🗄": "Kitchen", "🪟": "Doors & windows", "🧽": "Cleaning", "🪤": "Cleaning & pest", "🏠": "Roofing (outside / lumber)" };
+export function shoppingList(lines: MaterialLine[]) {
+  const rank = (item: string) => { const i = AISLE.findIndex((a) => item.startsWith(a)); return i < 0 ? 99 : i; };
+  return [...lines].sort((a, b) => rank(a.item) - rank(b.item)).map((l) => ({ ...l, aisle: AISLE_NAME[AISLE.find((a) => l.item.startsWith(a)) || ""] || "Other" }));
+}
+

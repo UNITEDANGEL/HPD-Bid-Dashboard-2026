@@ -93,4 +93,17 @@ assert.deepEqual(trafficRuns(path, [2, 2, 0, 1]), [{ level: 2, path: [[0, 0], [0
 assert.match(roadRouteUrl([{ lat: 1, lng: 2 }, { lat: 3, lng: 4 }]), /annotations=speed/);
 const road = parseRoadRoute({ code: "Ok", waypoints: [], routes: [{ distance: 3200, duration: 600, geometry: { coordinates: [[0, 0], [1, 0], [2, 0]] }, legs: [{ duration: 600, distance: 3200, annotation: { speed: [20, 8] } }] }] }, 2);
 assert.deepEqual(road.speeds, [20, 8]);
-console.log("translate, store stop, streaks, traffic: ok");
+// 💬 Which language a tenant's text is in; 🧾 the list in store order; 📝 "HPD said ...".
+const { textLang } = await loadLib("tenant-reply");
+const { shoppingList, materialsFor } = await loadLib("materials");
+assert.equal(textLang("你们什么时候来？"), "zh");
+assert.equal(textLang("Когда вы придёте?"), "ru");
+assert.equal(textLang("¿Cuándo vienen a arreglar el baño?"), "es");
+assert.equal(textLang("Thursday works"), "en");
+const shop = shoppingList(materialsFor([{ id: "A", text: "Replace door lock, patch plaster and paint the wall, fix leaking faucet" }]));
+assert.deepEqual(shop.map((m) => m.aisle), ["Paint", "Building materials", "Plumbing", "Hardware & doors"]);
+const hn = parseCommand("HPD said about ER07663 the inspection is Monday");
+assert.deepEqual(hn, { intent: "hpd-note", ref: "ER07663", text: "the inspection is Monday" });
+assert.equal(parseCommand("HPD told me they need photos by Friday").text, "they need photos by Friday");
+assert.equal(parseCommand("what do I say to HPD").intent, "hpd-call");
+console.log("translate, store stop, streaks, traffic, tenant language, shopping list, HPD notes: ok");

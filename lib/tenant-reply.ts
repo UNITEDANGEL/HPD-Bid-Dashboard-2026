@@ -45,3 +45,14 @@ export function suggestTenantReplyEs(body: string): string {
   if (/\bno (estoy|puedo|tengo)\b|\bno pueden\b/.test(t)) return "No hay problema. ¿Qué día y hora le conviene esta semana? Podemos ir de lunes a viernes de 9 AM a 4 PM.";
   return "Gracias. ¿Qué día y hora le conviene para la reparación? Podemos ir de lunes a viernes de 9 AM a 4 PM.";
 }
+
+// 💬 Which language a tenant's text is in (owner idea, 5 Nov): Chinese and Russian by their letters, Spanish by its
+// words; anything else is English.
+export function textLang(body: string): "zh" | "ru" | "es" | "en" {
+  const t = String(body || "");
+  if (/[\u4e00-\u9fff]/.test(t)) return "zh";
+  if ((t.match(/[\u0400-\u04ff]/g) || []).length >= 3) return "ru";
+  return isSpanishText(t) ? "es" : "en";
+}
+export const LANG_NAME: Record<string, string> = { zh: "Chinese", ru: "Russian", es: "Spanish", en: "English" };
+

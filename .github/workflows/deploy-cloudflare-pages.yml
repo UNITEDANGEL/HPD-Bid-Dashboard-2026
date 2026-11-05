@@ -404,6 +404,8 @@ jobs:
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-package-send.mjs \
             scripts/test-browser-robot-ideas.mjs \
+            scripts/test-browser-talk-store.mjs \
+            scripts/test-browser-tenant-lang.mjs \
             scripts/test-browser-claude-ask-quick.mjs \
             scripts/test-browser-goodnight.mjs \
             scripts/test-browser-papers.mjs \

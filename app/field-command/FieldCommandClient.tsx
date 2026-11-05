@@ -9,7 +9,7 @@ import { fetchRoadRoute, rushLevel, trafficLevels, trafficRuns, type RoadRoute }
 import { findStore, storeLine, type Store } from "../../lib/store-stop";
 import { bumpBest, streakLine, streaks } from "../../lib/streaks";
 import { drivingLink, routeLink, wazeLink } from "../../lib/driving-link";
-import TranslatePanel from "./TranslatePanel";
+import TranslatePanel, { translateLine } from "./TranslatePanel";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
 import JobSafeLine from "./JobSafeLine";
@@ -56,9 +56,9 @@ import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
 import { onSiteNote } from "../../lib/job-time";
 import { leftWithoutAfterPhoto } from "../../lib/leave-reminder";
-import { materialsFor } from "../../lib/materials";
+import { materialsFor, shoppingList } from "../../lib/materials";
 import { applyBatterySaver, batterySaverOn, cleanHelperName, getHelperLook, HELPER_COLORS, HELPER_HAIRS, HELPER_HATS, HELPER_SKINS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHair, type HelperHat, type HelperSkin } from "../../lib/helper-look";
-import { isSpanishText, spanishToEnglish, suggestTenantReply, suggestTenantReplyEs } from "../../lib/tenant-reply";
+import { isSpanishText, LANG_NAME, spanishToEnglish, suggestTenantReply, suggestTenantReplyEs, textLang } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -1040,7 +1040,8 @@ export default function FieldCommandClient() {
   // The pill at the bottom of the map as last shown (it hides while the helper is open): "what's next?" reads it (27 Oct).
   const nextStepRef = useRef<{ text: string; go: () => void } | null>(null);
   // 💬 "How did it go?" after a job (4 Nov): what's said next becomes the job's note. 🚗 leadDayRef: the hands-free day.
-  const pendingNoteRef = useRef<{ id: string; at: number } | null>(null);
+  const pendingNoteRef = useRef<{ id: string; at: number; hpd?: boolean } | null>(null);
+  const lastHpdJobRef = useRef("");
   const leadDayRef = useRef(false);
   const howWentRef = useRef<(id: string) => void>(() => {});
   // The map follows you from the moment it opens; dragging the map pauses it, Me resumes it.
@@ -1733,7 +1734,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -4312,8 +4313,25 @@ export default function FieldCommandClient() {
           const spanish = isSpanishText(m.body);
           const answerText = spanish ? suggestTenantReplyEs(m.body) : suggestTenantReply(m.body);
           const where = jobAddress(job).replace(/,\s*\d{5}$/, "");
+          // 💬 Spanish, Chinese or Russian (5 Nov): the whole text in English by the app's translator, and the answer
+          // written in their language (what it means in English shown next to it).
+          const lang = textLang(m.body);
+          if (lang !== "en") {
+            const heardLine = `💬 ${who}: "${m.body.slice(0, 160)}"`;
+            setAgent({ heard: heardLine, reply: `${who} texted back about ${where} (${jobId(job)}) in ${LANG_NAME[lang]}. Translating…` });
+            void (async () => {
+              const english = (await translateLine(m.body.slice(0, 500), lang, "en")) || (spanish ? spanishToEnglish(m.body) : "");
+              const answerEn = suggestTenantReply(english || m.body);
+              const theirs = answerEn ? (await translateLine(answerEn, "en", lang)) || (lang === "es" ? answerText : "") : "";
+              setAgent((a) => (a && a.heard === heardLine ? { heard: heardLine,
+                reply: `${who} texted back about ${where} (${jobId(job)}) in ${LANG_NAME[lang]}.${english ? ` It says: "${english}"` : " I couldn't translate it right now (no signal?)."}${theirs ? `\n\nI can answer in ${LANG_NAME[lang]}: "${theirs}"\n(In English: "${answerEn}")` : !answerEn && english ? " It sounds like they don't want texts: I won't answer." : ""}`,
+                offers: theirs ? [`text the tenant at ${jobId(job)} ${theirs}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: theirs ? "Send it?" : "Open the job?" } : a));
+              speak(english ? `${who} texted in ${LANG_NAME[lang]}. It says: ${english}.${theirs ? " Want me to answer?" : ""}` : `${who} texted in ${LANG_NAME[lang]}.`, 200);
+            })();
+          } else {
           setAgent({ heard: `💬 ${who}: "${m.body.slice(0, 160)}"`, reply: `${who} texted back about ${where} (${jobId(job)}).${spanish ? ` In Spanish. It says: ${spanishToEnglish(m.body)}.` : ""}${answerText ? ` I can answer${spanish ? " in Spanish" : ""}: "${answerText}"` : " It sounds like they don't want texts: I won't answer."}`, offers: answerText ? [`text the tenant at ${jobId(job)} ${answerText}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: answerText ? "Send it?" : "Open the job?" });
           speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 200);
+          }
         }
         window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));
       }
@@ -4994,13 +5012,13 @@ export default function FieldCommandClient() {
     {
       // 💬 The answer to "How did it go?" (3 minutes): kept as the job's note; "skip" / "no" leaves it.
       const pn = pendingNoteRef.current;
-      if (pn && !inner && Date.now() - pn.at < 180000) {
+      if (pn && !inner && Date.now() - pn.at < (pn.hpd ? 15 * 60000 : 180000)) {
         pendingNoteRef.current = null;
-        const said = heard.trim();
+        const said = heard.trim().replace(/^(hpd said|they said)[,:]?\s*/i, (x) => (pn.hpd ? "" : x));
         if (/^(skip|no|nope|nothing|never ?mind|cancel|not now)\b/i.test(said)) { setAgent({ heard, reply: "OK, nothing saved." }); speak("OK.", 0); return; }
         const c = parseCommand(said);
-        if (c.intent === "ask" || c.intent === "search" || c.intent === "yes") {
-          addJobNote(pn.id, said);
+        if (c.intent === "ask" || c.intent === "search" || c.intent === "yes" || (pn.hpd && /^(hpd said|they said)\b/i.test(heard.trim()))) {
+          addJobNote(pn.id, pn.hpd ? `☎️ HPD call ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}: ${said}` : said);
           setAgent({ heard, reply: `📝 Saved on ${pn.id}'s card: "${said}"` });
           speak("Got it, saved on the job.", 0, () => { if (convoRef.current) startListening(); });
           return;
@@ -5392,7 +5410,19 @@ export default function FieldCommandClient() {
       const when = appt ? `The visit is ${appointmentLabel(appt)}${appt.state === "requested" ? " (the tenant hasn't confirmed yet)" : ""}.` : outcome === "WORK_COMPLETED" ? "The work is finished." : /NO_ACCESS|REFUSED/.test(outcome) ? "We'll try again: give them the next day you can go." : "Give them the day you'll go: say a day you can keep.";
       const lines = [`1️⃣ The job: ${id} at ${jobAddress(j).replace(/,\s*\d{5}$/, "")}, ${work}.`, `2️⃣ What was done: ${done}.`, `3️⃣ When: ${when}`];
       cardsRef.current = [chatCard(id)].filter((c): c is ChatCard => Boolean(c));
+      // 📝 After the call (15 minutes): what's said next is kept on the job as "☎️ HPD call".
+      pendingNoteRef.current = { id, at: Date.now(), hpd: true };
+      lastHpdJobRef.current = id;
+      window.setTimeout(() => setAgent((a) => (a && a.reply.startsWith("☎️ What to say") ? { ...a, offers: ["skip"], offersLabel: "After the call, tell me what HPD said and I'll keep it on the job (or say skip):" } : a)), 50);
       answer(`☎️ What to say to HPD about ${id}${notice ? ` (their notice: ${Math.round(hoursLeft(notice, Date.now())) < 0 ? "overdue" : `${Math.round(hoursLeft(notice, Date.now()))} hours left`})` : ""}:\n${lines.join("\n")}\nKeep it short and say the job number first.`);
+      return;
+    }
+    if (cmd.intent === "hpd-note") {
+      const named = cmd.ref ? pick(cmd.ref) : null;
+      const j = (named && named !== "many" ? named : null) || selectedJob || (lastHpdJobRef.current ? jobs.find((x) => jobId(x) === lastHpdJobRef.current) : null) || null;
+      if (!j) { answer("Which job was HPD's call about? Say \"HPD said about\" and the job number, then what they said."); return; }
+      addJobNote(jobId(j), `☎️ HPD call ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}: ${cmd.text}`);
+      answer(`📝 Saved on ${jobId(j)}'s card: ☎️ HPD said "${cmd.text}"`);
       return;
     }
     if (cmd.intent === "streaks") {
@@ -5412,6 +5442,8 @@ export default function FieldCommandClient() {
       cardsRef.current = list.slice(0, 5).map((x) => chatCard(jobId(x))).filter((c): c is ChatCard => Boolean(c));
       const said = `📦 To bring for ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops today`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`;
       answer(said);
+      // 🧾 The same list in store-aisle order with check boxes (ticks kept for the day on this phone).
+      if (!multiRef.current) setAgent((a) => (a && a.heard === heard ? { ...a, shop: shoppingList(need).map((m) => ({ item: m.item, aisle: m.aisle, n: m.jobs.length })) } : a));
       // 🛒 Then the store on the way, added under the list when it's found.
       if (!multiRef.current) storeOffer((s, actions) => setAgent((a) => (a && a.heard === heard ? { ...a, reply: `${a.reply}\n\nNeed to buy any of it? ${storeLine(s)}`, actions: [...(a.actions || []), ...actions] } : a)));
       return;
@@ -8997,6 +9029,27 @@ export default function FieldCommandClient() {
           </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
+            {agent.shop?.length ? (() => {
+              const key = `hpd-shop-${nyToday()}`;
+              let ticked: string[] = [];
+              try { ticked = JSON.parse(localStorage.getItem(key) || "[]"); } catch { /* private mode */ }
+              let lastAisle = "";
+              return (
+                <div className="fc-shop" data-hpd-smoke="fc-shop">
+                  <b>🧾 Shopping list, in store order</b>
+                  {agent.shop.map((m) => {
+                    const head = m.aisle !== lastAisle ? <small key={`a-${m.item}`} className="fc-shop-aisle">{m.aisle}</small> : null;
+                    lastAisle = m.aisle;
+                    return [head, (
+                      <label key={m.item} className="fc-shop-row" data-hpd-smoke="fc-shop-row">
+                        <input type="checkbox" defaultChecked={ticked.includes(m.item)} data-hpd-smoke="fc-shop-check" onChange={(e) => { try { const now: string[] = JSON.parse(localStorage.getItem(key) || "[]"); const next = e.target.checked ? [...new Set([...now, m.item])] : now.filter((x) => x !== m.item); localStorage.setItem(key, JSON.stringify(next)); if (next.length === agent.shop!.length) { setOrbHappy(true); window.setTimeout(() => setOrbHappy(false), 3000); speak("Got everything. Nice!", 0); } } catch { /* private mode */ } }} />
+                        <span>{m.item}{m.n > 1 ? <em> · {m.n} jobs</em> : null}</span>
+                      </label>
+                    )];
+                  })}
+                </div>
+              );
+            })() : null}
             {agent.actions?.map((a) => <a key={a.href} className="fc-agent-action" data-hpd-smoke="fc-agent-action" href={a.href} target={a.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" onClick={(ev) => { if (a.href === "#next") { ev.preventDefault(); setAgent(null); nextStepRef.current?.go(); return; } if (a.href === "#requests") { ev.preventDefault(); setAgent(null); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); return; } if (a.href.startsWith("#go:")) { ev.preventDefault(); setAgent(null); const k = a.href.slice(4); if (k === "notices") { closeScreens("notices"); setNoticesOpen(true); } else goTo(k); return; } const jj = a.id ? jobs.find((x) => jobId(x) === a.id) : null; if (jj && a.via) recordTravel(jj, a.via); if (a.href.startsWith("tel:") && lastCallRef.current) noteCallStarted(lastCallRef.current); if (jj && a.remind) markReminderSent(jj, a.remind); if (a.queue) { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(a.queue)); } catch { /* private mode */ } } }}>{a.label}</a>)}
             {agent.confirm ? <>
               <button type="button" className="is-yes" data-hpd-smoke="fc-agent-yes" onClick={() => agentRef.current("yes")}>{agent.confirm.outcome === "SMS" ? "✅ Yes, send it" : "✅ Yes, save it"}</button>

@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
+      "title": "Tenant texts in their language",
+      "items": [
+        "💬 A tenant texts in Spanish, Chinese or Russian: the helper shows the whole text in English and offers an answer written in their language (with what it means in English). Nothing goes out until you say yes.",
+        "🧾 \"What do I need today\" now ends with a shopping list in the order you walk the store (paint, building materials, plumbing, electrical, hardware…), with a check box for each thing. Ticks stay for the day.",
+        "📝 After \"what do I say to HPD\", tell the helper what HPD said and it's kept on the job as \"☎️ HPD call\" with the date. Any time: \"HPD said about ER07663 the inspection is Monday\"."
+      ]
+    },
+    {
+      "date": "Nov 5, 2026",
       "title": "Talk with the tenant both ways",
       "items": [
         "🔁 Say \"translate\" (or tap 🔁 Talk both ways on a job card): the tenant holds their button and speaks Spanish, Chinese or Russian and the helper says it in English; you hold English and it says it back in theirs, big on the screen too. You can also type.",

@@ -4394,3 +4394,11 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-route-store { display: grid; gap: 6px; margin: 6px 0; }
 .fc-route-store p { margin: 0; font: 700 14px system-ui, sans-serif; }
 .fc-route-store div { display: flex; gap: 6px; flex-wrap: wrap; }
+/* 🧾 Shopping list in store order (5 Nov). */
+.fc-shop { display: grid; gap: 4px; margin: 8px 0; padding: 10px 12px; border-radius: 14px; background: #0b1220; border: 1px solid #334155; color: #f8fafc; }
+.fc-shop > b { font: 900 15px system-ui, sans-serif; }
+.fc-shop-aisle { margin-top: 4px; color: #93c5fd; font: 800 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+.fc-shop-row { display: flex; align-items: center; gap: 10px; min-height: 40px; font: 700 15px system-ui, sans-serif; }
+.fc-shop-row input { width: 22px; height: 22px; accent-color: #22c55e; flex: none; }
+.fc-shop-row input:checked + span { text-decoration: line-through; opacity: 0.6; }
+.fc-shop-row em { color: #94a3b8; font-style: normal; font-weight: 600; }

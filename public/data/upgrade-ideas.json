@@ -3,25 +3,25 @@
   "updated": "2026-11-05",
   "ideas": [
     {
-      "id": "tenant-texts-translated",
-      "icon": "💬",
+      "id": "hpd-call-history",
+      "icon": "🗂",
       "kind": "new",
-      "title": "Tenant texts in their language",
-      "why": "When a tenant texts in Spanish, Chinese or Russian, the app shows it in English and writes your answer back in their language."
+      "title": "HPD calls on the notice",
+      "why": "On a notice, the last things HPD said on the phone show next to it, so you never repeat yourself."
     },
     {
-      "id": "store-list-to-cart",
+      "id": "tenant-lang-remember",
+      "icon": "🌐",
+      "kind": "new",
+      "title": "Remember the tenant's language",
+      "why": "Once a tenant texts in Spanish, Chinese or Russian, every text to them (reminders, on my way) goes in their language."
+    },
+    {
+      "id": "shop-receipt-photo",
       "icon": "🧾",
       "kind": "new",
-      "title": "Shopping list to the store",
-      "why": "The materials list for today, sorted the way the store's aisles go, with a check box for each thing."
-    },
-    {
-      "id": "hpd-call-notes",
-      "icon": "📝",
-      "kind": "new",
-      "title": "Notes from the HPD call",
-      "why": "After you talk to HPD, say what they said; it goes on the job with the date, so the next call starts from there."
+      "title": "Receipt photo on the job",
+      "why": "Take a photo of the store receipt and the helper adds the amount to that job's costs."
     },
     {
       "id": "helper-call-tenant",

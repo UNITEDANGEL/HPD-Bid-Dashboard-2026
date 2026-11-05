@@ -90,7 +90,7 @@ try {
   if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   inbox = [...inbox, { from: `+1${digits}`, body: "Hola, no estoy en casa hoy", at: new Date(Date.now() + 3000).toISOString() }];
   await page.clock.runFor(125000);
-  await page.waitForFunction(() => /In Spanish/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
+  await page.waitForFunction(() => /I can answer in Spanish/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 20000 });
   assert.match(await reply.innerText(), /It says: .*today/);
   assert.match(await reply.innerText(), /I can answer in Spanish: "No hay problema\./);
   assert.equal(sent.length, 3, "the Spanish answer is offered, not sent");
