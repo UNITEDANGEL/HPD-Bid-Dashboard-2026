@@ -1143,3 +1143,6 @@
 .jc-retake button { min-height: 48px; border-radius: 12px; border: 1px solid #f59e0b; background: transparent; color: inherit; font: 800 15px system-ui, sans-serif; }
 .jc-retake button.jc-glow { background: #f59e0b; color: #1c1002; }
 @keyframes jcRetakeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+.jc-photo-look { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.jc-photo-look p { flex-basis: 100%; margin: 0; }
+.jc-photo-look button { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.5); background: rgba(30, 41, 59, 0.9); color: #f8fafc; font: 700 15px system-ui, sans-serif; }

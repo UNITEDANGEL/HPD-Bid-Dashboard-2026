@@ -5,6 +5,8 @@ import { listFieldEvidenceLite } from "../../lib/field-photo-store";
 import { checkPhoto, summarizePhotoCheck, type PhotoCheckItem, type PhotoCheckSummary, photoComment } from "../../lib/photo-check";
 import { speak } from "../../lib/speak";
 import HelperFace from "./HelperFace";
+import { lookAtPhoto, lookMessage, lookNote } from "../../lib/photo-look";
+import { addJobNote } from "../../lib/job-notes";
 
 // 📸 Photo check on the job card: looks at the before/after photos on this phone (blurry, dark, washed out, missing)
 // so a bad one is taken again at the building, not after HPD rejects the paperwork.
@@ -13,6 +15,10 @@ export default function PhotoCheck({ jobId, before, after, total, work }: { jobI
   const [busy, setBusy] = useState(0);
   // A new photo while the card is open: the helper looks at it and says so (a talking face on the card, out loud).
   const seen = useRef<Set<string> | null>(null);
+  // "What do you see?": the free picture AI names the problem in the newest before photo; it goes in the job notes only after a tap.
+  const [beforeUrl, setBeforeUrl] = useState("");
+  const [look, setLook] = useState<{ state: "idle" | "busy" | "ask" | "none" | "failed" | "added"; note?: string; msg?: string }>({ state: "idle" });
+  useEffect(() => { setLook({ state: "idle" }); }, [jobId, before, beforeUrl]);
   const [say, setSay] = useState<{ text: string; good: boolean } | null>(null);
   useEffect(() => { if (!say) return; const t = window.setTimeout(() => setSay(null), 9000); return () => window.clearTimeout(t); }, [say]);
   useEffect(() => {
@@ -20,6 +26,8 @@ export default function PhotoCheck({ jobId, before, after, total, work }: { jobI
     (async () => {
       const rows = (await listFieldEvidenceLite(jobId).catch(() => [])).filter((m) => (m.kind === "before" || m.kind === "after") && m.mediaType === "image" && m.dataUrl);
       setBusy(rows.length);
+      const newestBefore = rows.filter((r) => r.kind === "before").sort((a, b) => String(b.capturedAt || "").localeCompare(String(a.capturedAt || "")))[0];
+      setBeforeUrl(newestBefore?.dataUrl || "");
       const items: PhotoCheckItem[] = [];
       for (const row of rows) {
         if (stop) return;
@@ -48,6 +56,23 @@ export default function PhotoCheck({ jobId, before, after, total, work }: { jobI
       : good ? <span data-hpd-smoke="jc-photo-check-good">✓ {summary.checked === 1 ? "The photo looks" : `All ${summary.checked} photos look`} good for HPD{before && after ? " (before and after)" : ""}.</span>
       : summary.problems.length ? <ul>{summary.problems.map((p) => <li key={p} data-hpd-smoke="jc-photo-check-problem">⚠ {p}</li>)}</ul>
       : <span>Videos only: watch them once before you send.</span>}
+    {beforeUrl && !busy ? <div className="jc-photo-look" data-hpd-smoke="jc-photo-look">
+      {look.state === "idle" ? <button type="button" data-hpd-smoke="jc-photo-look-go" onClick={async () => {
+        setLook({ state: "busy" });
+        const r = await lookAtPhoto(beforeUrl);
+        if (r.ok === false) setLook({ state: "failed", msg: lookMessage(r.reason) });
+        else { const note = lookNote((r as { text: string }).text); setLook(note ? { state: "ask", note } : { state: "none" }); }
+      }}>🔎 What do you see?</button>
+        : look.state === "busy" ? <span>Looking at the before photo…</span>
+        : look.state === "ask" ? <>
+          <p data-hpd-smoke="jc-photo-look-note">🤖 {look.note}</p>
+          <button type="button" data-hpd-smoke="jc-photo-look-add" onClick={() => { addJobNote(jobId, look.note || ""); setLook({ state: "added" }); window.dispatchEvent(new Event("hpd-job-notes-changed")); }}>Add to job notes</button>
+          <button type="button" data-hpd-smoke="jc-photo-look-no" onClick={() => setLook({ state: "idle" })}>No</button>
+        </>
+        : look.state === "added" ? <span data-hpd-smoke="jc-photo-look-added">✓ Added to the job notes.</span>
+        : look.state === "none" ? <span data-hpd-smoke="jc-photo-look-none">I don&apos;t see a problem in the before photo.</span>
+        : <span data-hpd-smoke="jc-photo-look-failed">{look.msg}</span>}
+    </div> : null}
     {summary?.bad.length ? <div className="jc-photo-check-bad">{summary.bad.slice(0, 4).map((b) => <figure key={b.id}>
       <img src={b.dataUrl} alt={`${b.kind} photo that ${b.verdict === "blurry" ? "looks blurry" : b.verdict === "dark" ? "is too dark" : "is too bright"}`} />
       <figcaption>{b.kind === "before" ? "Before" : "After"}: {b.verdict === "blurry" ? "blurry" : b.verdict === "dark" ? "dark" : "too bright"}</figcaption>

@@ -14,6 +14,7 @@ export default function JobNotes({ jobId, address }: { jobId: string; address: s
     setTyped(loadJobNotes(jobId));
     setChat(notesFor(address, loadNotes()));
   }, [jobId, address]);
+  useEffect(() => { const on = () => setTyped(loadJobNotes(jobId)); window.addEventListener("hpd-job-notes-changed", on); return () => window.removeEventListener("hpd-job-notes-changed", on); }, [jobId]);
   const save = () => {
     if (!draft.trim()) return;
     setTyped(addJobNote(jobId, draft));

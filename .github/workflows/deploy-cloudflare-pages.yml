@@ -165,6 +165,7 @@ jobs:
           node scripts/test-photo-ai.mjs
           node scripts/test-claude-now.mjs
           node scripts/test-photo-check.cjs
+          node scripts/test-photo-look.cjs
           node scripts/test-helper-look.cjs
           node scripts/test-materials.cjs
           node scripts/test-ai-ask.mjs
@@ -395,6 +396,7 @@ jobs:
             scripts/test-browser-claude-now.mjs \
             scripts/test-browser-ideas.mjs \
             scripts/test-browser-photo-check.mjs \
+            scripts/test-browser-photo-look.mjs \
             scripts/test-browser-job-notes.mjs \
             scripts/test-browser-bids-welcome.mjs \
             scripts/test-browser-helper-alive.mjs \
