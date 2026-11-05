@@ -70,7 +70,7 @@ try {
   overrides["CHANGE-REQUEST-20261103100000"] = { at: ago(600), text: "Make the chat better" };
   overrides["CHANGE-REPLY-20261103100000"] = { status: "Waiting for you", updates: [{ at: ago(60), text: "Which one first?" }] };
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-orb"]')?.getAttribute("data-mode") === "ask", null, { timeout: 15000 });
-  assert.equal(await orb.locator(".fc-claude-orb-badge").innerText(), "❓");
+  assert.equal(await orb.locator(".fc-claude-orb-badge").innerText(), "1 question", "words, not a bare ❓ (owner, 4 Nov)");
   if (await page.locator('[data-hpd-smoke="fc-whatsnew"]').count()) await page.locator('[data-hpd-smoke="fc-whatsnew"]').getByRole("button", { name: "Close", exact: true }).first().click();
   await page.locator('[data-hpd-smoke="fc-whatsnew"]').waitFor({ state: "detached", timeout: 5000 });
   // A tap still brings the talking robot; it says Claude has a question, with a button to answer it.

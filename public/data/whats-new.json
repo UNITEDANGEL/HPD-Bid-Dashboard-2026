@@ -3,6 +3,18 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "Your helper is a person now",
+      "items": [
+        "🧑 The helper is a person now, not a robot: face, hair, eyes that blink and follow your finger, a mouth that moves when it talks, ears that perk up when it listens, and real hands that wave, point and give a thumbs up. It smiles, frowns and naps like a person.",
+        "🎨 Pick its skin and hair in 🎨, next to the shirt color and the hat.",
+        "❓ No more lone question mark: when Claude has a question, the Claude button says \"1 question\" and the card shows the question with 👍 You decide, ⏭ Skip it or ✍️ Answer.",
+        "📈 The month report now opens right in the chat (it didn't open on the iPhone before).",
+        "💵 Ask \"did HPD pay me for ER…\": paid (how much, when), partly, or how long it's been waiting.",
+        "🕒 Say \"on my way to ER…\" (or \"I'm on my way\"): the tenant gets \"on my way, about 20 minutes\", with the time from where you are, after your yes."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "Retake on the spot, the month on one page",
       "items": [
         "📷 A dark or blurry photo is said out loud right away, with a big 📷 Retake button that opens the camera again, while you're still in the apartment.",

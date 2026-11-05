@@ -53,7 +53,7 @@ import HelperFace, { helperFaceHtml } from "./HelperFace";
 import { onSiteNote } from "../../lib/job-time";
 import { leftWithoutAfterPhoto } from "../../lib/leave-reminder";
 import { materialsFor } from "../../lib/materials";
-import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HATS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHat } from "../../lib/helper-look";
+import { applyBatterySaver, batterySaverOn, getHelperLook, HELPER_COLORS, HELPER_HAIRS, HELPER_HATS, HELPER_SKINS, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHair, type HelperHat, type HelperSkin } from "../../lib/helper-look";
 import { isSpanishText, spanishToEnglish, suggestTenantReply, suggestTenantReplyEs } from "../../lib/tenant-reply";
 import { moodSound } from "../../lib/chime";
 import "../map/plan-my-day.css";
@@ -1858,6 +1858,7 @@ export default function FieldCommandClient() {
   // ✨ The magic: tapping the little 🤖 makes sparkles burst out of it and the big helper rise up and say hello out loud.
   const [magicAt, setMagicAt] = useState(0);
   const [magicOn, setMagicOn] = useState(false);
+  const [fileOpen, setFileOpen] = useState(false);
   useEffect(() => { if (!magicAt) return; setMagicOn(true); const t = window.setTimeout(() => setMagicOn(false), 1600); return () => window.clearTimeout(t); }, [magicAt]);
   // 👀 The 🤖's eyes look toward where you last tapped. Moved straight on the drawing (no redraw of the screen: a redraw
   // between the finger going down and the tap swallowed taps on the map pins).
@@ -3953,7 +3954,7 @@ export default function FieldCommandClient() {
         marker?.remove(); window.clearTimeout(timer); window.cancelAnimationFrame(raf);
         const size = map.getSize();
         const from = map.containerPointToLatLng([size.x / 2, Math.max(80, size.y - 170)]);
-        marker = L.marker(from, { icon: L.divIcon({ className: "fc-walk-marker", html: `<div class="fc-walk-bot is-walking" data-hpd-smoke="fc-walk-bot" data-omo="${omo}">${helperFaceHtml(getHelperLook().color, 34)}<i class="fc-walk-legs"><b></b><b></b></i></div>`, iconSize: [38, 50], iconAnchor: [19, 92] }), interactive: false, zIndexOffset: 2600 }).addTo(map);
+        marker = L.marker(from, { icon: L.divIcon({ className: "fc-walk-marker", html: `<div class="fc-walk-bot is-walking" data-hpd-smoke="fc-walk-bot" data-omo="${omo}">${helperFaceHtml(getHelperLook().color, 34, getHelperLook().skin, getHelperLook().hair)}<i class="fc-walk-legs"><b></b><b></b></i></div>`, iconSize: [38, 50], iconAnchor: [19, 92] }), interactive: false, zIndexOffset: 2600 }).addTo(map);
         const t0 = performance.now();
         const dur = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 1700;
         const step = (now: number) => {
@@ -4152,7 +4153,7 @@ export default function FieldCommandClient() {
       k = (k + 0.04) % 1.15;
       const f = Math.min(1, k);
       const pos: [number, number] = [from.lat + (to.lat - from.lat) * f, from.lng + (to.lng - from.lng) * f];
-      if (!marker) marker = L.marker(pos, { icon: L.divIcon({ className: "fc-ride-marker", html: `<div class="fc-ride-bot" data-hpd-smoke="fc-ride-bot">${helperFaceHtml(getHelperLook().color, 30)}</div>`, iconSize: [34, 34], iconAnchor: [17, 62] }), interactive: false, zIndexOffset: 2500 }).addTo(map);
+      if (!marker) marker = L.marker(pos, { icon: L.divIcon({ className: "fc-ride-marker", html: `<div class="fc-ride-bot" data-hpd-smoke="fc-ride-bot">${helperFaceHtml(getHelperLook().color, 30, getHelperLook().skin, getHelperLook().hair)}</div>`, iconSize: [34, 34], iconAnchor: [17, 62] }), interactive: false, zIndexOffset: 2500 }).addTo(map);
       else marker.setLatLng(pos);
     };
     const timer = window.setInterval(() => void tick(), 200);
@@ -5037,6 +5038,42 @@ export default function FieldCommandClient() {
       cardsRef.current = hits.filter((h) => h.job).map((h) => chatCard(h.job)).filter((c): c is ChatCard => Boolean(c));
       lastJobsRef.current = hits.find((h) => h.job) ? { ids: hits.filter((h) => h.job).map((h) => h.job), at: Date.now() } : lastJobsRef.current;
       answer(`🔍 Found ${hits.length === 1 ? "it" : `${hits.length}`}:\n${hits.map((h) => `• ${h.job ? `${h.job} (${addressOf(h.job) || "job"})` : "Your notes"}, in ${where[h.kind] || h.kind}: "${h.snippet}"`).join("\n")}`);
+      return;
+    }
+    if (cmd.intent === "paid-check") {
+      // 💵 One job's payment from PIP: paid (how much, when), partly, or how long it's been waiting since the paperwork.
+      const found = cmd.ref ? pick(cmd.ref) : selectedJob;
+      const j = found && found !== "many" ? found : null;
+      const id = j ? jobId(j) : (cmd.ref || "").toUpperCase();
+      const p = pipMap[id];
+      const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+      const sentAt = j ? Date.parse(String(value(j, ["PackageEmailedAt", "InvoiceSentAt"]) || "")) : NaN;
+      const waited = Number.isFinite(sentAt) ? Math.max(0, Math.floor((Date.now() - sentAt) / 86400000)) : null;
+      void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
+        const recent = ((pay?.recent || []) as { omo?: string; amount?: number; date?: string; status?: string }[]).filter((x) => String(x.omo || "").toUpperCase() === id && (x.amount || 0) > 0);
+        const when = recent[0]?.date ? ` on ${new Date(`${recent[0].date}T12:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : "";
+        const old = pipAgeDays > 7 ? ` (PIP's list is ${pipAgeDays} days old)` : "";
+        if (!p) { answer(`💵 ${id} isn't in HPD's payment list yet${old}.${waited !== null ? ` Your paperwork went out ${waited} day${waited === 1 ? "" : "s"} ago${waited > 30 ? ": past 30 days, worth a follow-up with HPD" : ""}.` : ""}`); return; }
+        if (p.status === "paid") { answer(`💵 Yes: HPD paid ${usd(p.paid)} on ${id}${when}.`); return; }
+        if (p.status === "partly paid") { answer(`💵 Partly: HPD paid ${usd(p.paid)} on ${id}${when}, and ${usd(p.outstanding)} is still owed${old}.`); return; }
+        answer(`💵 Not yet: ${usd(p.outstanding)} on ${id} is still waiting${p.closed ? ", and HPD closed it in PIP: check why" : ""}${waited !== null ? `, ${waited} day${waited === 1 ? "" : "s"} since your paperwork went out${waited > 30 ? ". Past 30 days: worth a follow-up" : ""}` : ""}${old}.`);
+      });
+      return;
+    }
+    if (cmd.intent === "on-my-way") {
+      // 🕒 "On my way, about 20 minutes" to the tenant of the job named, the open job or the next stop on today's route.
+      const named = cmd.ref ? pick(cmd.ref) : null;
+      const next = todayRouteIds().map((x) => jobs.find((r) => jobId(r) === x)).find((r) => r && !value(r, ["FieldOutcome", "fieldOutcome"])) || null;
+      const j = (named && named !== "many" ? named : null) || selectedJob || next;
+      if (!j) { answer("Which job? Say \"on my way to\" and the job number, or plan today's route first."); return; }
+      const to = jobLatLng(j), fix = lastFixRef.current;
+      let mins = 0;
+      if (to && fix && Date.now() - fix.at < 15 * 60000) {
+        const km = 6371 * 2 * Math.asin(Math.sqrt(Math.sin(((to.lat - fix.lat) * Math.PI) / 360) ** 2 + Math.cos((fix.lat * Math.PI) / 180) * Math.cos((to.lat * Math.PI) / 180) * Math.sin(((to.lng - fix.lng) * Math.PI) / 360) ** 2));
+        // NYC driving: about 20 km/h door to door, plus parking; rounded up to 5 minutes.
+        mins = Math.max(10, Math.ceil(((km * 1.3) / 20) * 60 / 5 + 1) * 5);
+      }
+      agentRef.current(`tell the tenant for ${jobId(j)} I'm on my way${mins ? `, about ${mins} minutes` : ""}`, true);
       return;
     }
     if (cmd.intent === "month-report") {
@@ -6547,7 +6584,7 @@ export default function FieldCommandClient() {
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge">❓</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">1 question</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
                     </button>
                     {orbSay && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
@@ -6790,16 +6827,17 @@ export default function FieldCommandClient() {
             const ago = (iso: string) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
             const state = t.status === "Done" ? "done" : t.status === "Waiting for you" ? "ask" : working ? "working" : "queued";
             const pct = t.steps.length ? Math.round((done / t.steps.length) * 100) : null;
-            if (!claudeCardBig && claudeLiveHidden !== `${t.id}|${activity(t)}`) {
+            // A question always shows in full, with the one-tap answers (owner, 4 Nov: "I need better flow").
+            if (!claudeCardBig && state !== "ask" && claudeLiveHidden !== `${t.id}|${activity(t)}`) {
               const ask = t.text.replace(/^\((said to the helper|from the chat|idea|auto upgrade)\)\s*/i, "").slice(0, 60);
-              const line = state === "working" ? (nowOn?.text || t.now?.text || (nowStep ? `Now: ${nowStep.text}` : "working on it")) : state === "done" ? `✅ Done: ${ask}` : state === "ask" ? `❓ Needs your answer: ${ask}` : claudeIsOn(claudeSeenAt) ? `Starting soon: ${ask}` : `⏸ Waiting for the office computer: ${ask}`;
+              const line = state === "working" ? (nowOn?.text || t.now?.text || (nowStep ? `Now: ${nowStep.text}` : "working on it")) : state === "done" ? `✅ Done: ${ask}` : claudeIsOn(claudeSeenAt) ? `Starting soon: ${ask}` : `⏸ Waiting for the office computer: ${ask}`;
               return slim(state, line, state === "done" ? null : pct, () => setClaudeLiveHidden(`${t.id}|${activity(t)}`));
             }
             if (claudeLiveHidden === `${t.id}|${activity(t)}`) return showTab(state === "working" ? `Claude working${t.steps.length ? ` · ${Math.round((done / t.steps.length) * 100)}%` : ""}` : state === "done" ? "Claude: done" : state === "ask" ? "Claude needs you" : "Claude", state);
             return (
               <div className={`fc-claude-live is-${state}`} data-hpd-smoke="fc-claude-live" role="status" aria-live="polite">
                 <button type="button" className="fc-claude-live-main" onClick={() => goTo("requests", "")}>
-                  <b><i className="fc-claude-live-dot" aria-hidden="true" />🤖 Claude · {state === "working" ? "working on it now" : state === "done" ? "✅ done" : state === "ask" ? "❓ needs your answer" : claudeIsOn(claudeSeenAt) ? "on, starting in a minute or two" : "⏸ off: starts when the office computer is on"}</b>
+                  <b><i className="fc-claude-live-dot" aria-hidden="true" />🤖 Claude · {state === "working" ? "working on it now" : state === "done" ? "✅ done" : state === "ask" ? "has one question for you" : claudeIsOn(claudeSeenAt) ? "on, starting in a minute or two" : "⏸ off: starts when the office computer is on"}</b>
                   <span className="fc-claude-live-req">“{t.text.replace(/^\((said to the helper|from the chat)\)\s*/i, "").slice(0, 70)}{t.text.length > 70 ? "…" : ""}”</span>
                   {t.steps.length ? (
                     <span className="fc-claude-live-steps" data-hpd-smoke="fc-claude-live-steps">
@@ -6813,6 +6851,14 @@ export default function FieldCommandClient() {
                   {lastNote ? <span className="fc-claude-live-note" data-hpd-smoke="fc-claude-live-note">{lastNote.text.slice(0, 140)} <small>· {ago(lastNote.at)}</small></span> : <span className="fc-claude-live-note">Sent {ago(t.at)}. {pickupLabel(claudeSeenAt)}.</span>}
                 </button>
                 <span className="fc-claude-live-side">{state !== "done" ? talkBtn : null}<button type="button" className="fc-claude-live-x" aria-label="Hide until the next update" data-hpd-smoke="fc-claude-live-hide" onClick={() => setClaudeLiveHidden(`${t.id}|${activity(t)}`)}>×</button>{smaller}</span>
+                {state === "ask" ? (
+                  // One tap answers (owner, 4 Nov: "it should auto know, I need better flow"): Claude decides, or skips it.
+                  <span className="fc-claude-ask-quick" data-hpd-smoke="fc-claude-ask-quick">
+                    <button type="button" data-hpd-smoke="fc-claude-ask-decide" onClick={() => void sendChangeAnswer(t, "You decide: do what makes the most sense and don't wait for me. If you need a date or a number from me, let me type it in the app later.")}>👍 You decide</button>
+                    <button type="button" data-hpd-smoke="fc-claude-ask-skip" onClick={() => void sendChangeAnswer(t, "Skip this one for now.")}>⏭ Skip it</button>
+                    <button type="button" data-hpd-smoke="fc-claude-ask-answer" onClick={() => goTo("requests", "")}>✍️ Answer</button>
+                  </span>
+                ) : null}
                 {state !== "done" ? talkBox : null}
               </div>
             );
@@ -8513,6 +8559,8 @@ export default function FieldCommandClient() {
           {dressOpen ? (
             <div className="fc-agent-dress" data-hpd-smoke="fc-agent-dress-box" role="group" aria-label="Dress the helper">
               <span>{(Object.keys(HELPER_COLORS) as HelperColor[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.color === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-color" data-color={k} aria-label={HELPER_COLORS[k].label} aria-pressed={helperLook.color === k} style={{ background: HELPER_COLORS[k].line }} onClick={() => setHelperLook({ color: k })} />)}</span>
+              <span data-hpd-smoke="fc-dress-skins">{(Object.keys(HELPER_SKINS) as HelperSkin[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.skin === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-skin" data-skin={k} aria-label={`Skin: ${HELPER_SKINS[k].label}`} aria-pressed={helperLook.skin === k} style={{ background: HELPER_SKINS[k].skin }} onClick={() => setHelperLook({ skin: k })} />)}</span>
+              <span data-hpd-smoke="fc-dress-hairs">{(Object.keys(HELPER_HAIRS) as HelperHair[]).map((k) => <button key={k} type="button" className={`fc-dress-color${helperLook.hair === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-hair" data-hair={k} aria-label={`Hair: ${HELPER_HAIRS[k].label}`} aria-pressed={helperLook.hair === k} style={{ background: HELPER_HAIRS[k].hair }} onClick={() => setHelperLook({ hair: k })} />)}</span>
               <span>{(Object.keys(HELPER_HATS) as HelperHat[]).map((k) => <button key={k} type="button" className={`fc-dress-hat${helperLook.hat === k ? " is-on" : ""}`} data-hpd-smoke="fc-dress-hat" data-hat={k} aria-pressed={helperLook.hat === k} onClick={() => setHelperLook({ hat: k })}>{HELPER_HATS[k]}</button>)}</span>
               {voiceSupported() ? (() => {
                 // 🎙 Its voice: a woman's or a man's, slower or faster; each tap says a sample with the mouth moving.
@@ -8540,7 +8588,8 @@ export default function FieldCommandClient() {
           <p key={agent.reply} data-hpd-smoke="fc-agent-reply" className={`fc-agent-words${agent.live ? " is-live" : ""}`}>{agent.reply.length > 500 || agent.live ? agent.reply : agent.reply.split(/(\s+)/).map((w, i) => (/^\s+$/.test(w) || !w ? w : <span key={i} style={{ animationDelay: `${Math.min(i, 120) * 22}ms` }}>{w}</span>))}</p>
           {agent.file ? (
             <div className="fc-agent-file" data-hpd-smoke="fc-agent-file">
-              <a href={agent.file.url} target="_blank" rel="noreferrer" data-hpd-smoke="fc-agent-file-open">📄 Open the report</a>
+              {/* Opens right here (owner, 4 Nov: "the report did not open": a new tab is blocked in the Home Screen app). */}
+              <button type="button" data-hpd-smoke="fc-agent-file-open" data-url={agent.file.url} onClick={() => setFileOpen((o) => !o)}>{fileOpen ? "▾ Hide the report" : "📄 Open the report"}</button>
               <button type="button" data-hpd-smoke="fc-agent-file-share" onClick={async () => {
                 const f = agent.file!;
                 try {
@@ -8549,6 +8598,7 @@ export default function FieldCommandClient() {
                   else window.open(f.url, "_blank");
                 } catch { /* closed the share sheet */ }
               }}>📤 Share</button>
+              {fileOpen ? <div className="fc-agent-file-view" data-hpd-smoke="fc-agent-file-view"><ItbPages pdfUrl={agent.file.url} pageCount={1} everyPage title={agent.file.name} /></div> : null}
             </div>
           ) : null}
           {agent.photos ? (

@@ -3,25 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "paid-check",
-      "icon": "💵",
+      "id": "helper-voice-lips",
+      "icon": "👄",
       "kind": "new",
-      "title": "Did HPD pay me?",
-      "why": "Ask \"did HPD pay ER…\": the robot checks the payment list and tells you paid, how much and when, or how long it's been waiting."
+      "title": "The mouth follows the words",
+      "why": "The helper's mouth moves with each word it says (open on vowels, closed on m and b), like a real person talking."
     },
     {
-      "id": "tenant-eta",
-      "icon": "🕒",
+      "id": "helper-moods",
+      "icon": "😊",
       "kind": "new",
-      "title": "Tell the tenant you're on the way",
-      "why": "One tap texts the tenant \"on my way, about 20 minutes\", with the time from your drive."
+      "title": "The helper reacts to your day",
+      "why": "It looks proud after a win, sleepy late at night, focused while you work a job."
     },
     {
-      "id": "job-checklist",
-      "icon": "✅",
+      "id": "papers-list",
+      "icon": "🗂",
       "kind": "new",
-      "title": "Job checklist from HPD's description",
-      "why": "Before you leave a job, the robot reads back each line of HPD's work list and you say done to each one."
+      "title": "Your papers in one place",
+      "why": "Insurance, license and certificates with their dates; the helper warns you 30 days before one runs out."
     },
     {
       "id": "voice-only-day",

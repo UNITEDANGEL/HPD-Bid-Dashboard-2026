@@ -4,7 +4,23 @@ import { useEffect, useState } from "react";
 
 export type HelperColor = "purple" | "blue" | "green" | "orange";
 export type HelperHat = "none" | "hardhat" | "cap";
-export type HelperLook = { color: HelperColor; hat: HelperHat };
+export type HelperSkin = "light" | "medium" | "tan" | "brown" | "dark";
+export type HelperHair = "black" | "brown" | "blond" | "gray";
+// color = the shirt now (owner, 4 Nov: "I want it to look like a whole person, not a robot"); skin and hair are picks too.
+export type HelperLook = { color: HelperColor; hat: HelperHat; skin: HelperSkin; hair: HelperHair };
+export const HELPER_SKINS: Record<HelperSkin, { skin: string; shade: string; label: string }> = {
+  light: { skin: "#f7d7c4", shade: "#e8b89f", label: "Light" },
+  medium: { skin: "#eac09a", shade: "#d49d73", label: "Medium" },
+  tan: { skin: "#d29a6a", shade: "#b67c4d", label: "Tan" },
+  brown: { skin: "#a8714a", shade: "#8a5735", label: "Brown" },
+  dark: { skin: "#70452a", shade: "#56331d", label: "Dark" },
+};
+export const HELPER_HAIRS: Record<HelperHair, { hair: string; label: string }> = {
+  black: { hair: "#1f1a17", label: "Black" },
+  brown: { hair: "#5b3a24", label: "Brown" },
+  blond: { hair: "#c99a4a", label: "Blond" },
+  gray: { hair: "#9ca3af", label: "Gray" },
+};
 
 export const HELPER_COLORS: Record<HelperColor, { face: string; line: string; ear: string; label: string }> = {
   purple: { face: "#ede9fe", line: "#7c3aed", ear: "#a78bfa", label: "Purple" },
@@ -16,12 +32,13 @@ export const HELPER_HATS: Record<HelperHat, string> = { none: "No hat", hardhat:
 
 const KEY = "hpd-helper-look";
 const EVENT = "hpd-helper-look";
-const DEFAULT: HelperLook = { color: "purple", hat: "none" };
+const DEFAULT: HelperLook = { color: "purple", hat: "none", skin: "medium", hair: "black" };
 
 export function getHelperLook(): HelperLook {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
-    return { color: v?.color in HELPER_COLORS ? v.color : DEFAULT.color, hat: v?.hat in HELPER_HATS ? v.hat : DEFAULT.hat };
+    return { color: v?.color in HELPER_COLORS ? v.color : DEFAULT.color, hat: v?.hat in HELPER_HATS ? v.hat : DEFAULT.hat,
+      skin: v?.skin in HELPER_SKINS ? v.skin : DEFAULT.skin, hair: v?.hair in HELPER_HAIRS ? v.hair : DEFAULT.hair };
   } catch { return DEFAULT; }
 }
 

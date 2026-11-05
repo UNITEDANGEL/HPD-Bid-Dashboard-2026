@@ -4290,4 +4290,27 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 /* 📈 A file from the robot (the month report), to open or share (4 Nov). */
 .fc-agent .fc-agent-file { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; animation: fc-week-in 0.4s ease both; }
 .fc-agent .fc-agent-file a, .fc-agent .fc-agent-file button { display: flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 12px; border: 0; background: #2563eb; color: #fff; font: 800 15px system-ui, sans-serif; text-decoration: none; }
-.fc-agent .fc-agent-file a { background: #1e293b; border: 1px solid #60a5fa; }
+.fc-agent .fc-agent-file [data-hpd-smoke="fc-agent-file-open"] { background: #1e293b; border: 1px solid #60a5fa; }
+.fc-agent .fc-agent-file-view { grid-column: 1 / -1; border-radius: 12px; overflow: hidden; background: #fff; animation: fc-week-in 0.35s ease both; }
+/* 🧑 The helper as a person (4 Nov: "look like a whole person, not a robot"): the same moves, placed on a face. */
+.fc-face.is-human .fc-face-eyes { transform-origin: 24px 20.4px; }
+.fc-face.is-human .fc-face-mouth { transform-origin: 24px 28.7px; transform: scaleY(0.4); }
+.fc-face.is-human.is-talking .fc-face-mouth { transform-origin: 24px 28.7px; animation: fc-talk-h 0.18s ease-in-out infinite alternate; }
+.fc-face.is-human.is-talking .fc-face-lips { opacity: 0.55; }
+@keyframes fc-talk-h { 0% { transform: scaleY(0.5) scaleX(1); } 40% { transform: scaleY(2.6) scaleX(0.9); } 70% { transform: scaleY(1.4) scaleX(1.08); } 100% { transform: scaleY(2.2) scaleX(0.82); } }
+.fc-face.is-human .fc-face-ear { transform-box: fill-box; transform-origin: 50% 50%; }
+.fc-face.is-human.is-listening .fc-face-ear { animation: fc-ear-h 0.6s ease-in-out infinite alternate; }
+@keyframes fc-ear-h { from { transform: scale(1); } to { transform: scale(1.22); filter: drop-shadow(0 0 2px #22d3ee); } }
+.fc-face.is-human.is-happy .fc-face-lips { display: none; }
+.fc-face.is-human.is-worried .fc-face-browline { display: none; }
+.fc-face.is-human.is-worried .fc-face-mouth { transform: scaleY(0.4) scaleX(0.7); }
+.fc-face.is-human .fc-face-look { transition: transform .3s cubic-bezier(.3,1.4,.5,1); }
+.fc-face.is-human .fc-hand { transform-box: fill-box; }
+.fc-face.is-human .fc-face-arms.is-wave .fc-arm-r { transform-origin: 0% 100%; animation: fc-arm-wave-h 0.42s ease-in-out infinite alternate; }
+@keyframes fc-arm-wave-h { from { transform: rotate(-10deg); } to { transform: rotate(12deg); } }
+@media (prefers-reduced-motion: reduce) { .fc-face.is-human * { animation: none !important; } }
+/* Claude's question in words, with one-tap answers (4 Nov). */
+.fc-claude-orb-badge.is-ask { width: auto; min-width: 0; padding: 0 6px; border-radius: 999px; font: 900 10px/16px system-ui, sans-serif; white-space: nowrap; background: #f59e0b; color: #1c1002; }
+.fc-claude-ask-quick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; animation: fc-week-in 0.35s ease both; }
+.fc-claude-ask-quick button { flex: 1 1 auto; min-height: 42px; padding: 0 12px; border-radius: 12px; border: 1px solid #f59e0b; background: #422006; color: #fef3c7; font: 800 14px system-ui, sans-serif; }
+.fc-claude-ask-quick button:first-child { background: #f59e0b; color: #1c1002; }

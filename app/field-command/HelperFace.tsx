@@ -1,23 +1,51 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { HELPER_COLORS, useHelperLook, type HelperHat, type HelperOutfit } from "../../lib/helper-look";
+import { HELPER_COLORS, HELPER_HAIRS, HELPER_SKINS, useHelperLook, type HelperHat, type HelperOutfit } from "../../lib/helper-look";
 
-// 🤖 The helper's face (owner, 3 Nov: "the bot should look real: blink, move around, and when it's talking to me it
-// should have a talking thing"). One small drawing: the eyes blink, the head tilts while it works, the mouth moves while
-// it talks, the ears glow while it listens; it smiles when something good happens and worries over an overdue notice;
-// it naps at night and stretches when it wakes up. Its color and hat are the owner's pick (lib/helper-look).
-// Moves are CSS (field-command.css .fc-face), off with "reduce motion".
+// 🧑 The helper (owner, 3 Nov: "the bot should look real: blink, move around, a talking thing"; 4 Nov: "the mouth, hands
+// and everything. I want it to look like a whole person, not a robot"): a person, head and shoulders, in a work shirt
+// of the owner's color, with the skin and hair the owner picks (🎨). The eyes blink and follow your finger, the mouth
+// opens and closes while it talks, the ears perk up while it listens, the head tilts while it thinks; it smiles at good
+// news, frowns over an overdue notice, naps at night and stretches when it wakes up; its hands wave, point and give a
+// thumbs up. Moves are CSS (field-command.css .fc-face), off with "reduce motion".
 export type FaceMode = "idle" | "working" | "listening" | "talking" | "ask" | "off" | "happy" | "worried" | "sleep";
 
 // look: where the eyes look, -1..1 each way (👀 they follow your finger on the map).
 // outfit: what it wears right now (lib/helper-look robotOutfit); arms: 👋 wave, 👉 point, 👍 thumbs up; hat: a hat for
 // the moment (⛑ at a job site) over the owner's pick.
 export type HelperArms = "wave" | "point" | "thumbs" | "";
+
+// A hand: palm and four fingers (open), or a fist with the index finger out (point) or the thumb up.
+function Hand({ kind, skin, shade }: { kind: "open" | "point" | "thumb"; skin: string; shade: string }) {
+  if (kind === "open") return (
+    <g className="fc-hand">
+      {[-3.2, -1.1, 1.1, 3.2].map((x, i) => <rect key={i} x={x - 0.9} y={-6.8 + Math.abs(x) * 0.35} width="1.8" height="5" rx="0.9" fill={skin} stroke={shade} strokeWidth="0.4" />)}
+      <rect x="4" y="-2.4" width="1.7" height="4" rx="0.85" fill={skin} stroke={shade} strokeWidth="0.4" transform="rotate(35 4.8 -0.4)" />
+      <ellipse cx="0" cy="0" rx="4.2" ry="3.6" fill={skin} stroke={shade} strokeWidth="0.5" />
+    </g>
+  );
+  if (kind === "point") return (
+    <g className="fc-hand">
+      <rect x="2" y="-1.2" width="6.5" height="2" rx="1" fill={skin} stroke={shade} strokeWidth="0.4" />
+      <ellipse cx="0" cy="0.4" rx="3.4" ry="3" fill={skin} stroke={shade} strokeWidth="0.5" />
+    </g>
+  );
+  return (
+    <g className="fc-hand">
+      <rect x="-1" y="-7" width="2" height="5.2" rx="1" fill={skin} stroke={shade} strokeWidth="0.4" />
+      <rect x="-3.6" y="-2.6" width="7.2" height="6" rx="2.6" fill={skin} stroke={shade} strokeWidth="0.5" />
+      <path d="M-2.6 -0.4 H2.6 M-2.6 1.4 H2.6" stroke={shade} strokeWidth="0.45" />
+    </g>
+  );
+}
+
 export default function HelperFace({ mode = "idle", size = 34, className = "", look, outfit = "", arms = "", hat }: { mode?: FaceMode; size?: number; className?: string; look?: { x: number; y: number } | null; outfit?: HelperOutfit; arms?: HelperArms; hat?: HelperHat }) {
   const picked = useHelperLook();
   const dress = { ...picked, hat: outfit === "party" || outfit === "pajamas" ? ("none" as HelperHat) : hat || picked.hat };
-  const c = HELPER_COLORS[dress.color];
+  const shirt = HELPER_COLORS[dress.color];
+  const { skin, shade } = HELPER_SKINS[dress.skin] || HELPER_SKINS.medium;
+  const hair = (HELPER_HAIRS[dress.hair] || HELPER_HAIRS.black).hair;
   // Waking up: a stretch for a moment after a nap.
   const prev = useRef(mode);
   const [waking, setWaking] = useState(false);
@@ -25,57 +53,92 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
     if (prev.current === "sleep" && mode !== "sleep") { setWaking(true); const t = window.setTimeout(() => setWaking(false), 1400); prev.current = mode; return () => window.clearTimeout(t); }
     prev.current = mode;
   }, [mode]);
+  const eyeShift = look ? { transform: `translate(${(look.x * 1.1).toFixed(2)}px, ${(look.y * 0.8).toFixed(2)}px)` } : undefined;
   return (
-    <svg className={`fc-face is-${mode}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-hat={dress.hat} data-outfit={outfit || undefined} data-arms={arms || undefined} width={size} height={size} viewBox="0 0 48 48" overflow="visible" aria-hidden="true">
-      {arms ? <g className={`fc-face-arms is-${arms}`} stroke={c.line} strokeWidth="2.6" strokeLinecap="round" fill="none">
-        <path className="fc-arm-l" d="M4 30 Q-2 34 -1 40" />
-        {arms === "wave" ? <g className="fc-arm-r"><path d="M44 28 Q50 22 50 14" /><circle cx="50" cy="12" r="2.8" fill={c.ear} stroke="none" /></g>
-          : arms === "point" ? <g className="fc-arm-r"><path d="M44 28 L54 26" /><path d="M54 26 l3 -1" strokeWidth="2" /></g>
-          : <g className="fc-arm-r"><path d="M44 30 Q50 30 50 24" /><text x="45" y="22" fontSize="10" stroke="none">👍</text></g>}
-      </g> : null}
+    <svg className={`fc-face is-human is-${mode}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-skin={dress.skin} data-hair={dress.hair} data-hat={dress.hat} data-outfit={outfit || undefined} data-arms={arms || undefined} width={size} height={size} viewBox="0 0 48 48" overflow="visible" aria-hidden="true">
+      {/* Shoulders in a work shirt (the owner's color), the neck. */}
+      <path d="M3 49 Q3.5 38.5 14.5 36.2 L33.5 36.2 Q44.5 38.5 45 49 Z" fill={shirt.line} />
+      <path d="M18.5 36.2 L24 43 L29.5 36.2 Z" fill={shirt.face} />
+      <path d="M16 36.6 L24 43 M32 36.6 L24 43" stroke={shirt.ear} strokeWidth="1.2" strokeLinecap="round" />
+      <rect x="20.4" y="29.5" width="7.2" height="8" rx="3" fill={shade} />
+      {outfit === "scarf" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="14.5" y="33" width="19" height="5" rx="2.5" fill="#dc2626" /><rect x="27" y="35.5" width="5" height="9" rx="2" fill="#b91c1c" /></g> : null}
       <g className="fc-face-head">
-        {dress.hat === "none" && outfit !== "party" && outfit !== "pajamas" ? <>
-          <line x1="24" y1="4" x2="24" y2="10" stroke="#c4b5fd" strokeWidth="2.5" strokeLinecap="round" />
-          <circle className="fc-face-antenna" cx="24" cy="4" r="3" fill="#22d3ee" />
-        </> : null}
-        <rect className="fc-face-ear" x="3" y="20" width="5" height="11" rx="2.5" fill={c.ear} />
-        <rect className="fc-face-ear" x="40" y="20" width="5" height="11" rx="2.5" fill={c.ear} />
-        <rect x="7" y="10" width="34" height="30" rx="11" fill={c.face} stroke={c.line} strokeWidth="2.5" />
-        <rect x="11" y="15" width="26" height="15" rx="7" fill="#1e1b4b" />
-        <g className="fc-face-look" style={look ? { transform: `translate(${(look.x * 3).toFixed(1)}px, ${(look.y * 2.2).toFixed(1)}px)` } : undefined}>
-          <g className="fc-face-eyes">
-            <ellipse cx="18.5" cy="22.5" rx="3" ry="3.4" fill="#67e8f9" />
-            <ellipse cx="29.5" cy="22.5" rx="3" ry="3.4" fill="#67e8f9" />
+        {/* Ears (they perk up while it listens). */}
+        <ellipse className="fc-face-ear" cx="12.7" cy="21.5" rx="2.1" ry="3.1" fill={skin} stroke={shade} strokeWidth="0.6" />
+        <ellipse className="fc-face-ear" cx="35.3" cy="21.5" rx="2.1" ry="3.1" fill={skin} stroke={shade} strokeWidth="0.6" />
+        {/* The face, then the hair over it. */}
+        <ellipse cx="24" cy="21" rx="11" ry="12.6" fill={skin} />
+        <path d="M24 33.4 Q30.5 33.2 33.6 27.5 Q31.5 32 24 32.6 Q16.5 32 14.4 27.5 Q17.5 33.2 24 33.4 Z" fill={shade} opacity="0.35" />
+        {dress.hat === "none" || outfit === "party" || outfit === "pajamas"
+          ? <path d="M12.7 20 Q11.4 7.4 24 6.6 Q36.6 7.4 35.3 20 Q34.4 13.6 29.6 12.4 Q25.5 14.4 19.4 12.9 Q14.6 13.4 12.7 20 Z" fill={hair} />
+          : <path d="M12.9 19.5 Q12.6 14.5 14.5 13.5 L33.5 13.5 Q35.4 14.5 35.1 19.5 Q33.8 15.6 30 15.3 L18 15.3 Q14.2 15.6 12.9 19.5 Z" fill={hair} />}
+        {/* Eyebrows, eyes (blink; they follow your finger), nose, cheeks. */}
+        <g className="fc-face-browline" stroke={hair} strokeWidth="1.25" strokeLinecap="round" fill="none">
+          <path d="M16.6 16.9 Q19 15.6 21.6 16.6" />
+          <path d="M26.4 16.6 Q29 15.6 31.4 16.9" />
+        </g>
+        <g className="fc-face-eyes">
+          <ellipse cx="19.2" cy="20.4" rx="2.5" ry="1.8" fill="#fff" />
+          <ellipse cx="28.8" cy="20.4" rx="2.5" ry="1.8" fill="#fff" />
+          <g className="fc-face-look" style={eyeShift}>
+            <circle cx="19.2" cy="20.5" r="1.3" fill="#4a3424" />
+            <circle cx="28.8" cy="20.5" r="1.3" fill="#4a3424" />
+            <circle cx="19.2" cy="20.5" r="0.6" fill="#0b0b0b" />
+            <circle cx="28.8" cy="20.5" r="0.6" fill="#0b0b0b" />
+            <circle cx="19.7" cy="20" r="0.35" fill="#fff" />
+            <circle cx="29.3" cy="20" r="0.35" fill="#fff" />
           </g>
+          <path d="M16.6 19.6 Q19.2 17.9 21.8 19.6 M26.2 19.6 Q28.8 17.9 31.4 19.6" stroke={shade} strokeWidth="0.6" fill="none" />
         </g>
-        <g className="fc-face-brows" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round">
-          <line x1="14.5" y1="19" x2="21" y2="16.8" />
-          <line x1="33.5" y1="19" x2="27" y2="16.8" />
+        <path d="M24.2 21.4 Q23 24.6 24.9 25.3" stroke={shade} strokeWidth="1" fill="none" strokeLinecap="round" />
+        <circle cx="17.4" cy="25.2" r="2" fill="#f87171" opacity="0.18" />
+        <circle cx="30.6" cy="25.2" r="2" fill="#f87171" opacity="0.18" />
+        {/* The mouth: lips at rest, an opening that moves while it talks, a big smile for good news. */}
+        <path className="fc-face-lips" d="M20.9 28.1 Q24 30.2 27.1 28.1" stroke="#a6463f" strokeWidth="1.15" fill="none" strokeLinecap="round" />
+        <ellipse className="fc-face-mouth" cx="24" cy="28.7" rx="2.5" ry="0.85" fill="#6b1d1d" />
+        <path className="fc-face-smile" d="M19.6 27.3 Q24 32.6 28.4 27.3 Z" fill="#6b1d1d" stroke="#a6463f" strokeWidth="0.8" strokeLinejoin="round" />
+        <g className="fc-face-brows" stroke={hair} strokeWidth="1.3" strokeLinecap="round">
+          <line x1="16.8" y1="16.2" x2="21.4" y2="17.6" />
+          <line x1="31.2" y1="16.2" x2="26.6" y2="17.6" />
         </g>
-        <rect className="fc-face-mouth" x="19" y="33" width="10" height="3" rx="1.5" fill={c.line} />
-        <path className="fc-face-smile" d="M17.5 32.5 Q24 39 30.5 32.5" stroke={c.line} strokeWidth="2.6" fill="none" strokeLinecap="round" />
         {dress.hat === "hardhat" ? <g className="fc-face-hat">
-          <path d="M9.5 12.5 Q24 -3 38.5 12.5 Z" fill="#facc15" stroke="#ca8a04" strokeWidth="1.5" />
-          <rect x="22.5" y="2.5" width="3" height="10" rx="1.5" fill="#eab308" />
-          <rect x="5" y="11.5" width="38" height="3.6" rx="1.8" fill="#eab308" stroke="#ca8a04" strokeWidth="1" />
+          <path d="M11.8 15.6 Q24 0.5 36.2 15.6 Z" fill="#facc15" stroke="#ca8a04" strokeWidth="1.2" />
+          <rect x="22.5" y="5" width="3" height="10" rx="1.5" fill="#eab308" />
+          <rect x="8.5" y="14.2" width="31" height="3.2" rx="1.6" fill="#eab308" stroke="#ca8a04" strokeWidth="0.8" />
         </g> : dress.hat === "cap" ? <g className="fc-face-hat">
-          <path d="M10 12.5 Q24 0 38 12.5 Z" fill="#1d4ed8" stroke="#1e3a8a" strokeWidth="1.5" />
-          <path d="M30 11.5 L46 13 L45 16 L30 14.5 Z" fill="#1e40af" />
-          <circle cx="24" cy="3.6" r="1.6" fill="#93c5fd" />
+          <path d="M12.2 15.6 Q24 3 35.8 15.6 Z" fill="#1d4ed8" stroke="#1e3a8a" strokeWidth="1.2" />
+          <path d="M28 14.4 L42 15.6 L41 18 L28 16.8 Z" fill="#1e40af" />
+          <circle cx="24" cy="6.6" r="1.4" fill="#93c5fd" />
         </g> : null}
-        {outfit === "sunglasses" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="12" y="19" width="10.5" height="7" rx="3" fill="#0f172a" /><rect x="25.5" y="19" width="10.5" height="7" rx="3" fill="#0f172a" /><line x1="22" y1="21.5" x2="26" y2="21.5" stroke="#0f172a" strokeWidth="1.6" /></g> : null}
-        {outfit === "scarf" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="8" y="37" width="32" height="6" rx="3" fill="#dc2626" /><rect x="28" y="40" width="6" height="9" rx="2" fill="#b91c1c" /></g> : null}
-        {outfit === "party" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M17 11 L24 -6 L31 11 Z" fill="#f472b6" stroke="#be185d" strokeWidth="1.2" /><circle cx="24" cy="-6" r="2.6" fill="#facc15" /><circle cx="21.5" cy="5" r="1.2" fill="#fff" /><circle cx="26" cy="1" r="1.2" fill="#fff" /></g> : null}
-        {outfit === "pajamas" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M10 12 Q22 -4 36 6 Q40 10 44 16 L40 17 Q36 12 34 12 Z" fill="#3b82f6" stroke="#1e40af" strokeWidth="1.2" /><circle cx="43" cy="17" r="2.6" fill="#fff" /></g> : null}
-        <text className="fc-face-zzz" x="36" y="10" fontSize="9" fontWeight="900" fill="#a5b4fc">z</text>
+        {outfit === "sunglasses" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="15.6" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><rect x="25" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><line x1="23" y1="19.6" x2="25" y2="19.6" stroke="#0f172a" strokeWidth="1.2" /></g> : null}
+        {outfit === "party" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M18 9.5 L24 -7 L30 9.5 Z" fill="#f472b6" stroke="#be185d" strokeWidth="1" /><circle cx="24" cy="-7" r="2.4" fill="#facc15" /><circle cx="22" cy="3.5" r="1.1" fill="#fff" /><circle cx="26" cy="0" r="1.1" fill="#fff" /></g> : null}
+        {outfit === "pajamas" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M12.4 13 Q22 -2 35 6 Q39 9 42 15 L38.5 16 Q35 11.5 33 12 Q24 8 12.4 13 Z" fill="#3b82f6" stroke="#1e40af" strokeWidth="1" /><circle cx="41.5" cy="16" r="2.4" fill="#fff" /></g> : null}
+        <text className="fc-face-zzz" x="36" y="9" fontSize="9" fontWeight="900" fill="#a5b4fc">z</text>
       </g>
+      {/* Hands: 👋 a wave by the head, 👉 pointing, 👍 a thumbs up; the sleeve in the shirt color. */}
+      {arms ? <g className={`fc-face-arms is-${arms}`} data-hpd-smoke="fc-face-hands">
+        <g className="fc-arm-r">
+          {arms === "wave" ? <>
+            <path d="M40 40 Q44.5 34 45 27.5" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
+            <g transform="translate(45 24.5) rotate(12)"><Hand kind="open" skin={skin} shade={shade} /></g>
+          </> : arms === "point" ? <>
+            <path d="M40 40 Q46 37 49 33" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
+            <g transform="translate(51 32) rotate(-22)"><Hand kind="point" skin={skin} shade={shade} /></g>
+          </> : <>
+            <path d="M40 41 Q45.5 39 46 33.5" stroke={shirt.line} strokeWidth="5" strokeLinecap="round" fill="none" />
+            <g transform="translate(46 30)"><Hand kind="thumb" skin={skin} shade={shade} /></g>
+          </>}
+        </g>
+      </g> : null}
       {outfit === "umbrella" ? <g className="fc-face-outfit fc-face-umbrella" data-hpd-smoke="fc-face-outfit"><path d="M30 2 Q42 -10 54 2 Z" fill="#0ea5e9" stroke="#0369a1" strokeWidth="1.2" /><path d="M42 2 L42 16 Q42 19 39.5 19" stroke="#334155" strokeWidth="1.8" fill="none" strokeLinecap="round" /></g> : null}
     </svg>
   );
 }
 
-// The same face as plain HTML, for a map marker (Leaflet draws markers from HTML, not React).
-export function helperFaceHtml(color = "purple", size = 30) {
+// The same person as plain HTML, for a map marker (Leaflet draws markers from HTML, not React).
+export function helperFaceHtml(color = "purple", size = 30, skinKey = "medium", hairKey = "black") {
   const c = HELPER_COLORS[(color in HELPER_COLORS ? color : "purple") as keyof typeof HELPER_COLORS];
-  return `<svg class="fc-face is-working" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true"><g class="fc-face-head"><line x1="24" y1="4" x2="24" y2="10" stroke="#c4b5fd" stroke-width="2.5" stroke-linecap="round"/><circle class="fc-face-antenna" cx="24" cy="4" r="3" fill="#22d3ee"/><rect x="3" y="20" width="5" height="11" rx="2.5" fill="${c.ear}"/><rect x="40" y="20" width="5" height="11" rx="2.5" fill="${c.ear}"/><rect x="7" y="10" width="34" height="30" rx="11" fill="${c.face}" stroke="${c.line}" stroke-width="2.5"/><rect x="11" y="15" width="26" height="15" rx="7" fill="#1e1b4b"/><g class="fc-face-eyes"><ellipse cx="18.5" cy="22.5" rx="3" ry="3.4" fill="#67e8f9"/><ellipse cx="29.5" cy="22.5" rx="3" ry="3.4" fill="#67e8f9"/></g><rect x="19" y="33" width="10" height="3" rx="1.5" fill="${c.line}"/></g></svg>`;
+  const { skin, shade } = HELPER_SKINS[(skinKey in HELPER_SKINS ? skinKey : "medium") as keyof typeof HELPER_SKINS];
+  const hair = HELPER_HAIRS[(hairKey in HELPER_HAIRS ? hairKey : "black") as keyof typeof HELPER_HAIRS].hair;
+  return `<svg class="fc-face is-human is-working" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 49 Q3.5 38.5 14.5 36.2 L33.5 36.2 Q44.5 38.5 45 49 Z" fill="${c.line}"/><path d="M18.5 36.2 L24 43 L29.5 36.2 Z" fill="${c.face}"/><rect x="20.4" y="29.5" width="7.2" height="8" rx="3" fill="${shade}"/><g class="fc-face-head"><ellipse cx="12.7" cy="21.5" rx="2.1" ry="3.1" fill="${skin}"/><ellipse cx="35.3" cy="21.5" rx="2.1" ry="3.1" fill="${skin}"/><ellipse cx="24" cy="21" rx="11" ry="12.6" fill="${skin}"/><path d="M12.7 20 Q11.4 7.4 24 6.6 Q36.6 7.4 35.3 20 Q34.4 13.6 29.6 12.4 Q25.5 14.4 19.4 12.9 Q14.6 13.4 12.7 20 Z" fill="${hair}"/><g class="fc-face-eyes"><ellipse cx="19.2" cy="20.4" rx="2.5" ry="1.8" fill="#fff"/><ellipse cx="28.8" cy="20.4" rx="2.5" ry="1.8" fill="#fff"/><circle cx="19.2" cy="20.5" r="1.3" fill="#4a3424"/><circle cx="28.8" cy="20.5" r="1.3" fill="#4a3424"/></g><path d="M20.9 28.1 Q24 30.2 27.1 28.1" stroke="#a6463f" stroke-width="1.15" fill="none" stroke-linecap="round"/></g></svg>`;
 }

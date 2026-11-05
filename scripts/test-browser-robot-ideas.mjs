@@ -41,6 +41,7 @@ try {
   const reply = page.locator('[data-hpd-smoke="fc-agent-reply"]');
   const say = async (text, re) => {
     if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+    if (await page.locator(".fc-job-sheet-close").count()) await page.locator(".fc-job-sheet-close").first().click().catch(() => {});
     await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill(text);
     await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
     await page.waitForFunction((src) => new RegExp(src).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 20000 }).catch(async () => { throw new Error(`"${text}" got: ${await reply.innerText().catch(() => "no chat")}`); });
@@ -50,6 +51,10 @@ try {
   assert.equal(asked.length, 0, "worked out on the phone");
   const time = await say("where am I losing time", /^🗺 /);
   const good = await say("good news", /^🎉 /);
+  // 💵 One job's payment, from HPD's payment list (or how long it's been waiting).
+  const paid = await say(`did HPD pay me for ${JOB}`, new RegExp(`^💵 (Yes: HPD paid|Partly|Not yet|${JOB} isn't in HPD's payment list)`));
+  // 🕒 On my way: the tenant text, read back for a yes (or the reason it can't).
+  const omw = await say(`on my way to ${JOB}`, /I'm on my way|no tenant phone|Tap to open it in Messages/);
   assert.match(good, /^🎉 (Great day!|Busy day, well done!|Nice work!|Quiet day)/);
 
   // 📸 Before and after: the newest of each, side by side, shared together.
@@ -82,8 +87,11 @@ try {
   await page.evaluate(() => { window.__shared = null; });
   const month = await say("month report", /^📈 \w+ \d{4} so far: \d+ jobs? won/);
   await page.locator('[data-hpd-smoke="fc-agent-file"]').waitFor({ timeout: 10000 });
-  const pdfHead = await page.evaluate(async () => { const a = document.querySelector('[data-hpd-smoke="fc-agent-file-open"]'); const b = new Uint8Array(await (await fetch(a.href)).arrayBuffer()); return String.fromCharCode(...b.slice(0, 5)) + "|" + b.length; });
+  const pdfHead = await page.evaluate(async () => { const a = document.querySelector('[data-hpd-smoke="fc-agent-file-open"]'); const b = new Uint8Array(await (await fetch(a.dataset.url)).arrayBuffer()); return String.fromCharCode(...b.slice(0, 5)) + "|" + b.length; });
   assert.match(pdfHead, /^%PDF-\|\d{4,}$/);
+  // It opens right in the chat (a new tab is blocked in the iPhone Home Screen app).
+  await page.locator('[data-hpd-smoke="fc-agent-file-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-agent-file-view"] [data-hpd-smoke="fc-itb-thumb"]').first().waitFor({ timeout: 20000 });
   await page.locator('[data-hpd-smoke="fc-agent-file-share"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
   assert.match((await page.evaluate(() => window.__shared)).files[0], /^HPD Field - \w+ \d{4} \(so far\)\.pdf\|application\/pdf$/);
@@ -135,7 +143,7 @@ try {
   assert.deepEqual((await page.evaluate(() => window.__shared)).files, [`SIGNED - ${JOB} - Work Completed.pdf|application/pdf`, `BEFORE-01 - ${JOB}.jpg|image/jpeg`, `AFTER-01 - ${JOB}.jpg|image/jpeg`, `AFTER VIDEO-01 - ${JOB}.mp4|video/mp4`]);
   await page.waitForFunction(() => /4 files ready: pick Mail to send them, or Save to Files/.test(document.querySelector('[data-hpd-smoke="fc-sent-copy-msg"]')?.textContent || ""), null, { timeout: 5000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS robot ideas: the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
+  console.log(`PASS robot ideas: "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
 } finally {
   await browser.close();
 }

@@ -29,6 +29,8 @@ export type AgentCommand =
   | { intent: "tour" }
   | { intent: "materials" }
   | { intent: "missing-paperwork" }
+  | { intent: "paid-check"; ref: string }
+  | { intent: "on-my-way"; ref: string }
   | { intent: "month-report"; last?: boolean }
   | { intent: "losing-time" }
   | { intent: "good-news" }
@@ -208,6 +210,11 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(what'?s|what does|how does) my (week|next 7 days|next week) look\b|\b(my )?week ahead\b|\bnext 7 days\b|\bwhat'?s coming up( this week)?\b|\b(this|next) week'?s (schedule|plan)\b/.test(t)) return { intent: "week-ahead" };
   // 🔍 "find the job where the tenant said the dog bites" (a number or an address stays the map search).
   if (!/\d/.test(t) && /^(please )?(find|search( for)?|look for|look up)\b|^(which|what) job (had|has|was|is|where)\b|^where was the job\b/.test(t)) return { intent: "find", query: String(heard).trim() };
+  // 💵 "did HPD pay me for ER07663", "was ER07663 paid", "payment on ER07663" (one job; "how much does HPD owe me" is all).
+  if (/[a-z]{2}\s?\d{5}/.test(t) && /\b(pay|paid|payment|money for|check for)\b/.test(t) && !/\b(bid|price)\b/.test(t)) return { intent: "paid-check", ref: (/[a-z]{2}\s?\d{5}/.exec(t)?.[0] || "").replace(/\s/g, "").toUpperCase() };
+  // 🕒 "tell the tenant I'm on my way", "on my way to ER07663", "text them I'm coming".
+  // Only said as itself ("tell the tenant we'll call when we're on the way" stays your own words to the tenant).
+  if (/^(i'?m |we'?re )?(on (my|our) way|coming|heading (there|over))( to [a-z]{2}\s?\d{5})?( now)?$/.test(t) || /^(tell|text|let) (the tenant|them|him|her)( know)? (that )?(i'?m|we'?re) (on (my|our) way|coming)( now)?$/.test(t)) return { intent: "on-my-way", ref: (/[a-z]{2}\s?\d{5}/.exec(t)?.[0] || "").replace(/\s/g, "").toUpperCase() };
   // 📈 "month report", "my month on one page", "last month's report".
   if (/\b(month(ly)? report|report (for|of) (the|this|last) month|month on one page|one page (report|for the month)|how was my month|(this|last) month'?s report)\b/.test(t)) return { intent: "month-report", ...(/\blast month\b/.test(t) ? { last: true } : {}) };
   // 🧾 / 🗺 / 🎉 / 📸 (owner, 4 Nov: "do all ideas").
