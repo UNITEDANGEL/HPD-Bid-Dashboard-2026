@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-05T06:39:12.728Z
+Fetcher run started: 2026-11-05T11:31:32.350Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/8 [00:00<?, ?it/s]Downloading COA messages:  12%|█▎        | 1/8 [00:00<00:00,  8.63it/s]Downloading COA messages:  25%|██▌       | 2/8 [00:00<00:00,  7.85it/s]Downloading COA messages:  38%|███▊      | 3/8 [00:00<00:00,  8.30it/s]Downloading COA messages:  50%|█████     | 4/8 [00:00<00:00,  7.34it/s]Downloading COA messages:  62%|██████▎   | 5/8 [00:00<00:00,  6.89it/s]Downloading COA messages:  75%|███████▌  | 6/8 [00:00<00:00,  6.82it/s]Downloading COA messages: 100%|██████████| 8/8 [00:01<00:00,  7.88it/s]Downloading COA messages: 100%|██████████| 8/8 [00:01<00:00,  7.64it/s]
-Geocoding COA addresses:   0%|          | 0/8 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 8/8 [00:00<00:00, 202135.13it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/8 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 1/8 [00:00<00:05,  1.34it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 2/8 [00:01<00:04,  1.49it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 3/8 [00:01<00:03,  1.62it/s]Fetching ITBs for COA OMOs:  50%|█████     | 4/8 [00:02<00:02,  1.64it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 5/8 [00:03<00:01,  1.72it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 6/8 [00:03<00:01,  1.83it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 7/8 [00:04<00:00,  1.75it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:04<00:00,  1.78it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:04<00:00,  1.71it/s]
+Downloading COA messages:   0%|          | 0/8 [00:00<?, ?it/s]Downloading COA messages:  12%|█▎        | 1/8 [00:00<00:00,  8.31it/s]Downloading COA messages:  25%|██▌       | 2/8 [00:00<00:00,  8.86it/s]Downloading COA messages:  38%|███▊      | 3/8 [00:00<00:00,  8.54it/s]Downloading COA messages:  50%|█████     | 4/8 [00:00<00:00,  8.44it/s]Downloading COA messages:  62%|██████▎   | 5/8 [00:00<00:00,  7.74it/s]Downloading COA messages:  75%|███████▌  | 6/8 [00:00<00:00,  6.72it/s]Downloading COA messages:  88%|████████▊ | 7/8 [00:00<00:00,  7.40it/s]Downloading COA messages: 100%|██████████| 8/8 [00:01<00:00,  7.80it/s]Downloading COA messages: 100%|██████████| 8/8 [00:01<00:00,  7.79it/s]
+Geocoding COA addresses:   0%|          | 0/8 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 8/8 [00:00<00:00, 140985.01it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/8 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 1/8 [00:00<00:05,  1.21it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 2/8 [00:01<00:04,  1.43it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 3/8 [00:02<00:03,  1.50it/s]Fetching ITBs for COA OMOs:  50%|█████     | 4/8 [00:02<00:02,  1.52it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 5/8 [00:03<00:01,  1.58it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 6/8 [00:03<00:01,  1.72it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 7/8 [00:04<00:00,  1.64it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:05<00:00,  1.68it/s]Fetching ITBs for COA OMOs: 100%|██████████| 8/8 [00:05<00:00,  1.60it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -269,7 +269,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-05T06:46:06.513Z
+Fetcher run finished: 2026-11-05T11:39:05.811Z
 {
   "fetchedCoaItems": 8,
   "fetchedItbItems": 8,
