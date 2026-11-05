@@ -44,7 +44,8 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
-import { briefDone, dayRecap, helloAgain, isYes, markBrief, nextPart, noteSaid, readDayLog, refersBack, shortSpeech, wasSaid, type Part, type Recap } from "../../lib/said-today";
+import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, wasSaid, type Part, type Recap } from "../../lib/said-today";
+import { planWeek, weekSpeech, type PlanDay, type WeekItem } from "../../lib/week-plan";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
 import { cleanTenantContactName, cleanTenantPhone } from "../../lib/tenantContact";
@@ -1570,6 +1571,8 @@ export default function FieldCommandClient() {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
       const all = (await r.json())?.overrides || {};
       setClaudeSeenAt(String((all["CLAUDE-HEARTBEAT"] as { at?: string } | undefined)?.at || ""));
+      // 🔁 One greeting across phones: what another phone already said today counts here too.
+      { const st = all["SAID-TODAY"] as { day?: string } | undefined; if (st?.day === nyToday()) mergeDayLog(st); }
       { const h = Object.entries(all).filter(([k]) => k.startsWith("HANDLED-")).map(([k, v]) => [k.slice(8), String((v as { at?: string } | undefined)?.at || "")] as [string, string]);
         if (h.length) setHandledMap((cur) => { const next = { ...cur }; for (const [o, at] of h) if (!cur[o] || (at && at > cur[o]) || (!at && cur[o] && false)) next[o] = at; return next; }); }
       const cn = all["CLAUDE-NOW"] as Partial<ClaudeNow> | undefined;
@@ -1642,10 +1645,28 @@ export default function FieldCommandClient() {
   const [autoInfo, setAutoInfo] = useState<{ lastAt: string; lastTitle: string; doneToday: number }>({ lastAt: "", lastTitle: "", doneToday: 0 });
   const [ideasNote, setIdeasNote] = useState("");
   useEffect(() => { try { setIdeasPicked(JSON.parse(localStorage.getItem("hpd-ideas-picked") || "{}")); } catch { /* private mode */ } }, []);
+  // 📋 Next on the plan (owner, 5 Nov: "ask me in the app to say do all ... stick to the plan"): the next items of
+  // docs/MASTER_PLAN.md, from upgrade-ideas.json "plan". ✅ Do all sends them to Claude as one request, in order; when
+  // they're live Claude puts the next ones there and the app asks again.
+  type PlanCard = { id: string; title: string; items: { id: string; icon: string; title: string; why: string }[] };
+  const [plan, setPlan] = useState<PlanCard | null>(null);
+  const [planSent, setPlanSent] = useState("");
+  const [planLater, setPlanLater] = useState("");
+  const [planNote, setPlanNote] = useState("");
+  const readPlan = (d: unknown): PlanCard | null => {
+    const p = (d as { plan?: { id?: string; title?: string; items?: unknown } } | null)?.plan;
+    const items = Array.isArray(p?.items) ? (p!.items as { id?: string; icon?: string; title?: string; why?: string }[]).filter((x) => x?.id && x?.title).slice(0, 5).map((x) => ({ id: String(x.id), icon: String(x.icon || "📋"), title: String(x.title).slice(0, 80), why: String(x.why || "").slice(0, 240) })) : [];
+    return p?.id && items.length ? { id: String(p.id), title: String(p.title || "Next on the plan").slice(0, 80), items } : null;
+  };
+  useEffect(() => {
+    try { setPlanSent(localStorage.getItem("hpd-plan-sent") || ""); setPlanLater(localStorage.getItem("hpd-plan-later") || ""); } catch { /* private mode */ }
+    void fetch("/data/upgrade-ideas.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPlan(readPlan(d))).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const loadIdeas = async (): Promise<Idea[]> => {
     try {
       const r = await fetch("/data/upgrade-ideas.json", { cache: "no-cache" });
       const d = r.ok ? await r.json() : null;
+      setPlan(readPlan(d));
       const list: Idea[] = Array.isArray(d?.ideas) ? d.ideas.filter((x: Idea) => x?.id && x?.title).map((x: Idea) => ({ id: String(x.id), icon: String(x.icon || "💡"), kind: String(x.kind || "upgrade"), title: String(x.title).slice(0, 80), why: String(x.why || "").slice(0, 240) })) : [];
       setIdeas(list);
       return list;
@@ -1674,6 +1695,16 @@ export default function FieldCommandClient() {
     setIdeasNote(ok ? `👍 Sent to Claude: “${x.title}”. ${pickupLabel(claudeSeenAt)}.` : "Saved on this phone; it goes to Claude when the server answers.");
     return ok;
   };
+  const sendPlanAll = async (p: PlanCard | null = plan) => {
+    if (!p?.items.length) return false;
+    setPlanSent(p.id);
+    try { localStorage.setItem("hpd-plan-sent", p.id); } catch { /* private mode */ }
+    const ok = await sendRequest(`(plan) Do all, in order (${p.title}): ${p.items.map((x, i) => `${i + 1}. ${x.title}: ${x.why}`).join(" ")}`);
+    setPlanNote(ok ? `✅ Sent to Claude, in order. ${pickupLabel(claudeSeenAt)}. When they're live, the next ones show here and I'll ask you again.` : "Saved on this phone; it goes to Claude when the server answers.");
+    return ok;
+  };
+  const planLaterToday = (p: PlanCard) => { const v = `${p.id}|${nyToday()}`; setPlanLater(v); try { localStorage.setItem("hpd-plan-later", v); } catch { /* private mode */ } };
+  const planAsk = Boolean(plan && plan.items.length && planSent !== plan.id);
   const askMoreIdeas = async () => {
     const ok = await sendRequest("(idea) Give me more upgrade ideas: new things to add, and things in the app that should work differently, faster or better. Add them to the ideas list.");
     setIdeasNote(ok ? `💬 Asked Claude for more ideas. They show here when ready. ${pickupLabel(claudeSeenAt)}.` : "Saved on this phone (offline).");
@@ -1747,7 +1778,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; plan?: PlanDay[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -1763,6 +1794,8 @@ export default function FieldCommandClient() {
   const convoMissRef = useRef(0);
   // Several questions in one sentence (23 Oct): the parts still to answer and the answers so far.
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
+  // 🌆 The evening wrap's boxes (done / still open / coming up) when it runs as part of a chain.
+  const chainRecapRef = useRef<Recap | null>(null);
   // The last things said to the AI and its answers (this session), for follow-up questions.
   const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
   // 🧠 More real (owner, 5 Nov): what it just offered ("Notices next. Go?" -> "go" does it), and the job just talked
@@ -2066,6 +2099,18 @@ export default function FieldCommandClient() {
     if (waiting) later.push(`⏳ ${waiting} notice${waiting === 1 ? "" : "s"} sent, waiting on HPD`);
     return dayRecap(readDayLog(day), done, open, later);
   };
+  // 🔁 One greeting across phones (owner, 5 Nov): after something is said, this phone tells the status server
+  // (SAID-TODAY, one small write a few seconds later; job numbers only, no tenant data).
+  useEffect(() => {
+    const testing = navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-said-sync") !== "1"; } catch { return true; } })();
+    if (testing) return;
+    let t = 0;
+    onSaidChange((log) => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => { void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "SAID-TODAY", patch: forServer(log) }) }).catch(() => {}); }, 4000);
+    });
+    return () => { onSaidChange(null); window.clearTimeout(t); };
+  }, []);
   const offerNext = (done: Part) => {
     const day = nyToday();
     noteSaid(day, `part:${done}`, done === "bids" ? "today's bids done" : done === "notices" ? "notices walked" : "jobs done for now");
@@ -5196,7 +5241,8 @@ export default function FieldCommandClient() {
         multiRef.current = null;
         const rest = confirm && m.queue.length ? `\n\nAfter that, ask me: ${m.queue.join("; ")}.` : "";
         const all = `${m.replies.join("\n\n")}${rest}`;
-        setAgent({ heard: m.heard, reply: all, confirm, cards: takeCards(all) }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
+        const rc = chainRecapRef.current; chainRecapRef.current = null;
+        setAgent({ heard: m.heard, reply: all, confirm, cards: takeCards(all), ...(rc ? { recap: rc } : {}) }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
         speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200, () => { if (convoRef.current) startListening(); });
         return;
       }
@@ -5319,6 +5365,47 @@ export default function FieldCommandClient() {
       const on = (e: Event) => { window.removeEventListener("hpd-bid-check-answer", on); answer(String((e as CustomEvent<string>).detail || "I couldn't judge that price.")); };
       window.addEventListener("hpd-bid-check-answer", on);
       window.dispatchEvent(new CustomEvent("hpd-bid-check", { detail: cmd.price }));
+      return;
+    }
+    if (cmd.intent === "plan-week") {
+      // 🗓 Plan my week (owner, 5 Nov: "work with the future work that's left to do"): each open piece of work on a day.
+      // Bids on their due day, appointments on theirs, notices on their deadline (late ones today), close-outs where
+      // there's room (weekdays, 3 a day).
+      const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
+      const today = nyToday();
+      let recs: Record<string, { status?: string; bidDue?: string }> = {};
+      try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+      const items: WeekItem[] = [];
+      const bidDays = new Map<string, { n: number; first: string }>();
+      for (const b of bidsListRef.current) {
+        if (!b.bidDue || b.bidDue < today || (b.omo && ["sent", "confirmed"].includes(String(recs[b.omo]?.status)) && recs[b.omo]?.bidDue === b.bidDue)) continue;
+        const cur = bidDays.get(b.bidDue) || { n: 0, first: b.bidDueTime || "" };
+        cur.n += 1;
+        bidDays.set(b.bidDue, cur);
+      }
+      for (const [d, v] of [...bidDays].sort((a, b) => a[0].localeCompare(b[0]))) items.push({ icon: "🧾", day: d, text: `${v.n} bid${v.n === 1 ? "" : "s"} to send${v.first ? ` (first due ${v.first})` : ""}` });
+      for (const j of jobs) {
+        const a = activeAppointment(j as unknown as Record<string, unknown>);
+        if (a && a.date >= today) items.push({ icon: "📅", day: a.date, text: `${(appointmentLabel(a).split(" · ")[1] || "").replace(/\s*–.*$/, "")} at ${jobAddress(j).replace(/,\s*\d{5}$/, "")}`.trim() });
+      }
+      for (const r of boardOpenRows) if (r.next && boardSide(r) === "tosend" && r.dueAt) items.push({ icon: "📄", day: fmt.format(new Date(r.dueAt)), text: `answer notice ${r.omo}` });
+      try { for (const c of daySummary(jobs, { id: jobId, address: jobAddress }).closeOut) items.push({ icon: "🗂", flex: true, text: `close out ${c.address.replace(/,\s*\d{5}$/, "")}` }); } catch { /* no jobs yet */ }
+      const p = planWeek(today, items.sort((a, b) => String(a.day || "").localeCompare(String(b.day || ""))));
+      const lines = p.days.filter((d, k) => k === 0 || d.items.length).map((d) => `• ${d.label}: ${d.items.length ? d.items.map((x) => `${x.icon} ${x.text}${x.late ? " (late)" : ""}`).join("; ") : "nothing planned"}`);
+      const reply = `🗓 Your week, planned:\n${lines.join("\n")}${p.later ? `\n…and ${p.later} more after this week.` : ""}`;
+      if (multiRef.current) { answer(reply); return; }
+      setAgent({ heard, reply, plan: p.days });
+      speak(weekSpeech(p), 200, () => { if (convoRef.current) startListening(); });
+      return;
+    }
+    if (cmd.intent === "plan-do-all") {
+      // ✅ "Do all" (owner, 5 Nov): the next items on the plan go to Claude, in order, as one request.
+      const go = (p: PlanCard | null) => {
+        if (!p?.items.length) { answer("Nothing is waiting on the plan right now. Say \"give me ideas\" for more."); return; }
+        if (planSent === p.id) { answer(`You already said do all for these: ${p.items.map((x) => x.title).join("; ")}. Claude is on it; the 🤖 button turns green while it builds.`); return; }
+        void sendPlanAll(p).then((ok) => answer(ok ? `✅ Sent to Claude, in order: ${p.items.map((x, i) => `${i + 1}. ${x.title}`).join("; ")}. ${pickupLabel(claudeSeenAt)}. When they're live I'll ask you again for the next ones.` : "I saved it on this phone; it goes to Claude when the connection is back."));
+      };
+      if (plan) go(plan); else void fetch("/data/upgrade-ideas.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { const p = readPlan(d); setPlan(p); go(p); }).catch(() => go(null));
       return;
     }
     if (cmd.intent === "week-ahead") {
@@ -6450,6 +6537,18 @@ export default function FieldCommandClient() {
         const paid = (pay?.recent || []).filter((p: { date?: string; status?: string; amount?: number }) => /paid/i.test(p.status || "") && recent(`${p.date}T12:00:00`)).reduce((n: number, p: { amount?: number }) => n + (p.amount || 0), 0);
         const parts = [`won ${wins} job${wins === 1 ? "" : "s"}`, `sent ${bidsSent} bid${bidsSent === 1 ? "" : "s"}`, `finished ${finished} job${finished === 1 ? "" : "s"}`, `sent paperwork for ${papers}`, paid ? `HPD paid you $${Math.round(paid).toLocaleString("en-US")}` : "no payment from HPD yet"];
         const said = `${day1 ? "Today" : "This week"} you ${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}.`;
+        if (day1) {
+          // 🌆 The evening wrap (owner, 5 Nov: "no repetitive"): the same boxes as the day so far. What's still open of
+          // what it told you, and what's coming up; said once, and the 6 PM note doesn't say it again.
+          const r = recapNow();
+          const still = r.reminded.filter((x) => !x.done).map((x) => x.text);
+          noteSaid(nyToday(), `wrap:${nyToday()}`, "the day's wrap");
+          const more = [still.length ? `Still open: ${still.join("; ")}.` : r.reminded.length ? "Everything I reminded you of is done." : "", r.later.length ? `Coming up: ${r.later.map((x) => x.replace(/^\S+\s/, "")).join("; ")}.` : ""].filter(Boolean).join(" ");
+          if (multiRef.current) chainRecapRef.current = r;
+          answer(`${said}${more ? ` ${more}` : ""}`);
+          if (!multiRef.current) setAgent((a) => (a ? { ...a, recap: r } : a));
+          return;
+        }
         if (!cmd.friday) { answer(said); return; }
         // 📊 Friday check-in: what went well, what to do better, one goal for next week.
         const overdue = boardUrgent.filter((r) => r.dueAt && hoursLeft(r, Date.now()) < 0).length;
@@ -8284,9 +8383,26 @@ export default function FieldCommandClient() {
           {/* Short (3 Nov): the first 2 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
           <ul>{newItems.slice(0, 2).map((x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return <li key={x}>{one.length > 90 ? `${one.slice(0, 88)}…` : one}</li>; })}</ul>
           {newItems.length > 2 ? <small className="fc-newupdate-more-n" data-hpd-smoke="fc-newupdate-more-n">…and {newItems.length - 2} more: tap All changes</small> : null}
+          {planAsk && plan ? (
+            <div className="fc-plan-ask" data-hpd-smoke="fc-plan-ask">
+              <b>📋 Next on the plan</b>
+              <span className="fc-plan-ask-items">{plan.items.map((x, i) => <span key={x.id}>{i + 1}. {x.icon} {x.title}</span>)}</span>
+              <button type="button" className="fc-plan-doall" data-hpd-smoke="fc-plan-doall" onClick={() => { unlockChime(); void sendPlanAll(); seenNewItems(); }}>✅ Do all</button>
+            </div>
+          ) : null}
           <div>
             <button type="button" data-hpd-smoke="fc-newupdate-ok" onClick={seenNewItems}>Got it</button>
             <button type="button" data-hpd-smoke="fc-newupdate-more" onClick={() => { seenNewItems(); setWhatsNewOpen(true); }}>All changes</button>
+          </div>
+        </div>
+      ) : null}
+      {planAsk && plan && !newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen && !agent && planLater !== `${plan.id}|${nyToday()}` && !(typeof navigator !== "undefined" && navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-plan") !== "1"; } catch { return true; } })()) ? (
+        <div className="fc-newupdate fc-plan-card" role="dialog" aria-label="Next on the plan" data-hpd-smoke="fc-plan-card">
+          <strong>📋 Next on the plan</strong>
+          <ol>{plan.items.map((x) => <li key={x.id}><b>{x.icon} {x.title}</b> <span>{x.why}</span></li>)}</ol>
+          <div>
+            <button type="button" className="fc-plan-doall" data-hpd-smoke="fc-plan-doall" onClick={() => { unlockChime(); void sendPlanAll(); }}>✅ Do all</button>
+            <button type="button" data-hpd-smoke="fc-plan-later" onClick={() => planLaterToday(plan)}>Later</button>
           </div>
         </div>
       ) : null}
@@ -8310,6 +8426,15 @@ export default function FieldCommandClient() {
               <small>{autoUpgrade ? "Claude builds the next idea by itself when you have no requests open (up to 3 a day). Tap to turn off." : "Tap to turn on: Claude builds the next idea by itself when nothing else is open."}</small>
             </button>
             <p className="fc-follow-note" data-hpd-smoke="fc-whatsnew-version">This version: {versionLabel() || `v${appVersion}`}{BUILT_COMMIT ? ` (${BUILT_COMMIT})` : ""}. Every version is kept.</p>
+            {plan ? (
+              <section className="fc-ideas fc-plan-box" data-hpd-smoke="fc-plan-box">
+                <h4>📋 Next on the plan</h4>
+                <p className="fc-follow-note">{plan.title}. One tap and Claude does them all, in order, then asks you about the next ones.</p>
+                <ol className="fc-idea-list">{plan.items.map((x) => <li key={x.id} className="fc-idea"><b>{x.icon} {x.title}</b><span>{x.why}</span></li>)}</ol>
+                {planSent === plan.id ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-sent" role="status">✅ Sent. Claude is doing them in order.</p> : <button type="button" className="fc-plan-doall" data-hpd-smoke="fc-plan-doall" onClick={() => void sendPlanAll()}>✅ Do all ({plan.items.length})</button>}
+              </section>
+            ) : null}
+            {planNote ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-note" role="status">{planNote}</p> : null}
             <section className="fc-ideas" data-hpd-smoke="fc-ideas">
               <h4>💡 Ideas from Claude</h4>
               <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
@@ -8975,7 +9100,7 @@ export default function FieldCommandClient() {
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
         // 🌆 End of day (owner idea, 3 Nov): after 6 PM, once a day, a few lines on what got done and what is waiting.
-        if (nowMin >= 18 * 60 && !nudgeSeen.includes(`day|${today}`)) {
+        if (nowMin >= 18 * 60 && !nudgeSeen.includes(`day|${today}`) && !wasSaid(nyToday(), `wrap:${nyToday()}`)) {
           const sum = daySummary(jobs, { id: jobId, address: jobAddress });
           const bits = [
             sum.counts.visited ? `${sum.counts.visited} visited` : "",
@@ -9226,6 +9351,16 @@ export default function FieldCommandClient() {
                 <section data-hpd-smoke="fc-recap-later"><b>⏭ Coming up</b>{agent.recap.later.length ? <ul>{agent.recap.later.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing booked ahead</small>}</section>
               </div>
             ) : null}
+            {agent.plan ? (
+              <div className="fc-weekplan" data-hpd-smoke="fc-weekplan">
+                {agent.plan.map((d) => (
+                  <section key={d.day} className={d.items.length ? "has" : ""} data-hpd-smoke="fc-weekplan-day">
+                    <b>{d.label}</b>
+                    {d.items.length ? <ul>{d.items.map((x, k) => <li key={k} className={x.late ? "is-late" : x.flex ? "is-flex" : ""}>{x.icon} {x.text}{x.late ? " · late" : ""}</li>)}</ul> : <small>Free</small>}
+                  </section>
+                ))}
+              </div>
+            ) : null}
             {agent.shop?.length ? (() => {
               const key = `hpd-shop-${nyToday()}`;
               let ticked: string[] = [];
@@ -9282,7 +9417,7 @@ export default function FieldCommandClient() {
           <b>🌆 Wrap up the day</b>
           <span>One tap: how today went, tomorrow&apos;s weather and parking, and the bids coming up.</span>
           <div>
-            <button type="button" className="is-yes" data-hpd-smoke="fc-evening-go" onClick={() => { doneEvening(); unlockChime(); agentRef.current("how did I do today and what's the weather tomorrow and is alternate side on tomorrow and read me the new bids"); }}>🌆 How did today go?</button>
+            <button type="button" className="is-yes" data-hpd-smoke="fc-evening-go" onClick={() => { doneEvening(); unlockChime(); agentRef.current("wrap up my day and what's the weather tomorrow and is alternate side on tomorrow and read me the new bids"); }}>🌆 How did today go?</button>
             <button type="button" data-hpd-smoke="fc-evening-no" onClick={doneEvening}>Not now</button>
           </div>
         </div>

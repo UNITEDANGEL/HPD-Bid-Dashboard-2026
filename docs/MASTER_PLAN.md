@@ -44,14 +44,31 @@ The plan, one by one (✅ = live):
 7. ✅ **More real talk, part 3: shorter out loud.** A long answer (300+ characters, 4+ sentences) is said as its first
    two sentences and "The rest is on the screen."; the screen keeps everything. (Still to do: warmer short words,
    waiting while you talk.)
-8. ☐ **Future work planner**: "plan my week" puts the open work on days (bids by due date, appointments, paperwork,
-   notices by deadline) and the morning brief reads only today's part.
-9. ☐ **Evening wrap**: the 🌆 wrap uses the same recap (done / still open / tomorrow), so nothing is said twice.
+8. ✅ **Future work planner** (lib/week-plan.ts): "plan my week" / "what's coming up this week" puts the open work on
+   the next 7 days: bids on their due day, appointments on theirs, notices on their deadline (a late one goes on
+   today, in red), close-out paperwork fills the weekdays with room (3 a day, never the weekend). Out loud: today and
+   tomorrow only; the rest is on the screen (fc-weekplan). The morning brief still talks about today only.
+9. ✅ **Evening wrap**: "wrap up my day" and the 🌆 card use the same three boxes (✅ done, 🔔 still open, ⏭ coming
+   up), then tomorrow's weather, parking and new bids. Once wrapped, the 6 PM "🌆 Today" chat note doesn't say it again.
+10. ✅ **One greeting across phones**: what was said today goes to the status server as SAID-TODAY (one small write a
+   few seconds after something is said; job numbers and our own short words only, never a tenant's name or phone).
+   The other phone reads it with the requests it already loads: it says "Hi again", not the morning brief again.
+11. ✅ **✅ Do all, from the app** (owner, 5 Nov night: "auto do all. Ask me in the app to say do all. Can we do that?
+   I want you to stick to the plan."): the next plan items are in public/data/upgrade-ideas.json "plan". The map
+   shows a card "📋 Next on the plan" with them (and the 🆕 update card has them too); ✅ Do all, or saying "do all",
+   sends ONE request "(plan) Do all, in order: 1. … 2. … 3. …". Claude builds them in that order, then puts the next
+   plan items in the card and the app asks again. Saying "do all" twice doesn't send it twice. "Later" hides the card
+   until tomorrow. Also on the requests screen (📋 Next on the plan, above 💡 Ideas). With 🔁 Keep upgrading ON,
+   Claude takes the plan items first, in order, before other ideas.
+12. ☐ **😴 Snooze a reminder**: "not today" or a long press on a 🔔 I told you item: it leaves today's list and comes
+   back in tomorrow's morning brief.
+13. ☐ **📋 One dashboard card**: the 📋 Today sheet and the chat's day so far become one card, the same three boxes
+   everywhere.
+14. ☐ **🗣 Warmer, shorter talk**: short friendly words out loud, and it waits while you're still talking instead of
+   cutting you off.
 
-Recommendations (Claude):
-- Keep "said once" on the status server too (one small write a day), so the iPhone and the laptop don't both greet you.
-- Let a long press on 🔔 I told you items mark "not today" (snooze to tomorrow's brief).
-- The 📋 Today sheet at the top and the chat recap should become one dashboard card: same three boxes.
+Recommendations (Claude): the first one is done (10); the other two are now plan items 12 and 13, and they are the
+"📋 Next on the plan" card in the app with 14.
 
 ---
 

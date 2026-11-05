@@ -3,6 +3,16 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
+      "title": "Do all, from the app",
+      "items": [
+        "✅ \"📋 Next on the plan\" shows on the map with the next upgrades from the plan. One tap on ✅ Do all (or say \"do all\") and Claude builds them in order, then asks you about the next ones.",
+        "🗓 Say \"plan my week\": your open work on the next 7 days. Bids on their due day, appointments, notices on their deadline (late ones today), close-outs where there's room.",
+        "🌆 The evening wrap shows the same boxes as the day so far: done, still open, coming up. Said once.",
+        "🔁 One greeting across your phones: if the iPhone already said good morning, the laptop says \"Hi again\"."
+      ]
+    },
+    {
+      "date": "Nov 5, 2026",
       "title": "Says it once",
       "items": [
         "🗣 The morning hello is said once a day. Tap the 🤖 again later and it says \"Hi again\" with what you got done, what's still open from what it told you, and the next thing. No repeats, and no \"99 jobs to do\".",

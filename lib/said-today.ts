@@ -18,7 +18,11 @@ export function readDayLog(day: string, store: Store | null = ls()): DayLog {
   } catch { /* private mode */ }
   return { day, briefAt: 0, said: [] };
 }
-const write = (log: DayLog, store: Store | null) => { try { store?.setItem(KEY, JSON.stringify({ ...log, said: log.said.slice(-40) })); } catch { /* private mode */ } };
+// 🔁 One greeting across phones (owner, 5 Nov): the app sends what was said to the status server (SAID-TODAY), so the
+// iPhone and the laptop don't both greet you. Called after each change.
+let listener: ((log: DayLog) => void) | null = null;
+export const onSaidChange = (fn: ((log: DayLog) => void) | null) => { listener = fn; };
+const write = (log: DayLog, store: Store | null) => { try { store?.setItem(KEY, JSON.stringify({ ...log, said: log.said.slice(-40) })); } catch { /* private mode */ } try { listener?.(log); } catch { /* never breaks talking */ } };
 
 export const briefDone = (day: string, store: Store | null = ls()) => readDayLog(day, store).briefAt > 0;
 export function markBrief(day: string, store: Store | null = ls(), now = Date.now()) { const log = readDayLog(day, store); if (!log.briefAt) { log.briefAt = now; write(log, store); } }
@@ -75,4 +79,34 @@ export function shortSpeech(reply: string) {
   const parts = (one.match(/.+?(?:[.!?]+(?=\s|$)|$)/g) || [one]).map((x) => x.trim()).filter(Boolean);
   if (one.length <= 300 || parts.length <= 3) return one;
   return `${parts.slice(0, 2).join(" ")} The rest is on the screen.`;
+}
+
+// What goes to the status server: keys and our own short words only. A job or a step becomes just its job number
+// (a step can name the tenant; no tenant data on the server).
+const OMO = /\b[A-Z]{2}\d{5}\b/;
+export function forServer(log: DayLog): DayLog {
+  const said: SaidItem[] = [];
+  for (const s of log.said) {
+    const [kind] = s.key.split(":");
+    if (["bids", "notice", "part", "wrap"].includes(kind)) said.push({ key: s.key.slice(0, 60), text: s.text.slice(0, 80), at: s.at });
+    else if (kind === "job" || kind === "first") { const o = OMO.exec(s.key); if (o) said.push({ key: `${kind}:${o[0]}`, text: kind === "job" ? `pick up where you left off on ${o[0]}` : `next: ${o[0]}`, at: s.at }); }
+  }
+  return { day: log.day, briefAt: log.briefAt, said: said.slice(-40) };
+}
+// Another phone's log for the same day joins this one: the earliest brief, every reminder once. true = something new.
+export function mergeDayLog(remote: unknown, store: Store | null = ls()): boolean {
+  const r = remote as Partial<DayLog> | null;
+  if (!r || typeof r.day !== "string") return false;
+  const log = readDayLog(r.day, store);
+  if (log.day !== r.day) return false;
+  let changed = false;
+  const rb = Number(r.briefAt) || 0;
+  if (rb && (!log.briefAt || rb < log.briefAt)) { log.briefAt = rb; changed = true; }
+  for (const s of Array.isArray(r.said) ? r.said : []) {
+    if (!s || typeof s.key !== "string" || log.said.some((x) => x.key === s.key || (s.key.startsWith("first:") && x.key.startsWith("first:") && x.key.includes(s.key.slice(6))))) continue;
+    log.said.push({ key: s.key, text: String(s.text || "").slice(0, 140), at: Number(s.at) || 0 });
+    changed = true;
+  }
+  if (changed) { try { store?.setItem(KEY, JSON.stringify({ ...log, said: log.said.slice(-40) })); } catch { /* private mode */ } }
+  return changed;
 }

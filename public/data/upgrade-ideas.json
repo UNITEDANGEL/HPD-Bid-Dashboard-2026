@@ -1,5 +1,5 @@
 {
-  "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data.",
+  "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
   "updated": "2026-11-05",
   "ideas": [
     {
@@ -373,5 +373,29 @@
       "title": "Did you bring everything?",
       "why": "Before you leave the office, the robot reads the shopping list for today's jobs and asks if the truck has it all."
     }
-  ]
+  ],
+  "plan": {
+    "id": "2026-11-05-evening-b",
+    "title": "From the 5 Nov plan: the helper says it once and gets more real",
+    "items": [
+      {
+        "id": "snooze-reminder",
+        "icon": "😴",
+        "title": "Snooze a reminder",
+        "why": "Say \"not today\" or long-press a 🔔 I told you item: it leaves today's list and comes back in tomorrow's morning brief."
+      },
+      {
+        "id": "one-dashboard-card",
+        "icon": "📋",
+        "title": "One dashboard card",
+        "why": "The 📋 Today sheet and the chat's day so far become one card: ✅ done, 🔔 still open, ⏭ coming up, the same everywhere."
+      },
+      {
+        "id": "warmer-talk",
+        "icon": "🗣",
+        "title": "Warmer, shorter talk",
+        "why": "Short friendly words out loud, and it waits while you're still talking instead of cutting you off."
+      }
+    ]
+  }
 }
