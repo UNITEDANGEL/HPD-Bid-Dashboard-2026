@@ -4402,3 +4402,43 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-shop-row input { width: 22px; height: 22px; accent-color: #22c55e; flex: none; }
 .fc-shop-row input:checked + span { text-decoration: line-through; opacity: 0.6; }
 .fc-shop-row em { color: #94a3b8; font-style: normal; font-weight: 600; }
+
+/* ✅ / 🔥 on the board (owner, 5 Nov: "fixed in green, everything else in red; the fire burning next to a 72-hour notice"). */
+.fc-board-row.is-ok { border-left: 6px solid #16a34a !important; background: linear-gradient(90deg, #f0fdf4, #fff 40%); }
+.fc-board-row.is-todo { border-left: 6px solid #dc2626 !important; background: linear-gradient(90deg, #fef2f2, #fff 40%); }
+.fc-board-okmark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #16a34a; color: #fff; font: 900 14px/1 system-ui; margin-right: 6px; }
+.fc-fire { display: inline-block; margin-right: 6px; font-size: 20px; transform-origin: 50% 90%; animation: fc-fire 0.9s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px rgba(249, 115, 22, .7)); }
+@keyframes fc-fire { 0% { transform: scale(1) rotate(-4deg); } 50% { transform: scale(1.12, 1.2) rotate(3deg); } 100% { transform: scale(.95, 1.05) rotate(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .fc-fire { animation: none; } }
+.fc-board-problem { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #fee2e2; color: #7f1d1d; font: 700 13.5px/1.35 system-ui; }
+.fc-board-heard { margin: 6px 0; padding: 6px 10px; border-radius: 10px; background: #dcfce7; color: #14532d; font: 600 13px/1.35 system-ui; }
+.fc-board-undo { border: 0; background: none; color: #1d4ed8; font: 700 13px system-ui; text-decoration: underline; padding: 0; }
+.fc-notice-actions .fc-board-handled { background: #16a34a !important; color: #fff !important; border-color: #15803d !important; font-weight: 800; }
+.fc-notice-actions .fc-board-handled.is-armed { background: #14532d !important; }
+/* 🗂 Go through my notices (5 Nov). */
+.fc-walk { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--fc-dock-total, 76px) + 8px); z-index: 1600; width: min(460px, calc(100vw - 16px)); max-height: 62vh; overflow-y: auto; box-sizing: border-box; padding: 10px 12px 8px; border-radius: 18px; background: #fff; color: #0f172a; box-shadow: 0 12px 36px rgba(0, 0, 0, .35); border-top: 6px solid #dc2626; animation: fc-arrive-in .35s ease-out; }
+.fc-walk.is-sent { border-top-color: #16a34a; }
+.fc-walk header { display: flex; align-items: center; gap: 6px; }
+.fc-walk header b { flex: 1; font: 900 16px/1.2 system-ui; }
+.fc-walk header button { min-width: 36px; min-height: 32px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; }
+.fc-walk-kind { margin: 6px 0 2px; font: 600 14px/1.35 system-ui; }
+.fc-walk-kind em { font-style: normal; font-weight: 900; color: #b91c1c; }
+.fc-walk.is-sent .fc-walk-kind em { color: #15803d; }
+.fc-walk-ok { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 4px; border-radius: 50%; background: #16a34a; color: #fff; font: 900 12px/1 system-ui; }
+.fc-walk-job { margin: 0 0 6px; font: 600 14px/1.3 system-ui; color: #334155; }
+.fc-walk dl { margin: 0; display: grid; gap: 4px; }
+.fc-walk dl div { display: grid; grid-template-columns: 104px 1fr; gap: 6px; font: 500 13.5px/1.35 system-ui; }
+.fc-walk dt { font-weight: 800; color: #475569; }
+.fc-walk dd { margin: 0; display: grid; gap: 2px; }
+.fc-walk dd .is-good { color: #15803d; font-weight: 700; }
+.fc-walk dd .is-bad { color: #b91c1c; font-weight: 700; }
+.fc-walk-next { margin: 8px 0 6px; padding: 8px 10px; border-radius: 10px; background: #fef9c3; font: 800 14px/1.35 system-ui; }
+.fc-walk-go { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-walk-go > * { min-height: 40px; padding: 0 12px; display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #0f172a; font: 700 13.5px system-ui; text-decoration: none; }
+.fc-walk-go .is-main { background: #2563eb; border-color: #1d4ed8; color: #fff; }
+.fc-walk-go .is-done { background: #16a34a; border-color: #15803d; color: #fff; }
+.fc-walk-go .is-done.is-armed { background: #14532d; }
+.fc-walk footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.fc-walk footer small { flex: 1; text-align: center; color: #64748b; font: 500 12px system-ui; }
+.fc-walk footer button { min-height: 40px; padding: 0 14px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; font: 800 14px system-ui; }
+.fc-walk footer .is-next { background: #0f172a; color: #fff; border-color: #0f172a; }

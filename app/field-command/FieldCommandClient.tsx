@@ -10,6 +10,7 @@ import { findStore, storeLine, type Store } from "../../lib/store-stop";
 import { bumpBest, streakLine, streaks } from "../../lib/streaks";
 import { drivingLink, routeLink, wazeLink } from "../../lib/driving-link";
 import TranslatePanel, { translateLine } from "./TranslatePanel";
+import NoticeWalk, { walkSpeech, type WalkFacts } from "./NoticeWalk";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
 import JobSafeLine from "./JobSafeLine";
@@ -64,7 +65,7 @@ import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
 import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
-import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardStep } from "../../lib/notice-board";
+import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardRow, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
@@ -1277,6 +1278,15 @@ export default function FieldCommandClient() {
   // The 24 / 72-hour board (17 Oct) and the steps ticked by hand on this phone.
   const [boardOpen, setBoardOpen] = useState(false);
   const [boardShow, setBoardShow] = useState<"all" | "ppn" | "docs">("all");
+  // ✅ "Already sent / fixed" (owner, 5 Nov): job -> when, on every phone (HANDLED-<job> on the status server, and this
+  // phone at once). The notice drops to Done.
+  const [handledMap, setHandledMap] = useState<Record<string, string>>({});
+  useEffect(() => { try { setHandledMap((cur) => ({ ...JSON.parse(localStorage.getItem("hpd-handled-v1") || "{}"), ...cur })); } catch { /* private mode */ } }, []);
+  const markHandled = (omo: string, on = true) => {
+    const at = on ? new Date().toISOString() : "";
+    setHandledMap((cur) => { const next = { ...cur, [omo]: at }; try { localStorage.setItem("hpd-handled-v1", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+    void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `HANDLED-${omo}`, patch: { at, how: on ? "owner: already sent / fixed" : "owner: undo" } }) }).catch(() => {});
+  };
   // Morning summary (owner, 17 Oct): the first time the app opens each day, what needs doing today, one tap to each.
   const [summaryToday, setSummaryToday] = useState(false);
   useEffect(() => {
@@ -1559,6 +1569,8 @@ export default function FieldCommandClient() {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
       const all = (await r.json())?.overrides || {};
       setClaudeSeenAt(String((all["CLAUDE-HEARTBEAT"] as { at?: string } | undefined)?.at || ""));
+      { const h = Object.entries(all).filter(([k]) => k.startsWith("HANDLED-")).map(([k, v]) => [k.slice(8), String((v as { at?: string } | undefined)?.at || "")] as [string, string]);
+        if (h.length) setHandledMap((cur) => { const next = { ...cur }; for (const [o, at] of h) if (!cur[o] || (at && at > cur[o]) || (!at && cur[o] && false)) next[o] = at; return next; }); }
       const cn = all["CLAUDE-NOW"] as Partial<ClaudeNow> | undefined;
       const nowValue: ClaudeNow | null = cn?.text ? { at: String(cn.at || ""), text: String(cn.text).slice(0, 120), task: String(cn.task || "").slice(0, 120), state: String(cn.state || ""), log: Array.isArray(cn.log) ? cn.log.slice(-8).map((l) => ({ at: String(l?.at || ""), text: String(l?.text || "").slice(0, 120) })) : [] } : null;
       setClaudeNow(nowValue);
@@ -2691,6 +2703,8 @@ export default function FieldCommandClient() {
   // An alert opens its own job (owner, 21 Oct "next upgrade"): the board scrolled to it, that bid, or the job card.
   const [boardFocus, setBoardFocus] = useState("");
   const [boardAutoReply, setBoardAutoReply] = useState("");
+  // 🗂 Go through my notices (5 Nov): the row keys in order, the one shown.
+  const [noticeWalk, setNoticeWalk] = useState<{ keys: string[]; i: number; waiting: number } | null>(null);
   const [bidsFocus, setBidsFocus] = useState("");
   // Phone alerts by themselves (21 Oct): registered on every open; "Allow alerts" only if the iPhone never allowed them.
   const [allowAlerts, setAllowAlerts] = useState("");
@@ -2933,7 +2947,7 @@ export default function FieldCommandClient() {
   // The latest email with PDFs you sent about each job, in any thread (e.g. you sent EP22713's paperwork in its own thread).
   const pdfsByOmo = new Map<string, string>();
   for (const t of boardThreads || []) for (const m of t.messages) if (m.mine && (m.files?.length || 0) > 0) for (const o of t.omos) if ((t.omos.length <= 2 || m.text.includes(o)) && (!pdfsByOmo.has(o) || (pdfsByOmo.get(o) || "") < m.at)) pdfsByOmo.set(o, m.at);
-  const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }) : [];
+  const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs, handled: handledMap, fixed: Object.fromEntries(toPrint.map((c) => [c.omo, c.savedAt])) }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
   const boardUrgent = urgentRows(boardRows);
   // A notice running out of time rings once (under 6 hours, nothing sent yet).
@@ -2955,7 +2969,11 @@ export default function FieldCommandClient() {
   const docsWaiting = boardOpenRows.filter((r) => r.kind === "docs" && !r.steps.sent.done);
   const waitingOnThem = boardOpenRows.filter((r) => r.next === "confirmed").length;
   // Vendor tracking's list (Due now); rejected paperwork and printing are Procurement's tabs.
-  const vendorTodo = priorities.filter((p) => p.kind === "24h" || p.kind === "72h" || p.kind === "missing");
+  // One truth for "sent" (owner, 5 Nov, ER01720: "I already sent the paperwork, it says overdue 8 days"): a job the board
+  // knows is sent (its AFF INVOICE email in any thread), fixed or marked done is off the to-do list.
+  const boardOmos = new Set(boardRows.map((r) => r.omo));
+  const boardUnsent = new Set(boardRows.filter((r) => r.next && !r.steps.sent.done).map((r) => r.omo));
+  const vendorTodo = priorities.filter((p) => (p.kind === "24h" || p.kind === "72h" || p.kind === "missing") && (!boardOmos.has(p.omo) || boardUnsent.has(p.omo)) && !(handledMap[p.omo] && handledMap[p.omo] > p.askedAt));
   // Rejections tracked to the money (17 Oct): rejected -> fixed -> printed -> emailed -> mailed -> paid in PIP.
   const payTrack = trackPayments({ rejections, corrections: toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }> });
   const heldBy = new Map(payTrack.rows.filter((r) => r.status === "held").map((r) => [r.omo, r.held]));
@@ -3011,6 +3029,9 @@ export default function FieldCommandClient() {
     if (kind && kind !== "all" && kind !== "aep") setNoticesTab(kind);
     setNoticeChooser(true);
     setNoticeMini(true);
+    // Gafur / Priority (owner, 5 Nov: "when I pick Gafur it should auto start her notices board, not a little box"):
+    // her board opens right away; closing it leaves her jobs on the map.
+    if (kind === "aep" || kind === "priority") { setBoardShow(kind === "aep" ? "docs" : "ppn"); setBoardOpen(true); }
   };
   // The nearest 24 / 72-hour deadline (for the timer on the Priority chip).
   const nextDue = vendorTodo.filter((p) => p.dueAt).sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)))[0];
@@ -5504,6 +5525,30 @@ export default function FieldCommandClient() {
       if (p.cards) cardsRef.current = p.cards;
       setAgent({ ...p, heard: m ? m.heard : p.heard, reply, cards: takeCards(reply) });
     }
+    if (cmd.intent === "notice-walk") {
+      // To send first (overdue / nearest deadline first), then the ones HPD answered; sent & waiting are skipped.
+      if (cmd.next && noticeWalk) { setNoticeWalk({ ...noticeWalk, i: Math.min(noticeWalk.i + 1, noticeWalk.keys.length - 1) }); setAgent(null); return; }
+      const order = (r: BoardRow) => (r.problem ? 0 : boardSide(r) === "tosend" ? (r.kind === "ppn" ? 1 : 2) : 3);
+      const todo = boardOpenRows.filter((r) => boardSide(r) === "tosend" || boardSide(r) === "replied" || r.problem)
+        .sort((a, b) => order(a) - order(b) || hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()) || Date.parse(a.noticeAt) - Date.parse(b.noticeAt))
+        .filter((r, i, all) => all.findIndex((x) => x.omo === r.omo) === i); // one card per job
+      const waiting = boardOpenRows.filter((r) => !todo.includes(r)).length;
+      if (!todo.length) { answer(`Nothing to send on your notices. 🎉${waiting ? ` ${waiting} are sent and waiting on HPD.` : ""}`); return; }
+      closeScreens();
+      setNoticeWalk({ keys: todo.map((r) => r.key), i: 0, waiting });
+      setAgent(null);
+      return;
+    }
+    if (cmd.intent === "notice-handled") {
+      // "I already sent ER00272": that job, else the one on the walk / screen, else ask.
+      const shown = noticeWalk ? boardRows.find((r) => r.key === noticeWalk.keys[noticeWalk.i]) : null;
+      const omo = cmd.ref || shown?.omo || (selectedJob && boardOpenRows.some((r) => r.omo === jobId(selectedJob)) ? jobId(selectedJob) : "");
+      const rows = boardOpenRows.filter((r) => r.omo === omo);
+      if (!omo || !rows.length) { answer(omo ? `${omo} has no open notice.` : "Which notice? Say the job number, like \"ER00272 is already sent\"."); return; }
+      markHandled(omo);
+      answer(`✅ ${omo} marked sent / fixed. It's off your notices on every phone (it shows under Done on the board; Undo is there).`);
+      return;
+    }
     if (cmd.intent === "reply-notice") {
       // Which notice: the job named, else the one on screen, else the only one waiting (or the most urgent from Lewis / Gafur).
       const waiting = boardOpenRows.filter((r) => !r.steps.sent.done || boardSide(r) === "replied");
@@ -6045,7 +6090,7 @@ export default function FieldCommandClient() {
       // The bids answer once they're on the map (BidsMode onChat).
       chatReplyRef.current = (reply, cards) => { if (cards) cardsRef.current = cards; answer(reply); };
       goTo("bids", "");
-      setBidsChat(cmd.intent === "bids-show" ? { n: Date.now(), kind: "show", boro: cmd.boro, day: cmd.day } : { n: Date.now(), kind: "next" });
+      setBidsChat(cmd.intent === "bids-show" ? { n: Date.now(), kind: "show", boro: cmd.boro, day: cmd.day } : { n: Date.now(), kind: "next", day: cmd.day });
       return;
     }
     if (cmd.intent === "where-appt") {
@@ -6477,6 +6522,29 @@ export default function FieldCommandClient() {
     answer(parts.length ? `Today: ${parts.join(", ")}.` : "Nothing urgent today.");
   };
   const addressOf = (omo: string) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; };
+  const walkKey = noticeWalk ? noticeWalk.keys[noticeWalk.i] : "";
+  useEffect(() => {
+    if (!walkKey) return;
+    const row = boardRows.find((r) => r.key === walkKey);
+    if (!row) return;
+    const job = findAnyJob(row.omo);
+    const at = job ? jobLatLng(job) : null;
+    if (at && mapRef.current) { followMeRef.current = false; try { mapRef.current.flyTo([at.lat, at.lng], 17, { duration: 2.4, easeLinearity: 0.1 }); } catch { /* map not ready */ } }
+    try { if (row.to) sessionStorage.setItem("hpd-vt-send", JSON.stringify({ omo: row.omo, to: row.to, name: row.who, notice: row.key, subject: `RE: ${row.subject}` })); } catch { /* private mode */ }
+    if (noticeWalk) speak(walkSpeech(row, walkFactsOf(row), noticeWalk.i, noticeWalk.keys.length), 900);
+  }, [walkKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🗂 What the app has on a notice's job (the board's "Found on record"), and the walk card's facts.
+  const findingsFor = (row: BoardRow) => noticeFindings({ omo: row.omo, job: findAnyJob(row.omo) as Record<string, unknown> | null, sent: followRef.current?.sent?.[row.omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[row.omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[row.omo], rejection: rejections.find((r) => r.omo === row.omo) || null, ourFilesAt: (row.steps.sent.how === "email" ? row.steps.sent.at : "") || pdfsByOmo.get(row.omo) || "" });
+  const walkFactsOf = (row: BoardRow): WalkFacts => {
+    const job = findAnyJob(row.omo) || null;
+    const t = job ? tenantInfo(job) : null;
+    const scope = job ? jobScope(job) : "";
+    const work = scope === SCOPE_MISSING ? "" : scope.replace(/\s+/g, " ").trim();
+    const where = t?.commonArea || /\bpublic hall(way)?\b|\bcommon area\b|\bhallway\b/i.test(work) ? "Public hall" : t?.apt ? `Apartment ${t.apt}` : "";
+    let calls: string[] = [];
+    try { calls = (allJobNotes()[row.omo] || []).map((n) => n.text).filter((x) => /^☎️ HPD call/.test(x)); } catch { /* private mode */ }
+    return { address: job ? noZip(jobAddress(job)) : "", where, work: work.length > 260 ? `${work.slice(0, 257)}…` : work, tenant: t ? { name: t.name, phone: t.phone } : null, calls, found: findingsFor(row).lines.map((l) => l.text), outcome: job ? value(job, ["FieldOutcome", "fieldOutcome"]) : "" };
+  };
   // Cards under the chat's answers (2 Nov, part 3): a notice (with Answer), a bid still open, else the job.
   const BORO_WORD: Record<string, string> = { MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" };
   const noZip = (a: string) => a.replace(/,\s*\d{5}$/, "");
@@ -8833,6 +8901,28 @@ export default function FieldCommandClient() {
         );
       })() : null}
       {translateLang ? <TranslatePanel startLang={translateLang} onClose={() => setTranslateLang("")} /> : null}
+      {noticeWalk && !boardOpen ? (() => {
+        const keys = noticeWalk.keys;
+        const row = boardRows.find((r) => r.key === keys[noticeWalk.i]);
+        if (!row) return null;
+        const facts = walkFactsOf(row);
+        const say = () => speak(walkSpeech(row, facts, noticeWalk.i, keys.length), 0);
+        const go = (i: number) => {
+          if (i >= keys.length) { const t = `That's all ${keys.length} notice${keys.length === 1 ? "" : "s"}. 👍${noticeWalk.waiting ? ` ${noticeWalk.waiting} more are sent and waiting on HPD.` : ""} Want to look at your jobs?`; setNoticeWalk(null); setAgent({ heard: "", reply: t }); speak(t, 100); return; }
+          setNoticeWalk({ ...noticeWalk, i });
+        };
+        return (
+          <NoticeWalk key={row.key} row={row} facts={facts} index={noticeWalk.i} total={keys.length} waitingCount={noticeWalk.waiting}
+            paperHref={`/paperwork/?job=${encodeURIComponent(row.omo)}${facts.outcome ? `&outcome=${facts.outcome}` : ""}${row.to ? "&vt=1" : ""}`}
+            fixHref={`/paperwork/?job=${encodeURIComponent(row.omo)}&fix=${encodeURIComponent((row.problem?.at || new Date().toISOString()).slice(0, 10))}${row.problem ? `&reason=${encodeURIComponent(row.problem.text.slice(0, 200))}` : ""}`}
+            onReply={() => { setBoardAutoReply(""); window.setTimeout(() => setBoardAutoReply(row.omo), 0); goTo("board", row.omo); }}
+            onBoard={() => goTo("board", row.omo)}
+            onJob={() => { const j = findAnyJob(row.omo); if (j) { setNoticeWalk(null); openIssueJob(j, true); } }}
+            onThread={() => setThreadView({ ids: [row.threadId], title: `${row.omo}: ${row.subject}` })}
+            onHandled={() => { markHandled(row.omo); window.setTimeout(() => go(noticeWalk.i + 1), 900); }}
+            onNext={() => go(noticeWalk.i + 1)} onPrev={() => go(Math.max(0, noticeWalk.i - 1))} onStop={() => setNoticeWalk(null)} onSpeak={say} />
+        );
+      })() : null}
       {!agent && !selectedJob && !moreOpen && dockEdit < 0 ? (
         <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
           e.preventDefault();
@@ -9146,9 +9236,7 @@ export default function FieldCommandClient() {
                 const c = critical;
                 if (armedTap !== `handled:${c.omo}`) { setArmedTap(`handled:${c.omo}`); return; }
                 setArmedTap("");
-                const at = new Date().toISOString();
-                for (const r of boardRows.filter((x) => x.omo === c.omo && x.next && !x.steps.sent.done)) markBoard(r.key, "sent", true);
-                void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `HANDLED-${c.omo}`, patch: { at, how: "owner tapped I handled it" } }) }).catch(() => {});
+                markHandled(c.omo);
                 setCritical(null);
               }}>{armedTap === `handled:${critical.omo}` ? "✅ Tap again: it's handled (stops the reminders)" : "✓ I handled it"}</button>
             ) : null}
@@ -9184,8 +9272,9 @@ export default function FieldCommandClient() {
           initialShow={boardShow}
           onScan={() => void runScan()}
           scanStatus={scanStatus}
-          scanChanged={scan && threads ? (() => { const before = new Map(buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs }).map((r) => [r.key, r.next])); return boardRows.filter((r) => before.has(r.key) && before.get(r.key) !== r.next).map((r) => ({ omo: r.omo, now: r.next === "confirmed" ? "📤 Sent, waiting on them" : r.next === null ? "✅ Confirmed" : `next: ${r.next}` })); })() : []}
-          findingsOf={(row) => noticeFindings({ omo: row.omo, job: findAnyJob(row.omo) as Record<string, unknown> | null, sent: followRef.current?.sent?.[row.omo] as { sentAt?: string; count?: number } | undefined, hpd: followRef.current?.hpd?.[row.omo] as { closedReason?: string; amount?: number } | undefined, pip: pipMap[row.omo], rejection: rejections.find((r) => r.omo === row.omo) || null, ourFilesAt: (row.steps.sent.how === "email" ? row.steps.sent.at : "") || pdfsByOmo.get(row.omo) || "" })}
+          scanChanged={scan && threads ? (() => { const before = new Map(buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs, handled: handledMap, fixed: Object.fromEntries(toPrint.map((c) => [c.omo, c.savedAt])) }).map((r) => [r.key, r.next])); return boardRows.filter((r) => before.has(r.key) && before.get(r.key) !== r.next).map((r) => ({ omo: r.omo, now: r.next === "confirmed" ? "📤 Sent, waiting on them" : r.next === null ? "✅ Confirmed" : `next: ${r.next}` })); })() : []}
+          findingsOf={findingsFor}
+          onHandled={(omo, on) => markHandled(omo, on)}
           addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}

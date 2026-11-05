@@ -26,6 +26,7 @@ type Props = {
   locked?: boolean; // your HPD emails couldn't be opened (signed out): say so instead of showing zeros
   scanChanged?: { omo: string; now: string }[];     // notices the check just updated
   autoReplyOmo?: string;                            // "answer the notice for …" by voice: open its AI reply right away
+  onHandled?: (omo: string, on: boolean) => void;   // ✅ "Already sent / fixed" (5 Nov), on every phone
 };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
@@ -42,7 +43,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -57,6 +58,7 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
   }, [focusOmo, rows.length]);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
+  const [handledArmed, setHandledArmed] = useState("");
   // When you last looked at each notice (this phone): what came in since is highlighted NEW. Saved a few seconds after
   // the board opens, so the highlight stays while you read.
   const [seen, setSeen] = useState<Record<string, string>>({});
@@ -280,13 +282,19 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
     const late = !row.steps.sent.done && h < 0;
     const hot = !row.steps.sent.done && h < 6;
     const address = addressOf(row.omo);
+    // Green: sent / fixed / done. Red: nothing went yet (or HPD found a problem with it).
+    const ok = !row.next || row.steps.sent.done;
     return (
-      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}`} data-hpd-smoke="fc-board-row" data-omo={row.omo} data-next={row.next || "done"}>
+      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}${ok ? " is-ok" : " is-todo"}`} data-hpd-smoke="fc-board-row" data-omo={row.omo} data-next={row.next || "done"} data-state={ok ? "ok" : "todo"}>
         <div className="fc-board-top">
+          {ok ? <span className="fc-board-okmark" aria-hidden="true">✓</span> : row.kind === "ppn" ? <span className="fc-fire" aria-hidden="true">🔥</span> : null}
           <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (boardSide(row) === "replied" ? `💬 ${(row.who || "They").split(/\s+/)[0]} replied ${day(row.lastTheirsAt)}` : boardSide(row) === "waiting" ? `📤 Sent ${day(new Date(sentTime(row)).toISOString())} · waiting ${Math.max(0, Math.floor((now - sentTime(row)) / 86400000))} d` : row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
           <span className="fc-board-kind">{row.kind === "docs" ? "MISSING DOCS" : `${row.hours}-HOUR`}</span>
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
+        {row.problem && row.next ? <p className="fc-board-problem" data-hpd-smoke="fc-board-problem">⚠️ {(row.who || "HPD").split(/\s+/)[0]} wrote {day(row.problem.at)}: “{row.problem.text}” Fix it with the same dates as the original and send it again, or tap ✅ if you already did.</p> : null}
+        {row.answered && !row.problem ? <p className="fc-board-heard" data-hpd-smoke="fc-board-heard">✅ {(row.who || "HPD").split(/\s+/)[0]} answered {day(row.answered.at)}: “{row.answered.text.slice(0, 120)}”</p> : null}
+        {row.handledAt && !row.next ? <p className="fc-board-heard" data-hpd-smoke="fc-board-handled-note">✅ You marked it sent / fixed {day(row.handledAt)}{onHandled ? <> · <button type="button" className="fc-board-undo" data-hpd-smoke="fc-board-handled-undo" onClick={() => onHandled(row.omo, false)}>Undo</button></> : null}</p> : null}
         {convo(row)}
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
         {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
@@ -340,6 +348,7 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
           </div>
         ) : row.next === "confirmed" ? <p className="fc-board-todo">Waiting for them to confirm. Tap ✅ when they do.</p> : null}
         <div className="fc-notice-actions">
+          {row.next && onHandled ? <button type="button" className={`fc-board-handled${handledArmed === row.key ? " is-armed" : ""}`} data-hpd-smoke="fc-board-handled" onClick={() => { if (handledArmed !== row.key) { setHandledArmed(row.key); return; } setHandledArmed(""); onHandled(row.omo, true); }}>{handledArmed === row.key ? "✅ Tap again: it's sent / fixed" : "✅ Already sent / fixed"}</button> : null}
           {row.next ? <button type="button" data-hpd-smoke="fc-board-reply" onClick={() => { const d = draftReply(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "" }); void writeWithAi(row, ""); }}>✨ Reply (AI)</button> : null}
           <button type="button" onClick={() => onOpenThread(row.threadId, `${row.omo}: ${row.subject}`)}>💬 Their email</button>
           {row.next === "sent" ? <a className="fc-board-send" data-hpd-smoke="fc-board-send" href={paperHref(row, "")} onClick={() => rememberSend(row)}>📤 Send the paperwork</a> : null}
@@ -395,7 +404,7 @@ export default function NoticeBoard({ autoReplyOmo = "", locked = false, focusOm
         {moved ? (
           <p className="fc-board-moved" role="status" data-hpd-smoke="fc-board-moved">
             ✓ Sent to {moved.to}. <b>{moved.omo}</b> moved to 📤 Sent · waiting.{moved.next ? <> Next: <b data-hpd-smoke="fc-board-next">{moved.next}</b>, its reply is being written.</> : null}
-            {moved.next ? <button type="button" data-hpd-smoke="fc-board-come-back" onClick={() => { const o = moved.omo; setReply(null); setSide("waiting"); setMoved(null); scrollToRow(o); }}>↩ Back to {moved.omo}</button>
+            {moved.next ? <button type="button" data-hpd-smoke="fc-board-come-back" onClick={() => { const o = moved.omo; const r = rows.find((x) => x.omo === o && x.next); const sd = r ? boardSide(r) : "waiting"; setReply(null); setSide(sd === "done" ? "waiting" : sd); setMoved(null); scrollToRow(o); }}>↩ Back to {moved.omo}</button>
               : side !== "waiting" ? <button type="button" data-hpd-smoke="fc-board-moved-go" onClick={() => { setSide("waiting"); setMoved(null); }}>See it</button> : null}
           </p>
         ) : null}

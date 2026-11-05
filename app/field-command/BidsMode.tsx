@@ -100,7 +100,11 @@ const WALK_KEY = "hpd-bid-walk";
 const BORO_NAME: Record<string, string> = { MN: "Manhattan", BX: "Bronx", BK: "Brooklyn", QN: "Queens", SI: "Staten Island" };
 
 // What the chat on the map asks the bids to do (2 Nov): show a borough / day on the map, or go to the next bid.
-export type BidsChat = { n: number; kind: "show"; boro: string; day: "all" | "0" | "1" } | { n: number; kind: "next" };
+export type BidsChat = { n: number; kind: "show"; boro: string; day: "all" | "0" | "1" } | { n: number; kind: "next"; day?: "0" | "1" };
+// The walk to a bid, slowed down (owner, 5 Nov: "slow down when you're zooming out to the building ... let me look at the
+// image of the building, then open the work description page and scroll it slowly left and right, read the whole
+// description"): the city, then the building, its photo, then HPD's page read along. Faster under a test robot.
+const walkPace = () => { try { return navigator.webdriver ? 0.35 : 1; } catch { return 1; } };
 
 export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused, chat = null, onChat }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void; chat?: BidsChat | null; onChat?: (reply: string, cards?: ChatCard[]) => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
@@ -200,12 +204,23 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     setSelected(null);
     setListSize("peek");
     setArriving({ omo: b.omo, boro: BORO_NAME[String(b.borough || "").toUpperCase()] || b.borough || "", address: b.address || "", what: [jobSummary(b.description || "").lines.map(lineText)[0], dueLabel(b)].filter(Boolean).join(" · ") });
-    try { if (map.flyTo) map.flyTo([b.lat, b.lng], 12, { duration: 0.9 }); else map.setView?.([b.lat, b.lng], 12); } catch { /* map not ready */ }
+    const k = walkPace();
+    try { if (map.flyTo) map.flyTo([b.lat, b.lng], 12, { duration: 2.2 * k, easeLinearity: 0.15 }); else map.setView?.([b.lat, b.lng], 12); } catch { /* map not ready */ }
     arriveTimer.current = window.setTimeout(() => {
-      try { if (map.flyTo) map.flyTo([b.lat, b.lng], 17, { duration: 1.1 }); else map.setView?.([b.lat, b.lng], 17); } catch { /* map not ready */ }
-      arriveTimer.current = window.setTimeout(open, 1400);
-    }, 1200);
+      try { if (map.flyTo) map.flyTo([b.lat, b.lng], 17, { duration: 3 * k, easeLinearity: 0.15 }); else map.setView?.([b.lat, b.lng], 17); } catch { /* map not ready */ }
+      // At the building: the card opens on its photo first, a moment to look, then HPD's work description.
+      arriveTimer.current = window.setTimeout(() => {
+        setArriving(null);
+        openBidRef.current(b, false);
+        setLooking(b.omo);
+        then?.();
+        window.setTimeout(() => document.querySelector(".fc-bid-sheet .fc-bid-body")?.scrollTo?.({ top: 0 }), 50);
+        arriveTimer.current = window.setTimeout(() => { setLooking(""); setShowDesc((n) => n + 1); }, 3000 * k);
+      }, 3300 * k);
+    }, 2600 * k);
   }
+  // 🏢 The few seconds the building's photo is shown before HPD's page opens.
+  const [looking, setLooking] = useState("");
   useEffect(() => () => window.clearTimeout(arriveTimer.current), []);
   const walkRef = useRef(walk);
   walkRef.current = walk;
@@ -682,16 +697,31 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     onFocused?.();
   }, [open, focusOmo, bids]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function nextToBid(after: string) {
+  // The day being worked (owner, 5 Nov: "if today's bids are done, stop; don't take me to tomorrow's bid unless I
+  // ask"): the day picked on the list, else the day of the bid open (one of tomorrow's tapped), else today.
+  // Nothing at all was due today: the next day with bids is the day.
+  function workDay(omo = "") {
+    if (dayPick !== "all") return dayKeys[Number(dayPick)];
+    const b = omo ? (bids || []).find((x) => x.omo === omo) : null;
+    if (b) return b.bidDue > dayKeys[0] ? b.bidDue : dayKeys[0];
+    const all = bids || [];
+    if (all.some((x) => x.bidDue === dayKeys[0])) return dayKeys[0];
+    return all.map((x) => x.bidDue).filter((d) => d > dayKeys[0]).sort()[0] || dayKeys[0];
+  }
+  const leftLater = (day: string) => (bids || []).filter((b) => b.bidDue > day && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || "")).length;
+  function nextToBid(after: string, anyDay = false) {
+    const day = workDay(after);
     return [...shownBids]
+      .filter((b) => anyDay || b.bidDue === day)
       .filter((b) => b.omo !== after && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || ""))
       .sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime)).localeCompare(b.bidDue + minutesOf(b.bidDueTime)))[0];
   }
   // "Next ▶" on the bid card (owner, 2 Nov: "when I go through each bid, go to the next bid"): the bids still to price
   // or send, by deadline; the one after this, or back to the first one left.
   function nextInLine(omo: string) {
+    const day = workDay(omo);
     const line = [...shownBids]
-      .filter((b) => b.omo === omo || (!noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || "")))
+      .filter((b) => b.omo === omo || (b.bidDue === day && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || "")))
       .sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime) + a.omo).localeCompare(b.bidDue + minutesOf(b.bidDueTime) + b.omo));
     const at = line.findIndex((b) => b.omo === omo);
     const left = line.filter((b) => b.omo !== omo);
@@ -740,8 +770,23 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       return;
     }
     const reply2 = (t: string) => onChat?.(t, []);
+    if (chat.day && dayPick !== chat.day) {
+      // "Next bid tomorrow": that day's bids on the list, then the first of them.
+      setDayPick(chat.day);
+      const day = dayKeys[Number(chat.day)];
+      const first = [...bids].filter((b) => b.bidDue === day && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || "")).sort(byDue)[0];
+      if (!first) { reply(`No bids left to price or send ${chat.day === "1" ? "tomorrow" : "today"}. 👍`); return; }
+      goToBid(first, undefined, true);
+      reply2(`${chat.day === "1" ? "Tomorrow's" : "Today's"} bids: first ${first.omo}, ${first.address}. Due ${dueLabel(first)}.`);
+      return;
+    }
     const { next, left } = nextInLine(selected?.omo || "");
-    if (!next) { reply(`No bids left to price or send${boroPick ? ` in ${BORO_NAME[boroPick] || boroPick}` : ""}. 👍`); return; }
+    if (!next) {
+      const day = workDay(selected?.omo || "");
+      const later = leftLater(day);
+      reply(`${day === dayKeys[0] ? "That's all of today's bids" : "That's all the bids for that day"}${boroPick ? ` in ${BORO_NAME[boroPick] || boroPick}` : ""}. 👍${later ? ` ${later} more are due later: say "tomorrow's bids" when you want them.` : ""} Time for your jobs?`);
+      return;
+    }
     goToBid(next, undefined, true);
     // The bid opens by itself: no card for it.
     const what = jobSummary(next.description || "").lines.map(lineText)[0];
@@ -807,6 +852,17 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (!voiceSave || draftValue !== voiceSave) return;
     setVoiceSave(0);
     window.setTimeout(() => (document.querySelector('[data-hpd-smoke="fc-bid-save"]') as HTMLButtonElement | null)?.click(), 50);
+    // A price far above what wins waits for your second tap: that button comes up above the helper's answer (5 Nov:
+    // the answer box covered "Tap again to save").
+    window.setTimeout(() => {
+      const btn = document.querySelector('[data-hpd-smoke="fc-bid-save"]') as HTMLElement | null;
+      const agent = document.querySelector('[data-hpd-smoke="fc-agent"]') as HTMLElement | null;
+      if (!btn || !agent) return;
+      let box: HTMLElement | null = btn.parentElement;
+      while (box && !(box.scrollHeight > box.clientHeight + 4 && /auto|scroll/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+      const over = btn.getBoundingClientRect().bottom - (agent.getBoundingClientRect().top - 12);
+      if (box && over > 0) { box.style.paddingBottom = `${Math.ceil(agent.getBoundingClientRect().height + 24)}px`; box.scrollBy({ top: over }); }
+    }, 700);
   }, [voiceSave, draftValue]);
 
   async function savePrice() {
@@ -1077,7 +1133,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     goToBid(bid, () => { if (row && row.state === "not-priced" && row.best) setDraft(String(row.best)); });
   }
   function startSitting() {
-    const omos = checklist.todo.map((r) => r.omo);
+    // Today's only, when there are some (5 Nov: "we went through all the bids, then we should just stop").
+    const todays = checklist.todo.filter((r) => r.day === "today");
+    const omos = (todays.length ? todays : checklist.todo).map((r) => r.omo);
     if (!omos.length) return;
     setSitting({ omos, at: 0, skipped: [], done: false });
     setChecklistOpen(false);
@@ -1164,13 +1222,13 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       {sentNote && !selected ? (
         <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
           <b>{sentNote.noBid ? `🚫 ${sentNote.omo}: NO BID faxed to HPD` : `📠 ${sentNote.omo} sent to HPD · ${money2(sentNote.price)}`}</b>
-          <span>{sentNote.next ? `Next bid: ${sentNote.next}. The fax is being tracked.` : "All bids done. The fax is being tracked: tap the bid to see when HPD receives it."}</span>
+          <span data-hpd-smoke="fc-bid-day-done">{sentNote.next ? `Next bid: ${sentNote.next}. The fax is being tracked.` : `That's all of ${workDay(sentNote.omo) === dayKeys[0] ? "today's" : "that day's"} bids ✓. The fax is being tracked.${leftLater(workDay(sentNote.omo)) ? ` ${leftLater(workDay(sentNote.omo))} more are due later: say "tomorrow's bids" when you want them.` : ""}`}</span>
           {sentNote.next ? <button type="button" data-hpd-smoke="fc-bid-come-back" onClick={comeBack}>↩ Come back to {sentNote.omo}</button> : null}
         </div>
       ) : null}
       {welcome && !selected && !arriving && !(sitting && !sitting.done) && bids && tab === "open" ? (() => {
         const todo = checklist.todo;
-        const first = todo.length ? (bids || []).find((b) => b.omo === todo[0].omo) : nextToBid("");
+        const first = todo.length ? (bids || []).find((b) => b.omo === todo[0].omo) : nextToBid("", true);
         const todayN = todo.filter((r) => r.day === "today").length;
         const what = first ? [first.omo, BORO_NAME[String(first.borough || "").toUpperCase()] || first.borough, jobSummary(first.description || "").lines.map(lineText)[0], dueLabel(first)].filter(Boolean).join(" · ") : "";
         return (
@@ -1180,10 +1238,10 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             {first ? <em data-hpd-smoke="fc-bids-welcome-next">Next: {what}</em> : null}
             <div>
               {first ? <button type="button" className="is-go" data-hpd-smoke="fc-bids-welcome-start" onClick={() => { setWelcome(false); if (todo.length) openFromChecklist(first.omo); else goToBid(first); }}>▶ Start with the next one</button> : null}
-              {todo.length > 1 ? <button type="button" data-hpd-smoke="fc-bids-welcome-all" onClick={() => { setWelcome(false); startSitting(); }}>🎯 Bid all {todo.length} in a row</button> : null}
+              {(todayN || todo.length) > 1 ? <button type="button" data-hpd-smoke="fc-bids-welcome-all" onClick={() => { setWelcome(false); startSitting(); }}>🎯 Bid all {todayN || todo.length}{todayN ? " of today's" : ""} in a row</button> : null}
               <button type="button" className="is-later" data-hpd-smoke="fc-bids-welcome-later" onClick={() => setWelcome(false)}>Later</button>
             </div>
-            {first && walk ? <small>Each one: the map flies to the building, then HPD&apos;s work description opens. After you send, it goes to the next one by itself.</small> : null}
+            {first && walk ? <small>Each one: the map flies slowly to the building, shows its photo, then reads HPD&apos;s work description with you. After you send, it goes to the next one of {todayN ? "today's" : "the day's"} by itself and stops when they&apos;re done.</small> : null}
           </div>
         );
       })() : null}
@@ -1237,6 +1295,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           })() : null}
           <div className="fc-bid-body">
             <h3>{selected.address}{selected.borough ? ` · ${selected.borough}` : ""}</h3>
+            {looking === selected.omo ? <p className="fc-bid-looking" role="status" data-hpd-smoke="fc-bid-looking">🏢 The building · opening the work description…</p> : null}
             {/* The building, like the awarded job card: your photo or Google Street View, 360° and camera. */}
             <BuildingHero key={selected.omo} id={`BID-${selected.omo}`} address={selected.address} borough={selected.borough || ""} point={Number.isFinite(selected.lat) && Number.isFinite(selected.lng) ? { lat: selected.lat as number, lng: selected.lng as number } : null} />
             <nav className="fc-bid-jump" aria-label="Jump to" data-hpd-smoke="fc-bid-jump">
@@ -1312,7 +1371,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </div>
             ) : null}
             <section>
-              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} onPrice={sentLocked ? undefined : goToPrice} /> : null}
+              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} readAlong={walk} onPrice={sentLocked ? undefined : goToPrice} /> : null}
               <button type="button" className="fc-bid-walk" data-hpd-smoke="fc-bid-walk" aria-pressed={walk} onClick={toggleWalk}>{walk ? "🗺 Opening a bid: map first, then HPD's page ✓" : "🗺 Opening a bid: map first, then HPD's page (off)"}</button>
               <div className="fc-bid-desc-head">
                 <button type="button" className="fc-bid-text-toggle" data-hpd-smoke="fc-bid-text-toggle" aria-expanded={showText} onClick={() => setShowText((v) => !v)}>{showText ? "▾ HPD's text" : "▸ Show HPD's text"}</button>

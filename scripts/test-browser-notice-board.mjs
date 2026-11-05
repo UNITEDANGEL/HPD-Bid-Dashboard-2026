@@ -97,7 +97,8 @@ United Angel Construction Corp` } });
   await board.locator('[data-hpd-smoke="fc-board-show-all"]').click();
 
   // The ready reply: says the OMO, first tap only arms.
-  const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').first();
+  // One that only needs a reply (not one HPD sent back with a problem: that stays to send until it goes again).
+  const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').filter({ hasNot: page.locator('[data-hpd-smoke="fc-board-problem"]') }).first();
   const omo = await row.locator(".fc-board-job b").innerText();
   await row.locator('[data-hpd-smoke="fc-board-reply"]').click();
   const box = row.locator('[data-hpd-smoke="fc-board-reply-box"]');

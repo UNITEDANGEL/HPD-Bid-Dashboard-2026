@@ -74,3 +74,8 @@
 .paperwork-optional { border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 12px; padding: 8px 10px; }
 .paperwork-optional summary { cursor: pointer; font-weight: 800; font-size: 14px; }
 .paperwork-optional[open] summary { margin-bottom: 8px; }
+
+/* 🔒 the original dates on a correction (5 Nov). */
+.paperwork-correction-sent.is-locked { border: 2px solid #16a34a; background: #f0fdf4; border-radius: 12px; padding: 8px 10px; }
+.paperwork-correction-sent p { margin: 0 0 6px; }
+input:disabled[type="date"] { background: #f1f5f9; color: #166534; font-weight: 700; }

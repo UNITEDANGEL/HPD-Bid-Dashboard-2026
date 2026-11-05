@@ -3,11 +3,25 @@
   "updated": "2026-11-05",
   "ideas": [
     {
-      "id": "hpd-call-history",
+      "id": "notice-walk-auto",
       "icon": "🗂",
       "kind": "new",
-      "title": "HPD calls on the notice",
-      "why": "On a notice, the last things HPD said on the phone show next to it, so you never repeat yourself."
+      "title": "Notices every morning",
+      "why": "At 8 AM the helper starts \"go through my notices\" by itself when something is still to send."
+    },
+    {
+      "id": "bid-read-aloud",
+      "icon": "🔊",
+      "kind": "new",
+      "title": "Read the bid out loud",
+      "why": "While the work description pans, the helper reads it to you in plain words."
+    },
+    {
+      "id": "hpd-problem-alert",
+      "icon": "⚠️",
+      "kind": "new",
+      "title": "Alert when HPD finds a problem",
+      "why": "A phone alert the minute HPD writes \"blank\" or \"errors\" about paperwork you sent."
     },
     {
       "id": "tenant-lang-remember",

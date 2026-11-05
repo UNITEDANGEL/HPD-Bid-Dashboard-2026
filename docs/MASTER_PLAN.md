@@ -10,6 +10,61 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 5 Nov 2026 (afternoon): the flow plan for notices, bids and the phone (owner: "add all to md plan and follow")
+
+The owner's words, in order:
+1. "AI should go through all the notices, find related emails, and see if the affidavit and invoice has been sent."
+2. "Can we have AI just work on the notices": every notice in detail. Take me to the notice, say what they're asking,
+   what we should do now, the work description (public hall / apartment), the tenant's name and phone.
+3. "Make the correction easily": go back to the original we sent. The work started / work completed / refused access
+   dates stay the same as the original. Only the mistake gets fixed.
+4. Bids: "if today's bids are done, stop; don't take me to tomorrow's bids unless I ask" (16 bids, went through all of
+   them, it should just stop: "maybe look at the other jobs").
+5. Bids: slow down. The map zooms out slowly, then slowly to the building; look at the building's photo; then the work
+   description page opens and scrolls slowly left and right, reading the whole description.
+6. "ER00272 I already answered, it's still on the board": it should know from the email I already sent.
+7. "A button that says I already sent it / I already fixed it" on the notices.
+8. "ER01720 I already sent the paperwork, it says overdue 8 days 20 hours. That should not be happening."
+9. Fixed / sent in green, everything else in red. Keep the fire on the notices; make the priority things a little
+   interactive (the fire burning next to a 72-hour notice).
+10. "When I pick Gafur it should open her notices board right away", not a little box I then open.
+11. "I need a better interaction with Claude from my phone. Everything I ask here should be doable from my phone."
+
+The plan (this order; each step tested like the owner uses it, then pushed):
+- [x] A. Bids stay on today's (step 4): next bid / after a send / NO BID / "Bid all in a row" only walk the day being
+      worked (today, or the day picked / opened). At the end: "That's all of today's bids. N more later: say
+      'tomorrow's bids'. Time for your jobs?" "Tomorrow's bids" / "next bid tomorrow" starts tomorrow's on purpose.
+- [x] B. The slow walk (step 5): city 2.2 s, building 3 s, the bid card on its building photo 3 s ("🏢 The building"),
+      then HPD's page zoomed in, panning left to right line by line down to the end of the description ("👀 Reading it
+      with you", any touch takes over); 💰 Price it glows when it's read.
+- [x] C. One truth for "sent" (steps 6, 8, 9): the Priority list and the map's overdue tags use the board's verdict
+      (our AFF INVOICE email in any thread counts); a sent notice never says overdue. Green when sent / fixed, red when
+      nothing went yet.
+- [x] D. Read HPD's answer (step 6): after our PDF, their next email in any of that job's threads: "received / thank
+      you / noted" -> ✅ confirmed by itself; "blank / missing / incomplete / resubmit" -> back to To send with what they
+      said ("⚠️ HPD 10/26: the copy is blank — send it again").
+- [x] E. ✅ "Already sent / fixed" (step 7) on every notice card, the urgent box and the helper ("I already sent
+      ER00272"): two taps, the notice goes to Done on every phone (HANDLED-<job> on the status server).
+- [x] F. 🗂 Go through my notices (steps 1, 2): the helper walks every open notice, To send first, most urgent first.
+      For each: the map flies to the job, a card says who sent what and when, what they ask, what your email shows
+      (affidavit / invoice sent? the file and date; HPD's answer), the work and where (apartment / public hall), the
+      tenant's name and phone, what HPD said on the phone, and what to do now, with one-tap buttons (reply with AI,
+      make / fix the paperwork, already sent, call the tenant, open the board, next). Ends with "That's all N."
+- [x] G. Corrections keep the original dates (step 3): fixing paperwork already sent opens with the dates from the
+      original (work started / completed, attempts, refusal) locked 🔒, with the date it was sent; HPD's reason can
+      still change a date it names; "HPD asked to change a date" unlocks by hand.
+- [x] H. Gafur opens her board (step 10): picking 📋 Gafur (or any notice kind with board rows) opens the board on that
+      filter right away, not the small bar.
+- [x] I. The fire (step 9): 🔥 flickers next to 24 / 72-hour notices still to send; sent ones show a green ✓.
+- [x] J. Claude from the phone (step 11): everything asked in this chat can be asked in the app's "Ask Claude for a
+      change" box, or say "tell Claude …" / "ask Claude to …" to the helper; it reaches this computer while it runs
+      (heartbeat), and the answers come back in the app.
+- Facts found on 5 Nov in the real emails: ER00272's AFF INVOICE went 10/26 in the "INVOICE IS INCOMPLETE" thread, HPD
+  answered "the copy you just resubmitted is blank", 10/27 we wrote "I will re-send", HPD "Noted"; no later PDF in the
+  sent email. ER01720's AFF INVOICE went 10/30 (the board had it as sent; only the Priority list said overdue: fixed).
+  ER05228 / ER01919 / ER04312: HPD wrote "highlighted errors" 10/21 (fixed ones go by mail: a correction saved in the
+  app counts; otherwise ✅ Already sent / fixed).
+
 ## 4 Nov 2026: everything the owner asked in the chat today (keep this up to date)
 
 The owner's words today, in order, and what was done with each:
@@ -66,6 +121,7 @@ The owner's words today, in order, and what was done with each:
 22. "do all ideas and keep upgrading" -> Friday check-in, hello in the tenant's language, safety check (246).
 23. 5 Nov "do all" + screenshot -> translate both ways, HPD call, streaks, store stop, traffic colors, Claude card fix (247). His answers: lost-bid and cleaner-screen skipped.
 24. 5 Nov "do all" -> tenant texts in their language, shopping list in store order, HPD call notes (248).
+25. 5 Nov "do all, better AI flow on notices" + bids today only + slow walk + ER00272 / ER01720 + already sent button + green / red + Gafur board + "everything from my phone" -> the flow plan at the top (249).
 
 ### Still to do from today
 - Keep making the robot more like a real person: answer while it is still thinking (first words fast), remember
@@ -91,6 +147,7 @@ giving me more ideas"; "everything we talk about goes in the master file". Claud
 Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 
 ### Done today (live or going live)
+- 5 Nov: go through my notices, already sent / fixed, HPD's answer read, green / red, Gafur opens her board, corrections keep the original dates, bids stay on today's and walk slower (249).
 - 5 Nov: tenant texts in their language, shopping list in store order, what HPD said kept on the job (248).
 - 5 Nov: talk with the tenant both ways, what to say to HPD, streaks, store stop on the way, traffic colors on the route, Claude's card above the bars (247).
 - 4 Nov: Friday check-in, hello in the tenant's language, a safety check before the first photo (246).
@@ -1017,6 +1074,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 246. **Friday check-in; hello in the tenant's language; safety check** (owner, 4 Nov: "do all ideas and keep upgrading"). Done: the week intent with friday ("Friday check in", "weekly check-in") adds what went well, what to do better (overdue notices, paperwork the same day, more bids) and a goal (bids next week); Friday 2-9 PM once a week the bubble offers it (hpd-friday-day). lib/speak speakIn(text, lang) with the phone's voice for that language; the job card's contact section has 🗣 Say hello: Español / 中文 / Русский (who we are, HPD sent us for the repair, may we come in), and when there's no voice it shows the words and how to add it. ⛑ The first before photo of a job shows jc-safety (power / water off? ladder steady?), said out loud, not blocking the camera; Yes, safe -> a job note. Tests: robot-ideas (Friday check-in with a goal, safety check -> note, hello in Spanish), 44 browser tests, all unit tests.
 247. **Talk with the tenant both ways; what to say to HPD; streaks; store stop; traffic colors; Claude card above the bars** (owner, 5 Nov: "do all", with a screenshot of Claude's question card hidden under the Next bar and the ask bar; and his in-app answers: 075513 "why you lost a bid" skip, 075545 "a cleaner screen" skip for now, 113516 "store stop on the way" you decide/build it, 093801 "traffic colors on the route" yes). Done: TranslatePanel (intent translate, job card jc-translate): tenant's mic in es-US / zh-CN / ru-RU, yours in English, server action hpd-translate (Workers AI @cf/meta/m2m100-1.2b, free allowance, 600 chars, nothing kept), the line big on screen and said with speakIn; typing works. Intent hpd-call + job card jc-hpd-say: 1 the job (OMO, address, first work line), 2 what was done (outcome, date, paperwork sent), 3 when (appointment / finished / give a day), plus the notice's hours left. lib/streaks.ts: work days in a row with bids sent (weekends never break it, today counts once sent), finished jobs in a row with paperwork the same day; record kept on the phone (hpd-streak-best), cheered once in the bubble; intent streaks. lib/store-stop.ts: OpenStreetMap Overpass (free, no key) hardware / DIY stores around the leg to the next stop, fewest extra minutes, a big chain wins a 4-minute tie; intent store-stop, after the materials list, and 🛒 on Today's route (store first, then the route in Google Maps). lib/road-route.ts: OSRM annotations=speed; rushLevel by the NY clock (weekday 7-10 and 4-7 rush, midday) -> highways red / avenues orange over the blue line; Google Maps for live traffic (no free live feed). CSS: the map hints (Claude's card) sit above the ask bar and the Next bar. Tests: test-translate-store-streaks.mjs (unit), test-browser-talk-store.mjs, claude-ask-quick (card not under the bars and its buttons tappable).
 248. **Tenant texts in their language; shopping list in store order; what HPD said kept on the job** (owner, 5 Nov: "do all"). Done: lib/tenant-reply textLang (Chinese / Russian by their letters, Spanish by its words); a tenant's text in another language goes through hpd-translate to English, the suggested answer is translated back into theirs (English meaning shown), offered as "text the tenant at <job> <their words>", sent only after yes. lib/materials shoppingList: the list in walk-the-store order (paint, building materials, flooring, plumbing, electrical, hardware, windows, cleaning, roofing) with aisle headers and check boxes in the chat (fc-shop; ticks kept for the day, hpd-shop-<day>; all ticked -> a cheer). After hpd-call, the next thing said (15 minutes) is kept as "☎️ HPD call <date>: ..."; intent hpd-note ("HPD said about ER07663 ...") any time. Tests: test-translate-store-streaks.mjs (textLang, aisle order, hpd-note), test-browser-tenant-lang.mjs.
+249. **Go through my notices; already sent / fixed; HPD's answer read; green / red + 🔥; Gafur opens her board; corrections keep the original dates; bids stay on today's and walk slower** (owner, 5 Nov, the flow plan at the top). Done: lib/notice-board hpdAnswerAfter / hpdWords (HPD's next email after our PDF in any thread about the job: problem words -> problem, back to To send; otherwise answered -> confirmed), handled (HANDLED-<job> from the status server, after the notice), fixed (a correction saved in the app after the problem). FieldCommandClient: handledMap + markHandled (this phone + status server), Priority list filtered by the board's sent verdict, the urgent box's "I handled it" = handled, intents notice-walk / notice-handled, NoticeWalk.tsx (card per notice: ask, email, work + where, tenant, HPD calls, on record, what to do now; map flies there, read out; ends "That's all N"), pickNotices aep / priority open the board. NoticeBoard: data-state ok / todo (green / red), 🔥 fc-fire, fc-board-problem / fc-board-heard, ✅ Already sent / fixed (two taps) + Undo. Paperwork: correction dates from the sent original always, locked (datesLocked) with "HPD asked to change a date" / "Put the original dates back", &reason= from a notice. BidsMode: workDay / leftLater (today only unless asked), "tomorrow's bids" (next-bid day 1), slow walk (walkPace, fc-bid-looking) + ItbPages readAlong (pans line by line, any touch takes over, Price it glows). Tests: test-notice-flow.mjs, test-browser-notice-walk.mjs.
 - **Quick questions in the chat** (owner idea, 3 Nov; done: ⚡ button in the chat bar opens one-tap questions (Today, Next bid, Notices, Owed, What's next); test-browser-quick-questions).
 918. **Don't leave without the after photo** (owner idea, 4 Nov; done: lib/leave-reminder.ts leftWithoutAfterPhoto = arrived today (FieldArrivedAt, under 10 h), no after photo, no outcome saved, and the phone more than 150 m from the job; the GPS watch in FieldCommandClient calls leavingRef once per job: orb bubble "📸 No after photo yet" + tone/voice; test-leave-reminder).
 919. **Smoother talking with the chat** (owner, 4 Nov, on the insurance/license idea: "make the fluid conversation more fluid, listen for the user after each response"; done: in FieldCommandClient startListening, if the mic ends with words heard but never marked final, the chat answers them; silent turns in 💬 mode retry 3 times (was 1); it already listened again after every spoken answer; test: scripts/test-browser-fluid-talk.mjs).

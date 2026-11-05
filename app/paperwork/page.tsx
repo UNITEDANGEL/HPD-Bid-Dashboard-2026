@@ -1469,7 +1469,7 @@ export default function PaperworkPage() {
 
     const fixFor = params.get("fix") || "";
     if (job && fixFor) {
-      setCorrection({ rejectedAt: fixFor, reason: "", attempt: "" });
+      setCorrection({ rejectedAt: fixFor, reason: String(params.get("reason") || "").slice(0, 300), attempt: "" });
       fetch("/data/correction_dates.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
         const got = d?.jobs?.[job.toUpperCase()];
         if (got) setSentDates(got);
@@ -1484,7 +1484,7 @@ export default function PaperworkPage() {
       }
       fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
         const r = d?.jobs?.[job.toUpperCase()];
-        if (r) setCorrection({ rejectedAt: r.rejectedAt || fixFor, reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "" });
+        if (r && (r.rejectedReason || !params.get("reason"))) setCorrection({ rejectedAt: r.rejectedAt || fixFor, reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "" });
       }).catch(() => {});
     }
     setSelectedId(job);
@@ -1591,23 +1591,27 @@ export default function PaperworkPage() {
     const sentOutcome = sentDates?.outcome && sentDates.outcome !== "no_work" ? sentDates.outcome : "";
     if ((sentOutcome || hpdOutcome) && outcome === "pending" && selectedJob) chooseOutcome(sentOutcome || hpdOutcome);
   }, [hpdOutcome, sentDates, outcome, selectedJob]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Fill the correction's dates from the sent paperwork, where the phone has none (or only today's default).
+  // A correction keeps the original's dates (owner, 5 Nov: "go to the original we sent: the work started, work
+  // completion or refused access dates have to stay the same; you might have made a mistake on something else"): the
+  // dates on the paperwork you sent HPD always win over the phone's, and they lock (🔒) until you say HPD asked to
+  // change a date. Calls are filled only where the phone has none.
+  const [datesUnlocked, setDatesUnlocked] = useState(false);
   useEffect(() => {
     if (!correction || !sentDates || sentDatesUsed || !selectedJob || outcome === "pending") return;
     const us = (iso?: string) => (iso ? displayDate(iso) : "");
-    const today = displayDate(todayIsoDate());
-    const blank = (v: string) => !v || displayDate(v) === today;
+    const last = sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers;
     setForm((current) => ({
       ...current,
-      workStart: blank(current.workStart) && sentDates.workStart ? us(sentDates.workStart) : current.workStart,
-      workComplete: blank(current.workComplete) && sentDates.workComplete ? us(sentDates.workComplete) : current.workComplete,
-      firstAttempt: blank(current.firstAttempt) && sentDates.attempt1 ? us(sentDates.attempt1) : current.firstAttempt,
-      secondAttempt: blank(current.secondAttempt) && (sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers) ? us(sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers) : current.secondAttempt,
+      workStart: sentDates.workStart ? us(sentDates.workStart) : current.workStart,
+      workComplete: sentDates.workComplete ? us(sentDates.workComplete) : current.workComplete,
+      firstAttempt: sentDates.attempt1 ? us(sentDates.attempt1) : current.firstAttempt,
+      secondAttempt: last ? us(last) : current.secondAttempt,
       phone1Date: !current.phone1Date && sentDates.call1 ? us(sentDates.call1) : current.phone1Date,
       phone2Date: !current.phone2Date && sentDates.call2 ? us(sentDates.call2) : current.phone2Date,
     }));
     setSentDatesUsed(true);
   }, [correction, sentDates, sentDatesUsed, selectedJob, outcome]);
+  const datesLocked = Boolean(correction && sentDatesUsed && sentDates && !datesUnlocked && (sentDates.workStart || sentDates.workComplete || sentDates.attempt1 || sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers));
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy && !locked);
   // Revise on the page (owner, 19 Oct: the iPhone app blocks pop-up boxes, so "Revise paperwork" did nothing): pick why
   // (e.g. "It was completed"), tap again to confirm; the sent version is kept and the new outcome is set.
@@ -5443,7 +5447,7 @@ export default function PaperworkPage() {
                   type="date"
                   data-hpd-smoke="paperwork-refused-date"
                   value={dateInputValue(form.secondAttempt || form.fieldDate)}
-                  onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                  disabled={datesLocked} onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
                 />
                 <small>Pick the real day, a past day too. It prints on the affidavit and on the invoice.</small>
               </label>
@@ -5492,7 +5496,7 @@ export default function PaperworkPage() {
                   type="date"
                   data-hpd-smoke="paperwork-by-others-date"
                   value={dateInputValue(form.secondAttempt || form.fieldDate)}
-                  onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                  disabled={datesLocked} onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
                 />
                 <small>Pick the real day, a past day too. It prints on the affidavit and on the invoice made with it.</small>
               </label>
@@ -5541,7 +5545,7 @@ export default function PaperworkPage() {
                     type="date"
                     data-hpd-smoke="paperwork-work-start"
                     value={dateInputValue(form.workStart || form.workComplete)}
-                    onChange={(event) => update("workStart", displayDate(event.target.value))}
+                    disabled={datesLocked} onChange={(event) => update("workStart", displayDate(event.target.value))}
                   />
                 </label>
                 <label className="paperwork-field">
@@ -5550,7 +5554,7 @@ export default function PaperworkPage() {
                     type="date"
                     data-hpd-smoke="paperwork-work-complete"
                     value={dateInputValue(form.workComplete || form.fieldDate)}
-                    onChange={(event) => update("workComplete", displayDate(event.target.value))}
+                    disabled={datesLocked} onChange={(event) => update("workComplete", displayDate(event.target.value))}
                   />
                 </label>
               </div>
@@ -5639,7 +5643,7 @@ export default function PaperworkPage() {
                       type="date"
                       data-hpd-smoke="paperwork-attempt-1"
                       value={dateInputValue(form.firstAttempt)}
-                      onChange={(event) => update("firstAttempt", displayDate(event.target.value))}
+                      disabled={datesLocked} onChange={(event) => update("firstAttempt", displayDate(event.target.value))}
                     />
                   </label>
                   <label className="paperwork-field">
@@ -5648,7 +5652,7 @@ export default function PaperworkPage() {
                       type="date"
                       data-hpd-smoke="paperwork-attempt-2"
                       value={dateInputValue(form.secondAttempt)}
-                      onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                      disabled={datesLocked} onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
                     />
                   </label>
                 </div>
@@ -5752,22 +5756,22 @@ export default function PaperworkPage() {
           <div className="paperwork-grid">
             <label className="paperwork-field">
               Work Start
-              <input value={form.workStart} onChange={(event) => update("workStart", event.target.value)} />
+              <input value={form.workStart} disabled={datesLocked} onChange={(event) => update("workStart", event.target.value)} />
             </label>
             <label className="paperwork-field">
               Work Complete / Field Date
-              <input value={form.workComplete} onChange={(event) => update("workComplete", event.target.value)} />
+              <input value={form.workComplete} disabled={datesLocked} onChange={(event) => update("workComplete", event.target.value)} />
             </label>
           </div>
 
           <div className="paperwork-grid">
             <label className="paperwork-field">
               No Access 1st Attempt
-              <input value={form.firstAttempt} onChange={(event) => update("firstAttempt", event.target.value)} />
+              <input value={form.firstAttempt} disabled={datesLocked} onChange={(event) => update("firstAttempt", event.target.value)} />
             </label>
             <label className="paperwork-field">
               No Access 2nd / Refusal Date
-              <input value={form.secondAttempt} onChange={(event) => update("secondAttempt", event.target.value)} />
+              <input value={form.secondAttempt} disabled={datesLocked} onChange={(event) => update("secondAttempt", event.target.value)} />
             </label>
           </div>
 
@@ -5859,15 +5863,19 @@ export default function PaperworkPage() {
                 </div>
               ) : null}
               {sentDatesUsed && sentDates ? (
-                <p className="paperwork-correction-sent" data-hpd-smoke="paperwork-correction-sent">📨 Dates filled in from the paperwork you sent HPD{sentDates.sentAt ? ` on ${displayDate(sentDates.sentAt)}` : ""}. Check them against HPD&apos;s reason before you save.</p>
+                <div className={`paperwork-correction-sent${datesLocked ? " is-locked" : ""}`} data-hpd-smoke="paperwork-correction-sent">
+                  <p>{datesLocked ? "🔒" : "📨"} Same dates as the original you sent HPD{sentDates.sentAt ? ` on ${displayDate(sentDates.sentAt)}` : ""}: {[sentDates.workStart ? `work started ${displayDate(sentDates.workStart)}` : "", sentDates.workComplete ? `completed ${displayDate(sentDates.workComplete)}` : "", sentDates.attempt1 ? `1st attempt ${displayDate(sentDates.attempt1)}` : "", sentDates.attempt2 ? `2nd attempt ${displayDate(sentDates.attempt2)}` : "", sentDates.refused ? `refused ${displayDate(sentDates.refused)}` : "", sentDates.doneByOthers ? `found done ${displayDate(sentDates.doneByOthers)}` : ""].filter(Boolean).join(", ") || "the dates on it"}.{datesLocked ? " They stay the same: only fix the mistake HPD pointed out." : " Unlocked: change only the date HPD asked about."}</p>
+                  {datesLocked ? <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-dates-unlock" onClick={() => setDatesUnlocked(true)}>HPD asked to change a date</button>
+                    : <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-dates-relock" onClick={() => { setDatesUnlocked(false); setSentDatesUsed(false); }}>🔒 Put the original dates back</button>}
+                </div>
               ) : null}
               {outcome === "work_completed" || outcome === "partial_work_completed" ? (
                 <div className="paperwork-correction-dates" data-hpd-smoke="paperwork-correction-dates">
                   <b>Work dates on this correction</b>
                   <small>Use the real dates (the ones on the paperwork you sent HPD), not today.</small>
                   <div>
-                    <label>Work started<input type="date" data-hpd-smoke="paperwork-correction-start" value={dateInputValue(form.workStart)} onChange={(e) => update("workStart", displayDate(e.target.value))} /></label>
-                    <label>Work completed<input type="date" data-hpd-smoke="paperwork-correction-complete" value={dateInputValue(form.workComplete)} onChange={(e) => update("workComplete", displayDate(e.target.value))} /></label>
+                    <label>Work started<input type="date" data-hpd-smoke="paperwork-correction-start" value={dateInputValue(form.workStart)} disabled={datesLocked} onChange={(e) => update("workStart", displayDate(e.target.value))} /></label>
+                    <label>Work completed<input type="date" data-hpd-smoke="paperwork-correction-complete" value={dateInputValue(form.workComplete)} disabled={datesLocked} onChange={(e) => update("workComplete", displayDate(e.target.value))} /></label>
                   </div>
                 </div>
               ) : null}
@@ -5876,8 +5884,8 @@ export default function PaperworkPage() {
                   <b>{outcome === "no_access" ? "Access attempts on this correction" : outcome === "refused_access" ? "The refusal on this correction" : "When you found the work done"}</b>
                   <small>Use the real dates (the ones on the paperwork you sent HPD), not today.</small>
                   <div>
-                    {outcome === "no_access" ? <label>1st attempt<input type="date" data-hpd-smoke="paperwork-correction-attempt1" value={dateInputValue(form.firstAttempt)} onChange={(e) => update("firstAttempt", displayDate(e.target.value))} /></label> : null}
-                    <label>{outcome === "no_access" ? "2nd attempt" : outcome === "refused_access" ? "Date refused" : "Date found done"}<input type="date" data-hpd-smoke="paperwork-correction-attempt2" value={dateInputValue(form.secondAttempt)} onChange={(e) => update("secondAttempt", displayDate(e.target.value))} /></label>
+                    {outcome === "no_access" ? <label>1st attempt<input type="date" data-hpd-smoke="paperwork-correction-attempt1" value={dateInputValue(form.firstAttempt)} disabled={datesLocked} onChange={(e) => update("firstAttempt", displayDate(e.target.value))} /></label> : null}
+                    <label>{outcome === "no_access" ? "2nd attempt" : outcome === "refused_access" ? "Date refused" : "Date found done"}<input type="date" data-hpd-smoke="paperwork-correction-attempt2" value={dateInputValue(form.secondAttempt)} disabled={datesLocked} onChange={(e) => update("secondAttempt", displayDate(e.target.value))} /></label>
                     {outcome === "no_access" && form.tenantPhone ? <label>1st call to tenant<input type="date" data-hpd-smoke="paperwork-correction-call1" value={dateInputValue(form.phone1Date)} onChange={(e) => update("phone1Date", displayDate(e.target.value))} /></label> : null}
                     {outcome === "no_access" && form.tenantPhone ? <label>2nd call<input type="date" value={dateInputValue(form.phone2Date)} onChange={(e) => update("phone2Date", displayDate(e.target.value))} /></label> : null}
                   </div>

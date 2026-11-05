@@ -126,6 +126,17 @@ try {
     await p2.locator('[data-hpd-smoke="paperwork-correction-dates"]').waitFor({ timeout: 10000 });
     await p2.waitForFunction(() => !document.querySelector('[data-hpd-smoke="paperwork-generate-correction"]')?.disabled, null, { timeout: 30000 });
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); // the app's "today" is New York's
+    // 🔒 The original's dates (5 Nov: "they have to stay the same"): when the sent paperwork's dates are known they fill
+    // in and lock; changing one takes "HPD asked to change a date".
+    const unlock = p2.locator('[data-hpd-smoke="paperwork-dates-unlock"]');
+    if (await unlock.count()) {
+      const orig = (await (await fetch(`${baseUrl}/data/correction_dates.json`)).json()).jobs?.[OLD] || {};
+      assert.equal(await p2.locator('[data-hpd-smoke="paperwork-correction-start"]').isDisabled(), true, "locked");
+      if (orig.workStart) assert.equal(await p2.locator('[data-hpd-smoke="paperwork-correction-start"]').inputValue(), orig.workStart, "the original's start date");
+      if (orig.workComplete) assert.equal(await p2.locator('[data-hpd-smoke="paperwork-correction-complete"]').inputValue(), orig.workComplete, "the original's completion date");
+      assert.match(await p2.locator('[data-hpd-smoke="paperwork-correction-sent"]').innerText(), /Same dates as the original you sent HPD/);
+      await unlock.click();
+    }
     await p2.locator('[data-hpd-smoke="paperwork-correction-start"]').fill(today);
     await p2.locator('[data-hpd-smoke="paperwork-correction-complete"]').fill(today);
     await p2.locator('[data-hpd-smoke="paperwork-generate-correction"]').click();

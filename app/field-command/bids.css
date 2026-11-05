@@ -887,3 +887,9 @@ i.is-won { background: #16a34a; }
 .fc-bid-gauge b { font-size: 22px; font-weight: 900; line-height: 1; }
 .fc-bid-gauge span { font-size: 12.5px; opacity: 0.8; }
 @media (prefers-reduced-motion: reduce) { .fc-bid-needle { transition: none; } }
+
+/* 🏢 the building photo moment, 👀 read along (5 Nov). */
+.fc-bid-looking { margin: 0 0 6px; padding: 6px 10px; border-radius: 10px; background: #0f172a; color: #fde68a; font: 800 14px/1.3 system-ui; text-align: center; animation: fc-arrive-in .35s ease-out; }
+.fc-itb-reading { margin: 4px 10px; padding: 6px 10px; border: 0; border-radius: 12px; background: #0f172a; color: #fde68a; font: 700 13px/1.3 system-ui; }
+.fc-itb-price.is-ready { animation: fc-price-ready 1.4s ease-in-out 3; }
+@keyframes fc-price-ready { 50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, .35); transform: scale(1.02); } }

@@ -33,13 +33,34 @@ export type BoardRow = {
   lastTheirsAt: string;                       // their latest email after ours ("" if they haven't answered)
   filed: { at: string; name: string; here: boolean } | null; // our latest email with a PDF named for the job (any thread)
   generalOnly?: boolean;                      // the only answer was a note to the whole list ("I'll send them today")
+  // HPD's answer after our paperwork, in any email about this job (owner, 5 Nov: "it should know from the email I
+  // already sent"): a problem with it ("the copy is blank") puts it back to send; otherwise it counts as confirmed.
+  problem?: { at: string; text: string } | null;
+  answered?: { at: string; text: string } | null;
+  handledAt?: string;                         // the owner said "already sent / fixed" (any phone)
 };
+
+// What HPD said after our paperwork (5 Nov). Their words without the quoted email and the signature.
+const PROBLEM = /\b(blank|missing|incomplete|incorrect|not correct|errors?|wrong|illegible|not legible|unreadable|re-?\s?submit|highlighted|rejected|not signed|unsigned|cannot be processed|can ?not open)\b/i;
+const NOTICE_MAIL = /poor performance notice|see attached .{0,20}notice|missing (required )?documents?/i;
+export function hpdWords(text: string) {
+  const cut = String(text || "").split(/\n\s*(?:On .{5,80}wrote:|From: |-----Original|________________)/)[0];
+  return cut.replace(/\s+/g, " ").replace(/(Joy-Ann Lewis|Community Associate|Vendor Tracking Unit|Regards,|Thank you,?\s*$).*$/i, "").trim().slice(0, 220);
+}
+export function hpdAnswerAfter(msgs: BoardMessage[], since: string): { ok: { at: string; text: string } | null; problem: { at: string; text: string } | null } {
+  const after = msgs.filter((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(since)).sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+    .map((m) => ({ at: m.at, text: hpdWords(m.text) })).filter((m) => m.text && !NOTICE_MAIL.test(m.text));
+  const problem = after.find((m) => PROBLEM.test(m.text)) || null;
+  return { problem, ok: problem ? null : after[0] || null };
+}
 
 // Where a row sits on the board (owner, 22 Oct: "once I hit send to vendor it should go to sent, waiting for a reply;
 // the not-sent ones on one side, the sent ones on another"): nothing sent yet / sent and waiting / they replied / done.
 export type BoardSide = "tosend" | "waiting" | "replied" | "done";
 export function boardSide(row: BoardRow): BoardSide {
   if (!row.next) return "done";
+  // HPD found a problem with what we sent ("the copy is blank"): it has to go again.
+  if (row.problem && !row.steps.sent.done) return "tosend";
   if (!row.steps.replied.done && !row.steps.sent.done) return "tosend";
   // A note to her whole list ("I'll send everything today") isn't this job sent: it stays to send until its PDF goes
   // out or an email names it.
@@ -63,6 +84,8 @@ export function buildBoard(input: {
   sent: Record<string, { sentAt?: string }>;
   marks: BoardMarks;
   closed?: Set<string>;
+  handled?: Record<string, string>; // job -> when the owner said "already sent / fixed" (status server HANDLED-<job>)
+  fixed?: Record<string, string>;   // job -> when a corrected package was saved in the app (lib/correction-store)
   now?: number;
   days?: number;     // how far back for notices (default 30)
   docsDays?: number; // how far back for missing-documents lists, by their latest message (default 31)
@@ -92,6 +115,17 @@ export function buildBoard(input: {
     return list[0] ? { at: list[0].at, name: list[0].name, here: list[0].threadId === threadId } : null;
   };
   const namesJob = (m: BoardMessage, omo: string) => (m.files || []).some((f) => f.toUpperCase().includes(omo));
+  // Every email about one job (threads naming only that job), for HPD's answer after our paperwork.
+  const jobMsgs = new Map<string, BoardMessage[]>();
+  for (const t of input.threads) {
+    if (t.omos.length !== 1 || /award/i.test(t.subject)) continue;
+    const list = jobMsgs.get(t.omos[0]) || [];
+    list.push(...t.messages);
+    jobMsgs.set(t.omos[0], list);
+  }
+  // A correction saved in the app after HPD's problem email: fixed (it goes in the mail, signed in ink).
+  const settle = (omo: string, h: ReturnType<typeof hpdAnswerAfter>) => { const f = input.fixed?.[omo] || ""; return h.problem && f && Date.parse(f) > Date.parse(h.problem.at) ? { ok: null, problem: null } : h; };
+  const handledOf = (omo: string, noticeAt: string) => { const h = input.handled?.[omo] || ""; return h && Date.parse(h) > Date.parse(noticeAt) ? h : ""; };
   const finish = (row: Omit<BoardRow, "next">) => {
     const s = row.steps;
     // A later step done means the earlier ones are too (e.g. the paperwork went out with the reply).
@@ -120,16 +154,21 @@ export function buildBoard(input: {
       const withFiles = after.find((m) => m.mine && (m.files?.length || 0) > 0) || (filed ? { at: filed.at, text: "", hpd: false, mine: true, files: [filed.name] } : undefined);
       const lastFiles = [...after].reverse().find((m) => m.mine && (m.files?.length || 0) > 0);
       const answer = lastFiles ? after.find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastFiles.at)) : undefined;
-      const mark = input.marks[key] || {};
+      const handledAt = handledOf(omo, notice.at);
+      const mark = { ...(input.marks[key] || {}), ...(handledAt ? { confirmed: handledAt } : {}) };
       const sentAt = input.sent[omo]?.sentAt || "";
       const lastMine = [...after].reverse().find((m) => m.mine);
       const lastTheirs = lastMine ? [...after].reverse().find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastMine.at)) : undefined;
+      // HPD's word after our latest paperwork, in any email about the job.
+      const papersAt = [lastFiles?.at || "", filed?.at || ""].sort().at(-1) || "";
+      const heard = settle(omo, papersAt ? hpdAnswerAfter(jobMsgs.get(omo) || msgs, papersAt) : { ok: null, problem: null });
       finish({
+        problem: heard.problem, answered: heard.ok, handledAt,
         lastMineAt: [lastMine?.at || "", filed?.at || ""].sort().at(-1) || "", lastTheirsAt: lastTheirs?.at || "", filed,
         key, omo, threadId: t.id, subject: t.subject, kind: "ppn", hours, who, to,
         noticeAt: notice.at, dueAt: dueAfterWeekdays(notice.at, hours), followUpAt: "", // weekdays only: Friday's 24-hour notice is due Monday
         want: "the affidavit and invoice, or an update on the job",
-        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(withFiles?.at || "", "", mark.sent), confirmed: step(answer?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
+        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(heard.problem ? "" : withFiles?.at || "", "", mark.sent), confirmed: step(heard.problem ? "" : answer?.at || heard.ok?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
         sentAt, noticeText: notice.text.slice(0, 2500),
       });
       continue;
@@ -156,7 +195,9 @@ export function buildBoard(input: {
       // Their answer after ours in her thread: any answer counts when our email's files are named for this job.
       const answer = here ? after.find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(here.at) && (m.text.includes(omo) || namesJob(here, omo))) : undefined;
       const follow = theirs.filter((m) => Date.parse(m.at) > Date.parse(listed.at)).at(-1);
-      const mark = input.marks[key] || {};
+      const handledAt = handledOf(omo, listed.at);
+      const mark = { ...(input.marks[key] || {}), ...(handledAt ? { confirmed: handledAt } : {}) };
+      const heard = settle(omo, withFiles ? hpdAnswerAfter(jobMsgs.get(omo) || [], withFiles.at) : { ok: null, problem: null });
       const sentAt = input.sent[omo]?.sentAt || "";
       // Ours for this job (names it, or answers the whole list); theirs after it in the same thread.
       // Only emails about THIS job (naming it, or its PDF) start the waiting clock and can be answered.
@@ -168,11 +209,12 @@ export function buildBoard(input: {
       const lastTheirs = lastMine && lastMineHere ? [...after].reverse().find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastMine.at)
         && (m.text.includes(omo) || !after.some((x) => x.mine && Date.parse(x.at) > Date.parse(lastMine.at) && Date.parse(x.at) < Date.parse(m.at)))) : undefined;
       finish({
+        problem: heard.problem, answered: heard.ok, handledAt,
         lastMineAt: lastMine?.at || "", lastTheirsAt: lastTheirs?.at || "", filed, generalOnly,
         key, omo, threadId: t.id, subject: t.subject, kind: "docs", hours: 0, who, to,
         noticeAt: listed.at, dueAt: "", followUpAt: follow?.at || "",
         want: line ? line[1].trim().replace(/\s+/g, " ") : "documents / an update",
-        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(withFiles?.at || "", "", mark.sent), confirmed: step(answer?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
+        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(heard.problem ? "" : withFiles?.at || "", "", mark.sent), confirmed: step(heard.problem ? "" : answer?.at || heard.ok?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
         sentAt, noticeText: listed.text.slice(0, 2500),
       });
     }
@@ -196,7 +238,8 @@ export function daysWaiting(row: BoardRow, now = Date.now()) {
 
 // Open notices with under 6 hours left (or overdue) and nothing sent yet: the reminder.
 export function urgentRows(rows: BoardRow[], now = Date.now()) {
-  return rows.filter((r) => r.next && r.kind === "ppn" && !r.steps.sent.done && hoursLeft(r, now) < 6);
+  // A notice HPD sent back with a problem ("the copy is blank") is a fix to make, not a deadline alarm.
+  return rows.filter((r) => r.next && r.kind === "ppn" && !r.steps.sent.done && !r.problem && hoursLeft(r, now) < 6);
 }
 
 // A ready reply for the owner to check (never sent without the owner's taps): what we have and what comes next.

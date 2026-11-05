@@ -3,6 +3,18 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
+      "title": "Go through my notices",
+      "items": [
+        "🗂 Say \"go through my notices\": the helper takes you to each notice still to send, one by one (most urgent first). Each card says who sent it, what they ask, what your email shows (affidavit and invoice sent? when, which file, HPD's answer), the work and where (apartment / public hall), the tenant's name and phone, and what to do now, with one tap for each step.",
+        "✅ \"Already sent / fixed\" on every notice (two taps), or say \"I already sent ER00272\". It goes to Done on every phone; Undo is there.",
+        "📧 The board reads HPD's answer after your paperwork: \"Received\" closes it by itself; \"the copy is blank\" or \"highlighted errors\" puts it back to send with their words. A notice whose affidavit and invoice went out never says overdue.",
+        "🟢🔴 Sent / fixed notices are green, the rest red, with 🔥 on the 24 / 72-hour ones still to send. Picking Gafur opens her board right away.",
+        "✏️ Fixing paperwork you already sent keeps the original dates (work started / completed, attempts, refusal) locked 🔒. If HPD asked to change a date, tap \"HPD asked to change a date\".",
+        "📨 Bids: \"next bid\" stays on today's and stops when they're done (\"tomorrow's bids\" when you want them). The walk is slower: the city, the building, its photo, then HPD's page read along left to right."
+      ]
+    },
+    {
+      "date": "Nov 5, 2026",
       "title": "Tenant texts in their language",
       "items": [
         "💬 A tenant texts in Spanish, Chinese or Russian: the helper shows the whole text in English and offers an answer written in their language (with what it means in English). Nothing goes out until you say yes.",

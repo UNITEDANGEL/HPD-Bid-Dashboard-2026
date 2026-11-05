@@ -73,7 +73,9 @@ export type AgentCommand =
   | { intent: "read-job"; ref: string; pick?: number; all?: boolean }
   | { intent: "bids" }
   | { intent: "bids-show"; boro: string; day: "all" | "0" | "1" }
-  | { intent: "next-bid" }
+  | { intent: "next-bid"; day?: "0" | "1" }
+  | { intent: "notice-walk"; next: boolean }
+  | { intent: "notice-handled"; ref: string }
   | { intent: "where-appt"; at: number }
   | { intent: "come-back" }
   | { intent: "bid-price"; price: number }
@@ -286,6 +288,8 @@ export function parseCommand(heard: string): AgentCommand {
       return { intent: "bids-show", boro: boro ? BORO_CODE[boro[1]] : "", day: /\btomorrow'?s?\b/.test(t) ? "1" : /\btoday'?s?\b/.test(t) ? "0" : "all" };
     }
     if (/^(ok |okay |so |now )?(go to |open |show me |take me to |do |start )?(the |my )?next (bid|invitation)( please)?$|^(start|let'?s start) (bidding|pricing|the bids)$|^let'?s (bid|price)$/.test(t)) return { intent: "next-bid" };
+    // "Tomorrow's bids", "next bid tomorrow", "start tomorrow's bids" (5 Nov: tomorrow only when asked).
+    if (/^(ok |okay |so |now )?(go to |open |show me |start |do |let'?s do )?(the |my )?(tomorrow'?s (bids|invitations)|next (bid|invitation) (for )?tomorrow|bids (due )?tomorrow)( please)?$/.test(t)) return { intent: "next-bid", day: "1" };
     const w = /^where(?:'?s| is) my (?:(next)(?: (?:appointment|appt|job|stop))?|(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?|o'?clock)?)(?: (?:appointment|appt|job|one))?(?: today)?$/.exec(t);
     if (w) {
       if (w[1]) return { intent: "where-appt", at: -1 };
@@ -370,6 +374,13 @@ export function parseCommand(heard: string): AgentCommand {
   }
   // "Plan my day" / "build my route" (22 Oct): Today's route planned for you, then read out.
   if (/\b(plan|build|make|set up|map out)\b.{0,20}\b(my |the |today'?s? )?(day|route|stops)\b/.test(t) || /^where (should|do) i go( first| today)?\b/.test(t)) return { intent: "plan" };
+  // 🗂 "Go through my notices" / "work on the notices" / "next notice" (owner, 5 Nov: "go through each and every notice in
+  // detail ... take me to the notice, tell me what they're asking, what should we do now").
+  if (/^(ok |okay |so |now )?(let'?s )?(go|walk|work|run|help) (me )?(through|on|with) (all |each )?(of )?(my |the )?(notices|vendor tracking)( one by one| in detail| each)?$|^(let'?s )?(do|work on|start|fix|handle|answer) (all )?(my |the )?notices( one by one| in detail)?$|^notices one by one$/.test(t)) return { intent: "notice-walk", next: false };
+  if (/^(ok |okay |so )?(go to |open |show me |take me to )?(the )?next notice( please)?$/.test(t)) return { intent: "notice-walk", next: true };
+  // ✅ "I already sent it" / "ER00272 is already fixed" / "this one's done" (5 Nov: "a button that says I already sent it,
+  // I already fixed this notice").
+  if (!/\bbids?\b/.test(t) && (/\balready (sent|answered|fixed|handled|resent|replied|did|done)\b|\b(been|was) (fixed|handled|sent|answered) already\b/.test(t) || /^(this|that|the) (one|notice)('?s| is| was| has been) (done|fixed|handled|sent|answered)$/.test(t))) return { intent: "notice-handled", ref: (/\b([a-z]{2})\s?(\d{5})\b/.exec(t) || []).slice(1).join("").toUpperCase() };
   // "Answer the notice for ER01987" / "reply to Lewis" / "reply to Gafur" (22 Oct).
   if (/\b(answer|reply|respond|write back)\b/.test(t) && /\b(notice|lewis|gafur|vendor tracking|hpd|email|request)\b/.test(t)) return { intent: "reply-notice", ref: refOf(t), who: (/\b(lewis|gafur)\b/.exec(t) || [])[1] || "" };
   // "Do the paperwork for this job" / "send the package" (22 Oct).

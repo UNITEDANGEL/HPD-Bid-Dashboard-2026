@@ -64,7 +64,48 @@ export const bidPages = (pageCount: number, descPages?: number[]) => [...new Set
 // form (page 2, when page 3 is empty: ER09499) the "WORK DESCRIPTION" box a little past the middle.
 const workAt = (page: number) => (page === 2 ? 0.56 : 0.12);
 
-export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, onPrice }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; onPrice?: () => void }) {
+// Read along (owner, 5 Nov: "scroll it slowly left and right, read the whole description, like I'm scrolling it"): the
+// zoomed page pans slowly across each part of the work, then down to the next, to the end of the description. Any
+// touch hands it back to you.
+function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: () => void) {
+  const pace = (() => { try { return navigator.webdriver ? 0.15 : 1; } catch { return 1; } })();
+  let stop = false;
+  const off = () => { stop = true; };
+  el.addEventListener("pointerdown", off, { once: true });
+  el.addEventListener("wheel", off, { once: true, passive: true });
+  el.addEventListener("touchstart", off, { once: true, passive: true });
+  const ease = (x: number) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
+  const glide = (toLeft: number, toTop: number, ms: number) => new Promise<void>((done) => {
+    const fromL = el.scrollLeft, fromT = el.scrollTop, t0 = performance.now();
+    const tick = (now: number) => {
+      if (stop) return done();
+      const p = Math.min(1, (now - t0) / Math.max(1, ms));
+      el.scrollLeft = fromL + (toLeft - fromL) * ease(p);
+      el.scrollTop = fromT + (toTop - fromT) * ease(p);
+      if (p < 1) requestAnimationFrame(tick); else done();
+    };
+    requestAnimationFrame(tick);
+  });
+  void (async () => {
+    const left = el.scrollWidth * 0.04;
+    const right = Math.max(left, el.scrollWidth - el.clientWidth - el.scrollWidth * 0.03);
+    const end = Math.min(el.scrollHeight - el.clientHeight, el.scrollHeight * endAt);
+    let top = el.scrollHeight * startAt;
+    for (let row = 0; row < 8 && !stop; row += 1) {
+      await glide(right, top, 3200 * pace);            // across the lines, left to right
+      if (stop || top >= end) break;
+      top = Math.min(end, top + el.clientHeight * 0.45);
+      await glide(left, top, 900 * pace);              // back to the left, a little further down
+    }
+    el.removeEventListener("pointerdown", off);
+    el.removeEventListener("wheel", off);
+    el.removeEventListener("touchstart", off);
+    onDone();
+  })();
+  return off;
+}
+
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -78,6 +119,10 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   // showDescription changes (a bid was just opened): the job description page opens full screen, zoomed in on the work.
   const [wantDesc, setWantDesc] = useState(0);
   const autoZoom = useRef<number | null>(null);
+  // "reading" while the page pans by itself; "read" once it reached the end (the price button glows).
+  const [reading, setReading] = useState<"" | "reading" | "read">("");
+  const stopRead = useRef<() => void>(() => {});
+  useEffect(() => () => stopRead.current(), []);
   useEffect(() => { if (showDescription) setWantDesc(showDescription); }, [showDescription]);
   useEffect(() => {
     if (!wantDesc || !shown?.length) return;
@@ -141,7 +186,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               </span>
             ) : null}
             <button type="button" data-hpd-smoke="fc-itb-zoom" aria-label="Zoom" onClick={() => zoomTo(zoom >= 2.95 ? 1 : Math.floor(zoom) + 1)}>🔍 {zoom >= 2.95 ? "1×" : `${Math.floor(zoom) + 1}×`}</button>
-            <button type="button" data-hpd-smoke="fc-itb-close" onClick={() => { setBig(null); zoomTo(1); }}>Close</button>
+            <button type="button" data-hpd-smoke="fc-itb-close" onClick={() => { stopRead.current(); setReading(""); setBig(null); zoomTo(1); }}>Close</button>
           </div>
           <div className="fc-itb-full-body" {...bind} data-hpd-smoke="fc-itb-zoombox">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -151,12 +196,22 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               autoZoom.current = null;
               zoomTo(2);
               // After zoomTo's own scroll: the left margin, at the line where the work starts.
-              requestAnimationFrame(() => requestAnimationFrame(() => { const el = bind.ref.current; if (el) { el.scrollLeft = el.scrollWidth * 0.04; el.scrollTop = el.scrollHeight * at; } }));
+              requestAnimationFrame(() => requestAnimationFrame(() => {
+                const el = bind.ref.current;
+                if (!el) return;
+                el.scrollLeft = el.scrollWidth * 0.04; el.scrollTop = el.scrollHeight * at;
+                if (!readAlong) return;
+                setReading("reading");
+                stopRead.current();
+                // Page 3: the description fills most of the page; page 2's work box is shorter.
+                stopRead.current = readAlongPage(el, at, big.page === 2 ? at + 0.22 : 0.85, () => setReading("read"));
+              }));
             }} />
           </div>
-          <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>
+          {reading === "reading" ? <button type="button" className="fc-itb-reading" data-hpd-smoke="fc-itb-reading" onClick={() => { stopRead.current(); setReading(""); }}>👀 Reading it with you… tap the page to take over</button>
+            : <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>}
           {/* Read it, then one tap to the price box (2 Nov): the page closes and the keyboard opens on the price. */}
-          {onPrice ? <button type="button" className="fc-itb-price" data-hpd-smoke="fc-itb-price" onClick={() => { setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
+          {onPrice ? <button type="button" className={`fc-itb-price${reading === "read" ? " is-ready" : ""}`} data-hpd-smoke="fc-itb-price" onClick={() => { stopRead.current(); setReading(""); setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
         </div>
       ) : null}
     </section>

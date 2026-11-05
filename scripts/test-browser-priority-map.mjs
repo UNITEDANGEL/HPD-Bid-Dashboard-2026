@@ -39,6 +39,9 @@ try {
 
   // Priority: just those jobs, glowing with the hours left.
   await chooser.locator('[data-hpd-smoke="fc-notice-pick-priority"]').click();
+  // Priority opens the board right away (5 Nov); closing it leaves those jobs on the map.
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 });
+  await page.locator('[data-hpd-smoke="fc-board-close"]').click();
   assert.match(await title.innerText(), /Priority · \d+/);
   await page.waitForTimeout(1500);
   const lit = await page.locator(".leaflet-marker-icon.is-glow").count();
