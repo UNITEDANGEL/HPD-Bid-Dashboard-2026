@@ -1146,3 +1146,11 @@
 .jc-photo-look { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .jc-photo-look p { flex-basis: 100%; margin: 0; }
 .jc-photo-look button { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.5); background: rgba(30, 41, 59, 0.9); color: #f8fafc; font: 700 15px system-ui, sans-serif; }
+/* ⛑ Safety check and 🗣 hello in the tenant's language (4 Nov). */
+.jc-safety { display: grid; gap: 6px; margin: 8px 0; padding: 12px; border-radius: 14px; background: #052e16; border: 2px solid #22c55e; color: #dcfce7; animation: jcRetakeIn 0.35s ease-out; }
+.jc-safety b { font: 900 16px system-ui, sans-serif; }
+.jc-safety div { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+.jc-safety button { min-height: 46px; border-radius: 12px; border: 1px solid #22c55e; background: transparent; color: inherit; font: 800 15px system-ui, sans-serif; }
+.jc-safety button.jc-glow { background: #22c55e; color: #052e16; }
+.jc-hello { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; font: 800 13px system-ui, sans-serif; }
+.jc-hello button { min-height: 38px; padding: 0 12px; border-radius: 999px; border: 1px solid #60a5fa; background: #eff6ff; color: #1e3a8a; font: 800 14px system-ui, sans-serif; }

@@ -50,6 +50,24 @@ export function langOf(text: string): "es" | "en" {
   const words = t.trim().split(/\s+/).length;
   return hits >= 2 && hits / Math.max(1, words) >= 0.2 ? "es" : "en";
 }
+// 🗣 Said in another language (a hello to the tenant, 4 Nov): the phone's voice for that language, if it has one.
+export function speakIn(text: string, lang: string) {
+  if (!voiceSupported() || !text) return false;
+  try {
+    playThroughSilent();
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = synth.getVoices().filter((x) => x.lang.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase())).sort((a, b) => Number(isNaturalVoice(b.name)) - Number(isNaturalVoice(a.name)) || Number(b.lang === lang) - Number(a.lang === lang))[0];
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang;
+    u.rate = 0.92;
+    u.onend = () => setTalking(false); u.onerror = () => setTalking(false);
+    setTalking(true);
+    synth.speak(u);
+    return Boolean(v);
+  } catch { return false; }
+}
+
 function pickVoice(lang: "es" | "en" = "en") {
   if (lang === "es") {
     const es = window.speechSynthesis.getVoices().filter((v) => /^es/i.test(v.lang)).sort((a, b) => Number(/US|MX/i.test(b.lang)) - Number(/US|MX/i.test(a.lang)));

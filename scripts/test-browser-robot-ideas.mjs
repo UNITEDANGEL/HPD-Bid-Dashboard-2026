@@ -60,6 +60,8 @@ try {
   await coach.locator('[data-hpd-smoke="fc-teach-stop"]').click();
   assert.equal(await coach.count(), 0);
   assert.equal(await page.locator("[data-teach]").count(), 0);
+  // 📊 Friday check-in: the week, what went well / to do better, one goal.
+  const friday = await say("friday check in", /^📊 Friday check-in\. This week you [\s\S]*🎯 Goal for next week: send \d+ bids/);
   const paper = await say("am I missing paperwork", /^🧾 /);
   assert.equal(asked.length, 0, "worked out on the phone");
   const time = await say("where am I losing time", /^🗺 /);
@@ -148,6 +150,14 @@ try {
   const black = await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 400; c.height = 300; const g = c.getContext("2d"); g.fillStyle = "#020202"; g.fillRect(0, 0, 400, 300); return c.toDataURL("image/jpeg", 0.9).split(",")[1]; });
   const startBtn = page.locator("#fc-job-card button", { hasText: /Before\s*(Tap to add|\d)/ }).first();
   await startBtn.click();
+  // ⛑ The first before photo of a job: a safety check (it doesn't stop the camera); Yes, safe is noted on the job.
+  await page.locator('[data-hpd-smoke="jc-safety"]').waitFor({ timeout: 5000 });
+  await page.locator('[data-hpd-smoke="jc-safety-ok"]').click();
+  await page.waitForFunction(() => /Safety check done/.test(localStorage.getItem("hpd-job-notes") || ""), null, { timeout: 3000 });
+  // 🗣 Hello in the tenant's language.
+  await page.evaluate(() => { window.__said = []; });
+  await page.locator('#fc-job-card [data-hpd-smoke="jc-hello-lang"][data-lang="es-US"]').click();
+  await page.waitForFunction(() => window.__said.some((t) => /^Hola, somos de United Angel Construction/.test(t)), null, { timeout: 3000 });
   const take = page.locator("#fc-job-card button", { hasText: /Take (before )?photo/ }).first();
   await take.waitFor({ timeout: 10000 });
   await page.evaluate(() => { window.__said = []; });
@@ -190,7 +200,7 @@ try {
   assert.deepEqual((await page.evaluate(() => window.__shared)).files, [`SIGNED - ${JOB} - Work Completed.pdf|application/pdf`, `BEFORE-01 - ${JOB}.jpg|image/jpeg`, `AFTER-01 - ${JOB}.jpg|image/jpeg`, `AFTER VIDEO-01 - ${JOB}.mp4|video/mp4`]);
   await page.waitForFunction(() => /4 files ready: pick Mail to send them, or Save to Files/.test(document.querySelector('[data-hpd-smoke="fc-sent-copy-msg"]')?.textContent || ""), null, { timeout: 5000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS robot ideas: teach me -> a coach with the button glowing, Next / Stop; a photo tip as the camera opens; reading the card glows its parts (first: ${firstPart}); "How did it go?" after a package -> the answer saved on the job card; "hands free day" -> driving mode on and the day read out; named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
+  console.log(`PASS robot ideas: Friday check-in with a goal; safety check before the first before photo, noted on the job; hello in Spanish at the door; teach me -> a coach with the button glowing, Next / Stop; a photo tip as the camera opens; reading the card glows its parts (first: ${firstPart}); "How did it go?" after a package -> the answer saved on the job card; "hands free day" -> driving mode on and the day read out; named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
 } finally {
   await browser.close();
 }

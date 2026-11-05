@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "Friday check-in",
+      "items": [
+        "📊 Friday after 2 PM the helper offers a one-minute check-in (or say \"Friday check in\" any day): your week, what went well, what to do better, and one goal for next week.",
+        "🗣 On a job card, \"Say hello\" in Español, 中文 or Русский: the helper tells the tenant who you are and why you're there (HPD sent you for the repair) and asks to come in. If the phone has no voice for that language, it shows the words and how to add the voice.",
+        "⛑ The first time you take a before photo on a job, a quick safety check pops up: power or water off? ladder steady? \"Yes, safe\" is noted on the job. It doesn't stop the camera."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "Teach me the app",
       "items": [
         "🔎 On a job card with a before photo, tap \"What do you see?\": the free picture AI names the problem (leak stain, mold, broken plaster). You see it first and tap Add to put it in the job notes. Free, 30 photos a day, nothing sent unless you tap.",

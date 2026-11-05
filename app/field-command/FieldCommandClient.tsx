@@ -65,7 +65,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
-import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
+import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, speakIn, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -4143,6 +4143,17 @@ export default function FieldCommandClient() {
     setOrbSay({ text: `❓ Claude has a question about ${what}. Tap me.`, full: `Claude has a question about ${what}: ${q} Tap ❓ Answer Claude to reply.`, at: Date.now() });
   }, [changeThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   const helloDoneRef = useRef(false);
+  // 📊 Friday after 2 PM, once a week: the helper offers the check-in in its bubble.
+  useEffect(() => {
+    if (!jobs.length) return;
+    try { if (navigator.webdriver && localStorage.getItem("hpd-test-friday") !== "1") return; } catch { return; }
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23", weekday: "short" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+    if (p.weekday !== "Fri" || Number(p.hour) < 14 || Number(p.hour) >= 21) return;
+    const day = `${p.year}-${p.month}-${p.day}`;
+    try { if (localStorage.getItem("hpd-friday-day") === day) return; localStorage.setItem("hpd-friday-day", day); } catch { return; }
+    const t = window.setTimeout(() => setOrbSay({ text: "📊 Friday check-in: one minute on your week? Tap me.", full: "Friday check-in", at: Date.now(), run: "friday check in" }), 6000);
+    return () => window.clearTimeout(t);
+  }, [jobs.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!selectedJob) return;
     try { localStorage.setItem("hpd-last-job", JSON.stringify({ omo: jobId(selectedJob), at: Date.now() })); } catch { /* private mode */ }
@@ -4724,7 +4735,16 @@ export default function FieldCommandClient() {
     cameraInputRef.current?.click();
   }
 
+  // ⛑ Safety check before the first before photo of a job (owner idea, 4 Nov): two questions, said out loud; it doesn't
+  // stop the camera. "Yes, safe" notes it on the job.
+  const [safety, setSafety] = useState("");
   function requestMediaUpload(kind: FieldMediaKind, fromStep = false) {
+    if (kind === "before" && selectedJob) {
+      const id = jobId(selectedJob);
+      let checked = true;
+      try { checked = Boolean(localStorage.getItem(`hpd-safety-${id}`)); } catch { /* private mode */ }
+      if (!checked && safety !== id) { setSafety(id); speak("Quick safety check: is the power or water off where you'll work, and is your ladder steady?", 100); }
+    }
     setAutoPackage(null);
     setMediaChoice(kind);
     setMediaChoiceInStep(fromStep);
@@ -6159,7 +6179,14 @@ export default function FieldCommandClient() {
       void fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((pay) => {
         const paid = (pay?.recent || []).filter((p: { date?: string; status?: string; amount?: number }) => /paid/i.test(p.status || "") && recent(`${p.date}T12:00:00`)).reduce((n: number, p: { amount?: number }) => n + (p.amount || 0), 0);
         const parts = [`won ${wins} job${wins === 1 ? "" : "s"}`, `sent ${bidsSent} bid${bidsSent === 1 ? "" : "s"}`, `finished ${finished} job${finished === 1 ? "" : "s"}`, `sent paperwork for ${papers}`, paid ? `HPD paid you $${Math.round(paid).toLocaleString("en-US")}` : "no payment from HPD yet"];
-        answer(`${day1 ? "Today" : "This week"} you ${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}.`);
+        const said = `${day1 ? "Today" : "This week"} you ${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}.`;
+        if (!cmd.friday) { answer(said); return; }
+        // 📊 Friday check-in: what went well, what to do better, one goal for next week.
+        const overdue = boardUrgent.filter((r) => r.dueAt && hoursLeft(r, Date.now()) < 0).length;
+        const well = wins ? `you won ${wins} job${wins === 1 ? "" : "s"}` : bidsSent ? `you sent ${bidsSent} bid${bidsSent === 1 ? "" : "s"}` : finished ? `you finished ${finished} job${finished === 1 ? "" : "s"}` : "";
+        const better = overdue ? `answer HPD's notices the same day: ${overdue} ${overdue === 1 ? "is" : "are"} overdue right now` : finished > papers ? "send the paperwork the same day you finish a job" : bidsSent < 5 ? "send more bids: more bids, more wins" : "";
+        const goal = Math.max(5, bidsSent + 2);
+        answer(`📊 Friday check-in. ${said}${well ? `\n\n👍 What went well: ${well}.` : ""}${better ? `\n\n🔧 To do better: ${better}.` : ""}\n\n🎯 Goal for next week: send ${goal} bids${overdue ? " and keep notices at zero overdue" : ""}. You've got this!`);
       });
       return;
     }
@@ -7162,6 +7189,13 @@ export default function FieldCommandClient() {
                 return (
                   <section className={`jc-contact is-${status.tone}`} data-hpd-smoke="jc-contact" aria-label="Tenant contact">
                     <p className="jc-contact-status" data-hpd-smoke="jc-contact-status">{status.text}</p>
+                    {/* 🗣 At the door (4 Nov): the helper says hello and why you're there in the tenant's language. */}
+                    <div className="jc-hello" data-hpd-smoke="jc-hello">
+                      <span>🗣 Say hello:</span>
+                      {([["es-US", "Español", "Hola, somos de United Angel Construction. Venimos de parte de HPD, la oficina de vivienda de la ciudad, para hacer la reparación en su apartamento. ¿Podemos pasar?"], ["zh-CN", "中文", "您好，我们是 United Angel Construction 的工人。纽约市房屋保护局（HPD）派我们来维修您的公寓。我们可以进来吗？"], ["ru-RU", "Русский", "Здравствуйте, мы из компании United Angel Construction. Нас прислал HPD, жилищный департамент города, чтобы сделать ремонт в вашей квартире. Можно войти?"]] as const).map(([lang, label, text]) => (
+                        <button key={lang} type="button" data-hpd-smoke="jc-hello-lang" data-lang={lang} onClick={() => { unlockChime(); if (!speakIn(text, lang)) setOutcomeMessage(`This phone has no ${label} voice yet: Settings → Accessibility → Spoken Content → Voices → add ${label}. The words are: ${text}`); }}>{label}</button>
+                      ))}
+                    </div>
                     {tenant.phone ? (
                       <div className={`jc-contact-btns${cs.tone === "none" && !tenant.commonArea ? " is-text-first" : ""}`}>
                         <a className={`jc-contact-call${reachedAt ? "" : " is-first"}`} data-hpd-smoke="jc-contact-call" href={`tel:${tenant.phone}`} onClick={() => startTenantCall(selectedJob)}>📞 Call {first}</a>
@@ -7510,6 +7544,16 @@ export default function FieldCommandClient() {
                       </div>
                     </li>
                     {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+                    {safety === id ? (
+                      <div className="jc-safety" role="alert" data-hpd-smoke="jc-safety">
+                        <b>⛑ Quick safety check</b>
+                        <span>Power or water off where you&apos;ll work? Ladder steady?</span>
+                        <div>
+                          <button type="button" className="jc-glow" data-hpd-smoke="jc-safety-ok" onClick={() => { try { localStorage.setItem(`hpd-safety-${id}`, new Date().toISOString()); } catch { /* private mode */ } addJobNote(id, `⛑ Safety check done ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })}: power / water off, ladder steady.`); setSafety(""); speak("Great, stay safe.", 0); }}>✅ Yes, safe</button>
+                          <button type="button" data-hpd-smoke="jc-safety-later" onClick={() => setSafety("")}>Not needed</button>
+                        </div>
+                      </div>
+                    ) : null}
                     {retake && retake.id === id ? (
                       <div className="jc-retake" role="alert" data-hpd-smoke="jc-retake">
                         <b>📷 That {retake.kind === "before" || retake.kind === "after" ? `${retake.kind} ` : ""}photo looks {retake.why}</b>

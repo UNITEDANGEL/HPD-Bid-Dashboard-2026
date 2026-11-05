@@ -3,25 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "helper-week-coach",
-      "icon": "📊",
+      "id": "helper-translate-tenant",
+      "icon": "🔁",
       "kind": "new",
-      "title": "Friday chat with the helper",
-      "why": "Every Friday the helper sits with you for a minute: what went well this week, what to do better, one goal for next week."
+      "title": "Talk with the tenant in their language",
+      "why": "Hold the mic, the tenant speaks Spanish, Chinese or Russian, and the helper says it in English (and your answer back in theirs)."
     },
     {
-      "id": "helper-tenant-language",
-      "icon": "🗣",
+      "id": "helper-what-to-say-hpd",
+      "icon": "☎️",
       "kind": "new",
-      "title": "The helper speaks to tenants in their language",
-      "why": "On a job card, tap 🗣 and the helper says a short hello and why you're there in Spanish, Chinese or Russian."
+      "title": "What to say when HPD calls",
+      "why": "Before you call HPD back about a notice, the helper gives you the 3 things to say: the job, what was done, and when."
     },
     {
-      "id": "helper-safety",
-      "icon": "⛑",
+      "id": "helper-streaks",
+      "icon": "🔥",
       "kind": "new",
-      "title": "Safety check before you start",
-      "why": "Before the first photo, the helper asks two quick questions: power off? ladder steady? and notes the answer."
+      "title": "Streaks",
+      "why": "The helper keeps your streaks: days in a row with every bid sent, weeks with no overdue notice, and cheers when you beat a record."
     },
     {
       "id": "helper-call-tenant",
