@@ -3,11 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "helper-quiz",
-      "icon": "🎓",
+      "id": "helper-week-coach",
+      "icon": "📊",
       "kind": "new",
-      "title": "The helper teaches you the app",
-      "why": "Ask \"teach me\": a 2-minute walk through the app with the helper pointing at each button."
+      "title": "Friday chat with the helper",
+      "why": "Every Friday the helper sits with you for a minute: what went well this week, what to do better, one goal for next week."
+    },
+    {
+      "id": "helper-tenant-language",
+      "icon": "🗣",
+      "kind": "new",
+      "title": "The helper speaks to tenants in their language",
+      "why": "On a job card, tap 🗣 and the helper says a short hello and why you're there in Spanish, Chinese or Russian."
+    },
+    {
+      "id": "helper-safety",
+      "icon": "⛑",
+      "kind": "new",
+      "title": "Safety check before you start",
+      "why": "Before the first photo, the helper asks two quick questions: power off? ladder steady? and notes the answer."
     },
     {
       "id": "helper-call-tenant",
@@ -15,13 +29,6 @@
       "kind": "new",
       "title": "The helper calls the tenant for you",
       "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
-    },
-    {
-      "id": "helper-photo-tips",
-      "icon": "📷",
-      "kind": "new",
-      "title": "Photo tips while you shoot",
-      "why": "Before and after photos: the helper says \"step back\" or \"turn on the light\" while the camera is open."
     },
     {
       "id": "papers-list",

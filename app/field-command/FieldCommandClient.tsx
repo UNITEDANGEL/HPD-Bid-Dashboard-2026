@@ -4079,6 +4079,28 @@ export default function FieldCommandClient() {
     return () => window.clearInterval(t);
   }, [boardUrgent[0]?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
   const stepsRef = useRef<{ title: string; items: string[]; i: number; at: number; end: string } | null>(null);
+  // 🎓 Teach me the app (owner idea, 4 Nov): a short coach at the top, the button it talks about glowing, said out loud.
+  const [teach, setTeach] = useState(-1);
+  const TEACH: { sel: string; text: string }[] = [
+    { sel: '[data-hpd-smoke="fc-claude-orb"]', text: "This is me, your helper. Tap me to talk, or hold me and just speak." },
+    { sel: '[data-hpd-smoke="fc-chatbar-input"]', text: "Type or say anything here: a job number, an address, or a question like what's due today." },
+    { sel: '[data-hpd-smoke="fc-search-mic"]', text: "The microphone: tap it and say what you need." },
+    { sel: '[data-hpd-smoke="fc-borough-bar"]', text: "Tap a borough to see only its jobs on the map." },
+    { sel: ".leaflet-marker-icon", text: "Every pin is a job. Tap one to open its card: the work, the tenant, the photos and the paperwork." },
+    { sel: '[data-hpd-smoke="fc-jobs-open"]', text: "Jobs: all your jobs in a list, the ones to do first on top." },
+    { sel: '[data-hpd-smoke="fc-bids-open"]', text: "Bids: the invitations to bid. Put a price and send it, one after the other." },
+    { sel: '[data-hpd-smoke="fc-notices-open"]', text: "Notices: what HPD asked for, with the time left. Answer the red ones first." },
+    { sel: '[data-hpd-smoke="fc-more-open"]', text: "All: everything else, like your route, the money HPD owes you, and your requests to Claude." },
+  ];
+  useEffect(() => {
+    document.querySelectorAll("[data-teach]").forEach((el) => el.removeAttribute("data-teach"));
+    if (teach < 0) return;
+    if (teach >= TEACH.length) { setTeach(-1); speak("That's the app! Ask me anything, any time.", 100); return; }
+    const el = document.querySelector<HTMLElement>(TEACH[teach].sel);
+    if (el) { el.setAttribute("data-teach", "1"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+    speak(TEACH[teach].text, 150);
+    return () => { document.querySelectorAll("[data-teach]").forEach((x) => x.removeAttribute("data-teach")); };
+  }, [teach]); // eslint-disable-line react-hooks/exhaustive-deps
   // 🧠 The robot learns your day: the first screen you open each morning (before 11), kept for 14 days.
   useEffect(() => {
     const key = bidsOpen ? "bids" : noticesOpen ? "notices" : boardOpen ? "board" : "";
@@ -4713,6 +4735,13 @@ export default function FieldCommandClient() {
     if (!mediaChoice || mediaBusy) return;
     const kind = mediaChoice;
     pendingMediaKindRef.current = kind;
+    // 📷 A photo tip as the camera opens (owner idea, 4 Nov), once per job and kind: what HPD wants to see.
+    if ((source === "camera" || source === "video-camera") && selectedJob && (kind === "before" || kind === "after")) {
+      const key = `hpd-photo-tip-${jobId(selectedJob)}-${kind}`;
+      let told = true;
+      try { told = Boolean(localStorage.getItem(key)); if (!told) localStorage.setItem(key, "1"); } catch { /* private mode */ }
+      if (!told) speak(kind === "before" ? "Before photo: step back so the whole problem shows, lights on, and hold still." : "After photo: stand in the same spot as the before photo, lights on, so HPD sees the same view fixed.", 0);
+    }
     if (source === "video-camera") videoCameraInputRef.current?.click();
     else if (source === "video-library") videoLibraryInputRef.current?.click();
     else if (source === "camera") cameraInputRef.current?.click();
@@ -5270,6 +5299,11 @@ export default function FieldCommandClient() {
       if (!need.length) { answer(`I couldn't tell the materials from the work descriptions of ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops`}. Read them on the cards.`); return; }
       cardsRef.current = list.slice(0, 5).map((x) => chatCard(jobId(x))).filter((c): c is ChatCard => Boolean(c));
       answer(`📦 To bring for ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops today`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`);
+      return;
+    }
+    if (cmd.intent === "teach") {
+      setAgent(null); setAgentFromDock(false);
+      window.setTimeout(() => setTeach(0), 200);
       return;
     }
     if (cmd.intent === "tour") {
@@ -6861,6 +6895,20 @@ export default function FieldCommandClient() {
                   ))}
                 </ul>
               ) : null}
+            </div>
+          ) : null}
+          {teach >= 0 && teach < TEACH.length ? (
+            <div className="fc-teach" role="dialog" aria-label="Learn the app" data-hpd-smoke="fc-teach">
+              <HelperFace mode={speakingNow ? "talking" : "idle"} size={44} arms="point" />
+              <div>
+                <b>🎓 {teach + 1} of {TEACH.length}</b>
+                <span data-hpd-smoke="fc-teach-text">{TEACH[teach].text}</span>
+                <span className="fc-teach-buttons">
+                  <button type="button" className="is-next" data-hpd-smoke="fc-teach-next" onClick={() => setTeach((n) => n + 1)}>{teach + 1 < TEACH.length ? "Next ▶" : "Done ✓"}</button>
+                  {teach > 0 ? <button type="button" data-hpd-smoke="fc-teach-back" onClick={() => setTeach((n) => Math.max(0, n - 1))}>◀ Back</button> : null}
+                  <button type="button" data-hpd-smoke="fc-teach-stop" onClick={() => { setTeach(-1); stopSpeaking(); }}>Stop</button>
+                </span>
+              </div>
             </div>
           ) : null}
           {/* In the same column as the other map notes (2 Nov: on top of "⚠ jobs need a check" it took its taps). */}

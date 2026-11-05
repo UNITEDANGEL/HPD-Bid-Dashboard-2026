@@ -47,6 +47,19 @@ try {
     await page.waitForFunction((src) => new RegExp(src).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 20000 }).catch(async () => { throw new Error(`"${text}" got: ${await reply.innerText().catch(() => "no chat")}`); });
     return reply.innerText();
   };
+  // 🎓 Teach me the app: a coach at the top, the button it talks about glows; Next moves on, Stop ends it.
+  if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("teach me the app");
+  await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
+  const coach = page.locator('[data-hpd-smoke="fc-teach"]');
+  await coach.waitFor({ timeout: 8000 });
+  assert.match(await coach.innerText(), /1 of 9[\s\S]*This is me, your helper/);
+  await page.waitForFunction(() => document.querySelector('[data-teach]')?.getAttribute("data-hpd-smoke") === "fc-claude-orb", null, { timeout: 5000 });
+  await coach.locator('[data-hpd-smoke="fc-teach-next"]').click();
+  await page.waitForFunction(() => document.querySelector('[data-teach]')?.getAttribute("data-hpd-smoke") === "fc-chatbar-input", null, { timeout: 5000 });
+  await coach.locator('[data-hpd-smoke="fc-teach-stop"]').click();
+  assert.equal(await coach.count(), 0);
+  assert.equal(await page.locator("[data-teach]").count(), 0);
   const paper = await say("am I missing paperwork", /^🧾 /);
   assert.equal(asked.length, 0, "worked out on the phone");
   const time = await say("where am I losing time", /^🗺 /);
@@ -137,7 +150,10 @@ try {
   await startBtn.click();
   const take = page.locator("#fc-job-card button", { hasText: /Take (before )?photo/ }).first();
   await take.waitFor({ timeout: 10000 });
+  await page.evaluate(() => { window.__said = []; });
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), take.click()]);
+  // 📷 The photo tip as the camera opens.
+  await page.waitForFunction(() => window.__said.some((t) => /Before photo: step back/.test(t)), null, { timeout: 5000 });
   await page.evaluate(() => { window.__said = []; });
   await chooser.setFiles({ name: "dark.jpg", mimeType: "image/jpeg", buffer: Buffer.from(black, "base64") });
   const retake = page.locator('[data-hpd-smoke="jc-retake"]');
@@ -174,7 +190,7 @@ try {
   assert.deepEqual((await page.evaluate(() => window.__shared)).files, [`SIGNED - ${JOB} - Work Completed.pdf|application/pdf`, `BEFORE-01 - ${JOB}.jpg|image/jpeg`, `AFTER-01 - ${JOB}.jpg|image/jpeg`, `AFTER VIDEO-01 - ${JOB}.mp4|video/mp4`]);
   await page.waitForFunction(() => /4 files ready: pick Mail to send them, or Save to Files/.test(document.querySelector('[data-hpd-smoke="fc-sent-copy-msg"]')?.textContent || ""), null, { timeout: 5000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS robot ideas: reading the card glows its parts (first: ${firstPart}); "How did it go?" after a package -> the answer saved on the job card; "hands free day" -> driving mode on and the day read out; named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
+  console.log(`PASS robot ideas: teach me -> a coach with the button glowing, Next / Stop; a photo tip as the camera opens; reading the card glows its parts (first: ${firstPart}); "How did it go?" after a package -> the answer saved on the job card; "hands free day" -> driving mode on and the day read out; named "Mike", it answers to its name and says "Yes?" when called; it shrugs when not sure; the mouth follows the words (${shapes}); "${paid.slice(0, 60)}"; on my way -> "${omw.replace(/\s+/g, " ").slice(0, 60)}…"; the month report is a real PDF to open or share (${month.replace(/\s+/g, " ").slice(0, 60)}…); a dark photo -> said out loud + Retake opens the camera; "${paper.replace(/\s+/g, " ").slice(0, 70)}…"; "${time.replace(/\s+/g, " ").slice(0, 70)}…"; "${good.replace(/\s+/g, " ").slice(0, 60)}"; before and after side by side, shared together; yesterday's talk goes to the AI; a slow answer starts with "let me check"; See what you sent shows the PDF, photos and video, and Get a copy of everything shares all 4`);
 } finally {
   await browser.close();
 }

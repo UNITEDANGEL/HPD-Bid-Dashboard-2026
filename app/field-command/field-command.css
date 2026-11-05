@@ -4350,3 +4350,14 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-ride-bot.is-waving .fc-face { animation: fc-ride-hop 0.5s ease-in-out 3; }
 @keyframes fc-ride-hop { 50% { transform: translateY(-6px) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) { #fc-job-card [data-read-along], .fc-ride-bot.is-waving .fc-face { animation: none; } }
+/* 🎓 Teach me the app (4 Nov): the coach and the glowing button. */
+.fc-teach { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0; padding: 12px; border-radius: 16px; background: #1e1b4b; border: 2px solid #a78bfa; color: #ede9fe; box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: fc-week-in .35s ease both; pointer-events: auto; }
+.fc-teach > div { display: grid; gap: 6px; flex: 1; }
+.fc-teach b { font: 900 14px system-ui, sans-serif; color: #c4b5fd; }
+.fc-teach span { font: 700 15px/1.35 system-ui, sans-serif; }
+.fc-teach .fc-teach-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.fc-teach button { min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid #a78bfa; background: transparent; color: inherit; font: 800 14px system-ui, sans-serif; }
+.fc-teach button.is-next { background: #a78bfa; color: #1e1b4b; }
+[data-teach] { position: relative; z-index: 5; outline: 3px solid #facc15 !important; outline-offset: 3px; border-radius: 14px; animation: fc-teach-pulse 1s ease-in-out infinite alternate; }
+@keyframes fc-teach-pulse { from { outline-color: #facc15; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); } to { outline-color: #fde68a; box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); } }
+@media (prefers-reduced-motion: reduce) { [data-teach] { animation: none; } }

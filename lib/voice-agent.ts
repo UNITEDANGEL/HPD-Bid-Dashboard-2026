@@ -27,6 +27,7 @@ export type AgentCommand =
   | { intent: "whats-new" }
   | { intent: "walkthrough"; ref: string }
   | { intent: "tour" }
+  | { intent: "teach" }
   | { intent: "materials" }
   | { intent: "missing-paperwork" }
   | { intent: "hands-free-day" }
@@ -226,6 +227,8 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(good news|how did (today|my day) go|my wins today|replay (my|the) day|celebrate)\b/.test(t) && !/\b(week|month)\b/.test(t)) return { intent: "good-news" };
   if (/\bbefore (and|&|\+) after\b|\bbefore\/after\b/.test(t) && /\b(show|see|send|photos?|pictures?|pics?)\b/.test(t)) return { intent: "before-after", ref: refOf(t) };
   if (/\b(what (do|should) i (need|bring|buy|take)( today| tomorrow)?|shopping list|materials?( list)?( for today)?|what to (buy|bring))\b/.test(t)) return { intent: "materials" };
+  // 🎓 "teach me the app", "how do I use the app", "show me how it works" (4 Nov).
+  if (/^(please )?(teach me( the app| how to use (it|the app))?|how do i use (this|the) app|show me how (it|the app) works|show me the buttons|what do the buttons do)\??$/.test(t)) return { intent: "teach" };
   if (/^(give me a |start the |take the |show me the )?tour$|^show me around( the app)?$|^(walk me through|show me) what'?s new$/.test(t)) return { intent: "tour" };
   if (/\b(i'?m|i am|we'?re|we are) (running |going to be |gonna be )?late\b|\brunning late\b/.test(t)) return { intent: "late", ref: refOf(t.replace(/\b(running|late|gonna|going to be)\b/g, " ")) };
   if (/^(?:so |ok(?:ay)? |hey )?(?:what'?s|what is|anything) new(?: in the app| today| with the app)?$|^what (?:did|have) (?:you|claude|cloud) (?:upgrade|upgraded|change|changed|add|added|build|built|fix|fixed)(?: today| lately| in the app)?$|^what (?:changed|got upgraded)(?: in the app| today)?$|^(?:read me |tell me |show me )?(?:the )?(?:latest|newest|new) (?:updates|upgrades|features|changes)(?: in the app)?$/.test(t)) return { intent: "whats-new" };
