@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
+      "title": "Says it once",
+      "items": [
+        "🗣 The morning hello is said once a day. Tap the 🤖 again later and it says \"Hi again\" with what you got done, what's still open from what it told you, and the next thing. No repeats, and no \"99 jobs to do\".",
+        "📒 The day so far, in the chat: ✅ done today, 🔔 what I told you (✓ when done), ⏭ coming up (tomorrow's bids, this week's appointments, notices waiting on HPD). Tap 📒 or say \"what did we do today\" / \"what's left\".",
+        "🔔 A reminder is said once a day, not again and again."
+      ]
+    },
+    {
+      "date": "Nov 5, 2026",
       "title": "Go through my notices",
       "items": [
         "🗂 Say \"go through my notices\": the helper takes you to each notice still to send, one by one (most urgent first). Each card says who sent it, what they ask, what your email shows (affidavit and invoice sent? when, which file, HPD's answer), the work and where (apartment / public hall), the tenant's name and phone, and what to do now, with one tap for each step.",

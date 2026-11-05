@@ -44,6 +44,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
+import { briefDone, dayRecap, helloAgain, markBrief, noteSaid, readDayLog, wasSaid, type Recap } from "../../lib/said-today";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
 import { cleanTenantContactName, cleanTenantPhone } from "../../lib/tenantContact";
@@ -1746,7 +1747,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -2033,6 +2034,34 @@ export default function FieldCommandClient() {
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d) === new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()) ? "" : `${d.toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short" })} `;
     return `${day}${d.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })}`;
   };
+  // 📒 The day so far (owner, 5 Nov): ✅ what got done today, 🔔 what the helper told you (done or still open), ⏭ the
+  // work coming up. No backlog counts ("you don't need to keep reminding me there are 99 jobs").
+  const recapNow = (): Recap => {
+    const day = nyToday();
+    const isToday = (iso?: string) => { const t = Date.parse(String(iso || "")); return Number.isFinite(t) && nyToday(new Date(t)) === day; };
+    const done: string[] = [];
+    let recs: Record<string, { sentAt?: string }> = {};
+    try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+    const bidsSent = Object.values(recs).filter((r) => isToday(r?.sentAt)).length;
+    if (bidsSent) done.push(`🧾 ${bidsSent} bid${bidsSent === 1 ? "" : "s"} sent`);
+    const notices = [...new Set(boardRows.filter((r) => isToday(r.steps.sent.at) || isToday(r.handledAt || "")).map((r) => r.omo))];
+    for (const o of notices.slice(0, 4)) done.push(`📄 ${o} paperwork sent`);
+    try { for (const v of daySummary(jobs, { id: jobId, address: jobAddress }).visited.slice(0, 4)) done.push(`🔧 ${v.address.replace(/,\s*\d{5}$/, "")}: ${v.text}`); } catch { /* no jobs yet */ }
+    const open = new Set<string>();
+    if (bidsDue.unsentToday) open.add(`bids:${day}`);
+    for (const r of boardRows) if (r.next && boardSide(r) !== "waiting") open.add(`notice:${r.omo}`);
+    if (nextOmoRef.current) open.add(`first:${nextOmoRef.current}`);
+    else if (nextStepRef.current) open.add(`first:${nextStepRef.current.text}`);
+    for (const s of readDayLog(day).said) if (s.key.startsWith("job:")) { const j = findAnyJob(s.key.slice(4)); if (j && !value(j, ["PackageApprovedAt"]) && !/approved/i.test(value(j, ["PackageReviewStatus"]))) open.add(s.key); }
+    const later: string[] = [];
+    if (bidsDue.tomorrow) later.push(`🧾 ${bidsDue.tomorrow} bid${bidsDue.tomorrow === 1 ? "" : "s"} due tomorrow`);
+    const week = nyToday(new Date(Date.now() + 7 * 86400000));
+    const appts = jobs.map((j) => ({ j, a: activeAppointment(j as unknown as Record<string, unknown>) })).filter((x) => x.a && x.a.date > day && x.a.date <= week).sort((x, y) => `${x.a!.date}${x.a!.start}`.localeCompare(`${y.a!.date}${y.a!.start}`));
+    if (appts.length) later.push(`📅 ${appts.length} appointment${appts.length === 1 ? "" : "s"} this week · first ${appointmentLabel(appts[0].a!)} at ${jobAddress(appts[0].j).replace(/,\s*\d{5}$/, "")}`);
+    const waiting = boardRows.filter((r) => r.next && boardSide(r) === "waiting").length;
+    if (waiting) later.push(`⏳ ${waiting} notice${waiting === 1 ? "" : "s"} sent, waiting on HPD`);
+    return dayRecap(readDayLog(day), done, open, later);
+  };
   const startAgentChat = (magic = false) => {
     unlockChime();
     const step = nextStepRef.current;
@@ -2041,8 +2070,26 @@ export default function FieldCommandClient() {
       // sparkles, the big face rises, it greets you by name and time of day out loud, then it listens.
       const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
       const name = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
-      const todo = jobRows.filter((r) => r.group === "todo").length;
-      const parts = [todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "", bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : ""].filter(Boolean);
+      // 🗣 Said once a day (owner, 5 Nov): the morning brief the first time; after that "Hi again" with what got done,
+      // what's still open of what it told you, and the next thing. No job counts at all.
+      const day = nyToday();
+      const late0 = boardUrgent.filter((r) => r.dueAt && hoursLeft(r, Date.now()) < 0);
+      const parts = [bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : "", late0.length ? `${late0.length} notice${late0.length === 1 ? "" : "s"} overdue` : ""].filter(Boolean);
+      if (briefDone(day)) {
+        const r = recapNow();
+        const again = helloAgain(name, r, step?.text || "");
+        const ask0 = (changeThreads || []).find((x) => x.status === "Waiting for you");
+        setMagicAt(Date.now());
+        moodSound("magic");
+        const acts0 = [...(ask0 ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
+        setAgent({ heard: "👋", reply: again, recap: r, actions: acts0.length ? acts0 : undefined });
+        speak(again.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
+        return;
+      }
+      markBrief(day);
+      if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
+      for (const r of late0.slice(0, 3)) noteSaid(day, `notice:${r.omo}`, `notice ${r.omo} overdue`);
+      if (step) noteSaid(day, `first:${nextOmoRef.current || step.text}`, step.text.replace(/\.$/, ""));
       // ❓ Claude waiting for your answer: the robot still comes out and talks, and says so with a button (owner, 4 Nov:
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
@@ -4096,6 +4143,9 @@ export default function FieldCommandClient() {
         if (o.omo !== top.omo) { localStorage.setItem("hpd-followup", JSON.stringify({ omo: top.omo, at: Date.now(), asked: false })); return; }
         if (o.asked || Date.now() - Number(o.at || 0) < 2 * 3600000 || h < 7 || h >= 21) return;
         localStorage.setItem("hpd-followup", JSON.stringify({ ...o, asked: true }));
+        // 🗣 Not twice in a day (owner, 5 Nov): the morning brief already named it, or it was said once.
+        if (wasSaid(nyToday(), `notice:${top.omo}`)) return;
+        noteSaid(nyToday(), `notice:${top.omo}`, `notice ${top.omo} still open`);
       } catch { return; }
       const hl = Math.round(hoursLeft(top, Date.now()));
       setOrbSay({ text: `🔔 Still open: ${top.omo} (${hl < 0 ? `overdue ${-hl} h` : `${hl} h left`}). Answer it now?`, full: "", run: `answer the notice for ${top.omo}`, at: Date.now() });
@@ -4252,15 +4302,20 @@ export default function FieldCommandClient() {
         return;
       }
       if (greeted) {
-        if (!pickUp) return;
+        if (!pickUp || !noteSaid(day, `job:${jobId(lastJob!)}`, pickUp)) return;
         const say = `↩️ Welcome back. Pick up where you left off? ${pickUp}.`;
         setOrbSay({ text: say, full: say, at: Date.now(), run: `open ${jobId(lastJob!)}` });
         return;
       }
       const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
       const name = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
-      const todo = jobRows.filter((r) => r.group === "todo").length;
-      const what = pickUp ? `Last time: ${pickUp}` : bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : todo ? `${todo} job${todo === 1 ? "" : "s"} to do` : "Tap me to talk";
+      const lateN = boardUrgent.filter((r) => r.dueAt && hoursLeft(r, Date.now()) < 0);
+      const what = pickUp ? `Last time: ${pickUp}` : bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : lateN.length ? `${lateN.length} notice${lateN.length === 1 ? "" : "s"} overdue` : "Tap me to talk";
+      // 🗣 This is the morning brief: said once, remembered (owner, 5 Nov).
+      markBrief(day);
+      if (pickUp) noteSaid(day, `job:${jobId(lastJob!)}`, pickUp);
+      else if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
+      else if (lateN.length) noteSaid(day, `notice:${lateN[0].omo}`, `notice ${lateN[0].omo} overdue`);
       const hi = `👋 ${h < 12 ? "Good morning" : h < 17 ? "Hi" : "Good evening"}, ${name}! ${what}.`;
       setOrbTap(true); window.setTimeout(() => setOrbTap(false), 1500);
       setOrbSay({ text: hi, full: `${hi} What can I do for you?`, at: Date.now(), ...(pickUp ? { run: `open ${jobId(lastJob!)}` } : {}) });
@@ -5161,6 +5216,20 @@ export default function FieldCommandClient() {
       const text = cmd.text.trim().replace(/^\w/, (c) => c.toUpperCase());
       if (!text) { answer(`What's not right with "${q}"? Say it like "not right, the button is still too small".`); return; }
       void sendChangeAnswer(t, text).then((ok) => answer(ok ? `📥 Sent to Claude on "${q}": "${text}". It goes back to work on it.` : "Couldn't send it right now (no signal?). Try again in a minute."));
+      return;
+    }
+    if (cmd.intent === "recap") {
+      const r = recapNow();
+      const still = r.reminded.filter((x) => !x.done);
+      const reply = [
+        r.done.length ? `Done today: ${r.done.map((x) => x.replace(/^\S+\s/, "")).join("; ")}.` : "Nothing finished yet today.",
+        r.reminded.length ? (still.length ? `Still open from what I told you: ${still.map((x) => x.text).join("; ")}.` : "Everything I reminded you of is done.") : "",
+        r.later.length ? `Coming up: ${r.later.map((x) => x.replace(/^\S+\s/, "")).join("; ")}.` : "",
+        nextStepRef.current ? `Next: ${nextStepRef.current.text.replace(/\.$/, "")}.` : "",
+      ].filter(Boolean).join(" ");
+      if (multiRef.current) { answer(reply); return; }
+      setAgent({ heard, reply, recap: r, actions: nextStepRef.current ? [{ label: "▶ Do it", href: "#next" }] : undefined });
+      speak(reply, 200, () => { if (convoRef.current) startListening(); });
       return;
     }
     if (cmd.intent === "catch-up") {
@@ -6517,8 +6586,10 @@ export default function FieldCommandClient() {
     if (bidsDue.today) parts.push(`${bidsDue.today} bid${bidsDue.today === 1 ? "" : "s"} due today`);
     const stops = todayRouteIds().length;
     if (stops) parts.push(`${stops} stop${stops === 1 ? "" : "s"} on today's route`);
-    const lateJobs = jobRows.filter((r) => r.group === "todo").length;
-    if (lateJobs) parts.push(`${lateJobs} job${lateJobs === 1 ? "" : "s"} to do`);
+    // (No "N jobs to do": the owner knows the backlog, 5 Nov.) Asked for, it counts as the day's brief.
+    markBrief(nyToday());
+    if (bidsDue.today) noteSaid(nyToday(), `bids:${nyToday()}`, `${bidsDue.today} bid${bidsDue.today === 1 ? "" : "s"} due today`);
+    for (const r of late.slice(0, 3)) noteSaid(nyToday(), `notice:${r.omo}`, `notice ${r.omo} overdue`);
     answer(parts.length ? `Today: ${parts.join(", ")}.` : "Nothing urgent today.");
   };
   const addressOf = (omo: string) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; };
@@ -9119,6 +9190,13 @@ export default function FieldCommandClient() {
           </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
+            {agent.recap ? (
+              <div className="fc-recap" data-hpd-smoke="fc-recap">
+                <section data-hpd-smoke="fc-recap-done"><b>✅ Done today</b>{agent.recap.done.length ? <ul>{agent.recap.done.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing yet</small>}</section>
+                <section data-hpd-smoke="fc-recap-reminded"><b>🔔 I told you</b>{agent.recap.reminded.length ? <ul>{agent.recap.reminded.map((x) => <li key={x.text} className={x.done ? "is-done" : "is-open"}>{x.done ? "✓ " : "• "}{x.text}</li>)}</ul> : <small>Nothing yet today</small>}</section>
+                <section data-hpd-smoke="fc-recap-later"><b>⏭ Coming up</b>{agent.recap.later.length ? <ul>{agent.recap.later.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing booked ahead</small>}</section>
+              </div>
+            ) : null}
             {agent.shop?.length ? (() => {
               const key = `hpd-shop-${nyToday()}`;
               let ticked: string[] = [];
@@ -9151,6 +9229,7 @@ export default function FieldCommandClient() {
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
             <button type="button" aria-label="Read a photo" data-hpd-smoke="fc-agent-photo" onClick={() => photoInputRef.current?.click()}>📷</button>
             <button type="button" aria-label="Dress the helper" aria-pressed={dressOpen} data-hpd-smoke="fc-agent-dress" onClick={() => setDressOpen((o) => !o)}>🎨</button>
+            <button type="button" aria-label="Today so far" data-hpd-smoke="fc-agent-recap-btn" onClick={() => agentRef.current("what did we do today")}>📒</button>
             <button type="button" aria-label="Your requests to Claude" data-hpd-smoke="fc-agent-requests" onClick={() => { stopSpeaking(); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); goTo("requests", ""); }}>📋</button>
             <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="fc-agent-photo-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void readPhoto(f); }} />
             <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>

@@ -53,7 +53,8 @@ try {
   await page.evaluate(() => document.dispatchEvent(new PointerEvent("pointerdown", { clientX: 30, clientY: 300, bubbles: true })));
   await page.waitForFunction(() => /translate\(-/.test(document.querySelector('[data-hpd-smoke="fc-claude-orb"] .fc-face-look')?.getAttribute("style") || ""), null, { timeout: 3000 });
   // 4) A quick tap: the magic. Sparkles burst out, the big face rises and greets you by name and time of day.
-  await page.evaluate(() => { window.__hear = ""; window.__said = []; if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 30); }; });
+  // ("what do I have today" above was the day's brief; a fresh morning for the greeting.)
+  await page.evaluate(() => { localStorage.removeItem("hpd-said-v1"); window.__hear = ""; window.__said = []; if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 30); }; });
   await page.waitForTimeout(900); // a tap right after letting go of a hold doesn't count (the app waits 0.8 s)
   await orb.click();
   await page.locator('[data-hpd-smoke="fc-magic"]').waitFor({ state: "attached", timeout: 3000 });
@@ -61,6 +62,23 @@ try {
   const big = await page.locator('[data-hpd-smoke="fc-agent-who"] [data-hpd-smoke="fc-face"]').getAttribute("width");
   assert.equal(big, "112", "the big face");
   await page.waitForFunction(() => window.__said.some((t) => /^(Yawn… you.re up late! )?Good (morning|afternoon|evening), Jot!/.test(t)), null, { timeout: 5000 });
+  assert.doesNotMatch(await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText(), /jobs? to do/, "no backlog count (owner, 5 Nov)");
+  // 🗣 Said once (owner, 5 Nov: "greeting in the morning once... no repetitive"): the second tap is "Hi again" with the
+  // day so far (done / what it told you / coming up), not the brief again.
+  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  await page.waitForTimeout(900);
+  await page.evaluate(() => { window.__said = []; });
+  await orb.click();
+  await page.waitForFunction(() => /^Hi again, Jot\./.test((document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").trim()), null, { timeout: 5000 });
+  const again = await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText();
+  assert.doesNotMatch(again, /Good (morning|afternoon|evening)|jobs? to do|You have \d+/, "nothing repeated");
+  await page.locator('[data-hpd-smoke="fc-recap"]').waitFor({ timeout: 3000 });
+  for (const part of ["fc-recap-done", "fc-recap-reminded", "fc-recap-later"]) assert.equal(await page.locator(`[data-hpd-smoke="${part}"]`).count(), 1, part);
+  await page.waitForFunction(() => window.__said.some((t) => /^Hi again, Jot\./.test(t)), null, { timeout: 5000 });
+  // 📒 "What did we do today" asks for it any time.
+  await page.locator('[data-hpd-smoke="fc-agent-recap-btn"]').click();
+  await page.waitForFunction(() => /Done today:|Nothing finished yet today\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.locator('[data-hpd-smoke="fc-recap"]').waitFor({ timeout: 3000 });
 
   // 5) 🎨 Dress it: a hard hat and green, on every face (the 🤖 button too), remembered on the phone.
   await page.locator('[data-hpd-smoke="fc-agent-dress"]').click();

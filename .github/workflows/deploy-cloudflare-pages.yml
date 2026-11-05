@@ -157,6 +157,7 @@ jobs:
           node scripts/test-priorities.mjs
           node scripts/test-notice-board.mjs
           node scripts/test-notice-flow.mjs
+          node scripts/test-said-today.mjs
           node scripts/test-notice-convo.mjs
           node scripts/test-job-tracker.mjs
           node scripts/test-street-view-hours.mjs

@@ -82,6 +82,7 @@ export type AgentCommand =
   | { intent: "appointment"; ref: string; date?: string; time?: string }
   | { intent: "remind"; what: string; date?: string; time?: string }
   | { intent: "today" }
+  | { intent: "recap" }
   | { intent: "notices" }
   | { intent: "yes" }
   | { intent: "no" }
@@ -197,6 +198,9 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(?:ok(?:ay)? )?(?:i'?m parked|i am parked|(?:turn off |stop |end )?driving mode(?: off)?|hands[- ]free(?: mode)? off|i'?m done driving|stop hands[- ]free)$/.test(t) && !/^(?:turn on |start )/.test(t)) return { intent: "driving", on: false };
   // Your usual price (3 Nov, pick 3 "remember my habits"): "bid the usual", "my usual price", "same as last time".
   if (/^(?:(?:bid|put|price it at|go with|use|give it|do)\s+)?(?:the usual|my usual(?: price)?|(?:the )?same (?:price )?as (?:last time|before|usual)|my last price|what i (?:usually|always) (?:bid|charge))(?: on (?:it|this(?: one)?))?$/.test(t)) return { intent: "bid-usual" };
+  // 📒 The day so far (owner, 5 Nov: "these are the things I reminded you, these are things that are completed", "the
+  // future work that's left to do"): "what did we do today", "what's done", "what did you remind me", "what's left".
+  if (/^(?:so |ok(?:ay)? |hey )?(?:what (?:did|have) (?:we|i) (?:do(?:ne)?|get done|got done|finish(?:ed)?|complete(?:d)?)(?: (?:so far|today))*|what(?:'?s| is| have i| have we) (?:done|finished|completed)(?: (?:so far|today))*|(?:day )?recap|today so far|what did you remind me(?: of| about)?(?: today)?|what(?:'?s| is) (?:still )?(?:left|coming up|ahead)(?: to do)?(?: (?:today|this week|for me))?|what work is (?:still )?left|(?:the )?future work|what'?s still open)\??$/.test(t)) return { intent: "recap" };
   // While you were away (3 Nov, the owner's pick 1): "what did I miss", "catch me up", "what happened while I was out".
   if (/^(?:so |ok(?:ay)? |hey )?(?:what did i miss|what have i missed|catch me up|fill me in|what happened(?: while i was (?:away|gone|out)| today| this morning)?|did i miss anything|anything happen(?:ed)?(?: while i was (?:away|gone|out))?|while i was (?:away|gone|out))$/.test(t)) return { intent: "catch-up" };
   // What changed in the app (3 Nov, "keep upgrading"): "what's new", "what did you upgrade", "what changed in the app",
