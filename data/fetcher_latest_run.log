@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-05T21:50:09.882Z
+Fetcher run started: 2026-11-05T22:01:00.073Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,15 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/11 [00:00<?, ?it/s]Downloading COA messages:   9%|▉         | 1/11 [00:00<00:01,  9.00it/s]Downloading COA messages:  18%|█▊        | 2/11 [00:00<00:01,  8.30it/s]Downloading COA messages:  27%|██▋       | 3/11 [00:00<00:00,  8.67it/s]Downloading COA messages:  45%|████▌     | 5/11 [00:00<00:00,  9.20it/s]Downloading COA messages:  55%|█████▍    | 6/11 [00:00<00:00,  9.35it/s]Downloading COA messages:  64%|██████▎   | 7/11 [00:00<00:00,  9.45it/s]Downloading COA messages:  73%|███████▎  | 8/11 [00:00<00:00,  9.40it/s]Downloading COA messages:  82%|████████▏ | 9/11 [00:00<00:00,  9.38it/s]Downloading COA messages:  91%|█████████ | 10/11 [00:01<00:00,  9.34it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00,  9.50it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00,  9.29it/s]
-Geocoding COA addresses:   0%|          | 0/11 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 11/11 [00:00<00:00, 155344.59it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/11 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   9%|▉         | 1/11 [00:00<00:06,  1.56it/s]Fetching ITBs for COA OMOs:  18%|█▊        | 2/11 [00:01<00:05,  1.71it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 3/11 [00:01<00:04,  1.79it/s]Fetching ITBs for COA OMOs:  36%|███▋      | 4/11 [00:02<00:04,  1.64it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 5/11 [00:02<00:03,  1.84it/s]Fetching ITBs for COA OMOs:  55%|█████▍    | 6/11 [00:03<00:02,  2.03it/s]Fetching ITBs for COA OMOs:  64%|██████▎   | 7/11 [00:03<00:01,  2.21it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 8/11 [00:03<00:01,  2.33it/s]Fetching ITBs for COA OMOs:  82%|████████▏ | 9/11 [00:04<00:00,  2.39it/s]Fetching ITBs for COA OMOs:  91%|█████████ | 10/11 [00:04<00:00,  2.36it/s]Fetching ITBs for COA OMOs: 100%|██████████| 11/11 [00:05<00:00,  2.38it/s]Fetching ITBs for COA OMOs: 100%|██████████| 11/11 [00:05<00:00,  2.11it/s]
+Downloading COA messages:   0%|          | 0/11 [00:00<?, ?it/s]Downloading COA messages:  18%|█▊        | 2/11 [00:00<00:00, 12.63it/s]Downloading COA messages:  36%|███▋      | 4/11 [00:00<00:00,  8.76it/s]Downloading COA messages:  55%|█████▍    | 6/11 [00:00<00:00, 10.48it/s]Downloading COA messages:  73%|███████▎  | 8/11 [00:00<00:00, 11.11it/s]Downloading COA messages:  91%|█████████ | 10/11 [00:00<00:00, 11.52it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00, 10.98it/s]
+Geocoding COA addresses:   0%|          | 0/11 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 11/11 [00:00<00:00, 181643.09it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/11 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   9%|▉         | 1/11 [00:00<00:04,  2.14it/s]Fetching ITBs for COA OMOs:  18%|█▊        | 2/11 [00:00<00:04,  2.07it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 3/11 [00:01<00:03,  2.17it/s]Fetching ITBs for COA OMOs:  36%|███▋      | 4/11 [00:01<00:03,  2.23it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 5/11 [00:02<00:02,  2.47it/s]Fetching ITBs for COA OMOs:  55%|█████▍    | 6/11 [00:02<00:01,  2.67it/s]Fetching ITBs for COA OMOs:  64%|██████▎   | 7/11 [00:02<00:01,  2.65it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 8/11 [00:03<00:01,  2.75it/s]Fetching ITBs for COA OMOs:  82%|████████▏ | 9/11 [00:03<00:00,  2.72it/s]Fetching ITBs for COA OMOs:  91%|█████████ | 10/11 [00:03<00:00,  2.79it/s]Fetching ITBs for COA OMOs: 100%|██████████| 11/11 [00:04<00:00,  2.74it/s]Fetching ITBs for COA OMOs: 100%|██████████| 11/11 [00:04<00:00,  2.57it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER09417: stored 1190.00, COA 1190.00
+Award amount check ER09579: stored 472.00, COA 472.00
 Award amount check ER09516: stored 372.00, COA 372.00
 Award amount check ER09330: stored 370.00, COA 370.00
 Award amount check ER09460: stored 375.00, COA 375.00
@@ -42,14 +44,14 @@ Award amount check ER08170: stored 577.00, COA 577.00
 Award amount check ER08552: stored 690.00, COA 690.00
 Award amount check ER07749: stored 417.00, COA 417.00
 Safe merge complete
-Master before: 703
+Master before: 705
 Incoming rows: 11
-Added new OMOs: 2
-Skipped existing OMOs: 9
+Added new OMOs: 0
+Skipped existing OMOs: 11
 Updated existing OMOs: 0
-Need geocode: 2
+Need geocode: 0
 Missing ITB: 0
-Missing description: 2
+Missing description: 0
 Master after: 705
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -57,10 +59,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 2
-OK ER09417 1070 OGDEN AVENUE, 10452 40.834765 -73.928098 NYC_PLANNING_OK
-OK ER09579 1177 WALTON AVENUE, 10452 40.834241 -73.920307 NYC_PLANNING_OK
-Geocoded: 2
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -85,25 +85,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 14
-DESCRIPTION OK ER09417 ER09417_110426020439.pdf
-DESCRIPTION OK ER09579 ER09579_110426011515.pdf
-Descriptions patched: 2
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER09417', 'Address': '1070 OGDEN AVENUE, 10452', 'RecoveredFrom': 'ER09417_110426020439.pdf', 'Preview': ': ******AEP****** AT BUILDING ENTRANCE DOOR AND VESTIBULE DOOR, PUBLI C HALL, 1ST STORY WORK TO BE DONE AT DOOR. 1). AT BUILDING ENTRANCE DOOR: PERFORM ALL NECESSARY REPAIRS DEFECTIVE DOOR LOCK A T BUILDING ENTANCE DOOR '}
-{'OMO': 'ER09579', 'Address': '1177 WALTON AVENUE, 10452', 'RecoveredFrom': 'ER09579_110426011515.pdf', 'Preview': ': *****AEP***** AT BUILDING ENTRANCE DOOR, PUBLIC HALL, 1ST STORY ( BUILDING 1173) REPAIR TO MAKE DOOR SELF-CLOSING PERFORM ALL NECESSARY REPAIRS THE DOOR PUSH BAR AT THE BUILDING (1173) ENTRANCE DOOR, TO MAKE DOOR SELF '}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 2,
-  "reused": 703,
+  "rendered": 0,
+  "reused": 705,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -276,13 +272,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-05T21:57:34.581Z
+Fetcher run finished: 2026-11-05T22:08:11.900Z
 {
   "fetchedCoaItems": 11,
   "fetchedItbItems": 11,
   "fetchedFinalJobRows": 11,
-  "addedNewOmos": 2,
-  "skippedExistingOmos": 9,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 11,
   "rawRows": 705,
   "rows2026": 654,
   "mapped2026": 654,
