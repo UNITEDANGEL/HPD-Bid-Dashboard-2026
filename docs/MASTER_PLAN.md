@@ -33,13 +33,17 @@ The plan, one by one (✅ = live):
    sent, jobs visited. 🔔 I told you: each reminder with ✓ when done, red when still open. ⏭ Coming up: tomorrow's
    bids, this week's appointments, notices waiting on HPD. The 📒 button in the chat, or say "what did we do today",
    "what's left", "what did you remind me", "what's coming up this week".
-5. ☐ **More real talk, part 1: it remembers the conversation.** Keep the last 10 exchanges of the day, so "that one",
-   "the second notice" and "do it" follow what was just said, and it never asks for something you told it a minute ago.
-6. ☐ **More real talk, part 2: it moves on by itself.** When a part is finished (today's bids sent, the notices walked),
+5. ✅ **More real talk, part 1: it remembers what you were just talking about.** The job named in the last 10 minutes is
+   "it" / "that one" / "this job": "I already sent it", "read me that one" go to that job, no "which job?" again.
+   (The AI already had the last 6 exchanges and the last 3 days for follow-ups like "why?" / "and tomorrow?".)
+6. ✅ **More real talk, part 2: it moves on by itself.** When a part is finished (today's bids sent, the notices walked),
    it says so once and offers the next part ("Bids are done. Notices next: 2 to send. Go?"), and doesn't go back to the
-   finished part.
-7. ☐ **More real talk, part 3: shorter, warmer voice.** One sentence out loud, the details on screen. It uses your name
-   once a day. "Got it", "done", "nice" instead of repeating the whole list. It waits if you're talking.
+   finished part. Done: lib/said-today nextPart (bids -> notices -> jobs); the end of today's bids and the end of the
+   notice walk say "… are done. Notices next: 2 to send. Go?"; "go" / "ok" / "do it" / "yes" within 10 minutes does
+   it ("On it."). "Hi again" offers the next step the same way.
+7. ✅ **More real talk, part 3: shorter out loud.** A long answer (300+ characters, 4+ sentences) is said as its first
+   two sentences and "The rest is on the screen."; the screen keeps everything. (Still to do: warmer short words,
+   waiting while you talk.)
 8. ☐ **Future work planner**: "plan my week" puts the open work on days (bids by due date, appointments, paperwork,
    notices by deadline) and the morning brief reads only today's part.
 9. ☐ **Evening wrap**: the 🌆 wrap uses the same recap (done / still open / tomorrow), so nothing is said twice.

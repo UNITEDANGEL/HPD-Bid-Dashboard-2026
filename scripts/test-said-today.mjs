@@ -36,3 +36,21 @@ for (const t of ["what did we do today", "what did I do today", "what have we do
 assert.equal(parseCommand("what do I have today").intent, "today");
 assert.equal(parseCommand("what did I miss").intent, "catch-up");
 console.log("PASS said once: the morning brief once a day, a reminder once, 'Hi again' with done / still open / next (no counts), what did we do today / what's left / what did you remind me");
+
+// ➡️ The next part, a yes, "it", and short speech (owner, 5 Nov: "the agent needs to be more real").
+{
+  const { nextPart, isYes, refersBack, shortSpeech } = await loadLib("said-today");
+  assert.deepEqual(nextPart("bids", { bidsLeft: 0, noticesToSend: 2, nextStep: "Call the tenant" }), { part: "notices", text: "Today's bids are done. Notices next: 2 to send. Go?" });
+  assert.deepEqual(nextPart("bids", { bidsLeft: 0, noticesToSend: 0, nextStep: "Call the tenant." }), { part: "jobs", text: "Today's bids are done. Your jobs next: Call the tenant. Go?" });
+  assert.deepEqual(nextPart("notices", { bidsLeft: 3, noticesToSend: 0, nextStep: "" }), { part: "bids", text: "The notices are done. Bids next: 3 left today. Go?" });
+  assert.equal(nextPart("notices", { bidsLeft: 0, noticesToSend: 0, nextStep: "" }).part, "");
+  for (const t of ["go", "yes", "OK", "okay let's go", "do it", "yes please", "sure", "let's go!"]) assert.equal(isYes(t), true, t);
+  for (const t of ["go to ER00272", "yes the tenant refused", "no", "ok what's next"]) assert.equal(isYes(t), false, t);
+  assert.equal(refersBack("I already sent it"), true);
+  assert.equal(refersBack("read me that one"), true);
+  assert.equal(refersBack("I already sent ER00272"), false);
+  const long = "One thing is first. Two is the second thing here. Three costs $1,200.00 today. Four is more. Five is more words to make this long enough to cut down for speech, really quite long indeed, more than three hundred characters in all, so it is cut and the rest stays on the screen for you, with every detail written out in full for you to read whenever you like, at your own pace.";
+  assert.equal(shortSpeech(long), "One thing is first. Two is the second thing here. The rest is on the screen.");
+  assert.equal(shortSpeech("Short. Answer."), "Short. Answer.");
+  console.log("PASS more real: next part after bids / notices (Go?), a short yes does it, 'it' = the job just talked about, long answers cut out loud");
+}

@@ -7,7 +7,10 @@
       "items": [
         "🗣 The morning hello is said once a day. Tap the 🤖 again later and it says \"Hi again\" with what you got done, what's still open from what it told you, and the next thing. No repeats, and no \"99 jobs to do\".",
         "📒 The day so far, in the chat: ✅ done today, 🔔 what I told you (✓ when done), ⏭ coming up (tomorrow's bids, this week's appointments, notices waiting on HPD). Tap 📒 or say \"what did we do today\" / \"what's left\".",
-        "🔔 A reminder is said once a day, not again and again."
+        "🔔 A reminder is said once a day, not again and again.",
+        "➡️ It moves on by itself: when today's bids or the notices are done it says so once and offers the next part (\"Notices next: 2 to send. Go?\"). Say \"go\" or \"ok\" and it does it.",
+        "🧠 \"It\" means the job you were just talking about: \"I already sent it\", \"read me that one\": no \"which job?\" again.",
+        "🗣 Long answers: it says the first two sentences out loud; the rest is on the screen."
       ]
     },
     {

@@ -51,3 +51,28 @@ export function helloAgain(name: string, r: Recap, next: string) {
   parts.push(next ? `Next: ${next.replace(/\.$/, "")}.` : "What's next?");
   return parts.join(" ");
 }
+
+// ➡️ It moves on by itself (owner, 5 Nov: "we already went through that, next we go to the next part"): when a part is
+// finished it says so once and offers the next one. Bids, then notices, then the jobs.
+export type Part = "bids" | "notices" | "jobs";
+const DONE_WORDS: Record<Part, string> = { bids: "Today's bids are done.", notices: "The notices are done.", jobs: "The jobs are done for now." };
+export function nextPart(done: Part, s: { bidsLeft: number; noticesToSend: number; nextStep: string }): { part: Part | ""; text: string } {
+  const order: Part[] = done === "bids" ? ["notices", "jobs"] : done === "notices" ? ["bids", "jobs"] : ["notices", "bids"];
+  for (const p of order) {
+    if (p === "bids" && s.bidsLeft > 0) return { part: p, text: `${DONE_WORDS[done]} Bids next: ${s.bidsLeft} left today. Go?` };
+    if (p === "notices" && s.noticesToSend > 0) return { part: p, text: `${DONE_WORDS[done]} Notices next: ${s.noticesToSend} to send. Go?` };
+    if (p === "jobs" && s.nextStep) return { part: p, text: `${DONE_WORDS[done]} Your jobs next: ${s.nextStep.replace(/\.$/, "")}. Go?` };
+  }
+  return { part: "", text: `${DONE_WORDS[done]} That's everything for now. 👍` };
+}
+// A short yes to what it just offered ("go", "ok", "do it", "yes let's go").
+export const isYes = (t: string) => /^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|go|go ahead|do it|let'?s go|let'?s do it|sounds good|next|alright)(?:[ ,]+(?:please|let'?s go|go|do it|sure|ok(?:ay)?))*[.!]*$/i.test(t.trim());
+// "it", "that one", "this job", "them": about what was just talked about.
+export const refersBack = (t: string) => /\b(it|that|this|that one|this one|that job|this job|the same|same one|them|there)\b/i.test(t) && !/\b[a-z]{2}\s?\d{5}\b/i.test(t);
+// 🗣 Out loud, a long answer is cut to its first two sentences; the rest stays on the screen.
+export function shortSpeech(reply: string) {
+  const one = reply.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+  const parts = (one.match(/.+?(?:[.!?]+(?=\s|$)|$)/g) || [one]).map((x) => x.trim()).filter(Boolean);
+  if (one.length <= 300 || parts.length <= 3) return one;
+  return `${parts.slice(0, 2).join(" ")} The rest is on the screen.`;
+}

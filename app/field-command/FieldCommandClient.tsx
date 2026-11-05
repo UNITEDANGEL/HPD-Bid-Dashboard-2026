@@ -44,7 +44,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
-import { briefDone, dayRecap, helloAgain, markBrief, noteSaid, readDayLog, wasSaid, type Recap } from "../../lib/said-today";
+import { briefDone, dayRecap, helloAgain, isYes, markBrief, nextPart, noteSaid, readDayLog, refersBack, shortSpeech, wasSaid, type Part, type Recap } from "../../lib/said-today";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
 import { cleanTenantContactName, cleanTenantPhone } from "../../lib/tenantContact";
@@ -1765,6 +1765,10 @@ export default function FieldCommandClient() {
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
   // The last things said to the AI and its answers (this session), for follow-up questions.
   const chatRef = useRef<{ you: string; helper: string; at: number }[]>([]);
+  // 🧠 More real (owner, 5 Nov): what it just offered ("Notices next. Go?" -> "go" does it), and the job just talked
+  // about ("I already sent it", "read me that one" -> that job, without asking again).
+  const offerRef = useRef<{ run: () => void; at: number } | null>(null);
+  const lastTalkRef = useRef<{ omo: string; at: number } | null>(null);
   // 🧠 The conversation is kept on the phone for 3 days, so the robot remembers yesterday (owner, 4 Nov).
   useEffect(() => { chatRef.current = loadChatMemory().slice(-8); }, []);
   // The helper as a conversation (27 Oct, owner: "a better interface for the AI"): the earlier turns stay on screen
@@ -2062,6 +2066,16 @@ export default function FieldCommandClient() {
     if (waiting) later.push(`⏳ ${waiting} notice${waiting === 1 ? "" : "s"} sent, waiting on HPD`);
     return dayRecap(readDayLog(day), done, open, later);
   };
+  const offerNext = (done: Part) => {
+    const day = nyToday();
+    noteSaid(day, `part:${done}`, done === "bids" ? "today's bids done" : done === "notices" ? "notices walked" : "jobs done for now");
+    const n = nextPart(done, { bidsLeft: bidsDue.unsentToday || 0, noticesToSend: boardRows.filter((r) => r.next && boardSide(r) === "tosend").length, nextStep: nextStepRef.current?.text || "" });
+    const step = nextStepRef.current;
+    offerRef.current = n.part === "notices" ? { run: () => agentRef.current("go through my notices"), at: Date.now() }
+      : n.part === "bids" ? { run: () => agentRef.current("next bid"), at: Date.now() }
+      : n.part === "jobs" && step ? { run: () => { setAgent(null); step.go(); }, at: Date.now() } : null;
+    return n.text;
+  };
   const startAgentChat = (magic = false) => {
     unlockChime();
     const step = nextStepRef.current;
@@ -2083,6 +2097,7 @@ export default function FieldCommandClient() {
         moodSound("magic");
         const acts0 = [...(ask0 ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
         setAgent({ heard: "👋", reply: again, recap: r, actions: acts0.length ? acts0 : undefined });
+        offerRef.current = step ? { run: () => { setAgent(null); step.go(); }, at: Date.now() } : null;
         speak(again.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
         return;
       }
@@ -5109,6 +5124,16 @@ export default function FieldCommandClient() {
         return;
       }
     }
+    {
+      // ➡️ "Go" / "OK" / "do it" right after it offered the next part: it does it (10 minutes; not over a yes / no).
+      const of = offerRef.current;
+      if (of && !inner && isYes(heard) && Date.now() - of.at < 600000 && !agent?.confirm && !(pendingRef.current && Date.now() - pendingRef.current.at < 120000)) {
+        offerRef.current = null;
+        speak("On it.", 0);
+        of.run();
+        return;
+      }
+    }
     if (askAnywayRef.current && askAnywayRef.current !== heard) askAnywayRef.current = "";
     {
       const st = stepsRef.current;
@@ -5175,14 +5200,18 @@ export default function FieldCommandClient() {
         speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200, () => { if (convoRef.current) startListening(); });
         return;
       }
+      // ➡️ Today's bids done: say it once and offer the next part.
+      if (/^That's all of today's bids/.test(reply)) reply = `${reply.replace(/\s*Time for your jobs\?$/, "")} ${offerNext("bids")}`;
+      { const o = omosIn(`${heard} ${reply}`)[0]; if (o) lastTalkRef.current = { omo: o, at: Date.now() }; }
       // 🚗 Hands-free day: after each answer, the next step to do ("go" does it).
       if (leadDayRef.current && drivingRef.current && !confirm && nextStepRef.current && !reply.includes(nextStepRef.current.text)) reply = `${reply}\n\nNext: ${nextStepRef.current.text}. Say "go", or ask me anything.`;
       setAgent({ heard, reply, confirm, cards: takeCards(reply) });
       // 🧠 Remembered for follow-ups (the AI's own answers are added where they come back).
       { const last = chatRef.current[chatRef.current.length - 1]; if (!(last && Date.now() - last.at < 3000 && last.helper.startsWith(reply.slice(0, 40)))) chatRef.current = [...chatRef.current, { you: String(heard).slice(0, 200), helper: reply.replace(/\s+/g, " ").slice(0, 400), at: Date.now() }].slice(-8); saveChatMemory(chatRef.current); }
       // 💬 Conversation mode: listen again once the answer has been said.
-      const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 200, again); };
-    const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob);
+      const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(shortSpeech(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ")), 200, again); };
+    const recentOmo = () => { const l = lastTalkRef.current; return l && Date.now() - l.at < 10 * 60000 && refersBack(heard) ? l.omo : ""; };
+    const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob || (recentOmo() ? findAnyJob(recentOmo()) || null : null));
     // The cards under an answer: the ones set for it, else the jobs it names (not the one already open).
     function takeCards(reply: string) {
       const set = cardsRef.current;
@@ -5611,7 +5640,7 @@ export default function FieldCommandClient() {
     if (cmd.intent === "notice-handled") {
       // "I already sent ER00272": that job, else the one on the walk / screen, else ask.
       const shown = noticeWalk ? boardRows.find((r) => r.key === noticeWalk.keys[noticeWalk.i]) : null;
-      const omo = cmd.ref || shown?.omo || (selectedJob && boardOpenRows.some((r) => r.omo === jobId(selectedJob)) ? jobId(selectedJob) : "");
+      const omo = cmd.ref || shown?.omo || (selectedJob && boardOpenRows.some((r) => r.omo === jobId(selectedJob)) ? jobId(selectedJob) : "") || (boardOpenRows.some((r) => r.omo === recentOmo()) ? recentOmo() : "");
       const rows = boardOpenRows.filter((r) => r.omo === omo);
       if (!omo || !rows.length) { answer(omo ? `${omo} has no open notice.` : "Which notice? Say the job number, like \"ER00272 is already sent\"."); return; }
       markHandled(omo);
@@ -8979,7 +9008,7 @@ export default function FieldCommandClient() {
         const facts = walkFactsOf(row);
         const say = () => speak(walkSpeech(row, facts, noticeWalk.i, keys.length), 0);
         const go = (i: number) => {
-          if (i >= keys.length) { const t = `That's all ${keys.length} notice${keys.length === 1 ? "" : "s"}. 👍${noticeWalk.waiting ? ` ${noticeWalk.waiting} more are sent and waiting on HPD.` : ""} Want to look at your jobs?`; setNoticeWalk(null); setAgent({ heard: "", reply: t }); speak(t, 100); return; }
+          if (i >= keys.length) { const t = `That's all ${keys.length} notice${keys.length === 1 ? "" : "s"}. 👍${noticeWalk.waiting ? ` ${noticeWalk.waiting} more are sent and waiting on HPD.` : ""} ${offerNext("notices")}`; setNoticeWalk(null); setAgent({ heard: "", reply: t }); speak(t, 100); return; }
           setNoticeWalk({ ...noticeWalk, i });
         };
         return (

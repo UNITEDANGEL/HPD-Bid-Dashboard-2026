@@ -90,6 +90,8 @@ try {
   await walk.locator('[data-hpd-smoke="fc-walk-next-btn"]').click();
   await walk.waitFor({ state: "detached" });
   await page.waitForFunction(() => /That's all \d+ notice/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  // ➡️ It moves on (owner, 5 Nov): the walk's end says the notices are done and offers the next part once.
+  assert.match(await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText(), /The notices are done\. (Bids next: \d+ left today\. Go\?|Your jobs next: .+ Go\?|That's everything for now\.)/);
 
   // "I already sent EQ15239" by voice: off the list.
   await say(`I already sent ${NOTHING}`);
