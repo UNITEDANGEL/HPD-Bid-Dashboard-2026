@@ -38,7 +38,7 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
 
   // 0) 👋 Hello on open (asked for in this test): the robot says hi in its bubble.
-  await page.evaluate(() => { localStorage.setItem("hpd-test-hello", "1"); localStorage.removeItem("hpd-robot-hello"); localStorage.removeItem("hpd-robot-hello-day"); localStorage.removeItem("hpd-last-job"); });
+  await page.evaluate(() => { localStorage.setItem("hpd-test-hello", "1"); localStorage.removeItem("hpd-robot-hello"); localStorage.removeItem("hpd-robot-hello-day"); localStorage.removeItem("hpd-last-job"); localStorage.setItem("hpd-goodnight-day", new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date())); /* the goodnight has its own test */ });
   await page.reload({ waitUntil: "load" });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   await page.waitForFunction(() => /^👋 (Good morning|Hi|Good evening), Jot!/.test(document.querySelector('[data-hpd-smoke="fc-orb-say"]')?.textContent || ""), null, { timeout: 8000 });

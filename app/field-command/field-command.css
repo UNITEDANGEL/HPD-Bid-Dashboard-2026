@@ -4340,3 +4340,13 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-face.is-human .fc-face-arms.is-count .fc-arm-r { animation: fc-arm-thumb 0.5s cubic-bezier(.2, 1.4, .4, 1) both; }
 @media (prefers-reduced-motion: reduce) { .fc-agent.is-from-dock .fc-agent-who .fc-face.is-human { animation: none; } }
 .fc-dress-voice-help { display: block; margin: 4px 0; padding: 8px 10px; border-radius: 10px; background: #1e293b; color: #e2e8f0; font: 600 13px/1.4 system-ui, sans-serif; }
+/* 📖 Reading the job card with you: the part being read glows (4 Nov). */
+#fc-job-card [data-read-along] { position: relative; border-radius: 14px; box-shadow: 0 0 0 3px #a78bfa, 0 0 22px rgba(167, 139, 250, 0.55); transition: box-shadow 0.3s ease; animation: fc-read-glow 1.4s ease-in-out infinite alternate; }
+@keyframes fc-read-glow { from { box-shadow: 0 0 0 2px #a78bfa, 0 0 10px rgba(167, 139, 250, 0.35); } to { box-shadow: 0 0 0 3px #c4b5fd, 0 0 24px rgba(167, 139, 250, 0.7); } }
+/* 🗺 The helper on the route waves at a finished stop. */
+.fc-ride-bot { position: relative; }
+.fc-ride-bot .fc-ride-wave { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, 4px) scale(0.6); opacity: 0; white-space: nowrap; padding: 2px 8px; border-radius: 999px; background: #fff; color: #0f172a; font: 900 12px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,.3); transition: transform 0.3s cubic-bezier(.2,1.4,.4,1), opacity 0.3s; pointer-events: none; }
+.fc-ride-bot.is-waving .fc-ride-wave { opacity: 1; transform: translate(-50%, -4px) scale(1); }
+.fc-ride-bot.is-waving .fc-face { animation: fc-ride-hop 0.5s ease-in-out 3; }
+@keyframes fc-ride-hop { 50% { transform: translateY(-6px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { #fc-job-card [data-read-along], .fc-ride-bot.is-waving .fc-face { animation: none; } }

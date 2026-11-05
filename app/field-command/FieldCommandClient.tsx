@@ -1869,6 +1869,16 @@ export default function FieldCommandClient() {
       unlockChime();
       // 🧭 "Take me there" after it: the job just read is the one "there" means.
       if (d.omo) { lastJobsRef.current = { ids: [d.omo], at: Date.now() }; const omo = d.omo; window.setTimeout(() => robotWalkRef.current(omo), 250); }
+      // 📖 Reading a job card with you (4 Nov): the address, the work, the tenant and the dates glow one after the other while
+      // it reads (data-read-along; React doesn't own it, so a re-render keeps it).
+      if (d.omo && document.querySelector("#fc-job-card")) {
+        const parts = ["jc-job-where", "jc-description", "jc-contact", "jc-key-dates"].map((k) => document.querySelector<HTMLElement>(`#fc-job-card [data-hpd-smoke="${k}"]`)).filter((el): el is HTMLElement => Boolean(el));
+        const clear = () => document.querySelectorAll<HTMLElement>("[data-read-along]").forEach((el) => el.removeAttribute("data-read-along"));
+        const per = Math.max(1800, Math.min(7000, (d.text.length * 62) / Math.max(1, parts.length)));
+        clear();
+        parts.forEach((el, i) => window.setTimeout(() => { clear(); el.setAttribute("data-read-along", "1"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, 300 + i * per));
+        window.setTimeout(clear, 300 + parts.length * per);
+      }
       setAgent({ heard: `📣 ${d.title}`, reply: d.text, actions: d.go ? [{ label: "🧭 Take me there (Waze)", href: d.go, id: d.omo, via: "Waze" }] : undefined, offers: d.omo ? ["walk me through it"] : undefined, offersLabel: d.omo ? "At the building?" : undefined });
       speak(d.text.replace(/\bHPD\b/g, "H P D").replace(/\b([A-Z]{2})(\d{5})\b/g, (_m, a: string, n: string) => `${a.split("").join(" ")} ${n.split("").join(" ")}`), 200, () => { if (convoRef.current && !listenRef.current) startListeningRef.current(); });
     };
@@ -4140,6 +4150,20 @@ export default function FieldCommandClient() {
       const pickUp = lastJob && !sent && !/APPOINTMENT_REQUESTED|NO_ACCESS_1/.test(outcome)
         ? `${jobId(lastJob)}${jobAddress(lastJob) ? ` (${jobAddress(lastJob)})` : ""}: ${FIELD_OUTCOMES[outcome] ? "the package isn't sent yet" : "still open"}`
         : "";
+      // 🌙 Goodnight (4 Nov): after 9 PM, once a night, tomorrow's first thing and the weather, then the pajamas go on.
+      const hNow = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+      let nightDone = true;
+      try { nightDone = localStorage.getItem("hpd-goodnight-day") === day; } catch { /* private mode */ }
+      if ((hNow >= 21 || hNow < 3) && !nightDone) {
+        try { localStorage.setItem("hpd-goodnight-day", day); } catch { /* private mode */ }
+        const nm = (() => { try { return localStorage.getItem("hpd-owner-name") || "Jot"; } catch { return "Jot"; } })();
+        const tomorrow = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + (hNow < 3 ? 0 : 86400000)));
+        const appt = jobs.map((j) => ({ j, a: activeAppointment(j as unknown as Record<string, unknown>) })).filter((x) => x.a && x.a.date === tomorrow).sort((x, y) => String(x.a!.start).localeCompare(String(y.a!.start)))[0];
+        const first = appt ? `your first appointment is ${appointmentLabel(appt.a!)} at ${jobAddress(appt.j).replace(/,\s*\d{5}$/, "")}` : bidsDue.tomorrow ? `${bidsDue.tomorrow} bid${bidsDue.tomorrow === 1 ? " is" : "s are"} due` : "";
+        const say = `🌙 Goodnight, ${nm}. ${first ? `Tomorrow ${first}. ` : ""}Get some rest!`;
+        setOrbSay({ text: say, full: say, at: Date.now() });
+        return;
+      }
       if (greeted) {
         if (!pickUp) return;
         const say = `↩️ Welcome back. Pick up where you left off? ${pickUp}.`;
@@ -4161,6 +4185,7 @@ export default function FieldCommandClient() {
     let marker: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
     let k = 0;
     let stop = false;
+    let doneStops = Number.MAX_SAFE_INTEGER;
     const tick = async () => {
       const map = mapRef.current;
       const ids = todayRouteIds();
@@ -4174,7 +4199,11 @@ export default function FieldCommandClient() {
       k = (k + 0.04) % 1.15;
       const f = Math.min(1, k);
       const pos: [number, number] = [from.lat + (to.lat - from.lat) * f, from.lng + (to.lng - from.lng) * f];
-      if (!marker) marker = L.marker(pos, { icon: L.divIcon({ className: "fc-ride-marker", html: `<div class="fc-ride-bot" data-hpd-smoke="fc-ride-bot">${helperFaceHtml(getHelperLook().color, 30, getHelperLook().skin, getHelperLook().hair)}</div>`, iconSize: [34, 34], iconAnchor: [17, 62] }), interactive: false, zIndexOffset: 2500 }).addTo(map);
+      // 👋 It waves (and says "nice!") each time a stop on today's route gets finished.
+      const finished = ids.filter((id) => { const j = jobsRef.current.find((x) => jobId(x) === id); return j && value(j, ["FieldOutcome", "fieldOutcome"]); }).length;
+      if (marker && finished > doneStops) { const el = marker.getElement?.()?.querySelector?.(".fc-ride-bot"); if (el) { el.classList.add("is-waving"); window.setTimeout(() => el.classList.remove("is-waving"), 3500); } }
+      doneStops = finished;
+      if (!marker) marker = L.marker(pos, { icon: L.divIcon({ className: "fc-ride-marker", html: `<div class="fc-ride-bot" data-hpd-smoke="fc-ride-bot"><span class="fc-ride-wave" aria-hidden="true">👋 Nice!</span>${helperFaceHtml(getHelperLook().color, 30, getHelperLook().skin, getHelperLook().hair)}</div>`, iconSize: [34, 34], iconAnchor: [17, 62] }), interactive: false, zIndexOffset: 2500 }).addTo(map);
       else marker.setLatLng(pos);
     };
     const timer = window.setInterval(() => void tick(), 200);

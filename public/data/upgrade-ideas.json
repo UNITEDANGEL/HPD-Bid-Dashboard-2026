@@ -3,25 +3,25 @@
   "updated": "2026-11-04",
   "ideas": [
     {
-      "id": "helper-sits-on-map",
-      "icon": "🗺",
+      "id": "helper-quiz",
+      "icon": "🎓",
       "kind": "new",
-      "title": "The helper rides on the map",
-      "why": "A tiny version of your helper rides along your route on the map and waves at each stop you finish."
+      "title": "The helper teaches you the app",
+      "why": "Ask \"teach me\": a 2-minute walk through the app with the helper pointing at each button."
     },
     {
-      "id": "helper-reads-card",
-      "icon": "📖",
+      "id": "helper-call-tenant",
+      "icon": "📞",
       "kind": "new",
-      "title": "The helper reads the job card with you",
-      "why": "Open a job and the helper points at each part as it reads it: the address, the work, the tenant, the due date."
+      "title": "The helper calls the tenant for you",
+      "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
     },
     {
-      "id": "helper-day-recap",
-      "icon": "🌙",
+      "id": "helper-photo-tips",
+      "icon": "📷",
       "kind": "new",
-      "title": "Goodnight from the helper",
-      "why": "At the end of the day the helper says goodnight with tomorrow's first stop and the weather, then puts on its pajamas."
+      "title": "Photo tips while you shoot",
+      "why": "Before and after photos: the helper says \"step back\" or \"turn on the light\" while the camera is open."
     },
     {
       "id": "papers-list",

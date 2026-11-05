@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 4, 2026",
+      "title": "Goodnight from your helper",
+      "items": [
+        "🌙 After 9 PM, the first time you open the app, your helper says goodnight with tomorrow's first appointment (or the bids due), once a night.",
+        "📖 When the helper reads a job card to you (🔊), each part lights up as it reads it: the address, the work, the tenant, the dates.",
+        "🗺 The little helper riding along today's route hops and says \"👋 Nice!\" each time you finish a stop."
+      ]
+    },
+    {
+      "date": "Nov 4, 2026",
       "title": "Claude's questions, fixed; a more real voice",
       "items": [
         "❓ Claude's questions: the button shows how many are waiting (\"6 questions\"), the card shows the whole question, and the buttons fit it: ✅ Yes, do it / No when it asks yes or no (or wants exact words), 👍 You decide when there's a choice. After you answer one, the next one shows.",

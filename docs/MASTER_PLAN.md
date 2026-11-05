@@ -60,7 +60,8 @@ The owner's words today, in order, and what was done with each:
    voices ⭐ in 🎨 with the free Premium download steps; the helper gets every open job (243).
 19. "Why does Claude still have one question for me? ... it gives me 2 options, it doesn't let me pick" -> 6 were waiting;
    the count, the whole question and answers that fit it; the next one shows after each answer (243). Still to do: the
-   owner answers the 6 (suggested answers given), and the 3 helper ideas (rides on the map, reads the card, goodnight).
+   owner answers the 6 (suggested answers given).
+20. "do all ideas and keep upgrading" -> goodnight, reading the card with you, the route helper waves (244).
 
 ### Still to do from today
 - Keep making the robot more like a real person: answer while it is still thinking (first words fast), remember
@@ -72,9 +73,9 @@ The owner's words today, in order, and what was done with each:
 
 ### Ideas from today (not started)
 - 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person.
-- 🗺 The helper rides along your route on the map and waves at each finished stop.
-- 📖 The helper reads the job card with you, pointing at each part.
-- 🌙 Goodnight from the helper: tomorrow's first stop and the weather, then pajamas.
+- 🎓 The helper teaches you the app in 2 minutes, pointing at each button.
+- 📞 The helper calls the tenant for you (needs the phone service).
+- 📷 Photo tips while you shoot ("step back", "turn on the light").
 - 🗂 Your papers in one place with dates and a 30-day warning.
 - 🚗 A whole day hands-free: the robot leads every step by voice.
 
@@ -86,6 +87,7 @@ giving me more ideas"; "everything we talk about goes in the master file". Claud
 Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 
 ### Done today (live or going live)
+- 4 Nov: goodnight from the helper, the job card glows as it is read, the route helper waves at finished stops (244).
 - 4 Nov: Claude's questions fixed (count, whole question, answers that fit, next one shows); natural voices ⭐ and how to get one; the helper knows every open job (243).
 - 4 Nov: "How did it go?" after a job (kept as the note), clothes for the weather, a whole day hands-free (242).
 - 4 Nov: name your helper (it answers to it), it shrugs / counts / points, it walks in (241).
@@ -1002,6 +1004,7 @@ them. The owner enters any payment details and API keys themselves (keys go into
 241. **Name your helper; it talks with its hands; it walks in** (owner, 4 Nov: "do all ideas and keep upgrading"). Done: helper-look name (🎨 "🏷 Its name", up to 20 letters); the chat header and the welcome line use it; agentRef strips "hey <name>," from what's said and answers "Yes? I'm listening." (then listens) to the name alone. HelperFace arms "shrug" (both hands up) and "count" (one finger up); the chat face shrugs on "not sure / I couldn't / I don't know", counts on a list (• or 1.), points at offered buttons. The chat face walks in from the side with steps and a bob when opened from the dock (fc-walk-in). Tests: robot-ideas (name, "Hey Mike" -> Yes?, a shrug on "I'm not sure").
 242. **How did it go?; dressed for the weather; a whole day hands-free** (owner, 4 Nov: "do all ideas and keep upgrading"). Done: after a package is approved (hpd-package-approved), once per job (hpd-how-went-<id>), the helper asks "How did it go at <street>?" with taps (It went fine / The tenant wasn't happy / I need to come back / skip) and listens; the next words go to addJobNote (the job card's notes); skip / no saves nothing. robotOutfit: raincoat (+ umbrella) in rain, winter (coat, knit hat, scarf) in snow or at 40° and under, jacket to 55°, tshirt at 80°+ (summer = with sunglasses when sunny); HelperFace draws the coats, the hood, the knit hat and a round T-shirt neck. Intent hands-free-day ("hands free day", "lead my day", "drive me through my day"): driving mode and conversation on, the day read out, then every answer ends with "Next: <step>. Say go" and "go / next / ok" runs nextStepRef; "I'm parked" ends it. Tests: test-helper-look (clothes by weather), robot-ideas (How did it go -> note saved; hands free day -> driving on).
 243. **Claude's questions fixed; a more real voice; the helper knows every job** (owner, 4 Nov: "Why does Claude still have one question for me? ... every time I tap it gives me 2 options; it doesn't let me pick an answer; I picked it two times but it doesn't work"; "I want the helper to know all the answers ... make him sound like a real person. How can I change voices?"). Found: 6 requests were waiting (2 the same), the badge always said "1 question", the card cut the question off, You decide didn't fit a yes / no question so the helper asked again, and after one answer the card stayed on it. Done: the badge counts ("6 questions"); a waiting question is always the card's request, shown in full; quickAnswers(question) gives ✅ Yes, do it (sends the exact words when it says type '...') / ⏭ Not now, ✅ Yes / No for "want me to…?", 👍 You decide / Skip otherwise; ✍️ Answer opens Your requests. Voice: ⭐ on natural voices (Premium / Enhanced / Siri / neural), up to 8 shown, and when the phone has none, the steps to download a free Premium voice; a question lifts the pitch a little. AI facts allJobs (every open job in short: number, address, borough, stage, status, award and due dates, amount, note; no tenant data) with a prompt rule. The 6 waiting questions were not answered for the owner (his decision); suggested answers given in the chat. Tests: claude-ask-quick (2 questions, exact-words Yes, the next one shows), smart-ask (allJobs, no tenant data), helper-talks.
+244. **Goodnight; reading the card with you; the route helper waves** (owner, 4 Nov: "do all ideas and keep upgrading"). Done: the hello at 9 PM-3 AM is a goodnight once a night (hpd-goodnight-day) with tomorrow's first appointment or the bids due; the read-aloud of a job card marks jc-job-where, jc-description, jc-contact and jc-key-dates one after the other (data-read-along, a purple glow, scrolled into view); the helper riding today's route hops with "👋 Nice!" when a route stop gets an outcome. Tests: goodnight (new, clock at 10 PM, once a night), robot-ideas (the card's parts glow while read), helper-talks (skips the goodnight at night).
 - **Quick questions in the chat** (owner idea, 3 Nov; done: ⚡ button in the chat bar opens one-tap questions (Today, Next bid, Notices, Owed, What's next); test-browser-quick-questions).
 918. **Don't leave without the after photo** (owner idea, 4 Nov; done: lib/leave-reminder.ts leftWithoutAfterPhoto = arrived today (FieldArrivedAt, under 10 h), no after photo, no outcome saved, and the phone more than 150 m from the job; the GPS watch in FieldCommandClient calls leavingRef once per job: orb bubble "📸 No after photo yet" + tone/voice; test-leave-reminder).
 919. **Smoother talking with the chat** (owner, 4 Nov, on the insurance/license idea: "make the fluid conversation more fluid, listen for the user after each response"; done: in FieldCommandClient startListening, if the mic ends with words heard but never marked final, the chat answers them; silent turns in 💬 mode retry 3 times (was 1); it already listened again after every spoken answer; test: scripts/test-browser-fluid-talk.mjs).
