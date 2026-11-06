@@ -78,6 +78,24 @@ function pickVoice(lang: "es" | "en" = "en") {
   return (chosen && all.find((v) => v.name === chosen)) || all[0];
 }
 
+// 🎙 Three voices to pick from (plan item 17): the 3 best English voices on this phone (natural ones first), each said
+// with the same sentence, without saving anything until the owner taps "Use this voice".
+export function topVoices(n = 3): SpeechSynthesisVoice[] { return englishVoices().slice(0, n); }
+export function sampleVoice(name: string, text: string) {
+  if (!voiceSupported() || !name || !text) return false;
+  try {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const v = englishVoices().find((x) => x.name === name);
+    const u = new SpeechSynthesisUtterance(speechText(text));
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+    u.rate = (v && isNaturalVoice(v.name) ? 0.94 : 0.98) * voiceRate();
+    u.onboundary = (e) => { const word = /^[^\s]+/.exec(u.text.slice(e.charIndex || 0))?.[0] || ""; if (word) window.dispatchEvent(new CustomEvent(SPEAK_WORD_EVENT, { detail: { word } })); };
+    synth.speak(u);
+    return true;
+  } catch { return false; }
+}
+
 // Said the way a person would (27 Oct): no emoji or bullets, "58°F" -> "58 degrees", "mph" -> "miles per hour".
 export function speechText(text: string) {
   return text
@@ -156,7 +174,8 @@ export function speak(text: string, delay = 900, onEnd?: () => void) {
       // 👄 Each word as it's said, so the helper's mouth follows the words (owner idea, 4 Nov).
       u.onboundary = (e) => { if (e.name && e.name !== "word") return; const word = /^[^\s]+/.exec(said.slice(e.charIndex || 0))?.[0] || ""; if (word) window.dispatchEvent(new CustomEvent(SPEAK_WORD_EVENT, { detail: { word } })); };
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === "es" ? "es-US" : "en-US";
-      u.rate = 0.98 * voiceRate();
+      // A natural (Premium / Enhanced) voice sounds more real a little slower, like a person talking.
+      u.rate = (v && isNaturalVoice(v.name) ? 0.94 : 0.98) * voiceRate();
       // A question lifts a little, like a person asking (owner, 4 Nov: "make him sound like a real person").
       u.pitch = /\?\s*$/.test(said) ? 1.05 : 1;
       u.volume = 1;

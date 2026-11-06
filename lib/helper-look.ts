@@ -8,7 +8,15 @@ export type HelperSkin = "light" | "medium" | "tan" | "brown" | "dark";
 export type HelperHair = "black" | "brown" | "blond" | "gray";
 // color = the shirt now (owner, 4 Nov: "I want it to look like a whole person, not a robot"); skin and hair are picks too.
 // name: what the owner calls the helper (🏷, 4 Nov); it answers to it ("Hey Mike, what's next?"). Empty = "Your helper".
-export type HelperLook = { color: HelperColor; hat: HelperHat; skin: HelperSkin; hair: HelperHair; name: string };
+// style: "cartoon" (the drawn person) or one of 3 real-looking faces the owner picks from previews (6 Nov).
+export type HelperStyle = "cartoon" | "real1" | "real2" | "real3";
+export const HELPER_STYLES: Record<HelperStyle, { label: string; eye: string; eyeDark: string; light: number; blurb: string }> = {
+  cartoon: { label: "Drawn", eye: "#4a3424", eyeDark: "#0b0b0b", light: 0, blurb: "the drawn person" },
+  real1: { label: "Natural", eye: "#6b4a2f", eyeDark: "#1a1009", light: 0.35, blurb: "soft daylight, brown eyes" },
+  real2: { label: "Studio", eye: "#3f7a8c", eyeDark: "#0b1a20", light: 0.6, blurb: "strong light, blue-green eyes" },
+  real3: { label: "Warm", eye: "#8a6a2a", eyeDark: "#201505", light: 0.45, blurb: "golden light, hazel eyes" },
+};
+export type HelperLook = { color: HelperColor; hat: HelperHat; skin: HelperSkin; hair: HelperHair; name: string; style: HelperStyle };
 export const cleanHelperName = (v: unknown) => String(v || "").replace(/[^\p{L}\p{N} '-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 20);
 export const HELPER_SKINS: Record<HelperSkin, { skin: string; shade: string; label: string }> = {
   light: { skin: "#f7d7c4", shade: "#e8b89f", label: "Light" },
@@ -34,13 +42,13 @@ export const HELPER_HATS: Record<HelperHat, string> = { none: "No hat", hardhat:
 
 const KEY = "hpd-helper-look";
 const EVENT = "hpd-helper-look";
-const DEFAULT: HelperLook = { color: "purple", hat: "none", skin: "medium", hair: "black", name: "" };
+const DEFAULT: HelperLook = { color: "purple", hat: "none", skin: "medium", hair: "black", name: "", style: "cartoon" };
 
 export function getHelperLook(): HelperLook {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     return { color: v?.color in HELPER_COLORS ? v.color : DEFAULT.color, hat: v?.hat in HELPER_HATS ? v.hat : DEFAULT.hat,
-      skin: v?.skin in HELPER_SKINS ? v.skin : DEFAULT.skin, hair: v?.hair in HELPER_HAIRS ? v.hair : DEFAULT.hair, name: String(v?.name || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0, 20) };
+      skin: v?.skin in HELPER_SKINS ? v.skin : DEFAULT.skin, hair: v?.hair in HELPER_HAIRS ? v.hair : DEFAULT.hair, name: String(v?.name || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0, 20), style: v?.style in HELPER_STYLES ? v.style : DEFAULT.style };
   } catch { return DEFAULT; }
 }
 

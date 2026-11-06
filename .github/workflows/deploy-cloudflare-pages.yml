@@ -410,6 +410,7 @@ jobs:
             scripts/test-browser-wait-talk.mjs \
             scripts/test-browser-convo-memory.mjs \
             scripts/test-browser-helper-talks.mjs \
+            scripts/test-browser-real-helper.mjs \
             scripts/test-browser-package-send.mjs \
             scripts/test-browser-robot-ideas.mjs \
             scripts/test-browser-talk-store.mjs \

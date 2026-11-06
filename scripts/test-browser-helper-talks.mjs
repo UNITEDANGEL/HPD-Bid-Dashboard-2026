@@ -82,7 +82,7 @@ try {
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-voice-name")), "Evan (Enhanced)");
   assert.equal(await voices.filter({ hasText: "Evan" }).getAttribute("aria-pressed"), "true");
   await page.locator('[data-hpd-smoke="fc-dress-rate"][data-rate="1.15"]').click();
-  await page.waitForFunction(() => window.__rate > 1.1, null, { timeout: 3000 });
+  await page.waitForFunction(() => window.__rate > 1.05, null, { timeout: 3000 });
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-voice-rate")), "1.15");
   // 🔋 Battery saver in 🎨: nothing moves while it's on.
   await page.locator('[data-hpd-smoke="fc-dress-saver"]').click();

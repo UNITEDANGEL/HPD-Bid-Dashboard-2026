@@ -375,26 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-05-night-c",
-    "title": "Next on the plan: a more real helper (your words: \"more real, more understanding, keep track of our conversation\")",
+    "id": "2026-11-06-a",
+    "title": "Next on the plan: a helper that understands and follows up",
     "items": [
       {
-        "id": "remembers-conversation",
-        "icon": "🧠",
-        "title": "It remembers our conversation",
-        "why": "The last things said today (both sides) kept on the phone: \"that job\", \"the one before\", \"what did I say about Main Street\" answered from them."
+        "id": "understands-better",
+        "icon": "👂",
+        "title": "It understands better",
+        "why": "When it isn't sure, it asks one short question (\"the bid or the notice?\") instead of guessing, and learns your own words."
       },
       {
-        "id": "real-face",
-        "icon": "🙂",
-        "title": "A more real face",
-        "why": "A real-looking face instead of a cartoon: blinks, looks at you, lips move with the words. You pick from 3 previews first."
+        "id": "follows-up",
+        "icon": "🔁",
+        "title": "It follows up by itself",
+        "why": "What you said you'd do (\"I'll call the tenant after lunch\") comes back at that time, once."
       },
       {
-        "id": "real-voice",
-        "icon": "🎙",
-        "title": "A more real voice",
-        "why": "The best natural voice on your iPhone, with pauses and short sentences. You pick from 3 samples. Free voices only."
+        "id": "hears-in-truck",
+        "icon": "🚚",
+        "title": "It hears you in the truck",
+        "why": "When wind or road noise hides your words, it says \"say it again\" and shows what it heard to fix with one tap."
       }
     ]
   }

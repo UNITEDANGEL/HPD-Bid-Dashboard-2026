@@ -95,14 +95,22 @@ The plan, one by one (✅ = live):
    Built (lib/convo-memory.ts): today's talk (last 30 exchanges, both sides) on this phone only, never sent; "what did
    we talk about", "what did I say about <street / job>", "say that again" / "what did you say before", "the job before"
    (opens it); "🧠 Today we talked about …" under the three boxes.
-16. ☐ **🙂 A more real face**: a real-looking face (photo-style, not a cartoon): blinks, looks at you, lips move with the
+16. ✅ **🙂 A more real face**: a real-looking face (photo-style, not a cartoon): blinks, looks at you, lips move with the
    words, nods while you talk; picked by the owner from 3 previews first.
-17. ☐ **🎙 A more real voice**: the best natural voice on the phone (iPhone "Enhanced/Premium" voices), slower and with
+   Built (6 Nov): in the chat's 🎨, three real-looking faces to pick from (Natural / Studio / Warm: shaded skin, real
+   irises, lashes, nose and lips, different light and eye color) next to the drawn one; blink, look, mouth-follows-words
+   and nods kept; the pick is kept on the phone. Test: test-browser-real-helper. (A true photo face needs a paid
+   service, so these are drawn with shading.)
+17. ✅ **🎙 A more real voice**: the best natural voice on the phone (iPhone "Enhanced/Premium" voices), slower and with
    pauses, short sentences; the owner picks it from 3 samples. Free voices only (no paid service).
+   Built (6 Nov): in 🎨 the 3 best voices on the phone (⭐ natural first) with ▶ Hear (says a sample, saves nothing) and
+   "Use this voice"; natural voices are said a little slower (0.94); answers already come in short sentences.
 18. ☐ **👂 It understands better**: when it isn't sure, it asks back one short question ("the bid or the notice?")
    instead of guessing; it learns the owner's own words (e.g. "close it" = send the affidavit) and keeps them.
 19. ☐ **🔁 It follows up by itself**: what you said you'd do ("I'll call the tenant after lunch") comes back at that
    time, once.
+20. ☐ **🚚 It hears you in the truck**: when the mic picks up wind or road noise and misses words, it says "I didn't
+   catch that, say it again" and shows what it heard to fix with one tap, instead of guessing.
 
 Recommendations (Claude): one dashboard card (13) and warmer talk (14) are next, then 15-19 to make the helper feel
 real (memory first: it's what makes it "understanding").

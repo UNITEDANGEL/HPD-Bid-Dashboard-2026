@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { HELPER_COLORS, HELPER_HAIRS, HELPER_SKINS, useHelperLook, type HelperHat, type HelperOutfit } from "../../lib/helper-look";
+import { useEffect, useId, useRef, useState } from "react";
+import { HELPER_COLORS, HELPER_HAIRS, HELPER_SKINS, HELPER_STYLES, useHelperLook, type HelperStyle, type HelperHat, type HelperOutfit } from "../../lib/helper-look";
 import { SPEAK_WORD_EVENT, visemesOf, type Viseme } from "../../lib/speak";
 
 // 🧑 The helper (owner, 3 Nov: "the bot should look real: blink, move around, a talking thing"; 4 Nov: "the mouth, hands
@@ -43,9 +43,10 @@ function Hand({ kind, skin, shade }: { kind: "open" | "point" | "thumb"; skin: s
   );
 }
 
-export default function HelperFace({ mode = "idle", size = 34, className = "", look, outfit = "", arms = "", hat }: { mode?: FaceMode; size?: number; className?: string; look?: { x: number; y: number } | null; outfit?: HelperOutfit; arms?: HelperArms; hat?: HelperHat }) {
+export default function HelperFace({ mode = "idle", size = 34, className = "", look, outfit = "", arms = "", hat, style }: { style?: HelperStyle; mode?: FaceMode; size?: number; className?: string; look?: { x: number; y: number } | null; outfit?: HelperOutfit; arms?: HelperArms; hat?: HelperHat }) {
   const picked = useHelperLook();
-  const dress = { ...picked, hat: outfit === "party" || outfit === "pajamas" ? ("none" as HelperHat) : hat || picked.hat };
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const dress = { ...picked, style: style || picked.style, hat: outfit === "party" || outfit === "pajamas" ? ("none" as HelperHat) : hat || picked.hat };
   const shirt = HELPER_COLORS[dress.color];
   const { skin, shade } = HELPER_SKINS[dress.skin] || HELPER_SKINS.medium;
   const hair = (HELPER_HAIRS[dress.hair] || HELPER_HAIRS.black).hair;
@@ -74,9 +75,16 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
     window.addEventListener(SPEAK_WORD_EVENT, on);
     return () => { window.removeEventListener(SPEAK_WORD_EVENT, on); timers.forEach((t) => window.clearTimeout(t)); window.clearTimeout(quiet); };
   }, [mode]);
+  const real = dress.style !== "cartoon";
+  const st = HELPER_STYLES[dress.style] || HELPER_STYLES.cartoon;
   const eyeShift = look ? { transform: `translate(${(look.x * 1.1).toFixed(2)}px, ${(look.y * 0.8).toFixed(2)}px)` } : undefined;
   return (
-    <svg className={`fc-face is-human is-${mode}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-skin={dress.skin} data-hair={dress.hair} data-hat={dress.hat} data-outfit={outfit || undefined} data-arms={arms || undefined} data-viseme={viseme || undefined} width={size} height={size} viewBox="0 0 48 48" overflow="visible" aria-hidden="true">
+    <svg className={`fc-face is-human is-${mode}${real ? " is-real" : ""}${waking ? " is-waking" : ""}${className ? ` ${className}` : ""}`} data-hpd-smoke="fc-face" data-mode={mode} data-color={dress.color} data-skin={dress.skin} data-hair={dress.hair} data-style={dress.style} data-hat={dress.hat} data-outfit={outfit || undefined} data-arms={arms || undefined} data-viseme={viseme || undefined} width={size} height={size} viewBox="0 0 48 48" overflow="visible" aria-hidden="true">
+      {real ? <defs>
+        <radialGradient id={`rf${uid}`} cx="40%" cy="32%" r="75%"><stop offset="0" stopColor="#fff" stopOpacity={0.35 * (1 + st.light)} /><stop offset="0.55" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity={0.12 + st.light * 0.28} /></radialGradient>
+        <radialGradient id={`ri${uid}`} cx="50%" cy="50%" r="50%"><stop offset="0" stopColor={st.eyeDark} /><stop offset="0.35" stopColor={st.eyeDark} /><stop offset="0.42" stopColor={st.eye} /><stop offset="0.85" stopColor={st.eye} /><stop offset="1" stopColor={st.eyeDark} /></radialGradient>
+        <linearGradient id={`rl${uid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c0645c" /><stop offset="1" stopColor="#8f3d3a" /></linearGradient>
+      </defs> : null}
       {/* Shoulders in a work shirt (the owner's color), the neck. */}
       <path d="M3 49 Q3.5 38.5 14.5 36.2 L33.5 36.2 Q44.5 38.5 45 49 Z" fill={shirt.line} />
       {outfit === "tshirt" || outfit === "summer" ? null : <>
@@ -112,19 +120,29 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
           <ellipse cx="19.2" cy="20.4" rx="2.5" ry="1.8" fill="#fff" />
           <ellipse cx="28.8" cy="20.4" rx="2.5" ry="1.8" fill="#fff" />
           <g className="fc-face-look" style={eyeShift}>
-            <circle cx="19.2" cy="20.5" r="1.3" fill="#4a3424" />
-            <circle cx="28.8" cy="20.5" r="1.3" fill="#4a3424" />
+            <circle cx="19.2" cy="20.5" r={real ? 1.55 : 1.3} fill={real ? `url(#ri${uid})` : "#4a3424"} />
+            <circle cx="28.8" cy="20.5" r={real ? 1.55 : 1.3} fill={real ? `url(#ri${uid})` : "#4a3424"} />
             <circle cx="19.2" cy="20.5" r="0.6" fill="#0b0b0b" />
             <circle cx="28.8" cy="20.5" r="0.6" fill="#0b0b0b" />
             <circle cx="19.7" cy="20" r="0.35" fill="#fff" />
             <circle cx="29.3" cy="20" r="0.35" fill="#fff" />
           </g>
           <path d="M16.6 19.6 Q19.2 17.9 21.8 19.6 M26.2 19.6 Q28.8 17.9 31.4 19.6" stroke={shade} strokeWidth="0.6" fill="none" />
+          {real ? <path d="M16.4 20.1 Q19.2 17.6 22 20.1 M26 20.1 Q28.8 17.6 31.6 20.1" stroke="#1a1410" strokeWidth="0.55" fill="none" strokeLinecap="round" /> : null}
         </g>
         <path d="M24.2 21.4 Q23 24.6 24.9 25.3" stroke={shade} strokeWidth="1" fill="none" strokeLinecap="round" />
         <circle cx="17.4" cy="25.2" r="2" fill="#f87171" opacity="0.18" />
         <circle cx="30.6" cy="25.2" r="2" fill="#f87171" opacity="0.18" />
+        {real ? <g className="fc-face-realskin" data-hpd-smoke="fc-face-real" pointerEvents="none">
+          <ellipse cx="24" cy="21" rx="11" ry="12.6" fill={`url(#rf${uid})`} />
+          <path d="M15.5 27 Q17.5 33 24 33.6 Q30.5 33 32.5 27 Q30 31.4 24 32 Q18 31.4 15.5 27 Z" fill={shade} opacity="0.5" />
+          <path d="M22.6 18.5 Q22 22.5 21.4 24.6 Q23 26.2 24.4 25.6 Q26 26.2 27 24.6" stroke={shade} strokeWidth="0.55" fill="none" opacity="0.8" strokeLinecap="round" />
+          <ellipse cx="22.2" cy="25.2" rx="0.5" ry="0.35" fill={shade} opacity="0.8" /><ellipse cx="25.8" cy="25.2" rx="0.5" ry="0.35" fill={shade} opacity="0.8" />
+          <path d="M15.5 21.2 Q19.2 17.4 22.8 21.2" stroke={shade} strokeWidth="0.35" fill="none" opacity="0.7" /><path d="M25.2 21.2 Q28.8 17.4 32.5 21.2" stroke={shade} strokeWidth="0.35" fill="none" opacity="0.7" />
+          <path d="M16.9 22.7 Q19.2 23.6 21.5 22.7 M26.5 22.7 Q28.8 23.6 31.1 22.7" stroke={shade} strokeWidth="0.4" fill="none" opacity="0.55" />
+        </g> : null}
         {/* The mouth: lips at rest, an opening that moves while it talks, a big smile for good news. */}
+        {real ? <path className="fc-face-reallips" d="M20.6 28 Q22.4 26.9 24 27.5 Q25.6 26.9 27.4 28 Q25.8 30.4 24 30.5 Q22.2 30.4 20.6 28 Z" fill={`url(#rl${uid})`} opacity="0.9" /> : null}
         <path className="fc-face-lips" d="M20.9 28.1 Q24 30.2 27.1 28.1" stroke="#a6463f" strokeWidth="1.15" fill="none" strokeLinecap="round" />
         <ellipse className="fc-face-mouth" cx="24" cy="28.7" rx="2.5" ry="0.85" fill="#6b1d1d" />
         <path className="fc-face-smile" d="M19.6 27.3 Q24 32.6 28.4 27.3 Z" fill="#6b1d1d" stroke="#a6463f" strokeWidth="0.8" strokeLinejoin="round" />
