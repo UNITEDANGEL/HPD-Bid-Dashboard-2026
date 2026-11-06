@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Nov 6, 2026",
+      "title": "Bid page reads slower",
+      "items": [
+        "🧾 On a bid's work description page, the read-along moves slower, stops where the work ends (not HPD's standard notes), and goes back to the start of the work."
+      ]
+    },
+    {
+      "date": "Nov 6, 2026",
       "title": "The helper knows where you are and keeps you posted",
       "items": [
         "📍 At a job, say \"what job is this\" or \"this job\": the helper knows which job you're standing at. No number needed.",

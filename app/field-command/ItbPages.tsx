@@ -63,6 +63,10 @@ export const bidPages = (pageCount: number, descPages?: number[]) => [...new Set
 // Where HPD types the work on a page, as a part of its height: page 3's "Job Description:" near the top; on the order
 // form (page 2, when page 3 is empty: ER09499) the "WORK DESCRIPTION" box a little past the middle.
 const workAt = (page: number) => (page === 2 ? 0.56 : 0.12);
+// Where the work ends on page 3 (owner, 6 Nov: "slow down the scrolling on the work description page and stay on the
+// work description, you don't need to go down"): the "Job Description:" box starts about 22% down, each typed line is
+// about 2% of the page, ~72 letters a line; HPD's standard notes come after it. Not known: the first half of the page.
+export const workEndAt = (descChars?: number) => (descChars && descChars > 0 ? Math.min(0.7, 0.22 + (Math.ceil(descChars / 72) + 3) * 0.0195) : 0.45);
 
 // Read along (owner, 5 Nov: "scroll it slowly left and right, read the whole description, like I'm scrolling it"): the
 // zoomed page pans slowly across each part of the work, then down to the next, to the end of the description. Any
@@ -92,11 +96,13 @@ function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: 
     const end = Math.min(el.scrollHeight - el.clientHeight, el.scrollHeight * endAt);
     let top = el.scrollHeight * startAt;
     for (let row = 0; row < 8 && !stop; row += 1) {
-      await glide(right, top, 3200 * pace);            // across the lines, left to right
+      await glide(right, top, 5500 * pace);            // across the lines, left to right (slowly: 6 Nov)
       if (stop || top >= end) break;
-      top = Math.min(end, top + el.clientHeight * 0.45);
-      await glide(left, top, 900 * pace);              // back to the left, a little further down
+      top = Math.min(end, top + el.clientHeight * 0.3);
+      await glide(left, top, 1500 * pace);             // back to the left, a little further down
     }
+    // Back up to the start of the work and stay there (it doesn't wander into HPD's standard notes).
+    if (!stop) await glide(left, el.scrollHeight * startAt, 1800 * pace);
     el.removeEventListener("pointerdown", off);
     el.removeEventListener("wheel", off);
     el.removeEventListener("touchstart", off);
@@ -105,7 +111,7 @@ function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: 
   return off;
 }
 
-export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void }) {
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice, descChars }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void; descChars?: number }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -204,7 +210,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
                 setReading("reading");
                 stopRead.current();
                 // Page 3: the description fills most of the page; page 2's work box is shorter.
-                stopRead.current = readAlongPage(el, at, big.page === 2 ? at + 0.22 : 0.85, () => setReading("read"));
+                stopRead.current = readAlongPage(el, at, big.page === 2 ? at + 0.22 : workEndAt(descChars), () => setReading("read"));
               }));
             }} />
           </div>

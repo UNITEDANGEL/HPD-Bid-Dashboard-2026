@@ -9212,7 +9212,7 @@ export default function FieldCommandClient() {
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
         // 📊 Friday wrap (plan item 23): Friday from 5 PM, once a week, the week in a few words; Open = the weekly report.
-        if (isFridayWrapTime(nyNow().weekday, nowMin) && !nudgeSeen.includes(`week|${today}`)) {
+        if (jobs.length && isFridayWrapTime(nyNow().weekday, nowMin) && !nudgeSeen.includes(`week|${today}`)) {
           const st = fieldStats(jobs, "week", { skip: (job) => isTestJob(jobId(job)) });
           const c0 = st.counts;
           const weekAgo = Date.now() - 7 * 86400000;

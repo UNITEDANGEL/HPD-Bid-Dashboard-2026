@@ -81,6 +81,13 @@ try {
   await page.waitForTimeout(300);
   const top3 = await box.evaluate((el) => el.scrollTop / el.scrollHeight);
   assert.ok(top3 < 0.25, `page 3: the job description near the top (${top3.toFixed(2)})`);
+  // It reads along slowly and stays on the work description (owner, 6 Nov: "slow down the scrolling ... stay on the work
+  // description, you don't need to go down"): never past the end of the work, and back at its start when done.
+  await box.evaluate((el) => { window.__maxTop = 0; el.addEventListener("scroll", () => { window.__maxTop = Math.max(window.__maxTop, el.scrollTop / el.scrollHeight); }); });
+  await page.locator('[data-hpd-smoke="fc-itb-price"].is-ready').waitFor({ timeout: 60000 });
+  const read = await box.evaluate((el) => ({ maxTop: window.__maxTop, now: el.scrollTop / el.scrollHeight }));
+  assert.ok(read.maxTop < 0.7, `stayed on the work description (went down to ${read.maxTop.toFixed(2)})`);
+  assert.ok(Math.abs(read.now - top3) < 0.03, `back at the start of the work when done (${read.now.toFixed(2)} vs ${top3.toFixed(2)})`);
   await page.locator('[data-hpd-smoke="fc-itb-close"]').click();
 
   // The switch on the bid card: off, a bid opens at once on the card (no borough card, no full-screen page).

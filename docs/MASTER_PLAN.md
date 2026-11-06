@@ -123,6 +123,13 @@ The plan, one by one (✅ = live):
    your yes. Test: test-browser-tenant-aloud.
 23. ✅ **📊 Friday wrap**: Friday from 5 PM, once, a chat card: "📊 Your week: N jobs closed in the field, $X of work done,
    N bids won ($Y). First next week: …"; Open = the weekly report (lib/friday-wrap.ts).
+23b. ✅ **Bid page: slower, stays on the work** (owner, 6 Nov: "in the invitation to bid you need to slow down the scrolling
+   on the work description page and stay on the work description. You don't need to go down"): the read-along on page
+   3 moves about 70% slower (5.5 s across each line block, smaller steps down), stops where the work ends (estimated
+   from the description's length: the "Job Description" box starts ~22% down, ~2% a line) instead of going to 85% of
+   the page (HPD's standard notes), then glides back to the start of the work and stays there. Test: bid-walk.
+   Also fixed: the 📊 Friday card waited for nothing and showed before the jobs loaded on Friday evenings (React
+   hydration error #418); it now waits for the jobs. The day-nudge test closes the Friday card first, like the owner.
 24. ☐ **🗂 One-card close-out**: after "work done" by voice, the affidavit and invoice are made and shown in one card to
    check (preview first), then two taps to send.
 25. ☐ **🧠 It remembers yesterday**: the morning brief says what you said you'd do yesterday and didn't ("yesterday you

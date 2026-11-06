@@ -36,6 +36,11 @@ try {
       await page.waitForTimeout(500);
       assert.equal(await nudge.count(), 0, "quiet before 6 PM");
     } else {
+      // On a Friday evening the 📊 week card comes first: close it, as the owner would.
+      for (let i = 0; i < 5 && !(await nudge.count()); i++) {
+        if (await page.locator('[data-hpd-smoke="fc-chat-nudge"][data-kind="week"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').click();
+        await page.clock.runFor(61000);
+      }
       await nudge.waitFor();
       assert.match(await page.locator('[data-hpd-smoke="fc-chat-nudge-text"]').innerText(), /^🌆 Today: 1 visited, 1 finished[^.]*\. Tomorrow: /);
       await page.locator('[data-hpd-smoke="fc-chat-nudge-go"]').click();

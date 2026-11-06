@@ -6,9 +6,10 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const ny = (ms, o) => new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", ...o }).format(new Date(ms));
-// The next Friday 5:20 PM in New York.
-let t = Date.now();
+// The next Friday 5:20 PM in New York (whole minutes from the top of this hour, so 17:20 is hit).
+let t = Math.floor(Date.now() / 3600000) * 3600000;
 for (let i = 0; i < 24 * 8 * 3; i++, t += 20 * 60000) if (ny(t, { weekday: "short" }) === "Fri" && ny(t, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) === "17:20") break;
+if (ny(t, { weekday: "short" }) !== "Fri") throw new Error("no Friday 5:20 PM found");
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
@@ -35,8 +36,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-agent-reply"]').waitFor();
   await page.clock.runFor(61000);
   assert.equal(await nudge.count(), 0, "once");
-  // The clock is set to a later day than the page was built on: React notes the date text differs (#418). Not an error.
-  assert.deepEqual(errors.filter((e) => !/React error #418/.test(e)), []);
+  assert.deepEqual(errors, []);
   console.log("PASS Friday wrap: Friday 5:20 PM the chat shows the week in a few words, Open = the weekly report, once");
 } finally {
   await browser.close();
