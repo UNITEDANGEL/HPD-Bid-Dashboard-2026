@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-06T15:41:45.949Z
+Fetcher run started: 2026-11-06T15:51:32.048Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:01,  7.19it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  7.73it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  8.87it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  8.12it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  9.03it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.17it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  7.26it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  7.97it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 245121.66it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:01<00:09,  1.20s/it]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:05,  1.27it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:02<00:03,  1.59it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:02<00:02,  1.85it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.05it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:03<00:01,  2.12it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.21it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:04<00:00,  2.21it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.20it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  1.91it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:00,  8.95it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  9.44it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 10.33it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 10.77it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 10.85it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 10.73it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 220752.84it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:05,  1.55it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:03,  2.06it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.37it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  2.59it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.63it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.79it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  2.91it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.91it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.94it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.67it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -176,8 +176,9 @@ HPD requests: 19 OMOs HPD asked about (paperwork / status) from 30 staff emails 
 
 ========== Update HPD job status from NYC Open Data ==========
 $ node scripts/update-hpd-job-status.mjs
-HPD job status: 912 of 950 jobs found, 178 still open at HPD, 734 closed
+HPD job status not updated: NYC Open Data answered 503
 
+WARNING: HPD job status was not refreshed: Update HPD job status from NYC Open Data failed with exit code 1
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
@@ -270,7 +271,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-06T15:47:40.945Z
+Fetcher run finished: 2026-11-06T15:56:45.774Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,
