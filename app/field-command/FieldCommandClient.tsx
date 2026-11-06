@@ -108,7 +108,7 @@ import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
-import { addJobNote, allJobNotes } from "../../lib/job-notes";
+import { addJobNote, allJobNotes, loadJobNotes } from "../../lib/job-notes";
 import { searchAll, searchQuery, type SearchDoc } from "../../lib/search-all";
 import { dailyTip } from "../../lib/daily-tip";
 import { closest, MAYBE, SURE } from "../../lib/did-you-mean";
@@ -9444,6 +9444,7 @@ export default function FieldCommandClient() {
                           <p className="fc-prio-title">{it.head}</p>
                           <p className="fc-prio-want">{it.lines[0]}{hpd ? ` · HPD closed it: ${hpd}` : ""}</p>
                           {work ? <p className="fc-notice-table-work">🔧 {work.length > 140 ? `${work.slice(0, 140)}…` : work}</p> : null}
+                          {(() => { const call = loadJobNotes(it.omo).filter((n) => n.text.startsWith("☎️ HPD call")).pop()?.text || ""; return call ? <p className="fc-notice-table-work" data-hpd-smoke="fc-notice-table-call">{call}</p> : null; })()}
                           <div className="fc-notice-actions">
                             {job ? <button type="button" data-hpd-smoke="fc-notice-table-open" onClick={() => { setNoticesOpen(false); setSelectedJob(job); }}>Open job</button> : null}
                             {job && jobLatLng(job) ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${jobAddress(job)}, NY`)}`} target="_blank" rel="noreferrer" data-hpd-smoke="fc-notice-table-go">🚗 Go there</a> : null}
@@ -10144,9 +10145,11 @@ export default function FieldCommandClient() {
           factsOf={(omo) => {
             const j = findAnyJob(omo);
             const hpd = String(((followRef.current?.hpd || {}) as Record<string, { closedReason?: string }>)[omo]?.closedReason || "");
-            if (!j) return hpd ? { address: "", borough: "", amount: "", awarded: "", work: "", hpd } : null;
+            // ☎️ What HPD said last on a call (idea list): the newest "☎️ HPD call" note on the job.
+            const call = loadJobNotes(omo).filter((n) => n.text.startsWith("☎️ HPD call")).pop()?.text.replace(/^☎️ /, "") || "";
+            if (!j) return hpd || call ? { address: "", borough: "", amount: "", awarded: "", work: "", hpd, call } : null;
             const work = String(j.JobDescription || j.Job_Description || "").replace(/^[:\s]+/, "").replace(/\s+/g, " ").trim();
-            return { address: jobAddress(j), borough: jobBorough(j), amount: String(j.AwardAmount || ""), awarded: String(j.AwardDate || ""), work, hpd };
+            return { address: jobAddress(j), borough: jobBorough(j), amount: String(j.AwardAmount || ""), awarded: String(j.AwardDate || ""), work, hpd, call };
           }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}

@@ -19,6 +19,8 @@ try {
   const posted = [];
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => { if (r.request().method() === "POST") posted.push(r.request().postData() || ""); return r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }); });
   await c.addInitScript(() => { if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { setTimeout(() => u.onend?.(), 30); }; });
+  // ☎️ What HPD said last on a call, saved on the job (the helper saves "HPD said ..." like this).
+  await c.addInitScript((omo) => { localStorage.setItem("hpd-job-notes", JSON.stringify({ [omo]: [{ text: "☎️ HPD call Nov 5: they want the after photos by Friday", at: "2026-11-05T15:00:00Z" }, { text: "gate code 1234", at: "2026-11-05T16:00:00Z" }] })); }, "ER02330");
   const page = await c.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -48,6 +50,7 @@ try {
   const open = table.locator(`[data-hpd-smoke="fc-notice-table-row"][data-omo="${OPEN}"]`);
   assert.equal(await open.getAttribute("data-tone"), "tosend");
   assert.match(await open.locator('[data-hpd-smoke="fc-notice-table-address"]').innerText(), /1020 BOYNTON AVENUE/);
+  assert.equal(await open.locator('[data-hpd-smoke="fc-notice-table-call"]').innerText(), "☎️ HPD call Nov 5: they want the after photos by Friday");
   assert.ok(await open.isVisible());
   const sent = table.locator(`[data-hpd-smoke="fc-notice-table-row"][data-omo="${SENT}"]`);
   assert.equal(await sent.isVisible(), false, "already sent: folded away");
@@ -57,7 +60,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-notices-emails"]').getAttribute("open"), null, "the emails are folded");
 
   assert.deepEqual(errors, []);
-  console.log("PASS every notice: number + address, to-do first, sent folded, emails folded; 🧹 old jobs listed and ✅ Closed takes one off");
+  console.log("PASS every notice: number + address, what HPD said on the last call, to-do first, sent folded, emails folded; 🧹 old jobs listed and ✅ Closed takes one off");
 } finally {
   await browser.close();
 }

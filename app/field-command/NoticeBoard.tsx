@@ -31,7 +31,7 @@ type Props = {
 };
 // The job on each notice (owner, 6 Nov: "I don't see the work order number, the address, everything is missing ...
 // I don't want to see the conversations, that's for you to analyze").
-export type JobFacts = { address: string; borough: string; amount: string; awarded: string; work: string; hpd: string };
+export type JobFacts = { address: string; borough: string; amount: string; awarded: string; work: string; hpd: string; call?: string };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
 
@@ -305,6 +305,7 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
               {f.borough ? <div><dt>🏠</dt><dd>{f.borough}</dd></div> : null}
               {money || f.awarded ? <div><dt>💵</dt><dd>{[money, f.awarded ? `awarded ${f.awarded}` : ""].filter(Boolean).join(" · ")}</dd></div> : null}
               {f.work ? <div><dt>🔧</dt><dd>{f.work.length > 150 ? `${f.work.slice(0, 150)}…` : f.work}</dd></div> : null}
+              {f.call ? <div><dt>☎️</dt><dd data-hpd-smoke="fc-board-call">{f.call}</dd></div> : null}
               <div><dt>🏛</dt><dd data-hpd-smoke="fc-board-hpd">{f.hpd ? `HPD closed it: ${f.hpd}` : "HPD: still open"}</dd></div>
             </dl>
           );
