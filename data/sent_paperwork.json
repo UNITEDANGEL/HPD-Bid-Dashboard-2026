@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-06T17:23:02.466775+00:00",
+"generatedAt": "2026-11-06T17:31:51.971857+00:00",
 "since": "2026/10/23",
 "jobs": {
 "EN04541": [
@@ -21683,6 +21683,14 @@
 "file": "SIGNED - ER07610 - Work Completed.pdf",
 "outcome": "work_completed",
 "subject": "SIGNED - ER07610 - Work Completed - 3346 FULTON STREET, 11208"
+},
+{
+"date": "2026-11-06",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "AFTER VIDEO-03 - ER07610.mp4",
+"outcome": "work_completed",
+"subject": "Fwd: SIGNED - ER07610 - Work Completed - 3346 FULTON STREET, 11208",
+"via": "hpd-staff"
 }
 ],
 "ER07640": [
