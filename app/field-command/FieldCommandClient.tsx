@@ -25,6 +25,8 @@ import { jobStages, nextStep } from "../../lib/job-stages";
 import { loadConversations, reloadConversations, loadNotices, loadPrivate, loadSearchIndex, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
 import MediaViewer from "./MediaViewer";
+import EmailSheet, { type EmailJob } from "./EmailSheet";
+import { emailPeople } from "../../lib/email-people";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
 import { nextStop, nextStopLine } from "../../lib/next-stop";
@@ -3247,6 +3249,10 @@ export default function FieldCommandClient() {
     return jobs.filter((j) => !isTestJob(jobId(j)) && isStaleJob(j as Record<string, unknown>, jobQueue(j), Date.now(), onNotice.has(jobId(j))));
   }, [jobs, noticeOmoKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const staleIds = new Set(staleJobs.map((j) => jobId(j)));
+  // ✉️ Email screen (owner, 6 Nov: "Add email feature to the app"): HPD people from their own emails, Lewis / Gafur first.
+  const [emailFor, setEmailFor] = useState<{ job: EmailJob } | null>(null);
+  const emailList = useMemo(() => emailPeople(boardRows), [boardThreads]); // eslint-disable-line react-hooks/exhaustive-deps
+  const emailJobOf = (j: JobRecord | null): EmailJob => (j ? { omo: jobId(j), address: jobAddress(j), unit: unitOf(String(j.JobDescription || j.Job_Description || "")) } : null);
   const [staleOpen, setStaleOpen] = useState(false);
   const staleMark = (job: JobRecord, closed: boolean) => {
     const id = jobId(job);
@@ -5374,6 +5380,16 @@ export default function FieldCommandClient() {
           speak("Got it, saved on the job.", 0, () => { if (convoRef.current) startListening(); });
           return;
         }
+      }
+      // ✉️ "Email Lewis" / "write to Gafur about ER07610": opens the email screen to check and send (never sends by voice).
+      if (/^(e-?mail|write (an )?e-?mail|send (an )?e-?mail|write to)\b/i.test(heard.trim())) {
+        const omo = (/\b([A-Z]{2}\s?\d{4,6})\b/i.exec(heard) || [])[1]?.replace(/\s/g, "").toUpperCase() || "";
+        const named = omo ? jobs.find((r) => jobId(r) === omo) || null : null;
+        const job = emailJobOf(named || selectedJob);
+        setEmailFor({ job: job && /gafur/i.test(heard) ? { ...job, unit: "aep" } : job && /lewis|louis/i.test(heard) ? { ...job, unit: "erp" } : job });
+        setAgent({ heard, reply: `✉️ The email is open${job ? ` for ${job.omo}` : ""}. Check it, then tap Send.` });
+        speak("The email is open. Check it, then tap send.", 0);
+        return;
       }
       // 🚗 Hands-free day: "go" / "next" / "ok" does the next step.
       if (leadDayRef.current && drivingRef.current && /^(go|next|ok(ay)?|yes|do it|let'?s go)[.!]?$/i.test(heard.trim()) && nextStepRef.current) {
@@ -8354,6 +8370,9 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
+                {!isTestJob(id) ? (
+                  <button type="button" className="jc-email" data-hpd-smoke="jc-email" onClick={() => setEmailFor({ job: emailJobOf(selectedJob) })}>✉️ Email {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]} about this job</button>
+                ) : null}
                 {counts.total > 0 ? (
                   <div className="jc-media-see" data-hpd-smoke="jc-media-see-row">
                     {(["before", "after"] as const).filter((k) => counts[k]).map((k) => (
@@ -8691,6 +8710,9 @@ export default function FieldCommandClient() {
           </button>
         );
       })() : null}
+      {sideOpen && !selectedJob && !whatsNewOpen && !bidsOpen ? (
+        <button type="button" className="fc-side-email" data-hpd-smoke="fc-side-email" onClick={() => setEmailFor({ job: null })}>✉️ Email HPD</button>
+      ) : null}
       {sideOpen && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-text-size" role="group" aria-label="Text size" data-hpd-smoke="fc-text-size">
           <span aria-hidden="true">🔠</span>
@@ -9855,6 +9877,7 @@ export default function FieldCommandClient() {
           </div>
         );
       })() : null}
+      {emailFor ? <EmailSheet people={emailList} job={emailFor.job} onClose={() => setEmailFor(null)} onSent={(line) => setOutcomeMessage(`✉️ ${line}`)} /> : null}
       {mediaView ? <MediaViewer jobId={mediaView.id} kind={mediaView.kind} onClose={() => setMediaView(null)} /> : null}
       {workView ? (() => {
         const job = jobs.find((j) => jobId(j) === workView.id) || selectedJob;

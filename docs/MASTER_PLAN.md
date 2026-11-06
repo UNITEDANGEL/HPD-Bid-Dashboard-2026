@@ -94,6 +94,9 @@ The plan, one by one (✅ = live, ☐ = next):
 28. ✅ **Bigger text** (✉ side button -> 🔠 A / A+ / A++: cards, sheets, chat, notices grow; the map stays) (owner: "when I'm reading I see very small text, zoom everything up"): an A / A+ / A++ size for the
    whole app, remembered on the phone.
 29. ✅ **Message board of the day**: a 🤖 tap after the morning says only what changed since it last talked (new done, new open, a new next step); nothing new = "Nothing new since 2:10 PM". The board (📒 the day so far) stays on screen.
+30. ✅ **✉️ Email from the app** (said to the helper, 6 Nov: "Add email feature to the app"): on every job card "✉️ Email Lewis/Gafur about this job" (the job's unit), and "✉️ Email HPD" in the ✉ side panel; say "email Lewis about ER07610" to open it. Pick who (Lewis, Gafur or another HPD person who wrote to you), tap a ready line (✅ work done, 🚪 no access, 📅 appointment set, 📄 paperwork sent, ❓ question) or type / say it, then 📥 Send to me first or ✉️ Send. Only @hpd.nyc.gov addresses; never sent by voice alone.
+31. ☐ **Fold the location warning on the computer**: "Couldn't get your location" on the PC says the computer has no GPS and shows where the phone last was / the 🔨 job instead.
+32. ☐ **Fold "1 job needs a check" behind the ✉ side button** like the other small cards.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -241,12 +244,12 @@ The plan, one by one (✅ = live):
    go?" answer, said or typed; not HPD call notes, not older notes like a gate code) fills "What work was completed?
    (invoice description)" in capitals, to check and change before anything is made. A completed job keeps HPD's scope
    as the invoice description (that's what HPD expects).
-30. ✅ **📬 HPD overnight, in the brief**: the morning brief says in one line who at HPD wrote overnight, on which job and
+30. ☐ **📬 HPD overnight, in the brief**: the morning brief says in one line who at HPD wrote overnight, on which job and
    what they want.
-31. ✅ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
-32. ✅ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
+31. ☐ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
+32. ☐ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
 
-Recommendations (Claude): 13-32 are done.
+Recommendations (Claude): 13-29 are done; 30-32 are next on the plan (in the app's 📋 card).
 
 ---
 
