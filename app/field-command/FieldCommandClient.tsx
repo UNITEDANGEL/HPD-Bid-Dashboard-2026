@@ -7548,9 +7548,18 @@ export default function FieldCommandClient() {
               ) : null}
             </div>
           ) : null}
-          {locateStatus === "error" ? (
-            <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
-          ) : null}
+          {/* 💻 On the computer (owner, 6 Nov: "I'm on my computer, I can't see my location"): a PC has no GPS, so instead
+              of a warning it says where the phone has you working (the 🔨 job saved from the phone), one tap to open it. */}
+          {locateStatus === "error" ? (() => {
+            const computer = typeof navigator !== "undefined" && !/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+            if (!computer) return <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location · allow location, then tap 📍</p>;
+            const here = jobs.map((j) => ({ j, h: onSite(j as Record<string, unknown>) })).filter((x) => x.h).sort((a, b) => b.h!.since - a.h!.since)[0];
+            return (
+              <button type="button" className="fc-map-hint fc-pc-where" data-hpd-smoke="fc-pc-where" onClick={() => { if (here) { setSelectedJob(here.j); } }}>
+                💻 Computer: no GPS · {here ? <>📱 phone has you at <b>{jobId(here.j)}</b></> : "your phone puts you on the map"}
+              </button>
+            );
+          })() : null}
 
           {!jobs.length ? (
             <p className={`fc-map-hint ${jobsLoadFailed ? "fc-map-hint-warn" : ""}`} role="status">{jobsLoadFailed ? "Couldn't load jobs. Check the connection; retrying." : "Loading jobs..."}</p>
@@ -7587,7 +7596,7 @@ export default function FieldCommandClient() {
               </div>
             );
           })() : null}
-          {dataIssues.length && !selectedJob ? (
+          {dataIssues.length && !selectedJob && sideOpen ? (
             <div className="fc-data-check" data-hpd-smoke="fc-data-check">
               <button type="button" className="fc-map-hint fc-map-hint-warn" aria-expanded={dataCheckOpen} onClick={() => { setDataCheckOpen((open) => !open); setCloseOutOpen(false); }}>
                 ⚠ {dataIssues.length} job{dataIssues.length === 1 ? "" : "s"} need{dataIssues.length === 1 ? "s" : ""} a check {dataCheckOpen ? "▴" : "▾"}
@@ -8701,7 +8710,7 @@ export default function FieldCommandClient() {
       {!selectedJob && !whatsNewOpen && !bidsOpen ? (() => {
         const hint = sideHintRef.current;
         sideHintRef.current = 0;
-        const n = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (claudeWorkingRef.current || claudeLiveRef.current ? 1 : 0) + hint + (missed.length && !voiceOff() ? 1 : 0) + (allowAlerts ? 1 : 0);
+        const n = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (claudeWorkingRef.current || claudeLiveRef.current ? 1 : 0) + hint + (missed.length && !voiceOff() ? 1 : 0) + (allowAlerts ? 1 : 0) + (dataIssues.length ? 1 : 0);
         const work = (changeThreads || []).find((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
         const pct = work && work.steps.length ? Math.round((work.steps.filter((x) => x.done).length / work.steps.length) * 100) : null;
         return (

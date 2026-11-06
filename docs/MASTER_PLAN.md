@@ -95,8 +95,8 @@ The plan, one by one (✅ = live, ☐ = next):
    whole app, remembered on the phone.
 29. ✅ **Message board of the day**: a 🤖 tap after the morning says only what changed since it last talked (new done, new open, a new next step); nothing new = "Nothing new since 2:10 PM". The board (📒 the day so far) stays on screen.
 30. ✅ **✉️ Email from the app** (said to the helper, 6 Nov: "Add email feature to the app"): on every job card "✉️ Email Lewis/Gafur about this job" (the job's unit), and "✉️ Email HPD" in the ✉ side panel; say "email Lewis about ER07610" to open it. Pick who (Lewis, Gafur or another HPD person who wrote to you), tap a ready line (✅ work done, 🚪 no access, 📅 appointment set, 📄 paperwork sent, ❓ question) or type / say it, then 📥 Send to me first or ✉️ Send. Only @hpd.nyc.gov addresses; never sent by voice alone.
-31. ☐ **Fold the location warning on the computer**: "Couldn't get your location" on the PC says the computer has no GPS and shows where the phone last was / the 🔨 job instead.
-32. ☐ **Fold "1 job needs a check" behind the ✉ side button** like the other small cards.
+31. ✅ **The location line on the computer** (owner: "I'm on my computer, I can't see my location"): instead of "Couldn't get your location", the PC says "💻 Computer: no GPS · 📱 phone has you at ER07717" (the 🔨 job saved from the phone), one tap opens that job. Phones keep the old warning.
+32. ✅ **"⚠ 1 job needs a check" folds behind the ✉ side button** like the other small cards (it adds 1 to the side button's count).
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
