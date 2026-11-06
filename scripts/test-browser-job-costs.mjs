@@ -19,6 +19,9 @@ try {
     if (r.request().method() === "POST") { try { posted.push(JSON.parse(r.request().postData() || "{}")); } catch { /* not json */ } return r.fulfill({ json: { ok: true } }); }
     return r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });
   });
+  // The free picture AI, faked: it reads the receipt's total and store (no real AI in tests).
+  const reads = [];
+  await c.route("**/api/drive/hpd-photo", (r) => { reads.push(JSON.parse(r.request().postData() || "{}")); return r.fulfill({ json: { ai: true, text: "TOTAL 45.20 STORE Home Depot" } }); });
   await c.addInitScript(() => { if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { setTimeout(() => u.onend?.(), 30); }; });
   const page = await c.newPage();
   const errors = [];
@@ -39,6 +42,11 @@ try {
   await box.locator("summary").click();
   await page.locator('[data-hpd-smoke="jc-cost-file"]').setInputFiles({ name: "receipt.png", mimeType: "image/png", buffer: PNG });
   await page.waitForFunction(() => /✓/.test(document.querySelector('[data-hpd-smoke="jc-cost-photo"]')?.textContent || ""));
+  // The receipt is read: the amount and store fill the box, to check; nothing saved yet.
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="jc-cost-input"]')?.value === "45.20 Home Depot", null, { timeout: 8000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-cost-reading"]').innerText(), /📷 Read \$45\.20 at Home Depot: check it, then Add/);
+  assert.equal(reads.length, 1); assert.match(reads[0].question, /TOTAL 45\.20 STORE Home Depot/); assert.match(reads[0].image, /^data:image\/jpeg;base64,/);
+  assert.equal(await box.locator('[data-hpd-smoke="jc-cost-row"]').count(), 0, "not saved before Add");
   await page.locator('[data-hpd-smoke="jc-cost-input"]').fill("45.20 Home Depot door closer");
   await page.locator('[data-hpd-smoke="jc-cost-save"]').click();
   await page.waitForFunction(() => /Costs: \$45\.20 spent · \$[\d,.]+ left of \$[\d,]+/.test(document.querySelector('[data-hpd-smoke="jc-costs"] summary')?.textContent || ""), null, { timeout: 5000 });

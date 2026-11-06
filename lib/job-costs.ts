@@ -34,3 +34,16 @@ export function costLine(costs: JobCost[], award: number) {
   const total = costTotal(costs);
   return `${usd(total)} spent${award > 0 ? ` · ${usd(award - total)} left of ${usd(award)}` : ""}`;
 }
+
+// 📷 -> 🧾 The receipt read by the free picture AI (server/ai-draft aiReadPhoto, Cloudflare's own model): asked for one
+// line "TOTAL <amount> STORE <name>". Its answer fills the box to check; nothing is saved until you tap Add.
+export const RECEIPT_QUESTION = "This is a store receipt. Answer with one line only, exactly like: TOTAL 45.20 STORE Home Depot. Use the final total paid (with tax). If you can't read the total, answer: TOTAL unclear.";
+export function receiptFromText(text: string): { amount: number; store: string } | null {
+  const t = String(text || "").replace(/\s+/g, " ");
+  const total = /TOTAL[^0-9a-z]{0,6}\$?\s*(\d{1,5}(?:,\d{3})*(?:\.\d{1,2})?)/i.exec(t) || /\$\s*(\d{1,5}(?:,\d{3})*\.\d{2})/.exec(t);
+  if (!total) return null;
+  const amount = Math.round(Number(total[1].replace(/,/g, "")) * 100) / 100;
+  if (!(amount > 0) || amount > 50000) return null;
+  const store = (/STORE[:\s]+([A-Za-z0-9&'. -]{2,40}?)(?:[.,;]|\s+TOTAL|$)/i.exec(t)?.[1] || "").trim().replace(/\.$/, "");
+  return { amount, store: /^(unclear|unknown|n\/?a)$/i.test(store) ? "" : store };
+}

@@ -28,7 +28,7 @@ import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
 import { emailPeople } from "../../lib/email-people";
 import { buildingHistory, historyLine } from "../../lib/building-history";
-import { costLine, parseCost, readCosts, usd } from "../../lib/job-costs";
+import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd } from "../../lib/job-costs";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
 import { nextStop, nextStopLine, workInWords } from "../../lib/next-stop";
@@ -3302,6 +3302,29 @@ export default function FieldCommandClient() {
     img.onerror = () => { URL.revokeObjectURL(url); resolve(""); };
     img.src = url;
   });
+  // 📷 -> 🧾 Read the receipt (free picture AI, same 15-a-day allowance as reading a photo): the total and the store go
+  // in the box to check; Add saves it. Only when the box has no amount yet.
+  const [costReading, setCostReading] = useState("");
+  const readReceipt = async (photo: string) => {
+    if (!photo || parseCost(costText)) return;
+    const day = nyToday();
+    let used = { day: "", n: 0 };
+    try { used = { ...used, ...JSON.parse(localStorage.getItem("hpd-photo-reads") || "{}") }; } catch { /* private mode */ }
+    if (used.day === day && used.n >= 15) { setCostReading("15 photos read today (the free limit): type the amount."); return; }
+    setCostReading("Reading the receipt…");
+    try {
+      const r = await fetch("/api/drive/hpd-photo", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: photo, question: RECEIPT_QUESTION }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401 || d.reconnectRequired) { setCostReading("Sign in with Google on this phone to read receipts. Type the amount for now."); return; }
+      if (d.ai && d.text) { try { localStorage.setItem("hpd-photo-reads", JSON.stringify({ day, n: (used.day === day ? used.n : 0) + 1 })); } catch { /* private mode */ } }
+      const got = d.ai ? receiptFromText(String(d.text || "")) : null;
+      if (!got) { setCostReading("Couldn't read the total: type the amount."); return; }
+      setCostText((t) => (parseCost(t) ? t : `${got.amount.toFixed(2)}${got.store ? ` ${got.store}` : ""}${t.trim() ? ` ${t.trim()}` : ""}`));
+      setCostReading(`📷 Read ${usd(got.amount)}${got.store ? ` at ${got.store}` : ""}: check it, then Add.`);
+    } catch {
+      setCostReading("No connection: type the amount.");
+    }
+  };
   const emailJobOf = (j: JobRecord | null): EmailJob => (j ? { omo: jobId(j), address: jobAddress(j), unit: unitOf(String(j.JobDescription || j.Job_Description || "")) } : null);
   const [staleOpen, setStaleOpen] = useState(false);
   const staleMark = (job: JobRecord, closed: boolean) => {
@@ -8464,7 +8487,7 @@ export default function FieldCommandClient() {
                   const add = () => {
                     const c = parseCost(costText);
                     if (!c) { setOutcomeMessage("🧾 Type the amount and what it was for, like 45.20 Home Depot door closer."); return; }
-                    if (addJobCost(selectedJob, c, costPhoto) !== null) { setCostText(""); setCostPhoto(""); }
+                    if (addJobCost(selectedJob, c, costPhoto) !== null) { setCostText(""); setCostPhoto(""); setCostReading(""); }
                   };
                   return (
                     <details className="jc-costs" data-hpd-smoke="jc-costs">
@@ -8488,9 +8511,10 @@ export default function FieldCommandClient() {
                         <input value={costText} onChange={(e) => setCostText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} placeholder="45.20 Home Depot door closer" data-hpd-smoke="jc-cost-input" />
                         <button type="button" className={costPhoto ? "is-on" : ""} aria-label="Receipt photo" data-hpd-smoke="jc-cost-photo" onClick={() => costPhotoRef.current?.click()}>{costPhoto ? "✓📷" : "📷"}</button>
                         <button type="button" className="is-main" data-hpd-smoke="jc-cost-save" onClick={add}>Add</button>
-                        <input ref={costPhotoRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="jc-cost-file" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void shrinkReceipt(f).then(setCostPhoto); }} />
+                        <input ref={costPhotoRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="jc-cost-file" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void shrinkReceipt(f).then((photo) => { setCostPhoto(photo); void readReceipt(photo); }); }} />
                       </div>
-                      <small>The receipt photo stays on this phone; it never goes to HPD. Or say: spent 45 at Home Depot.</small>
+                      {costReading ? <p className="jc-cost-reading" role="status" data-hpd-smoke="jc-cost-reading">{costReading}</p> : null}
+                      <small>📷 a receipt and the amount fills in (read by the free AI, not kept). The photo is saved on this phone only, never sent to HPD. Or say: spent 45 at Home Depot.</small>
                     </details>
                   );
                 })()}
