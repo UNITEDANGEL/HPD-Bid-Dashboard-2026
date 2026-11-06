@@ -6,7 +6,8 @@
       "title": "Bid page reads slower",
       "items": [
         "🧾 On a bid's work description page, the read-along moves slower, stops where the work ends (not HPD's standard notes), and goes back to the start of the work.",
-        "🗂 Tell the helper a job is done: it says the affidavit and invoice are next, with a button to check them now."
+        "🗂 Tell the helper a job is done: it says the affidavit and invoice are next, with a button to check them now.",
+        "🧠 The morning brief asks about what you said you'd do yesterday (\"Yesterday you said you'd call the tenant. Did that get done?\")."
       ]
     },
     {

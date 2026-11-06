@@ -133,8 +133,9 @@ The plan, one by one (✅ = live):
 24. ✅ **🗂 One-card close-out**: it mostly existed (a finished job opens the affidavit + invoice preview by itself after 6
    seconds; sending is two taps there). Now the helper says so when you tell it a job is done ("📄 The affidavit and
    invoice open next: check them, then two taps to send") with a "📄 Check the paperwork now" button, on every voice path.
-25. ☐ **🧠 It remembers yesterday**: the morning brief says what you said you'd do yesterday and didn't ("yesterday you
-   said you'd call Lewis").
+25. ✅ **🧠 It remembers yesterday**: what you said you'd do ("I'll call the tenant after lunch", item 19) is kept by day on
+   the phone; the next morning brief asks once: "Yesterday you said you'd call the tenant. Did that get done?" (lib/convo-memory
+   notePromise / takeEarlierPromises; up to 3 days back).
 26. ☐ **🔕 Quiet hours**: no talking and no sound alerts from 9 PM to 7 AM (cards stay silent on the screen), unless
    you're working the notices.
 

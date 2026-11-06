@@ -74,6 +74,7 @@ import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
 import { jobHere, saysHere } from "../../lib/job-here";
 import { isFridayWrapTime, weekWrap } from "../../lib/friday-wrap";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
+import { notePromise, promisesLine, takeEarlierPromises } from "../../lib/convo-memory";
 import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
@@ -2198,6 +2199,8 @@ export default function FieldCommandClient() {
         return;
       }
       const backFromSnooze = takeSnoozedBack(day);
+      // 🧠 What you said you'd do yesterday (plan item 25), asked once in the morning brief.
+      const promised = promisesLine(takeEarlierPromises(day), day);
       markBrief(day);
       if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
       if (step) noteSaid(day, `first:${nextOmoRef.current || step.text}`, step.text.replace(/\.$/, ""));
@@ -2205,7 +2208,7 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
       // 🧠 Your usual start (3 of the last 14 mornings), offered before 11 if you haven't opened it yet today.
@@ -6307,7 +6310,7 @@ export default function FieldCommandClient() {
       saveReminders([...readReminders(), item]);
       const label = appointmentLabel({ date, start: time, end: hourAfter(time) } as Appointment).replace(/–.*$/, "").replace(/ · /, " at ");
       const cal = `${window.location.origin}/api/appointment-calendar?${new URLSearchParams({ kind: "reminder", id: "reminder", what: cmd.what, date, time })}`;
-      if (cmd.self) { showPanel({ heard, reply: `👍 Got it. I'll bring it up on ${label}: ${cmd.what}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] }); return; }
+      if (cmd.self) { notePromise(today, cmd.what); showPanel({ heard, reply: `👍 Got it. I'll bring it up on ${label}: ${cmd.what}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] }); return; }
       showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
       return;
     }

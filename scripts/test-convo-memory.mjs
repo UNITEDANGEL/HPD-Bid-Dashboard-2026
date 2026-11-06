@@ -31,3 +31,20 @@ assert.deepEqual(P("what did you say before"), { intent: "memory", ask: "last" }
 assert.deepEqual(P("the job before"), { intent: "memory", ask: "job-before" });
 assert.deepEqual(P("go back to the last one"), { intent: "memory", ask: "job-before" });
 console.log("PASS remembers our conversation: today's talk kept (both sides, once), what we talked about, what I said about X, say that again, the job before; new day = fresh");
+
+// 🧠 It remembers yesterday (plan item 25).
+{
+  const { notePromise, takeEarlierPromises, promisesLine } = await loadLib("convo-memory");
+  const p = mem();
+  notePromise("2026-11-05", "call the tenant", p);
+  notePromise("2026-11-05", "call the tenant", p);
+  notePromise("2026-11-06", "fax it", p);
+  assert.deepEqual(takeEarlierPromises("2026-11-05", p), [], "nothing from before today yet");
+  const due = takeEarlierPromises("2026-11-06", p);
+  assert.deepEqual(due.map((x) => x.what), ["call the tenant"], "once, yesterday's only");
+  assert.equal(promisesLine(due, "2026-11-06"), "Yesterday you said you'd call the tenant. Did that get done?");
+  assert.deepEqual(takeEarlierPromises("2026-11-06", p), [], "asked once");
+  assert.deepEqual(takeEarlierPromises("2026-11-07", p).map((x) => x.what), ["fax it"]);
+  assert.equal(promisesLine([], "2026-11-07"), "");
+  console.log("PASS remembers yesterday: what you said you'd do comes back once in the next morning brief");
+}

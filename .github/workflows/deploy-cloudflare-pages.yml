@@ -418,6 +418,7 @@ jobs:
             scripts/test-browser-job-here.mjs \
             scripts/test-browser-tenant-aloud.mjs \
             scripts/test-browser-friday-wrap.mjs \
+            scripts/test-browser-yesterday.mjs \
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-real-helper.mjs \
             scripts/test-browser-package-send.mjs \

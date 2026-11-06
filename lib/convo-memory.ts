@@ -70,3 +70,31 @@ export function jobBefore(log: ConvoLog) {
   const { jobs } = talkedAbout(log);
   return jobs[1] || "";
 }
+
+// 🧠 It remembers yesterday (plan item 25): what you said you'd do ("I'll call the tenant after lunch") is kept by day;
+// the next morning brief asks about the ones from before today, once.
+export type Promise1 = { day: string; what: string };
+const PKEY = "hpd-promises-v1";
+const readPromises = (store: Store | null): Promise1[] => { try { const a = JSON.parse(store?.getItem(PKEY) || "[]"); return Array.isArray(a) ? a.filter((x) => x && typeof x.what === "string" && typeof x.day === "string") : []; } catch { return []; } };
+export function notePromise(day: string, what: string, store: Store | null = ls()) {
+  const w = String(what || "").replace(/\s+/g, " ").trim().slice(0, 120);
+  if (!w) return;
+  const all = readPromises(store).filter((x) => !(x.day === day && x.what === w));
+  all.push({ day, what: w });
+  try { store?.setItem(PKEY, JSON.stringify(all.slice(-20))); } catch { /* private mode */ }
+}
+// The ones from before today (up to 3 days back), taken once.
+export function takeEarlierPromises(today: string, store: Store | null = ls()): Promise1[] {
+  const all = readPromises(store);
+  const back = new Date(Date.parse(`${today}T12:00:00Z`) - 3 * 86400000).toISOString().slice(0, 10);
+  const due = all.filter((x) => x.day < today && x.day >= back);
+  const keep = all.filter((x) => x.day >= today);
+  if (keep.length !== all.length) { try { store?.setItem(PKEY, JSON.stringify(keep)); } catch { /* private mode */ } }
+  return due;
+}
+export function promisesLine(due: Promise1[], today: string) {
+  if (!due.length) return "";
+  const y = new Date(Date.parse(`${today}T12:00:00Z`) - 86400000).toISOString().slice(0, 10);
+  const when = due.every((x) => x.day === y) ? "Yesterday" : "Earlier";
+  return `${when} you said you'd ${due.slice(0, 3).map((x) => x.what).join("; ")}${due.length > 3 ? ` (+${due.length - 3} more)` : ""}. Did that get done?`;
+}
