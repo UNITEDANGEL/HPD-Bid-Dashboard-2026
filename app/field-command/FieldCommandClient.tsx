@@ -71,6 +71,7 @@ import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type Boa
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
+import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
@@ -5173,7 +5174,17 @@ export default function FieldCommandClient() {
     setAgent({ heard: "💬", reply: `How did it go at ${where}? Tell me in a few words and I'll keep it as the job's note (or say skip).`, offers: ["It went fine", "The tenant wasn't happy", "I need to come back", "skip"], offersLabel: "Or tap:" });
     speak(`How did it go at ${where}?`, 300, () => startListening());
   };
+  const myWordsBusyRef = useRef(false);
   agentRef.current = (heard: string, inner = false) => {
+    // 👂 Your own words (plan item 18): teach it ("when I say close it, I mean send the affidavit"), and what it learned
+    // is done straight away.
+    if (!inner) {
+      const teach = parseTeach(heard);
+      if (teach && "forget" in teach) { const ok = forgetWords(teach.forget); setAgent({ heard, reply: ok ? `👂 OK, I forgot "${teach.forget}".` : `I didn't have "${teach.forget}" saved.` }); speak(ok ? "OK, forgotten." : "I didn't have that.", 200); return; }
+      if (teach && "said" in teach) { learnWords(teach.said, teach.meaning); const r = `👂 Got it: when you say "${teach.said}", I'll do "${teach.meaning}".`; setAgent({ heard, reply: r }); speak(r, 200, () => { if (convoRef.current) startListening(); }); return; }
+      const mine = myMeaning(heard);
+      if (mine && normWords(mine) !== normWords(heard) && !myWordsBusyRef.current) { myWordsBusyRef.current = true; try { agentRef.current(mine, false); } finally { myWordsBusyRef.current = false; } return; }
+    }
     // 🏷 It answers to its name (4 Nov): "Hey Mike, what's next?" -> "what's next?"; just "Hey Mike" -> "Yes?".
     {
       const name = getHelperLook().name;
@@ -9368,7 +9379,7 @@ export default function FieldCommandClient() {
           })() : null}
           {agent.choices?.length ? (
             <div className="fc-agent-try fc-agent-choices" data-hpd-smoke="fc-agent-choices">
-              {agent.choices.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-choice" onClick={() => agentRef.current(c)}>{c}</button>)}
+              {agent.choices.map((c) => <button key={c} type="button" data-hpd-smoke="fc-agent-choice" onClick={() => { learnWords(agent.heard, c); agentRef.current(c); }}>{c}</button>)}
               <button type="button" className="is-ai" data-hpd-smoke="fc-agent-ask-ai" onClick={() => { const h = agent.heard; askAnywayRef.current = h; agentRef.current(h); }}>🤖 Ask the AI instead</button>
             </div>
           ) : null}

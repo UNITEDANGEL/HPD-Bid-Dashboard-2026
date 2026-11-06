@@ -160,6 +160,7 @@ jobs:
           node scripts/test-said-today.mjs
           node scripts/test-notice-check.mjs
           node scripts/test-convo-memory.mjs
+          node scripts/test-my-words.mjs
           node scripts/test-notice-convo.mjs
           node scripts/test-job-tracker.mjs
           node scripts/test-street-view-hours.mjs
@@ -409,6 +410,7 @@ jobs:
             scripts/test-browser-notice-check.mjs \
             scripts/test-browser-wait-talk.mjs \
             scripts/test-browser-convo-memory.mjs \
+            scripts/test-browser-my-words.mjs \
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-real-helper.mjs \
             scripts/test-browser-package-send.mjs \

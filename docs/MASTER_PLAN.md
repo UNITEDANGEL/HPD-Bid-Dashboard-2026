@@ -105,8 +105,9 @@ The plan, one by one (✅ = live):
    pauses, short sentences; the owner picks it from 3 samples. Free voices only (no paid service).
    Built (6 Nov): in 🎨 the 3 best voices on the phone (⭐ natural first) with ▶ Hear (says a sample, saves nothing) and
    "Use this voice"; natural voices are said a little slower (0.94); answers already come in short sentences.
-18. ☐ **👂 It understands better**: when it isn't sure, it asks back one short question ("the bid or the notice?")
-   instead of guessing; it learns the owner's own words (e.g. "close it" = send the affidavit) and keeps them.
+18. ✅ **👂 It understands better**: it learns your own words (lib/my-words.ts, on this phone): teach it "when I say
+   close it, I mean send the affidavit" (or "close it means …"; "forget close it" undoes it) and it does that straight
+   away next time; picking from "Did you mean…?" teaches it too. Not sure = it still asks back ("Did you mean…?").
 19. ☐ **🔁 It follows up by itself**: what you said you'd do ("I'll call the tenant after lunch") comes back at that
    time, once.
 20. ☐ **🚚 It hears you in the truck**: when the mic picks up wind or road noise and misses words, it says "I didn't

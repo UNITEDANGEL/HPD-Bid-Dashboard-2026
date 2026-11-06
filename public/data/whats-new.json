@@ -2,6 +2,14 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 5, 2026",
+      "title": "It learns your words",
+      "items": [
+        "👂 Teach the helper your own words: \"when I say close it, I mean send the affidavit\". Next time \"close it\" just does it. \"Forget close it\" undoes it.",
+        "👂 When you pick from \"Did you mean…?\", it remembers, so it won't ask the same thing again."
+      ]
+    },
+    {
       "date": "Nov 6, 2026",
       "title": "A more real face and voice",
       "items": [
