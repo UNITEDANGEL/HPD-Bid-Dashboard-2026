@@ -244,10 +244,10 @@ The plan, one by one (✅ = live):
    go?" answer, said or typed; not HPD call notes, not older notes like a gate code) fills "What work was completed?
    (invoice description)" in capitals, to check and change before anything is made. A completed job keeps HPD's scope
    as the invoice description (that's what HPD expects).
-30. ☐ **📬 HPD overnight, in the brief**: the morning brief says in one line who at HPD wrote overnight, on which job and
+30. ✅ **📬 HPD overnight, in the brief**: the morning brief says in one line who at HPD wrote overnight, on which job and
    what they want.
-31. ☐ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
-32. ☐ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
+31. ✅ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
+32. ✅ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
 
 Recommendations (Claude): 13-29 are done; 30-32 are next on the plan (in the app's 📋 card).
 
