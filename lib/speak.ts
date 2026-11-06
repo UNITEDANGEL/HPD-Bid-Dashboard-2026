@@ -83,6 +83,9 @@ export function speechText(text: string) {
   return text
     .replace(/\p{Extended_Pictographic}|️|‍/gu, "")
     .replace(/^\s*[•·]\s*/gm, "")
+    // Said like a person (plan item 14, warmer talk): no symbols read out.
+    .replace(/\s*(?:->|→)\s*/g, ", then ").replace(/\s+·\s+/g, ", ").replace(/\s&\s/g, " and ")
+    .replace(/\(\+(\d+) more\)/g, "and $1 more").replace(/\be\.g\.\s*/gi, "like ")
     .replace(/(\d+)°\s*F\b/g, "$1 degrees").replace(/(\d+)°/g, "$1 degrees")
     .replace(/\bmph\b/g, "miles per hour").replace(/(\d) ?mi\b/g, "$1 miles").replace(/(\d) ?min\b/g, "$1 minutes")
     .replace(/\s*\n+\s*/g, ". ").replace(/([.!?:])\.\s/g, "$1 ").replace(/\s+/g, " ").trim();

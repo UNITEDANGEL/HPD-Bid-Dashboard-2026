@@ -375,20 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-05-evening-b",
-    "title": "From the 5 Nov plan: the helper says it once and gets more real",
+    "id": "2026-11-05-night-c",
+    "title": "Next on the plan: a more real helper (your words: \"more real, more understanding, keep track of our conversation\")",
     "items": [
       {
-        "id": "one-dashboard-card",
-        "icon": "📋",
-        "title": "One dashboard card",
-        "why": "The 📋 Today sheet and the chat's day so far become one card: ✅ done, 🔔 still open, ⏭ coming up, the same everywhere."
+        "id": "remembers-conversation",
+        "icon": "🧠",
+        "title": "It remembers our conversation",
+        "why": "The last things said today (both sides) kept on the phone: \"that job\", \"the one before\", \"what did I say about Main Street\" answered from them."
       },
       {
-        "id": "warmer-talk",
-        "icon": "🗣",
-        "title": "Warmer, shorter talk",
-        "why": "Short friendly words out loud, and it waits while you're still talking instead of cutting you off."
+        "id": "real-face",
+        "icon": "🙂",
+        "title": "A more real face",
+        "why": "A real-looking face instead of a cartoon: blinks, looks at you, lips move with the words. You pick from 3 previews first."
+      },
+      {
+        "id": "real-voice",
+        "icon": "🎙",
+        "title": "A more real voice",
+        "why": "The best natural voice on your iPhone, with pauses and short sentences. You pick from 3 samples. Free voices only."
       }
     ]
   }

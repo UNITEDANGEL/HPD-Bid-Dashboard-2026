@@ -83,8 +83,10 @@ The plan, one by one (✅ = live):
    Notices button and the ⏰ chip on the map stay (silent).
 13. ✅ **📋 One dashboard card**: the ☀️ Today sheet and the chat's day so far show the same three boxes (✅ done today,
    🔔 I told you with 😴 Not today, ⏭ coming up), drawn by one piece of code (recapBoxes), on top of the Today sheet.
-14. ☐ **🗣 Warmer, shorter talk**: short friendly words out loud, and it waits while you're still talking instead of
-   cutting you off.
+14. ✅ **🗣 Warmer, shorter talk**: it waits while you're still talking: when what it heard ends unfinished ("call the
+   tenant for", "plan my", "um") it listens again and joins the two parts (lib/said-today soundsUnfinished); symbols
+   are said as words ("->" = "then", "·" = ",", "&" = "and"); long answers still said in 2 sentences.
+   Next on the plan in the app (📋, ✅ Do all): 15 🧠 remembers our conversation, 16 🙂 a more real face, 17 🎙 a more real voice.
 
 15. ☐ **🧠 It remembers our conversation** (owner, 5 Nov night: "I want a better AI ... more real and sound more real
    ... he needs to be more understanding and keep track of our conversation when we talked about" + "how else can we

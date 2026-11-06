@@ -121,3 +121,13 @@ console.log("PASS said once: the morning brief once a day, a reminder once, 'Hi 
   for (const t of ["not today", "snooze", "snooze it", "remind me tomorrow"]) assert.deepEqual(parseCommand(t), { intent: "snooze" }, t);
   console.log("PASS snooze: not today takes a reminder off today's list and brings it back in tomorrow's brief");
 }
+
+// 🗣 Waits while you're still talking + said like a person (plan item 14).
+{
+  const { soundsUnfinished } = await loadLib("said-today");
+  for (const t of ["call the tenant for", "plan my", "send the paperwork and", "um", "what's the weather in"]) assert.equal(soundsUnfinished(t), true, t);
+  for (const t of ["plan my week", "what did we do today", "thank you", "call the tenant for EQ15239", "yes", ""]) assert.equal(soundsUnfinished(t), false, t);
+  const { speechText } = await loadLib("speak");
+  assert.equal(speechText("Bids -> notices · 3 left (+2 more) & done"), "Bids, then notices, 3 left and 2 more and done");
+  console.log("PASS waits while you talk (unfinished sentences held), symbols said as words");
+}

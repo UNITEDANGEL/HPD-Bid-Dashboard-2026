@@ -8,7 +8,8 @@
         "🔎 Notices -> \"Check every notice from my email\" (or say \"check every notice\"): each job in one line: already sent (when, which PDF; don't send again), not sent yet, HPD found a problem, or check first.",
         "📤 A job whose paperwork already went to HPD (like ER01720, sent in the stop work email) no longer says call the tenant or needs a visit: it waits on HPD.",
         "🔕 No more \"urgent\" out loud: notice deadlines are said only when you're working the notices.",
-        "📋 The ☀️ Today sheet now starts with the same three boxes as the chat: done today, what I told you, coming up."
+        "📋 The ☀️ Today sheet now starts with the same three boxes as the chat: done today, what I told you, coming up.",
+        "🗣 It waits while you're still talking: a short pause after \"call the tenant for…\" no longer cuts you off."
       ]
     },
     {

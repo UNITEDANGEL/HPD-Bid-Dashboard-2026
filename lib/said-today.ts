@@ -95,6 +95,15 @@ export function nextPart(done: Part, s: { bidsLeft: number; noticesToSend: numbe
 export const isYes = (t: string) => /^(?:yes|yeah|yep|yup|sure|ok(?:ay)?|go|go ahead|do it|let'?s go|let'?s do it|sounds good|next|alright)(?:[ ,]+(?:please|let'?s go|go|do it|sure|ok(?:ay)?))*[.!]*$/i.test(t.trim());
 // "it", "that one", "this job", "them": about what was just talked about.
 export const refersBack = (t: string) => /\b(it|that|this|that one|this one|that job|this job|the same|same one|them|there)\b/i.test(t) && !/\b[a-z]{2}\s?\d{5}\b/i.test(t);
+// 🗣 It waits while you're still talking (plan item 14, owner: "it waits while you're still talking instead of cutting
+// you off"): the phone stops listening at a short pause; when what it heard ends like a sentence that isn't finished
+// ("call the tenant for", "send the paperwork and", "um"), it keeps listening and puts the two parts together.
+export const soundsUnfinished = (t: string) => {
+  const s = t.trim().toLowerCase().replace(/[.,!?]+$/, "");
+  if (!s) return false;
+  return /\b(?:and|or|but|so|then|the|a|an|to|for|of|on|in|at|with|about|from|my|his|her|their|this|that|is|are|was|if|because|um+|uh+|uhm|also|plus|could|would|should)$/.test(s);
+};
+
 // 🗣 Out loud, a long answer is cut to its first two sentences; the rest stays on the screen.
 export function shortSpeech(reply: string) {
   const one = reply.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();

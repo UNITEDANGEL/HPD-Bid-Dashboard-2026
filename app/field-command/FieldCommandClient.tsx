@@ -44,7 +44,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
-import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
+import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, soundsUnfinished, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
 import { planWeek, weekSpeech, type PlanDay, type WeekItem } from "../../lib/week-plan";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
@@ -1466,6 +1466,8 @@ export default function FieldCommandClient() {
     return () => window.removeEventListener("hpd-listen", on);
   }, []);
   const micRetryRef = useRef(false);
+  // 🗣 What you said before a short pause that didn't sound finished (plan item 14): kept, and the next words join it.
+  const heldSpeechRef = useRef<{ text: string; at: number } | null>(null);
   function startListening() {
     stopSpeaking();
     type Rec = { lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
@@ -1488,10 +1490,27 @@ export default function FieldCommandClient() {
         // Right after "Who refused?" the description goes to the helper, not the search box.
         const answeringWho = Boolean(pendingWhoRef.current && Date.now() - pendingWhoRef.current.at < 120000);
         if (cmd.intent === "search" && !convoRef.current && !answeringWho) { setFindHidden(""); setSearch(cmd.text); return; }
-        if (final) { handled = true; setSearch(""); convoMissRef.current = 0; agentRef.current(said); }
+        if (final) {
+          handled = true; setSearch(""); convoMissRef.current = 0;
+          const held = heldSpeechRef.current && Date.now() - heldSpeechRef.current.at < 15000 ? heldSpeechRef.current.text : "";
+          const full = `${held} ${said}`.trim();
+          // Not finished ("call the tenant for…"): wait for the rest instead of cutting you off (once per sentence).
+          if (convoRef.current && !held && soundsUnfinished(full)) { heldSpeechRef.current = { text: full, at: Date.now() }; setAgent((a) => (a ? { ...a, heard: `${full}…` } : { heard: `${full}…`, reply: "I'm listening…" })); return; }
+          heldSpeechRef.current = null;
+          agentRef.current(full);
+        }
       };
       rec.onend = () => {
         setListening(false); listenRef.current = null;
+        // Waiting for the rest of a sentence: listen again; if nothing more comes, answer what was said.
+        if (heldSpeechRef.current && convoRef.current) {
+          const h = heldSpeechRef.current;
+          if (!heardSomething || handled) {
+            if (Date.now() - h.at > 6000) { heldSpeechRef.current = null; agentRef.current(h.text); return; }
+            window.setTimeout(() => { if (convoRef.current) startListening(); }, 150);
+            return;
+          }
+        }
         // Phone cut the mic before it called the words final (4 Nov: "make the conversation more fluid"): answer what it heard instead of going quiet.
         if (convoRef.current && heardSomething && !handled && lastSaid.trim()) { handled = true; setSearch(""); convoMissRef.current = 0; agentRef.current(lastSaid); return; }
         // Conversation mode, nothing said: a few more tries, then it rests (tap 💬 to go on).
