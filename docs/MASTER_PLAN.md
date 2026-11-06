@@ -143,8 +143,9 @@ The plan, one by one (✅ = live):
    time too ("I'm on my way. I should be there around 2:40 PM (about 20 minutes).") so the tenant knows even if they read
    it later, and "text them we're on the way" gets the time added (lib/on-my-way.ts: distance x 1.35, 18 mph, 12 in rush
    hour, rounded up to 5 minutes). Read back; sent only after your yes.
-28. ☐ **📸 Photos before paperwork**: the paperwork card says if before / after photos are missing and lets you add them
-   before sending (HPD needs them).
+28. ✅ **📸 Photos before paperwork**: when the work was done (completed / partial) and this phone has no before or no
+   after photos, the paperwork card says so on top ("📸 No after photos on this phone yet. HPD needs them…") with
+   "📷 Add photos first" (back to the job). lib/paperwork-photos.ts.
 29. ☐ **📝 Your words on the invoice**: your "how did it go" answer becomes the work note on the invoice (preview first).
 
 Recommendations (Claude): 13-26 are done; 27-29 are next on the plan (in the app's 📋 card).

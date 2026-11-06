@@ -4497,3 +4497,5 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-dress-sample button { min-height: 40px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.45); background: rgba(255, 255, 255, 0.12); color: inherit; font: inherit; font-size: 13px; font-weight: 700; }
 .fc-dress-sample.is-on { border-color: #7c3aed; background: rgba(124, 58, 237, 0.28); }
 .fc-face.is-real.is-idle .fc-face-head { animation-duration: 7s; }
+.fc-package-photo-gap { margin: 0; padding: 10px 12px; background: #fef3c7; color: #78350f; font: 700 15px/1.35 system-ui, sans-serif; border-bottom: 2px solid #f59e0b; }
+.fc-package-photo-gap button { margin-left: 6px; min-height: 36px; padding: 4px 12px; border-radius: 18px; border: 0; background: #b45309; color: #fff; font: 800 14px system-ui; }

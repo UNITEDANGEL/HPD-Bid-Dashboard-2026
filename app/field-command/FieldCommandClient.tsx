@@ -73,6 +73,7 @@ import { noticeFindings } from "../../lib/notice-findings";
 import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
 import { jobHere, saysHere } from "../../lib/job-here";
 import { etaMinutes, isOnMyWay, withArrival } from "../../lib/on-my-way";
+import { photoGap } from "../../lib/paperwork-photos";
 import { isFridayWrapTime, weekWrap } from "../../lib/friday-wrap";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { notePromise, promisesLine, takeEarlierPromises } from "../../lib/convo-memory";
@@ -9807,6 +9808,12 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-package-sheet-back" onClick={closePackageSheet}>← Back to job</button>
             <strong>{packageSheet.id} package</strong>
           </header>
+          {(() => {
+            // 📸 Photos before paperwork (plan item 28): what's missing, with a way back to take them.
+            const j = findAnyJob(packageSheet.id);
+            const gap = j ? photoGap(value(j, ["FieldOutcome", "fieldOutcome"]), mediaCounts[packageSheet.id]) : "";
+            return gap ? <p className="fc-package-photo-gap" data-hpd-smoke="fc-package-photo-gap">{gap} <button type="button" data-hpd-smoke="fc-package-add-photos" onClick={closePackageSheet}>📷 Add photos first</button></p> : null;
+          })()}
           <iframe src={packageSheet.href} title={`${packageSheet.id} package`} allow="web-share; clipboard-write; camera" />
         </div>
       ) : null}
