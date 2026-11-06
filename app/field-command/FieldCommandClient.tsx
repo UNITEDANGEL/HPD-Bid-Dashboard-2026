@@ -71,6 +71,7 @@ import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type Boa
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
+import { jobHere, saysHere } from "../../lib/job-here";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
@@ -5183,6 +5184,12 @@ export default function FieldCommandClient() {
     speak(`How did it go at ${where}?`, 300, () => startListening());
   };
   const myWordsBusyRef = useRef(false);
+  // 📍 The job you're standing at (plan item 21), from the phone's last location (10 minutes at most).
+  const hereJob = (): JobRecord | null => {
+    const spots = jobs.map((j) => { const at = jobLatLng(j); return at ? { id: jobId(j), lat: at.lat, lng: at.lng } : null; }).filter((x): x is { id: string; lat: number; lng: number } => Boolean(x));
+    const h = jobHere(lastFixRef.current, spots);
+    return h ? jobs.find((j) => jobId(j) === h.id) || null : null;
+  };
   agentRef.current = (heard: string, inner = false) => {
     // 👂 Your own words (plan item 18): teach it ("when I say close it, I mean send the affidavit"), and what it learned
     // is done straight away.
@@ -5318,7 +5325,7 @@ export default function FieldCommandClient() {
       // 💬 Conversation mode: listen again once the answer has been said.
       const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(shortSpeech(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ")), 200, again); };
     const recentOmo = () => { const l = lastTalkRef.current; return l && Date.now() - l.at < 10 * 60000 && refersBack(heard) ? l.omo : ""; };
-    const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob || (recentOmo() ? findAnyJob(recentOmo()) || null : null));
+    const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob || (recentOmo() ? findAnyJob(recentOmo()) || null : null) || (saysHere(heard) ? hereJob() : null));
     // The cards under an answer: the ones set for it, else the jobs it names (not the one already open).
     function takeCards(reply: string) {
       const set = cardsRef.current;
@@ -5900,6 +5907,12 @@ export default function FieldCommandClient() {
     if (cmd.intent === "text-tenant" || cmd.intent === "call-tenant" || cmd.intent === "navigate" || cmd.intent === "arrived" || cmd.intent === "open" || cmd.intent === "late") {
       // Which job: the one named, else the one on screen; "next stop": Today's route, else the closest open job.
       let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : selectedJob;
+      // 📍 "This job" / "the job here" (plan item 21): the job you're standing at.
+      if (!job && !cmd.ref && ((cmd.intent === "open" && cmd.here) || saysHere(heard))) {
+        const h = hereJob();
+        if (!h) { answer(lastFixRef.current && Date.now() - lastFixRef.current.at < 600000 ? "📍 I don't see a job of yours right here (within about 200 m). Say its number or the street." : "📍 I don't know where you are yet: tap Locate (or allow location), then ask again."); return; }
+        job = h;
+      }
       if (!job && cmd.intent === "late") {
         // Running late to: the job just talked about, else today's next stop on the route.
         const recent = lastJobsRef.current && Date.now() - lastJobsRef.current.at < 60 * 60000 ? jobs.find((x) => jobId(x) === lastJobsRef.current!.ids[0]) : null;

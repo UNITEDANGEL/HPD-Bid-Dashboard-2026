@@ -96,7 +96,7 @@ export type AgentCommand =
   | { intent: "call-tenant"; ref: string }
   | { intent: "navigate"; ref: string; next: boolean; there?: boolean }
   | { intent: "arrived"; ref: string }
-  | { intent: "open"; ref: string }
+  | { intent: "open"; ref: string; here?: boolean }
   | { intent: "plan" }
   | { intent: "route-add"; ref: string }
   | { intent: "route-remove"; ref: string }
@@ -229,6 +229,8 @@ export function parseCommand(heard: string): AgentCommand {
   { const m = /^(?:so |ok(?:ay)? |hey )?what (?:did|do) (?:i|we|you) (?:say|said|tell you|told you|talk about) (?:about|on|for|regarding) (.+?)\??$/.exec(t); if (m && !/^(?:today|before|earlier)$/.test(m[1])) return { intent: "memory", ask: "about", about: m[1] }; }
   if (/^(?:so |ok(?:ay)? |hey )?(?:what (?:did|was it) you (?:just )?(?:say|said)(?: (?:before|earlier|again|last))?|say (?:that|it) again|repeat (?:that|it)(?: please)?|come again|what was that)\??$/.test(t)) return { intent: "memory", ask: "last" };
   if (/^(?:so |ok(?:ay)? |hey )?(?:(?:go back to |open |show me )?the (?:job|one) (?:before|before that)|the other (?:job|one)|(?:go )?back to the (?:last|previous|other) (?:job|one))\??$/.test(t)) return { intent: "memory", ask: "job-before" };
+  // 📍 The job here (plan item 21): "what job is this", "which job am I at", "open the job here".
+  if (/^(?:so |ok(?:ay)? |hey )?(?:(?:open|show(?: me)?|pull up) )?(?:what(?:'?s| is) (?:this|the) job(?: here)?|what job is (?:this|here)|which job am i (?:at|on)|what job am i at|the job here|this job|where am i)\??$/.test(t)) return { intent: "open", ref: "", here: true };
   // 🔎 Check every notice (owner, 5 Nov: "research every notice we get from my email ... we cannot make mistakes").
   if (/^(?:please |ok(?:ay)? |hey )?(?:(?:check|research|look (?:at|through)|go over|audit|double[- ]check) (?:every|all(?: of)?|each|all the) (?:my |the )?(?:notices?|ppns?)(?: (?:from|in) (?:my |the )?e-?mails?)?|(?:which|what) notices (?:are|were|did i|have i) (?:already )?(?:sent|send)\??|notice check)[.!?]*$/.test(t)) return { intent: "notice-check" };
   if (/^(?:ok(?:ay)? |yes |so )?(?:do (?:them |it |the plan )?all|do all (?:of )?(?:them|it|the plan|three|3)|do the (?:whole )?plan|do everything on the plan|build (?:them )?all)[.!]*$/.test(t)) return { intent: "plan-do-all" };

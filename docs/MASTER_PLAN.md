@@ -115,8 +115,9 @@ The plan, one by one (✅ = live):
 20. ✅ **🚚 It hears you in the truck**: the phone says how sure it is of the words; unsure (wind, road noise) and not a
    command it knows = "🚚 I didn't catch that well. I heard: … Say it again, or tap it if that's right" (one tap uses it),
    then it listens again. Known commands still run (lib/said-today unclearHearing).
-21. ☐ **📍 "The job here"**: "this job", "the job here", "this building" = the job you're standing at (by the phone's
-   location), so you don't have to say the number.
+21. ✅ **📍 "The job here"**: "what job is this", "which job am I at", "this job", "the job here", "this building" = the
+   nearest job within about 200 m of the phone's location (10 minutes old at most; lib/job-here.ts); no location yet =
+   "tap Locate"; none near = "say its number". Works in "text the tenant for this job" too.
 22. ☐ **📱 Tenant texts out loud**: a tenant's reply is read to you while driving, and you answer by voice ("tell her
    Thursday at 10 works"); it reads your answer back and sends only after your yes.
 23. ☐ **📊 Friday wrap**: Friday at 5, once: the week in a few words: money in, jobs closed, bids won, what's first
