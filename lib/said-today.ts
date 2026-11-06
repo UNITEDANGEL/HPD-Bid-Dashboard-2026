@@ -146,3 +146,26 @@ export function mergeDayLog(remote: unknown, store: Store | null = ls()): boolea
   if (changed) { try { store?.setItem(KEY, JSON.stringify({ ...log, said: log.said.slice(-40) })); } catch { /* private mode */ } }
   return changed;
 }
+
+// 📋 A message board, not repeats (owner, 6 Nov: "I don't want my AI helper feeding me over and over, we already went
+// through this once. It's just a message board, whatever we discussed, wherever we are, and we keep moving forward
+// through the day"). "Hi again" says only what changed since the last time it talked to you: new things done, new
+// things still open, the next step if it's new. Nothing new: one short line. The whole board stays on the screen.
+export type HiSnap = { day: string; at: number; done: string[]; still: string[]; next: string };
+export function helloSince(name: string, r: Recap, next: string, prev: HiSnap | null, day: string, now = Date.now()): { text: string; snap: HiSnap } {
+  const done = r.done.slice(), still = r.reminded.filter((x) => !x.done).map((x) => x.text);
+  const snap: HiSnap = { day, at: now, done, still, next };
+  if (!prev || prev.day !== day) return { text: helloAgain(name, r, next), snap };
+  const newDone = done.filter((x) => !prev.done.includes(x));
+  const newStill = still.filter((x) => !prev.still.includes(x));
+  const parts = [`Hi again, ${name}.`];
+  if (newDone.length) parts.push(`Since we talked: ${list(newDone.slice(0, 3))} done${newDone.length > 3 ? ` (+${newDone.length - 3} more)` : ""}.`);
+  if (newStill.length) parts.push(`New: ${newStill[0]}${newStill.length > 1 ? ` (+${newStill.length - 1} more)` : ""}.`);
+  const nextNew = next && next !== prev.next;
+  if (nextNew) parts.push(`Next: ${next.replace(/\.$/, "")}.`);
+  if (parts.length === 1) {
+    const t = new Date(prev.at).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
+    parts.push(`Nothing new since ${t}.${next ? " Same next step, it's on the board." : ""}`);
+  }
+  return { text: parts.join(" "), snap };
+}

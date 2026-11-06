@@ -83,7 +83,7 @@ The plan, one by one (✅ = live, ☐ = next):
 21. ✅ **Claude working = a blinking green dot with the %** on the side tab; the 💡 next-step / ⏰ notice chips wait behind it.
 22. ✅ **Mic message for the device you're on** (computer / Android / iPhone), not always "iPhone".
 23. ✅ **On-my-way time check fixed** (a stray character made "at 2 PM" in your text not count).
-24. ☐ **A message board, not repeats** (owner, 6 Nov: "I don't want my AI helper feeding me the same thing over and over ...
+24. ✅ **A message board, not repeats** (owner, 6 Nov: "I don't want my AI helper feeding me the same thing over and over ...
    it's just a message board, whatever we discussed, wherever we are, and we keep moving forward through the day; keep track
    of everything"): every reminder said once, kept on one board of the day (said / done / next), never re-read.
 25. ✅ **Claude on the iPhone**: Remote Control is on for the build session; the owner follows and talks from the Claude app
@@ -93,7 +93,7 @@ The plan, one by one (✅ = live, ☐ = next):
    up through GitHub's API one file at a time (retried), the video fix first on its own so the phone got it sooner.
 28. ✅ **Bigger text** (✉ side button -> 🔠 A / A+ / A++: cards, sheets, chat, notices grow; the map stays) (owner: "when I'm reading I see very small text, zoom everything up"): an A / A+ / A++ size for the
    whole app, remembered on the phone.
-29. ☐ **Message board of the day** (item 24): one board, said / done / next, each reminder once.
+29. ✅ **Message board of the day**: a 🤖 tap after the morning says only what changed since it last talked (new done, new open, a new next step); nothing new = "Nothing new since 2:10 PM". The board (📒 the day so far) stays on screen.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.

@@ -52,7 +52,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
-import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, soundsUnfinished, unclearHearing, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
+import { briefDone, dayRecap, forServer, helloAgain, helloSince, type HiSnap, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, soundsUnfinished, unclearHearing, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
 import { planWeek, weekSpeech, type PlanDay, type WeekItem } from "../../lib/week-plan";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
@@ -2208,7 +2208,7 @@ export default function FieldCommandClient() {
         const ask0 = (changeThreads || []).find((x) => x.status === "Waiting for you");
         // Claude's question is said here too, not only the button.
         const askWhat0 = ask0 ? ask0.text.replace(/^\((?:idea|said to the helper|from the chat|auto upgrade|plan)\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-        const again = helloAgain(name, r, step?.text || "").replace(/^(Hi again, [^.]+\.)/, (m) => `${m}${ask0 ? ` Claude has a question for you about ${askWhat0}.` : ""}`);
+        const again = (() => { let prevSnap: HiSnap | null = null; try { prevSnap = JSON.parse(localStorage.getItem("hpd-hi-snap-v1") || "null"); } catch { /* private mode */ } const h2 = helloSince(name, r, step?.text || "", prevSnap, day); try { localStorage.setItem("hpd-hi-snap-v1", JSON.stringify(h2.snap)); } catch { /* private mode */ } return h2.text; })().replace(/^(Hi again, [^.]+\.)/, (m) => `${m}${ask0 ? ` Claude has a question for you about ${askWhat0}.` : ""}`);
         setMagicAt(Date.now());
         moodSound("magic");
         const acts0 = [...(ask0 ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
