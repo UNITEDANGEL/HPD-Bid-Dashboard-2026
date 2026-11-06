@@ -112,11 +112,17 @@ The plan, one by one (✅ = live):
    Lewis tonight", "I'll send the affidavit for EQ15239 tomorrow" = a reminder at that time, said back ("👍 Got it.
    I'll bring it up on …"), with Add to Calendar. After lunch = 1:30, this afternoon = 2, tonight = 7, later = in 2 hours
    (tomorrow 9 AM late at night). No time said = nothing saved.
-20. ☐ **🚚 It hears you in the truck**: when the mic picks up wind or road noise and misses words, it says "I didn't
-   catch that, say it again" and shows what it heard to fix with one tap, instead of guessing.
+20. ✅ **🚚 It hears you in the truck**: the phone says how sure it is of the words; unsure (wind, road noise) and not a
+   command it knows = "🚚 I didn't catch that well. I heard: … Say it again, or tap it if that's right" (one tap uses it),
+   then it listens again. Known commands still run (lib/said-today unclearHearing).
+21. ☐ **📍 "The job here"**: "this job", "the job here", "this building" = the job you're standing at (by the phone's
+   location), so you don't have to say the number.
+22. ☐ **📱 Tenant texts out loud**: a tenant's reply is read to you while driving, and you answer by voice ("tell her
+   Thursday at 10 works"); it reads your answer back and sends only after your yes.
+23. ☐ **📊 Friday wrap**: Friday at 5, once: the week in a few words: money in, jobs closed, bids won, what's first
+   next week.
 
-Recommendations (Claude): one dashboard card (13) and warmer talk (14) are next, then 15-19 to make the helper feel
-real (memory first: it's what makes it "understanding").
+Recommendations (Claude): 13-20 are done; 21-23 are next on the plan (in the app's 📋 card).
 
 ---
 

@@ -33,3 +33,15 @@ console.log("PASS your own words: taught (when I say X, I mean Y / X means Y), d
   assert.equal(P("remind me to call Lewis at 3").self, undefined, "remind me stays as before");
   console.log("PASS follows up by itself: I'll / let me / I'm going to … with a time = a reminder then (no time = nothing)");
 }
+
+// 🚚 It hears you in the truck (plan item 20): unsure words + not a known command = say it again.
+{
+  const { unclearHearing } = await loadLib("said-today");
+  assert.equal(unclearHearing(0.3, "ask"), true);
+  assert.equal(unclearHearing(0.3, "search"), true);
+  assert.equal(unclearHearing(0.3, "plan-week"), false, "a known command still runs");
+  assert.equal(unclearHearing(0.9, "ask"), false);
+  assert.equal(unclearHearing(undefined, "ask"), false, "phones that don't say how sure: as before");
+  assert.equal(unclearHearing(0, "ask"), false);
+  console.log("PASS hears you in the truck: unsure + unknown = say it again; known commands and sure words go through");
+}

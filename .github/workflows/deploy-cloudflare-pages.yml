@@ -412,6 +412,7 @@ jobs:
             scripts/test-browser-convo-memory.mjs \
             scripts/test-browser-my-words.mjs \
             scripts/test-browser-follow-up.mjs \
+            scripts/test-browser-truck-noise.mjs \
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-real-helper.mjs \
             scripts/test-browser-package-send.mjs \

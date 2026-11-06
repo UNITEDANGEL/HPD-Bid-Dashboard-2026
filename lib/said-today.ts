@@ -104,6 +104,11 @@ export const soundsUnfinished = (t: string) => {
   return /\b(?:and|or|but|so|then|the|a|an|to|for|of|on|in|at|with|about|from|my|his|her|their|this|that|is|are|was|if|because|um+|uh+|uhm|also|plus|could|would|should)$/.test(s);
 };
 
+// 🚚 It hears you in the truck (plan item 20): the phone says how sure it is of the words (0-1). Unsure (wind, road
+// noise) and not a command it knows = ask to say it again instead of guessing.
+export const unclearHearing = (confidence: number | undefined, intent: string) =>
+  typeof confidence === "number" && confidence > 0 && confidence < 0.5 && (intent === "ask" || intent === "search");
+
 // 🗣 Out loud, a long answer is cut to its first two sentences; the rest stays on the screen.
 export function shortSpeech(reply: string) {
   const one = reply.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();

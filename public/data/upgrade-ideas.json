@@ -375,26 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-06-a",
-    "title": "Next on the plan: a helper that understands and follows up",
+    "id": "2026-11-06-b",
+    "title": "Next on the plan: the helper knows where you are and keeps you posted",
     "items": [
       {
-        "id": "understands-better",
-        "icon": "👂",
-        "title": "It understands better",
-        "why": "When it isn't sure, it asks one short question (\"the bid or the notice?\") instead of guessing, and learns your own words."
+        "id": "job-here",
+        "icon": "📍",
+        "title": "\"The job here\"",
+        "why": "Say \"this job\" or \"the job here\" and it knows the job you're standing at, by the phone's location. No number needed."
       },
       {
-        "id": "follows-up",
-        "icon": "🔁",
-        "title": "It follows up by itself",
-        "why": "What you said you'd do (\"I'll call the tenant after lunch\") comes back at that time, once."
+        "id": "tenant-texts-aloud",
+        "icon": "📱",
+        "title": "Tenant texts out loud",
+        "why": "A tenant's reply is read to you while driving; you answer by voice, it reads it back and sends only after your yes."
       },
       {
-        "id": "hears-in-truck",
-        "icon": "🚚",
-        "title": "It hears you in the truck",
-        "why": "When wind or road noise hides your words, it says \"say it again\" and shows what it heard to fix with one tap."
+        "id": "friday-wrap",
+        "icon": "📊",
+        "title": "Friday wrap",
+        "why": "Friday at 5, once: money in, jobs closed, bids won, and what's first next week, in a few words."
       }
     ]
   }

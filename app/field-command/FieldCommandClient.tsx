@@ -44,7 +44,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
-import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, soundsUnfinished, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
+import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, soundsUnfinished, unclearHearing, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
 import { planWeek, weekSpeech, type PlanDay, type WeekItem } from "../../lib/week-plan";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
@@ -1484,6 +1484,7 @@ export default function FieldCommandClient() {
       rec.lang = lastLangRef.current === "es" ? "es-US" : "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
       rec.onresult = (e) => {
         const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
+        const sure = Math.min(...Array.from(e.results).map((r) => { const c = (r[0] as { confidence?: number }).confidence; return typeof c === "number" && c > 0 ? c : 1; }));
         const final = Array.from(e.results).every((r) => r.isFinal);
         micRetryRef.current = false;
         heardSomething = true; lastSaid = said;
@@ -1499,6 +1500,13 @@ export default function FieldCommandClient() {
           // Not finished ("call the tenant for…"): wait for the rest instead of cutting you off (once per sentence).
           if (convoRef.current && !held && soundsUnfinished(full)) { heldSpeechRef.current = { text: full, at: Date.now() }; setAgent((a) => (a ? { ...a, heard: `${full}…` } : { heard: `${full}…`, reply: "I'm listening…" })); return; }
           heldSpeechRef.current = null;
+          // 🚚 Road noise (plan item 20): unsure of the words and not a known command = say it again, or tap what it heard.
+          if (unclearHearing(sure, parseCommand(full).intent)) {
+            const reply = `🚚 I didn't catch that well. I heard: "${full}". Say it again, or tap it if that's right.`;
+            setAgent({ heard: full, reply, choices: [full] });
+            speak("Sorry, I didn't catch that. Say it again?", 150, () => { if (convoRef.current) startListening(); });
+            return;
+          }
           agentRef.current(full);
         }
       };
