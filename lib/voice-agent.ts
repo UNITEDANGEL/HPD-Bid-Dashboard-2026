@@ -83,6 +83,7 @@ export type AgentCommand =
   | { intent: "remind"; what: string; date?: string; time?: string }
   | { intent: "today" }
   | { intent: "recap" }
+  | { intent: "snooze" }
   | { intent: "plan-week" }
   | { intent: "plan-do-all" }
   | { intent: "notices" }
@@ -207,6 +208,7 @@ export function parseCommand(heard: string): AgentCommand {
   // ✅ Do all (owner, 5 Nov: "ask me in the app to say do all ... stick to the plan"): the next items on the plan go to
   // Claude as one request.
   if (/^(?:ok(?:ay)? |yes |so )?(?:do (?:them |it |the plan )?all|do all (?:of )?(?:them|it|the plan|three|3)|do the (?:whole )?plan|do everything on the plan|build (?:them )?all)[.!]*$/.test(t)) return { intent: "plan-do-all" };
+  if (/^(?:ok(?:ay)? |hey )?(?:not today|(?:snooze|postpone)(?: it| that| them| these| all| the reminders?)?|remind me (?:about (?:it|that|them) )?tomorrow|(?:do|leave) (?:it|that) tomorrow)[.!]*$/.test(t)) return { intent: "snooze" };
   if (/^(?:so |ok(?:ay)? |hey )?(?:what (?:did|have) (?:we|i) (?:do(?:ne)?|get done|got done|finish(?:ed)?|complete(?:d)?)(?: (?:so far|today))*|what(?:'?s| is| have i| have we) (?:done|finished|completed)(?: (?:so far|today))*|(?:day )?recap|today so far|what did you remind me(?: of| about)?(?: today)?|what(?:'?s| is) (?:still )?(?:left|coming up|ahead)(?: to do)?(?: (?:today|this week|for me))?|what work is (?:still )?left|(?:the )?future work|what'?s still open)\??$/.test(t)) return { intent: "recap" };
   // While you were away (3 Nov, the owner's pick 1): "what did I miss", "catch me up", "what happened while I was out".
   if (/^(?:so |ok(?:ay)? |hey )?(?:what did i miss|what have i missed|catch me up|fill me in|what happened(?: while i was (?:away|gone|out)| today| this morning)?|did i miss anything|anything happen(?:ed)?(?: while i was (?:away|gone|out))?|while i was (?:away|gone|out))$/.test(t)) return { intent: "catch-up" };

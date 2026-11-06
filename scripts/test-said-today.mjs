@@ -25,7 +25,7 @@ assert.equal(wasSaid("2026-11-06", "notice:ER03009", s), false);
 
 // Bids all sent (key no longer open); the notice still open.
 const r = dayRecap(readDayLog(D, s), ["🧾 16 bids sent"], new Set(["notice:ER03009"]), ["🧾 4 bids due tomorrow"]);
-assert.deepEqual(r.reminded, [{ text: "16 bids due today", done: true }, { text: "notice ER03009 overdue", done: false }]);
+assert.deepEqual(r.reminded, [{ text: "16 bids due today", done: true, key: "bids:2026-11-05" }, { text: "notice ER03009 overdue", done: false, key: "notice:ER03009" }]);
 const hi = helloAgain("Jot", r, "notice ER03009 overdue 20 hours.");
 assert.equal(hi, "Hi again, Jot. Done today: 🧾 16 bids sent. Still open from what I told you: notice ER03009 overdue. Next: notice ER03009 overdue 20 hours.");
 assert.doesNotMatch(hi, /Good morning|jobs? to do/);
@@ -102,4 +102,22 @@ console.log("PASS said once: the morning brief once a day, a reminder once, 'Hi 
   assert.equal(noteSaid(D, "bids:2026-11-05", "16 bids due today", b), false, "not said twice across phones");
   assert.equal(mergeDayLog(out, b), false, "nothing new the second time");
   console.log("PASS plan my week (late on today, close-outs 3 a weekday), do all, one greeting across phones (no tenant data on the server)");
+}
+
+// 😴 Snooze a reminder: off today's list, back in tomorrow's brief.
+{
+  const { snooze, isSnoozed, takeSnoozedBack, withoutSnoozed } = await loadLib("said-today");
+  const { parseCommand } = await loadLib("voice-agent");
+  const m = mem();
+  noteSaid("2026-11-05", "notice:ER03009", "notice ER03009 overdue", m);
+  noteSaid("2026-11-05", "bids:2026-11-05", "4 bids due today", m);
+  snooze("2026-11-05", "notice:ER03009", "notice ER03009 overdue", m);
+  assert.equal(isSnoozed("2026-11-05", "notice:ER03009", m), true);
+  assert.deepEqual(withoutSnoozed(readDayLog("2026-11-05", m), m).said.map((x) => x.key), ["bids:2026-11-05"]);
+  assert.deepEqual(takeSnoozedBack("2026-11-05", m), [], "not back the same day");
+  assert.equal(isSnoozed("2026-11-06", "notice:ER03009", m), false, "tomorrow it counts again");
+  assert.deepEqual(takeSnoozedBack("2026-11-06", m), ["notice ER03009 overdue"]);
+  assert.deepEqual(takeSnoozedBack("2026-11-06", m), [], "said once");
+  for (const t of ["not today", "snooze", "snooze it", "remind me tomorrow"]) assert.deepEqual(parseCommand(t), { intent: "snooze" }, t);
+  console.log("PASS snooze: not today takes a reminder off today's list and brings it back in tomorrow's brief");
 }

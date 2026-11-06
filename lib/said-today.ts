@@ -36,10 +36,32 @@ export function noteSaid(day: string, key: string, text: string, store: Store | 
   return true;
 }
 
-export type Recap = { done: string[]; reminded: { text: string; done: boolean }[]; later: string[] };
+export type Recap = { done: string[]; reminded: { text: string; done: boolean; key?: string }[]; later: string[] };
+
+// 😴 Snooze a reminder (owner, 5 Nov plan): "not today" takes it off today's list; it comes back in tomorrow's morning brief.
+type Snoozed = { key: string; text: string; until: string };
+const SKEY = "hpd-snooze-v1";
+const readSnoozes = (store: Store | null): Snoozed[] => { try { const o = JSON.parse(store?.getItem(SKEY) || "[]"); return Array.isArray(o) ? o.filter((x) => x && typeof x.key === "string" && typeof x.until === "string") : []; } catch { return []; } };
+const nextDay = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) + 86400000).toISOString().slice(0, 10);
+export function snooze(day: string, key: string, text: string, store: Store | null = ls()) {
+  const all = readSnoozes(store).filter((x) => x.key !== key);
+  all.push({ key, text: text.replace(/\s+/g, " ").trim().slice(0, 140), until: nextDay(day) });
+  try { store?.setItem(SKEY, JSON.stringify(all.slice(-40))); } catch { /* private mode */ }
+}
+// Still snoozed on `day` (its day hasn't come yet).
+export const isSnoozed = (day: string, key: string, store: Store | null = ls()) => readSnoozes(store).some((x) => x.key === key && x.until > day);
+// The ones whose day has come: tomorrow's brief says them once, then they are normal reminders again.
+export function takeSnoozedBack(day: string, store: Store | null = ls()): string[] {
+  const all = readSnoozes(store);
+  const back = all.filter((x) => x.until <= day);
+  if (back.length) { try { store?.setItem(SKEY, JSON.stringify(all.filter((x) => x.until > day))); } catch { /* private mode */ } }
+  return back.map((x) => x.text);
+}
+// The reminders of today's log that are not snoozed.
+export const withoutSnoozed = (log: DayLog, store: Store | null = ls()): DayLog => ({ ...log, said: log.said.filter((s) => !isSnoozed(log.day, s.key, store)) });
 // `open` holds the keys still open right now: a reminder whose key isn't there any more got done.
 export function dayRecap(log: DayLog, done: string[], open: Set<string>, later: string[]): Recap {
-  return { done, reminded: log.said.map((s) => ({ text: s.text, done: !open.has(s.key) })), later };
+  return { done, reminded: log.said.map((s) => ({ text: s.text, done: !open.has(s.key), key: s.key })), later };
 }
 
 const list = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);

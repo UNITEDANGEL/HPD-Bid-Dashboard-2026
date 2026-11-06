@@ -379,12 +379,6 @@
     "title": "From the 5 Nov plan: the helper says it once and gets more real",
     "items": [
       {
-        "id": "snooze-reminder",
-        "icon": "😴",
-        "title": "Snooze a reminder",
-        "why": "Say \"not today\" or long-press a 🔔 I told you item: it leaves today's list and comes back in tomorrow's morning brief."
-      },
-      {
         "id": "one-dashboard-card",
         "icon": "📋",
         "title": "One dashboard card",

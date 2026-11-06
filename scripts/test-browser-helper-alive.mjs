@@ -79,6 +79,14 @@ try {
   await page.locator('[data-hpd-smoke="fc-agent-recap-btn"]').click();
   await page.waitForFunction(() => /Done today:|Nothing finished yet today\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-recap"]').waitFor({ timeout: 3000 });
+  // 😴 Not today: an open reminder (if any are open) leaves the list and is remembered for tomorrow.
+  const snz = page.locator('[data-hpd-smoke="fc-snooze"]');
+  const before = await snz.count();
+  if (before) {
+    await snz.first().click();
+    await page.waitForFunction((n) => document.querySelectorAll('[data-hpd-smoke="fc-snooze"]').length === n - 1, before, { timeout: 3000 });
+    assert.ok(await page.evaluate(() => (JSON.parse(localStorage.getItem("hpd-snooze-v1") || "[]")).length >= 1), "remembered for tomorrow");
+  }
 
   // 5) 🎨 Dress it: a hard hat and green, on every face (the 🤖 button too), remembered on the phone.
   await page.locator('[data-hpd-smoke="fc-agent-dress"]').click();

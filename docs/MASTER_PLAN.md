@@ -60,8 +60,8 @@ The plan, one by one (✅ = live):
    plan items in the card and the app asks again. Saying "do all" twice doesn't send it twice. "Later" hides the card
    until tomorrow. Also on the requests screen (📋 Next on the plan, above 💡 Ideas). With 🔁 Keep upgrading ON,
    Claude takes the plan items first, in order, before other ideas.
-12. ☐ **😴 Snooze a reminder**: "not today" or a long press on a 🔔 I told you item: it leaves today's list and comes
-   back in tomorrow's morning brief.
+12. ✅ **😴 Snooze a reminder**: say "not today" (or tap 😴 Not today under a 🔔 I told you item): it leaves today's
+   list and comes back in tomorrow's morning brief ("Back from yesterday: …"), once. lib/said-today snooze, `hpd-snooze-v1`.
 13. ☐ **📋 One dashboard card**: the 📋 Today sheet and the chat's day so far become one card, the same three boxes
    everywhere.
 14. ☐ **🗣 Warmer, shorter talk**: short friendly words out loud, and it waits while you're still talking instead of

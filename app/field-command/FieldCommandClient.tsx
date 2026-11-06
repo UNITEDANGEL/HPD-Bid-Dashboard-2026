@@ -44,7 +44,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
-import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, wasSaid, type Part, type Recap } from "../../lib/said-today";
+import { briefDone, dayRecap, forServer, helloAgain, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
 import { planWeek, weekSpeech, type PlanDay, type WeekItem } from "../../lib/week-plan";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { cleanJobLocationText } from "../../lib/jobLocation";
@@ -2097,8 +2097,10 @@ export default function FieldCommandClient() {
     if (appts.length) later.push(`📅 ${appts.length} appointment${appts.length === 1 ? "" : "s"} this week · first ${appointmentLabel(appts[0].a!)} at ${jobAddress(appts[0].j).replace(/,\s*\d{5}$/, "")}`);
     const waiting = boardRows.filter((r) => r.next && boardSide(r) === "waiting").length;
     if (waiting) later.push(`⏳ ${waiting} notice${waiting === 1 ? "" : "s"} sent, waiting on HPD`);
-    return dayRecap(readDayLog(day), done, open, later);
+    return dayRecap(withoutSnoozed(readDayLog(day)), done, open, later);
   };
+  // 😴 Snooze: off today's list, back in tomorrow's morning brief.
+  const snoozeReminder = (key: string, text: string) => { snooze(nyToday(), key, text); setAgent((a) => (a && a.recap ? { ...a, recap: recapNow() } : a)); };
   // 🔁 One greeting across phones (owner, 5 Nov): after something is said, this phone tells the status server
   // (SAID-TODAY, one small write a few seconds later; job numbers only, no tenant data).
   useEffect(() => {
@@ -2146,6 +2148,7 @@ export default function FieldCommandClient() {
         speak(again.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
         return;
       }
+      const backFromSnooze = takeSnoozedBack(day);
       markBrief(day);
       if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
       for (const r of late0.slice(0, 3)) noteSaid(day, `notice:${r.omo}`, `notice ${r.omo} overdue`);
@@ -2154,7 +2157,7 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
       // 🧠 Your usual start (3 of the last 14 mornings), offered before 11 if you haven't opened it yet today.
@@ -5291,6 +5294,13 @@ export default function FieldCommandClient() {
       const text = cmd.text.trim().replace(/^\w/, (c) => c.toUpperCase());
       if (!text) { answer(`What's not right with "${q}"? Say it like "not right, the button is still too small".`); return; }
       void sendChangeAnswer(t, text).then((ok) => answer(ok ? `📥 Sent to Claude on "${q}": "${text}". It goes back to work on it.` : "Couldn't send it right now (no signal?). Try again in a minute."));
+      return;
+    }
+    if (cmd.intent === "snooze") {
+      const open = recapNow().reminded.filter((x) => !x.done && x.key);
+      if (!open.length) { answer("Nothing open to snooze. 👍"); return; }
+      for (const x of open) snooze(nyToday(), x.key!, x.text);
+      answer(`😴 OK, ${open.length === 1 ? "that one" : `those ${open.length}`} off today's list. I'll bring ${open.length === 1 ? "it" : "them"} back tomorrow morning.`);
       return;
     }
     if (cmd.intent === "recap") {
@@ -9347,7 +9357,7 @@ export default function FieldCommandClient() {
             {agent.recap ? (
               <div className="fc-recap" data-hpd-smoke="fc-recap">
                 <section data-hpd-smoke="fc-recap-done"><b>✅ Done today</b>{agent.recap.done.length ? <ul>{agent.recap.done.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing yet</small>}</section>
-                <section data-hpd-smoke="fc-recap-reminded"><b>🔔 I told you</b>{agent.recap.reminded.length ? <ul>{agent.recap.reminded.map((x) => <li key={x.text} className={x.done ? "is-done" : "is-open"}>{x.done ? "✓ " : "• "}{x.text}</li>)}</ul> : <small>Nothing yet today</small>}</section>
+                <section data-hpd-smoke="fc-recap-reminded"><b>🔔 I told you</b>{agent.recap.reminded.length ? <ul>{agent.recap.reminded.map((x) => <li key={x.text} className={x.done ? "is-done" : "is-open"}>{x.done ? "✓ " : "• "}{x.text}{!x.done && x.key ? <button type="button" className="fc-snooze" aria-label={`Not today: ${x.text}`} data-hpd-smoke="fc-snooze" onClick={() => snoozeReminder(x.key!, x.text)}>😴 Not today</button> : null}</li>)}</ul> : <small>Nothing yet today</small>}</section>
                 <section data-hpd-smoke="fc-recap-later"><b>⏭ Coming up</b>{agent.recap.later.length ? <ul>{agent.recap.later.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing booked ahead</small>}</section>
               </div>
             ) : null}
