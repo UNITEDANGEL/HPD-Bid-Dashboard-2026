@@ -5,3 +5,13 @@ kv_namespaces = [
   { binding = "HPD_STATUS_OVERRIDES", id = "6bd78f1a2d944eebb86704cf31f7f916" }
 ]
 
+
+# 🗄 One store for every saved step (6 Nov 2026): KV's free plan allows ~1,000 writes a day; a SQLite Durable Object
+# ~100,000. It copies KV once on its first start; KV stays as the backup.
+[[durable_objects.bindings]]
+name = "STORE"
+class_name = "OverrideStore"
+
+[[migrations]]
+tag = "v1-override-store"
+new_sqlite_classes = ["OverrideStore"]

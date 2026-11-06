@@ -1,4 +1,4 @@
-﻿const CORS_HEADERS = {
+const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -91,6 +91,69 @@ function rememberChange(key, value) {
   if (value) memory.overrides[key] = value; else delete memory.overrides[key];
 }
 
+// 🗄 One store for every saved step (6 Nov 2026): KV's free plan allows ~1,000 writes a day and every save cost 2, so
+// by afternoon the owner's job steps and Claude's replies were refused ("KV put() limit exceeded for the day"). A Durable
+// Object (SQLite, free plan ~100,000 row writes a day) holds them now: 1 write per save, and saves are taken one at a
+// time, so two phones saving at once can't overwrite each other (the combined KV copy could). The first time it starts
+// it copies everything from KV (KV is kept as it was, as a backup).
+const SEEDED = "__seeded_from_kv__";
+export class OverrideStore {
+  constructor(state, env) { this.state = state; this.env = env; this.all = null; this.loading = null; }
+  // One load at a time: two first requests together copy from KV once.
+  load() {
+    if (this.all) return Promise.resolve(this.all);
+    if (!this.loading) this.loading = this.loadNow().finally(() => { this.loading = null; });
+    return this.loading;
+  }
+  async loadNow() {
+    const storage = this.state.storage;
+    if (!(await storage.get(SEEDED))) {
+      const kv = this.env.HPD_STATUS_OVERRIDES;
+      const from = (kv && (await kv.get(ALL_KEY, "json"))) || {};
+      for (const prefix of ["PUSH-", "PUSHLOG-"]) {
+        let cursor;
+        do {
+          const page = await kv.list({ prefix, cursor });
+          for (const item of page.keys) if (!(item.name in from)) { const v = await kv.get(item.name, "json"); if (v) from[item.name] = v; }
+          cursor = page.list_complete === false ? page.cursor : undefined;
+        } while (cursor);
+      }
+      const entries = Object.entries(from).filter(([k]) => k !== ALL_KEY && !k.startsWith("__sync__:"));
+      for (let i = 0; i < entries.length; i += 100) await storage.put(Object.fromEntries(entries.slice(i, i + 100)));
+      await storage.put(SEEDED, new Date().toISOString());
+    }
+    const rows = await storage.list();
+    const all = {};
+    for (const [k, v] of rows) if (k !== SEEDED) all[k] = v;
+    this.all = all;
+    return all;
+  }
+  async fetch(request) {
+    const url = new URL(request.url);
+    const all = await this.load();
+    if (url.pathname === "/all") return Response.json(all);
+    if (url.pathname === "/prefix") {
+      const prefix = url.searchParams.get("p") || "";
+      return Response.json(Object.fromEntries(Object.entries(all).filter(([k]) => k.startsWith(prefix))));
+    }
+    if (url.pathname === "/one") return Response.json(all[url.searchParams.get("key") || ""] || null);
+    const body = await request.json().catch(() => ({}));
+    const key = cleanKey(body.key);
+    if (!key || key === SEEDED) return Response.json({ ok: false }, { status: 400 });
+    if (url.pathname === "/save") { await this.state.storage.put(key, body.value); all[key] = body.value; return Response.json({ ok: true }); }
+    if (url.pathname === "/delete") { await this.state.storage.delete(key); delete all[key]; return Response.json({ ok: true }); }
+    return Response.json({ ok: false }, { status: 404 });
+  }
+}
+// The one store, or null (tests and the old setup: then KV as before).
+async function store(env, path, body) {
+  if (!env.STORE) return undefined;
+  const stub = env.STORE.get(env.STORE.idFromName("all"));
+  const r = await stub.fetch(`https://store${path}`, body === undefined ? undefined : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`store ${path}: ${r.status}`);
+  return r.json();
+}
+
 // Cloud sync of field records stays off until SYNC_ENABLED = "1" is set on the Worker.
 const syncOn = (env) => env.SYNC_ENABLED === "1";
 
@@ -123,6 +186,7 @@ async function handle(request, env) {
     if (url.pathname === "/push-sub" && request.method === "GET") {
       const id = cleanKey(url.searchParams.get("id"));
       if (!/^PUSH-[0-9a-f]{16}$/.test(id)) return json({ ok: false, error: "Invalid id." }, 400);
+      if (env.STORE) return json({ ok: true, sub: await store(env, `/one?key=${encodeURIComponent(id)}`) });
       return json({ ok: true, sub: await env.HPD_STATUS_OVERRIDES.get(id, "json") });
     }
     if (url.pathname === "/push-subs" && request.method === "GET") {
@@ -130,6 +194,11 @@ async function handle(request, env) {
       const prefix = url.searchParams.get("log") === "1" ? "PUSHLOG-" : "PUSH-";
       const hit = pushListCache[prefix];
       if (hit && Date.now() - hit.at < 300000) return json({ ok: true, subs: hit.subs, cached: true });
+      if (env.STORE) {
+        const subs = await store(env, `/prefix?p=${prefix}`);
+        pushListCache[prefix] = { at: Date.now(), subs };
+        return json({ ok: true, subs });
+      }
       const out = {};
       let cursor;
       do {
@@ -144,7 +213,7 @@ async function handle(request, env) {
       const freshMs = env.OVERRIDES_CACHE_MS === undefined ? FRESH_MS : Number(env.OVERRIDES_CACHE_MS);
       if (memory && Date.now() - memory.at < freshMs) return json({ ok: true, overrides: memory.overrides });
       try {
-        const overrides = (await env.HPD_STATUS_OVERRIDES.get(ALL_KEY, "json")) || (await buildAll(env));
+        const overrides = env.STORE ? await store(env, "/all") : (await env.HPD_STATUS_OVERRIDES.get(ALL_KEY, "json")) || (await buildAll(env));
         remember(overrides);
         return json({ ok: true, overrides });
       } catch (error) {
@@ -190,8 +259,11 @@ async function handle(request, env) {
         OMO: key,
         updatedAt: new Date().toISOString(),
       };
-      await env.HPD_STATUS_OVERRIDES.put(key, JSON.stringify(saved));
-      await updateAll(env, key, saved);
+      if (env.STORE) await store(env, "/save", { key, value: saved });
+      else {
+        await env.HPD_STATUS_OVERRIDES.put(key, JSON.stringify(saved));
+        await updateAll(env, key, saved);
+      }
       rememberChange(key, saved);
       return json({ ok: true, key, override: saved });
     }
@@ -200,8 +272,11 @@ async function handle(request, env) {
       if (!key) {
         return json({ ok: false, error: "Missing key." }, 400);
       }
-      await env.HPD_STATUS_OVERRIDES.delete(key);
-      await updateAll(env, key, null);
+      if (env.STORE) await store(env, "/delete", { key });
+      else {
+        await env.HPD_STATUS_OVERRIDES.delete(key);
+        await updateAll(env, key, null);
+      }
       rememberChange(key, null);
       return json({ ok: true, deleted: key });
     }
