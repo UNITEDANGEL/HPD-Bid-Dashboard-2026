@@ -4593,3 +4593,9 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .jc-shot-guide b { font: 800 15px/1.3 system-ui; }
 .jc-shot-guide div { display: flex; flex-wrap: wrap; gap: 8px; }
 .jc-shot-guide button { flex: 1 1 110px; min-height: 48px; border-radius: 12px; border: 1px solid #4ade80; background: #14532d; color: #fff; font: 800 14px system-ui; }
+/* 🔠 Bigger text (6 Nov): the cards, sheets and chat grow; the map itself stays as it is. */
+.fc-text-size { position: absolute; z-index: 1461; right: 40px; top: calc(max(12px, env(safe-area-inset-top)) + 236px); display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 12px; background: #2e1065ee; border: 1px solid #a78bfa; color: #fff; }
+.fc-text-size button { min-width: 40px; min-height: 36px; border-radius: 10px; border: 1px solid #6d28d9; background: #1e1b4b; color: #fff; font: 800 14px system-ui; }
+.fc-text-size button.is-on { background: #7c3aed; border-color: #c4b5fd; }
+html[data-text-size="1.15"] #fc-job-card, html[data-text-size="1.15"] .fc-package-sheet, html[data-text-size="1.15"] .fc-agent, html[data-text-size="1.15"] .fc-media-viewer, html[data-text-size="1.15"] .fc-work-order, html[data-text-size="1.15"] .fc-notice-chooser,
+html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-sheet, html[data-text-size="1.3"] .fc-agent, html[data-text-size="1.3"] .fc-media-viewer, html[data-text-size="1.3"] .fc-work-order, html[data-text-size="1.3"] .fc-notice-chooser { zoom: var(--fc-text, 1); }

@@ -1601,7 +1601,10 @@ export default function FieldCommandClient() {
   // ✉ The side tab: updates, the plan and Claude's work wait behind one small icon on the right edge; tap to open,
   // tap ◂ to close. Remembered on this phone. (Browser tests see them open unless they ask for the tab.)
   const [sideOpen, setSideOpenState] = useState(false);
-  const sideHintRef = useRef(0); // a 💡 next step / ⏰ notice chip is waiting behind the tab
+  const sideHintRef = useRef(0);
+  const [textSize, setTextSizeState] = useState("1");
+  useEffect(() => { try { const v = localStorage.getItem("hpd-text-size") || "1"; setTextSizeState(v); document.documentElement.style.setProperty("--fc-text", v); document.documentElement.dataset.textSize = v; } catch { /* private mode */ } }, []);
+  const setTextSize = (v: string) => { setTextSizeState(v); try { localStorage.setItem("hpd-text-size", v); } catch { /* private mode */ } document.documentElement.style.setProperty("--fc-text", v); document.documentElement.dataset.textSize = v; }; // a 💡 next step / ⏰ notice chip is waiting behind the tab
   useEffect(() => { try { const v = localStorage.getItem("hpd-side-open"); setSideOpenState(v === "1" || (v === null && typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-side") !== "1")); } catch { /* private mode */ } }, []);
   const setSideOpen = (on: boolean) => { setSideOpenState(on); try { localStorage.setItem("hpd-side-open", on ? "1" : "0"); } catch { /* private mode */ } };
   useEffect(() => { try { setClaudeCardBigState(localStorage.getItem("hpd-claude-card") === "big"); } catch { /* private mode */ } }, []);
@@ -8688,6 +8691,14 @@ export default function FieldCommandClient() {
           </button>
         );
       })() : null}
+      {sideOpen && !selectedJob && !whatsNewOpen && !bidsOpen ? (
+        <div className="fc-text-size" role="group" aria-label="Text size" data-hpd-smoke="fc-text-size">
+          <span aria-hidden="true">🔠</span>
+          {([["1", "A"], ["1.15", "A+"], ["1.3", "A++"]] as const).map(([v, label]) => (
+            <button key={v} type="button" aria-pressed={textSize === v} className={textSize === v ? "is-on" : ""} data-hpd-smoke={`fc-text-${label.length}`} onClick={() => setTextSize(v)}>{label}</button>
+          ))}
+        </div>
+      ) : null}
       {sideOpen && newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>

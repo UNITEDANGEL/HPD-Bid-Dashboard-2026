@@ -91,7 +91,7 @@ The plan, one by one (✅ = live, ☐ = next):
 26. ✅ **Photos guided one by one** (repeat of 15): after each photo "Before: 3 photos saved ✓" with 📷 Next photo / 🎥 Before video (glows after 3) / ✅ Done; a dark or blurry one asks Retake or Keep first.
 27. ✅ **Pushes when GitHub cuts this PC off** (6 Nov afternoon): git push kept failing on the slow connection; the work goes
    up through GitHub's API one file at a time (retried), the video fix first on its own so the phone got it sooner.
-28. ☐ **Bigger text** (owner: "when I'm reading I see very small text, zoom everything up"): an A / A+ / A++ size for the
+28. ✅ **Bigger text** (✉ side button -> 🔠 A / A+ / A++: cards, sheets, chat, notices grow; the map stays) (owner: "when I'm reading I see very small text, zoom everything up"): an A / A+ / A++ size for the
    whole app, remembered on the phone.
 29. ☐ **Message board of the day** (item 24): one board, said / done / next, each reminder once.
 
