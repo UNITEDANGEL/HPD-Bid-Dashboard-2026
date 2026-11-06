@@ -58,3 +58,4 @@ data/sent_paperwork_dates.json
 data/private-itb/
 data/private-templates/
 .claude-now.json
+data/.claude-heartbeat-at

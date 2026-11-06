@@ -21,7 +21,9 @@ import { spawnSync } from "node:child_process";
 
 const URL_ = process.env.HPD_STATUS_URL || "https://hpd-status-worker.uac525.workers.dev";
 const STATE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".claude-now.json");
-const MIN_GAP = 20_000, SAME_GAP = 5 * 60_000, DAY_CAP = 150;
+// 6 Nov: the status server's free plan allows ~1,000 writes a day (each post = 2); 150 a day used a third of it and
+// the owner's job steps were refused by afternoon. 60 a day, at most one a minute.
+const MIN_GAP = 60_000, SAME_GAP = 5 * 60_000, DAY_CAP = 60;
 const argv = process.argv.slice(2);
 const arg = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? (argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : "") : null; };
 const nyDay = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());

@@ -32,7 +32,16 @@ const busyNow = (o) => Object.entries(o).some(([k, v]) => k.startsWith("CHANGE-R
 // "Claude is on" for the app (owner, 2 Nov: "do I have to leave Claude open?"): every check and every wait writes the
 // time to CLAUDE-HEARTBEAT, so the app can say whether requests are being picked up right now or wait for the computer.
 // About once per 9-minute wait, so the status server's daily write limit isn't touched.
-const heartbeat = () => fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "CLAUDE-HEARTBEAT", patch: { at: new Date().toISOString(), every: 9 } }) }).catch(() => {});
+// 6 Nov: at most once every 25 minutes (a file on this PC remembers the last one): the server's free plan allows
+// ~1,000 writes a day and the owner's job steps need them more.
+const BEAT_FILE = new URL("../data/.claude-heartbeat-at", import.meta.url);
+const heartbeat = async () => {
+  let last = 0;
+  try { last = Number(fs.readFileSync(BEAT_FILE, "utf8")) || 0; } catch { /* first time */ }
+  if (Date.now() - last < 25 * 60000) return;
+  try { fs.writeFileSync(BEAT_FILE, String(Date.now())); } catch { /* read-only */ }
+  await fetch(`${URL_}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "CLAUDE-HEARTBEAT", patch: { at: new Date().toISOString(), every: 25 } }) }).catch(() => {});
+};
 
 if (flag("check")) {
   await heartbeat();
@@ -91,4 +100,4 @@ if (alert) {
   const out = spawnSync(process.execPath, ["scripts/send-push.mjs", "--alert", "--title", alert.title, "--body", alert.body, "--url", alert.url], { cwd: new URL("..", import.meta.url), encoding: "utf8" });
   console.log(`Phone alert: ${(out.stdout || out.stderr || "").trim().split("\n").pop()}`);
 }
-console.log(res.ok ? `Replied to ${id}: ${reply.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length}` : ""}${text ? " + update" : ""}${reply.workingAt ? " · working now" : ""}` : `Failed: HTTP ${res.status}`);
+console.log(res.ok ? `Replied to ${id}: ${reply.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length}` : ""}${text ? " + update" : ""}${reply.workingAt ? " · working now" : ""}` : `Failed: HTTP ${res.status} ${(await res.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300)}`);

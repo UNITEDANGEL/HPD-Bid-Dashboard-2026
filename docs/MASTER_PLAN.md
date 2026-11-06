@@ -76,7 +76,7 @@ The plan, one by one (✅ = live, ☐ = next):
    the before video; same for after.
 16. ✅ **🧭 Next stop while working** (plan 31): while on a job, the next job ready: where, how far, what the work is.
 17. ✅ **🔁 Monday paperwork sweep** (plan 32): Monday from 8 AM, the brief says once which finished jobs still need the paperwork sent, oldest first.
-18. ☐ **Bigger text**: an "A A" size setting for the whole app (cards, chat, notices).
+18. ✅ (done as 28) **Bigger text**: an "A A" size setting for the whole app (cards, chat, notices).
 19. ✅ **Everything folds**: the little messages (💡 next step, ⏰ notice chip, chat nudges like "bid due in 33 min", 🔊 play alerts, 🔔 get alerts, updates, the plan card, Claude's %) wait behind the ✉ side button with a count; the notices are a row of small chips; the helper tucks to a bubble.
 20. ✅ **🧭 Next stop** (plan 31): after a job's outcome, and on the 🔨 Working banner: the nearest open job (appointments
    today first), miles, minutes, the work in a few words; said out loud after the outcome.
@@ -97,6 +97,8 @@ The plan, one by one (✅ = live, ☐ = next):
 30. ✅ **✉️ Email from the app** (said to the helper, 6 Nov: "Add email feature to the app"): on every job card "✉️ Email Lewis/Gafur about this job" (the job's unit), and "✉️ Email HPD" in the ✉ side panel; say "email Lewis about ER07610" to open it. Pick who (Lewis, Gafur or another HPD person who wrote to you), tap a ready line (✅ work done, 🚪 no access, 📅 appointment set, 📄 paperwork sent, ❓ question) or type / say it, then 📥 Send to me first or ✉️ Send. Only @hpd.nyc.gov addresses; never sent by voice alone.
 31. ✅ **The location line on the computer** (owner: "I'm on my computer, I can't see my location"): instead of "Couldn't get your location", the PC says "💻 Computer: no GPS · 📱 phone has you at ER07717" (the 🔨 job saved from the phone), one tap opens that job. Phones keep the old warning.
 32. ✅ **"⚠ 1 job needs a check" folds behind the ✉ side button** like the other small cards (it adds 1 to the side button's count).
+33. ✅ **The status server ran out of writes again (6 Nov afternoon)**: "KV put() limit exceeded for the day" (free plan ~1,000 writes, each save = 2). Phones keep their steps and retry, but in-app request replies stopped. Cut the background writes: Claude's live card at most 60 a day / 1 a minute (was 150 / every 20 s), the "Claude is on" heartbeat every 25 min (was 9), the helper's "said today" 1 min after the last line (was 4 s).
+34. ☐ **Server fix for good (owner to decide)**: the server writes each save twice; a version that writes once (or moves to Cloudflare D1, 100,000 writes a day free) needs a hand-run deploy from GitHub Actions, and the first deploy also turns on phone sync, so it waits for the owner's OK.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.

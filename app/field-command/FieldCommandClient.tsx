@@ -241,8 +241,9 @@ const versionLabel = () => {
 type WhatsNew = { date: string; title: string; items: string[] }[];
 // Is Claude on right now (owner, 2 Nov: "the request just tells me to wait, how many minutes? do I have to leave Claude
 // open?")? Claude runs on the office computer: while it's on with the Claude app open it looks for requests every 20 s
-// and writes CLAUDE-HEARTBEAT about every 9 minutes (scripts/reply-change-request.mjs). Seen in the last 12 minutes = on.
-const CLAUDE_ON_MS = 12 * 60000;
+// and writes CLAUDE-HEARTBEAT about every 25 minutes (scripts/reply-change-request.mjs; was 9, 6 Nov: the server's daily
+// write limit). Seen in the last 35 minutes = on.
+const CLAUDE_ON_MS = 35 * 60000;
 // A clock that counts up every second while Claude works on a request (owner, 2 Nov: "something moving that is actually
 // work in progress"). Its own little timer, so the rest of the screen doesn't redraw every second.
 function WorkingClock({ since }: { since: string }) {
@@ -2178,7 +2179,7 @@ export default function FieldCommandClient() {
     let t = 0;
     onSaidChange((log) => {
       window.clearTimeout(t);
-      t = window.setTimeout(() => { void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "SAID-TODAY", patch: forServer(log) }) }).catch(() => {}); }, 4000);
+      t = window.setTimeout(() => { void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "SAID-TODAY", patch: forServer(log) }) }).catch(() => {}); }, navigator.webdriver ? 4000 : 60000); // 1 min after the last line (was 4 s; daily write limit)
     });
     return () => { onSaidChange(null); window.clearTimeout(t); };
   }, []);
