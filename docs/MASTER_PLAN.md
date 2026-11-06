@@ -130,8 +130,9 @@ The plan, one by one (✅ = live):
    the page (HPD's standard notes), then glides back to the start of the work and stays there. Test: bid-walk.
    Also fixed: the 📊 Friday card waited for nothing and showed before the jobs loaded on Friday evenings (React
    hydration error #418); it now waits for the jobs. The day-nudge test closes the Friday card first, like the owner.
-24. ☐ **🗂 One-card close-out**: after "work done" by voice, the affidavit and invoice are made and shown in one card to
-   check (preview first), then two taps to send.
+24. ✅ **🗂 One-card close-out**: it mostly existed (a finished job opens the affidavit + invoice preview by itself after 6
+   seconds; sending is two taps there). Now the helper says so when you tell it a job is done ("📄 The affidavit and
+   invoice open next: check them, then two taps to send") with a "📄 Check the paperwork now" button, on every voice path.
 25. ☐ **🧠 It remembers yesterday**: the morning brief says what you said you'd do yesterday and didn't ("yesterday you
    said you'd call Lewis").
 26. ☐ **🔕 Quiet hours**: no talking and no sound alerts from 9 PM to 7 AM (cards stay silent on the screen), unless

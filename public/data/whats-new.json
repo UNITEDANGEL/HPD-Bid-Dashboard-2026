@@ -5,7 +5,8 @@
       "date": "Nov 6, 2026",
       "title": "Bid page reads slower",
       "items": [
-        "🧾 On a bid's work description page, the read-along moves slower, stops where the work ends (not HPD's standard notes), and goes back to the start of the work."
+        "🧾 On a bid's work description page, the read-along moves slower, stops where the work ends (not HPD's standard notes), and goes back to the start of the work.",
+        "🗂 Tell the helper a job is done: it says the affidavit and invoice are next, with a button to check them now."
       ]
     },
     {

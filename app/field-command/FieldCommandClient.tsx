@@ -6215,11 +6215,20 @@ export default function FieldCommandClient() {
         const fresh = { ...job, ...(readSharedWorkflowOverrides()[c.id] || {}) };
         if (value(fresh, ["FieldOutcome"]) !== c.outcome) { answer("Not saved. Open the job card to check it."); return; }
         const waiting = secondTryState(fresh);
-        answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}${said.date ? ` on ${said.date.slice(5).replace("-", "/")}` : ""}.${waiting ? ` Come back from ${waiting.dueLabel} for the 2nd try.` : " The package opens next."}`);
+        // 🗂 One-card close-out (plan item 24): the affidavit + invoice open by themselves to check; sending is two taps.
+        const reply = `Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}${said.date ? ` on ${said.date.slice(5).replace("-", "/")}` : ""}.${waiting ? ` Come back from ${waiting.dueLabel} for the 2nd try.` : " 📄 The affidavit and invoice open next: check them, then two taps to send."}`;
+        if (waiting || multiRef.current) { answer(reply); return; }
+        showPanel({ heard, reply, actions: [{ label: "📄 Check the paperwork now", href: paperworkGenerateHref(c.id, c.outcome) }] });
         return;
       }
       setJobOutcome(job, c.outcome, "Said to the voice helper");
-      answer(`Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.`);
+      {
+        const fresh = { ...job, ...(readSharedWorkflowOverrides()[c.id] || {}) };
+        const waiting = secondTryState(fresh);
+        const reply = `Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.${waiting || c.outcome === "APPOINTMENT_REQUESTED" ? "" : " 📄 The affidavit and invoice open next: check them, then two taps to send."}`;
+        if (waiting || c.outcome === "APPOINTMENT_REQUESTED" || multiRef.current) { answer(reply); return; }
+        showPanel({ heard, reply, actions: [{ label: "📄 Check the paperwork now", href: paperworkGenerateHref(c.id, c.outcome) }] });
+      }
       return;
     }
     if (cmd.intent === "no") { pendingOutcomeRef.current = null; answer("OK, nothing saved."); return; }

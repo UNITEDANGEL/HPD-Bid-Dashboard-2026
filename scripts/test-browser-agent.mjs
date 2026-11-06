@@ -74,6 +74,9 @@ try {
   await panel.locator('[data-hpd-smoke="fc-agent-yes"]').click();
   await page.waitForFunction(() => /^Saved\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 10000 });
   const done = await page.evaluate((o) => JSON.stringify(JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[o] || {}), omo);
+  // 🗂 One-card close-out (plan item 24): the paperwork is next, to check, with a button for it.
+  assert.match(await reply.innerText(), /The affidavit and invoice open next: check them, then two taps to send/);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Check the paperwork now" }).count(), 1);
   assert.ok(/WORK_COMPLETED/.test(done) || saved.length > before, `saved for ${omo}`);
 
   // A free question: the AI gets the app's facts (no tenant details) and the answer is said and shown.
