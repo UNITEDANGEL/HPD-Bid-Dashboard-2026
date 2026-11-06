@@ -88,10 +88,13 @@ The plan, one by one (✅ = live):
    are said as words ("->" = "then", "·" = ",", "&" = "and"); long answers still said in 2 sentences.
    Next on the plan in the app (📋, ✅ Do all): 15 🧠 remembers our conversation, 16 🙂 a more real face, 17 🎙 a more real voice.
 
-15. ☐ **🧠 It remembers our conversation** (owner, 5 Nov night: "I want a better AI ... more real and sound more real
+15. ✅ **🧠 It remembers our conversation** (owner, 5 Nov night: "I want a better AI ... more real and sound more real
    ... he needs to be more understanding and keep track of our conversation when we talked about" + "how else can we
    upgrade the AI"): the last 20 things said today (both sides) kept on the phone; "it", "that job", "the one before",
    "what did I say about Main Street" answered from them; a "🧠 Today we talked about" line in the day so far.
+   Built (lib/convo-memory.ts): today's talk (last 30 exchanges, both sides) on this phone only, never sent; "what did
+   we talk about", "what did I say about <street / job>", "say that again" / "what did you say before", "the job before"
+   (opens it); "🧠 Today we talked about …" under the three boxes.
 16. ☐ **🙂 A more real face**: a real-looking face (photo-style, not a cartoon): blinks, looks at you, lips move with the
    words, nods while you talk; picked by the owner from 3 previews first.
 17. ☐ **🎙 A more real voice**: the best natural voice on the phone (iPhone "Enhanced/Premium" voices), slower and with

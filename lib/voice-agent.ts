@@ -87,6 +87,7 @@ export type AgentCommand =
   | { intent: "plan-week" }
   | { intent: "plan-do-all" }
   | { intent: "notice-check" }
+  | { intent: "memory"; ask: "summary" | "about" | "last" | "job-before"; about?: string }
   | { intent: "notices" }
   | { intent: "yes" }
   | { intent: "no" }
@@ -208,6 +209,12 @@ export function parseCommand(heard: string): AgentCommand {
   if (/^(?:so |ok(?:ay)? |hey )?(?:plan (?:my|the|out my|out the) week|(?:my|the) week(?:'?s)? plan|week plan|what(?:'?s| is) (?:coming up|on|ahead|planned)(?: for me)? (?:this|my|the) week|what do i have (?:this|the) week|plan the next 7 days)\??$/.test(t)) return { intent: "plan-week" };
   // ✅ Do all (owner, 5 Nov: "ask me in the app to say do all ... stick to the plan"): the next items on the plan go to
   // Claude as one request.
+  // 🧠 It remembers our conversation (plan item 15): "what did we talk about", "what did I say about Main Street",
+  // "what did you say before", "the job before".
+  if (/^(?:so |ok(?:ay)? |hey )?(?:what (?:did|have) we (?:talk(?:ed)?|been talking) about(?: today)?|what were we (?:talking|saying) about|remind me what we (?:talked|said) about|our conversation(?: today)?)\??$/.test(t)) return { intent: "memory", ask: "summary" };
+  { const m = /^(?:so |ok(?:ay)? |hey )?what (?:did|do) (?:i|we|you) (?:say|said|tell you|told you|talk about) (?:about|on|for|regarding) (.+?)\??$/.exec(t); if (m && !/^(?:today|before|earlier)$/.test(m[1])) return { intent: "memory", ask: "about", about: m[1] }; }
+  if (/^(?:so |ok(?:ay)? |hey )?(?:what (?:did|was it) you (?:just )?(?:say|said)(?: (?:before|earlier|again|last))?|say (?:that|it) again|repeat (?:that|it)(?: please)?|come again|what was that)\??$/.test(t)) return { intent: "memory", ask: "last" };
+  if (/^(?:so |ok(?:ay)? |hey )?(?:(?:go back to |open |show me )?the (?:job|one) (?:before|before that)|the other (?:job|one)|(?:go )?back to the (?:last|previous|other) (?:job|one))\??$/.test(t)) return { intent: "memory", ask: "job-before" };
   // 🔎 Check every notice (owner, 5 Nov: "research every notice we get from my email ... we cannot make mistakes").
   if (/^(?:please |ok(?:ay)? |hey )?(?:(?:check|research|look (?:at|through)|go over|audit|double[- ]check) (?:every|all(?: of)?|each|all the) (?:my |the )?(?:notices?|ppns?)(?: (?:from|in) (?:my |the )?e-?mails?)?|(?:which|what) notices (?:are|were|did i|have i) (?:already )?(?:sent|send)\??|notice check)[.!?]*$/.test(t)) return { intent: "notice-check" };
   if (/^(?:ok(?:ay)? |yes |so )?(?:do (?:them |it |the plan )?all|do all (?:of )?(?:them|it|the plan|three|3)|do the (?:whole )?plan|do everything on the plan|build (?:them )?all)[.!]*$/.test(t)) return { intent: "plan-do-all" };

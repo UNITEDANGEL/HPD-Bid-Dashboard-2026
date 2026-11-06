@@ -4483,3 +4483,4 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-notice-check button { justify-self: start; margin-top: 2px; padding: 4px 10px; min-height: 32px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-size: 14px; }
 .fc-today-recap { margin: 4px 0 8px; }
 .fc-today-recap .fc-recap { margin: 0; }
+.fc-recap-talk { grid-column: 1 / -1; margin: 2px 0 0; font-size: 14px; color: #c4b5fd; }

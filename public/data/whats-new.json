@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
+      "title": "It remembers our talk",
+      "items": [
+        "🧠 The helper keeps today's talk on your phone: ask \"what did we talk about\", \"what did I say about Main Street\", \"say that again\" or \"the job before\".",
+        "🧠 The day so far shows \"Today we talked about …\" with the jobs."
+      ]
+    },
+    {
+      "date": "Nov 5, 2026",
       "title": "Check every notice",
       "items": [
         "🔎 Notices -> \"Check every notice from my email\" (or say \"check every notice\"): each job in one line: already sent (when, which PDF; don't send again), not sent yet, HPD found a problem, or check first.",

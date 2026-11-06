@@ -71,6 +71,7 @@ import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type Boa
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
+import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
 import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, speakIn, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
@@ -1799,6 +1800,11 @@ export default function FieldCommandClient() {
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
   const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; plan?: PlanDay[]; noticeCheck?: NoticeCheckItem[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  // 🧠 Every exchange (what you said, what it answered) goes into today's talk on this phone (plan item 15).
+  useEffect(() => {
+    if (!agent?.heard || !agent.reply || agent.reply === "I'm listening…") return;
+    addTurn(nyToday(), agent.heard, agent.reply);
+  }, [agent?.heard, agent?.reply]); // eslint-disable-line react-hooks/exhaustive-deps
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -2126,6 +2132,7 @@ export default function FieldCommandClient() {
       <section data-hpd-smoke="fc-recap-done"><b>✅ Done today</b>{r.done.length ? <ul>{r.done.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing yet</small>}</section>
       <section data-hpd-smoke="fc-recap-reminded"><b>🔔 I told you</b>{r.reminded.length ? <ul>{r.reminded.map((x) => <li key={x.text} className={x.done ? "is-done" : "is-open"}>{x.done ? "✓ " : "• "}{x.text}{!x.done && x.key ? <button type="button" className="fc-snooze" aria-label={`Not today: ${x.text}`} data-hpd-smoke="fc-snooze" onClick={() => snoozeReminder(x.key!, x.text)}>😴 Not today</button> : null}</li>)}</ul> : <small>Nothing yet today</small>}</section>
       <section data-hpd-smoke="fc-recap-later"><b>⏭ Coming up</b>{r.later.length ? <ul>{r.later.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing booked ahead</small>}</section>
+      {(() => { const talk = talkedAbout(readConvo(nyToday())); return talk.jobs.length ? <p className="fc-recap-talk" data-hpd-smoke="fc-recap-talk">🧠 Today we talked about {talk.jobs.slice(0, 6).join(", ")}</p> : null; })()}
     </div>
   );
   const [, setRecapTick] = useState(0);
@@ -5438,6 +5445,19 @@ export default function FieldCommandClient() {
       if (multiRef.current) { answer(reply); return; }
       setAgent({ heard, reply, plan: p.days });
       speak(weekSpeech(p), 200, () => { if (convoRef.current) startListening(); });
+      return;
+    }
+    if (cmd.intent === "memory") {
+      // 🧠 Today's talk, kept on this phone (plan item 15).
+      const log = readConvo(nyToday());
+      if (cmd.ask === "job-before") {
+        const j = jobBefore(log);
+        if (!j) { answer("We've only talked about one job today (or none). Say its number and I'll open it."); return; }
+        agentRef.current(`open ${j}`);
+        return;
+      }
+      // "Say that again": the answer before this question (the newest turn is this one only after it's answered).
+      answer(cmd.ask === "summary" ? `🧠 ${convoSummary(log)}` : cmd.ask === "about" ? `🧠 ${recall(log, cmd.about || "")}` : `🧠 ${lastAnswer(log)}`);
       return;
     }
     if (cmd.intent === "notice-check") {

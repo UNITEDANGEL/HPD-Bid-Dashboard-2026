@@ -1,0 +1,33 @@
+// 🧠 It remembers our conversation (owner, 5 Nov: "keep track of our conversation when we talked about"; plan item 15).
+import assert from "node:assert/strict";
+import { loadLib } from "./daily-report.mjs";
+
+const { addTurn, readConvo, summary, recall, lastAnswer, jobBefore, talkedAbout } = await loadLib("convo-memory");
+const { parseCommand } = await loadLib("voice-agent");
+const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)) }; };
+const s = mem();
+const D = "2026-11-05";
+const t0 = Date.parse("2026-11-05T14:00:00Z");
+assert.equal(addTurn(D, "👋", "Good morning", s, t0), false, "the opener isn't talk");
+assert.equal(addTurn(D, "open EQ15239", "EQ15239, 84-01 Main Street: leak in the bathroom.", s, t0 + 1000), true);
+assert.equal(addTurn(D, "open EQ15239", "EQ15239, 84-01 Main Street: leak in the bathroom.", s, t0 + 2000), false, "same twice = once");
+addTurn(D, "what about ER01720", "ER01720: paperwork sent 10/30, waiting on HPD.", s, t0 + 60000);
+addTurn(D, "plan my week", "Your week, planned: today 3 bids.", s, t0 + 120000);
+const log = readConvo(D, s);
+assert.equal(log.turns.length, 3);
+assert.deepEqual(talkedAbout(log).jobs, ["ER01720", "EQ15239"]);
+assert.match(summary(log), /^Today we talked 3 times, about ER01720, EQ15239\. Last you asked: "plan my week", "what about ER01720", "open EQ15239"\.$/);
+assert.match(recall(log, "main street"), /you said "open EQ15239" and I said: EQ15239, 84-01 Main Street: leak in the bathroom\./);
+assert.match(recall(log, "EQ15239"), /open EQ15239/);
+assert.match(recall(log, "the roof"), /I don't have anything about the roof from today/);
+assert.match(lastAnswer(log), /when you said "plan my week", I said: Your week, planned/);
+assert.equal(jobBefore(log), "EQ15239");
+assert.equal(readConvo("2026-11-06", s).turns.length, 0, "a new day starts fresh");
+const P = (t) => parseCommand(t);
+assert.deepEqual(P("what did we talk about"), { intent: "memory", ask: "summary" });
+assert.deepEqual(P("what did I say about main street"), { intent: "memory", ask: "about", about: "main street" });
+assert.deepEqual(P("say that again"), { intent: "memory", ask: "last" });
+assert.deepEqual(P("what did you say before"), { intent: "memory", ask: "last" });
+assert.deepEqual(P("the job before"), { intent: "memory", ask: "job-before" });
+assert.deepEqual(P("go back to the last one"), { intent: "memory", ask: "job-before" });
+console.log("PASS remembers our conversation: today's talk kept (both sides, once), what we talked about, what I said about X, say that again, the job before; new day = fresh");
