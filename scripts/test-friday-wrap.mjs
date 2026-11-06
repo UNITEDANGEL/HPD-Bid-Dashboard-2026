@@ -10,3 +10,14 @@ assert.equal(isFridayWrapTime(5, 17 * 60), true);
 assert.equal(isFridayWrapTime(5, 16 * 60 + 59), false);
 assert.equal(isFridayWrapTime(4, 18 * 60), false);
 console.log("PASS Friday wrap: the week in a few words, Friday from 5 PM only");
+
+// 🔕 Quiet hours (plan item 26): 9 PM-7 AM New York.
+{
+  const { quietHours } = await loadLib("chime");
+  const at = (iso) => quietHours(new Date(iso));
+  assert.equal(at("2026-11-06T02:30:00Z"), true, "9:30 PM");
+  assert.equal(at("2026-11-06T11:30:00Z"), true, "6:30 AM");
+  assert.equal(at("2026-11-06T12:30:00Z"), false, "7:30 AM");
+  assert.equal(at("2026-11-06T20:00:00Z"), false, "3 PM");
+  console.log("PASS quiet hours: 9 PM to 7 AM New York");
+}

@@ -136,10 +136,16 @@ The plan, one by one (✅ = live):
 25. ✅ **🧠 It remembers yesterday**: what you said you'd do ("I'll call the tenant after lunch", item 19) is kept by day on
    the phone; the next morning brief asks once: "Yesterday you said you'd call the tenant. Did that get done?" (lib/convo-memory
    notePromise / takeEarlierPromises; up to 3 days back).
-26. ☐ **🔕 Quiet hours**: no talking and no sound alerts from 9 PM to 7 AM (cards stay silent on the screen), unless
-   you're working the notices.
+26. ✅ **🔕 Quiet hours**: 9 PM-7 AM New York, alerts (emails from HPD, invitations, faxes, awards…) show on the screen
+   without a chime, a voice or a buzz (lib/chime ring + quietHours); while you're on the notices they ring as before; a
+   tenant's text isn't read out at night unless you're driving. Anything you ask the helper is still answered out loud.
+27. ☐ **🚗 "I'm on my way" text**: say "tell the tenant I'm on my way": it adds the arrival time from where you are and
+   the traffic, reads it back, and sends after your yes.
+28. ☐ **📸 Photos before paperwork**: the paperwork card says if before / after photos are missing and lets you add them
+   before sending (HPD needs them).
+29. ☐ **📝 Your words on the invoice**: your "how did it go" answer becomes the work note on the invoice (preview first).
 
-Recommendations (Claude): 13-23 are done; 24-26 are next on the plan (in the app's 📋 card).
+Recommendations (Claude): 13-26 are done; 27-29 are next on the plan (in the app's 📋 card).
 
 ---
 

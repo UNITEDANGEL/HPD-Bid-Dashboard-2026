@@ -87,7 +87,13 @@ export type AppNotice = { kind: RingKind; title: string; text?: string; go?: "bo
 
 // The tone, then the words (owner, 22 Oct: "an actual voice instead of beeps"): "Urgent email. 24-hour notice from
 // Lewis, work order E Q 3 1 3 6 4. They want the affidavit and invoice." Muting the sound mutes the voice too.
+// 🔕 Quiet hours (plan item 26): 9 PM-7 AM New York, alerts show on the screen without a sound, a voice or a buzz,
+// unless you're working the notices right now (the app says so with setAlertsAwake).
+export const quietHours = (d = new Date()) => { const h = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(d)); return h >= 21 || h < 7; };
+let awake = false;
+export function setAlertsAwake(on: boolean) { awake = on; }
 export function ring(n: AppNotice) {
+  if (quietHours() && !awake) return false;
   const played = playChime(n.kind);
   if (played) speak(spokenAlert(n), kindOf(n.kind) === "award" ? 1500 : 950);
   return played;

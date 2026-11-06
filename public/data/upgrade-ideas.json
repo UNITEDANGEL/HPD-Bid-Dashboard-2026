@@ -375,26 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-06-c",
-    "title": "Next on the plan: less work at the end of the job, and calm nights",
+    "id": "2026-11-06-d",
+    "title": "Next on the plan: on the way, photos, and your words on the paperwork",
     "items": [
       {
-        "id": "one-card-closeout",
-        "icon": "🗂",
-        "title": "One-card close-out",
-        "why": "After \"work done\" by voice, the affidavit and invoice are made and shown in one card to check, then two taps to send."
+        "id": "on-my-way",
+        "icon": "🚗",
+        "title": "\"I'm on my way\" text",
+        "why": "Say \"tell the tenant I'm on my way\": it adds your arrival time (from where you are and the traffic), reads it back, and sends after your yes."
       },
       {
-        "id": "remembers-yesterday",
-        "icon": "🧠",
-        "title": "It remembers yesterday",
-        "why": "The morning brief says what you said you'd do yesterday and didn't (\"yesterday you said you'd call Lewis\")."
+        "id": "photos-before-paperwork",
+        "icon": "📸",
+        "title": "Photos before paperwork",
+        "why": "The paperwork card says if before / after photos are missing and lets you add them before sending. HPD needs them."
       },
       {
-        "id": "quiet-hours",
-        "icon": "🔕",
-        "title": "Quiet hours",
-        "why": "No talking and no sound alerts from 9 PM to 7 AM; cards stay silent on the screen, unless you're working the notices."
+        "id": "words-on-invoice",
+        "icon": "📝",
+        "title": "Your words on the invoice",
+        "why": "Your \"how did it go\" answer becomes the work note on the invoice, shown first to check."
       }
     ]
   }

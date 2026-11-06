@@ -76,7 +76,7 @@ import { isFridayWrapTime, weekWrap } from "../../lib/friday-wrap";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { notePromise, promisesLine, takeEarlierPromises } from "../../lib/convo-memory";
 import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
-import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
+import { chimeMuted, notify, playChime, quietHours, ring, setAlertsAwake, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
 import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, sampleVoice, speakIn, topVoices, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
 import NoticeBoard from "./NoticeBoard";
@@ -3114,6 +3114,7 @@ export default function FieldCommandClient() {
   // A notice running out of time rings once (under 6 hours, nothing sent yet), only while you're working the notices
   // (owner, 5 Nov: "it keeps saying urgent. Do not do that, only do that when we engage to solve the notices").
   const noticeEngaged = boardOpen || noticesOpen || noticeChooser || !!noticeWalk || followFilter === "notices";
+  useEffect(() => { setAlertsAwake(noticeEngaged); }, [noticeEngaged]);
   useEffect(() => {
     if (!boardUrgent.length || !noticeEngaged) return;
     try {
@@ -4518,11 +4519,11 @@ export default function FieldCommandClient() {
               setAgent((a) => (a && a.heard === heardLine ? { heard: heardLine,
                 reply: `${who} texted back about ${where} (${jobId(job)}) in ${LANG_NAME[lang]}.${english ? ` It says: "${english}"` : " I couldn't translate it right now (no signal?)."}${theirs ? `\n\nI can answer in ${LANG_NAME[lang]}: "${theirs}"\n(In English: "${answerEn}")` : !answerEn && english ? " It sounds like they don't want texts: I won't answer." : ""}`,
                 offers: theirs ? [`text the tenant at ${jobId(job)} ${theirs}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: theirs ? "Send it?" : "Open the job?" } : a));
-              speak(english ? `${who} texted in ${LANG_NAME[lang]}. It says: ${english}.${theirs ? " Want me to answer?" : ""}` : `${who} texted in ${LANG_NAME[lang]}.`, 20, () => { if (drivingRef.current || convoRef.current) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListeningRef.current(); } });
+              if (!quietHours() || drivingRef.current) speak(english ? `${who} texted in ${LANG_NAME[lang]}. It says: ${english}.${theirs ? " Want me to answer?" : ""}` : `${who} texted in ${LANG_NAME[lang]}.`, 20, () => { if (drivingRef.current || convoRef.current) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListeningRef.current(); } });
             })();
           } else {
           setAgent({ heard: `💬 ${who}: "${m.body.slice(0, 160)}"`, reply: `${who} texted back about ${where} (${jobId(job)}).${spanish ? ` In Spanish. It says: ${spanishToEnglish(m.body)}.` : ""}${answerText ? ` I can answer${spanish ? " in Spanish" : ""}: "${answerText}"` : " It sounds like they don't want texts: I won't answer."}`, offers: answerText ? [`text the tenant at ${jobId(job)} ${answerText}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: answerText ? "Send it?" : "Open the job?" });
-          speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 20, () => { if (drivingRef.current || convoRef.current) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListeningRef.current(); } });
+          if (!quietHours() || drivingRef.current) speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 20, () => { if (drivingRef.current || convoRef.current) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListeningRef.current(); } });
           }
         }
         window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));
