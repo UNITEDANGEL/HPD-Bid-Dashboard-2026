@@ -108,8 +108,10 @@ The plan, one by one (✅ = live):
 18. ✅ **👂 It understands better**: it learns your own words (lib/my-words.ts, on this phone): teach it "when I say
    close it, I mean send the affidavit" (or "close it means …"; "forget close it" undoes it) and it does that straight
    away next time; picking from "Did you mean…?" teaches it too. Not sure = it still asks back ("Did you mean…?").
-19. ☐ **🔁 It follows up by itself**: what you said you'd do ("I'll call the tenant after lunch") comes back at that
-   time, once.
+19. ✅ **🔁 It follows up by itself**: "I'll call the tenant after lunch", "let me fax it at 3", "I'm going to text
+   Lewis tonight", "I'll send the affidavit for EQ15239 tomorrow" = a reminder at that time, said back ("👍 Got it.
+   I'll bring it up on …"), with Add to Calendar. After lunch = 1:30, this afternoon = 2, tonight = 7, later = in 2 hours
+   (tomorrow 9 AM late at night). No time said = nothing saved.
 20. ☐ **🚚 It hears you in the truck**: when the mic picks up wind or road noise and misses words, it says "I didn't
    catch that, say it again" and shows what it heard to fix with one tap, instead of guessing.
 

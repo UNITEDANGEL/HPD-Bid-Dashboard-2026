@@ -80,7 +80,7 @@ export type AgentCommand =
   | { intent: "come-back" }
   | { intent: "bid-price"; price: number }
   | { intent: "appointment"; ref: string; date?: string; time?: string }
-  | { intent: "remind"; what: string; date?: string; time?: string }
+  | { intent: "remind"; what: string; date?: string; time?: string; self?: boolean }
   | { intent: "today" }
   | { intent: "recap" }
   | { intent: "snooze" }
@@ -168,6 +168,20 @@ export function parseCommand(heard: string): AgentCommand {
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t) && !/driving|hands[- ]free/.test(t)) return { intent: "no" };
+  // 🔁 It follows up by itself (plan item 19): "I'll call the tenant after lunch" = a reminder at that time, without
+  // saying "remind me". Only when a time is said.
+  {
+    const m = /^(?:ok(?:ay)?,? |so,? |yeah,? |alright,? )?(?:i'?ll|i will|i'?m (?:going to|gonna)|let me|i need to|i have to|i gotta|i got to) (.{3,})$/.exec(t);
+    if (m && !/\b(?:remind me|bid \$?\d)/.test(m[1])) {
+      const w0 = m[1].replace(/\bafter lunch\b/, "at 1:30 pm").replace(/\bbefore lunch\b/, "at 11:30 am").replace(/\bthis afternoon\b/, "today at 2 pm").replace(/\btonight\b/, "today at 7 pm").replace(/\bthis evening\b/, "today at 6 pm")
+        .replace(/\b(?:first thing tomorrow|tomorrow morning)\b/, "tomorrow at 8 am").replace(/\blater(?: today)?\b/, "in 2 hours").replace(/\bin a (?:bit|little while)\b/, "in 1 hour");
+      const when = parseWhen(w0);
+      // "Later" late in the evening = tomorrow morning, not after midnight.
+      if (/\blater\b|\bin a (?:bit|little while)\b/.test(m[1]) && when.time && (when.time >= "21:00" || when.time < "07:00")) { const d = parseWhen("tomorrow at 9 am"); when.date = d.date; when.time = d.time; }
+      const what = when.words.replace(/\b(on|at|by|in|around)\s*$/, "").replace(/\s+/g, " ").trim().replace(/\b([a-z]{2})(\d{5})\b/g, (_x, a: string, b: string) => `${a.toUpperCase()}${b}`);
+      if ((when.time || when.date) && what.split(" ").length >= 1 && what.length >= 3) return { intent: "remind", what, self: true, ...(when.date ? { date: when.date } : {}), ...(when.time ? { time: when.time } : {}) };
+    }
+  }
   // 🧠 Notes the chat keeps for you (3 Nov idea): "remember the super at 123 Main is in the basement".
   if (isNotesQuestion(t)) return { intent: "my-notes" };
   {

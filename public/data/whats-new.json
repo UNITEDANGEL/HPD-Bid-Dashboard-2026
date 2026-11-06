@@ -3,10 +3,11 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
-      "title": "It learns your words",
+      "title": "It learns your words and follows up",
       "items": [
         "👂 Teach the helper your own words: \"when I say close it, I mean send the affidavit\". Next time \"close it\" just does it. \"Forget close it\" undoes it.",
-        "👂 When you pick from \"Did you mean…?\", it remembers, so it won't ask the same thing again."
+        "👂 When you pick from \"Did you mean…?\", it remembers, so it won't ask the same thing again.",
+        "🔁 Say \"I'll call the tenant after lunch\" and the helper brings it up at 1:30 by itself."
       ]
     },
     {

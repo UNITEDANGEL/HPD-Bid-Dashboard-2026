@@ -6276,6 +6276,7 @@ export default function FieldCommandClient() {
       saveReminders([...readReminders(), item]);
       const label = appointmentLabel({ date, start: time, end: hourAfter(time) } as Appointment).replace(/–.*$/, "").replace(/ · /, " at ");
       const cal = `${window.location.origin}/api/appointment-calendar?${new URLSearchParams({ kind: "reminder", id: "reminder", what: cmd.what, date, time })}`;
+      if (cmd.self) { showPanel({ heard, reply: `👍 Got it. I'll bring it up on ${label}: ${cmd.what}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] }); return; }
       showPanel({ heard, reply: `OK. I'll remind you to ${cmd.what} on ${label}. Tap Add to Calendar so your phone reminds you even with the app closed.`, actions: [{ label: "🔔 Add to Calendar", href: cal }] });
       return;
     }
