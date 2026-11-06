@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T17:41:26.583218+00:00",
+  "generatedAt": "2026-11-06T17:49:35.234122+00:00",
   "days": 14,
   "bids": [
     {
@@ -2084,6 +2084,398 @@
       },
       "lat": 40.833025,
       "lng": -73.930634
+    },
+    {
+      "omo": "ER08838",
+      "bidDue": "2026-11-08",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-09",
+      "workCompletion": "2026-11-20",
+      "address": "34-08 30 STREET",
+      "borough": "QN",
+      "itbFile": "ER08838_110626123950.pdf",
+      "description": "AT BAHROOM REPALCE TILES AROUND BATHTUB AND ANY VISIBLE DAMAGED AREAS NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK APARTMENT A6 - BATHROOM REPAIR DEMOLISH AND REMOVE APPROXIMATELY 90 SQUARE FEET OF EXISTING CERAMIC WALL TILES. INSTALL NEW CEMENT BACKER BOARD, CAULK, AND SEAL ALL GAPS TO ENSURE A PROPER, WATERTIGHT INSTALLATION. INSTALL A NEW SHOWER BODY AND ALL ASSOCIATED COMPONENTS. REMOVE AND REPLACE THE CHIPPED AND DAMAGED BATHTUB WITH A NEW BATHTUB. RESTORE ALL AFFECTED AREAS TO SAFE, SANITARY, AND PROPER WORKING CONDITION, ENSURING ALL PLUMBING FIXTURES AND COMPONENTS FUNCTION CORRECTLY. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "notes": "NOTE – CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793986796000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.75982,
+      "lng": -73.928469
+    },
+    {
+      "omo": "ER09628",
+      "bidDue": "2026-11-08",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-09",
+      "workCompletion": "2026-11-19",
+      "address": "1449 FULTON STREET",
+      "borough": "BK",
+      "itbFile": "ER09628_110626124225.pdf",
+      "description": "AEP AT 1ST STORY, ALL 4 VACANT COMMERCIAL STORES PROVIDE ACCESS TO ALL 4 VACANT STORES AT FULTON STREET. AT 1ST STORY, ALL 4 VACANT COMMERCIAL STORES, TOTAL 4 STOREFRONTS 1….DO ALL NECESSARY WORK TO PROVIDE ACCESS AND SECURITY TO OPEN ROLL DOWN GATES AND ENTRANCE DOORS AT ALL 4 STORES. MAKE SURE THEY OPEN AND CLOSE FULLY. 2….SECURE WOOD FENCE DOORS WITH NEW HEAVY DUTY CHAIN AND PADLOCKS.SECURE ALL 4 ROLL DOWN GATES WITH NEW HEAVY DUTY PADLOCKS. ALL PADLOCKS KEYED ALIKE. 3….PROVIDE 3 SETS OF KEYS TO HPD AEP CPM CHACKO (phone: sign in to see) *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM LIJO RAJU CHACKO AT CELL (phone: sign in to see) AND EMAIL CHACKOL@HPD.NYC.GOV ALSO EMAIL SUPERVISORS PASQUALE DELLITURRI AT 212 863 5111, (phone: sign in to see) DELLITUP@HPD.NYC.GOV, OR ASAAD EMAD 212 863 8346 CELL (phone: sign in to see) TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWING PLAN. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD NYC GOV OR PEREZBIA@HPD NYC GOV OR COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 (TENANT:- (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793986946000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.680214,
+      "lng": -73.94299
+    },
+    {
+      "omo": "ER09890",
+      "bidDue": "2026-11-08",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-09",
+      "workCompletion": "2026-11-16",
+      "address": "2733 MORRIS AVENUE",
+      "borough": "BX",
+      "itbFile": "ER09890_110626124513.pdf",
+      "description": "PROPERLY REPAIR THE BROKEN OR DEFECTIVE PLASTERED SURFACES AND PAINT IN A UNIFORM COLOR AT CEILING IN THE BATHROOM AND IN THE PRIVATE HALLWAY, LOCATED AT APT 2G, 2nd STORY, 2nd APARTMENT FROM EAST AT SOUTH. LOCATION OF WORK: BATHROOM AND PRIVATE HALLWAY TRACE, LOCATE AND REPAIR THE WATER LEAK. (THE PROBABLE SOURCE IS FROM THE BATHROOM ABOVE). TAPE, PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN / DEFECTIVE CEILINGS. ENSURE THAT THE LEAK DOES NOT RE-OCCUR. DEMOLISH EXISTING LOOSE PLASTER AND SHEET ROCK. SQUARE OFF DAMAGED SECTION OF CEILING, IN THE BATHROOM (APPROX. 8 SQ. FT. AND IN THE PRIVATE HALLWAY (APPROX. 6 SQ. FT.). PROVIDE AND PROPERLY INSTALL NEW SHEETROCK OR SIMILAR MATERIAL (APPROX. 14 SQ. FT.) TAPE AND PLASTER, PRIME WITH STAIN KILLER AND APPLY TWO COATS OF PAINT OVER ENTIRE CEILING IN THE BATHROOM (APPROX. 30 SQ. FT), AND OVER ENTIRE CEILING IN THE PRIVATE HALLWAY (APPROX. 42 QS. FT.) IN COLOUR AND FINISH SIMILAR TO EXISTING. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT H.P.D. @ (212) 863-6161, 6135, 6231, 6175 OR 6046 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212) 863-6009 ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. CONTRACTORS MUST CONTACT HPD- S. HUGHES @ 212-863-5754; B. CARR @ 212-863-5518; S. CROSSLAND @212-863-6132; A. MARTINEZ @ 212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @ 212-863-5496; R. REED @ 212-863-5481; R. BUSHRA @ 212-863-6046; E. ORR @ 212-863-6875; K. ATKINS @ 212-863-6182; P. DAS @ 212-863-5491; A. LAWSON @ 212-863-6208; D. SIACA @ 212-863-5549; Supervisor D. SAUL @ 212-863-5527 J. Rishi Jagdeor@hpd.nyc.gov. TENANT CONTACT: (tenant contact: sign in to see) TENANT CONTACT: (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1793987114000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.868712,
+      "lng": -73.89533
     },
     {
       "omo": "ER10058",

@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-06T17:41:49.948814+00:00",
+"generatedAt": "2026-11-06T17:50:00.475903+00:00",
 "since": "2026/10/23",
 "jobs": {
 "EN04541": [
@@ -21793,6 +21793,16 @@
 "file": "Outlook-xj4v4uwg.png",
 "outcome": "",
 "subject": "Re: STATUS UPDATE REQUEST- OMO#ER07749, OMO#ER08552, OMO#ER07663",
+"via": "hpd-staff"
+}
+],
+"ER09460": [
+{
+"date": "2026-11-06",
+"to": "\"Kowlessar, Dennis (HPD)\" <KowlessD@hpd.nyc.gov>",
+"file": "image001.png",
+"outcome": "",
+"subject": "Re: 2179 Washington Ave. Bx. ER09460",
 "via": "hpd-staff"
 }
 ]
