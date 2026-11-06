@@ -192,8 +192,9 @@ async function backupOne(id: string, api: Api, shouldContinue: () => boolean) {
 // Backs up every video not yet in Drive, oldest first, one at a time. Stops when told to (app
 // hidden, offline, backup turned off) and carries on next time.
 export async function backupVideos({ api = defaultApi, shouldContinue = () => true }: { api?: Api; shouldContinue?: () => boolean } = {}) {
-  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; type?: string } }).connection;
-  if (connection?.saveData || connection?.type === "cellular") return;
+  // On mobile data too (owner, 6 Nov, on a Pixel at ER07610: "0 of 3 ... it's not saving the videos ... that's our
+  // record, the most important part"). Android tells the app it's on cellular, and the backup used to skip itself
+  // there, so in the field the videos never reached Drive.
   if (videoBackupPaused()) return;
   const work = async () => {
     const [ids, entries] = await Promise.all([listFieldVideoIds(), allEntries()]);
