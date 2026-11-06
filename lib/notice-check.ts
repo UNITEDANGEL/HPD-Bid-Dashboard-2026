@@ -35,7 +35,11 @@ export function checkNotices(rows: BoardRow[], threads: BoardThread[], now = Dat
     let tone: CheckTone;
     let head: string;
     const sent = r.steps.sent;
-    if (r.problem && !sent.done) {
+    // HPD closed the job (6 Nov: "Already sent closed"): nothing more to send.
+    if (r.steps.confirmed.how === "record" && sent.at === "closed") {
+      tone = "done";
+      head = "✅ HPD closed the job. Nothing to send";
+    } else if (r.problem && !sent.done) {
       tone = "fix";
       head = `⚠ HPD found a problem ${md(r.problem.at)}: fix it and send it again`;
       lines.unshift(`HPD: "${r.problem.text.slice(0, 140)}"`);

@@ -27,7 +27,11 @@ type Props = {
   scanChanged?: { omo: string; now: string }[];     // notices the check just updated
   autoReplyOmo?: string;                            // "answer the notice for …" by voice: open its AI reply right away
   onHandled?: (omo: string, on: boolean) => void;   // ✅ "Already sent / fixed" (5 Nov), on every phone
+  factsOf?: (omo: string) => JobFacts | null;       // the job itself: address, work, award, HPD's status (6 Nov)
 };
+// The job on each notice (owner, 6 Nov: "I don't see the work order number, the address, everything is missing ...
+// I don't want to see the conversations, that's for you to analyze").
+export type JobFacts = { address: string; borough: string; amount: string; awarded: string; work: string; hpd: string };
 
 const OUTCOMES = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
 
@@ -43,7 +47,7 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
-export default function NoticeBoard({ onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -289,13 +293,26 @@ export default function NoticeBoard({ onHandled, autoReplyOmo = "", locked = fal
         <div className="fc-board-top">
           {ok ? <span className="fc-board-okmark" aria-hidden="true">✓</span> : row.kind === "ppn" ? <span className="fc-fire" aria-hidden="true">🔥</span> : null}
           <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (boardSide(row) === "replied" ? `💬 ${(row.who || "They").split(/\s+/)[0]} replied ${day(row.lastTheirsAt)}` : boardSide(row) === "waiting" ? `📤 Sent ${day(new Date(sentTime(row)).toISOString())} · waiting ${Math.max(0, Math.floor((now - sentTime(row)) / 86400000))} d` : row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
-          <span className="fc-board-kind">{row.kind === "docs" ? "MISSING DOCS" : `${row.hours}-HOUR`}</span>
+          <span className="fc-board-kind">{row.kind === "docs" ? "AEP · MISSING DOCS" : `ERP · ${row.hours}-HOUR`}</span>
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
+        {(() => {
+          const f = factsOf?.(row.omo);
+          if (!f) return null;
+          const money = Number(f.amount) ? `$${Number(f.amount).toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "";
+          return (
+            <dl className="fc-board-facts" data-hpd-smoke="fc-board-facts">
+              {f.borough ? <div><dt>🏠</dt><dd>{f.borough}</dd></div> : null}
+              {money || f.awarded ? <div><dt>💵</dt><dd>{[money, f.awarded ? `awarded ${f.awarded}` : ""].filter(Boolean).join(" · ")}</dd></div> : null}
+              {f.work ? <div><dt>🔧</dt><dd>{f.work.length > 150 ? `${f.work.slice(0, 150)}…` : f.work}</dd></div> : null}
+              <div><dt>🏛</dt><dd data-hpd-smoke="fc-board-hpd">{f.hpd ? `HPD closed it: ${f.hpd}` : "HPD: still open"}</dd></div>
+            </dl>
+          );
+        })()}
         {row.problem && row.next ? <p className="fc-board-problem" data-hpd-smoke="fc-board-problem">⚠️ {(row.who || "HPD").split(/\s+/)[0]} wrote {day(row.problem.at)}: “{row.problem.text}” Fix it with the same dates as the original and send it again, or tap ✅ if you already did.</p> : null}
         {row.answered && !row.problem ? <p className="fc-board-heard" data-hpd-smoke="fc-board-heard">✅ {(row.who || "HPD").split(/\s+/)[0]} answered {day(row.answered.at)}: “{row.answered.text.slice(0, 120)}”</p> : null}
         {row.handledAt && !row.next ? <p className="fc-board-heard" data-hpd-smoke="fc-board-handled-note">✅ You marked it sent / fixed {day(row.handledAt)}{onHandled ? <> · <button type="button" className="fc-board-undo" data-hpd-smoke="fc-board-handled-undo" onClick={() => onHandled(row.omo, false)}>Undo</button></> : null}</p> : null}
-        {convo(row)}
+        <details className="fc-board-emails" data-hpd-smoke="fc-board-emails"><summary>💬 The emails</summary>{convo(row)}</details>
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
         {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
           const hol = holidaysBetween(row.noticeAt, row.dueAt);
@@ -392,7 +409,7 @@ export default function NoticeBoard({ onHandled, autoReplyOmo = "", locked = fal
           </div>
         ) : null}
         <div className="fc-board-filter" role="tablist" data-hpd-smoke="fc-board-filter">
-          {([["all", "All", rows.filter((r) => r.next).length], ["ppn", "⏱ 24 / 72-hour", rows.filter((r) => r.next && r.kind === "ppn").length], ["docs", "📋 Gafur · AEP", rows.filter((r) => r.next && r.kind === "docs").length]] as const).map(([k, label, n]) => (
+          {([["all", "All", rows.filter((r) => r.next).length], ["ppn", "🚨 Lewis · ERP 24/72 h", rows.filter((r) => r.next && r.kind === "ppn").length], ["docs", "🏛 Gafur · AEP", rows.filter((r) => r.next && r.kind === "docs").length]] as const).map(([k, label, n]) => (
             <button key={k} type="button" role="tab" aria-selected={show === k} className={show === k ? "is-on" : ""} data-hpd-smoke={`fc-board-show-${k}`} onClick={() => setShow(k)}>{label} <b>{n}</b></button>
           ))}
         </div>

@@ -123,7 +123,8 @@ try {
     await page.waitForTimeout(800);
     assert.equal(await isOpen("notices"), false);
     const afterCount = await jobCount();
-    assert.ok(afterCount > before, `${where}: all jobs back on the map (${before} -> ${afterCount} jobs)`);
+    // The everyday map leaves old nothing-on-file jobs out (🧹, 6 Nov), so it can hold fewer than the notices view.
+    assert.ok(afterCount > 0 && afterCount !== before, `${where}: back to all jobs on the map (${before} -> ${afterCount} jobs)`);
     // A job card, then a map button: the card closes.
     // A pin on screen (the first one in the page can be off the edge of the map).
     const pin = page.locator(".fc-pin:visible").first();

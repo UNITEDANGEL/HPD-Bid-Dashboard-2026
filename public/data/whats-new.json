@@ -3,6 +3,20 @@
   "versions": [
     {
       "date": "Nov 6, 2026",
+      "title": "Notices, videos, working here",
+      "items": [
+        "🎥 Videos now go up to Drive on mobile data too (on Android they stopped whenever the phone was on cellular).",
+        "👁 \"See the before items\" on the job card shows every saved photo and video, and whether it's in Drive yet.",
+        "📋 Every notice shows the job number, address, work and HPD's status; sent ones are folded away, the emails behind a tap.",
+        "🚨 Lewis · ERP and 🏛 Gafur · AEP each have their own map of what's still to send; 📦 sent ones are on the archive map.",
+        "📅 Saving an appointment emails Lewis (ERP) or Gafur (AEP) 15 seconds later, with Undo.",
+        "📍 At a job it asks \"Have you arrived?\"; Yes opens HPD's work order, scrolls to the work and reads it out loud.",
+        "🔨 The job you're working at shows on the map, on the phone and the computer, with the time on site; the time is kept on the job.",
+        "✉ Updates and Claude's progress are behind one small button on the right edge; 🧹 old jobs with nothing on file are off the map."
+      ]
+    },
+    {
+      "date": "Nov 6, 2026",
       "title": "On the way, photos, your words",
       "items": [
         "🚗 \"On my way\" texts now say when you'll be there (\"around 2:40 PM\"), so the tenant knows even if they read it later.",

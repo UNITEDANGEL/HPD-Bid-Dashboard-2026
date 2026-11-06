@@ -24,11 +24,18 @@ import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
 import { loadConversations, reloadConversations, loadNotices, loadPrivate, loadSearchIndex, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
+import MediaViewer from "./MediaViewer";
+import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
+import { overnightLine } from "../../lib/overnight";
+import { nextStop, nextStopLine } from "../../lib/next-stop";
+import { itbPdfUrl } from "../../lib/private-data";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
 import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
 import { markCorrectedCopy } from "../../lib/correction-copy";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
+import { isStaleJob } from "../../lib/stale-jobs";
+import { appointmentEmail, unitEmail, unitOf, UNIT_NAMES } from "../../lib/appointment-notice";
 import { paperworkLeft } from "../../lib/paperwork-left";
 import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory, timeInsight } from "../../lib/robot-insights";
 import { onSiteMinutes } from "../../lib/job-time";
@@ -1269,7 +1276,7 @@ export default function FieldCommandClient() {
   // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
   const [showOlderLayer, setShowOlderLayer] = useState(false);
   // Notices button (owner, 16 Oct): first asks what you're looking for, then the map shows just those jobs.
-  type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep";
+  type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep" | "erp" | "archive";
   const [noticeChooser, setNoticeChooser] = useState(false);
   // After a pick the picker shrinks to a thin bar so the map is in view (owner, 17 Oct: "take me to the map").
   const [noticeMini, setNoticeMini] = useState(false);
@@ -1541,7 +1548,7 @@ export default function FieldCommandClient() {
         micRetryRef.current = false;
         if (/not-allowed|service-not-allowed|audio-capture/.test(why)) convoMissRef.current = 99; // no mic: don't keep trying
         // Say what's wrong instead of nothing (owner, 23 Oct: "mic not working on my iPhone").
-        if (why === "not-allowed" || why === "service-not-allowed") { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "The iPhone blocked listening for HPD Field. On the iPhone: Settings → Privacy & Security → Microphone and Speech Recognition: allow it; and Settings → General → Keyboard → Enable Dictation: on. Or tap the search box and use the keyboard's 🎙, then Go." }); }
+        if (why === "not-allowed" || why === "service-not-allowed") { convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: !/iPhone|iPad/i.test(navigator.userAgent) ? (/Android/i.test(navigator.userAgent) ? "Chrome blocked the microphone for HPD Field. Tap the ⓘ or 🔒 next to the web address → Permissions → Microphone → Allow, then tap 🎤 again. Or type instead." : "This browser blocked the microphone. Click the 🔒 next to the web address → Microphone → Allow, then click 🎤 again. Or type your question instead.") : "The iPhone blocked listening for HPD Field. On the iPhone: Settings → Privacy & Security → Microphone and Speech Recognition: allow it; and Settings → General → Keyboard → Enable Dictation: on. Or tap the search box and use the keyboard's 🎙, then Go." }); }
         else if (why === "network") setAgent({ heard: "🎤", reply: "Listening needs internet: check the signal and tap 🎤 again." });
         else if (why === "audio-capture") setAgent({ heard: "🎤", reply: "No microphone found (another app may be using it). Close it and tap 🎤 again." });
       };
@@ -1590,6 +1597,12 @@ export default function FieldCommandClient() {
   // 🤖 Claude on the map is one slim live line by default (owner, 3 Nov: "like a real helper on the side ... more room
   // on the map"); tap it for the whole card. Remembered on this phone.
   const [claudeCardBig, setClaudeCardBigState] = useState(false);
+  // ✉ The side tab: updates, the plan and Claude's work wait behind one small icon on the right edge; tap to open,
+  // tap ◂ to close. Remembered on this phone. (Browser tests see them open unless they ask for the tab.)
+  const [sideOpen, setSideOpenState] = useState(false);
+  const sideHintRef = useRef(0); // a 💡 next step / ⏰ notice chip is waiting behind the tab
+  useEffect(() => { try { const v = localStorage.getItem("hpd-side-open"); setSideOpenState(v === "1" || (v === null && typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-side") !== "1")); } catch { /* private mode */ } }, []);
+  const setSideOpen = (on: boolean) => { setSideOpenState(on); try { localStorage.setItem("hpd-side-open", on ? "1" : "0"); } catch { /* private mode */ } };
   useEffect(() => { try { setClaudeCardBigState(localStorage.getItem("hpd-claude-card") === "big"); } catch { /* private mode */ } }, []);
   const setClaudeCardBig = (big: boolean) => { setClaudeCardBigState(big); try { localStorage.setItem("hpd-claude-card", big ? "big" : "slim"); } catch { /* private mode */ } };
   const [claudeSeenAt, setClaudeSeenAt] = useState("");
@@ -2203,6 +2216,8 @@ export default function FieldCommandClient() {
       const backFromSnooze = takeSnoozedBack(day);
       // 🧠 What you said you'd do yesterday (plan item 25), asked once in the morning brief.
       const promised = promisesLine(takeEarlierPromises(day), day);
+      // 📬 Who at HPD wrote overnight (plan item 30), one calm line.
+      const overnight = h < 12 ? overnightLine((threads || []) as unknown as Parameters<typeof overnightLine>[0]) : "";
       markBrief(day);
       if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
       if (step) noteSaid(day, `first:${nextOmoRef.current || step.text}`, step.text.replace(/\.$/, ""));
@@ -2210,7 +2225,7 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${overnight ? ` ${overnight}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
       // 🧠 Your usual start (3 of the last 14 mornings), offered before 11 if you haven't opened it yet today.
@@ -2416,6 +2431,7 @@ export default function FieldCommandClient() {
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number; beforeVideos?: number; afterVideos?: number; beforeDay?: string; afterDay?: string }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
+  const [mediaView, setMediaView] = useState<{ id: string; kind: "before" | "after" } | null>(null);
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
   // When each before/after photo/video was saved on this phone (from its id): finds ones taken after the package went out.
   const [mediaSavedTimes, setMediaSavedTimes] = useState<Record<string, { at: string; video: boolean }[]>>({});
@@ -3139,6 +3155,7 @@ export default function FieldCommandClient() {
   // knows is sent (its AFF INVOICE email in any thread), fixed or marked done is off the to-do list.
   const boardOmos = new Set(boardRows.map((r) => r.omo));
   const boardUnsent = new Set(boardRows.filter((r) => r.next && !r.steps.sent.done).map((r) => r.omo));
+  const noticeCheckList = checkNotices(boardRows, boardThreads || []);
   const vendorTodo = priorities.filter((p) => (p.kind === "24h" || p.kind === "72h" || p.kind === "missing") && (!boardOmos.has(p.omo) || boardUnsent.has(p.omo)) && !(handledMap[p.omo] && handledMap[p.omo] > p.askedAt));
   // Rejections tracked to the money (17 Oct): rejected -> fixed -> printed -> emailed -> mailed -> paid in PIP.
   const payTrack = trackPayments({ rejections, corrections: toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }> });
@@ -3149,17 +3166,23 @@ export default function FieldCommandClient() {
     corrections: new Set(threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).flatMap((t) => t.omos)),
     print: new Set(toPrint.filter((c) => !c.mailedAt).map((c) => c.omo)),
     all: new Set<string>(),
-    // Gafur (AEP): the jobs on her missing-documents lists still open.
-    aep: new Set(boardOpenRows.filter((r) => r.kind === "docs").map((r) => r.omo)),
+    // Gafur (AEP, Alternative Enforcement Program) and Lewis (ERP, Emergency Repair Program): the jobs on their
+    // notices still to send (nothing sent yet, or HPD found a problem). Sent / done ones are in the archive.
+    aep: new Set(noticeCheckList.items.filter((x) => (x.tone === "tosend" || x.tone === "fix" || x.tone === "check") && boardRows.find((r) => r.key === x.rowKey)?.kind === "docs").map((x) => x.omo)),
+    erp: new Set(noticeCheckList.items.filter((x) => (x.tone === "tosend" || x.tone === "fix" || x.tone === "check") && boardRows.find((r) => r.key === x.rowKey)?.kind === "ppn").map((x) => x.omo)),
+    // 📦 Sent or done: off the notice maps, kept here.
+    archive: new Set(noticeCheckList.items.filter((x) => x.tone === "sent" || x.tone === "done").map((x) => x.omo)),
   };
-  noticeSets.all = new Set([...noticeSets.priority, ...noticeSets.rejected, ...noticeSets.corrections, ...noticeSets.print]);
+  noticeSets.all = new Set([...noticeSets.priority, ...noticeSets.erp, ...noticeSets.aep, ...noticeSets.rejected, ...noticeSets.corrections, ...noticeSets.print].filter((o) => !noticeSets.archive.has(o) || noticeSets.rejected.has(o) || noticeSets.corrections.has(o) || noticeSets.print.has(o)));
   const noticeSetKey = noticeKind ? [...noticeSets[noticeKind]].sort().join(",") : "";
   const NOTICE_KINDS = [
     { key: "all", icon: "📩", short: "All notices", title: "All notices", note: "Everything on the map at once" },
-    { key: "priority", icon: "🔥", short: "Priority", title: "Priority · vendor tracking", note: "Lewis / Gafur want the affidavit, invoice or an update" },
+    { key: "priority", icon: "🔥", short: "Priority", title: "Priority · vendor tracking", note: "Waiting on you: Lewis (ERP) / Gafur (AEP) want the affidavit, invoice or an update" },
+    { key: "erp", icon: "🚨", short: "Lewis · ERP", title: "Lewis · Emergency Repair (ERP) notices", note: "Lewis's 24 / 72-hour notices still to send" },
     { key: "rejected", icon: "💵", short: "Payment rejected", title: "Payment rejected", note: "Procurement rejected the invoice / affidavit: fix & resend" },
     { key: "corrections", icon: "✏️", short: "Corrections", title: "Corrections", note: "HPD staff asked you to correct paperwork" },
-    { key: "aep", icon: "📋", short: "Gafur · AEP", title: "Gafur · AEP missing documents", note: "Her list: affidavit, invoice, photos, updates" },
+    { key: "aep", icon: "🏛", short: "Gafur · AEP", title: "Gafur · AEP (Alternative Enforcement Program)", note: "Jobs on her lists still to send: affidavit, invoice, photos, updates" },
+    { key: "archive", icon: "📦", short: "Sent / archived", title: "Sent or done notices", note: "Already sent or closed: off the notice maps, kept here" },
     { key: "print", icon: "🖨", short: "Print & mail", title: "Print & mail", note: "Fixed paperwork to sign in ink and mail" },
   ] as const;
   // Earliest Priority item per job (24-hour before 72-hour before missing documents).
@@ -3169,12 +3192,12 @@ export default function FieldCommandClient() {
   if (followFilter === "notices" && noticeKind) {
     for (const omo of noticeSets[noticeKind]) {
       const kind = noticeKind !== "all" ? noticeKind
-        : noticeSets.priority.has(omo) ? "priority" : noticeSets.aep.has(omo) ? "aep" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
+        : noticeSets.priority.has(omo) ? "priority" : noticeSets.aep.has(omo) ? "aep" : noticeSets.erp.has(omo) ? "erp" : noticeSets.archive.has(omo) ? "archive" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
       const it = prioByOmo.get(omo);
       const due = it ? dueText(it.dueAt) : "";
       const tag = kind === "priority"
         ? (it ? (it.kind === "missing" ? "🔥 Docs" : `🔥 ${it.kind === "24h" ? "24h" : "72h"} · ${due.replace(" left", "").replace("overdue ", "-")}`) : "🔥 Asked")
-        : kind === "aep" ? "📋 Docs" : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
+        : kind === "archive" ? "📦 Sent" : kind === "aep" || kind === "erp" ? (() => { const r = boardRows.filter((x) => x.omo === omo).sort((a, b) => Date.parse(b.noticeAt) - Date.parse(a.noticeAt))[0]; const unit = kind === "aep" ? "🏛 AEP" : "🚨 ERP"; return !r ? unit : !r.next ? `${unit} ✓` : r.steps.sent.done ? `${unit} sent` : `${unit} to do`; })() : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
       glow.set(omo, { tag, cls: `is-glow is-glow-${kind}${kind === "priority" && it?.kind === "24h" ? " is-glow-24h" : ""}${kind === "priority" && /overdue/.test(due) ? " is-glow-late" : ""}` });
     }
   }
@@ -3192,7 +3215,7 @@ export default function FieldCommandClient() {
     setSelectedJob(null);
     setFollowFilter("notices");
     setNoticeKind(kind);
-    if (kind && kind !== "all" && kind !== "aep") setNoticesTab(kind);
+    if (kind && kind !== "all" && kind !== "aep" && kind !== "erp" && kind !== "archive") setNoticesTab(kind);
     setNoticeChooser(true);
     setNoticeMini(true);
     // Gafur / Priority (owner, 5 Nov: "when I pick Gafur it should auto start her notices board, not a little box"):
@@ -3211,6 +3234,22 @@ export default function FieldCommandClient() {
     return f.state === followFilter;
   };
 
+  // 🧹 Old jobs with nothing on file (lib/stale-jobs): off the everyday map, in their own list.
+  const noticeOmoKey = [...noticeSets.all, ...boardRows.map((r) => r.omo)].sort().join(",");
+  const staleJobs = useMemo(() => {
+    const onNotice = new Set(noticeOmoKey.split(","));
+    return jobs.filter((j) => !isTestJob(jobId(j)) && isStaleJob(j as Record<string, unknown>, jobQueue(j), Date.now(), onNotice.has(jobId(j))));
+  }, [jobs, noticeOmoKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const staleIds = new Set(staleJobs.map((j) => jobId(j)));
+  const [staleOpen, setStaleOpen] = useState(false);
+  const staleMark = (job: JobRecord, closed: boolean) => {
+    const id = jobId(job);
+    const now = new Date().toISOString();
+    const patch = closed ? { ArchivedFromMap: true, archivedFromMap: true, ArchivedAt: now, archivedAt: now, ClosedOutByOwner: now } : { KeepOnMap: true, KeptOnMapAt: now };
+    try { writeSharedWorkflowPatch(id, patch); } catch { setOutcomeMessage("Could not save on this device. Please retry."); return; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    void flushOverrideOutbox(HPD_STATUS_WORKER_URL);
+  };
   const filteredJobs = useMemo(() => {
     if (jobsOpen && jobsShown) { const ids = new Set(jobsShown.ids); return jobs.filter((job) => ids.has(jobId(job))); }
     const q = search.trim().toLowerCase();
@@ -3238,6 +3277,7 @@ export default function FieldCommandClient() {
       const isTheTestJob = jobId(job) === TEST_JOB_ID;
       if (!dueOnMap(job) && !isTheTestJob) {
         if (!matchesJobQueue(job, status)) return false;
+        if (status === "pending" && staleIds.has(jobId(job))) return false;
         if (!matchesAwardLookback(job, daysBack)) return false;
         if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       }
@@ -3248,7 +3288,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey, jobsOpen, jobsShown]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey, jobsOpen, jobsShown, staleJobs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The open job card has priority over "follow me": stop following and show the job's pin in
   // the open strip of map between the search bar and the top of the card. The locate button
@@ -3756,7 +3796,8 @@ export default function FieldCommandClient() {
               const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const screen = map.latLngToContainerPoint(position);
               const showLabel = reservePinLabel(screen.x, screen.y, occupied);
-              const lit = glowRef.current.get(jobId(job));
+              const here = onSite(job as Record<string, unknown>);
+              const lit = glowRef.current.get(jobId(job)) || (here ? { tag: `🔨 Working · ${duration(here.minutes)}`, cls: "is-glow is-glow-onsite" } : undefined);
               const html = (showLabel || lit
                 ? jobPinHtml(job, meta, priority, visit.count)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
@@ -3768,7 +3809,7 @@ export default function FieldCommandClient() {
               const zoomClass = map.getZoom() >= 18 ? " is-z18" : map.getZoom() >= 16 ? " is-z16" : "";
               // The pin's tip sits on the building.
               const big = showLabel || Boolean(lit);
-              const icon = L.divIcon({ className: (big ? "fc-label-marker" : "fc-dot-marker") + zoomClass + (lit ? ` ${lit.cls}` : ""), html, iconSize: big ? [36, 42] : [14, 14], iconAnchor: big ? [18, 40] : [7, 7] });
+              const icon = L.divIcon({ className: (big ? "fc-label-marker" : "fc-dot-marker") + zoomClass + (lit ? ` ${lit.cls}` : ""), html, iconSize: big ? [36, 42] : [18, 18], iconAnchor: big ? [18, 40] : [9, 9] });
               const marker = L.marker(position, { icon, title: lit ? `${title} - ${lit.tag}` : title, zIndexOffset: lit ? 3000 : showLabel ? 1000 : 0 });
               marker.on("click", () => {
                 if (!big || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
@@ -4055,11 +4096,11 @@ export default function FieldCommandClient() {
       const id = jobId(job);
       if (askedArriveRef.current.has(id) || workflowStamps[id]?.arrived || value(job, ["FieldArrivedAt"]) || !["pending", "followup"].includes(jobQueue(job))) continue; // to do or a 2nd try
       const travel = value(job, ["TravelStartedAt"]);
-      if (!route.has(id) && !(travel && new Date(travel).toDateString() === today)) continue;
+      const planned = route.has(id) || Boolean(travel && new Date(travel).toDateString() === today);
       const at = jobLatLng(job);
       if (!at) continue;
       const meters = distanceMiles({ lat, lng }, at) * 1609.34;
-      if (meters <= 120 && (!best || meters < best.meters)) best = { job, meters };
+      if (meters <= (planned ? 120 : accuracy <= 60 ? 60 : 0) && (!best || meters < best.meters)) best = { job, meters };
     }
     if (!best) return;
     askedArriveRef.current.add(jobId(best.job));
@@ -4561,6 +4602,20 @@ export default function FieldCommandClient() {
     return { ...patch, FieldVisitHistory: history };
   }
 
+  // 📄 The work order at the job (owner, 6 Nov: "I said I've arrived, it should automatically open the invitation to
+  // bid, scroll just like we did for the bids, very nice and slowly to the work description, read it out loud"): HPD's
+  // page on the work description, the read-along scroll, the work read out loud, then the next step in one tap.
+  const [workView, setWorkView] = useState<{ id: string; tick: number } | null>(null);
+  function workWords(job: JobRecord) {
+    return jobScope(job).replace(/\s+/g, " ").split(/\bNOTE\s*[-–:]|\bCONTRACTOR MUST CONTACT\b/i)[0].replace(/^[:\s]+/, "").trim();
+  }
+  function openWorkOrder(job: JobRecord, arrived = false) {
+    const id = jobId(job);
+    setWorkView({ id, tick: Date.now() });
+    const words = workWords(job);
+    if (words) speak(`${arrived ? "You're here. " : ""}Work order ${id.split("").join(" ")}. ${words.slice(0, 600)}`);
+  }
+
   function markArrived(job: JobRecord) {
     const id = jobId(job);
     saveWorkflowStamp(job, "arrived");
@@ -4840,6 +4895,58 @@ export default function FieldCommandClient() {
     requestAnimationFrame(() => appointmentRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }
 
+  // 📅 -> ✉ The appointment goes to vendor tracking by itself (owner, 6 Nov: "that appointment should automatically be
+  // sent to Lewis also, just to keep her in the loop"): Lewis for ERP jobs, Gafur for AEP jobs. It goes out 15 seconds
+  // after saving (Undo stops it), once per job and time.
+  const [apptMail, setApptMail] = useState<{ key: string; omo: string; to: string; name: string; subject: string; text: string; left: number; status: string } | null>(null);
+  const apptMailTimer = useRef<number | null>(null);
+  function tellUnitAboutAppointment(job: JobRecord, appointment: Appointment) {
+    const omo = jobId(job);
+    if (isTestJob(omo) || !appointment.date) return;
+    const key = `${omo}|${appointment.date}|${appointment.start}`;
+    let sentKeys: string[] = [];
+    try { sentKeys = JSON.parse(localStorage.getItem("hpd-appt-told-v1") || "[]"); } catch { /* private mode */ }
+    if (sentKeys.includes(key)) return;
+    const unit = unitOf(String(job.JobDescription || job.Job_Description || ""));
+    const who = unitEmail(unit, boardRows);
+    if (!who) { setOutcomeMessage(`📅 Saved. ${UNIT_NAMES[unit]}'s email wasn't found in your HPD emails, so she wasn't told: forward it from Gmail.`); return; }
+    const changed = sentKeys.some((k) => k.startsWith(`${omo}|`));
+    const mail = appointmentEmail({ omo, address: jobAddress(job), appointment, who: who.who, changed });
+    setApptMail({ key, omo, to: who.to, name: who.who, ...mail, left: 15, status: "" });
+  }
+  async function sendApptMail(m: NonNullable<typeof apptMail>) {
+    setApptMail({ ...m, left: 0, status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: m.to, subject: m.subject, text: m.text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(r.status === 401 ? "sign in with Google on this phone" : d.error || `HTTP ${r.status}`);
+      try { const a = JSON.parse(localStorage.getItem("hpd-appt-told-v1") || "[]"); localStorage.setItem("hpd-appt-told-v1", JSON.stringify([...a, m.key].slice(-200))); } catch { /* private mode */ }
+      setApptMail({ ...m, left: 0, status: `✓ ${m.name.split(/\s+/)[0]} was told about the appointment for ${m.omo}.` });
+      window.setTimeout(() => setApptMail((cur) => (cur && cur.key === m.key && cur.status.startsWith("✓") ? null : cur)), 8000);
+    } catch (e) {
+      setApptMail({ ...m, left: 0, status: `Not sent (${e instanceof Error ? e.message : "no connection"}). Tap Send to try again.` });
+    }
+  }
+  useEffect(() => {
+    if (!apptMail || apptMail.status || apptMail.left <= 0) return;
+    apptMailTimer.current = window.setTimeout(() => {
+      if (apptMail.left <= 1) void sendApptMail(apptMail);
+      else setApptMail({ ...apptMail, left: apptMail.left - 1 });
+    }, 1000);
+    return () => { if (apptMailTimer.current) window.clearTimeout(apptMailTimer.current); };
+  }, [apptMail]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 🧭 The next stop from a job (plan item 31): the nearest open job, appointments today first.
+  function nextStopFrom(from: { lat: number; lng: number }, exceptId: string) {
+    const list = jobs.filter((j) => !isTestJob(jobId(j)) && ["pending", "followup"].includes(jobQueue(j)) && !staleIds.has(jobId(j))).flatMap((j) => {
+      const at = jobLatLng(j);
+      if (!at) return [];
+      const a = activeAppointment(j as Record<string, unknown>);
+      return [{ id: jobId(j), lat: at.lat, lng: at.lng, address: jobAddress(j), work: jobScope(j), open: true, appointmentToday: Boolean(a && appointmentTiming(a).today && !appointmentTiming(a).past) }];
+    });
+    return nextStop(from, list, exceptId);
+  }
+
   function saveAppointment(job: JobRecord, appointment: Appointment) {
     const id = jobId(job);
     const latest = { ...job, ...readSharedWorkflowOverrides()[id] };
@@ -4848,6 +4955,7 @@ export default function FieldCommandClient() {
     mergeWorkflowPatchIntoScreen(id, patch);
     setWorkflowStamps(prev => ({ ...prev, [id]: { ...prev[id], status: patch.status } }));
     if (["requested", "confirmed"].includes(appointment.state)) {
+      tellUnitAboutAppointment(latest, appointment);
       setAppointmentOpen(false);
       setOutcomeMessage(`📅 ${id}: appointment saved for ${appointmentLabel(appointment)}. Tap "🔔 Add to Calendar" so your iPhone reminds you even with the app closed; the pin also lights up on the map as the time gets close.`);
     }
@@ -4858,13 +4966,23 @@ export default function FieldCommandClient() {
     if (paperworkLock(job).locked && !isTestJob(jobId(job))) { setOutcomeMessage(lockedMessage(jobId(job), paperworkLock(job))); return; }
     const id = jobId(job);
     try {
-      const patch = withVisitLocation(job, fieldOutcomePatch(job, outcome, note, new Date().toISOString()));
+      const base = fieldOutcomePatch(job, outcome, note, new Date().toISOString());
+      const here = onSite(job as Record<string, unknown>);
+      if (here && !["VISIT_STARTED", "WORK_STARTED", "APPOINTMENT_REQUESTED"].includes(outcome)) {
+        const record = onSiteRecord(here.since, Date.now());
+        const hist = Array.isArray((base as Record<string, unknown>).FieldVisitHistory) ? (base as { FieldVisitHistory: unknown[] }).FieldVisitHistory : (Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory : []);
+        Object.assign(base, { OnSiteMinutes: Number(job.OnSiteMinutes || 0) + here.minutes, OnSiteEndedAt: new Date().toISOString(), FieldVisitHistory: [...hist, { recordedAt: new Date().toISOString(), outcome: null, note: record }] });
+      }
+      const patch = withVisitLocation(job, base);
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
       const waiting = secondTryState({ ...job, ...patch });
       if (!openPackage) return;
-      setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : `✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`);
+      const at = jobLatLng(job);
+      const ns = !["VISIT_STARTED", "WORK_STARTED", "APPOINTMENT_REQUESTED"].includes(outcome) && at ? nextStopFrom(at, id) : null;
+      setOutcomeMessage(`${waiting ? secondTryMessage(id, waiting.dueLabel) : `✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`}${ns ? ` ${nextStopLine(ns)}` : ""}`);
+      if (ns) window.setTimeout(() => speak(nextStopLine(ns).replace("🧭 ", "").replace(/\b([A-Z]{2})(\d{5})\b/, (_m, a: string, b: string) => `${a} ${b.split("").join(" ")}`)), 1500);
       if (outcome !== "APPOINTMENT_REQUESTED" && !waiting) setAutoPackage({ id, outcome, seconds: 6 });
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Could not save the outcome. Try again.");
@@ -4976,6 +5094,13 @@ export default function FieldCommandClient() {
   // 📷 Retake before you leave (owner idea, 4 Nov): a dark or blurry photo is said out loud with one big Retake button,
   // while you're still in the apartment.
   const [retake, setRetake] = useState<{ id: string; kind: FieldMediaKind; why: string } | null>(null);
+  const [shotGuide, setShotGuide] = useState<{ id: string; kind: "before" | "after"; photos: number; videos: number } | null>(null);
+  function guideShot(source: "camera" | "video-camera") {
+    if (!shotGuide) return;
+    pendingMediaKindRef.current = shotGuide.kind;
+    if (source === "camera") cameraInputRef.current?.click(); else videoCameraInputRef.current?.click();
+  }
+
   function retakeNow() {
     if (!retake) return;
     pendingMediaKindRef.current = retake.kind;
@@ -5042,6 +5167,15 @@ export default function FieldCommandClient() {
         speak(`That ${kind === "before" || kind === "after" ? `${kind} ` : ""}photo looks ${why}. HPD may reject it. Tap Retake while you're still there.`, 400);
       } else setRetake(null);
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
+      if ((kind === "before" || kind === "after") && saved.length) {
+        const photos = saved.filter((m) => m.mediaType !== "video").length, videos = saved.filter((m) => m.mediaType === "video").length;
+        setShotGuide((g) => {
+          const prev = g && g.id === id && g.kind === kind ? g : { id, kind, photos: 0, videos: 0 };
+          const next = { ...prev, photos: prev.photos + photos, videos: prev.videos + videos };
+          if (!dark && !blurry) speak(videos && !photos ? `${kind} video saved. Take another, or tap Done.` : next.photos >= 3 && !next.videos ? `Photo ${next.photos} saved. Take the ${kind} video now?` : `Photo ${next.photos} saved. Take the next one.`, 300);
+          return next;
+        });
+      }
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}${photoWarning}` : "No image or video was saved.");
       // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
       if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
@@ -6635,7 +6769,7 @@ export default function FieldCommandClient() {
       const hello = first && first.length > 1 ? `Hi ${first[0].toUpperCase()}${first.slice(1).toLowerCase()}` : "Hello";
       // The arrival time, from where you are (a location from the last 10 minutes) to the job.
       let message = cmd.message;
-      if (isOnMyWay(message) && !/\d{1,2}(?::\d{2})?\s*(?:am|pm)|minutes?/i.test(message)) {
+      if (isOnMyWay(message) && !/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\bminutes?\b/i.test(message)) {
         const here = lastFixRef.current, there = jobLatLng(job);
         if (here?.at && Date.now() - here.at < 600000 && there) message = withArrival(message, etaMinutes(here, there));
       }
@@ -6993,6 +7127,7 @@ export default function FieldCommandClient() {
             ))}
           </div>
           <div className="fc-bar-days">
+            {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs hidden: check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small></button> : null}
             <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
               <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
             </button>
@@ -7477,7 +7612,7 @@ export default function FieldCommandClient() {
             // A question waiting for the owner comes before anything else (4 Nov: answered one, the next one stayed hidden).
             const t = live.find((x) => x.status === "Waiting for you") || live.find((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000) || live[0];
             const nowOn = claudeNowFresh(claudeNow) && claudeNow ? claudeNow : null;
-            if (selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen) return null;
+            if (selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen || !sideOpen) return null;
             const talkTo = t && t.status !== "Done" ? t : null;
             const tell = async (raw: string) => {
               const text = raw.trim();
@@ -8082,6 +8217,7 @@ export default function FieldCommandClient() {
                         </div>
                       </div>
                     ) : null}
+                    
                     {retake && retake.id === id ? (
                       <div className="jc-retake" role="alert" data-hpd-smoke="jc-retake">
                         <b>📷 That {retake.kind === "before" || retake.kind === "after" ? `${retake.kind} ` : ""}photo looks {retake.why}</b>
@@ -8188,6 +8324,16 @@ export default function FieldCommandClient() {
                     </div>
                   </div>
                 ) : null}
+                {shotGuide && shotGuide.id === id && !retake ? (
+                      <div className="jc-shot-guide" role="status" data-hpd-smoke="jc-shot-guide">
+                        <b>{shotGuide.kind === "before" ? "📷 Before" : "📷 After"}: {shotGuide.photos} photo{shotGuide.photos === 1 ? "" : "s"}{shotGuide.videos ? `, ${shotGuide.videos} video${shotGuide.videos === 1 ? "" : "s"}` : ""} saved ✓</b>
+                        <div>
+                          <button type="button" className={shotGuide.photos < 3 || shotGuide.videos ? "jc-glow" : ""} data-hpd-smoke="jc-shot-next-photo" disabled={Boolean(mediaBusy)} onClick={() => guideShot("camera")}>📷 Next photo</button>
+                          <button type="button" className={shotGuide.photos >= 3 && !shotGuide.videos ? "jc-glow" : ""} data-hpd-smoke="jc-shot-video" disabled={Boolean(mediaBusy)} onClick={() => guideShot("video-camera")}>🎥 {shotGuide.kind === "before" ? "Before" : "After"} video</button>
+                          <button type="button" data-hpd-smoke="jc-shot-done" onClick={() => { setShotGuide(null); speak(shotGuide.kind === "before" ? "Before done. Do the work, then the after photos." : "After done. Tap I'm done to review the paperwork.", 0); }}>✅ Done</button>
+                        </div>
+                      </div>
+                    ) : null}
                 <div className="jc-stages" role="group" aria-label="Job photos and videos">
                   {(["before", "after"] as const).map((kind) => {
                     const thumbs = mediaThumbs[id]?.[kind] || [];
@@ -8202,6 +8348,13 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
+                {counts.total > 0 ? (
+                  <div className="jc-media-see" data-hpd-smoke="jc-media-see-row">
+                    {(["before", "after"] as const).filter((k) => counts[k]).map((k) => (
+                      <button key={k} type="button" data-hpd-smoke={`jc-media-see-${k}`} onClick={() => setMediaView({ id, kind: k })}>👁 See the {counts[k]} {k} {counts[k] === 1 ? "item" : "items"}</button>
+                    ))}
+                  </div>
+                ) : null}
                 {backup && counts.total > 0 ? (
                   <p className={`jc-backup ${backup.auto && !backup.error ? "is-on" : "is-off"}`} data-hpd-smoke="jc-backup">
                     {!backup.auto ? (
@@ -8510,7 +8663,29 @@ export default function FieldCommandClient() {
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
       {/* Not over the bids list (it covered the list's pull-up bar on short screens); it shows again back on the map. */}
-      {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
+      {apptMail ? (
+        <div className="fc-appt-mail" role="status" data-hpd-smoke="fc-appt-mail">
+          <span data-hpd-smoke="fc-appt-mail-text">{apptMail.status || `✉ Telling ${apptMail.name.split(/\s+/)[0]} (${apptMail.to}) about the appointment for ${apptMail.omo} in ${apptMail.left} s`}</span>
+          {!apptMail.status ? <button type="button" data-hpd-smoke="fc-appt-mail-undo" onClick={() => setApptMail(null)}>Undo</button> : null}
+          {!apptMail.status || apptMail.status.startsWith("Not sent") ? <button type="button" data-hpd-smoke="fc-appt-mail-now" onClick={() => void sendApptMail(apptMail)}>Send now</button> : null}
+          {apptMail.status && apptMail.status !== "Sending…" ? <button type="button" aria-label="Close" onClick={() => setApptMail(null)}>✕</button> : null}
+        </div>
+      ) : null}
+      {/* ✉ The side tab (6 Nov): one small icon on the right edge with a count; open it for the updates, the plan and
+          Claude's work, close it with ◂. */}
+      {!selectedJob && !whatsNewOpen && !bidsOpen ? (() => {
+        const hint = sideHintRef.current;
+        sideHintRef.current = 0;
+        const n = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (claudeWorkingRef.current || claudeLiveRef.current ? 1 : 0) + hint;
+        const work = (changeThreads || []).find((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
+        const pct = work && work.steps.length ? Math.round((work.steps.filter((x) => x.done).length / work.steps.length) * 100) : null;
+        return (
+          <button type="button" className={`fc-side-tab${sideOpen ? " is-open" : ""}${work ? " is-working" : ""}`} data-hpd-smoke="fc-side-tab" aria-expanded={sideOpen} aria-label={sideOpen ? "Close updates and Claude" : work ? `Claude is working${pct !== null ? `: ${pct}%` : ""}` : `Updates and Claude${n ? `: ${n}` : ""}`} title={work ? `Claude is working on: ${work.text.replace(/^\([^)]*\)\s*/, "").slice(0, 80)}` : undefined} onClick={() => setSideOpen(!sideOpen)}>
+            {sideOpen ? "◂" : work ? <span className="fc-side-work" data-hpd-smoke="fc-side-work"><i aria-hidden="true" />{pct !== null ? <em>{pct}%</em> : null}</span> : "✉"}{!sideOpen && n && !work ? <b data-hpd-smoke="fc-side-count">{n}</b> : null}
+          </button>
+        );
+      })() : null}
+      {sideOpen && newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>
           {/* Short (3 Nov): the first 2 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
@@ -8529,7 +8704,7 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {planAsk && plan && !newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen && !agent && planLater !== `${plan.id}|${nyToday()}` && !(typeof navigator !== "undefined" && navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-plan") !== "1"; } catch { return true; } })()) ? (
+      {sideOpen && planAsk && plan && !newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen && !agent && planLater !== `${plan.id}|${nyToday()}` && !(typeof navigator !== "undefined" && navigator.webdriver && (() => { try { return localStorage.getItem("hpd-test-plan") !== "1"; } catch { return true; } })()) ? (
         <div className="fc-newupdate fc-plan-card" role="dialog" aria-label="Next on the plan" data-hpd-smoke="fc-plan-card">
           <strong>📋 Next on the plan</strong>
           <ol>{plan.items.map((x) => <li key={x.id}><b>{x.icon} {x.title}</b> <span>{x.why}</span></li>)}</ol>
@@ -8539,7 +8714,7 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {justUpdated && !newItems.length && !selectedJob && !whatsNewOpen ? (
+      {sideOpen && justUpdated && !newItems.length && !selectedJob && !whatsNewOpen ? (
         <div className="fc-updated-banner" role="status" data-hpd-smoke="fc-updated-banner">
           <span>✨ App updated{whatsNew?.[0]?.items?.[0] ? `: ${whatsNew[0].items[0]}` : ""}</span>
           <button type="button" onClick={() => { setWhatsNewOpen(true); setJustUpdated(false); }}>What&apos;s new</button>
@@ -8796,6 +8971,34 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {staleOpen ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-stale-sheet" role="dialog" aria-label="Old jobs" data-hpd-smoke="fc-stale-sheet">
+          <header>
+            <strong>🧹 Old jobs, nothing on file ({staleJobs.length})</strong>
+            <button type="button" data-hpd-smoke="fc-stale-close" onClick={() => setStaleOpen(false)}>Close</button>
+          </header>
+          <div className="fc-summary-body">
+            <p className="fc-follow-note">Still &quot;pending&quot; in the app 3+ weeks after the completion date, with no visit, appointment or paperwork on record. They&apos;re off the map. Tap ✅ Closed if it&apos;s closed out (it&apos;s archived), or 📌 Keep to put it back on the map.</p>
+            {!staleJobs.length ? <p className="fc-follow-note">All clear. 🎉</p> : null}
+            <ol className="fc-notice-table-list">
+              {[...staleJobs].sort((a, b) => String(jobId(a)).localeCompare(String(jobId(b)))).map((job) => {
+                const hpd = String(((followRef.current?.hpd || {}) as Record<string, { closedReason?: string }>)[jobId(job)]?.closedReason || "");
+                return (
+                  <li key={jobId(job)} data-hpd-smoke="fc-stale-row" data-omo={jobId(job)}>
+                    <div className="fc-prio-head"><b>{jobId(job)}</b><span>{jobAddress(job)}{jobBorough(job) ? ` · ${jobBorough(job)}` : ""}</span></div>
+                    <p className="fc-prio-want">Due {String(job.WorkCompletionDate || "?")} · awarded {String(job.AwardDate || "?")}{Number(job.AwardAmount) ? ` · $${Number(job.AwardAmount).toLocaleString("en-US", { maximumFractionDigits: 0 })}` : ""} · {hpd ? `HPD: ${hpd}` : "HPD: still open"}</p>
+                    <div className="fc-notice-actions">
+                      <button type="button" data-hpd-smoke="fc-stale-closed" onClick={() => staleMark(job, true)}>✅ Closed</button>
+                      <button type="button" data-hpd-smoke="fc-stale-keep" onClick={() => staleMark(job, false)}>📌 Keep</button>
+                      <button type="button" onClick={() => { setStaleOpen(false); setSelectedJob(job); }}>Open job</button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </div>
+      ) : null}
       {noticesOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-notices-sheet" role="dialog" aria-label="HPD notices" data-hpd-smoke="fc-notices-sheet">
           <header>
@@ -8816,7 +9019,7 @@ export default function FieldCommandClient() {
                 ]],
                 ["vendor", "🔥 Vendor tracking = Priority", "Lewis / Gafur asking for the affidavit, invoice or an update.", [
                   ["priority", "🔥 Priority", vendorTodo.length],
-                  ["requests", "📧 Their emails", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
+                  ["requests", "📋 Every notice", noticeCheckList.items.filter((x) => x.tone !== "sent" && x.tone !== "done").length],
                   ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
                 ]],
               ] as const).map(([dept, title, note, tabsRaw]) => {
@@ -9037,7 +9240,42 @@ export default function FieldCommandClient() {
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
+            {/* Every notice, one line per job (owner, 6 Nov: "I want to see the work order number, the address ... I don't
+                want to see the conversations"). Sent / done ones are folded away; the emails are behind a tap. */}
+            <section className="fc-follow-section fc-notice-table" data-hpd-smoke="fc-notice-table">
+              <h4>📋 Every notice from vendor tracking</h4>
+              <p className="fc-follow-note" data-hpd-smoke="fc-notice-table-sum">{noticeCheckList.summary}</p>
+              {(["todo", "sent"] as const).map((part) => {
+                const list = noticeCheckList.items.filter((x) => (part === "todo") === (x.tone !== "sent" && x.tone !== "done"));
+                if (!list.length) return part === "todo" ? <p key={part} className="fc-follow-note">Nothing left to do on the notices. 🎉</p> : null;
+                const body = (
+                  <ol className="fc-notice-table-list">
+                    {list.map((it) => {
+                      const job = findAnyJob(it.omo);
+                      const work = job ? String(job.JobDescription || job.Job_Description || "").replace(/^[:\s]+/, "").replace(/\s+/g, " ").trim() : "";
+                      const hpd = String(((followRef.current?.hpd || {}) as Record<string, { closedReason?: string }>)[it.omo]?.closedReason || "");
+                      return (
+                        <li key={it.rowKey} className={`is-${it.tone}`} data-hpd-smoke="fc-notice-table-row" data-omo={it.omo} data-tone={it.tone}>
+                          <div className="fc-prio-head"><b>{it.omo}</b><span data-hpd-smoke="fc-notice-table-address">{job ? `${jobAddress(job)}${jobBorough(job) ? ` · ${jobBorough(job)}` : ""}` : "Address not on file"}</span></div>
+                          <p className="fc-prio-title">{it.head}</p>
+                          <p className="fc-prio-want">{it.lines[0]}{hpd ? ` · HPD closed it: ${hpd}` : ""}</p>
+                          {work ? <p className="fc-notice-table-work">🔧 {work.length > 140 ? `${work.slice(0, 140)}…` : work}</p> : null}
+                          <div className="fc-notice-actions">
+                            {job ? <button type="button" data-hpd-smoke="fc-notice-table-open" onClick={() => { setNoticesOpen(false); setSelectedJob(job); }}>Open job</button> : null}
+                            {job && jobLatLng(job) ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${jobAddress(job)}, NY`)}`} target="_blank" rel="noreferrer" data-hpd-smoke="fc-notice-table-go">🚗 Go there</a> : null}
+                            {it.tone !== "sent" && it.tone !== "done" && job ? <a href={`/paperwork/?job=${encodeURIComponent(it.omo)}`}>📄 Paperwork</a> : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                );
+                return part === "todo" ? <div key={part}>{body}</div> : <details key={part} className="fc-notice-table-sent" data-hpd-smoke="fc-notice-table-sent"><summary>✅ Already sent or done ({list.length}): don&apos;t send again</summary>{body}</details>;
+              })}
+            </section>
+            <details className="fc-board-emails" data-hpd-smoke="fc-notices-emails"><summary>💬 Their emails (for checking)</summary>
             {threadSection("requests", "📋 Vendor tracking: emails asking for the affidavit, invoice, photos and poor performance notices", REQUEST_KINDS, "J. Lewis (ERP) and D. Gafur (AEP) track vendors: they ask for the affidavit and invoice. Not the same as payment rejections or corrections.")}
+            </details>
             </>) : null}
           </div>
         </div>
@@ -9185,6 +9423,8 @@ export default function FieldCommandClient() {
             const rush = wd >= 1 && wd <= 5 && ((nyHour >= 7 && nyHour < 10) || (nyHour >= 16 && nyHour < 19));
             return Math.max(3, Math.round(distanceMiles(here, there) * 1.35 / (rush ? 12 : 18) * 60));
           })() : 0;
+          sideHintRef.current = 1;
+          if (!sideOpen) return null;
           return (
             <button type="button" className={`fc-focus-chip is-next is-${next.kind}`} data-hpd-smoke="fc-next-chip" data-kind={next.kind} onClick={next.go}>
               <span aria-hidden="true">{next.icon}</span> <b>Next:</b> {next.text}{driveMin ? <small className="fc-next-drive" data-hpd-smoke="fc-next-drive"> · 🚗 {driveMin} min</small> : null} <em>→</em>
@@ -9195,6 +9435,8 @@ export default function FieldCommandClient() {
         if (ping && ping.omo === top.omo) { nextStepRef.current = null; return null; }
         const h = Math.round(hoursLeft(top, Date.now()));
         nextStepRef.current = { text: `notice ${top.omo} ${h < 0 ? `overdue ${-h} hours` : `${h} hours left`}${boardUrgent.length > 1 ? `, and ${boardUrgent.length - 1} more` : ""}`, go: () => goTo("board", top.omo) };
+        sideHintRef.current = 1;
+        if (!sideOpen) return null;
         return (
           <button type="button" className={`fc-focus-chip${h < 0 ? " is-late" : ""}`} data-hpd-smoke="fc-focus-chip" onClick={() => goTo("board", top.omo)}>
             <span aria-hidden="true">⏰</span> <b>{top.omo}</b> {h < 0 ? `overdue ${-h} h` : `${h} h left`}{boardUrgent.length > 1 ? <small> +{boardUrgent.length - 1} more</small> : null} <em>→</em>
@@ -9597,12 +9839,49 @@ export default function FieldCommandClient() {
           </div>
         );
       })() : null}
+      {mediaView ? <MediaViewer jobId={mediaView.id} kind={mediaView.kind} onClose={() => setMediaView(null)} /> : null}
+      {workView ? (() => {
+        const job = jobs.find((j) => jobId(j) === workView.id) || selectedJob;
+        if (!job) return null;
+        const file = String(job.ITBFile || job.itbFile || "");
+        const words = workWords(job);
+        const stamps = workflowStamps[workView.id] || {};
+        return (
+          <div className="fc-work-order" role="dialog" aria-label="Work order" data-hpd-smoke="fc-work-order">
+            <header>
+              <strong>📄 {workView.id} · {jobAddress(job)}</strong>
+              <button type="button" data-hpd-smoke="fc-work-order-close" onClick={() => { stopSpeaking(); setWorkView(null); }}>Close</button>
+            </header>
+            <div className="fc-work-order-body">
+              {file ? <ItbPages key={workView.tick} pdfUrl={itbPdfUrl(file)} pageCount={3} showDescription={1} readAlong descChars={words.length} /> : null}
+              {words ? <p className="fc-work-order-words" data-hpd-smoke="fc-work-order-words">🔧 {words}</p> : null}
+            </div>
+            <footer>
+              <button type="button" data-hpd-smoke="fc-work-order-read" onClick={() => speak(`Work order ${workView.id.split("").join(" ")}. ${words.slice(0, 600)}`)}>🔊 Read again</button>
+              {!stamps.work ? <button type="button" className="is-go" data-hpd-smoke="fc-work-order-start" onClick={() => { stopSpeaking(); saveWorkflowStamp(job, "visit"); saveWorkflowStamp(job, "work"); setWorkView(null); setSelectedJob(job); setOutcomeMessage(`🔨 ${workView.id}: work started. Take the before photos.`); requestMediaUpload("before", true); }}>🔨 Start the work</button> : null}
+              <button type="button" data-hpd-smoke="fc-work-order-noaccess" onClick={() => { stopSpeaking(); setWorkView(null); setSelectedJob(job); offerOutside(job); }}>🚪 No answer at the door</button>
+            </footer>
+          </div>
+        );
+      })() : null}
+      {(() => {
+        if (selectedJob || workView) return null;
+        const here = jobs.map((j) => ({ j, h: onSite(j as Record<string, unknown>) })).filter((x) => x.h).sort((a, b) => b.h!.since - a.h!.since)[0];
+        if (!here) return null;
+        return (
+          <button type="button" className="fc-onsite" data-hpd-smoke="fc-onsite" onClick={() => { setSelectedJob(here.j); }}>
+            <b>🔨 Working at {jobId(here.j)}</b>
+            <span>{jobAddress(here.j).replace(/,\s*\d{5}$/, "")} · since {clockAt(here.h!.since)} · {duration(here.h!.minutes)}</span>
+            {(() => { const at = jobLatLng(here.j); const ns = at ? nextStopFrom(at, jobId(here.j)) : null; return ns ? <small data-hpd-smoke="fc-onsite-next">Next: {ns.id} · {ns.address.replace(/,\s*\d{5}$/, "")} · {ns.miles} mi · ~{ns.minutes} min{ns.work ? ` · ${ns.work}` : ""}</small> : null; })()}
+          </button>
+        );
+      })()}
       {arrivePrompt && !selectedJob ? (
         <div className="fc-arrive" role="dialog" aria-label="Have you arrived?" data-hpd-smoke="fc-arrive">
           <b>📍 You&apos;re at {arrivePrompt.address}</b>
           <span>{arrivePrompt.id} · {arrivePrompt.feet} ft away. Have you arrived?</span>
           <div>
-            <button type="button" className="is-yes" data-hpd-smoke="fc-arrive-yes" onClick={() => { const job = jobs.find((j) => jobId(j) === arrivePrompt.id); setArrivePrompt(null); if (job) { openIssueJob(job); markArrived(job); offerOutside(job); } }}>✅ Yes, start the job</button>
+            <button type="button" className="is-yes" data-hpd-smoke="fc-arrive-yes" onClick={() => { const job = jobs.find((j) => jobId(j) === arrivePrompt.id); setArrivePrompt(null); if (job) { openIssueJob(job); markArrived(job); openWorkOrder(job, true); } }}>✅ Yes, start the job</button>
             <button type="button" data-hpd-smoke="fc-arrive-no" onClick={() => setArrivePrompt(null)}>Not yet</button>
           </div>
         </div>
@@ -9675,6 +9954,13 @@ export default function FieldCommandClient() {
           findingsOf={findingsFor}
           onHandled={(omo, on) => markHandled(omo, on)}
           addressOf={(omo) => { const j = findAnyJob(omo); return j ? jobAddress(j) : ""; }}
+          factsOf={(omo) => {
+            const j = findAnyJob(omo);
+            const hpd = String(((followRef.current?.hpd || {}) as Record<string, { closedReason?: string }>)[omo]?.closedReason || "");
+            if (!j) return hpd ? { address: "", borough: "", amount: "", awarded: "", work: "", hpd } : null;
+            const work = String(j.JobDescription || j.Job_Description || "").replace(/^[:\s]+/, "").replace(/\s+/g, " ").trim();
+            return { address: jobAddress(j), borough: jobBorough(j), amount: String(j.AwardAmount || ""), awarded: String(j.AwardDate || ""), work, hpd };
+          }}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}
           onOpenThread={(id, title) => setThreadView({ ids: [id], title })}
@@ -9797,7 +10083,7 @@ export default function FieldCommandClient() {
           </footer>
         </div>
       ) : null}
-      {updateReady && !mediaBusy ? (
+      {sideOpen && updateReady && !mediaBusy ? (
         <button type="button" className="fc-update-ready" data-hpd-smoke="fc-update-ready" onClick={() => window.location.replace(`${window.location.pathname}?v=${encodeURIComponent(latestCommitRef.current)}`)}>
           🔄 New version ready · <b>Update</b>
         </button>

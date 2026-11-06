@@ -42,6 +42,7 @@ try {
     await corr.waitFor();
     assert.equal(await corr.locator('[data-hpd-smoke="fc-thread-row"]').count(), Math.min(8, data.threads.filter((t) => CORRECTION.includes(t.kind)).length));
     await page.locator('[data-hpd-smoke="fc-notice-tab-requests"]').click();
+    await page.locator('[data-hpd-smoke="fc-notices-emails"] > summary').click();
     const req = page.locator('[data-hpd-smoke="fc-threads-requests"]');
     await req.waitFor();
     assert.equal(await req.locator('[data-hpd-smoke="fc-thread-row"]').count(), Math.min(8, data.threads.filter((t) => REQUEST.includes(t.kind)).length));

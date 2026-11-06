@@ -10,6 +10,86 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 6 Nov 2026 (afternoon, on the road at ER07610): notices first, the map stays open, the record is safe
+
+The owner's words (chat, 6 Nov), so they never have to be repeated:
+- "Fix the notices, archive the ones that are already done, check all. I want to go on route today so we can do the
+  notices: go see the job, try to do it."
+- "I want a better dashboard for vendor tracking. I don't see the details of the notices, only conversations. I don't
+  want to see the conversations, that's for you to analyze. I want the work order number, the address, everything."
+- "Lewis is vendor tracking for ERP (Emergency Repair). Gafur is AEP (Alternative Enforcement Program, they have the
+  authority for the building). Same source, two different units."
+- "I need all the notices on the map" and then: "if they're sent, take them off the map and archive them. The notices
+  need their own map. Whatever is fixed, archive it, go to a different map."
+- "Many jobs are already closed out, I still see them on the map (ER02772). Better icons on the map, more clear."
+- "I don't want to keep seeing new updates and Claude working on the screen (the 20% card). A small letter icon on the
+  side I can expand and contract. Keep the room on the map open, full screen. Everything expands and contracts,
+  notices too: small, on the side, pop up and pop down."
+- "I scheduled an appointment for Tuesday: it should automatically be sent to Lewis to keep her in the loop."
+- "You know I arrived: look at my location, there's a job here, mark that I arrived, then confirm with me. Then open
+  the invitation to bid, scroll nice and slowly to the work description and read it out loud. A very clear job card:
+  started the work, then the outcome."
+- "ER07610: I'm on a Pixel, it's not saving the videos, it says 0 of 3. The before and after videos are our record,
+  the most important part. Save them in the same folder as the job's data. I clicked Before, 10 saved, I don't see
+  any of them."
+- "The before/after process needs to be smoother: ask me to take a photo, approve it, upload it, ask for the next one;
+  when I'm done take me to the before video."
+- "We're working at this job: show on the map that work is in progress here, keep track of the time, record it on the
+  job card for good. My computer can't see my location: show it from the phone."
+- "When we're working, prepare the next step: guide me to the next location and what the next job is about."
+- "Text is too small to read: zoom everything up. Summarize what I said."
+- "Keep adding everything we talk about to this file."
+
+The plan, one by one (✅ = live, ☐ = next):
+1. ✅ **Every notice, with the job** (📋 Every notice tab): job number, address, borough, the work, HPD's status, what's
+   left; to do first; already sent folded away; the emails behind a tap ("💬 Their emails (for checking)"). The board
+   cards show the borough, award, work and HPD's status; their emails are folded too.
+2. ✅ **Old notice jobs found** (scripts/add-notice-jobs.mjs): 65 jobs on Gafur's / Lewis's lists that weren't in the
+   app (2022-2025) got their address and map point from NYC Open Data or from the list itself (EP04029 1237 Dean St,
+   EP07952 835 Nostrand Ave …), and HPD's closing reason (EP28352: OMO Completed = done).
+3. ✅ **Two units**: 🚨 Lewis · ERP (24 / 72-hour notices) and 🏛 Gafur · AEP (missing documents), each its own map
+   with only what's still to send; 📦 Sent / archived is its own map. The board labels say ERP / AEP.
+4. ✅ **"HPD closed the job. Nothing to send"** instead of "Already sent closed".
+5. ✅ **🧹 Old jobs off the map**: pending 3+ weeks past the completion date with nothing on file (ER02772) leave the
+   everyday map; the 🧹 button lists them: ✅ Closed (archived) or 📌 Keep. Jobs on a notice always stay.
+6. ✅ **Clearer pins**: bigger head and symbol with a dark outline, bigger dots, finished jobs smaller and faded.
+7. ✅ **✉ Side tab**: "App updated", "Next on the plan", "New version ready" and Claude's working card (the 20%) wait
+   behind one small icon on the right edge with a count; tap to open, ◂ to close.
+8. ✅ **Notices smaller**: the notice kinds are one row of small chips you slide, not big tiles.
+9. ✅ **Appointment -> Lewis / Gafur**: saving an appointment emails Lewis (ERP jobs) or Gafur (AEP jobs) 15 seconds
+   later ("to keep you in the loop: we scheduled the appointment with the tenant for Tuesday, 11/10 between 10 and
+   12"), with Undo and Send now; once per job and time; no tenant name or phone.
+10. ✅ **At the job**: standing at any to-do job (60 m, good GPS) asks "Have you arrived?" even off the route; Yes saves
+   the arrival, opens HPD's work order on the work description (slow read-along scroll), reads the work out loud;
+   🔨 Start the work / 🚪 No answer at the door.
+11. ✅ **Videos to Drive on mobile data**: the video backup skipped itself whenever Android said "cellular" (the
+   Pixel), so in the field nothing went up ("0 of 3"). Now it goes on mobile data too. While working they're in
+   Drive "HPD Video Backup / <job>"; the package moves them into the job's package folder.
+12. ✅ **👁 See what's saved**: "See the 10 before items" opens every photo and video on the phone (videos play), each
+   saying ☁️ in Drive or 📱 still going up.
+13. ✅ **🔨 Working here**: the job you arrived at today with no outcome since shows on the map (the pin "🔨 Working ·
+   1 h 20 min" and a banner) on the phone and the computer, from the job record (never the live position); when the
+   outcome is saved, "On site 2:10 PM – 3:45 PM (1 h 35 min)" stays on the job.
+14. ✅ **📬 HPD overnight in the brief** (plan 30): "Overnight, Gafur sent documents on EP04029 …; Lewis sent a 24-hour
+   notice on ER01720."
+15. ☐ **Photos guided one by one**: take a photo -> looks good? -> saved and backed up -> "take the next one"; Done ->
+   the before video; same for after.
+16. ☐ **🧭 Next stop while working** (plan 31): while on a job, the next job ready: where, how far, what the work is.
+17. ☐ **🔁 Monday paperwork sweep** (plan 32).
+18. ☐ **Bigger text**: an "A A" size setting for the whole app (cards, chat, notices).
+19. ☐ **Everything folds**: every card on the map (agent chat, notices, today) opens and closes from the side.
+20. ✅ **🧭 Next stop** (plan 31): after a job's outcome, and on the 🔨 Working banner: the nearest open job (appointments
+   today first), miles, minutes, the work in a few words; said out loud after the outcome.
+21. ✅ **Claude working = a blinking green dot with the %** on the side tab; the 💡 next-step / ⏰ notice chips wait behind it.
+22. ✅ **Mic message for the device you're on** (computer / Android / iPhone), not always "iPhone".
+23. ✅ **On-my-way time check fixed** (a stray character made "at 2 PM" in your text not count).
+24. ☐ **A message board, not repeats** (owner, 6 Nov: "I don't want my AI helper feeding me the same thing over and over ...
+   it's just a message board, whatever we discussed, wherever we are, and we keep moving forward through the day; keep track
+   of everything"): every reminder said once, kept on one board of the day (said / done / next), never re-read.
+25. ✅ **Claude on the iPhone**: Remote Control is on for the build session; the owner follows and talks from the Claude app
+   (Code tab). Pushes from this PC go through GitHub's API when git push is cut off by the slow connection.
+26. ☐ **Photos guided one by one** (repeat of 15, owner asked again): photo -> looks good -> saved -> next; then the video.
+
 ## 5 Nov 2026 (evening): the helper says it once, and gets more real (owner: "add conversation to md file and upgrade one by one")
 
 The owner's words (chat, 5 Nov evening):

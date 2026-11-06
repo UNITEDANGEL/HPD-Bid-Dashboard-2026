@@ -22,7 +22,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
-  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 15, null, { timeout: 120000 });
   // Every notice job on the map at once (the busiest view).
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
   const all = page.locator('[data-hpd-smoke="fc-notice-pick-all"]');
@@ -36,7 +36,7 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/calm-notices.png` });
   // Back to the plain map: the focus chip (when a notice is overdue / under 6 h) opens it on the board.
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
-  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 50, null, { timeout: 120000 });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 15, null, { timeout: 120000 });
   const chip = page.locator('[data-hpd-smoke="fc-focus-chip"]');
   let chipText = "none (nothing overdue / under 6 h)";
   if (await chip.count()) {

@@ -4499,3 +4499,97 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-face.is-real.is-idle .fc-face-head { animation-duration: 7s; }
 .fc-package-photo-gap { margin: 0; padding: 10px 12px; background: #fef3c7; color: #78350f; font: 700 15px/1.35 system-ui, sans-serif; border-bottom: 2px solid #f59e0b; }
 .fc-package-photo-gap button { margin-left: 6px; min-height: 36px; padding: 4px 12px; border-radius: 18px; border: 0; background: #b45309; color: #fff; font: 800 14px system-ui; }
+
+/* The job on each notice (6 Nov): borough, award, work, HPD's status; the emails folded away. */
+.fc-board-facts { display: grid; gap: 3px; margin: 4px 0 6px; font: 13.5px/1.35 system-ui; color: #cbd5e1; }
+.fc-board-facts > div { display: grid; grid-template-columns: 22px 1fr; gap: 4px; }
+.fc-board-facts dt { margin: 0; }
+.fc-board-facts dd { margin: 0; }
+.fc-board-emails { margin: 4px 0; }
+.fc-board-emails > summary { cursor: pointer; font: 600 13px system-ui; color: #94a3b8; padding: 6px 0; }
+.fc-notice-table-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-notice-table-list > li { border: 1px solid #334155; border-radius: 12px; padding: 10px 12px; background: #0f172a; }
+.fc-notice-table-list > li.is-fix, .fc-notice-table-list > li.is-tosend { border-left: 4px solid #ef4444; }
+.fc-notice-table-list > li.is-check { border-left: 4px solid #f59e0b; }
+.fc-notice-table-list > li.is-sent, .fc-notice-table-list > li.is-done { border-left: 4px solid #22c55e; opacity: .85; }
+.fc-notice-table-work { margin: 4px 0; font: 13px/1.35 system-ui; color: #cbd5e1; }
+.fc-notice-table-sent { margin-top: 10px; }
+.fc-notice-table-sent > summary { cursor: pointer; font: 600 14px system-ui; color: #86efac; padding: 8px 0; }
+.fc-stale-btn { display: inline-flex; align-items: center; gap: 3px; min-height: 40px; padding: 0 10px; border-radius: 999px; border: 1px solid #f59e0b; background: #1f2937; color: #fde68a; font: 700 13px system-ui; }
+
+/* Clearer pins (owner, 6 Nov: "better icon on map, more clear"): a bigger head and symbol with a dark outline so it
+   reads on light and dark maps; bigger dots with a dark ring; finished jobs smaller and faded so open work stands out. */
+.fc-pin-head { left: 1px; top: 1px; width: 34px; height: 34px; border-width: 3px; box-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.85), 0 4px 10px rgba(0, 0, 0, 0.55); }
+.fc-pin-head svg { width: 20px; height: 20px; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
+.fc-pin-chip { font-size: 12px; line-height: 16px; }
+.fc-job-dot { width: 18px; height: 18px; border-width: 3px; box-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.85), 0 1px 4px rgba(0, 0, 0, 0.45); }
+.fc-pin.is-done, .fc-pin.is-complete, .fc-pin.is-hpd-closed, .fc-pin.is-others { transform: scale(0.8); opacity: 0.7; }
+.fc-notice-pick.is-erp { border-color: #f97316; }
+.is-glow-erp .fc-pin { --glow: #f97316; }
+.is-glow-erp .fc-glow-tag { border-color: #f97316; }
+/* ✉ The side tab (6 Nov): small, on the right edge, under the top buttons. */
+.fc-side-tab { position: absolute; z-index: 1460; right: 0; top: calc(max(12px, env(safe-area-inset-top)) + 236px); width: 34px; height: 44px; border: 1px solid #a78bfa; border-right: 0; border-radius: 12px 0 0 12px; background: #2e1065ee; color: #fff; font: 700 18px/1 system-ui; display: grid; place-items: center; box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.4); }
+.fc-side-tab b { position: absolute; top: -6px; left: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #ef4444; color: #fff; font: 800 11px/18px system-ui; }
+.fc-side-tab.is-working { animation: fc-side-pulse 2s ease-in-out infinite; }
+@keyframes fc-side-pulse { 50% { box-shadow: -2px 2px 14px #a78bfa; } }
+@media (prefers-reduced-motion: reduce) { .fc-side-tab.is-working { animation: none; } }
+.fc-appt-mail { position: fixed; z-index: 3100; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 76px); transform: translateX(-50%); width: min(460px, calc(100% - 24px)); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: #0c4a6e; border: 1px solid #38bdf8; color: #fff; font: 600 14px/1.35 system-ui; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); }
+.fc-appt-mail span { flex: 1 1 200px; }
+.fc-appt-mail button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #7dd3fc; background: #075985; color: #fff; font: 700 13px system-ui; }
+.fc-notice-pick.is-archive { border-color: #64748b; opacity: 0.85; }
+.is-glow-archive .fc-pin { --glow: #64748b; opacity: 0.75; }
+/* 📄 The work order at the job (6 Nov). */
+.fc-work-order { position: fixed; z-index: 3050; inset: auto 0 0 0; height: min(78dvh, 720px); display: flex; flex-direction: column; background: #0b1220; color: #f8fafc; border-top: 2px solid #38bdf8; border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5); }
+.fc-work-order header, .fc-work-order footer { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+.fc-work-order header strong { flex: 1; font: 700 15px/1.3 system-ui; }
+.fc-work-order header button, .fc-work-order footer button { min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid #475569; background: #1e293b; color: #fff; font: 700 14px system-ui; }
+.fc-work-order footer { flex-wrap: wrap; border-top: 1px solid #1e293b; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.fc-work-order footer .is-go { flex: 1 1 160px; background: #16a34a; border-color: #22c55e; font-size: 16px; }
+.fc-work-order-body { flex: 1; overflow-y: auto; padding: 0 12px; }
+.fc-work-order-words { font: 15px/1.45 system-ui; color: #e2e8f0; background: #111c30; border-radius: 12px; padding: 10px 12px; }
+/* Notices smaller (owner, 6 Nov: "the notices need to get smaller ... I want to keep my map open"): the kinds in one
+   row you slide sideways, small chips instead of big tiles. */
+.fc-notice-picks { display: flex; overflow-x: auto; gap: 6px; padding: 6px 2px 2px; scrollbar-width: none; }
+.fc-notice-picks::-webkit-scrollbar { display: none; }
+.fc-notice-pick { flex: 0 0 auto; grid-auto-flow: column; align-items: center; min-height: 44px !important; padding: 4px 12px; border-radius: 22px; }
+.fc-notice-pick b { font-size: 13px !important; white-space: nowrap; }
+.fc-notice-pick-icon { font-size: 16px; }
+.fc-notice-pick em { position: static; min-width: 20px; font-size: 12px !important; line-height: 20px !important; margin-left: 4px; }
+.fc-notice-pick-timer { position: static !important; margin-left: 4px; font-size: 11px; white-space: nowrap; }
+/* 🔨 Working here now (6 Nov). */
+.fc-onsite { position: absolute; z-index: 1470; left: 50%; transform: translateX(-50%); top: calc(max(12px, env(safe-area-inset-top)) + 128px); display: grid; gap: 2px; max-width: calc(100% - 120px); padding: 7px 14px; border-radius: 16px; border: 2px solid #f59e0b; background: #1c1917f0; color: #fff; text-align: left; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+.fc-onsite b { font: 800 14px system-ui; color: #fcd34d; }
+.fc-onsite span { font: 600 12.5px/1.3 system-ui; color: #e7e5e4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.is-glow-onsite .fc-pin { --glow: #f59e0b; }
+.is-glow-onsite .fc-glow-tag { border-color: #f59e0b; background: #f59e0b; color: #1c1917; }
+/* 👁 Saved photos and videos (6 Nov). */
+.jc-media-see { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.jc-media-see button { flex: 1 1 140px; min-height: 44px; border-radius: 12px; border: 1px solid #38bdf8; background: #0c4a6e; color: #fff; font: 700 14px system-ui; }
+.fc-media-viewer { position: fixed; z-index: 3300; inset: 0; display: flex; flex-direction: column; background: #020617; color: #f8fafc; }
+.fc-media-viewer header { display: flex; align-items: center; gap: 8px; padding: max(10px, env(safe-area-inset-top)) 12px 10px; }
+.fc-media-viewer header strong { flex: 1; font: 800 16px system-ui; }
+.fc-media-viewer header button, .fc-media-viewer-tabs button, .fc-media-load { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid #475569; background: #1e293b; color: #fff; font: 700 14px system-ui; }
+.fc-media-viewer-tabs { display: flex; gap: 8px; padding: 0 12px 8px; }
+.fc-media-viewer-tabs button.is-on { background: #0369a1; border-color: #38bdf8; }
+.fc-media-viewer-body { flex: 1; overflow-y: auto; padding: 0 12px max(16px, env(safe-area-inset-bottom)); }
+.fc-media-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.fc-media-grid li { display: grid; gap: 4px; }
+.fc-media-grid img, .fc-media-grid video { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; background: #0f172a; }
+.fc-media-grid small { font: 12px/1.35 system-ui; color: #cbd5e1; }
+/* 🧹 sits on the right edge under the ✉ side tab, out of the borough bar (one row). */
+.fc-stale-btn { position: fixed; z-index: 1460; right: 0; top: calc(max(12px, env(safe-area-inset-top)) + 288px); min-height: 40px; width: 40px; padding: 0; justify-content: center; flex-direction: column; gap: 0; border-radius: 12px 0 0 12px; border-right: 0; font-size: 15px; }
+.fc-stale-btn small { font-size: 11px; line-height: 1; }
+/* Claude working: a blinking green dot with the % on the side tab (6 Nov). */
+.fc-side-tab.is-working { border-color: #22c55e; background: #052e16ee; width: 46px; }
+.fc-side-work { display: grid; justify-items: center; gap: 2px; }
+.fc-side-work i { width: 12px; height: 12px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: fc-side-blink 1.1s ease-in-out infinite; }
+.fc-side-work em { font: 800 11px/1 system-ui; font-style: normal; color: #bbf7d0; }
+@keyframes fc-side-blink { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .fc-side-work i { animation: none; } }
+.fc-media-grid small a { color: #7dd3fc; font-weight: 700; }
+.fc-onsite small { font: 600 12px/1.3 system-ui; color: #93c5fd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 📷 Guided photos (6 Nov). */
+.jc-shot-guide { display: grid; gap: 8px; margin: 8px 0; padding: 10px 12px; border-radius: 14px; border: 2px solid #22c55e; background: #052e16; color: #ecfdf5; }
+.jc-shot-guide b { font: 800 15px/1.3 system-ui; }
+.jc-shot-guide div { display: flex; flex-wrap: wrap; gap: 8px; }
+.jc-shot-guide button { flex: 1 1 110px; min-height: 48px; border-radius: 12px; border: 1px solid #4ade80; background: #14532d; color: #fff; font: 800 14px system-ui; }
