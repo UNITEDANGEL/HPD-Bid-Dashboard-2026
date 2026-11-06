@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-06T14:52:32.394Z
+Fetcher run started: 2026-11-06T15:01:44.205Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,14 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 15.77it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 15.60it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 15.24it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 13.76it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 14.47it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 192595.59it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:03,  2.23it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:02,  2.68it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:01,  3.04it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  3.00it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:01<00:01,  3.16it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:01<00:00,  3.25it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  3.37it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:02<00:00,  3.49it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.34it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.18it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 11.87it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 11.74it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 11.97it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 11.39it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 11.62it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 253347.22it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.82it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:03,  1.90it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.18it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.38it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.28it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.44it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.50it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.62it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.67it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.43it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER08707: stored 415.00, COA 415.00
 Award amount check ER09417: stored 1190.00, COA 1190.00
 Award amount check ER09579: stored 472.00, COA 472.00
 Award amount check ER09516: stored 372.00, COA 372.00
@@ -41,14 +42,14 @@ Award amount check ER08795: stored 465.00, COA 465.00
 Award amount check ER08570: stored 415.00, COA 415.00
 Award amount check ER07663: stored 406.00, COA 406.00
 Safe merge complete
-Master before: 705
+Master before: 706
 Incoming rows: 9
-Added new OMOs: 1
-Skipped existing OMOs: 8
+Added new OMOs: 0
+Skipped existing OMOs: 9
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 706
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -56,9 +57,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER08707 506 WEST 150 STREET, 10031 40.828499 -73.945966 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -83,23 +83,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER08707 ER08707_110426014613.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER08707', 'Address': '506 WEST 150 STREET, 10031', 'RecoveredFrom': 'ER08707_110426014613.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT APT 1B ENTRANCE DOOR 1ST STORY. INSTALL SELF CLOSING HINGES, REFIT DOOR AND MAKE AL L NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR ENSURE DOORS IS PROPER'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 705,
+  "rendered": 0,
+  "reused": 706,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -272,13 +270,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-06T14:58:03.124Z
+Fetcher run finished: 2026-11-06T15:07:40.294Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,
   "fetchedFinalJobRows": 9,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 8,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 9,
   "rawRows": 706,
   "rows2026": 655,
   "mapped2026": 655,
