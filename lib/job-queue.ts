@@ -49,8 +49,10 @@ export function visitState(job: Job) {
   const finished = [job.archived,job.Archived,job.ArchivedFromMap,job.archivedFromMap].some(v=>v===true||v===1||/^(true|1)$/i.test(String(v))) || (!/partial|not completed|incomplete|no access/.test(status) && /completed|complete|closed|archived|cancelled|canceled/.test(status));
   const blocked = finished || (!approved && (refused || attempts >= 2));
   const waiting = !approved && (attempts > 0 || /appointment|scheduled/.test(status));
-  const kind = finished ? "finished" : blocked ? "blocked" : waiting ? "return" : "needs";
-  return { kind, blocked, approved, attempts, count: Math.max(visits.size,attempts,refused || lastAt ? 1 : 0), lastAt: lastAt ? (/^\d{4}-\d{2}-\d{2}$/.test(String(lastRaw)) ? String(lastRaw) : new Date(lastAt).toISOString()) : "", lastOutcome: String(latest?.outcome || savedJobStatus(job)), note: String(latest?.note || ""), color: kind === "finished" ? "#737b85" : blocked ? "#d93838" : waiting ? "#bd780b" : "#198754", label: finished ? "Finished / archived" : blocked ? "Do not revisit" : approved ? "Return approved" : waiting ? "Return needs review" : "Needs visit" };
+  // Paperwork already sent to HPD (owner, 5 Nov, ER01720): no visit needed, even when none was recorded in the app.
+  const papers = !finished && !blocked && !waiting && String(job.PaperworkSentAt || "").trim();
+  const kind = finished || papers ? "finished" : blocked ? "blocked" : waiting ? "return" : "needs";
+  return { kind, blocked, approved, attempts, count: Math.max(visits.size,attempts,refused || lastAt ? 1 : 0), lastAt: lastAt ? (/^\d{4}-\d{2}-\d{2}$/.test(String(lastRaw)) ? String(lastRaw) : new Date(lastAt).toISOString()) : "", lastOutcome: String(latest?.outcome || savedJobStatus(job)), note: String(latest?.note || ""), color: kind === "finished" ? "#737b85" : blocked ? "#d93838" : waiting ? "#bd780b" : "#198754", label: papers ? "Papers sent: no visit needed" : finished ? "Finished / archived" : blocked ? "Do not revisit" : approved ? "Return approved" : waiting ? "Return needs review" : "Needs visit" };
 }
 
 export function matchesJobQueue(job: Job, queue: string): boolean {

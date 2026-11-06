@@ -45,6 +45,8 @@ try {
     const reachableK = (k) => reachable(viaAll(k) ? '[data-hpd-smoke="fc-more-open"]' : BUTTONS[k].tap);
     const backToMap = async () => {
       for (let i = 0; i < 4; i++) {
+        // Opening Notices can ring the ⏰ deadline box (only there, owner 5 Nov): snooze it like the owner would.
+        while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').first().click();
         const now = await openNow();
         if (!now.length) return;
         const k = now[0];

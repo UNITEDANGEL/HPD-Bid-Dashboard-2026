@@ -70,6 +70,7 @@ import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
 import { boardSide, buildBoard, hoursLeft, urgentRows, type BoardMarks, type BoardRow, type BoardStep } from "../../lib/notice-board";
 import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
+import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
 import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, speakIn, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
@@ -1778,7 +1779,7 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; plan?: PlanDay[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; plan?: PlanDay[]; noticeCheck?: NoticeCheckItem[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
   const agentRef = useRef<(heard: string, inner?: boolean) => void>(() => {});
   // The jobs the helper just listed (wins, bids, notices, the day's route), for "read me the descriptions" / "the first one".
   const lastJobsRef = useRef<{ ids: string[]; at: number } | null>(null);
@@ -2125,7 +2126,8 @@ export default function FieldCommandClient() {
   };
   const startAgentChat = (magic = false) => {
     unlockChime();
-    const step = nextStepRef.current;
+    // Notice deadlines aren't said in the greeting (owner, 5 Nov): only when you open the notices.
+    const step = nextStepRef.current && !/^notice [A-Z]{2}\d{5} /.test(nextStepRef.current.text) ? nextStepRef.current : null;
     if (magic) {
       // ✨ From the 🤖 (owner, 3 Nov: "when I click the small robot it should magically emerge and start talking"):
       // sparkles, the big face rises, it greets you by name and time of day out loud, then it listens.
@@ -2134,12 +2136,13 @@ export default function FieldCommandClient() {
       // 🗣 Said once a day (owner, 5 Nov): the morning brief the first time; after that "Hi again" with what got done,
       // what's still open of what it told you, and the next thing. No job counts at all.
       const day = nyToday();
-      const late0 = boardUrgent.filter((r) => r.dueAt && hoursLeft(r, Date.now()) < 0);
-      const parts = [bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : "", late0.length ? `${late0.length} notice${late0.length === 1 ? "" : "s"} overdue` : ""].filter(Boolean);
+      const parts = [bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : ""].filter(Boolean);
       if (briefDone(day)) {
         const r = recapNow();
-        const again = helloAgain(name, r, step?.text || "");
         const ask0 = (changeThreads || []).find((x) => x.status === "Waiting for you");
+        // Claude's question is said here too, not only the button.
+        const askWhat0 = ask0 ? ask0.text.replace(/^\((?:idea|said to the helper|from the chat|auto upgrade|plan)\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
+        const again = helloAgain(name, r, step?.text || "").replace(/^(Hi again, [^.]+\.)/, (m) => `${m}${ask0 ? ` Claude has a question for you about ${askWhat0}.` : ""}`);
         setMagicAt(Date.now());
         moodSound("magic");
         const acts0 = [...(ask0 ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
@@ -2151,7 +2154,6 @@ export default function FieldCommandClient() {
       const backFromSnooze = takeSnoozedBack(day);
       markBrief(day);
       if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
-      for (const r of late0.slice(0, 3)) noteSaid(day, `notice:${r.omo}`, `notice ${r.omo} overdue`);
       if (step) noteSaid(day, `first:${nextOmoRef.current || step.text}`, step.text.replace(/\.$/, ""));
       // ❓ Claude waiting for your answer: the robot still comes out and talks, and says so with a button (owner, 4 Nov:
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
@@ -3060,9 +3062,11 @@ export default function FieldCommandClient() {
   const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs, handled: handledMap, fixed: Object.fromEntries(toPrint.map((c) => [c.omo, c.savedAt])) }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
   const boardUrgent = urgentRows(boardRows);
-  // A notice running out of time rings once (under 6 hours, nothing sent yet).
+  // A notice running out of time rings once (under 6 hours, nothing sent yet), only while you're working the notices
+  // (owner, 5 Nov: "it keeps saying urgent. Do not do that, only do that when we engage to solve the notices").
+  const noticeEngaged = boardOpen || noticesOpen || noticeChooser || !!noticeWalk || followFilter === "notices";
   useEffect(() => {
-    if (!boardUrgent.length) return;
+    if (!boardUrgent.length || !noticeEngaged) return;
     try {
       const rang = new Set<string>(JSON.parse(localStorage.getItem("hpd-rang-urgent") || "[]"));
       const fresh = boardUrgent.filter((r) => !rang.has(r.key));
@@ -3072,7 +3076,7 @@ export default function FieldCommandClient() {
       const h = Math.max(0, Math.round(hoursLeft(fresh[0], Date.now())));
       notify({ kind: "urgent", go: "board", omo: fresh[0].omo, title: fresh.length === 1 ? `${fresh[0].omo}: ${h <= 0 ? "notice overdue" : `${h} h left on the notice`}` : `${fresh.length} notices under 6 hours`, text: "Nothing sent yet: answer them now" });
     } catch { /* private mode */ }
-  }, [boardUrgent.map((r) => r.key).join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [boardUrgent.map((r) => r.key).join(), noticeEngaged]); // eslint-disable-line react-hooks/exhaustive-deps
   // For the morning summary: notices due by tonight (or overdue) with nothing sent, missing documents waiting.
   const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
   const dueToday = boardOpenRows.filter((r) => r.kind === "ppn" && !r.steps.sent.done && r.dueAt && Date.parse(r.dueAt) <= endOfToday.getTime()).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
@@ -5408,6 +5412,17 @@ export default function FieldCommandClient() {
       speak(weekSpeech(p), 200, () => { if (convoRef.current) startListening(); });
       return;
     }
+    if (cmd.intent === "notice-check") {
+      // 🔎 Every notice from the email, one line per job: already sent (don't send again), to send, to fix, check first.
+      if (!boardThreads) { answer("The emails aren't loaded yet (sign in, or wait a few seconds), then ask again."); return; }
+      const c = checkNotices(boardRows, boardThreads);
+      const bad = c.items.filter((x) => x.tone === "fix" || x.tone === "check" || x.tone === "tosend");
+      const reply = `🔎 ${c.summary}${bad.length ? ` First: ${bad.slice(0, 3).map((x) => `${x.omo} ${x.head.replace(/^\S+\s/, "").split(":")[0].toLowerCase()}`).join("; ")}.` : " Nothing to send."}`;
+      if (multiRef.current) { answer(reply); return; }
+      setAgent({ heard, reply, noticeCheck: c.items });
+      speak(reply, 200, () => { if (convoRef.current) startListening(); });
+      return;
+    }
     if (cmd.intent === "plan-do-all") {
       // ✅ "Do all" (owner, 5 Nov): the next items on the plan go to Claude, in order, as one request.
       const go = (p: PlanCard | null) => {
@@ -7584,7 +7599,9 @@ export default function FieldCommandClient() {
                 const asking = last?.note === "Called the tenant" && Date.now() - Date.parse(String(last.recordedAt || "")) < 3 * 3600000;
                 const raw = (tenant.name || "").split(/\s+/)[0];
                 const first = raw && raw.length > 1 ? `${raw[0].toUpperCase()}${raw.slice(1).toLowerCase()}` : "the tenant";
+                const papersAt = String((selectedJob as Record<string, unknown>).PaperworkSentAt || "").trim();
                 const status = reachedAt ? { tone: "ok", text: `✅ Reached ${first} · ${when(reachedAt)}` }
+                  : papersAt ? { tone: "ok", text: `📤 Paperwork already sent to HPD ${papersAt}: no need to contact the tenant.` }
                   : cs.tone === "common" ? { tone: "common", text: "🏢 Public area job (hallway, stairs): no tenant to call. Log anyone you talk to by calling from here." }
                   : tries ? { tone: "try", text: `🟡 Not reached yet · ${tries} ${tries === 1 ? "try" : "tries"}, last ${when(last?.recordedAt)}` }
                   : { tone: "none", text: "🔴 Not contacted yet: text the tenant the job summary first, then call" };
@@ -8651,9 +8668,12 @@ export default function FieldCommandClient() {
             {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-mini-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
           </header>
+          <div className="fc-board-row2">
           <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }}>
             <span aria-hidden="true">⏱</span><b>Vendor tracking board</b><small>{boardOpenRows.filter((r) => r.kind === "ppn").length} notices · {boardOpenRows.filter((r) => r.kind === "docs").length} missing docs{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
           </button>
+          <button type="button" className="fc-notice-check-btn" data-hpd-smoke="fc-notice-check" aria-label="Check every notice from my email" onClick={() => { unlockChime(); agentRef.current("check every notice"); }}>🔎<small>Check every notice</small></button>
+          </div>
           <div className="fc-notice-picks">
             {NOTICE_KINDS.map((k) => (
               <button key={k.key} type="button" title={k.note} aria-pressed={noticeKind === k.key} className={`fc-notice-pick is-${k.key}${noticeKind === k.key ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-pick-${k.key}`} onClick={() => pickNotices(k.key)}>
@@ -9354,6 +9374,17 @@ export default function FieldCommandClient() {
           </form> : null}
           {agent.signIn ? <form className="fc-agent-signin" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="fc-agent-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
           <div>
+            {agent.noticeCheck?.length ? (
+              <ul className="fc-notice-check" data-hpd-smoke="fc-notice-check-list">
+                {agent.noticeCheck.map((x) => (
+                  <li key={x.omo} className={`is-${x.tone}`} data-hpd-smoke="fc-notice-check-item" data-omo={x.omo} data-tone={x.tone}>
+                    <b>{x.omo}</b> <span>{x.head}</span>
+                    {x.lines.map((l) => <small key={l}>{l}</small>)}
+                    <button type="button" onClick={() => { setAgent(null); goTo("board", x.omo); }}>Open ›</button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {agent.recap ? (
               <div className="fc-recap" data-hpd-smoke="fc-recap">
                 <section data-hpd-smoke="fc-recap-done"><b>✅ Done today</b>{agent.recap.done.length ? <ul>{agent.recap.done.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing yet</small>}</section>

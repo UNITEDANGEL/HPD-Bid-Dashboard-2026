@@ -73,13 +73,14 @@ export function spokenAlert(n: { kind: string; title: string; text?: string; omo
     case "award": words = `Confirmation of award! You won ${omo || "a job"}.`; break;
     // No work order number for bids, just how many (owner, 22 Oct: "just tell me invitation to bid; if three, you have three new invitations to bid").
     case "bid": { const many = Number((/(\d+) new invitations/.exec(n.title) || [])[1] || 0); words = many > 1 ? `You have ${many} new invitations to bid.` : "New invitation to bid."; break; }
-    case "notice": words = `Urgent email. ${/72/.test(n.title + text) ? "72" : "24"}-hour notice${who ? ` from ${who}` : ""}, ${omo}. ${text}`; break;
+    // No "urgent" out loud (owner, 5 Nov: "it keeps saying urgent, do not do that, only when we engage to solve the notices").
+    case "notice": words = `New email. ${/72/.test(n.title + text) ? "72" : "24"}-hour notice${who ? ` from ${who}` : ""}, ${omo}. ${text}`; break;
     case "request": words = /^they received it/i.test(text) ? `${who || "H P D"} replied: received.` : `Request from ${who || "H P D"}${/document/i.test(n.title + text) ? ", requesting documents" : ""}. ${text || omo}`; break;
     case "rejection": words = `Payment rejected, ${omo}. ${text}`; break;
     case "message": words = `Email from ${who || "H P D"}${omo ? `, ${omo}` : ""}. ${text}`; break;
     case "fax-ok": words = `Fax confirmed. ${title.replace(/^fax (went through|confirmed)[,:]?\s*/i, "")}`; break;
     case "fax-bad": words = `Fax failed. ${title.replace(/^fax failed[,:]?\s*/i, "")}. ${text}`; break;
-    case "urgent": words = `Urgent. ${title}. ${text}`; break;
+    case "urgent": words = `${title}. ${text}`; break;
     default: words = `${title}. ${text}`;
   }
   words = words.replace(/\bOMO\s*(#|No\.?:?)?\s*(?=[A-Z]{2}\d{5})/gi, "work order ").replace(/\bwork order work order\b/gi, "work order").replace(/\bHPD\b/g, "H P D").replace(/\s+([.,])/g, "$1").replace(/\.\s*\./g, ".").replace(/,\s*\./g, ".").replace(/\s+/g, " ").trim();

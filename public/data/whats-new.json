@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 5, 2026",
+      "title": "Check every notice",
+      "items": [
+        "🔎 Notices -> \"Check every notice from my email\" (or say \"check every notice\"): each job in one line: already sent (when, which PDF; don't send again), not sent yet, HPD found a problem, or check first.",
+        "📤 A job whose paperwork already went to HPD (like ER01720, sent in the stop work email) no longer says call the tenant or needs a visit: it waits on HPD.",
+        "🔕 No more \"urgent\" out loud: notice deadlines are said only when you're working the notices."
+      ]
+    },
+    {
+      "date": "Nov 5, 2026",
       "title": "Do all, from the app",
       "items": [
         "😴 Say \"not today\" (or tap 😴 Not today under an item in 🔔 I told you): it leaves today's list and comes back in tomorrow's morning brief.",

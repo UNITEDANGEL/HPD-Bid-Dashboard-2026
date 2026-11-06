@@ -47,6 +47,8 @@ try {
   const text = await page.locator('[data-hpd-smoke="fc-chat-nudge-text"]').innerText();
   assert.match(text, /^👋 While you were away: .*✅ Claude finished “Make the bid pins bigger”.*❓ Claude needs your answer on “Add a dark map at night”/);
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/catch-up.png` }).catch(() => {});
+  // Claude's question card can sit over the line (it says the same thing): put it away first, like the owner would.
+  await page.locator('[data-hpd-smoke="fc-claude-live-hide"]').click({ timeout: 2000 }).catch(() => {});
   await page.locator('[data-hpd-smoke="fc-chat-nudge-go"]').click();
   const reply = page.locator('[data-hpd-smoke="fc-agent-reply"]');
   await page.waitForFunction(() => /^Since /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });

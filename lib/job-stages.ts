@@ -40,6 +40,9 @@ export function jobStages(job: Record<string, unknown>, pip?: StagePip | null, r
   if (CLOSED_OUTCOME.test(outcome)) work = { key: "work", label: OUTCOME_LABEL[outcome] || "Work done", detail: workNote, tone: "done" };
   else if (hpdReason) work = { key: "work", label: "Done", detail: `HPD: ${hpdReason}`, tone: "done" };
   else if (outcome) work = { key: "work", label: OUTCOME_LABEL[outcome] || outcome.replace(/_/g, " ").toLowerCase(), detail: workDay, tone: "now" };
+  // The paperwork already went to HPD by email (owner, 5 Nov: "ER01720 is already sent ... it's still coming up ... we
+  // cannot make mistakes like this"): the field part is over even when no visit was recorded in the app.
+  else if (sentDay) work = { key: "work", label: "Done", detail: `papers sent ${sentDay}`, tone: "done" };
   else work = { key: "work", label: "Work done", detail: `complete by ${shortDay(job.WorkCompletionDate || job.MaturityDate) || "?"}`, tone: "todo" };
 
   let paperwork: Stage;

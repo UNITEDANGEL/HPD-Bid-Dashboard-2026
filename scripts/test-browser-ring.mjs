@@ -68,6 +68,9 @@ try {
   // The new 24-hour notice alerts as a ⏱ notice, then (under 6 h) as a ⏰ deadline.
   // Under 6 hours: the critical box in the middle (21 Oct); it rings once and stays on screen quietly (22 Oct).
   const crit = page.locator('[data-hpd-smoke="fc-critical"]');
+  // It rings only while you're working the notices (owner, 5 Nov: "it keeps saying urgent ... only when we engage to
+  // solve the notices"): open Notices.
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
   for (let i = 0; i < 90 && !(await crit.count()); i++) await page.clock.runFor(5000);
   await crit.waitFor({ timeout: 5000 });
   assert.match(await crit.innerText(), /EQ99997: \d+ h left on the notice[\s\S]*Answer now[\s\S]*Snooze 30 min/);
@@ -80,6 +83,9 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/ring-3-urgent.png` });
   await crit.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   assert.equal(await crit.count(), 0);
+  // Back to the bids screen (Notices was opened for the deadline alarm).
+  await page.locator('[data-hpd-smoke="fc-notice-chooser-close"]').click({ timeout: 2000 }).catch(() => {});
+  await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
   // Each rings once: nothing new -> no banner again.
   const n = (await vib()).length;
   await page.clock.runFor(6 * 60 * 1000);

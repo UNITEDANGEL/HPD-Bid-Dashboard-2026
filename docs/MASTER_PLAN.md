@@ -62,13 +62,45 @@ The plan, one by one (✅ = live):
    Claude takes the plan items first, in order, before other ideas.
 12. ✅ **😴 Snooze a reminder**: say "not today" (or tap 😴 Not today under a 🔔 I told you item): it leaves today's
    list and comes back in tomorrow's morning brief ("Back from yesterday: …"), once. lib/said-today snooze, `hpd-snooze-v1`.
+12b. ✅ **🔎 Check every notice + no mistakes on sent paperwork** (owner, 5 Nov night: "ER01720 is already sent, check.
+   I want an AI helper button that's gonna research every notice we get from my email, and then give me the results
+   like this OMO I gave you. We already sent this one, and it's still coming up as the AI is still requesting this one.
+   We cannot make mistakes like this." + "one of the things we need to upgrade that we have in the md file").
+   What was wrong: ER01720's 72 h notice (10/22) was answered on 10/30 with "ER01720 AFF INVOICE.pdf", but in the
+   STOP WORK NOTICE email, not the notice's own thread. The board knew (sent, waiting on HPD), but the job card only
+   looked at visits recorded in the app: "🔴 Not contacted yet", "Next: call the tenant first", "Needs visit".
+   Fixed: paperwork sent to HPD (any email) = the field part is done: the job card says "📤 Paperwork already sent to
+   HPD", next step "Waiting for HPD to close it", "Papers sent: no visit needed" (lib/job-stages, lib/job-queue).
+   New: Notices -> "🔎 Check every notice from my email" (or say "check every notice"): every notice and missing-
+   documents list from the email, one line per job (lib/notice-check.ts): ⚠ HPD found a problem / 🔍 check first
+   (paperwork on record but no email with the PDF) / ❗ not sent yet (hours left) / ✅ already sent (date, PDF, which
+   email; "Don't send it again"), plus HPD's STOP WORK NOTICE when there is one. From the emails on the phone, no
+   paid AI, nothing sent. Test: scripts/test-notice-check.mjs (an ER01720 copy) and test-browser-notice-check.
+12c. ✅ **No "urgent" out loud** (owner, 5 Nov night: "It keeps saying urgent. Do not do that. Only do that when we
+   engage to solve the notices"): the spoken alert for a new notice email says "New email. 24-hour notice …" (not
+   "Urgent email"); the deadline alarm (⏰ under 6 hours) rings only while you're on the notices (Notices, the board,
+   the notice walk); the greeting no longer says "N notices overdue" or "first thing: notice … overdue". The red
+   Notices button and the ⏰ chip on the map stay (silent).
 13. ☐ **📋 One dashboard card**: the 📋 Today sheet and the chat's day so far become one card, the same three boxes
    everywhere.
 14. ☐ **🗣 Warmer, shorter talk**: short friendly words out loud, and it waits while you're still talking instead of
    cutting you off.
 
-Recommendations (Claude): the first one is done (10); the other two are now plan items 12 and 13, and they are the
-"📋 Next on the plan" card in the app with 14.
+15. ☐ **🧠 It remembers our conversation** (owner, 5 Nov night: "I want a better AI ... more real and sound more real
+   ... he needs to be more understanding and keep track of our conversation when we talked about" + "how else can we
+   upgrade the AI"): the last 20 things said today (both sides) kept on the phone; "it", "that job", "the one before",
+   "what did I say about Main Street" answered from them; a "🧠 Today we talked about" line in the day so far.
+16. ☐ **🙂 A more real face**: a real-looking face (photo-style, not a cartoon): blinks, looks at you, lips move with the
+   words, nods while you talk; picked by the owner from 3 previews first.
+17. ☐ **🎙 A more real voice**: the best natural voice on the phone (iPhone "Enhanced/Premium" voices), slower and with
+   pauses, short sentences; the owner picks it from 3 samples. Free voices only (no paid service).
+18. ☐ **👂 It understands better**: when it isn't sure, it asks back one short question ("the bid or the notice?")
+   instead of guessing; it learns the owner's own words (e.g. "close it" = send the affidavit) and keeps them.
+19. ☐ **🔁 It follows up by itself**: what you said you'd do ("I'll call the tenant after lunch") comes back at that
+   time, once.
+
+Recommendations (Claude): one dashboard card (13) and warmer talk (14) are next, then 15-19 to make the helper feel
+real (memory first: it's what makes it "understanding").
 
 ---
 
