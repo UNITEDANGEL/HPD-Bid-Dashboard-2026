@@ -72,10 +72,10 @@ The plan, one by one (✅ = live, ☐ = next):
    outcome is saved, "On site 2:10 PM – 3:45 PM (1 h 35 min)" stays on the job.
 14. ✅ **📬 HPD overnight in the brief** (plan 30): "Overnight, Gafur sent documents on EP04029 …; Lewis sent a 24-hour
    notice on ER01720."
-15. ☐ **Photos guided one by one**: take a photo -> looks good? -> saved and backed up -> "take the next one"; Done ->
+15. ✅ **Photos guided one by one**: take a photo -> looks good? -> saved and backed up -> "take the next one"; Done ->
    the before video; same for after.
-16. ☐ **🧭 Next stop while working** (plan 31): while on a job, the next job ready: where, how far, what the work is.
-17. ☐ **🔁 Monday paperwork sweep** (plan 32).
+16. ✅ **🧭 Next stop while working** (plan 31): while on a job, the next job ready: where, how far, what the work is.
+17. ✅ **🔁 Monday paperwork sweep** (plan 32): Monday from 8 AM, the brief says once which finished jobs still need the paperwork sent, oldest first.
 18. ☐ **Bigger text**: an "A A" size setting for the whole app (cards, chat, notices).
 19. ☐ **Everything folds**: every card on the map (agent chat, notices, today) opens and closes from the side.
 20. ✅ **🧭 Next stop** (plan 31): after a job's outcome, and on the 🔨 Working banner: the nearest open job (appointments
@@ -88,7 +88,18 @@ The plan, one by one (✅ = live, ☐ = next):
    of everything"): every reminder said once, kept on one board of the day (said / done / next), never re-read.
 25. ✅ **Claude on the iPhone**: Remote Control is on for the build session; the owner follows and talks from the Claude app
    (Code tab). Pushes from this PC go through GitHub's API when git push is cut off by the slow connection.
-26. ☐ **Photos guided one by one** (repeat of 15, owner asked again): photo -> looks good -> saved -> next; then the video.
+26. ✅ **Photos guided one by one** (repeat of 15): after each photo "Before: 3 photos saved ✓" with 📷 Next photo / 🎥 Before video (glows after 3) / ✅ Done; a dark or blurry one asks Retake or Keep first.
+27. ✅ **Pushes when GitHub cuts this PC off** (6 Nov afternoon): git push kept failing on the slow connection; the work goes
+   up through GitHub's API one file at a time (retried), the video fix first on its own so the phone got it sooner.
+28. ☐ **Bigger text** (owner: "when I'm reading I see very small text, zoom everything up"): an A / A+ / A++ size for the
+   whole app, remembered on the phone.
+29. ☐ **Message board of the day** (item 24): one board, said / done / next, each reminder once.
+
+The owner's words, later on 6 Nov:
+- "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
+- "Push and do all. Keep adding this chat to the md file and keep upgrading."
+- "Open the app side by side on the Google Pixel" -> Android split screen (Recents -> app icon -> Split screen).
+- "10 videos on my Android are not uploading: fix that first, ER07610."
 
 ## 5 Nov 2026 (evening): the helper says it once, and gets more real (owner: "add conversation to md file and upgrade one by one")
 

@@ -28,6 +28,7 @@ import MediaViewer from "./MediaViewer";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
 import { nextStop, nextStopLine } from "../../lib/next-stop";
+import { isMondaySweepTime, mondaySweepLine, paperworkLeft as sweepLeft } from "../../lib/monday-sweep";
 import { itbPdfUrl } from "../../lib/private-data";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
 import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
@@ -2218,6 +2219,8 @@ export default function FieldCommandClient() {
       const promised = promisesLine(takeEarlierPromises(day), day);
       // 📬 Who at HPD wrote overnight (plan item 30), one calm line.
       const overnight = h < 12 ? overnightLine((threads || []) as unknown as Parameters<typeof overnightLine>[0]) : "";
+      // 🔁 Monday paperwork sweep (plan item 32): Monday from 8 AM, in the once-a-day brief.
+      const sweep = isMondaySweepTime(new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })).getDay(), h) ? mondaySweepLine(sweepLeft(jobs as Record<string, unknown>[], (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>)) : "";
       markBrief(day);
       if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
       if (step) noteSaid(day, `first:${nextOmoRef.current || step.text}`, step.text.replace(/\.$/, ""));
@@ -2225,7 +2228,7 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${overnight ? ` ${overnight}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${overnight ? ` ${overnight}` : ""}${sweep ? ` ${sweep}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
       // 🧠 Your usual start (3 of the last 14 mornings), offered before 11 if you haven't opened it yet today.
