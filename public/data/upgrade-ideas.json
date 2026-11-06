@@ -375,26 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-06-b",
-    "title": "Next on the plan: the helper knows where you are and keeps you posted",
+    "id": "2026-11-06-c",
+    "title": "Next on the plan: less work at the end of the job, and calm nights",
     "items": [
       {
-        "id": "job-here",
-        "icon": "📍",
-        "title": "\"The job here\"",
-        "why": "Say \"this job\" or \"the job here\" and it knows the job you're standing at, by the phone's location. No number needed."
+        "id": "one-card-closeout",
+        "icon": "🗂",
+        "title": "One-card close-out",
+        "why": "After \"work done\" by voice, the affidavit and invoice are made and shown in one card to check, then two taps to send."
       },
       {
-        "id": "tenant-texts-aloud",
-        "icon": "📱",
-        "title": "Tenant texts out loud",
-        "why": "A tenant's reply is read to you while driving; you answer by voice, it reads it back and sends only after your yes."
+        "id": "remembers-yesterday",
+        "icon": "🧠",
+        "title": "It remembers yesterday",
+        "why": "The morning brief says what you said you'd do yesterday and didn't (\"yesterday you said you'd call Lewis\")."
       },
       {
-        "id": "friday-wrap",
-        "icon": "📊",
-        "title": "Friday wrap",
-        "why": "Friday at 5, once: money in, jobs closed, bids won, and what's first next week, in a few words."
+        "id": "quiet-hours",
+        "icon": "🔕",
+        "title": "Quiet hours",
+        "why": "No talking and no sound alerts from 9 PM to 7 AM; cards stay silent on the screen, unless you're working the notices."
       }
     ]
   }

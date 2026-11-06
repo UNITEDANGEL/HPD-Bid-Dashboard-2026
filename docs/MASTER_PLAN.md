@@ -118,12 +118,19 @@ The plan, one by one (✅ = live):
 21. ✅ **📍 "The job here"**: "what job is this", "which job am I at", "this job", "the job here", "this building" = the
    nearest job within about 200 m of the phone's location (10 minutes old at most; lib/job-here.ts); no location yet =
    "tap Locate"; none near = "say its number". Works in "text the tenant for this job" too.
-22. ☐ **📱 Tenant texts out loud**: a tenant's reply is read to you while driving, and you answer by voice ("tell her
-   Thursday at 10 works"); it reads your answer back and sends only after your yes.
-23. ☐ **📊 Friday wrap**: Friday at 5, once: the week in a few words: money in, jobs closed, bids won, what's first
-   next week.
+22. ✅ **📱 Tenant texts out loud**: a tenant's text is read out (it already was); now, while driving (or talking), the
+   helper listens right after for your answer ("tell her we'll be there at 10"), reads it back and sends only after
+   your yes. Test: test-browser-tenant-aloud.
+23. ✅ **📊 Friday wrap**: Friday from 5 PM, once, a chat card: "📊 Your week: N jobs closed in the field, $X of work done,
+   N bids won ($Y). First next week: …"; Open = the weekly report (lib/friday-wrap.ts).
+24. ☐ **🗂 One-card close-out**: after "work done" by voice, the affidavit and invoice are made and shown in one card to
+   check (preview first), then two taps to send.
+25. ☐ **🧠 It remembers yesterday**: the morning brief says what you said you'd do yesterday and didn't ("yesterday you
+   said you'd call Lewis").
+26. ☐ **🔕 Quiet hours**: no talking and no sound alerts from 9 PM to 7 AM (cards stay silent on the screen), unless
+   you're working the notices.
 
-Recommendations (Claude): 13-20 are done; 21-23 are next on the plan (in the app's 📋 card).
+Recommendations (Claude): 13-23 are done; 24-26 are next on the plan (in the app's 📋 card).
 
 ---
 

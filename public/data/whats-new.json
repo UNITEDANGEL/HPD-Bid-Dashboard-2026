@@ -3,9 +3,11 @@
   "versions": [
     {
       "date": "Nov 6, 2026",
-      "title": "The helper knows where you are",
+      "title": "The helper knows where you are and keeps you posted",
       "items": [
-        "📍 At a job, say \"what job is this\" or \"this job\": the helper knows which job you're standing at. No number needed."
+        "📍 At a job, say \"what job is this\" or \"this job\": the helper knows which job you're standing at. No number needed.",
+        "📱 Driving: a tenant's text is read to you and the helper listens for your answer (\"tell her we'll be there at 10\"). It reads it back and sends only after your yes.",
+        "📊 Friday at 5: your week in a few words (jobs closed, work done, bids won, first thing next week)."
       ]
     },
     {

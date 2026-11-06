@@ -72,6 +72,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
 import { jobHere, saysHere } from "../../lib/job-here";
+import { isFridayWrapTime, weekWrap } from "../../lib/friday-wrap";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
 import { chimeMuted, notify, playChime, ring, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
@@ -4514,11 +4515,11 @@ export default function FieldCommandClient() {
               setAgent((a) => (a && a.heard === heardLine ? { heard: heardLine,
                 reply: `${who} texted back about ${where} (${jobId(job)}) in ${LANG_NAME[lang]}.${english ? ` It says: "${english}"` : " I couldn't translate it right now (no signal?)."}${theirs ? `\n\nI can answer in ${LANG_NAME[lang]}: "${theirs}"\n(In English: "${answerEn}")` : !answerEn && english ? " It sounds like they don't want texts: I won't answer." : ""}`,
                 offers: theirs ? [`text the tenant at ${jobId(job)} ${theirs}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: theirs ? "Send it?" : "Open the job?" } : a));
-              speak(english ? `${who} texted in ${LANG_NAME[lang]}. It says: ${english}.${theirs ? " Want me to answer?" : ""}` : `${who} texted in ${LANG_NAME[lang]}.`, 200);
+              speak(english ? `${who} texted in ${LANG_NAME[lang]}. It says: ${english}.${theirs ? " Want me to answer?" : ""}` : `${who} texted in ${LANG_NAME[lang]}.`, 20, () => { if (drivingRef.current || convoRef.current) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListeningRef.current(); } });
             })();
           } else {
           setAgent({ heard: `💬 ${who}: "${m.body.slice(0, 160)}"`, reply: `${who} texted back about ${where} (${jobId(job)}).${spanish ? ` In Spanish. It says: ${spanishToEnglish(m.body)}.` : ""}${answerText ? ` I can answer${spanish ? " in Spanish" : ""}: "${answerText}"` : " It sounds like they don't want texts: I won't answer."}`, offers: answerText ? [`text the tenant at ${jobId(job)} ${answerText}`, `open ${jobId(job)}`] : [`open ${jobId(job)}`], offersLabel: answerText ? "Send it?" : "Open the job?" });
-          speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 200);
+          speak(`${who} texted back: ${m.body.slice(0, 200)}.${answerText ? " Want me to answer?" : ""}`, 20, () => { if (drivingRef.current || convoRef.current) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListeningRef.current(); } });
           }
         }
         window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "message", go: job ? "job" : undefined, omo: job ? jobId(job) : undefined, title: `💬 ${job ? `${tenantInfo(job).name?.split(/\s+/)[0] || "The tenant"} replied · ${jobId(job)}` : `Text from ***${last10(m.from).slice(-4)}`}`, text: m.body.slice(0, 200) } }));
@@ -9210,6 +9211,17 @@ export default function FieldCommandClient() {
         for (const r of fresh.slice(0, 2)) all.push({ key: `notice|${r.key}`, kind: "notice", text: `📨 New ${r.hours}-hour notice for ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}${r.want ? `: HPD wants ${r.want.toLowerCase()}` : ""}. Answer it now?`, label: "✍️ Answer", go: () => agentRef.current(`answer the notice for ${r.omo}`) });
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
+        // 📊 Friday wrap (plan item 23): Friday from 5 PM, once a week, the week in a few words; Open = the weekly report.
+        if (isFridayWrapTime(nyNow().weekday, nowMin) && !nudgeSeen.includes(`week|${today}`)) {
+          const st = fieldStats(jobs, "week", { skip: (job) => isTestJob(jobId(job)) });
+          const c0 = st.counts;
+          const weekAgo = Date.now() - 7 * 86400000;
+          const won = jobs.filter((j) => !isTestJob(jobId(j)) && Date.parse(String(value(j, ["AwardDate"]) || "")) >= weekAgo);
+          const wonAmount = won.reduce((n, j) => n + (Number(String(value(j, ["AwardAmount"]) || "").replace(/[^\d.]/g, "")) || 0), 0);
+          const ahead = jobs.map((j) => ({ j, a: activeAppointment(j as unknown as Record<string, unknown>) })).filter((x) => x.a && x.a.date > today).sort((x, y) => `${x.a!.date}${x.a!.start}`.localeCompare(`${y.a!.date}${y.a!.start}`))[0];
+          const text = weekWrap({ closed: c0.completed + c0.partial + c0.noAccess + c0.refused + c0.byOthers, earned: st.earned, won: won.length, wonAmount, first: ahead ? `${appointmentLabel(ahead.a!)} at ${noZip(jobAddress(ahead.j))}` : "" });
+          all.push({ key: `week|${today}`, kind: "week", text, label: "Open", go: () => agentRef.current("weekly review") });
+        }
         // 🌆 End of day (owner idea, 3 Nov): after 6 PM, once a day, a few lines on what got done and what is waiting.
         if (nowMin >= 18 * 60 && !nudgeSeen.includes(`day|${today}`) && !wasSaid(nyToday(), `wrap:${nyToday()}`)) {
           const sum = daySummary(jobs, { id: jobId, address: jobAddress });
