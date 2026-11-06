@@ -28,6 +28,7 @@ import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
 import { emailPeople } from "../../lib/email-people";
 import { buildingHistory, historyLine } from "../../lib/building-history";
+import { costLine, parseCost, readCosts, usd } from "../../lib/job-costs";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
 import { nextStop, nextStopLine, workInWords } from "../../lib/next-stop";
@@ -3262,6 +3263,45 @@ export default function FieldCommandClient() {
     fetch("/data/jobs_2024_2025.json", { cache: "force-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPastJobs(Array.isArray(d?.jobs) ? d.jobs : [])).catch(() => setPastJobs([]));
   }, [selectedJob, pastJobs]);
   const buildingPast = useMemo(() => (selectedJob ? buildingHistory(selectedJob as Record<string, unknown>, [jobs as Record<string, unknown>[], olderJobs as Record<string, unknown>[], (pastJobs || []) as Record<string, unknown>[]], workInWords) : []), [selectedJob, jobs, olderJobs, pastJobs]);
+  // 🧾 Costs on the job (idea list): amount + what, shared on the job (JobCosts); the receipt photo stays on this phone
+  // (localStorage hpd-receipt-<job>-<at>, a small JPEG), never in HPD's package.
+  const [costText, setCostText] = useState("");
+  const [costPhoto, setCostPhoto] = useState("");
+  const costPhotoRef = useRef<HTMLInputElement | null>(null);
+  const addJobCost = (job: JobRecord, cost: { amount: number; what: string }, photo = "") => {
+    const id = jobId(job);
+    const at = new Date().toISOString();
+    const list = [...readCosts((job as Record<string, unknown>).JobCosts), { at, amount: cost.amount, what: cost.what }];
+    if (photo) { try { localStorage.setItem(`hpd-receipt-${id}-${at}`, photo); } catch { /* phone full: the amount is still saved */ } }
+    const patch = { JobCosts: list };
+    try { writeSharedWorkflowPatch(id, patch); } catch { setOutcomeMessage("Could not save on this device. Please retry."); return null; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    void flushOverrideOutbox(HPD_STATUS_WORKER_URL);
+    return costLine(list, jobAwardAmount(job));
+  };
+  const removeJobCost = (job: JobRecord, at: string) => {
+    const id = jobId(job);
+    const list = readCosts((job as Record<string, unknown>).JobCosts).filter((c) => c.at !== at);
+    try { localStorage.removeItem(`hpd-receipt-${id}-${at}`); } catch { /* private mode */ }
+    const patch = { JobCosts: list };
+    try { writeSharedWorkflowPatch(id, patch); } catch { return; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    void flushOverrideOutbox(HPD_STATUS_WORKER_URL);
+  };
+  const shrinkReceipt = (file: File) => new Promise<string>((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 900 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.6));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(""); };
+    img.src = url;
+  });
   const emailJobOf = (j: JobRecord | null): EmailJob => (j ? { omo: jobId(j), address: jobAddress(j), unit: unitOf(String(j.JobDescription || j.Job_Description || "")) } : null);
   const [staleOpen, setStaleOpen] = useState(false);
   const staleMark = (job: JobRecord, closed: boolean) => {
@@ -5390,6 +5430,17 @@ export default function FieldCommandClient() {
           speak("Got it, saved on the job.", 0, () => { if (convoRef.current) startListening(); });
           return;
         }
+      }
+      // 🧾 "Spent 45 at Home Depot" / "receipt 120 for paint on ER07610": a cost on that job (or the open / 🔨 job).
+      if (/^(i\s+)?(spent|paid|receipt|add (a )?cost|cost)\b/i.test(heard.trim()) && parseCost(heard)) {
+        const omo = (/\b([A-Z]{2}\s?\d{4,6})\b/i.exec(heard) || [])[1]?.replace(/\s/g, "").toUpperCase() || "";
+        const here = jobs.map((j) => ({ j, h: onSite(j as Record<string, unknown>) })).filter((x) => x.h).sort((a, b) => b.h!.since - a.h!.since)[0]?.j || null;
+        const j = (omo ? jobs.find((r) => jobId(r) === omo) : null) || selectedJob || here;
+        if (!j) { setAgent({ heard, reply: "🧾 Which job? Say it with the job number, like: spent 45 at Home Depot on ER07610." }); speak("Which job? Say the job number too.", 0); return; }
+        const c = parseCost(heard)!;
+        const line = addJobCost(j, c);
+        if (line !== null) { setAgent({ heard, reply: `🧾 ${usd(c.amount)}${c.what ? ` (${c.what})` : ""} saved on ${jobId(j)}: ${line}.` }); speak(`Saved ${usd(c.amount)} on ${jobId(j)}.`, 0); }
+        return;
       }
       // ✉️ "Email Lewis" / "write to Gafur about ER07610": opens the email screen to check and send (never sends by voice).
       if (/^(e-?mail|write (an )?e-?mail|send (an )?e-?mail|write to)\b/i.test(heard.trim())) {
@@ -8407,6 +8458,42 @@ export default function FieldCommandClient() {
                     </ol>
                   </details>
                 ) : null}
+                {(() => {
+                  const costs = readCosts((selectedJob as Record<string, unknown>).JobCosts);
+                  const line = costLine(costs, jobAwardAmount(selectedJob));
+                  const add = () => {
+                    const c = parseCost(costText);
+                    if (!c) { setOutcomeMessage("🧾 Type the amount and what it was for, like 45.20 Home Depot door closer."); return; }
+                    if (addJobCost(selectedJob, c, costPhoto) !== null) { setCostText(""); setCostPhoto(""); }
+                  };
+                  return (
+                    <details className="jc-costs" data-hpd-smoke="jc-costs">
+                      <summary>🧾 {line ? `Costs: ${line}` : "Add a cost / receipt"}</summary>
+                      {costs.length ? (
+                        <ul>
+                          {costs.map((c) => {
+                            let photo = "";
+                            try { photo = localStorage.getItem(`hpd-receipt-${id}-${c.at}`) || ""; } catch { /* private mode */ }
+                            return (
+                              <li key={c.at} data-hpd-smoke="jc-cost-row">
+                                {photo ? <img src={photo} alt="Receipt" /> : null}
+                                <b>{usd(c.amount)}</b> <span>{c.what || "cost"}</span>
+                                <button type="button" aria-label="Remove this cost" data-hpd-smoke="jc-cost-remove" onClick={() => removeJobCost(selectedJob, c.at)}>✕</button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                      <div className="jc-cost-add">
+                        <input value={costText} onChange={(e) => setCostText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} placeholder="45.20 Home Depot door closer" data-hpd-smoke="jc-cost-input" />
+                        <button type="button" className={costPhoto ? "is-on" : ""} aria-label="Receipt photo" data-hpd-smoke="jc-cost-photo" onClick={() => costPhotoRef.current?.click()}>{costPhoto ? "✓📷" : "📷"}</button>
+                        <button type="button" className="is-main" data-hpd-smoke="jc-cost-save" onClick={add}>Add</button>
+                        <input ref={costPhotoRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="jc-cost-file" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void shrinkReceipt(f).then(setCostPhoto); }} />
+                      </div>
+                      <small>The receipt photo stays on this phone; it never goes to HPD. Or say: spent 45 at Home Depot.</small>
+                    </details>
+                  );
+                })()}
                 {!isTestJob(id) ? (
                   <button type="button" className="jc-email" data-hpd-smoke="jc-email" onClick={() => setEmailFor({ job: emailJobOf(selectedJob) })}>✉️ Email {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]} about this job</button>
                 ) : null}

@@ -109,6 +109,8 @@ try {
 
   // Tapping the chip asks for the forecast.
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  // A nudge of the hour (e.g. Friday's week wrap) can sit on the chip: close it first.
+  while (await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click();
   await wx.click();
   await waitReply(/^Today: \d+° to \d+°F/);
   if (!(await page.locator('[data-hpd-smoke="fc-agent-type-input"]').count())) await page.locator('[data-hpd-smoke="fc-agent-type-btn"]').click();

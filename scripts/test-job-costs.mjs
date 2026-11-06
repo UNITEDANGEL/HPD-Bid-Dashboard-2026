@@ -1,0 +1,18 @@
+// 🧾 Costs on the job: the amount and what it was for from what's typed or said; total and what's left of the award.
+import assert from "node:assert/strict";
+import { loadLib } from "./daily-report.mjs";
+const { parseCost, costLine, costTotal, readCosts, usd } = await loadLib("job-costs");
+assert.deepEqual(parseCost("45.20 home depot door closer"), { amount: 45.2, what: "Home depot door closer" });
+assert.deepEqual(parseCost("spent $1,200 at Home Depot for ER07610"), { amount: 1200, what: "Home Depot" });
+assert.deepEqual(parseCost("receipt 120 dollars for paint"), { amount: 120, what: "Paint" });
+assert.deepEqual(parseCost("30"), { amount: 30, what: "" });
+assert.equal(parseCost("home depot"), null);
+assert.equal(parseCost("0"), null);
+const costs = readCosts([{ at: "x", amount: 45.2, what: "Door closer" }, { at: "y", amount: "20", what: "Screws" }, { amount: 0 }, null]);
+assert.equal(costs.length, 2);
+assert.equal(costTotal(costs), 65.2);
+assert.equal(costLine(costs, 1200), "$65.20 spent · $1,134.80 left of $1,200");
+assert.equal(costLine(costs, 0), "$65.20 spent");
+assert.equal(costLine([], 1200), "");
+assert.equal(usd(1200), "$1,200");
+console.log("job-costs ok");

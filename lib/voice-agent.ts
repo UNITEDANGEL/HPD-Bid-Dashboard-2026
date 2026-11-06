@@ -33,6 +33,8 @@ export type AgentCommand =
   | { intent: "hands-free-day" }
   | { intent: "paid-check"; ref: string }
   | { intent: "on-my-way"; ref: string }
+  | { intent: "cost" }
+  | { intent: "email" }
   | { intent: "month-report"; last?: boolean }
   | { intent: "losing-time" }
   | { intent: "good-news" }
@@ -167,6 +169,10 @@ export function parseCommand(heard: string): AgentCommand {
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
+  // 🧾 "Spent 45 at Home Depot", "receipt 120 for paint": a cost on the job (FieldCommandClient adds it).
+  if (/^(i\s+)?(spent|paid|receipt|add (a )?cost)\b.*\d/.test(t)) return { intent: "cost" };
+  // ✉️ "Email Lewis about ER07610": opens the email screen (never sends by voice).
+  if (/^(e-?mail|write (an )?e-?mail|send (an )?e-?mail|write to)\b/.test(t)) return { intent: "email" };
   if (short && /^(no|nope|cancel|stop|wrong|never ?mind|don'?t)\b/.test(t) && !/no access/.test(t) && !/^no bid/.test(t) && !/driving|hands[- ]free/.test(t)) return { intent: "no" };
   // 🔁 It follows up by itself (plan item 19): "I'll call the tenant after lunch" = a reminder at that time, without
   // saying "remind me". Only when a time is said.
