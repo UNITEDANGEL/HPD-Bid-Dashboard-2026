@@ -25,6 +25,10 @@ try {
   assert.match(lines.money, /\$[\d,]+ held by rejections/);
   assert.match(lines.bids, /bids? due today|invitations? open/);
   if (shots) await page.screenshot({ path: `${shots}/today-1.png` });
+  // 📋 One dashboard card (plan item 13): the same three boxes as the chat's day so far, on top.
+  const recap = card.locator('[data-hpd-smoke="fc-today-recap"]');
+  for (const part of ["fc-recap-done", "fc-recap-reminded", "fc-recap-later"]) assert.equal(await recap.locator(`[data-hpd-smoke="${part}"]`).count(), 1, part);
+  assert.match(await recap.innerText(), /✅ Done today[\s\S]*🔔 I told you[\s\S]*⏭ Coming up/);
 
   // Missing documents -> the board, on that filter; the summary is done for today.
   await card.locator('[data-hpd-smoke="fc-today-docs"]').click();

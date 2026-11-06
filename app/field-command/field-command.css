@@ -4481,3 +4481,5 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 .fc-notice-check li.is-sent, .fc-notice-check li.is-done { border-left-color: #16a34a; }
 .fc-notice-check small { color: #475569; font-size: 13px; }
 .fc-notice-check button { justify-self: start; margin-top: 2px; padding: 4px 10px; min-height: 32px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-size: 14px; }
+.fc-today-recap { margin: 4px 0 8px; }
+.fc-today-recap .fc-recap { margin: 0; }

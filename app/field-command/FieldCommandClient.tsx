@@ -2101,7 +2101,16 @@ export default function FieldCommandClient() {
     return dayRecap(withoutSnoozed(readDayLog(day)), done, open, later);
   };
   // 😴 Snooze: off today's list, back in tomorrow's morning brief.
-  const snoozeReminder = (key: string, text: string) => { snooze(nyToday(), key, text); setAgent((a) => (a && a.recap ? { ...a, recap: recapNow() } : a)); };
+  // 📋 One dashboard card (plan item 14): the same three boxes in the chat and on the ☀️ Today sheet.
+  const recapBoxes = (r: Recap) => (
+    <div className="fc-recap" data-hpd-smoke="fc-recap">
+      <section data-hpd-smoke="fc-recap-done"><b>✅ Done today</b>{r.done.length ? <ul>{r.done.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing yet</small>}</section>
+      <section data-hpd-smoke="fc-recap-reminded"><b>🔔 I told you</b>{r.reminded.length ? <ul>{r.reminded.map((x) => <li key={x.text} className={x.done ? "is-done" : "is-open"}>{x.done ? "✓ " : "• "}{x.text}{!x.done && x.key ? <button type="button" className="fc-snooze" aria-label={`Not today: ${x.text}`} data-hpd-smoke="fc-snooze" onClick={() => snoozeReminder(x.key!, x.text)}>😴 Not today</button> : null}</li>)}</ul> : <small>Nothing yet today</small>}</section>
+      <section data-hpd-smoke="fc-recap-later"><b>⏭ Coming up</b>{r.later.length ? <ul>{r.later.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing booked ahead</small>}</section>
+    </div>
+  );
+  const [, setRecapTick] = useState(0);
+  const snoozeReminder = (key: string, text: string) => { snooze(nyToday(), key, text); setRecapTick((n) => n + 1); setAgent((a) => (a && a.recap ? { ...a, recap: recapNow() } : a)); };
   // 🔁 One greeting across phones (owner, 5 Nov): after something is said, this phone tells the status server
   // (SAID-TODAY, one small write a few seconds later; job numbers only, no tenant data).
   useEffect(() => {
@@ -9385,13 +9394,7 @@ export default function FieldCommandClient() {
                 ))}
               </ul>
             ) : null}
-            {agent.recap ? (
-              <div className="fc-recap" data-hpd-smoke="fc-recap">
-                <section data-hpd-smoke="fc-recap-done"><b>✅ Done today</b>{agent.recap.done.length ? <ul>{agent.recap.done.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing yet</small>}</section>
-                <section data-hpd-smoke="fc-recap-reminded"><b>🔔 I told you</b>{agent.recap.reminded.length ? <ul>{agent.recap.reminded.map((x) => <li key={x.text} className={x.done ? "is-done" : "is-open"}>{x.done ? "✓ " : "• "}{x.text}{!x.done && x.key ? <button type="button" className="fc-snooze" aria-label={`Not today: ${x.text}`} data-hpd-smoke="fc-snooze" onClick={() => snoozeReminder(x.key!, x.text)}>😴 Not today</button> : null}</li>)}</ul> : <small>Nothing yet today</small>}</section>
-                <section data-hpd-smoke="fc-recap-later"><b>⏭ Coming up</b>{agent.recap.later.length ? <ul>{agent.recap.later.map((x) => <li key={x}>{x}</li>)}</ul> : <small>Nothing booked ahead</small>}</section>
-              </div>
-            ) : null}
+            {agent.recap ? recapBoxes(agent.recap) : null}
             {agent.plan ? (
               <div className="fc-weekplan" data-hpd-smoke="fc-weekplan">
                 {agent.plan.map((d) => (
@@ -9573,6 +9576,8 @@ export default function FieldCommandClient() {
             <strong>☀️ Today · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</strong>
             <button type="button" aria-label="Close" data-hpd-smoke="fc-today-close" onClick={closeSummary}>Got it</button>
           </header>
+          {/* 📋 One dashboard card (plan item 14): ✅ done today, 🔔 what the helper told you, ⏭ coming up, as in the chat. */}
+          <div className="fc-today-recap" data-hpd-smoke="fc-today-recap">{recapBoxes(recapNow())}</div>
           <button type="button" className={`fc-today-line${dueToday.length ? " is-hot" : ""}`} data-hpd-smoke="fc-today-due" onClick={() => { closeSummary(); setBoardShow("ppn"); closeScreens("board"); setBoardOpen(true); }}>
             <span aria-hidden="true">⏱</span><b>{(() => { const late = dueToday.filter((r) => Date.parse(r.dueAt) < Date.now()).length; const soon = dueToday.length - late; return dueToday.length ? [late ? `${late} notice${late === 1 ? "" : "s"} OVERDUE` : "", soon ? `${soon} due today` : ""].filter(Boolean).join(" · ") : "No 24 / 72-hour deadline today"; })()}</b>
             <small>{dueToday.length ? `${Date.parse(dueToday[0].dueAt) < Date.now() ? "Oldest" : "First one"}: ${dueText(dueToday[0].dueAt)} · ${dueToday[0].omo}` : `${boardOpenRows.filter((r) => r.kind === "ppn").length} notices open on the board`}</small>

@@ -81,8 +81,8 @@ The plan, one by one (✅ = live):
    "Urgent email"); the deadline alarm (⏰ under 6 hours) rings only while you're on the notices (Notices, the board,
    the notice walk); the greeting no longer says "N notices overdue" or "first thing: notice … overdue". The red
    Notices button and the ⏰ chip on the map stay (silent).
-13. ☐ **📋 One dashboard card**: the 📋 Today sheet and the chat's day so far become one card, the same three boxes
-   everywhere.
+13. ✅ **📋 One dashboard card**: the ☀️ Today sheet and the chat's day so far show the same three boxes (✅ done today,
+   🔔 I told you with 😴 Not today, ⏭ coming up), drawn by one piece of code (recapBoxes), on top of the Today sheet.
 14. ☐ **🗣 Warmer, shorter talk**: short friendly words out loud, and it waits while you're still talking instead of
    cutting you off.
 
