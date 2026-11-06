@@ -77,7 +77,7 @@ The plan, one by one (✅ = live, ☐ = next):
 16. ✅ **🧭 Next stop while working** (plan 31): while on a job, the next job ready: where, how far, what the work is.
 17. ✅ **🔁 Monday paperwork sweep** (plan 32): Monday from 8 AM, the brief says once which finished jobs still need the paperwork sent, oldest first.
 18. ☐ **Bigger text**: an "A A" size setting for the whole app (cards, chat, notices).
-19. ☐ **Everything folds**: every card on the map (agent chat, notices, today) opens and closes from the side.
+19. ✅ **Everything folds**: the little messages (💡 next step, ⏰ notice chip, chat nudges like "bid due in 33 min", 🔊 play alerts, 🔔 get alerts, updates, the plan card, Claude's %) wait behind the ✉ side button with a count; the notices are a row of small chips; the helper tucks to a bubble.
 20. ✅ **🧭 Next stop** (plan 31): after a job's outcome, and on the 🔨 Working banner: the nearest open job (appointments
    today first), miles, minutes, the work in a few words; said out loud after the outcome.
 21. ✅ **Claude working = a blinking green dot with the %** on the side tab; the 💡 next-step / ⏰ notice chips wait behind it.

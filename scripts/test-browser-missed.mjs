@@ -32,6 +32,8 @@ try {
   await card.waitFor({ timeout: 30000 });
   assert.match(await card.innerText(), /Play 2 new alerts/);
   if (shots) await page.screenshot({ path: `${shots}/missed.png` });
+  // A chat nudge (a bid due soon, by the clock) may sit on top: close it first.
+  while (await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click();
   await card.locator('[data-hpd-smoke="fc-missed-play"]').click();
   await page.waitForFunction(() => window.__said.some((t) => /new alerts/.test(t)), null, { timeout: 5000 });
   const said = await page.evaluate(() => window.__said.find((t) => /new alerts/.test(t)));

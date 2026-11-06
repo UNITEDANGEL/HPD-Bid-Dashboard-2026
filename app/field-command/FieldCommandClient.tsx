@@ -8682,7 +8682,7 @@ export default function FieldCommandClient() {
       {!selectedJob && !whatsNewOpen && !bidsOpen ? (() => {
         const hint = sideHintRef.current;
         sideHintRef.current = 0;
-        const n = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (claudeWorkingRef.current || claudeLiveRef.current ? 1 : 0) + hint;
+        const n = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (claudeWorkingRef.current || claudeLiveRef.current ? 1 : 0) + hint + (missed.length && !voiceOff() ? 1 : 0) + (allowAlerts ? 1 : 0);
         const work = (changeThreads || []).find((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
         const pct = work && work.steps.length ? Math.round((work.steps.filter((x) => x.done).length / work.steps.length) * 100) : null;
         return (
@@ -9517,6 +9517,8 @@ export default function FieldCommandClient() {
         }
         const nudge = all.find((n) => !nudgeSeen.includes(n.key));
         if (!nudge) return null;
+        sideHintRef.current = 1; // a little message: behind the ✉ side button (6 Nov)
+        if (!sideOpen) return null;
         const done = () => setNudgeSeen(markNudgeSeen(nudge.key));
         return (
           <div className="fc-chat-nudge" role="status" data-hpd-smoke="fc-chat-nudge" data-kind={nudge.kind} key={nudge.key}>
@@ -9900,13 +9902,13 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {missed.length && !voiceOff() ? (
+      {sideOpen && missed.length && !voiceOff() ? (
         <div className="fc-missed" role="status" data-hpd-smoke="fc-missed">
           <button type="button" className="fc-missed-play" data-hpd-smoke="fc-missed-play" onClick={playMissed}>🔊 Play {missed.length} new alert{missed.length === 1 ? "" : "s"}</button>
           <button type="button" className="fc-missed-x" aria-label="Not now" data-hpd-smoke="fc-missed-dismiss" onClick={clearMissed}>✕</button>
         </div>
       ) : null}
-      {allowAlerts ? (
+      {sideOpen && allowAlerts ? (
         <div className="fc-allow-alerts" role="dialog" aria-label="Allow alerts" data-hpd-smoke="fc-allow-alerts">
           <b>🔔 Get alerts on this phone</b>
           <span>{allowAlerts === "ask" ? "Wins (cha-ching), notices, Gafur / Lewis requests, rejections, new bids — even with the app closed. One tap, then it's automatic." : allowAlerts}</span>
