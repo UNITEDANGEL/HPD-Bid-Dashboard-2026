@@ -95,6 +95,9 @@ jobs:
           node scripts/test-drive-full-backup.mjs
           node scripts/test-drive-videos.mjs
           node scripts/test-phone-storage.mjs
+          node scripts/test-overnight.mjs
+          node scripts/test-next-stop.mjs
+          node scripts/test-monday-sweep.mjs
           node scripts/test-weather.mjs
           node scripts/test-voice-next-tenant.mjs
           node scripts/test-voice-notes.mjs
