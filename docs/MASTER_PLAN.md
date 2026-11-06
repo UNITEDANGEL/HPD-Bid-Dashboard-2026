@@ -146,9 +146,16 @@ The plan, one by one (✅ = live):
 28. ✅ **📸 Photos before paperwork**: when the work was done (completed / partial) and this phone has no before or no
    after photos, the paperwork card says so on top ("📸 No after photos on this phone yet. HPD needs them…") with
    "📷 Add photos first" (back to the job). lib/paperwork-photos.ts.
-29. ☐ **📝 Your words on the invoice**: your "how did it go" answer becomes the work note on the invoice (preview first).
+29. ✅ **📝 Your words on the invoice**: on a partial job, your latest note on the job from the work day on ("How did it
+   go?" answer, said or typed; not HPD call notes, not older notes like a gate code) fills "What work was completed?
+   (invoice description)" in capitals, to check and change before anything is made. A completed job keeps HPD's scope
+   as the invoice description (that's what HPD expects).
+30. ☐ **📬 HPD overnight, in the brief**: the morning brief says in one line who at HPD wrote overnight, on which job and
+   what they want.
+31. ☐ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
+32. ☐ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
 
-Recommendations (Claude): 13-26 are done; 27-29 are next on the plan (in the app's 📋 card).
+Recommendations (Claude): 13-29 are done; 30-32 are next on the plan (in the app's 📋 card).
 
 ---
 

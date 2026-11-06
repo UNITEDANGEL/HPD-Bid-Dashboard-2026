@@ -375,26 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-06-d",
-    "title": "Next on the plan: on the way, photos, and your words on the paperwork",
+    "id": "2026-11-06-e",
+    "title": "Next on the plan: mornings, the next stop, and paperwork that's left",
     "items": [
       {
-        "id": "on-my-way",
-        "icon": "🚗",
-        "title": "\"I'm on my way\" text",
-        "why": "Say \"tell the tenant I'm on my way\": it adds your arrival time (from where you are and the traffic), reads it back, and sends after your yes."
+        "id": "hpd-overnight",
+        "icon": "📬",
+        "title": "HPD overnight, in the brief",
+        "why": "The morning brief says in one line who at HPD wrote overnight, on which job and what they want."
       },
       {
-        "id": "photos-before-paperwork",
-        "icon": "📸",
-        "title": "Photos before paperwork",
-        "why": "The paperwork card says if before / after photos are missing and lets you add them before sending. HPD needs them."
+        "id": "next-stop",
+        "icon": "🧭",
+        "title": "Next stop after a job",
+        "why": "When you say a job is done, it offers the nearest open job and how long to get there."
       },
       {
-        "id": "words-on-invoice",
-        "icon": "📝",
-        "title": "Your words on the invoice",
-        "why": "Your \"how did it go\" answer becomes the work note on the invoice, shown first to check."
+        "id": "monday-sweep",
+        "icon": "🔁",
+        "title": "Monday paperwork sweep",
+        "why": "Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first."
       }
     ]
   }

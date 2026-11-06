@@ -1,5 +1,6 @@
 "use client";
 
+import { loadJobNotes } from "../../lib/job-notes";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, PDFName, PDFTextField, degrees, rgb } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
@@ -517,6 +518,9 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     workComplete: outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(actualCompleteAt) || displayDate(todayIsoDate()) : displayDate(noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
+    // 📝 Your words on the invoice (plan item 29): on a partial job, what you told the helper ("How did it go?") fills
+    // "What work was completed?" to check before anything is made.
+    partialWorkDone: outcome === "partial_work_completed" ? lastFieldNote(jobId, String(actualCompleteAt || "")) : "",
   };
 }
 
@@ -736,6 +740,17 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
 }
 
 // A real scope, not empty and not the stand-in used when the ITB text couldn't be read.
+// The latest note you said or typed on the job (not an HPD call note), in capitals like the rest of the invoice.
+// Only notes from the day the work was recorded or later (not an older "gate code" note).
+function lastFieldNote(jobId: string, workDay = "") {
+  try {
+    // The work day, else the last 2 days.
+    const from = new Date(Date.parse(workDay) || Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+    const notes = loadJobNotes(jobId).filter((n) => n.text && !/^☎️/.test(n.text) && String(n.at || "").slice(0, 10) >= from);
+    return notes.length ? notes[notes.length - 1].text.trim().toUpperCase().slice(0, 400) : "";
+  } catch { return ""; }
+}
+
 function hasWorkDescription(form: PackageForm) {
   const text = form.description.trim();
   return Boolean(text) && text !== "Work completed per HPD bid / work order." && !isJunkDescription(text);
