@@ -4624,3 +4624,11 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-email-sheet footer button.is-main { background: #16a34a; border-color: #16a34a; color: #fff; }
 .fc-email-sheet footer button:disabled { opacity: .5; }
 .fc-map-hints .fc-pc-where { pointer-events: auto; cursor: pointer; border: 1px solid #93c5fd; background: #eff6ff; color: #1e3a8a; font-weight: 700; text-align: left; }
+
+/* 🏢 Building history on the job card */
+.jc-building { margin: 8px 0; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.jc-building summary { padding: 10px 12px; font: 800 15px system-ui; color: #334155; cursor: pointer; }
+.jc-building ol { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; gap: 6px; }
+.jc-building li button { width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; color: #0f172a; font: 600 14px system-ui; }
+.jc-building li button:disabled { opacity: 1; color: #334155; }
+.jc-building li small { display: block; margin-top: 2px; color: #475569; font: 500 13px system-ui; }

@@ -27,9 +27,10 @@ import ItbPages from "./ItbPages";
 import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
 import { emailPeople } from "../../lib/email-people";
+import { buildingHistory, historyLine } from "../../lib/building-history";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
-import { nextStop, nextStopLine } from "../../lib/next-stop";
+import { nextStop, nextStopLine, workInWords } from "../../lib/next-stop";
 import { isMondaySweepTime, mondaySweepLine, paperworkLeft as sweepLeft } from "../../lib/monday-sweep";
 import { itbPdfUrl } from "../../lib/private-data";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
@@ -3253,6 +3254,14 @@ export default function FieldCommandClient() {
   // ✉️ Email screen (owner, 6 Nov: "Add email feature to the app"): HPD people from their own emails, Lewis / Gafur first.
   const [emailFor, setEmailFor] = useState<{ job: EmailJob } | null>(null);
   const emailList = useMemo(() => emailPeople(boardRows), [boardThreads]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🏢 Building history (idea list): the other jobs at this building, 2024 to now. The 2024-2025 file loads the first
+  // time a job card opens.
+  const [pastJobs, setPastJobs] = useState<JobRecord[] | null>(null);
+  useEffect(() => {
+    if (!selectedJob || pastJobs) return;
+    fetch("/data/jobs_2024_2025.json", { cache: "force-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPastJobs(Array.isArray(d?.jobs) ? d.jobs : [])).catch(() => setPastJobs([]));
+  }, [selectedJob, pastJobs]);
+  const buildingPast = useMemo(() => (selectedJob ? buildingHistory(selectedJob as Record<string, unknown>, [jobs as Record<string, unknown>[], olderJobs as Record<string, unknown>[], (pastJobs || []) as Record<string, unknown>[]], workInWords) : []), [selectedJob, jobs, olderJobs, pastJobs]);
   const emailJobOf = (j: JobRecord | null): EmailJob => (j ? { omo: jobId(j), address: jobAddress(j), unit: unitOf(String(j.JobDescription || j.Job_Description || "")) } : null);
   const [staleOpen, setStaleOpen] = useState(false);
   const staleMark = (job: JobRecord, closed: boolean) => {
@@ -8380,6 +8389,24 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
+                {buildingPast.length ? (
+                  <details className="jc-building" data-hpd-smoke="jc-building">
+                    <summary>🏢 This building: {historyLine(buildingPast)}</summary>
+                    <ol>
+                      {buildingPast.slice(0, 12).map((x) => {
+                        const open = jobs.find((r) => jobId(r) === x.omo);
+                        return (
+                          <li key={x.omo} data-hpd-smoke="jc-building-row">
+                            <button type="button" disabled={!open} onClick={() => { if (open) setSelectedJob(open); }}>
+                              <b>{x.omo}</b>{x.at ? <span> · {new Date(x.at).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" })}</span> : null}{x.unit ? <span> · apt {x.unit}</span> : null}{x.amount ? <span> · ${x.amount.toLocaleString("en-US")}</span> : null}
+                              <small>{x.work}{x.ended ? ` · ${x.ended}` : ""}</small>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </details>
+                ) : null}
                 {!isTestJob(id) ? (
                   <button type="button" className="jc-email" data-hpd-smoke="jc-email" onClick={() => setEmailFor({ job: emailJobOf(selectedJob) })}>✉️ Email {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]} about this job</button>
                 ) : null}
