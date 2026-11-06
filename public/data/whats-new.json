@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Nov 6, 2026",
+      "title": "On the way, photos, your words",
+      "items": [
+        "🚗 \"On my way\" texts now say when you'll be there (\"around 2:40 PM\"), so the tenant knows even if they read it later."
+      ]
+    },
+    {
+      "date": "Nov 6, 2026",
       "title": "Bid page reads slower",
       "items": [
         "🧾 On a bid's work description page, the read-along moves slower, stops where the work ends (not HPD's standard notes), and goes back to the start of the work.",

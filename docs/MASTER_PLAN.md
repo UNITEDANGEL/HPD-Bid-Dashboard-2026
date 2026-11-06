@@ -139,8 +139,10 @@ The plan, one by one (✅ = live):
 26. ✅ **🔕 Quiet hours**: 9 PM-7 AM New York, alerts (emails from HPD, invitations, faxes, awards…) show on the screen
    without a chime, a voice or a buzz (lib/chime ring + quietHours); while you're on the notices they ring as before; a
    tenant's text isn't read out at night unless you're driving. Anything you ask the helper is still answered out loud.
-27. ☐ **🚗 "I'm on my way" text**: say "tell the tenant I'm on my way": it adds the arrival time from where you are and
-   the traffic, reads it back, and sends after your yes.
+27. ✅ **🚗 "I'm on my way" text**: it already existed ("on my way to EQ…" = "about 20 minutes"); now the text says a clock
+   time too ("I'm on my way. I should be there around 2:40 PM (about 20 minutes).") so the tenant knows even if they read
+   it later, and "text them we're on the way" gets the time added (lib/on-my-way.ts: distance x 1.35, 18 mph, 12 in rush
+   hour, rounded up to 5 minutes). Read back; sent only after your yes.
 28. ☐ **📸 Photos before paperwork**: the paperwork card says if before / after photos are missing and lets you add them
    before sending (HPD needs them).
 29. ☐ **📝 Your words on the invoice**: your "how did it go" answer becomes the work note on the invoice (preview first).

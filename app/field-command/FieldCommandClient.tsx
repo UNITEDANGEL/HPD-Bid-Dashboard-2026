@@ -72,6 +72,7 @@ import { PAY_STEPS, money, trackPayments } from "../../lib/payment-track";
 import { noticeFindings } from "../../lib/notice-findings";
 import { checkNotices, type NoticeCheckItem } from "../../lib/notice-check";
 import { jobHere, saysHere } from "../../lib/job-here";
+import { etaMinutes, isOnMyWay, withArrival } from "../../lib/on-my-way";
 import { isFridayWrapTime, weekWrap } from "../../lib/friday-wrap";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { notePromise, promisesLine, takeEarlierPromises } from "../../lib/convo-memory";
@@ -5584,7 +5585,8 @@ export default function FieldCommandClient() {
         // NYC driving: about 20 km/h door to door, plus parking; rounded up to 5 minutes.
         mins = Math.max(10, Math.ceil(((km * 1.3) / 20) * 60 / 5 + 1) * 5);
       }
-      agentRef.current(`tell the tenant for ${jobId(j)} I'm on my way${mins ? `, about ${mins} minutes` : ""}`, true);
+      // 🚗 A clock time too (plan item 27): the tenant may read it later.
+      agentRef.current(`tell the tenant for ${jobId(j)} ${mins ? withArrival("I'm on my way", mins).replace(/\.$/, ` (about ${mins} minutes).`) : "I'm on my way"}`, true);
       return;
     }
     if (cmd.intent === "month-report") {
@@ -6617,6 +6619,8 @@ export default function FieldCommandClient() {
       // Your own words to the tenant (23 Oct). Which job: the one named, else the tenant who texted last (2 days), else
       // the job on screen. Text service on: read back, sent after your yes; otherwise Messages opens with it.
       let job: JobRecord | null | "many" = cmd.ref ? findJobRef(cmd.ref, jobs, jobId, jobAddress) : null;
+      // 🚗 "I'm on my way" (plan item 27): the job on screen, else the next one you're going to.
+      if (!job && !cmd.ref && isOnMyWay(cmd.message)) job = selectedJob || (nextOmoRef.current ? jobs.find((x) => jobId(x) === nextOmoRef.current) || null : null);
       if (!job && !cmd.ref) {
         const lastReply = jobs.map((j) => ({ j, at: Date.parse(String(value(j, ["TenantRepliedAt"]) || "")) })).filter((x) => Number.isFinite(x.at) && Date.now() - x.at < 2 * 86400000).sort((a, b) => b.at - a.at)[0];
         job = lastReply?.j || selectedJob;
@@ -6628,7 +6632,13 @@ export default function FieldCommandClient() {
       if (!t.phone || t.commonArea) { answer(`There's no tenant phone on file for ${where}.`); return; }
       const first = (t.name || "").split(/\s+/)[0];
       const hello = first && first.length > 1 ? `Hi ${first[0].toUpperCase()}${first.slice(1).toLowerCase()}` : "Hello";
-      const text = `${hello}, this is Jot from United Angel Construction about ${where}: ${cmd.message[0].toUpperCase()}${cmd.message.slice(1)}`;
+      // The arrival time, from where you are (a location from the last 10 minutes) to the job.
+      let message = cmd.message;
+      if (isOnMyWay(message) && !/\d{1,2}(?::\d{2})?\s*(?:am|pm)|minutes?/i.test(message)) {
+        const here = lastFixRef.current, there = jobLatLng(job);
+        if (here?.at && Date.now() - here.at < 600000 && there) message = withArrival(message, etaMinutes(here, there));
+      }
+      const text = `${hello}, this is Jot from United Angel Construction about ${where}: ${message[0].toUpperCase()}${message.slice(1)}`;
       openIssueJob(job);
       if (smsReady) {
         pendingSmsRef.current = { id: jobId(job), text };

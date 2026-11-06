@@ -163,6 +163,7 @@ jobs:
           node scripts/test-my-words.mjs
           node scripts/test-job-here.mjs
           node scripts/test-friday-wrap.mjs
+          node scripts/test-on-my-way.mjs
           node scripts/test-notice-convo.mjs
           node scripts/test-job-tracker.mjs
           node scripts/test-street-view-hours.mjs
@@ -420,6 +421,7 @@ jobs:
             scripts/test-browser-friday-wrap.mjs \
             scripts/test-browser-yesterday.mjs \
             scripts/test-browser-quiet-hours.mjs \
+            scripts/test-browser-on-my-way.mjs \
             scripts/test-browser-helper-talks.mjs \
             scripts/test-browser-real-helper.mjs \
             scripts/test-browser-package-send.mjs \
