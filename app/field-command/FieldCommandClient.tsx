@@ -6224,7 +6224,7 @@ export default function FieldCommandClient() {
         // 🗂 One-card close-out (plan item 24): the affidavit + invoice open by themselves to check; sending is two taps.
         const reply = `Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}${said.date ? ` on ${said.date.slice(5).replace("-", "/")}` : ""}.${waiting ? ` Come back from ${waiting.dueLabel} for the 2nd try.` : " 📄 The affidavit and invoice open next: check them, then two taps to send."}`;
         if (waiting || multiRef.current) { answer(reply); return; }
-        showPanel({ heard, reply, actions: [{ label: "📄 Check the paperwork now", href: paperworkGenerateHref(c.id, c.outcome) }] });
+        showPanel({ heard, reply, actions: [{ label: "📄 Check the paperwork now", href: paperworkGenerateHref(c.id, c.outcome) }] }); speak(reply, 200, () => { if (convoRef.current) startListening(); });
         return;
       }
       setJobOutcome(job, c.outcome, "Said to the voice helper");
@@ -6233,7 +6233,7 @@ export default function FieldCommandClient() {
         const waiting = secondTryState(fresh);
         const reply = `Saved. ${jobAddress(job)} is marked ${FIELD_OUTCOMES[c.outcome].toLowerCase()}.${waiting || c.outcome === "APPOINTMENT_REQUESTED" ? "" : " 📄 The affidavit and invoice open next: check them, then two taps to send."}`;
         if (waiting || c.outcome === "APPOINTMENT_REQUESTED" || multiRef.current) { answer(reply); return; }
-        showPanel({ heard, reply, actions: [{ label: "📄 Check the paperwork now", href: paperworkGenerateHref(c.id, c.outcome) }] });
+        showPanel({ heard, reply, actions: [{ label: "📄 Check the paperwork now", href: paperworkGenerateHref(c.id, c.outcome) }] }); speak(reply, 200, () => { if (convoRef.current) startListening(); });
       }
       return;
     }
