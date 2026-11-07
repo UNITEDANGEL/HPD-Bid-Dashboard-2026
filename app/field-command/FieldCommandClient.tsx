@@ -44,7 +44,8 @@ import { isStaleJob } from "../../lib/stale-jobs";
 import { appointmentEmail, unitEmail, unitOf, UNIT_NAMES } from "../../lib/appointment-notice";
 import { paperworkLeft } from "../../lib/paperwork-left";
 import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory, timeInsight } from "../../lib/robot-insights";
-import { onSiteMinutes } from "../../lib/job-time";
+import { minutesLabel, onSiteMinutes } from "../../lib/job-time";
+import { nextOpenStop, takingLong, usualMinutes } from "../../lib/long-job";
 import { kindOfWork, learnedMinutes, type TimedVisit } from "../../lib/learned-time";
 import { monthReportPdf, monthSummary } from "../../lib/month-report";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -9693,6 +9694,25 @@ export default function FieldCommandClient() {
           const unpriced = soon.filter((b) => !(recs[b.omo!]?.price && recs[b.omo!]?.bidDue === b.bidDue)).length;
           const mins = minOf(soon[0].bidDueTime) - nowMin;
           all.push({ key: `bids|${today}|${soon.map((b) => b.omo).join(",")}`, kind: "bids", text: `⏰ ${soon.length} bid${soon.length === 1 ? "" : "s"} due in ${mins} min${unpriced ? `, ${unpriced} not priced` : ""}. Start?`, label: "▶ Start", go: () => agentRef.current("next bid") });
+        }
+        // ⏰ Job is taking long (6 Nov): at a job much longer than your usual time (learned for it), offer the next
+        // tenant on today's route a "running late" text (written by the helper; you tap send).
+        {
+          const here = jobs.find((j) => {
+            const a = String(value(j, ["FieldArrivedAt"]) || "");
+            if (!a || newYorkDay(a) !== today || isTestJob(jobId(j))) return false;
+            const h = (Array.isArray(j.FieldVisitHistory) ? j.FieldVisitHistory : []) as { recordedAt?: string; outcome?: string | null }[];
+            return !h.some((x) => x?.outcome && Date.parse(String(x.recordedAt)) > Date.parse(a));
+          });
+          if (here) {
+            const learned = learnedMinutes({ building: buildingKey(jobAddress(here)), kind: kindOfWork(jobScope(here)) }, timedVisits);
+            const long = takingLong(String(value(here, ["FieldArrivedAt"])), usualMinutes(learned?.minutes, timedVisits.map((v) => v.minutes)), now);
+            let ids: string[] = [];
+            try { const r = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null"); if (r?.settings?.date === today && Array.isArray(r.ids)) ids = r.ids; } catch { /* private mode */ }
+            const nextId = long ? nextOpenStop(ids, jobId(here), (id) => { const rj = routeJobs.find((x) => x.id === id); return Boolean(rj && !rj.done && !rj.closed); }) : "";
+            const nj = nextId ? jobs.find((j) => jobId(j) === nextId) : null;
+            if (long && nj && tenantInfo(nj).phone && !tenantInfo(nj).commonArea) all.push({ key: `long|${jobId(here)}|${today}`, kind: "long", text: `⏰ ${minutesLabel(long.elapsed)} at ${noZip(jobAddress(here))} (usually ${minutesLabel(long.usual)}). Tell the next tenant, ${noZip(jobAddress(nj))}, you're running late?`, label: "📱 Text", go: () => agentRef.current(`running late for ${nextId}`) });
+          }
         }
         if (movingFast && !driving) all.push({ key: `drive|${today}`, kind: "drive", text: "🚗 Looks like you're driving. Talk hands-free?", label: "🚗 Turn on", go: () => setDrivingMode(true) });
         if (awaySince) {

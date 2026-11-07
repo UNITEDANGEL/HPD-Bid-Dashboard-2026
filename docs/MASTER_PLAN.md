@@ -107,6 +107,8 @@ The plan, one by one (✅ = live, ☐ = next):
 40. ✅ **🌐 Remember the tenant's language** (idea list, 4 Nov): when a tenant texts back in Spanish, Chinese or Russian, the app remembers it for that job (on the phone only, by work order number). 📱 Text tenant on that job then writes the text in their language with the English below it; the one-tap messages (On the way, 15 min late…) too; texts the helper sends from the business number (the appointment confirmation, an answer you said yes to) go in their language. A 🌐 Their language row on the text (English / Español / 中文 / Русский) changes it; English forgets it. The free translator (Cloudflare's own model). Test: test-browser-tenant-lang-remember.
 41. ✅ **🗺 The route that learns** (idea list, 3 Nov: "remembers how long each building really takes and plans the day with it"): every visit the app timed (⏱ I'm here -> the saved outcome) teaches Today's route. A building you've been to gets the time it took there (the middle of your visits); otherwise your usual for that kind of work (door / lock, plumbing, lead, mold…, once 3 jobs are timed); otherwise Minutes per job. The stop says "⏱ 80 min here: your last visit at this building", its times and the rest of the day follow, and Plan my day fits fewer stops when a building takes long. Nothing new is kept (worked out from the jobs' own visit times). Tests: test-learned-time, test-browser-route-learns.
 42. ✅ **🗣 The helper answers in the bubble** (idea list, 3 Nov): tuck the chat to the side (⇥) and it stays a bubble: the type box comes back under the map, and short plain answers ("There's nothing waiting for a yes.", "58°, dry") show whole in the bubble with the face talking, no chat opening over the map. Tap the bubble to open the chat; from then on answers open it as before. Answers with buttons, cards or a question always open the chat. (Every short answer in the bubble broke 14 flows that expect the chat, so it's only after you tuck it.) Test: test-browser-bubble-answer. Also fixed 3 old tests that broke on Friday evenings (the 📊 Your week note covered buttons; a reworded reply); test-browser-arrive, -job-here and -bid-usual fail at night on the old code too: recheck in the day.
+43. ✅ **⏰ Job is taking long** (app idea list): at a job (⏱ I'm here today, nothing saved yet) half again longer than your usual time there (learned for that building / kind of work, else the middle of all your timed visits, else 1 hour) and 20+ minutes over, with a next stop on today's route that has a tenant phone, the helper's note says "⏰ 2 h at 1207 1 Avenue (usually 1 h). Tell the next tenant, …, you're running late?"; 📱 Text writes the running-late text with your new time (you tap send). Once a day per job. Tests: test-long-job, test-browser-long-job.
+44. ✅ **Already there, ticked off the idea lists**: 🗂 Your papers in one place with a 30-day warning (/papers/); 🔔 one alert at 6 PM with what's due tomorrow (the 🌆 evening wrap-up, weekdays 6-10 PM: bids faxed, notices answered, what's still open, tomorrow's bids). Bundling every other alert into it was not done: the owner asked on 20 Oct for each alert to ring on its own.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -389,7 +391,7 @@ The owner's words today, in order, and what was done with each:
 - ✅ 🗂 HPD calls on the notice: what HPD said last, next to the notice (39, 6 Nov).
 - ✅ 🌐 Remember the tenant's language: every text to them in their language (40, 6 Nov).
 - ✅ 🧾 Receipt photo on the job: the amount goes to that job's costs (36, 38, 6 Nov).
-- 🗂 Your papers in one place with dates and a 30-day warning.
+- ✅ 🗂 Your papers in one place with dates and a 30-day warning (already at /papers/; 44).
 - 🚗 A whole day hands-free: the robot leads every step by voice.
 
 ## 3 Nov 2026: everything the owner asked in the chat, and the idea list (keep this up to date)
@@ -462,10 +464,10 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job.
 - ✅ 🗺 Route that learns: remembers how long each building really takes and plans the day with it (41, 6 Nov).
 - 📅 Week view: jobs, bids due and notices for the next 7 days on one screen.
-- 🔔 One alert a day at 6 PM with what's due tomorrow, instead of many small ones.
+- ✅ 🔔 One alert a day at 6 PM with what's due tomorrow (the evening wrap-up; 44).
 - 🧾 Invoice check before sending: amounts match the award and the COA.
 - 🏢 Building history: every past job at this address, photos and notes, one tap from the card.
-- 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF.
+- ✅ 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF (already: "monthly report" in the chat).
 - ✅ 🗣 The helper answers in the bubble too: short answers ("58°, dry") show in the bubble without opening the chat (42, 6 Nov).
 
 ## What the owner asked for (this conversation)
