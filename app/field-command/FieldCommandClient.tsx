@@ -4065,6 +4065,12 @@ export default function FieldCommandClient() {
   function toggleOneHand() {
     setOneHand((on) => { try { localStorage.setItem("hpd-one-hand", on ? "0" : "1"); } catch { /* private mode */ } return !on; });
   }
+  // 🔘 Bigger buttons with gloves on (idea list): every button at least 56 px tall and wide, bigger letters. Kept on the phone.
+  const [gloves, setGloves] = useState(false);
+  useEffect(() => { try { setGloves(localStorage.getItem("hpd-gloves") === "1"); } catch { /* private mode */ } }, []);
+  function toggleGloves() {
+    setGloves((on) => { try { localStorage.setItem("hpd-gloves", on ? "0" : "1"); } catch { /* private mode */ } return !on; });
+  }
   function chooseMapStyle(style: MapStyle) {
     setMapStyle(style);
     try { localStorage.setItem("hpd-map-style", style); } catch { /* private mode */ }
@@ -7241,7 +7247,7 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}${oneHand ? " fc-one-hand" : ""}`}>
+    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}${oneHand ? " fc-one-hand" : ""}${gloves ? " fc-gloves" : ""}`}>
       <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
@@ -7605,6 +7611,7 @@ export default function FieldCommandClient() {
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
               { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
               { key: "one-hand", icon: "🖐", label: "One-hand mode", info: oneHand ? "On: search and map buttons by your thumb" : "Off · moves the top buttons down by your thumb", go: toggleOneHand },
+              { key: "gloves", icon: "🧤", label: "Big buttons (gloves)", info: gloves ? "On: every button bigger for work gloves" : "Off · makes every button bigger for work gloves", go: toggleGloves },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
             ];
             return (
@@ -9736,6 +9743,21 @@ export default function FieldCommandClient() {
             const nextId = long ? nextOpenStop(ids, jobId(here), (id) => { const rj = routeJobs.find((x) => x.id === id); return Boolean(rj && !rj.done && !rj.closed); }) : "";
             const nj = nextId ? jobs.find((j) => jobId(j) === nextId) : null;
             if (long && nj && tenantInfo(nj).phone && !tenantInfo(nj).commonArea) all.push({ key: `long|${jobId(here)}|${today}`, kind: "long", text: `⏰ ${minutesLabel(long.elapsed)} at ${noZip(jobAddress(here))} (usually ${minutesLabel(long.usual)}). Tell the next tenant, ${noZip(jobAddress(nj))}, you're running late?`, label: "📱 Text", go: () => agentRef.current(`running late for ${nextId}`) });
+          }
+        }
+        // 🧰 Did you bring everything? (idea list): the morning of a planned route, before the first "I'm here", the
+        // things today's stops need, and one tap reads the list (in store order, with ticks).
+        {
+          const ids = todayRouteIds();
+          const nyHour = Number(new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }));
+          const arrivedToday = jobs.some((j) => newYorkDay(String(value(j, ["FieldArrivedAt"]) || "")) === today);
+          if (ids.length && nyHour >= 5 && nyHour < 11 && !arrivedToday) {
+            const open = ids.map((id) => jobs.find((x) => jobId(x) === id)).filter((x): x is JobRecord => Boolean(x) && !value(x as JobRecord, ["FieldOutcome", "fieldOutcome"]));
+            const need = materialsFor(open.map((x) => ({ id: jobId(x), text: jobScope(x) })));
+            if (need.length) {
+              const names = need.slice(0, 3).map((m) => m.item.replace(/^\S+\s+/u, "").toLowerCase());
+              all.push({ key: `bring|${today}`, kind: "bring", text: `🧰 Before you go: today's ${open.length} stop${open.length === 1 ? " needs" : "s need"} ${names.join(", ")}${need.length > 3 ? ` and ${need.length - 3} more` : ""}. All in the truck?`, label: "📦 The list", go: () => agentRef.current("what do I need today") });
+            }
           }
         }
         if (movingFast && !driving) all.push({ key: `drive|${today}`, kind: "drive", text: "🚗 Looks like you're driving. Talk hands-free?", label: "🚗 Turn on", go: () => setDrivingMode(true) });
