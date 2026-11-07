@@ -1,4 +1,8 @@
-export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string }; done?: { at: string; label: string }; contact?: { tone: "none" | "try" | "ok" | "common"; tries: number }; secondTry?: { from: string; first: string } };
+export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string }; done?: { at: string; label: string }; contact?: { tone: "none" | "try" | "ok" | "common"; tries: number }; secondTry?: { from: string; first: string }; minutes?: number; minutesWhy?: string };
+// 🗺 The stay at one stop: what the app learned for it (lib/learned-time), else the route's minutes per job.
+export function stayMinutes(job: { minutes?: number }, fallback: number) {
+  return Number.isFinite(job.minutes) && (job.minutes as number) > 0 ? (job.minutes as number) : fallback;
+}
 export type RoutePoint = { lat: number; lng: number };
 export type RouteSettings = { date: string; start: string; end: string; minutes: number; borough: string };
 export type RouteStop = { job: RouteJob; arrival: number; finish: number; travel: number; warning: string };
@@ -36,7 +40,7 @@ export function scheduleStops(jobs: RouteJob[], s: RouteSettings, origin: RouteP
     const travel = Number.isFinite(road) ? Math.ceil(road as number) + PARK_MINUTES : travelEstimate(previous,job);
     const appointment = job.appointment?.state==='confirmed' && job.appointment.date===s.date ? job.appointment : undefined;
     const arrival = Math.max(cursor + travel, appointment ? timeMinutes(appointment.start) : 0);
-    const finish = arrival + s.minutes;
+    const finish = arrival + stayMinutes(job, s.minutes);
     const warning = !Number.isFinite(arrival) || (appointment && !Number.isFinite(timeMinutes(appointment.end))) ? 'Invalid appointment time' : appointment && finish > timeMinutes(appointment.end) ? 'Appointment window conflict' : finish > timeMinutes(s.end) ? 'Beyond workday' : '';
     cursor = finish; previous = job;
     return {job,arrival,finish,travel,warning};
@@ -85,17 +89,17 @@ export function planDay(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint) 
     const limit = next ? timeMinutes(next.appointment!.start) : timeMinutes(s.end);
     const runStart = previous, run: RouteJob[] = [];
     while (selected.length + run.length < 8) {
-      const fits = pending.filter(j=>cursor+travelEstimate(previous,j)+s.minutes+(next?travelEstimate(j,next):0)<=limit);
+      const fits = pending.filter(j=>cursor+travelEstimate(previous,j)+stayMinutes(j,s.minutes)+(next?travelEstimate(j,next):0)<=limit);
       if (!fits.length) break;
       const job = fits.reduce((best,j)=>{const d=stopCost(previous,j)-stopCost(previous,best); return d<0||(d===0&&j.id<best.id)?j:best;});
       pending.splice(pending.indexOf(job),1); run.push(job);
-      cursor += travelEstimate(previous,job)+s.minutes; previous=job;
+      cursor += travelEstimate(previous,job)+stayMinutes(job,s.minutes); previous=job;
     }
     const ordered = untangle(runStart, run, next);
     selected.push(...ordered);
     if (ordered.length) previous = ordered[ordered.length-1];
     if (next) {
-      selected.push(next); cursor=Math.max(cursor+travelEstimate(previous,next),timeMinutes(next.appointment!.start))+s.minutes; previous=next;
+      selected.push(next); cursor=Math.max(cursor+travelEstimate(previous,next),timeMinutes(next.appointment!.start))+stayMinutes(next,s.minutes); previous=next;
     }
   }
   return selected;

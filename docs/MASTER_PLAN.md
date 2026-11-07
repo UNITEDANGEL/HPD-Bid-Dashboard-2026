@@ -105,6 +105,7 @@ The plan, one by one (✅ = live, ☐ = next):
 38. ✅ **📷 The receipt fills in the amount**: after the 📷 receipt photo, the free picture AI (Cloudflare's own model, the same 15-a-day allowance as reading a photo, nothing kept) reads the total and the store into the box ("45.20 Home Depot"), with "📷 Read $45.20 at Home Depot: check it, then Add". Nothing is saved until Add; if it can't read it, it says so and you type it.
 39. ✅ **☎️ What HPD said on the last call, next to the notice** (idea list, 4 Nov): the newest "☎️ HPD call Nov 5: …" note on the job (saved when you tell the helper "HPD said …") shows on the notice's card on the board and in "📋 Every notice". Notes stay on the phone.
 40. ✅ **🌐 Remember the tenant's language** (idea list, 4 Nov): when a tenant texts back in Spanish, Chinese or Russian, the app remembers it for that job (on the phone only, by work order number). 📱 Text tenant on that job then writes the text in their language with the English below it; the one-tap messages (On the way, 15 min late…) too; texts the helper sends from the business number (the appointment confirmation, an answer you said yes to) go in their language. A 🌐 Their language row on the text (English / Español / 中文 / Русский) changes it; English forgets it. The free translator (Cloudflare's own model). Test: test-browser-tenant-lang-remember.
+41. ✅ **🗺 The route that learns** (idea list, 3 Nov: "remembers how long each building really takes and plans the day with it"): every visit the app timed (⏱ I'm here -> the saved outcome) teaches Today's route. A building you've been to gets the time it took there (the middle of your visits); otherwise your usual for that kind of work (door / lock, plumbing, lead, mold…, once 3 jobs are timed); otherwise Minutes per job. The stop says "⏱ 80 min here: your last visit at this building", its times and the rest of the day follow, and Plan my day fits fewer stops when a building takes long. Nothing new is kept (worked out from the jobs' own visit times). Tests: test-learned-time, test-browser-route-learns.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -458,7 +459,7 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 ### Ideas (not started; the app's 💡 list is public/data/upgrade-ideas.json)
 - 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up.
 - 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job.
-- 🗺 Route that learns: remembers how long each building really takes and plans the day with it.
+- ✅ 🗺 Route that learns: remembers how long each building really takes and plans the day with it (41, 6 Nov).
 - 📅 Week view: jobs, bids due and notices for the next 7 days on one screen.
 - 🔔 One alert a day at 6 PM with what's due tomorrow, instead of many small ones.
 - 🧾 Invoice check before sending: amounts match the award and the COA.

@@ -28,7 +28,7 @@ import ItbPages from "./ItbPages";
 import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
 import { emailPeople } from "../../lib/email-people";
-import { buildingHistory, historyLine } from "../../lib/building-history";
+import { buildingHistory, buildingKey, historyLine } from "../../lib/building-history";
 import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd } from "../../lib/job-costs";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
@@ -45,6 +45,7 @@ import { appointmentEmail, unitEmail, unitOf, UNIT_NAMES } from "../../lib/appoi
 import { paperworkLeft } from "../../lib/paperwork-left";
 import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory, timeInsight } from "../../lib/robot-insights";
 import { onSiteMinutes } from "../../lib/job-time";
+import { kindOfWork, learnedMinutes, type TimedVisit } from "../../lib/learned-time";
 import { monthReportPdf, monthSummary } from "../../lib/month-report";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -4833,8 +4834,14 @@ export default function FieldCommandClient() {
     return road;
   }
 
+  // 🗺 The route that learns (6 Nov): every visit the app timed, by building and kind of work.
+  const timedVisits = useMemo<TimedVisit[]>(() => jobs.flatMap((j) => {
+    const minutes = isTestJob(jobId(j)) ? null : onSiteMinutes(j as unknown as Record<string, unknown>);
+    return minutes === null ? [] : [{ building: buildingKey(jobAddress(j)), kind: kindOfWork(jobScope(j)), minutes }];
+  }), [jobs]);
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
     const point = jobLatLng(job); if (!point || isTestJob(jobId(job))) return [];
+    const learned = learnedMinutes({ building: buildingKey(jobAddress(job)), kind: kindOfWork(jobScope(job)) }, timedVisits);
     const queue = jobQueue(job);
     // Finished today (an outcome saved today that still stands): shown as done on Today's route.
     const today = nyToday();
@@ -4845,8 +4852,9 @@ export default function FieldCommandClient() {
       // The tenant on the route too (30 Oct): who expects you, who's a knock-anyway access attempt.
       contact:(()=>{const cs=tenantContactState(job as Record<string, unknown>,tenantInfo(job).commonArea);return {tone:cs.tone,tries:cs.tries};})(),
       // 🔒 A no-access job waiting for its 2nd try (31 Oct): on the route from the day it's allowed.
-      ...(()=>{const t2=secondTryState(job as Record<string, unknown>);return t2?{secondTry:{from:t2.dueDay,first:t2.firstLabel}}:{};})()}];
-  }), [jobs, calendarDate]);
+      ...(()=>{const t2=secondTryState(job as Record<string, unknown>);return t2?{secondTry:{from:t2.dueDay,first:t2.firstLabel}}:{};})(),
+      ...(learned?{minutes:learned.minutes,minutesWhy:learned.why}:{})}];
+  }), [jobs, calendarDate, timedVisits]);
 
   // Two taps instead of pop-up boxes (the iPhone home-screen app blocks confirm()): the first tap arms the button and
   // says what will happen, the second does it; it disarms after 6 seconds.
