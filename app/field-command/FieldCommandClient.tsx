@@ -47,7 +47,7 @@ import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory
 import { minutesLabel, onSiteMinutes } from "../../lib/job-time";
 import { nextOpenStop, takingLong, usualMinutes } from "../../lib/long-job";
 import { isNightNy, MAP_STYLE_LABEL, type MapStyle } from "../../lib/night";
-import { kindOfWork, learnedMinutes, type TimedVisit } from "../../lib/learned-time";
+import { kindOfWork, kindTimeAnswer, learnedMinutes, type TimedVisit } from "../../lib/learned-time";
 import { monthReportPdf, monthSummary } from "../../lib/month-report";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -5969,6 +5969,10 @@ export default function FieldCommandClient() {
         .filter((x): x is { j: JobRecord; minutes: number } => x.minutes !== null)
         .map(({ j, minutes }) => ({ minutes, borough: ({ MN: "Manhattan", BK: "Brooklyn", QN: "Queens", BX: "the Bronx", SI: "Staten Island" } as Record<string, string>)[String(jobBorough(j))] || String(jobBorough(j)), kind: (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "").split(/[·(,:]/)[0].trim().slice(0, 30) }));
       answer(`🗺 ${timeInsight(timed)}`);
+      return;
+    }
+    if (cmd.intent === "time-kind") {
+      answer(kindTimeAnswer(cmd.work ? kindOfWork(cmd.work) : null, timedVisits));
       return;
     }
     if (cmd.intent === "good-news") {

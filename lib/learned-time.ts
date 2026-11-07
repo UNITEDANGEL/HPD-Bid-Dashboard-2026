@@ -41,3 +41,22 @@ export function learnedMinutes(job: { building: string; kind: string }, timed: T
   return null;
 }
 
+// ⏱ How long each kind of work takes (app idea list): "how long does a door job take?" / "how long does each kind of
+// work take?", from the visits the app timed (⏱ I'm here -> the saved outcome). For planning the day and pricing bids.
+const minLabel = (n: number) => { const r = Math.round(n / 5) * 5; return r >= 60 ? `${Math.floor(r / 60)} h${r % 60 ? ` ${r % 60} min` : ""}` : `${Math.max(5, r)} min`; };
+export function kindTimes(timed: TimedVisit[]) {
+  const by = new Map<string, number[]>();
+  for (const t of timed) if (t.kind && t.kind !== "other") by.set(t.kind, [...(by.get(t.kind) || []), t.minutes]);
+  return [...by.entries()].map(([kind, xs]) => ({ kind, n: xs.length, mid: median(xs), low: Math.min(...xs), high: Math.max(...xs) })).sort((a, b) => b.n - a.n);
+}
+export function kindTimeAnswer(kind: string | null, timed: TimedVisit[]) {
+  const all = kindTimes(timed);
+  if (kind && kind !== "other") {
+    const k = all.find((x) => x.kind === kind);
+    if (!k) return `I haven't timed a ${kind} job yet. Tap ⏱ I'm here when you get there and save how it went: I'll learn how long ${kind} work takes you.`;
+    const range = k.n > 1 && k.high - k.low >= 10 ? ` (from ${minLabel(k.low)} to ${minLabel(k.high)})` : "";
+    return `⏱ ${kind[0].toUpperCase()}${kind.slice(1)} work takes you about ${minLabel(k.mid)}: the middle of ${k.n} timed job${k.n === 1 ? "" : "s"}${range}.${k.n < 3 ? " A few more timed jobs and it gets surer." : ""}`;
+  }
+  if (!all.length) return "No job has been timed yet. Tap ⏱ I'm here when you get to a job and save how it went: I'll learn how long each kind of work takes you.";
+  return `⏱ How long your work takes (the middle of your timed jobs):\n${all.slice(0, 8).map((k) => `• ${k.kind}: ${minLabel(k.mid)} (${k.n} job${k.n === 1 ? "" : "s"})`).join("\n")}`;
+}

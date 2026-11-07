@@ -37,6 +37,7 @@ export type AgentCommand =
   | { intent: "email" }
   | { intent: "month-report"; last?: boolean }
   | { intent: "losing-time" }
+  | { intent: "time-kind"; work: string }
   | { intent: "good-news" }
   | { intent: "before-after"; ref: string }
   | { intent: "find"; query: string }
@@ -284,6 +285,12 @@ export function parseCommand(heard: string): AgentCommand {
   // 🧾 / 🗺 / 🎉 / 📸 (owner, 4 Nov: "do all ideas").
   if (/\b(am i missing|missing (any )?paperwork|paperwork (i'?m )?missing|what paperwork (is )?(left|missing)|unfinished paperwork|paperwork (still )?(left|to do))\b/.test(t)) return { intent: "missing-paperwork" };
   if (/\b(losing time|where (does|do) (my|the) time go|what takes (the )?longest|which jobs take (the )?longest|slowest (jobs?|borough)|how long do (my )?jobs take)\b/.test(t)) return { intent: "losing-time" };
+  // ⏱ "how long does a door job take", "how long do locks usually take me", "how long does each kind of work take".
+  if (/\bhow (long|much time)\b/.test(t) && /\b(take|takes|took|last|need)\b/.test(t) && !/\b(drive|driving|get there|traffic|bid|bids|fax|hpd|pay|paid|payment|approve|approval)\b/.test(t)) {
+    if (/\b(each|every|all) (kind|type)s?\b|\bkinds? of (work|jobs?)\b|\btypes? of (work|jobs?)\b/.test(t)) return { intent: "time-kind", work: "" };
+    const kind = /\b(lead|mou?ld|doors?|locks?|buzzer|intercom|windows?|glass|guards?|leaks?|pipes?|plumbing|toilets?|sinks?|faucets?|drains?|electric(al)?|outlets?|wiring|lights?|smoke detectors?|ceilings?|plaster|walls?|paint(ing)?|floors?|tiles?|rubbish|debris|pests?|exterminat\w*|roach(es)?|mice|rodents?)\b/.exec(t);
+    if (kind) return { intent: "time-kind", work: kind[1] };
+  }
   if (/\b(good news|how did (today|my day) go|my wins today|replay (my|the) day|celebrate)\b/.test(t) && !/\b(week|month)\b/.test(t)) return { intent: "good-news" };
   if (/\bbefore (and|&|\+) after\b|\bbefore\/after\b/.test(t) && /\b(show|see|send|photos?|pictures?|pics?)\b/.test(t)) return { intent: "before-after", ref: refOf(t) };
   if (/\b(what (do|should) i (need|bring|buy|take)( today| tomorrow)?|shopping list|materials?( list)?( for today)?|what to (buy|bring))\b/.test(t)) return { intent: "materials" };
