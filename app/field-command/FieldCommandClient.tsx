@@ -110,6 +110,7 @@ import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
+import { outsideWord } from "../../lib/rain-route";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
@@ -4899,7 +4900,9 @@ export default function FieldCommandClient() {
       contact:(()=>{const cs=tenantContactState(job as Record<string, unknown>,tenantInfo(job).commonArea);return {tone:cs.tone,tries:cs.tries};})(),
       // 🔒 A no-access job waiting for its 2nd try (31 Oct): on the route from the day it's allowed.
       ...(()=>{const t2=secondTryState(job as Record<string, unknown>);return t2?{secondTry:{from:t2.dueDay,first:t2.firstLabel}}:{};})(),
-      ...(learned?{minutes:learned.minutes,minutesWhy:learned.why}:{})}];
+      ...(learned?{minutes:learned.minutes,minutesWhy:learned.why}:{}),
+      // 🌧 Outside work (roof, facade…) for the rain check on the route.
+      ...(outsideWord(jobScope(job))?{outside:outsideWord(jobScope(job))}:{})}];
   }), [jobs, calendarDate, timedVisits]);
 
   // Two taps instead of pop-up boxes (the iPhone home-screen app blocks confirm()): the first tap arms the button and
