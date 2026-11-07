@@ -55,6 +55,7 @@ try {
   await coach.waitFor({ timeout: 8000 });
   assert.match(await coach.innerText(), /1 of 9[\s\S]*This is me, your helper/);
   await page.waitForFunction(() => document.querySelector('[data-teach]')?.getAttribute("data-hpd-smoke") === "fc-claude-orb", null, { timeout: 5000 });
+  while (await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click();
   await coach.locator('[data-hpd-smoke="fc-teach-next"]').click();
   await page.waitForFunction(() => document.querySelector('[data-teach]')?.getAttribute("data-hpd-smoke") === "fc-chatbar-input", null, { timeout: 5000 });
   await coach.locator('[data-hpd-smoke="fc-teach-stop"]').click();

@@ -106,6 +106,7 @@ The plan, one by one (✅ = live, ☐ = next):
 39. ✅ **☎️ What HPD said on the last call, next to the notice** (idea list, 4 Nov): the newest "☎️ HPD call Nov 5: …" note on the job (saved when you tell the helper "HPD said …") shows on the notice's card on the board and in "📋 Every notice". Notes stay on the phone.
 40. ✅ **🌐 Remember the tenant's language** (idea list, 4 Nov): when a tenant texts back in Spanish, Chinese or Russian, the app remembers it for that job (on the phone only, by work order number). 📱 Text tenant on that job then writes the text in their language with the English below it; the one-tap messages (On the way, 15 min late…) too; texts the helper sends from the business number (the appointment confirmation, an answer you said yes to) go in their language. A 🌐 Their language row on the text (English / Español / 中文 / Русский) changes it; English forgets it. The free translator (Cloudflare's own model). Test: test-browser-tenant-lang-remember.
 41. ✅ **🗺 The route that learns** (idea list, 3 Nov: "remembers how long each building really takes and plans the day with it"): every visit the app timed (⏱ I'm here -> the saved outcome) teaches Today's route. A building you've been to gets the time it took there (the middle of your visits); otherwise your usual for that kind of work (door / lock, plumbing, lead, mold…, once 3 jobs are timed); otherwise Minutes per job. The stop says "⏱ 80 min here: your last visit at this building", its times and the rest of the day follow, and Plan my day fits fewer stops when a building takes long. Nothing new is kept (worked out from the jobs' own visit times). Tests: test-learned-time, test-browser-route-learns.
+42. ✅ **🗣 The helper answers in the bubble** (idea list, 3 Nov): tuck the chat to the side (⇥) and it stays a bubble: the type box comes back under the map, and short plain answers ("There's nothing waiting for a yes.", "58°, dry") show whole in the bubble with the face talking, no chat opening over the map. Tap the bubble to open the chat; from then on answers open it as before. Answers with buttons, cards or a question always open the chat. (Every short answer in the bubble broke 14 flows that expect the chat, so it's only after you tuck it.) Test: test-browser-bubble-answer. Also fixed 3 old tests that broke on Friday evenings (the 📊 Your week note covered buttons; a reworded reply); test-browser-arrive, -job-here and -bid-usual fail at night on the old code too: recheck in the day.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -465,7 +466,7 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - 🧾 Invoice check before sending: amounts match the award and the COA.
 - 🏢 Building history: every past job at this address, photos and notes, one tap from the card.
 - 📈 Monthly report: money in, jobs done, win rate, best boroughs, as a one-page PDF.
-- 🗣 The helper answers in the bubble too: short answers ("58°, dry") show in the bubble without opening the chat.
+- ✅ 🗣 The helper answers in the bubble too: short answers ("58°, dry") show in the bubble without opening the chat (42, 6 Nov).
 
 ## What the owner asked for (this conversation)
 

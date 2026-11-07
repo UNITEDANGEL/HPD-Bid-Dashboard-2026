@@ -4658,3 +4658,6 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 
 /* 🗺 The route that learns: the time this stop really takes. */
 .fc-route-learned { color: #047857; font-size: 0.8rem; font-weight: 600; }
+
+/* 🗣 A short answer shown whole in the bubble. */
+.fc-agent-bubble small.is-answer { max-width: 220px; -webkit-line-clamp: 3; color: #fff; font-size: 14px; }

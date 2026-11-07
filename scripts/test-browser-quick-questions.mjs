@@ -28,6 +28,7 @@ try {
   assert.equal(await row.count(), 0, "row hides while typing");
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("");
   await row.waitFor({ timeout: 10000 });
+  while (await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click();
   await page.locator('[data-hpd-smoke="fc-quick-q"][data-ask="next bid"]').tap();
   await page.locator('[data-hpd-smoke="fc-agent"]').waitFor({ timeout: 30000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-heard"]').innerText().then((t) => /next bid/i.test(t)), true, "helper heard the tapped question");

@@ -303,6 +303,12 @@ function itbFileName(job: JobRecord | null | undefined) {
 }
 const SCOPE_MISSING = "Couldn't read the scope from this job's ITB. Open the ITB under Job documents; type the scope on the paperwork page.";
 
+// 🗣 A plain one-line answer, short enough for the bubble: nothing to tap, pick or confirm in it.
+function isBubbleAnswer(a: { reply: string } & Record<string, unknown>) {
+  const r = String(a.reply || "").trim();
+  if (!r || r.length > 90 || r.includes("\n") || /…$/.test(r)) return false;
+  return !["file", "photos", "week", "chart", "live", "confirm", "signIn", "shop", "recap", "plan", "noticeCheck"].some((k) => a[k]) && !["choices", "offers", "cards", "actions"].some((k) => Array.isArray(a[k]) && (a[k] as unknown[]).length);
+}
 function jobScope(job: JobRecord) {
   const picked = longestCleanDescription(job, [
     "ItbPage3Description",
@@ -2038,12 +2044,19 @@ export default function FieldCommandClient() {
   const [speakingNow, setSpeakingNow] = useState(false);
   // Tucks 15 s after the last answer or tap, on the map only (not over a bid or a job), not while listening, talking,
   // driving or waiting for a yes / a pick.
+  // 🗣 A short answer ("58°, dry") stays in the bubble (idea list, 3 Nov): once you tuck the chat to the bubble (⇥), the
+  // next plain one-line answers show whole in it, the face talking; no chat opens over the map. A tap on the bubble (or
+  // closing the helper) opens the chat for answers again. Never an answer with buttons, cards or a question.
+  const bubbleModeRef = useRef(false);
+  useEffect(() => { if (!agent) bubbleModeRef.current = false; }, [agent]);
+  const bubbleAnswer = Boolean(agent && agent.reply && !agentFromDock && isBubbleAnswer(agent));
   useEffect(() => {
+    if (bubbleAnswer && bubbleModeRef.current && !selectedJob && !bidsOpen && !listening && !convo && !driving && !agentTypeOpen) { setAgentTucked(true); return; }
     setAgentTucked(false);
     if (!agent || selectedJob || bidsOpen || listening || speakingNow || convo || driving || agent.confirm || agent.choices?.length || agent.signIn || agentTypeOpen) return;
     const t = window.setTimeout(() => setAgentTucked(true), 15000);
     return () => window.clearTimeout(t);
-  }, [agent, selectedJob, bidsOpen, listening, speakingNow, convo, driving, agentTypeOpen, tuckPoke]);
+  }, [agent, selectedJob, bidsOpen, listening, speakingNow, convo, driving, agentTypeOpen, tuckPoke, bubbleAnswer]);
   useEffect(() => { if (!agent) setAgentFromDock(false); }, [agent]);
   useEffect(() => {
     const card = agent?.cards?.find((c) => c.kind !== "bid");
@@ -9753,7 +9766,7 @@ export default function FieldCommandClient() {
             onNext={() => go(noticeWalk.i + 1)} onPrev={() => go(Math.max(0, noticeWalk.i - 1))} onStop={() => setNoticeWalk(null)} onSpeak={say} />
         );
       })() : null}
-      {!agent && !selectedJob && !moreOpen && dockEdit < 0 ? (
+      {(!agent || agentTucked) && !selectedJob && !moreOpen && dockEdit < 0 ? (
         <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
           e.preventDefault();
           const t = chatBarText.trim();
@@ -9762,7 +9775,8 @@ export default function FieldCommandClient() {
           setChatTip("");
           (e.currentTarget.querySelector("input") as HTMLInputElement | null)?.blur();
           unlockChime();
-          setAgentTypeOpen(true);
+          // 🗣 Asked with the chat in the bubble: the answer comes in the bubble (no type box opening the chat).
+          if (!(agentTucked && bubbleModeRef.current)) setAgentTypeOpen(true);
           agentRef.current(t);
         }}>
           {/* Quick answer buttons (owner idea, 3 Nov): one tap instead of typing. */}
@@ -9792,7 +9806,7 @@ export default function FieldCommandClient() {
       {agent ? (
         <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}${agentFromDock ? " is-from-dock" : ""}${agentFromDock && !selectedJob && !bidsOpen && !driving ? " is-big" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
           onPointerDown={() => setTuckPoke((n) => n + 1)} onKeyDown={() => setTuckPoke((n) => n + 1)}>
-          {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => setAgentTucked(false)}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} /><small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small></button> : null}
+          {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => { bubbleModeRef.current = false; setAgentTucked(false); }}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} />{bubbleAnswer && bubbleModeRef.current ? <small className="is-answer" data-hpd-smoke="fc-agent-bubble-answer">{agent.reply}</small> : <small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small>}</button> : null}
           {driving ? <button type="button" className="fc-agent-driving" data-hpd-smoke="fc-agent-driving" onClick={() => setDrivingMode(false)}>🚗 Driving: short answers, I keep listening · tap to stop</button> : null}
           {/* Earlier turns only over the map: over a sheet (bid, job) the panel stays small so it doesn't hide its buttons. */}
           {!selectedJob && !bidsOpen && agentHistory.length > 3 ? (
@@ -10011,7 +10025,7 @@ export default function FieldCommandClient() {
             <button type="button" aria-label="Your requests to Claude" data-hpd-smoke="fc-agent-requests" onClick={() => { stopSpeaking(); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); goTo("requests", ""); }}>📋</button>
             <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="fc-agent-photo-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void readPhoto(f); }} />
             <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>
-            <button type="button" aria-label="Move the chat to the side" data-hpd-smoke="fc-agent-tuck" onClick={(e) => { e.stopPropagation(); setAgentTucked(true); }}>⇥</button>
+            <button type="button" aria-label="Move the chat to the side" data-hpd-smoke="fc-agent-tuck" onClick={(e) => { e.stopPropagation(); bubbleModeRef.current = true; setAgentTypeOpen(false); setAgentTucked(true); }}>⇥</button>
             <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); setAgentFromDock(false); setOrbBack(Date.now()); }}>✕</button>
           </div>
         </div>

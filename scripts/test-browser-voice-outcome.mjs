@@ -56,7 +56,7 @@ try {
   const back = await say("male, tall, dark hair", /Say yes/, false);
   assert.match(back, new RegExp(`as refused access on \\w+ ${PAST.slice(5).replace("-", "/")}, refused by MALE, TALL, DARK HAIR\\?`));
   const done = await say("yes", /Saved\./, false);
-  assert.match(done, /The package opens next/);
+  assert.match(done, /(The package opens|The affidavit and invoice open) next/);
   const rec = await saved();
   assert.equal(rec.FieldOutcome, "REFUSED_ACCESS");
   assert.equal(nyDay(Date.parse(rec.RefusalDate)), PAST, "saved on the day said");
