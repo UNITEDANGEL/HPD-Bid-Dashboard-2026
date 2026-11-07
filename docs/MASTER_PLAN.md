@@ -104,6 +104,7 @@ The plan, one by one (✅ = live, ☐ = next):
 37. ✅ **Invoice check against the award: not needed**: the invoice already prints the bid, the change and the charge on their own lines, so a charge that differs from the award can be right; checking it would stop good paperwork.
 38. ✅ **📷 The receipt fills in the amount**: after the 📷 receipt photo, the free picture AI (Cloudflare's own model, the same 15-a-day allowance as reading a photo, nothing kept) reads the total and the store into the box ("45.20 Home Depot"), with "📷 Read $45.20 at Home Depot: check it, then Add". Nothing is saved until Add; if it can't read it, it says so and you type it.
 39. ✅ **☎️ What HPD said on the last call, next to the notice** (idea list, 4 Nov): the newest "☎️ HPD call Nov 5: …" note on the job (saved when you tell the helper "HPD said …") shows on the notice's card on the board and in "📋 Every notice". Notes stay on the phone.
+40. ✅ **🌐 Remember the tenant's language** (idea list, 4 Nov): when a tenant texts back in Spanish, Chinese or Russian, the app remembers it for that job (on the phone only, by work order number). 📱 Text tenant on that job then writes the text in their language with the English below it; the one-tap messages (On the way, 15 min late…) too; texts the helper sends from the business number (the appointment confirmation, an answer you said yes to) go in their language. A 🌐 Their language row on the text (English / Español / 中文 / Русский) changes it; English forgets it. The free translator (Cloudflare's own model). Test: test-browser-tenant-lang-remember.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -383,9 +384,9 @@ The owner's words today, in order, and what was done with each:
 
 ### Ideas from today (not started)
 - 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person.
-- 🗂 HPD calls on the notice: what HPD said last, next to the notice.
-- 🌐 Remember the tenant's language: every text to them in their language.
-- 🧾 Receipt photo on the job: the amount goes to that job's costs.
+- ✅ 🗂 HPD calls on the notice: what HPD said last, next to the notice (39, 6 Nov).
+- ✅ 🌐 Remember the tenant's language: every text to them in their language (40, 6 Nov).
+- ✅ 🧾 Receipt photo on the job: the amount goes to that job's costs (36, 38, 6 Nov).
 - 🗂 Your papers in one place with dates and a 30-day warning.
 - 🚗 A whole day hands-free: the robot leads every step by voice.
 

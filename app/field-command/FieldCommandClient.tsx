@@ -10,6 +10,7 @@ import { findStore, storeLine, type Store } from "../../lib/store-stop";
 import { bumpBest, streakLine, streaks } from "../../lib/streaks";
 import { drivingLink, routeLink, wazeLink } from "../../lib/driving-link";
 import TranslatePanel, { translateLine } from "./TranslatePanel";
+import { LANG_LABEL, rememberTenantLang, TENANT_LANGS, tenantLangOf, type TenantLang } from "../../lib/tenant-lang";
 import NoticeWalk, { walkSpeech, type WalkFacts } from "./NoticeWalk";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
@@ -2323,7 +2324,8 @@ export default function FieldCommandClient() {
   const [movingFast, setMovingFast] = useState(false);
   const fastRef = useRef(0);
   // 📱 Text the tenant (22 Oct): the draft being read / edited before it opens in Messages.
-  const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number } | null>(null);
+  const [tenantText, setTenantText] = useState<{ id: string; text: string; ai: string; at?: number; english?: string } | null>(null);
+  const [, setTenantLangTick] = useState(0);
   // What is waiting for a yes, kept 2 minutes even if the answer panel is closed (a yes said from the search mic).
   const pendingRef = useRef<{ id: string; outcome: string; at: number } | null>(null);
   // An outcome said with its day / who refused, waiting for yes; a refusal said without who waits for the description.
@@ -4210,8 +4212,16 @@ export default function FieldCommandClient() {
       facts: { tenantFirstName: (t.name || "").split(/\s+/)[0] || null, address: jobAddress(job).replace(/,\s*\d{5}$/, ""), apartment: t.apt || null, hpdWorkOrder: jobId(job), job: jobWords, company: "United Angel Construction" },
     }) }).then(async (r) => ({ status: r.status, d: await r.json().catch(() => ({})) })).then(({ status, d }) => {
       const text = String(d?.text || "").replace(/^"|"$/g, "").trim();
+      if (tenantLangOf(id) !== "en") { void draftInTheirLang(id, d?.ai && text && text.length <= 480 ? text : ready, ""); return; }
       setTenantText((cur) => (cur && cur.id === id ? (d?.ai && text && text.length <= 480 ? { ...cur, text, ai: "✨ Written by AI. Read it, change anything, then open it in Messages and press Send there." } : { ...cur, ai: status === 401 ? "Ready text below. Sign in with Google on this phone and the AI writes it next time." : "" }) : cur));
-    }).catch(() => setTenantText((cur) => (cur && cur.id === id ? { ...cur, ai: "" } : cur)));
+    }).catch(() => { if (tenantLangOf(id) !== "en") void draftInTheirLang(id, ready, ""); else setTenantText((cur) => (cur && cur.id === id ? { ...cur, ai: "" } : cur)); });
+  }
+  // 🌐 The text in the tenant's language (remembered from their texts, or picked on the draft); the English kept to show.
+  async function draftInTheirLang(id: string, english: string, ai: string, lang: TenantLang = tenantLangOf(id)) {
+    if (lang === "en") { setTenantText((cur) => (cur && cur.id === id ? { ...cur, text: english, english: undefined, ai } : cur)); return; }
+    setTenantText((cur) => (cur && cur.id === id ? { ...cur, text: english, english: undefined, ai: `🌐 Writing it in ${LANG_LABEL[lang]}…` } : cur));
+    const theirs = await translateLine(english, "en", lang);
+    setTenantText((cur) => (cur && cur.id === id ? (theirs ? { ...cur, text: theirs, english, ai: `🌐 In ${LANG_LABEL[lang]}, the tenant's language. The English is below: read it, then send.` } : { ...cur, text: english, english: undefined, ai: `Couldn't put it in ${LANG_LABEL[lang]} right now (no signal?): this is the English.` }) : cur));
   }
   // The evening-before reminder text for an appointment, and noting it on the job so it isn't offered again (27 Oct).
   function reminderText(job: JobRecord, a: Appointment, day: "today" | "tomorrow" = "tomorrow") {
@@ -4263,12 +4273,15 @@ export default function FieldCommandClient() {
   // confirm: the appointment confirmation (it doesn't restart the "waiting for an answer" clock).
   async function smsNow(job: JobRecord, text: string, confirm = false): Promise<{ sent: boolean; message: string }> {
     try {
-      const r = await fetch("/api/drive/tenant-sms", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: tenantInfo(job).phone, text }) });
+      const lang = tenantLangOf(jobId(job));
+      let body = text, inLang = "";
+      if (lang !== "en" && textLang(text) === "en") { const theirs = await translateLine(text, "en", lang); if (theirs) { body = theirs; inLang = ` in ${LANG_LABEL[lang]}`; } }
+      const r = await fetch("/api/drive/tenant-sms", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: tenantInfo(job).phone, text: body }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.reason || d.error || `HTTP ${r.status}`);
       if (confirm) { const id = jobId(job); const patch = { TenantConfirmedAt: new Date().toISOString(), FieldVisitHistory: visitHistoryWith(job, "Texted the tenant the appointment", null) }; try { writeSharedWorkflowPatch(id, patch); } catch {} mergeWorkflowPatchIntoScreen(id, patch); }
       else markTenantTexted(job, text);
-      return { sent: true, message: `✓ Sent to ${d.to}. Their answer comes back here.` };
+      return { sent: true, message: `✓ Sent to ${d.to}${inLang}. Their answer comes back here.` };
     } catch (e) {
       return { sent: false, message: `Not sent: ${e instanceof Error ? e.message : "error"}` };
     }
@@ -4615,6 +4628,8 @@ export default function FieldCommandClient() {
       for (const m of replies) {
         const job = jobsRef.current.find((j) => { const ph = last10(tenantInfo(j).phone); return ph.length === 10 && ph === last10(m.from); });
         if (job) markTenantReplied(job);
+        // 🌐 They wrote in Spanish / Chinese / Russian: remember it, the next texts go in their language.
+        if (job && textLang(m.body) !== "en") rememberTenantLang(jobId(job), textLang(m.body));
         // Their words stay on this phone only (not on the job record the status server keeps), for "any texts from tenants".
         try { const keep = JSON.parse(localStorage.getItem("hpd-tenant-replies") || "[]"); keep.push({ omo: job ? jobId(job) : "", body: m.body.slice(0, 300), at: m.at }); localStorage.setItem("hpd-tenant-replies", JSON.stringify(keep.slice(-30))); } catch { /* private mode */ }
         // Their answer names a day and time ("Thursday at 10 works"): offer it as the appointment (23 Oct, plan step 4).
@@ -8644,9 +8659,15 @@ export default function FieldCommandClient() {
                                   ["✅ Please confirm", `${hi}, ${me}. Please confirm our appointment at ${where}. Reply YES to confirm or tell us a better time.`],
                                   ["🚪 We're outside", `${hi}, ${me}. We are outside ${where} for the HPD repair. Please let us in.`],
                                 ];
-                                return <div className="jc-tenant-quick" data-hpd-smoke="jc-tenant-quick">{quick.map(([label, text]) => <button key={label} type="button" data-hpd-smoke="jc-tenant-quick-btn" onClick={() => setTenantText({ ...tenantText, text, ai: "Ready: read it, then send it." })}>{label}</button>)}</div>;
+                                return <div className="jc-tenant-quick" data-hpd-smoke="jc-tenant-quick">{quick.map(([label, text]) => <button key={label} type="button" data-hpd-smoke="jc-tenant-quick-btn" onClick={() => { setTenantText({ ...tenantText, text, english: undefined, ai: "Ready: read it, then send it." }); if (tenantLangOf(tenantText.id) !== "en") void draftInTheirLang(tenantText.id, text, "Ready: read it, then send it."); }}>{label}</button>)}</div>;
                               })()}
+                              {/* 🌐 Their language (remembered when they text back in it): the text goes in it, the English below. */}
+                              <div className="jc-tenant-lang" data-hpd-smoke="jc-tenant-lang" role="group" aria-label="The tenant's language">
+                                <small>🌐 Their language:</small>
+                                {TENANT_LANGS.map((l) => <button key={l} type="button" data-lang={l} aria-pressed={tenantLangOf(tenantText.id) === l} onClick={() => { const en = tenantText.english || tenantText.text; rememberTenantLang(tenantText.id, l); setTenantLangTick((n) => n + 1); void draftInTheirLang(tenantText.id, en, "Ready: read it, then send it.", l); }}>{LANG_LABEL[l]}</button>)}
+                              </div>
                               <textarea rows={6} data-hpd-smoke="jc-tenant-draft-text" value={tenantText.text} onChange={(e) => setTenantText({ ...tenantText, text: e.target.value })} />
+                              {tenantText.english ? <p className="jc-tenant-english" data-hpd-smoke="jc-tenant-english">In English: {tenantText.english}</p> : null}
                               <div>
                                 {smsReady ? <button type="button" className={`is-send${smsSend?.id === jobId(selectedJob) && smsSend.armed ? " is-armed" : ""}`} data-hpd-smoke="jc-tenant-send-sms" disabled={smsSend?.id === jobId(selectedJob) && smsSend.status === "Sending…"} onClick={() => void sendTenantSms(selectedJob, tenantText.text)}>{smsSend?.id === jobId(selectedJob) && smsSend.armed ? "✅ Tap again: send the text" : "📤 Send it now"}</button> : null}
                                 <a className={smsReady ? undefined : "is-send"} data-hpd-smoke="jc-tenant-open-sms" href={smsHref(tenant.phone, tenantText.text)} onClick={() => markTenantTexted(selectedJob, tenantText.text)}>📱 {smsReady ? "From my phone" : "Open in Messages"}</a>
