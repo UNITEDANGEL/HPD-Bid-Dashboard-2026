@@ -38,6 +38,7 @@ export type AgentCommand =
   | { intent: "month-report"; last?: boolean }
   | { intent: "losing-time" }
   | { intent: "day-money" }
+  | { intent: "hpd-emails" }
   | { intent: "time-kind"; work: string }
   | { intent: "good-news" }
   | { intent: "before-after"; ref: string }
@@ -171,6 +172,8 @@ export function parseCommand(heard: string): AgentCommand {
   const t = String(heard || "").trim().toLowerCase().replace(/[.?!]+$/, "");
   const short = t.split(/\s+/).length <= 3;
   if (short && /^(yes|yeah|yep|correct|right|do it|save it|confirm|ok(ay)?|sure)\b/.test(t)) return { intent: "yes" };
+  // 📩 "any new HPD emails", "what did HPD email me", "read me my HPD emails": who wrote, which job, what they want.
+  if (/\b(new|any|latest|recent|my) (new )?hpd e-?mails?\b|\be-?mails? from hpd\b|\bwhat did hpd (e-?mail|write|send)( me)?$|\bread (me )?(my )?(new )?hpd e-?mails?\b/.test(t)) return { intent: "hpd-emails" };
   // 🧾 "Spent 45 at Home Depot", "receipt 120 for paint": a cost on the job (FieldCommandClient adds it).
   if (/^(i\s+)?(spent|paid|receipt|add (a )?cost)\b.*\d/.test(t)) return { intent: "cost" };
   // ✉️ "Email Lewis about ER07610": opens the email screen (never sends by voice).

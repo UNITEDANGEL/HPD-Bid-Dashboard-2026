@@ -112,6 +112,7 @@ import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
+import { emailBrief } from "../../lib/email-brief";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
@@ -2149,6 +2150,11 @@ export default function FieldCommandClient() {
     const working = moved.filter((t) => t.status !== "Done" && t.status !== "Waiting for you");
     if (working.length) lines.push(`🔧 Claude worked on ${working.length === 1 ? ask(working[0]) : `${working.length} requests`}`);
     return lines;
+  };
+  // 📩 HPD's emails since a time (not ours), for the 20-second brief.
+  const hpdMailsSince = (since: string) => {
+    const t0 = Date.parse(since);
+    return (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.parse(m.at) > t0).map((m) => ({ from: senderName(m.from || ""), omo: t.omos[0] || "", text: String(m.text || ""), subject: t.subject, at: m.at })));
   };
   const sinceLabel = (iso: string) => {
     const d = new Date(iso);
@@ -5719,7 +5725,10 @@ export default function FieldCommandClient() {
       const since = awaySince || (lastSeenRef.current && Date.now() - Date.parse(lastSeenRef.current) < 86400000 ? lastSeenRef.current : new Date(Date.now() - 12 * 3600000).toISOString());
       const lines = catchUp(since);
       setAwaySince("");
-      const reply = lines.length ? `Since ${sinceLabel(since)}:\n${lines.map((l) => `• ${l}`).join("\n")}` : `Nothing new since ${sinceLabel(since)}: no new bids, no HPD emails, nothing from Claude.`;
+      // 📩 Each HPD email in one line (who, which job, what they want) instead of "HPD wrote 3 times".
+      const brief = emailBrief(hpdMailsSince(since));
+      const other = brief ? lines.filter((l) => !l.startsWith("📧 HPD wrote")) : lines;
+      const reply = lines.length ? `Since ${sinceLabel(since)}:${other.length ? `\n${other.map((l) => `• ${l}`).join("\n")}` : ""}${brief ? `\n\n${brief}` : ""}` : `Nothing new since ${sinceLabel(since)}: no new bids, no HPD emails, nothing from Claude.`;
       if (multiRef.current) { answer(reply); return; }
       setAgent({ heard, reply, cards: takeCards(reply) });
       speak(reply, 200, () => { if (convoRef.current) startListening(); });
@@ -5972,6 +5981,12 @@ export default function FieldCommandClient() {
         .filter((x): x is { j: JobRecord; minutes: number } => x.minutes !== null)
         .map(({ j, minutes }) => ({ minutes, borough: ({ MN: "Manhattan", BK: "Brooklyn", QN: "Queens", BX: "the Bronx", SI: "Staten Island" } as Record<string, string>)[String(jobBorough(j))] || String(jobBorough(j)), kind: (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "").split(/[·(,:]/)[0].trim().slice(0, 30) }));
       answer(`🗺 ${timeInsight(timed)}`);
+      return;
+    }
+    if (cmd.intent === "hpd-emails") {
+      // The last 24 hours (the app reads your email every 10 minutes).
+      const brief = emailBrief(hpdMailsSince(new Date(Date.now() - 86400000).toISOString()));
+      answer(brief ? brief.replace(/^📧 (\d+) new HPD (emails?):/, "📧 $1 HPD $2 in the last 24 hours:") : "📧 No emails from HPD in the last 24 hours.");
       return;
     }
     if (cmd.intent === "day-money") {
@@ -9264,10 +9279,10 @@ export default function FieldCommandClient() {
             {NOTICE_KINDS.map((k) => (
               <button key={k.key} type="button" title={k.note} aria-pressed={noticeKind === k.key} className={`fc-notice-pick is-${k.key}${noticeKind === k.key ? " is-on" : ""}`} data-hpd-smoke={`fc-notice-pick-${k.key}`} onClick={() => pickNotices(k.key)}>
                 <span className="fc-notice-pick-icon" aria-hidden="true">{k.icon}</span>
-                <b>{k.short}</b>
-                <em>{noticeSets[k.key].size}</em>
+                <span className="fc-notice-pick-text"><b>{k.short}</b>
                 {k.key === "priority" && nextDue ? <small className="fc-notice-pick-timer" data-hpd-smoke="fc-notice-timer">⏱ {dueText(nextDue.dueAt)}</small> : null}
-                {k.key === "rejected" && payTrack.summary.held ? <small className="fc-notice-pick-timer is-money" data-hpd-smoke="fc-notice-held">{money(payTrack.summary.held)} held</small> : null}
+                {k.key === "rejected" && payTrack.summary.held ? <small className="fc-notice-pick-timer is-money" data-hpd-smoke="fc-notice-held">{money(payTrack.summary.held)} held</small> : null}</span>
+                <em>{noticeSets[k.key].size}</em>
               </button>
             ))}
             <button type="button" className="fc-notice-pick is-list" data-hpd-smoke="fc-notice-pick-list" onClick={() => setNoticesOpen(true)}>
