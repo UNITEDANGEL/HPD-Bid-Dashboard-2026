@@ -55,7 +55,7 @@ try {
   // What shows on the screen, as parts of the page's height: the WORK DESCRIPTION lines (about 0.57-0.68 down) are in it.
   const at = await box.evaluate((el) => ({ top: el.scrollTop / el.scrollHeight, bottom: (el.scrollTop + el.clientHeight) / el.scrollHeight }));
   assert.ok(at.top > 0.15 && at.top <= 0.57 && at.bottom >= 0.68, `scrolled down to the WORK DESCRIPTION box (${at.top.toFixed(2)}-${at.bottom.toFixed(2)})`);
-  await page.screenshot({ path: process.env.SHOT || "bid-walk.png" }).catch(() => {});
+  await page.screenshot({ path: process.env.SHOT || `${process.env.TEMP || "/tmp"}/bid-walk.png` }).catch(() => {});
   // "💰 Price it": the page closes, the price box is on the screen with the cursor in it.
   await page.locator('[data-hpd-smoke="fc-itb-price"]').click();
   await page.locator('[data-hpd-smoke="fc-bid-sheet"]').waitFor();
@@ -71,7 +71,7 @@ try {
   const next = page.locator('[data-hpd-smoke="fc-bid-next"]');
   const head = await page.locator('[data-hpd-smoke="fc-bid-sheet"] header').evaluate((el) => ({ fits: el.scrollWidth <= el.clientWidth + 1, nextRight: el.querySelector(".fc-bid-next")?.getBoundingClientRect().right || 0 }));
   assert.ok(head.fits && head.nextRight <= 390, `the bid card's top row fits the iPhone (${JSON.stringify(head)})`);
-  await page.locator('[data-hpd-smoke="fc-bid-sheet"] header').screenshot({ path: process.env.SHOT || "bid-walk.png" }).catch(() => {});
+  await page.locator('[data-hpd-smoke="fc-bid-sheet"] header').screenshot({ path: process.env.SHOT || `${process.env.TEMP || "/tmp"}/bid-walk.png` }).catch(() => {});
   assert.equal(await next.getAttribute("aria-label"), `Next bid: ${other.omo} (1 left)`);
   await next.click();
   await page.locator('[data-hpd-smoke="fc-bid-arriving"]', { hasText: other.omo }).waitFor({ timeout: 5000 });
