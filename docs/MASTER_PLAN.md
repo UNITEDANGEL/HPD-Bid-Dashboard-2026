@@ -112,6 +112,8 @@ The plan, one by one (✅ = live, ☐ = next):
 45. ✅ **📝 Say why there is no photo** (app idea list): when you walk away (150 m+) from a job you tapped I'm here at today with no after photo and no result saved, the helper says so and offers three taps: No access / Tenant refused / Completed by others; one reads it back and yes saves it as the visit's result, same as saying it. (Also fixed: the warning's address kept its zip.) Test: test-browser-photo-reason.
 46. ✅ **📤 Send the route** (app idea list: "one tap sends tomorrow's route (addresses only) to your own phone or a helper's"): Today's route has "📤 Send this route": the phone's share sheet (Messages, WhatsApp, email…) with "Route for Monday, Nov 9: 2 stops", each stop's time, address and work order, and the whole route in Google Maps. No tenant names or phones, not where you start from. Plan tomorrow by picking tomorrow's day in Plan settings. Test: test-browser-route-learns.
 47. ✅ **🌙 Dark map at night** (app idea list: "a dark screen that is easier on the eyes in a dark truck"): All → Map style now goes Light → Dark → Dark at night → Light with each tap, and it's kept on the phone (before, the dark map went back to light every time the app opened). Dark at night turns the map dark from half an hour after sunset (New York, by month) to 6:30 AM and back by itself. The 🗺 map button still flips light/dark. (The job card and panels are not dark yet.) Tests: test-night, test-browser-night-map.
+48. ✅ **🖐 One-hand mode** (idea list): All → One-hand mode moves the search box, filters, 🔔, the borough buttons and Map / Locate down above the chat bar, by your thumb; the Year menu opens upward; the helper's little notes and the location line go to the top instead. Kept on the phone; tap again to put everything back. Test: test-browser-one-hand.
+49. ✅ **📉 Why you lost a bid: already there**: the bid stats (Bids → 📊) show how far above the winner you were when you lost, by kind of work and borough, and how many you lost by under 10%.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -463,8 +465,8 @@ Done with its plan number when it is live, add new ideas at the bottom of Ideas.
 - 💲 Price check by voice; 📅 the week ahead; 🔔 one follow-up on an open notice; 🌎 Spanish (233).
 
 ### Ideas (not started; the app's 💡 list is public/data/upgrade-ideas.json)
-- 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up.
-- 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job.
+- ✅ 🧭 Next paperwork step after each job; 📊 which bids you win; ⚡ make the app open faster; 🔍 weekly app check-up. (done earlier)
+- ✅ 🌆 End-of-day summary; ✋ one-hand mode; 📷 enough photos per job; 📝 notes on every job. (one-hand mode: 48, 6 Nov)
 - ✅ 🗺 Route that learns: remembers how long each building really takes and plans the day with it (41, 6 Nov).
 - 📅 Week view: jobs, bids due and notices for the next 7 days on one screen.
 - ✅ 🔔 One alert a day at 6 PM with what's due tomorrow (the evening wrap-up; 44).

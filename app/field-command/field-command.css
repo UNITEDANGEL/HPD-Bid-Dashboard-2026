@@ -4661,3 +4661,12 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 
 /* 🗣 A short answer shown whole in the bubble. */
 .fc-agent-bubble small.is-answer { max-width: 220px; -webkit-line-clamp: 3; color: #fff; font-size: 14px; }
+
+/* 🖐 One-hand mode: the top row, boroughs and map buttons sit low, by the thumb, above the chat bar. */
+.fc-one-hand .fc-search-row { top: auto !important; bottom: calc(var(--fc-dock-h) + 62px) !important; }
+.fc-one-hand .fc-borough-bar { top: auto !important; bottom: calc(var(--fc-dock-h) + 122px) !important; }
+.fc-one-hand .fc-map-controls { top: auto !important; bottom: calc(var(--fc-dock-h) + 180px) !important; }
+.fc-one-hand .fc-reveal-controls { top: auto !important; bottom: calc(var(--fc-dock-h) + 66px) !important; }
+.fc-one-hand .fc-map-hints { bottom: auto !important; top: 14px !important; }
+.fc-one-hand .fc-days-menu { top: auto; bottom: calc(100% + 6px); max-height: 60vh; overflow: auto; }
+.fc-one-hand .fc-chat-nudge { bottom: auto; top: 90px; }

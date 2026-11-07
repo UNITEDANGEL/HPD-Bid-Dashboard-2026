@@ -4059,6 +4059,12 @@ export default function FieldCommandClient() {
     const t = window.setInterval(apply, 60000);
     return () => window.clearInterval(t);
   }, [mapStyle]);
+  // 🖐 One-hand mode (idea list): search, filters, boroughs and the map buttons move down by the thumb. Kept on the phone.
+  const [oneHand, setOneHand] = useState(false);
+  useEffect(() => { try { setOneHand(localStorage.getItem("hpd-one-hand") === "1"); } catch { /* private mode */ } }, []);
+  function toggleOneHand() {
+    setOneHand((on) => { try { localStorage.setItem("hpd-one-hand", on ? "0" : "1"); } catch { /* private mode */ } return !on; });
+  }
   function chooseMapStyle(style: MapStyle) {
     setMapStyle(style);
     try { localStorage.setItem("hpd-map-style", style); } catch { /* private mode */ }
@@ -7235,7 +7241,7 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}${oneHand ? " fc-one-hand" : ""}`}>
       <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
@@ -7598,6 +7604,7 @@ export default function FieldCommandClient() {
               { key: "ideas-more", icon: "💬", label: "More ideas", info: "Ask Claude for new ideas right now", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void askMoreIdeas(); } },
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
               { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
+              { key: "one-hand", icon: "🖐", label: "One-hand mode", info: oneHand ? "On: search and map buttons by your thumb" : "Off · moves the top buttons down by your thumb", go: toggleOneHand },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
             ];
             return (
