@@ -167,17 +167,73 @@ export function askFacts(body) {
 // The backup model (also free on Workers AI) answers when the big one is busy or out of today's allowance.
 export const ASK_BACKUP_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 
+// DO lines (app actions the AI chose) stay on their own lines; the rest is one spoken paragraph.
+export function cleanAnswer(t) {
+  const lines = String(t || "").replace(/[*#`_]/g, "").split(/\r?\n/);
+  const dos = lines.map((l) => l.trim()).filter((l) => /^DO:\s*\S/i.test(l)).slice(0, 3).map((l) => `DO: ${l.replace(/^DO:\s*/i, "").slice(0, 160)}`);
+  const asks = lines.map((l) => l.trim()).filter((l) => /^ASK:\s*\S/i.test(l)).slice(0, 2).map((l) => `ASK: ${l.replace(/^ASK:\s*/i, "").slice(0, 90)}`);
+  const said = lines.filter((l) => !/^\s*(DO|ASK):/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 900);
+  return [said, ...dos, ...asks].filter(Boolean).join("\n");
+}
+
+function askMessages(ask) {
+  const user = `Facts from the app (JSON):\n${JSON.stringify(ask.facts)}\n\nQuestion: ${ask.question}`;
+  const history = Array.isArray(ask.history) ? ask.history : [];
+  return [{ role: "system", content: ASK_SYSTEM }, ...history.flatMap((t) => [{ role: "user", content: t.you }, { role: "assistant", content: t.helper }]), { role: "user", content: user }];
+}
+
+// 🗣 The robot starts talking right away (idea list, 6 Nov): the same answer, word by word as the AI writes it (one
+// JSON line per piece: {"t":"..."}, then {"done":true,"ai":true,"text":...} with the cleaned whole answer), so the phone
+// says the first sentence while the rest is still coming. Workers AI only (free); null = answer the normal way.
+export async function aiAnswerStream(env, ask) {
+  if (!env?.AI) return null;
+  const messages = askMessages(ask);
+  const models = [env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast", ASK_BACKUP_MODEL];
+  const enc = new TextEncoder();
+  const line = (o) => enc.encode(`${JSON.stringify(o)}\n`);
+  for (const model of models) {
+    let src;
+    try { src = await env.AI.run(model, { messages, max_tokens: 450, stream: true }); } catch { continue; }
+    if (!src || typeof src.getReader !== "function") {
+      const text = cleanAnswer(typeof src?.response === "string" ? src.response : "");
+      if (!text) continue;
+      return new ReadableStream({ start(c) { c.enqueue(line({ t: text })); c.enqueue(line({ done: true, ai: true, model, text })); c.close(); } });
+    }
+    return new ReadableStream({
+      async start(c) {
+        const reader = src.getReader();
+        const dec = new TextDecoder();
+        let buf = "", full = "";
+        const take = (raw) => {
+          const l = raw.trim();
+          if (!l.startsWith("data:")) return;
+          const data = l.slice(5).trim();
+          if (!data || data === "[DONE]") return;
+          try { const j = JSON.parse(data); const t = typeof j.response === "string" ? j.response : ""; if (t) { full += t; c.enqueue(line({ t })); } } catch { /* a broken piece */ }
+        };
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += dec.decode(value, { stream: true });
+            let i;
+            while ((i = buf.indexOf("\n")) >= 0) { take(buf.slice(0, i)); buf = buf.slice(i + 1); }
+          }
+          take(buf);
+        } catch { /* cut off: what came is the answer */ }
+        const text = cleanAnswer(full);
+        c.enqueue(line(text ? { done: true, ai: true, model, text } : { done: true, ai: false, reason: "The AI gave no answer." }));
+        c.close();
+      },
+    });
+  }
+  return null;
+}
+
 export async function aiAnswer(env, ask, fetcher = fetch) {
   const user = `Facts from the app (JSON):\n${JSON.stringify(ask.facts)}\n\nQuestion: ${ask.question}`;
   const history = Array.isArray(ask.history) ? ask.history : [];
-  // DO lines (app actions the AI chose) stay on their own lines; the rest is one spoken paragraph.
-  const clean = (t) => {
-    const lines = String(t || "").replace(/[*#`_]/g, "").split(/\r?\n/);
-    const dos = lines.map((l) => l.trim()).filter((l) => /^DO:\s*\S/i.test(l)).slice(0, 3).map((l) => `DO: ${l.replace(/^DO:\s*/i, "").slice(0, 160)}`);
-    const asks = lines.map((l) => l.trim()).filter((l) => /^ASK:\s*\S/i.test(l)).slice(0, 2).map((l) => `ASK: ${l.replace(/^ASK:\s*/i, "").slice(0, 90)}`);
-    const said = lines.filter((l) => !/^\s*(DO|ASK):/i.test(l)).join(" ").replace(/\s+/g, " ").trim().slice(0, 900);
-    return [said, ...dos, ...asks].filter(Boolean).join("\n");
-  };
+  const clean = cleanAnswer;
   if (env?.AI) {
     const messages = [{ role: "system", content: ASK_SYSTEM }, ...history.flatMap((t) => [{ role: "user", content: t.you }, { role: "assistant", content: t.helper }]), { role: "user", content: user }];
     const models = [env.CLOUDFLARE_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast", ASK_BACKUP_MODEL];

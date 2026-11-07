@@ -158,13 +158,25 @@ export function visemesOf(word: string): Viseme[] {
   return [start, shape, end];
 }
 
-export function speak(text: string, delay = 900, onEnd?: () => void) {
+// About when the phone will be done saying what it was given (for a queued line's give-up time).
+let busyUntil = 0;
+// queue: said after what's being said now instead of cutting it off (🗣 the rest of an answer whose first sentence
+// was said while it was still coming). An empty queued line waits for the talking to end, then calls onEnd.
+export function speak(text: string, delay = 900, onEnd?: () => void, queue = false) {
+  if (queue && !text && voiceSupported() && !voiceOff()) {
+    const t0 = Date.now();
+    const wait = () => { if (!window.speechSynthesis.speaking || Date.now() - t0 > 30000) onEnd?.(); else window.setTimeout(wait, 250); };
+    window.setTimeout(wait, 250);
+    return true;
+  }
   if (!text || !voiceSupported() || voiceOff()) { if (onEnd) window.setTimeout(onEnd, 300); return false; }
   playThroughSilent();
   try {
     window.setTimeout(() => {
       const synth = window.speechSynthesis;
-      synth.cancel();
+      const ahead = queue ? Math.max(0, busyUntil - Date.now()) : 0;
+      if (!queue) synth.cancel();
+      busyUntil = Date.now() + ahead + Math.min(60000, 2500 + text.length * 80);
       const said = brief ? briefText(text) : speechText(text);
       const lang = langOf(text);
       const v = pickVoice(lang);
@@ -180,9 +192,10 @@ export function speak(text: string, delay = 900, onEnd?: () => void) {
       u.pitch = /\?\s*$/.test(said) ? 1.05 : 1;
       u.volume = 1;
       u.onend = fin; u.onerror = fin;
+      u.onstart = () => setTalking(true);
       synth.speak(u);
-      // Some phones never say "done": give up after the time it would take to say it.
-      window.setTimeout(fin, Math.min(60000, 2500 + text.length * 80));
+      // Some phones never say "done": give up after the time it would take to say it (and what's ahead of it).
+      window.setTimeout(fin, ahead + Math.min(60000, 2500 + text.length * 80));
       setTalking(true);
     }, delay);
     return true;

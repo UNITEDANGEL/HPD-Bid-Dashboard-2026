@@ -109,6 +109,7 @@ import JobsList, { type JobRow, tenantsToCall } from "./JobsList";
 import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
+import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
@@ -1866,6 +1867,8 @@ export default function FieldCommandClient() {
   const convoMissRef = useRef(0);
   // Several questions in one sentence (23 Oct): the parts still to answer and the answers so far.
   const multiRef = useRef<{ heard: string; queue: string[]; replies: string[] } | null>(null);
+  // 🗣 The first sentence of an AI answer already said while the rest was coming (answer() then says only the rest).
+  const streamHeadRef = useRef("");
   // 🌆 The evening wrap's boxes (done / still open / coming up) when it runs as part of a chain.
   const chainRecapRef = useRef<Recap | null>(null);
   // The last things said to the AI and its answers (this session), for follow-up questions.
@@ -5624,7 +5627,11 @@ export default function FieldCommandClient() {
         const all = `${m.replies.join("\n\n")}${rest}`;
         const rc = chainRecapRef.current; chainRecapRef.current = null;
         setAgent({ heard: m.heard, reply: all, confirm, cards: takeCards(all), ...(rc ? { recap: rc } : {}) }); pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
-        speak(sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " "), 200, () => { if (convoRef.current) startListening(); });
+        const talkAll = sayOmo(all).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ").replace(/\n+/g, " ");
+        const head = streamHeadRef.current; streamHeadRef.current = "";
+        const restSay = head ? restAfter(talkAll, sayOmo(head).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ")) : null;
+        if (restSay !== null) speak(restSay, 0, () => { if (convoRef.current) startListening(); }, true);
+        else speak(talkAll, 200, () => { if (convoRef.current) startListening(); });
         return;
       }
       // ➡️ Today's bids done: say it once and offer the next part.
@@ -5636,7 +5643,13 @@ export default function FieldCommandClient() {
       // 🧠 Remembered for follow-ups (the AI's own answers are added where they come back).
       { const last = chatRef.current[chatRef.current.length - 1]; if (!(last && Date.now() - last.at < 3000 && last.helper.startsWith(reply.slice(0, 40)))) chatRef.current = [...chatRef.current, { you: String(heard).slice(0, 200), helper: reply.replace(/\s+/g, " ").slice(0, 400), at: Date.now() }].slice(-8); saveChatMemory(chatRef.current); }
       // 💬 Conversation mode: listen again once the answer has been said.
-      const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null; speak(shortSpeech(sayOmo(reply).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ")), 200, again); };
+      const again = () => { if (convoRef.current) startListening(); }; pendingRef.current = confirm ? { ...confirm, at: Date.now() } : null;
+      const talk = (x: string) => sayOmo(x).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", ");
+      const full = shortSpeech(talk(reply));
+      // 🗣 Its first sentence was already said while the answer was coming: say just the rest, after it.
+      const head = streamHeadRef.current; streamHeadRef.current = "";
+      const rest = head ? restAfter(full, talk(head)) : null;
+      if (rest !== null) speak(rest, 0, again, true); else speak(full, 200, again); };
     const recentOmo = () => { const l = lastTalkRef.current; return l && Date.now() - l.at < 10 * 60000 && refersBack(heard) ? l.omo : ""; };
     const pick = (ref: string) => (ref ? findJobRef(ref, jobs, jobId, jobAddress) : selectedJob || (recentOmo() ? findAnyJob(recentOmo()) || null : null) || (saysHere(heard) ? hereJob() : null));
     // The cards under an answer: the ones set for it, else the jobs it names (not the one already open).
@@ -6449,10 +6462,25 @@ export default function FieldCommandClient() {
           // Always answers (owner, 4 Nov: "it needs to be working all the time"): a failed try is tried once more.
           // Like a person (owner, 4 Nov: "flow like a real person"): a slow answer gets a short "let me check" first.
           const filler = window.setTimeout(() => { if (!multiRef.current && !inner) speak(["Let me check.", "One sec.", "Let me look.", "Hmm, let me see."][Math.floor(Date.now() / 1000) % 4], 0); }, 1300);
-          const ask = () => fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts }) });
-          let r = await ask().catch(() => null);
+          const ask = (stream = false) => fetch("/api/drive/hpd-ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: cmd.question, facts, ...(stream ? { stream: true } : {}) }) });
+          // 🗣 It starts talking right away (idea list, 6 Nov): the answer comes word by word; the first sentence is said
+          // as soon as it's whole and the words show as they come; answer() says the rest.
+          let head = "", shownAt = 0;
+          streamHeadRef.current = "";
+          const onText = (soFar: string) => {
+            if (multiRef.current || inner) return;
+            if (!head) {
+              const f = firstSentence(soFar);
+              if (f) { head = f; window.clearTimeout(filler); streamHeadRef.current = f; speak(sayOmo(f).replace(/\bHPD\b/g, "H P D").replace(/\s*·\s*/g, ", "), 0); }
+            }
+            if (Date.now() - shownAt > 200) {
+              const shown = soFar.split(/\r?\n\s*(?:DO|ASK):/i)[0].replace(/[*#`_]/g, "").replace(/\s+/g, " ").trim();
+              if (shown) { shownAt = Date.now(); setAgent({ heard, reply: `${shown} …` }); }
+            }
+          };
+          let r = await ask(true).catch(() => null);
           if (!r || (r.status >= 500 && r.status !== 501)) { if (!multiRef.current) setAgent({ heard, reply: "Trying once more…" }); await new Promise((ok) => window.setTimeout(ok, 1500)); r = await ask(); }
-          let d = await r.json().catch(() => ({}));
+          let d = await readAnswerStream(r, onText);
           window.clearTimeout(filler);
           if (r.ok && !d.ai && d.reason && d.reason !== "not-set-up") { await new Promise((ok) => window.setTimeout(ok, 1200)); const again = await ask().catch(() => null); if (again) { const d2 = await again.json().catch(() => ({})); if (again.ok && d2.ai) { r = again; d = d2; } } }
           if (r.ok && d.ai && d.text) {

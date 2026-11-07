@@ -116,7 +116,8 @@ The plan, one by one (✅ = live, ☐ = next):
 49. ✅ **📉 Why you lost a bid: already there**: the bid stats (Bids → 📊) show how far above the winner you were when you lost, by kind of work and borough, and how many you lost by under 10%.
 50. ✅ **🧤 Big buttons with gloves on** (app idea list): All → Big buttons (gloves) makes every button at least 56 px tall and wide with bigger letters (the job card, the All list, the dock, the map's + / −, the next-up chip). Kept on the phone; tap again to turn it off. Test: test-browser-gloves-bring.
 51. ✅ **🧰 Did you bring everything?** (app idea list): on the morning of a planned route (5-11 AM, before the first I'm here), the helper's note says "🧰 Before you go: today's 2 stops need door hardware / locks, plumbing parts. All in the truck?"; 📦 The list opens the full list in store order with check boxes and the store on the way. Once a day. Test: test-browser-gloves-bring.
-52. Owner, 7 Nov: "do all and keep going FROM MD" -> 50, 51.
+52. ✅ **🗣 The robot starts talking right away** (idea list, 6 Nov): a free question to the AI now comes back word by word (Cloudflare's free model streams it). The helper says the first sentence as soon as it is whole, the words show in the chat as they come, and the rest is said right after the first sentence (queued, not cut off, never said twice). An answer that comes all at once (the backup) works as before. Tests: test-ask-stream, test-browser-talk-right-away.
+53. Owner, 7 Nov: "do all and keep going FROM MD" -> 50, 51, 52.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -395,7 +396,7 @@ The owner's words today, in order, and what was done with each:
   colors, time at each job, store stop on the way.
 
 ### Ideas from today (not started)
-- 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person.
+- ✅ 🗣 The robot starts talking right away (first sentence while the rest is still coming), like a person (52, 7 Nov).
 - ✅ 🗂 HPD calls on the notice: what HPD said last, next to the notice (39, 6 Nov).
 - ✅ 🌐 Remember the tenant's language: every text to them in their language (40, 6 Nov).
 - ✅ 🧾 Receipt photo on the job: the amount goes to that job's costs (36, 38, 6 Nov).

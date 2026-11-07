@@ -3,7 +3,7 @@
 // Only reachable through handleDriveAuth, after the owner/session/Google identity checks.
 
 import { readReplies, sendSms, smsReady } from "./tenant-sms.mjs";
-import { aiAnswer, aiDraft, aiReadPhoto, aiTranslate, askFacts, draftFacts, photoFacts, translateFacts } from "./ai-draft.mjs";
+import { aiAnswer, aiAnswerStream, aiDraft, aiReadPhoto, aiTranslate, askFacts, draftFacts, photoFacts, translateFacts } from "./ai-draft.mjs";
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -425,9 +425,15 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
     }
     if (action === "hpd-ask") {
       // A question to the voice helper: a short answer from the facts the phone sends. Never changes anything.
-      const ask = askFacts(await request.json().catch(() => null));
+      const body = await request.json().catch(() => null);
+      const ask = askFacts(body);
       if (!ask) fail("Invalid question.", 400);
       try {
+        // 🗣 Word by word when the phone asks for it (it starts talking at the first sentence).
+        if (body?.stream === true) {
+          const stream = await aiAnswerStream(env, ask).catch(() => null);
+          if (stream) return new Response(stream, { headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+        }
         return reply(await aiAnswer(env, ask, fetcher));
       } catch (e) {
         return reply({ ai: false, reason: `The AI didn’t answer (${e instanceof Error ? e.message.slice(0, 120) : "error"}).` });
