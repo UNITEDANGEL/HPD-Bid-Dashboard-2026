@@ -46,6 +46,7 @@ import { paperworkLeft } from "../../lib/paperwork-left";
 import { earlierDays, goodNews, loadChatMemory, missingPaperwork, saveChatMemory, timeInsight } from "../../lib/robot-insights";
 import { minutesLabel, onSiteMinutes } from "../../lib/job-time";
 import { nextOpenStop, takingLong, usualMinutes } from "../../lib/long-job";
+import { isNightNy, MAP_STYLE_LABEL, type MapStyle } from "../../lib/night";
 import { kindOfWork, learnedMinutes, type TimedVisit } from "../../lib/learned-time";
 import { monthReportPdf, monthSummary } from "../../lib/month-report";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -4048,8 +4049,22 @@ export default function FieldCommandClient() {
     [filteredJobs]
   );
 
+  // 🌙 Map style, kept on this phone: Light, Dark, or Dark at night (from half an hour after sunset to 6:30 AM).
+  const [mapStyle, setMapStyle] = useState<MapStyle>("light");
+  useEffect(() => { try { const v = localStorage.getItem("hpd-map-style"); if (v === "dark" || v === "night") setMapStyle(v); } catch { /* private mode */ } }, []);
+  useEffect(() => {
+    const apply = () => setDarkTiles(mapStyle === "dark" || (mapStyle === "night" && isNightNy()));
+    apply();
+    if (mapStyle !== "night") return;
+    const t = window.setInterval(apply, 60000);
+    return () => window.clearInterval(t);
+  }, [mapStyle]);
+  function chooseMapStyle(style: MapStyle) {
+    setMapStyle(style);
+    try { localStorage.setItem("hpd-map-style", style); } catch { /* private mode */ }
+  }
   function toggleTileStyle() {
-    setDarkTiles((prev) => !prev);
+    chooseMapStyle(darkTiles ? "light" : "dark");
   }
 
   async function placeUserMarker(latitude: number, longitude: number) {
@@ -7582,7 +7597,7 @@ export default function FieldCommandClient() {
               { key: "ideas", icon: "💡", label: "Upgrade ideas", info: "Claude's next ideas · tap 👍 to build", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); } },
               { key: "ideas-more", icon: "💬", label: "More ideas", info: "Ask Claude for new ideas right now", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void askMoreIdeas(); } },
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
-              { key: "map", icon: "🗺", label: "Map style", info: darkTiles ? "Dark map" : "Light map", go: () => { setMoreOpen(false); toggleTileStyle(); } },
+              { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
             ];
             return (

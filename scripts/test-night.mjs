@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import { loadLib } from "./daily-report.mjs";
+const { isNightNy } = await loadLib("night");
+assert.equal(isNightNy(new Date("2026-11-09T19:00:00Z")), false, "2 PM in November");
+assert.equal(isNightNy(new Date("2026-11-09T22:30:00Z")), true, "5:30 PM in November (sunset ~4:50)");
+assert.equal(isNightNy(new Date("2026-07-09T22:30:00Z")), false, "6:30 PM in July");
+assert.equal(isNightNy(new Date("2026-07-10T01:30:00Z")), true, "9:30 PM in July");
+assert.equal(isNightNy(new Date("2026-11-09T11:00:00Z")), true, "6 AM");
+assert.equal(isNightNy(new Date("2026-11-09T12:00:00Z")), false, "7 AM");
+console.log("PASS night: dark from half an hour after sunset to 6:30 AM, New York time");
