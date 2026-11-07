@@ -37,6 +37,7 @@ export type AgentCommand =
   | { intent: "email" }
   | { intent: "month-report"; last?: boolean }
   | { intent: "losing-time" }
+  | { intent: "day-money" }
   | { intent: "time-kind"; work: string }
   | { intent: "good-news" }
   | { intent: "before-after"; ref: string }
@@ -284,6 +285,8 @@ export function parseCommand(heard: string): AgentCommand {
   if (/\b(month(ly)? report|report (for|of) (the|this|last) month|month on one page|one page (report|for the month)|how was my month|(this|last) month'?s report)\b/.test(t)) return { intent: "month-report", ...(/\blast month\b/.test(t) ? { last: true } : {}) };
   // 🧾 / 🗺 / 🎉 / 📸 (owner, 4 Nov: "do all ideas").
   if (/\b(am i missing|missing (any )?paperwork|paperwork (i'?m )?missing|what paperwork (is )?(left|missing)|unfinished paperwork|paperwork (still )?(left|to do))\b/.test(t)) return { intent: "missing-paperwork" };
+  // 💵 "how much did I make today", "what did I earn this week", "today's money" (finished jobs' award amounts).
+  if (/\b(how much|what) (did|have) i (make|made|earn|earned)\b|\b(today'?s|my) money\b|\bmoney (i )?(made|earned) (today|this week)\b|\bearned (today|this week)\b/.test(t) && !/\b(paid|pay|payment|check|owe|owed)\b/.test(t)) return { intent: "day-money" };
   if (/\b(losing time|where (does|do) (my|the) time go|what takes (the )?longest|which jobs take (the )?longest|slowest (jobs?|borough)|how long do (my )?jobs take)\b/.test(t)) return { intent: "losing-time" };
   // ⏱ "how long does a door job take", "how long do locks usually take me", "how long does each kind of work take".
   if (/\bhow (long|much time)\b/.test(t) && /\b(take|takes|took|last|need)\b/.test(t) && !/\b(drive|driving|get there|traffic|bid|bids|fax|hpd|pay|paid|payment|approve|approval)\b/.test(t)) {

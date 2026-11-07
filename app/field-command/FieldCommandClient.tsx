@@ -111,6 +111,7 @@ import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import { outsideWord } from "../../lib/rain-route";
+import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
@@ -4886,6 +4887,8 @@ export default function FieldCommandClient() {
     const minutes = isTestJob(jobId(j)) ? null : onSiteMinutes(j as unknown as Record<string, unknown>);
     return minutes === null ? [] : [{ building: buildingKey(jobAddress(j)), kind: kindOfWork(jobScope(j)), minutes }];
   }), [jobs]);
+  // 💵 Today's money (idea list): finished jobs' award amounts today and this week, in the chip at the top.
+  const moneyNow = useMemo(() => dayMoney(jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ id: jobId(j), address: jobAddress(j), amount: Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, outcome: String(value(j, ["FieldOutcome", "fieldOutcome"]) || ""), doneAt: String(value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || "") }))), [jobs, calendarDate]);
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
     const point = jobLatLng(job); if (!point || isTestJob(jobId(job))) return [];
     const learned = learnedMinutes({ building: buildingKey(jobAddress(job)), kind: kindOfWork(jobScope(job)) }, timedVisits);
@@ -5969,6 +5972,10 @@ export default function FieldCommandClient() {
         .filter((x): x is { j: JobRecord; minutes: number } => x.minutes !== null)
         .map(({ j, minutes }) => ({ minutes, borough: ({ MN: "Manhattan", BK: "Brooklyn", QN: "Queens", BX: "the Bronx", SI: "Staten Island" } as Record<string, string>)[String(jobBorough(j))] || String(jobBorough(j)), kind: (jobSummary(jobScope(j)).lines[0] ? lineText(jobSummary(jobScope(j)).lines[0]) : "").split(/[·(,:]/)[0].trim().slice(0, 30) }));
       answer(`🗺 ${timeInsight(timed)}`);
+      return;
+    }
+    if (cmd.intent === "day-money") {
+      answer(dayMoneyAnswer(moneyNow));
       return;
     }
     if (cmd.intent === "time-kind") {
@@ -7721,11 +7728,16 @@ export default function FieldCommandClient() {
         {/* Status messages stack below the search box instead of overlapping each other. */}
         <div className="fc-map-hints" hidden={filtersOpen}>
           {/* Weather + 🅿️ no street cleaning today (28 Oct): the first line of the top-left column, so it never sits on top of the job banners (28 Oct, "make the layout better"). */}
-          {(wxChip || aspOffToday) && !selectedJob && !agent ? (
+          {(wxChip || aspOffToday || moneyNow.week > 0) && !selectedJob && !agent ? (
             <div className="fc-wx-row">
               {wxChip ? (
                 <button type="button" className={`fc-wx-chip${wxChip.alert ? " is-alert" : ""}`} data-hpd-smoke="fc-wx-chip" aria-label={`Weather: ${wxChip.temp} degrees${wxChip.note ? `, ${wxChip.note}` : ""}. Tap for the forecast`} onClick={() => { unlockChime(); agentRef.current("what's the weather"); }}>
                   <span aria-hidden="true">{wxChip.icon}</span><b>{wxChip.temp}°</b>{wxChip.note ? <small>{wxChip.note}</small> : null}
+                </button>
+              ) : null}
+              {moneyNow.week > 0 ? (
+                <button type="button" className="fc-money-chip" data-hpd-smoke="fc-money-chip" aria-label={`Earned ${dollars(moneyNow.today)} today, ${dollars(moneyNow.week)} this week. Tap for the jobs`} onClick={() => { unlockChime(); agentRef.current("how much did I make today"); }}>
+                  <span aria-hidden="true">💵</span><b>{moneyNow.today ? <>$<CountUp value={moneyNow.today} format={(n) => Math.round(n).toLocaleString("en-US")} /></> : "$0"}</b><small>today · {dollars(moneyNow.week)} week</small>
                 </button>
               ) : null}
               {aspOffToday ? (
