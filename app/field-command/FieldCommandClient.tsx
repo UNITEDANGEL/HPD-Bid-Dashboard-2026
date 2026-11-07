@@ -4082,8 +4082,10 @@ export default function FieldCommandClient() {
       if (!at) continue;
       if (!leftWithoutAfterPhoto(job as Record<string, unknown>, (mediaCounts[id] || { after: 0 }).after, distanceMiles({ lat, lng }, at) * 1609.34)) continue;
       warnedLeaveRef.current.add(id);
-      const short = jobAddress(job).replace(/,s*d{5}$/, "");
+      const short = jobAddress(job).replace(/,\s*\d{5}$/, "");
       setOrbSay({ text: "📸 No after photo yet", full: `You are leaving ${short} and there is no after photo. HPD needs one. Go back, or save why you have none.`, at: Date.now() });
+      // 📝 Say why there is no photo (idea list): one tap saves the reason as the visit's result (read back, then yes).
+      setAgent({ heard: "📍 Leaving", reply: `📸 You're leaving ${short} (${id}) with no after photo. HPD needs one: go back for it, or tap why there's none.`, choices: [`No access at ${id}`, `Tenant refused at ${id}`, `Completed by others at ${id}`] });
       ring({ kind: "message", title: "📸 No after photo yet", text: `You are leaving ${short}. HPD needs an after photo.` });
     }
   };
