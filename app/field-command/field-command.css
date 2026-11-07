@@ -4683,3 +4683,55 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-route-rain.is-wet { background: #1e3a8a22; border-color: #3b82f6; }
 .fc-route-rain p { margin: 0 0 6px; font-weight: 700; }
 .fc-route-rain button { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 0; background: #2563eb; color: #fff; font-weight: 800; }
+
+
+/* 📋 Vendor tracking board, new layout (owner, 7 Nov: "I don't like this layout; all info is in light color ink"):
+   white cards with black ink, a colored band on top (red = to send, green = sent / fixed, blue = they replied), the job
+   number and address big, the due time right under them, the facts with words, the next step in a yellow box. */
+.fc-board-sheet .fc-board-row { position: relative; gap: 10px; padding: 0 14px 14px; border: 1px solid #cbd5e1 !important; border-left: 8px solid #dc2626 !important; border-radius: 16px; background: #fff !important; color: #0f172a; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); opacity: 1; overflow: hidden; }
+.fc-board-sheet .fc-board-row.is-ok { border-left-color: #16a34a !important; }
+.fc-board-sheet .fc-board-row.side-replied { border-left-color: #2563eb !important; }
+.fc-board-sheet .fc-board-row.is-docs.is-todo { border-left-color: #0284c7 !important; }
+.fc-board-sheet .fc-board-top { margin: 0 -14px; padding: 10px 14px; background: #dc2626; color: #fff; }
+.fc-board-sheet .fc-board-row.is-ok .fc-board-top { background: #15803d; }
+.fc-board-sheet .fc-board-row.side-replied .fc-board-top { background: #1d4ed8; }
+.fc-board-sheet .fc-board-row.is-docs.is-todo .fc-board-top { background: #0369a1; }
+.fc-board-sheet .fc-board-row .fc-board-clock { color: #fff !important; font: 900 21px/1.15 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-kind { flex: none; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, .95); color: #0f172a; font: 900 12.5px system-ui, sans-serif; letter-spacing: .03em; white-space: nowrap; }
+.fc-board-sheet .fc-board-okmark { background: #fff; color: #15803d; }
+.fc-board-sheet .fc-board-job { display: grid; gap: 2px; margin-top: 2px; color: #0f172a; }
+.fc-board-sheet .fc-board-job b { font: 900 24px/1.1 system-ui, sans-serif; color: #0f172a; letter-spacing: .01em; }
+.fc-board-sheet .fc-board-addr { font: 800 17px/1.25 system-ui, sans-serif; color: #1e293b; }
+.fc-board-sheet .fc-board-due { padding: 8px 12px; border-radius: 10px; background: #fee2e2; color: #7f1d1d; font: 700 16px/1.3 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-due b { color: #7f1d1d; font-weight: 900; }
+.fc-board-sheet .fc-board-hol { color: #991b1b; }
+.fc-board-sheet .fc-board-facts { display: grid; gap: 0; margin: 0; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.fc-board-sheet .fc-board-facts > div { display: grid; grid-template-columns: 112px 1fr; gap: 8px; padding: 8px 10px; border-top: 1px solid #e2e8f0; align-items: start; }
+.fc-board-sheet .fc-board-facts > div:first-child { border-top: 0; }
+.fc-board-sheet .fc-board-facts > div:nth-child(even) { background: #f8fafc; }
+.fc-board-sheet .fc-board-facts dt { margin: 0; color: #475569; font: 800 13.5px/1.3 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-facts dd { margin: 0; color: #0f172a; font: 700 15px/1.35 system-ui, sans-serif; text-transform: none; }
+.fc-board-sheet .fc-board-problem { padding: 10px 12px; border-radius: 10px; background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; font: 700 15px/1.35 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-heard { padding: 8px 12px; border-radius: 10px; background: #f0fdf4; border: 1px solid #86efac; color: #14532d; font: 700 15px/1.35 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-want { color: #0c4a6e; font: 700 16px/1.3 system-ui, sans-serif; } .fc-board-sheet .fc-board-want b { color: #0f172a; }
+.fc-board-sheet .fc-board-filed { padding: 8px 12px; border-radius: 10px; background: #eff6ff; border: 1px solid #93c5fd; color: #1e3a8a; font: 700 15px/1.35 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-from { color: #475569; font: 600 14px/1.3 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-emails summary { min-height: 44px; display: flex; align-items: center; color: #1d4ed8; font: 800 15.5px system-ui, sans-serif; cursor: pointer; }
+.fc-board-sheet .fc-convo { background: #f1f5f9; }
+.fc-board-sheet .fc-convo-msg.is-theirs { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; }
+.fc-board-sheet .fc-convo-msg.is-ours { background: #dcfce7; color: #14532d; }
+.fc-board-sheet .fc-convo-detail, .fc-board-sheet .fc-convo-file, .fc-board-sheet .fc-convo-proof { color: #334155; }
+.fc-board-sheet .fc-found { background: #f8fafc; border: 1px solid #93c5fd; color: #0f172a; }
+.fc-board-sheet .fc-found > b { color: #1d4ed8; }
+.fc-board-sheet .fc-found li { color: #0f172a; font-weight: 600; }
+.fc-board-sheet .fc-found-next { color: #0f172a; font-weight: 800; }
+.fc-board-sheet .fc-board-steps button { border: 2px solid #cbd5e1; background: #f8fafc; color: #334155; }
+.fc-board-sheet .fc-board-steps li.is-done button { border-color: #16a34a; background: #dcfce7; color: #14532d; }
+.fc-board-sheet .fc-board-steps li.is-next button { border-color: #ea580c; background: #ffedd5; color: #7c2d12; }
+.fc-board-sheet .fc-board-todo { padding: 10px 12px; border-radius: 10px; background: #fef9c3; border: 1px solid #facc15; color: #713f12; font: 800 15.5px/1.35 system-ui, sans-serif; }
+.fc-board-sheet .fc-board-quiet { color: #0f172a; }
+.fc-board-sheet .fc-board-row .fc-notice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-board-sheet .fc-board-row .fc-notice-actions > button, .fc-board-sheet .fc-board-row .fc-notice-actions > a { min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; font: 800 15px system-ui, sans-serif; }
+.fc-board-sheet .fc-board-row .fc-notice-actions > .fc-board-handled { background: #15803d; border-color: #15803d; color: #fff; }
+.fc-board-sheet .fc-board-row .fc-notice-actions > a.fc-board-send { display: inline-flex; align-items: center; background: #1d4ed8; border-color: #1d4ed8; color: #fff; text-decoration: none; }
+.fc-board-sheet .fc-board-undo { color: #1d4ed8; }

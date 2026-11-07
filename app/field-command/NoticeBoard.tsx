@@ -47,6 +47,9 @@ function clock(h: number) {
 }
 const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
 
+// Email leftovers out of HPD's words: inline-image tags like [cid:…] and extra spaces.
+const noJunk = (t: string) => String(t || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").trim();
+
 export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -289,36 +292,36 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
     // Green: sent / fixed / done. Red: nothing went yet (or HPD found a problem with it).
     const ok = !row.next || row.steps.sent.done;
     return (
-      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}${ok ? " is-ok" : " is-todo"}`} data-hpd-smoke="fc-board-row" data-omo={row.omo} data-next={row.next || "done"} data-state={ok ? "ok" : "todo"}>
+      <li key={row.key} className={`fc-board-row ${row.kind === "docs" ? "is-docs" : `is-${row.hours}h`}${hot ? " is-hot" : ""}${late ? " is-late" : ""}${row.next ? "" : " is-done"}${ok ? " is-ok" : " is-todo"}${row.next ? ` side-${boardSide(row)}` : ""}`} data-hpd-smoke="fc-board-row" data-omo={row.omo} data-next={row.next || "done"} data-state={ok ? "ok" : "todo"}>
         <div className="fc-board-top">
           {ok ? <span className="fc-board-okmark" aria-hidden="true">✓</span> : row.kind === "ppn" ? <span className="fc-fire" aria-hidden="true">🔥</span> : null}
           <span className="fc-board-clock" data-hpd-smoke="fc-board-clock">{row.next ? (boardSide(row) === "replied" ? `💬 ${(row.who || "They").split(/\s+/)[0]} replied ${day(row.lastTheirsAt)}` : boardSide(row) === "waiting" ? `📤 Sent ${day(new Date(sentTime(row)).toISOString())} · waiting ${Math.max(0, Math.floor((now - sentTime(row)) / 86400000))} d` : row.steps.sent.done ? "📤 Sent · waiting" : row.kind === "docs" ? `📋 Waiting ${daysWaiting(row, now)} days` : `⏱ ${clock(h)}`) : "✅ Done"}</span>
           <span className="fc-board-kind">{row.kind === "docs" ? "AEP · MISSING DOCS" : `ERP · ${row.hours}-HOUR`}</span>
         </div>
-        <p className="fc-board-job"><b>{row.omo}</b>{address ? ` · ${address}` : ""}</p>
+        <p className="fc-board-job"><b>{row.omo}</b>{address ? <span className="fc-board-addr">{address}</span> : null}</p>
+        {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
+          const hol = holidaysBetween(row.noticeAt, row.dueAt);
+          return <p className="fc-board-due" data-hpd-smoke="fc-board-due">Due <b>{new Date(row.dueAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</b>{hol.length ? <span className="fc-board-hol"> · 🗓 {hol.join(", ")} not counted</span> : null}</p>;
+        })() : null}
         {(() => {
           const f = factsOf?.(row.omo);
           if (!f) return null;
           const money = Number(f.amount) ? `$${Number(f.amount).toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "";
           return (
             <dl className="fc-board-facts" data-hpd-smoke="fc-board-facts">
-              {f.borough ? <div><dt>🏠</dt><dd>{f.borough}</dd></div> : null}
-              {money || f.awarded ? <div><dt>💵</dt><dd>{[money, f.awarded ? `awarded ${f.awarded}` : ""].filter(Boolean).join(" · ")}</dd></div> : null}
-              {f.work ? <div><dt>🔧</dt><dd>{f.work.length > 150 ? `${f.work.slice(0, 150)}…` : f.work}</dd></div> : null}
-              {f.call ? <div><dt>☎️</dt><dd data-hpd-smoke="fc-board-call">{f.call}</dd></div> : null}
-              <div><dt>🏛</dt><dd data-hpd-smoke="fc-board-hpd">{f.hpd ? `HPD closed it: ${f.hpd}` : "HPD: still open"}</dd></div>
+              {f.borough ? <div><dt>🏠 Borough</dt><dd>{f.borough}</dd></div> : null}
+              {money || f.awarded ? <div><dt>💵 Award</dt><dd>{[money, f.awarded ? `awarded ${f.awarded}` : ""].filter(Boolean).join(" · ")}</dd></div> : null}
+              {f.work ? <div><dt>🔧 Work</dt><dd>{f.work.length > 150 ? `${f.work.slice(0, 150)}…` : f.work}</dd></div> : null}
+              {f.call ? <div><dt>☎️ HPD call</dt><dd data-hpd-smoke="fc-board-call">{f.call}</dd></div> : null}
+              <div><dt>🏛 HPD</dt><dd data-hpd-smoke="fc-board-hpd">{f.hpd ? `Closed it: ${f.hpd}` : "Still open"}</dd></div>
             </dl>
           );
         })()}
-        {row.problem && row.next ? <p className="fc-board-problem" data-hpd-smoke="fc-board-problem">⚠️ {(row.who || "HPD").split(/\s+/)[0]} wrote {day(row.problem.at)}: “{row.problem.text}” Fix it with the same dates as the original and send it again, or tap ✅ if you already did.</p> : null}
-        {row.answered && !row.problem ? <p className="fc-board-heard" data-hpd-smoke="fc-board-heard">✅ {(row.who || "HPD").split(/\s+/)[0]} answered {day(row.answered.at)}: “{row.answered.text.slice(0, 120)}”</p> : null}
+        {row.problem && row.next ? <p className="fc-board-problem" data-hpd-smoke="fc-board-problem">⚠️ {(row.who || "HPD").split(/\s+/)[0]} wrote {day(row.problem.at)}: “{noJunk(row.problem.text)}” Fix it with the same dates as the original and send it again, or tap ✅ if you already did.</p> : null}
+        {row.answered && !row.problem ? <p className="fc-board-heard" data-hpd-smoke="fc-board-heard">✅ {(row.who || "HPD").split(/\s+/)[0]} answered {day(row.answered.at)}: “{noJunk(row.answered.text).slice(0, 120)}”</p> : null}
         {row.handledAt && !row.next ? <p className="fc-board-heard" data-hpd-smoke="fc-board-handled-note">✅ You marked it sent / fixed {day(row.handledAt)}{onHandled ? <> · <button type="button" className="fc-board-undo" data-hpd-smoke="fc-board-handled-undo" onClick={() => onHandled(row.omo, false)}>Undo</button></> : null}</p> : null}
         <details className="fc-board-emails" data-hpd-smoke="fc-board-emails"><summary>💬 The emails</summary>{convo(row)}</details>
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
-        {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
-          const hol = holidaysBetween(row.noticeAt, row.dueAt);
-          return <p className="fc-board-due" data-hpd-smoke="fc-board-due">Due <b>{new Date(row.dueAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</b>{hol.length ? <span className="fc-board-hol"> · 🗓 {hol.join(", ")} not counted</span> : null}</p>;
-        })() : null}
         {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
         {row.filed ? <p className="fc-board-filed" data-hpd-smoke="fc-board-filed">📎 Already emailed <b>{day(row.filed.at)}</b>: {row.filed.name}{row.filed.here ? "" : " (in another email)"}. Don&apos;t send it again; tell them the date.</p> : null}
         {row.next && findingsOf ? (() => {
