@@ -115,3 +115,11 @@ export function nextRouteStop(routeIds: string[], finishedId: string, isOpen: (i
   if (!id) return null;
   return { id, stop: routeIds.indexOf(id) + 1, of: routeIds.length, left: routeIds.filter(open).length };
 }
+
+// 📤 Send the route (idea list: "one tap sends tomorrow's route (addresses only) to your own phone or a helper's"): the
+// day, each stop's time, address and work order, and the whole route in Google Maps. No tenant names or phones.
+export function routeShareText(date: string, stops: { id: string; address: string; arrival: number }[], link?: string | null) {
+  const day = Number.isFinite(Date.parse(date)) ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' }) : date;
+  const lines = stops.map((s, i) => `${i + 1}. ${routeTime(s.arrival)} ${s.address.replace(/,\s*\d{5}$/, '')} (${s.id})`);
+  return `Route for ${day}: ${stops.length} stop${stops.length === 1 ? '' : 's'}\n${lines.join('\n')}${link ? `\nWhole route: ${link}` : ''}`;
+}

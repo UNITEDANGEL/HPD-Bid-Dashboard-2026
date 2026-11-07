@@ -15,6 +15,7 @@ try {
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   await context.route(/router\.project-osrm\.org/, (r) => r.fulfill({ json: { code: "NoRoute" } }));
   await context.addInitScript(({ route, today, yesterday }) => {
+    navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
     if (sessionStorage.getItem("seeded")) return;
     localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({ [route[0]]: { FieldArrivedAt: `${yesterday}T15:00:00.000Z`, ActualWorkCompletionDate: `${yesterday}T16:20:00.000Z` } }));
     localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings: { date: today, start: "08:00", end: "17:00", minutes: 45, borough: "ALL" }, ids: route, origin: { point: { lat: 40.6966, lng: -73.8273 }, label: "office" } }));
@@ -36,8 +37,15 @@ try {
   assert.equal(span(first), 80, first);
   assert.equal(span(second), 45, second);
   assert.ok(!/⏱ \d+ min here/.test(second));
+  // 📤 Send this route: times, addresses and work orders, the whole route link; no tenant data.
+  await page.locator('[data-hpd-smoke="fc-route-share"]').click();
+  await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
+  const shared = await page.evaluate(() => window.__shared.text);
+  assert.match(shared, /^Route for \w+day, \w{3} \d{1,2}: 2 stops\n1\. \d{2}:\d{2} 1207 1 AVENUE \(EQ15239\)\n2\. \d{2}:\d{2} 541 ISHAM STREET \(EQ24465\)\nWhole route: https:\/\/www\.google\.com\/maps\/dir\//);
+  assert.ok(!/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/.test(shared.replace(/https:\S+/, "")), "no phone numbers");
+  assert.match(await page.locator(".fc-today-route [role=status]").innerText(), /Route sent/);
   assert.deepEqual(errors, []);
-  console.log("PASS the route learns: a building timed at 80 min before gets 80 min on today's route (with why); others keep 45");
+  console.log("PASS the route learns: a building timed at 80 min before gets 80 min on today's route (with why); others keep 45; 📤 Send this route shares times, addresses and work orders + the map link");
 } finally {
   await browser.close();
 }
