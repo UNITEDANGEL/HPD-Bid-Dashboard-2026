@@ -19,7 +19,7 @@ export type BidRecord = {
   revisions?: { price: number; sentAt?: string }[];
   // A bid faxed outside the app: the price HPD has, so a revision can cross it out.
   priorPrice?: number;
-  // The work description (first 240 letters, public like the invitation) so your usual price per kind of work still
+  // The work description (first 1,200 letters: enough for the size and every kind of work it names, public like the invitation) so your usual price per kind of work still
   // counts after the invitation is gone (3 Nov, "bid the usual").
   work?: string;
   // Why you chose this price (optional, e.g. "Secure-Tech lock costs ~$2,000"): shown on the next job like it.

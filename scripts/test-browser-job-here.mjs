@@ -19,6 +19,9 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   await page.locator('[data-hpd-smoke="fc-locate"]').click({ timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(1500);
+  // Standing at a job, the app may ask "Have you arrived?" first (it names the job): "Not yet", then ask by voice.
+  const arrive = page.locator('[data-hpd-smoke="fc-arrive"]');
+  if (await arrive.count()) { await page.locator('[data-hpd-smoke="fc-arrive-no"]').click(); }
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what job is this");
   await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
   await page.waitForFunction(() => /ER01720/.test(document.querySelector("#fc-job-card")?.textContent || ""), null, { timeout: 15000 });

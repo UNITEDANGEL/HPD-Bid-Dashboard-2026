@@ -880,7 +880,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       ...(previous || newRound || { attempts: 0 }), omo: selected.omo, address: selected.address, borough: selected.borough,
       bidDue: selected.bidDue, bidDueTime: selected.bidDueTime, price: draftValue, savedAt: now,
       status: previous && previous.status !== "saved" ? previous.status : "saved", updatedAt: now,
-      reason: why, work: String(selected.description || "").slice(0, 240) || previous?.work,
+      reason: why, work: String(selected.description || "").slice(0, 1200) || previous?.work,
     } as BidRecord;
     const what = previous && previous.price === draftValue ? `Reason saved: "${why || ""}"` : `Price saved ${money2(draftValue)}${why ? ` ("${why}")` : ""}`;
     await update(withLog(base, what, now));

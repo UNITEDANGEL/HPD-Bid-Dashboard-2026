@@ -40,18 +40,30 @@ try {
   assert.match(await ask.innerText(), new RegExp(`${stop.OMO} · \\d+ ft away\\. Have you arrived\\?`));
   if (shots) await page.screenshot({ path: `${shots}/arrive-ask.png` });
   await ask.locator('[data-hpd-smoke="fc-arrive-yes"]').click();
+  // Yes opens the work order to read first (owner, 5 Nov: "mark that I arrived, then open the work order"); with a tenant
+  // phone, 🚪 No answer at the door offers the "we're outside" text, ready for Messages.
+  const wo = page.locator('[data-hpd-smoke="fc-work-order"]');
+  await wo.waitFor({ timeout: 20000 });
+  assert.match(await wo.innerText(), new RegExp(stop.OMO));
+  if (await wo.locator('[data-hpd-smoke="fc-work-order-noaccess"]').count()) {
+    await wo.locator('[data-hpd-smoke="fc-work-order-noaccess"]').click();
+    const card = page.locator("#fc-job-card");
+    await card.waitFor({ timeout: 20000 });
+    if (await page.locator('[data-hpd-smoke="jc-tenant-call"]').count()) {
+      const offer = page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "we're outside" });
+      await offer.waitFor({ timeout: 10000 });
+      assert.match(decodeURIComponent((await offer.getAttribute("href")).split("body=")[1]), /We are outside .* for the HPD repair\. Please let us in\./);
+      await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+      console.log("  arrived: \"we're outside\" text offered");
+    }
+  } else {
+    await wo.locator('[data-hpd-smoke="fc-work-order-close"]').click();
+  }
   const card = page.locator("#fc-job-card");
+  if (!(await card.count())) { await page.goto(`${baseUrl}/map/?omo=${stop.OMO}&view=all`, { waitUntil: "load" }); }
   await card.waitFor({ timeout: 20000 });
   assert.match(await card.innerText(), new RegExp(stop.OMO));
   await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="jc-step-arrived"]'), null, { timeout: 15000 });
-  // With a tenant phone on file: "we're outside" is offered, ready for Messages.
-  if (await page.locator('[data-hpd-smoke="jc-tenant-call"]').count()) {
-    const offer = page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "we're outside" });
-    await offer.waitFor({ timeout: 10000 });
-    assert.match(decodeURIComponent((await offer.getAttribute("href")).split("body=")[1]), /We are outside .* for the HPD repair\. Please let us in\./);
-    await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
-    console.log("  arrived: \"we're outside\" text offered");
-  }
   // The job first: plain lines above HPD's full text.
   const sum = card.locator('[data-hpd-smoke="jc-job-sum"]');
   await sum.waitFor();

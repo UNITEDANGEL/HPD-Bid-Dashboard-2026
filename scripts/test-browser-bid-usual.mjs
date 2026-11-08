@@ -13,7 +13,7 @@ const src = fetched.bids.filter((b) => b.itbFile).slice(0, 4);
 const description = src[0].description;
 const bids = src.map((b, i) => ({ ...b, description, bidDue: i === 0 ? day(1) : day(-3 - i), bidDueTime: "11:00 AM" }));
 const ago = (d) => new Date(Date.now() - d * 86400000).toISOString();
-const records = Object.fromEntries(bids.slice(1).map((b, i) => [b.omo, { omo: b.omo, address: b.address || "", borough: b.borough, bidDue: b.bidDue, bidDueTime: "11:00 AM", price: [900, 1000, 1200][i], savedAt: ago(5 + i), sentAt: ago(5 + i), sentPrice: [900, 1000, 1200][i], status: "sent", work: description.slice(0, 240) }]));
+const records = Object.fromEntries(bids.slice(1).map((b, i) => [b.omo, { omo: b.omo, address: b.address || "", borough: b.borough, bidDue: b.bidDue, bidDueTime: "11:00 AM", price: [900, 1000, 1200][i], savedAt: ago(5 + i), sentAt: ago(5 + i), sentPrice: [900, 1000, 1200][i], status: "sent", work: description.slice(0, 1200) }]));
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
