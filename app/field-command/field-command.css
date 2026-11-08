@@ -4789,7 +4789,11 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-jobs-kept { pointer-events: auto; display: flex; gap: 6px; align-items: center; justify-self: start; }
 .fc-jobs-kept button { min-height: 38px; padding: 0 12px; border-radius: 19px; border: 1px solid #16a34a; background: rgba(5, 46, 22, .9); color: #fff; font: 800 14.5px system-ui, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
 .fc-jobs-kept .fc-jobs-kept-x { border-color: #cbd5e1; background: #fff; color: #0f172a; }
-/* 🗺 Jobs on the map (folded): the days in one small row under the title. */
-.fc-app .fc-jobs-sheet.is-mini .fc-jobs-days { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin: 4px 0 0; }
-.fc-app .fc-jobs-sheet.is-mini .fc-jobs-days button { min-height: 34px; padding: 0 2px; font-size: 12px; border-radius: 12px; }
-.fc-app .fc-jobs-sheet.is-mini .fc-notif-tabs { display: none; }
+/* 🗺 Jobs on the map (owner, 8 Nov: "I don't want to see the list when I click Jobs, I want to see the jobs on the map"):
+   one slim line at the bottom: the count, the days picker, ☰ List, ✕. Everything else waits in the list. */
+.fc-app .fc-jobs-sheet.is-mini .fc-summary-body { display: none !important; }
+.fc-app .fc-jobs-sheet.is-mini { padding: 0 !important; }
+.fc-app .fc-jobs-sheet.is-mini header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 8px 10px; }
+.fc-app .fc-jobs-sheet.is-mini header strong { white-space: nowrap; font-size: 17px; }
+.fc-jobs-days-pick { min-width: 0; min-height: 44px; padding: 0 8px; border-radius: 12px; border: 1px solid #475569; background: #111827; color: #f8fafc; font: 800 15px system-ui, sans-serif; }
+.fc-app .fc-jobs-sheet.is-mini header button { min-height: 44px; padding: 0 12px; }

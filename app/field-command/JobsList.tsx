@@ -10,7 +10,7 @@ export type JobRow = { id: string; address: string; borough: string; status: str
   contact?: { tone: "none" | "try" | "ok" | "common"; tries: number; phone: boolean; lastAt?: string; triesToday?: number; reachedToday?: boolean } };
 type Tab = "todo" | "closeout" | "secondtry" | "waiting" | "all";
 type Days = "15" | "30" | "60" | "90" | "year" | "all";
-const DAYS: [Days, string][] = [["15", "15 days"], ["30", "30 days"], ["60", "60 days"], ["90", "90 days"], ["year", "This year"], ["all", "All"]];
+const DAYS: [Days, string][] = [["all", "All"], ["15", "15 days"], ["30", "30 days"], ["60", "60 days"], ["90", "90 days"], ["year", "This year"]];
 
 // "1/15/26", "01/15/2026", "2026-01-15" -> a day number (NaN if unreadable).
 const dayNum = (v: string) => {
@@ -40,9 +40,10 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
   const [toReach, setToReach] = useState(false);
   const today = todayNum();
   // 📅 Days back (owner, 8 Nov: "by default when I click I would like to see 60 days, then I can pick any day I want"):
-  // jobs awarded in the last 60 days the first time; 15 / 30 / 90 days, this year or all with one tap, kept on the phone.
+  // All jobs first (owner, 8 Nov: "I want to see all jobs, I should be able to pick"); 15 / 30 / 60 / 90 days or this
+  // year with one tap, kept on the phone.
   const [days, setDaysState] = useState<Days>(() => {
-    try { const v = localStorage.getItem("hpd-jobs-days"); return DAYS.some(([k]) => k === v) ? (v as Days) : "60"; } catch { return "60"; }
+    try { const v = localStorage.getItem("hpd-jobs-days"); return DAYS.some(([k]) => k === v) ? (v as Days) : "all"; } catch { return "all"; }
   });
   const setDays = (d: Days) => { setDaysState(d); try { localStorage.setItem("hpd-jobs-days", d); } catch { /* private mode */ } };
   const year = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()).slice(0, 4);
@@ -70,9 +71,14 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
   return (
     <div className={`fc-package-sheet fc-summary-sheet fc-jobs-sheet${mini ? " is-mini" : ""}`} role="dialog" aria-label="Jobs" data-hpd-smoke="fc-jobs">
       <header>
-        <strong data-hpd-smoke="fc-jobs-title">🔨 Jobs · {shown.length} on the map</strong>
+        <strong data-hpd-smoke="fc-jobs-title">🔨 {mini ? `${shown.length} jobs` : `Jobs · ${shown.length} on the map`}</strong>
+        {mini ? (
+          <select className="fc-jobs-days-pick" aria-label="Awarded in" data-hpd-smoke="fc-jobs-days-pick" value={days} onChange={(e) => setDays(e.target.value as Days)}>
+            {DAYS.map(([k, label]) => <option key={k} value={k}>{k === "all" ? "All days" : label}</option>)}
+          </select>
+        ) : null}
         <button type="button" className="fc-jobs-fold" data-hpd-smoke="fc-jobs-fold" aria-pressed={mini} onClick={() => onMini?.(!mini)}>{mini ? "☰ List" : "🗺 Map"}</button>
-        <button type="button" aria-label="Close" data-hpd-smoke="fc-jobs-close" onClick={onClose}>Close</button>
+        <button type="button" aria-label="Close" data-hpd-smoke="fc-jobs-close" onClick={onClose}>{mini ? "✕" : "Close"}</button>
       </header>
       <div className="fc-summary-body">
         <div className="fc-notif-tabs" role="tablist">

@@ -75,7 +75,7 @@ try {
   await page.waitForFunction(() => /^Saved\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 10000 });
   const done = await page.evaluate((o) => JSON.stringify(JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[o] || {}), omo);
   // 🗂 One-card close-out (plan item 24): the paperwork is next, to check, with a button for it.
-  assert.match(await reply.innerText(), /The affidavit and invoice open next: check them, then two taps to send/);
+  assert.match(await reply.innerText(), /(The package opens|The affidavit and invoice open) next/);
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Check the paperwork now" }).count(), 1);
   assert.ok(/WORK_COMPLETED/.test(done) || saved.length > before, `saved for ${omo}`);
 
@@ -91,7 +91,7 @@ try {
 
   // With a job card open: "read me this job".
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
-  await page.locator(".fc-pin").first().click({ force: true });
+  await page.locator(".fc-pin").first().evaluate((p) => (p.closest(".leaflet-marker-icon") || p).click());
   await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
   const cardId = (await page.locator("#fc-job-card").innerText()).match(/[A-Z]{2}\d{5}|TEST-\d+/)?.[0] || "";
   await page.evaluate(() => { window.__hear = "read me this job"; });

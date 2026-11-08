@@ -7,6 +7,7 @@ import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate 
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
+import { invoiceCheck } from "../../lib/invoice-check";
 import { removeCorrection, saveCorrection } from "../../lib/correction-store";
 import { autoFix, type FixResult } from "../../lib/auto-fix";
 import { loadPrivate, withPrivate } from "../../lib/private-data";
@@ -5538,6 +5539,15 @@ export default function PaperworkPage() {
                   placeholder={form.bidAmount || "$0.00"}
                 />
               </label>
+              {/* 🧾 Invoice check (idea list): the amount against the award, and the invoice date, before it goes out. */}
+              {(() => {
+                const lines = invoiceCheck({ outcome, amount: form.amount, bidAmount: form.bidAmount, invoiceDate: form.invoiceDate, workComplete: form.workComplete });
+                return lines.length ? (
+                  <ul className="paperwork-invoice-check" data-hpd-smoke="paperwork-invoice-check" aria-label="Invoice check">
+                    {lines.map((l, i) => <li key={i} className={`is-${l.tone}`}>{l.tone === "ok" ? "✅" : "⚠️"} {l.text}</li>)}
+                  </ul>
+                ) : null;
+              })()}
               {outcome === "work_completed" ? (
                 <label className="paperwork-field">
                   Work description (prints on the invoice; from the ITB, edit if needed)

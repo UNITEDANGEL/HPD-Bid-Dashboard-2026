@@ -99,7 +99,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-more-open"]').click(); await tap("map: stats", '[data-hpd-smoke="fc-stats-open"]');
   for (const p of ["today", "week", "month"]) await tap(`stats: ${p}`, `[data-hpd-smoke="fc-stats-period-${p}"]`, 300);
   await close();
-  await tap("map: layers", '[aria-label="Toggle map style"]'); await tap("map: layers back", '[aria-label="Toggle map style"]');
+  await tap("map: satellite", '[data-hpd-smoke="fc-map-style"]'); await tap("map: dark", '[data-hpd-smoke="fc-map-style"]'); await tap("map: street again", '[data-hpd-smoke="fc-map-style"]');
   for (const chip of await page.locator(".fc-quick-chips button").all()) { if (await chip.isVisible().catch(() => false)) { checked.buttons += 1; await chip.click().catch(() => {}); await page.waitForTimeout(250); } }
   await scanText("map chips");
   // Close out / 2nd try: round buttons that open a list sheet; "needs a check" is still a pill.

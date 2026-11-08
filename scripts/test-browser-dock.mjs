@@ -36,7 +36,7 @@ try {
   // 2. Just one row (owner, 29 Oct: "too many buttons on the bottom"): no strip above it; the buttons still on the map.
   assert.equal(await page.locator('[data-hpd-smoke="fc-dock-strip"], .fc-dock-chip').count(), 0, "no second row of buttons");
   for (const sel of ['[data-hpd-smoke="fc-route-open"]', '[data-hpd-smoke="fc-stats-open"]']) assert.equal(await page.locator(sel).count(), 0, `${sel} not on the map until All is open`);
-  for (const sel of ['[aria-label="Toggle map style"]', '[aria-label="Locate me"]', '[data-hpd-smoke="fc-days-menu-btn"]']) assert.ok(await page.locator(sel).isVisible(), `${sel} still on the map`);
+  for (const sel of ['[data-hpd-smoke="fc-map-style"]', '[aria-label="Locate me"]', '[data-hpd-smoke="fc-days-menu-btn"]']) assert.ok(await page.locator(sel).isVisible(), `${sel} still on the map`);
 
   // 3. All: big round tiles (Route, Appts, Follow-up, Stats, Alerts, What's new) with their own colors, then the other rows.
   await page.locator('[data-hpd-smoke="fc-more-open"]').click();

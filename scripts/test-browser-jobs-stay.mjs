@@ -23,22 +23,24 @@ try {
   };
   const days = () => page.locator('[data-hpd-smoke="fc-days-menu-btn"]').innerText().then((t) => t.replace(/\s+/g, " ").trim());
   const count = async () => Number(await page.locator('[data-hpd-smoke="fc-days-btn-count"]').innerText());
-  const jobsTitle = async () => Number(/(\d+) on the map/.exec(await page.locator('[data-hpd-smoke="fc-jobs-title"]').innerText())[1]);
+  const jobsTitle = async () => Number(/(\d+) (?:jobs|on the map)/.exec(await page.locator('[data-hpd-smoke="fc-jobs-title"]').innerText())[1]);
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await ready();
   assert.match(await days(), /Year ▾/, "the map starts on this year");
   const year = await count();
-  // Jobs: on the map first, the list folded; the last 60 days.
+  // Jobs: on the map first (one slim line), all jobs; pick days in it.
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
   const sheet = page.locator('[data-hpd-smoke="fc-jobs"]');
   await sheet.waitFor();
   assert.ok(await sheet.evaluate((e) => e.classList.contains("is-mini")), "the map first, not the list");
-  assert.equal(await page.locator('[data-hpd-smoke="fc-jobs-days-60"]').getAttribute("aria-pressed"), "true", "60 days");
-  const sixty = await jobsTitle();
-  await page.locator('[data-hpd-smoke="fc-jobs-days-15"]').click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-jobs-days-pick"]').inputValue(), "all", "all jobs");
+  assert.ok((await sheet.boundingBox()).height < 90, "one slim line, not the list");
+  const all = await jobsTitle();
+  await page.locator('[data-hpd-smoke="fc-jobs-days-pick"]').selectOption("15");
   const fifteen = await jobsTitle();
-  await page.locator('[data-hpd-smoke="fc-jobs-days-60"]').click();
-  assert.ok(fifteen <= sixty, `15 (${fifteen}) <= 60 (${sixty})`);
+  await page.locator('[data-hpd-smoke="fc-jobs-days-pick"]').selectOption("60");
+  const sixty = await jobsTitle();
+  assert.ok(fifteen <= sixty && sixty <= all, `15 (${fifteen}) <= 60 (${sixty}) <= all (${all})`);
   // ☰ List when you want it; 🗺 Map folds it again.
   await page.locator('[data-hpd-smoke="fc-jobs-fold"]').click();
   assert.ok(!(await sheet.evaluate((e) => e.classList.contains("is-mini"))));
@@ -73,7 +75,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
   await page.locator('[data-hpd-smoke="fc-days-year"]').click();
   assert.deepEqual(errors, []);
-  console.log(`PASS jobs on the map: the map starts on the year (${year}); Jobs opens on the map with 60 days (${sixty}; 15: ${fifteen}), ☰ List when wanted; Close keeps the ${sixty} on the map, ✕ All gives ${year} back; 30 days remembered`);
+  console.log(`PASS jobs on the map: the map starts on the year (${year}); Jobs opens on the map with all jobs (${all}; 60: ${sixty}; 15: ${fifteen}), ☰ List when wanted; Close keeps the ${sixty} on the map, ✕ All gives ${year} back; 30 days remembered`);
 } finally {
   await browser.close();
 }
