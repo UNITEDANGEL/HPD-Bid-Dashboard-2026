@@ -476,7 +476,16 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         const top = banner ? Math.max(20, banner.bottom - area.top + 16) : 120;
         const below = bar && bar.top > area.top ? Math.max(48, area.bottom - bar.top + 24) : 124;
         // Pins are 52 px with the due-day tag under them: keep half a pin + the tag clear of the edges.
-        map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [40, Math.min(top + 30, Math.max(50, area.height - 200))], paddingBottomRight: [104, Math.min(below + 14, Math.max(60, area.height - top - 110))], maxZoom: 14 });
+        // Quarter zoom steps for this fit only: on a sideways phone the strip of map is thin, and a whole step out or in
+        // left a few pins outside it.
+        const snap = map.options.zoomSnap;
+        map.options.zoomSnap = 0.25;
+        // The real band between the header and the list when it's at least 30 px; else the old caps.
+        const thin = area.height - (top + 30) - (below + 14) < 30;
+        map.fitBounds(layerRef.current.getBounds(), thin
+          ? { paddingTopLeft: [40, Math.min(top + 30, Math.max(50, area.height - 200))], paddingBottomRight: [104, Math.min(below + 14, Math.max(60, area.height - top - 110))], maxZoom: 14 }
+          : { paddingTopLeft: [40, top + 30], paddingBottomRight: [104, below + 14], maxZoom: 14 });
+        map.options.zoomSnap = snap;
       };
       fit();
       window.setTimeout(fit, 450);
