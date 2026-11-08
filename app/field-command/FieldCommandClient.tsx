@@ -113,6 +113,7 @@ import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-tal
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
 import { emailBrief } from "../../lib/email-brief";
+import { checklistLine, photoChecklist } from "../../lib/photo-checklist";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
@@ -8593,6 +8594,24 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
+                {/* 📋 What HPD needs, ticked as you take it (idea list); tap one still missing to add it. */}
+                {(() => {
+                  const items = photoChecklist(counts);
+                  return (
+                    <div className="jc-photo-list" data-hpd-smoke="jc-photo-list" aria-label="Photos HPD needs">
+                      <b>{checklistLine(items)}</b>
+                      <ul>
+                        {items.map((it) => (
+                          <li key={it.key} className={it.done ? "is-done" : ""} data-hpd-smoke={`jc-photo-list-${it.key}`}>
+                            <button type="button" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload(it.kind)}>
+                              <span aria-hidden="true">{it.done ? "✅" : "⬜"}</span>{it.label}<small>{it.note}</small>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
                 {buildingPast.length ? (
                   <details className="jc-building" data-hpd-smoke="jc-building">
                     <summary>🏢 This building: {historyLine(buildingPast)}</summary>

@@ -125,6 +125,9 @@ The plan, one by one (✅ = live, ☐ = next):
 58. ✅ **📩 HPD emails in 20 seconds** (app idea list): "what did I miss" now gives each HPD email in one line: who wrote, which job, what they want (fix the paperwork, the affidavit and invoice, a status update, photos, the appointment, received / approved, cancelled), with their first words; ask "any new HPD emails?" for the last 24 hours. Worked out from the email's own words on the phone (no AI). Test: test-email-brief.
 59. ✅ Owner, 7 Nov: "I don't like the layout of the notice board, how it's scrolling left and right. Everything needs to be in one box, nice and neat." -> The Notices panel (🔔 Notices button) is now one box the width of the screen: the vendor tracking board and Check every notice on top, then every notice kind in 2 neat columns (icon, name, its timer or money held, the count on the right), The list across the bottom; nothing scrolls sideways (before: one long row about 5 screens wide). Test: test-browser-notice-panel-neat.
 60. Owner, 7 Nov: "do all and keep going" -> 57, 58.
+61. ✅ **📋 Photo checklist per job** (app idea list): under Before / After on the job card, "Still to take: before video, after photos, after video" and four tiles that tick ✅ as you save them: Before photos (1 of 3 … 3 ✓), Before video, After photos, After video. Tap one still missing to add it. Test: test-browser-photo-checklist.
+62. **📶 Photos with no signal: already there**: photos and videos are saved on the phone first and go to Drive / the package later, so a basement with no signal is fine.
+63. Owner, 8 Nov: "open app and do all" -> 61, 62.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
