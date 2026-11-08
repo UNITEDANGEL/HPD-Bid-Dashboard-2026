@@ -375,26 +375,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-06-e",
-    "title": "Next on the plan: mornings, the next stop, and paperwork that's left",
+    "id": "2026-11-08-a",
+    "title": "Next on the plan: photos, tomorrow's route, and tenants who went quiet",
     "items": [
       {
-        "id": "hpd-overnight",
-        "icon": "📬",
-        "title": "HPD overnight, in the brief",
-        "why": "The morning brief says in one line who at HPD wrote overnight, on which job and what they want."
+        "id": "missing-photos",
+        "icon": "📸",
+        "title": "Missing photos, in the brief",
+        "why": "The morning brief says which finished jobs still have no after photos, so HPD does not reject the paperwork."
       },
       {
-        "id": "next-stop",
-        "icon": "🧭",
-        "title": "Next stop after a job",
-        "why": "When you say a job is done, it offers the nearest open job and how long to get there."
+        "id": "tomorrow-route",
+        "icon": "🌙",
+        "title": "Tomorrow's route at 6 PM",
+        "why": "Once, at 6 PM: tomorrow's stops in order, with the first drive time."
       },
       {
-        "id": "monday-sweep",
-        "icon": "🔁",
-        "title": "Monday paperwork sweep",
-        "why": "Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first."
+        "id": "tenant-quiet",
+        "icon": "💬",
+        "title": "Tenant didn't answer",
+        "why": "A tenant with no reply after 2 days gets a follow-up text written for you to check and send."
       }
     ]
   }

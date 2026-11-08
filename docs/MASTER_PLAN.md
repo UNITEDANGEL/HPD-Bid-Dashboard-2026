@@ -280,6 +280,9 @@ The plan, one by one (✅ = live):
    what they want.
 31. ✅ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
 32. ✅ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
+33. ☐ **📸 Missing photos, in the brief**: the morning brief says which finished jobs still have no after photos on this phone, so HPD does not reject the paperwork.
+34. ☐ **🌙 Tomorrow's route at 6 PM**: once, at 6 PM on a work day: tomorrow's stops in order, with the first one's drive time.
+35. ☐ **💬 Tenant didn't answer**: a tenant texted 2 days ago with no reply gets a follow-up text written for you to check and send (two taps).
 
 Recommendations (Claude): 13-29 are done; 30-32 are next on the plan (in the app's 📋 card).
 
