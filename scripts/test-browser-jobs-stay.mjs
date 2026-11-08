@@ -1,7 +1,8 @@
-// 📅 Jobs and days (owner, 8 Nov: "every time I click Jobs and close, the jobs disappear"; "I want to see all jobs for
-// the year; when I click Jobs I should be able to pick any days back, but by default I would like to see 60 days"):
-// the map starts on this year with every job (old ones with nothing on file faded, not hidden); Jobs opens on 60 days the first time, then the days you picked
-// with 15 / 30 / 90 / This year / All; closing Jobs gives the same year map back; a day range picked on the map is kept.
+// 📅 Jobs on the map (owner, 8 Nov: "every time I click Jobs and close, the jobs disappear"; "when I click Jobs it
+// should show me the jobs, not the list first; I can choose to see the list"; "by default 60 days, then I can pick any
+// day"): the map starts on this year; Jobs opens on the map (the list folded to its bar) with the last 60 days; Close
+// keeps those jobs on the map with "🔨 Your Jobs list · N jobs", ✕ All gives the whole year back; the days picked in
+// Jobs and on the map are kept.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
@@ -27,34 +28,42 @@ try {
   await ready();
   assert.match(await days(), /Year ▾/, "the map starts on this year");
   const year = await count();
-  // The year's jobs: the menu's "This year" count is what the map shows (old ones faded, not hidden).
-  await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
-  const menuYear = Number(/(\d+)/.exec(await page.locator('[data-hpd-smoke="fc-days-count-year"]').innerText())[1]);
-  await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
-  assert.equal(year, menuYear, `all of the year's jobs on the map (${year})`);
-  assert.ok(await page.locator(".fc-dot-marker.is-old, .fc-label-marker.is-old").count() >= 0);
-  // Jobs: opens on 60 days.
+  // Jobs: on the map first, the list folded; the last 60 days.
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-jobs"]').waitFor();
-  assert.equal(await page.locator('[data-hpd-smoke="fc-jobs-days-60"]').getAttribute("aria-pressed"), "true", "60 days when it opens");
+  const sheet = page.locator('[data-hpd-smoke="fc-jobs"]');
+  await sheet.waitFor();
+  assert.ok(await sheet.evaluate((e) => e.classList.contains("is-mini")), "the map first, not the list");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-jobs-days-60"]').getAttribute("aria-pressed"), "true", "60 days");
   const sixty = await jobsTitle();
   await page.locator('[data-hpd-smoke="fc-jobs-days-15"]').click();
   const fifteen = await jobsTitle();
-  await page.locator('[data-hpd-smoke="fc-jobs-days-all"]').click();
-  const all = await jobsTitle();
-  assert.ok(fifteen <= sixty && sixty <= all, `15 (${fifteen}) <= 60 (${sixty}) <= all (${all})`);
-  // Closing Jobs: the same year map back (nothing disappears).
+  await page.locator('[data-hpd-smoke="fc-jobs-days-60"]').click();
+  assert.ok(fifteen <= sixty, `15 (${fifteen}) <= 60 (${sixty})`);
+  // ☰ List when you want it; 🗺 Map folds it again.
+  await page.locator('[data-hpd-smoke="fc-jobs-fold"]').click();
+  assert.ok(!(await sheet.evaluate((e) => e.classList.contains("is-mini"))));
+  assert.equal(await page.locator('[data-hpd-smoke="fc-jobs-row"]').count(), sixty);
+  await page.locator('[data-hpd-smoke="fc-jobs-fold"]').click();
+  // Close: the same jobs stay on the map.
   await page.locator('[data-hpd-smoke="fc-jobs-close"]').click();
   await page.waitForTimeout(1000);
+  const kept = page.locator('[data-hpd-smoke="fc-jobs-kept"]');
+  await kept.waitFor({ timeout: 5000 });
+  assert.match(await kept.innerText(), new RegExp(`Your Jobs list · ${sixty} job`));
+  assert.equal(await count(), sixty, "the jobs you saw stay on the map");
+  // ✕ All: the whole year again.
+  await page.locator('[data-hpd-smoke="fc-jobs-kept-x"]').click();
+  await page.waitForTimeout(800);
+  assert.equal(await kept.count(), 0);
   assert.equal(await count(), year);
-  // Opened again: the days you picked last (All) are kept.
+  // Days picked on the map are kept after the app opens again; picking days also ends the Jobs view.
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
-  assert.equal(await page.locator('[data-hpd-smoke="fc-jobs-days-all"]').getAttribute("aria-pressed"), "true");
   await page.locator('[data-hpd-smoke="fc-jobs-close"]').click();
-  // A day range picked on the map is kept after the app opens again.
+  await kept.waitFor({ timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
   await page.locator('[data-hpd-smoke="fc-days-last30"]').click();
   await page.waitForTimeout(800);
+  assert.equal(await kept.count(), 0, "picking days shows the map's days");
   assert.match(await days(), /30d ▾/);
   const thirty = await count();
   await page.reload({ waitUntil: "load" });
@@ -63,10 +72,8 @@ try {
   assert.equal(await count(), thirty);
   await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
   await page.locator('[data-hpd-smoke="fc-days-year"]').click();
-  await page.waitForTimeout(800);
-  assert.equal(await count(), year);
   assert.deepEqual(errors, []);
-  console.log(`PASS jobs and days: the map starts on the year (${year} jobs, old ones faded); Jobs opens on 60 days (${sixty}; 15: ${fifteen}, all: ${all}); closing Jobs gives the year map back; 30 days remembered`);
+  console.log(`PASS jobs on the map: the map starts on the year (${year}); Jobs opens on the map with 60 days (${sixty}; 15: ${fifteen}), ☰ List when wanted; Close keeps the ${sixty} on the map, ✕ All gives ${year} back; 30 days remembered`);
 } finally {
   await browser.close();
 }

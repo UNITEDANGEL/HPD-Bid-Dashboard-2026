@@ -1320,6 +1320,12 @@ export default function FieldCommandClient() {
   const setJobsTab = (t: string) => { setJobsTabState(t); try { localStorage.setItem("hpd-jobs-tab", t); } catch { /* private mode */ } };
   const [jobsShown, setJobsShown] = useState<{ key: string; ids: string[] } | null>(null);
   const [jobsMini, setJobsMini] = useState(false);
+  // 🔨 After Close, the map keeps the Jobs list's jobs (owner, 8 Nov: "when I click Close it takes all the jobs out")
+  // until you pick days, a borough, a search or tap ✕ on the note.
+  const [jobsKept, setJobsKept] = useState(false);
+  // 🗺 Jobs opens on the map (owner, 8 Nov: "when I click Jobs it should show me the jobs, not the list first; I can
+  // choose to see the list"): the list folded to its bar, ☰ List opens it. ("hpd-jobs-open" = "list" opens the list.)
+  const jobsMapFirst = () => { try { return localStorage.getItem("hpd-jobs-open") !== "list"; } catch { return true; } };
   const noticeMiniRef = useRef(false);
   const jobsOpenRef = useRef(false);
   const jobsShownRef = useRef<{ key: string; ids: string[] } | null>(null);
@@ -3382,7 +3388,7 @@ export default function FieldCommandClient() {
     void flushOverrideOutbox(HPD_STATUS_WORKER_URL);
   };
   const filteredJobs = useMemo(() => {
-    if (jobsOpen && jobsShown) { const ids = new Set(jobsShown.ids); return jobs.filter((job) => ids.has(jobId(job))); }
+    if ((jobsOpen || jobsKept) && jobsShown) { const ids = new Set(jobsShown.ids); return jobs.filter((job) => ids.has(jobId(job))); }
     const q = search.trim().toLowerCase();
     const olderOnNotices = followFilter !== "notices" ? []
       : noticeKind ? olderJobs.filter((j) => noticeSets[noticeKind].has(jobId(j)))
@@ -3418,7 +3424,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey, jobsOpen, jobsShown, staleJobs]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections, noticeKind, noticeSetKey, jobsOpen, jobsKept, jobsShown, staleJobs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The open job card has priority over "follow me": stop following and show the job's pin in
   // the open strip of map between the search bar and the top of the card. The locate button
@@ -3630,7 +3636,10 @@ export default function FieldCommandClient() {
   }, [trackerOpen, jobs, followUps, pipMap]); // eslint-disable-line react-hooks/exhaustive-deps
   // One screen at a time: a map button closes whatever else is open (bids, notices, stats, today, follow-up,
   // summary, route, the job card, menus) before opening its own. Tapping it again closes it (back to the map).
+  // Picking days, a borough, a search or a filter goes back to the whole map.
+  useEffect(() => { setJobsKept(false); }, [borough, status, search, daysBack, dateRange, followFilter, showOlderLayer]);
   const closeScreens = (keep = "") => {
+    if (keep !== "jobs") setJobsKept(false);
     if (keep !== "bids") setBidsOpen(false);
     if (keep !== "notices") { setNoticesOpen(false); setNoticeChooser(false); }
     if (keep !== "board") setBoardOpen(false);
@@ -7607,7 +7616,7 @@ export default function FieldCommandClient() {
           // Owner can pick which 3 buttons sit next to ✨ AI (hold one, or All → Bottom buttons); the rest are tiles under All.
           // 29 Oct, owner: "too many buttons on the bottom" → picked layout A: one row (Jobs, Bids, ✨ AI, Notices, All), no strip.
           const make: Record<DockKey, (cls: string) => ReactElement> = {
-            jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs${jobsNeedYou ? " is-glow" : ""}`} data-hpd-smoke="fc-jobs-open" data-glow={jobsNeedYou ? "1" : undefined} aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); return; } closeScreens("jobs"); setJobsOpen(true); }}>
+            jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs${jobsNeedYou ? " is-glow" : ""}`} data-hpd-smoke="fc-jobs-open" data-glow={jobsNeedYou ? "1" : undefined} aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); setJobsMini(false); setJobsKept(Boolean(jobsShown && jobsShown.ids.length)); return; } closeScreens("jobs"); setJobsMini(jobsMapFirst()); setJobsOpen(true); }}>
               <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count"><CountUp value={jobsTodo} /></span> : null}
             </button>,
             bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}${bidsDue.unsentToday ? " is-glow" : ""}`} data-hpd-smoke="fc-bids-open" data-glow={bidsDue.unsentToday ? "1" : undefined} aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}><CountUp value={bidsDue.open} /></span> : null}</button>,
@@ -7794,6 +7803,12 @@ export default function FieldCommandClient() {
         {/* Status messages stack below the search box instead of overlapping each other. */}
         <div className="fc-map-hints" hidden={filtersOpen}>
           {/* Weather + 🅿️ no street cleaning today (28 Oct): the first line of the top-left column, so it never sits on top of the job banners (28 Oct, "make the layout better"). */}
+          {jobsKept && jobsShown && !jobsOpen && !selectedJob ? (
+            <div className="fc-jobs-kept" data-hpd-smoke="fc-jobs-kept">
+              <button type="button" className="fc-jobs-kept-open" onClick={() => { closeScreens("jobs"); setJobsMini(false); setJobsOpen(true); }}>🔨 Your Jobs list · <b>{jobsShown.ids.length}</b> job{jobsShown.ids.length === 1 ? "" : "s"}</button>
+              <button type="button" className="fc-jobs-kept-x" aria-label="Show all jobs" data-hpd-smoke="fc-jobs-kept-x" onClick={() => { setJobsKept(false); setJobsShown(null); }}>✕ All</button>
+            </div>
+          ) : null}
           {(wxChip || aspOffToday || moneyNow.week > 0) && !selectedJob && !agent ? (
             <div className="fc-wx-row">
               {wxChip ? (
@@ -10329,7 +10344,7 @@ export default function FieldCommandClient() {
         </div>
       ) : null}
       {/* The list stays open behind a job card (closing the card brings it back, same tab). */}
-      {jobsOpen && !selectedJob ? <JobsList rows={jobRows} initialTab={jobsTab} onTab={setJobsTab} mini={jobsMini} onMini={setJobsMini} onShown={(key, ids) => setJobsShown((prev) => (prev && prev.key === key && prev.ids.join() === ids.join() ? prev : { key, ids }))} onClose={() => { setJobsOpen(false); setJobsShown(null); setJobsMini(false); }} onOpen={(id) => { const job = jobs.find((j) => jobId(j) === id); if (job) openIssueJob(job); }} /> : null}
+      {jobsOpen && !selectedJob ? <JobsList rows={jobRows} initialTab={jobsTab} onTab={setJobsTab} mini={jobsMini} onMini={setJobsMini} onShown={(key, ids) => setJobsShown((prev) => (prev && prev.key === key && prev.ids.join() === ids.join() ? prev : { key, ids }))} onClose={() => { setJobsOpen(false); setJobsMini(false); setJobsKept(Boolean(jobsShown && jobsShown.ids.length)); }} onOpen={(id) => { const job = jobs.find((j) => jobId(j) === id); if (job) openIssueJob(job); }} /> : null}
       {critical ? (
         <div className="fc-critical" role="alertdialog" aria-label="Urgent" data-hpd-smoke="fc-critical" data-kind={critical.kind}>
           <div className="fc-critical-box">
