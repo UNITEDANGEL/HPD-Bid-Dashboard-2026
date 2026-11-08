@@ -7,5 +7,5 @@ export function isNightNy(now = new Date()) {
   const h = get("hour") + get("minute") / 60;
   return h >= SUNSET[get("month") - 1] + 0.5 || h < 6.5;
 }
-export type MapStyle = "light" | "dark" | "night";
-export const MAP_STYLE_LABEL: Record<MapStyle, string> = { light: "Light map", dark: "Dark map", night: "Dark at night" };
+export type MapStyle = "light" | "dark" | "night" | "satellite";
+export const MAP_STYLE_LABEL: Record<MapStyle, string> = { light: "Street map", dark: "Dark map", night: "Dark at night", satellite: "Satellite" };

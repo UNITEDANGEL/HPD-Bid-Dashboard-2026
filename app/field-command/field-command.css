@@ -3335,7 +3335,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-app .fc-jobs-sheet header strong { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fc-jobs-fold { min-height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid #0f766e; background: #134e4a; color: #fff; font: 900 14px system-ui, sans-serif; white-space: nowrap; }
 .fc-app .fc-jobs-sheet.is-mini { height: auto !important; max-height: none !important; }
-.fc-app .fc-jobs-sheet.is-mini .fc-jobs-search, .fc-app .fc-jobs-sheet.is-mini .fc-jobs-list, .fc-app .fc-jobs-sheet.is-mini .fc-follow-note { display: none; }
+.fc-app .fc-jobs-sheet.is-mini .fc-jobs-search, .fc-app .fc-jobs-sheet.is-mini .fc-jobs-days, .fc-app .fc-jobs-sheet.is-mini .fc-jobs-list, .fc-app .fc-jobs-sheet.is-mini .fc-follow-note { display: none; }
 
 /* Vendor tracking board sides (owner, 22 Oct): To send / Sent · waiting / They replied. */
 .fc-board-sides { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; }
@@ -4765,3 +4765,22 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .jc-photo-list button small { grid-column: 2; color: #475569; font: 700 12px system-ui, sans-serif; }
 .jc-photo-list li.is-done button { border-color: #16a34a; background: #f0fdf4; }
 .jc-photo-list li.is-done button small { color: #15803d; }
+
+/* 📅 Jobs list: awarded in the last N days (60 when it opens). */
+.fc-jobs-days { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 6px 0; }
+.fc-jobs-days button { min-height: 40px; border-radius: 20px; border: 1px solid #334155; background: #111827; color: #e2e8f0; font: 800 13.5px system-ui, sans-serif; }
+.fc-jobs-days button.is-on { background: #f8fafc; color: #0f172a; border-color: #f8fafc; }
+/* 🧹 Old jobs with nothing on file: on the map, faded. */
+.fc-dot-marker.is-old, .fc-label-marker.is-old { opacity: .55; filter: grayscale(.9); }
+.fc-dot-marker.is-old .fc-job-dot { width: 13px; height: 13px; margin: 2px; border-width: 2px; }
+
+/* 📍 Bigger, clearer pins (owner, 8 Nov: "a better map"): dots and pins larger, the tip still on the building. */
+.fc-job-dot { width: 20px; height: 20px; margin: -1px; border-width: 3px; box-shadow: 0 1px 4px rgba(0, 0, 0, .45); }
+.fc-label-marker .fc-pin { transform: scale(1.22); }
+.fc-label-marker.is-z16 .fc-pin { transform: scale(1.38); }
+.fc-label-marker.is-z18 .fc-pin { transform: scale(1.55); }
+.fc-label-marker.is-focus .fc-pin { transform: scale(1.7); }
+.fc-pin-head { border-width: 3px; }
+/* 🛰 Satellite: pins pop on the photo. */
+.is-satellite .fc-job-dot { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); }
+.is-satellite .fc-pin-head { box-shadow: 0 0 0 2px rgba(0, 0, 0, .5), 0 3px 8px rgba(0, 0, 0, .6); }

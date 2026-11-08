@@ -49,6 +49,8 @@ export async function routePrivate(context, opts = {}) {
   // The "🆕 New update includes…" card (27 Oct) shows on a reload; the What's new lines count as seen in the tests
   // (test-browser-newupdate sets its own).
   await markNewsSeen(context);
+  // The Jobs list remembers its days (60 the first time, owner 8 Nov): the tests pick from every job, like "All".
+  if (!opts.jobsDays) await context.addInitScript(() => { try { if (!localStorage.getItem("hpd-jobs-days")) localStorage.setItem("hpd-jobs-days", "all"); } catch {} });
   // City building records (27 Oct: the job card looks them up too): answered "not found" at once, so cards don't
   // wait on the network or move; a test that needs them routes its own (registered later, so it wins).
   await context.route(/geosearch\.planninglabs\.nyc/, (route) => route.fulfill({ json: { features: [] } }));

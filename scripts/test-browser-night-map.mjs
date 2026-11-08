@@ -1,4 +1,4 @@
-// 🌙 Dark map at night (idea list): All → Map style cycles Light → Dark → Dark at night → Light, kept on the phone.
+// 🌙 Dark map at night (idea list): All → Map style cycles Street → Satellite → Dark → Dark at night → Street, kept on the phone.
 // At 5:30 PM in November (after sunset) "Dark at night" makes the map dark; at 2 PM it's light. Kept after a reload.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
@@ -31,7 +31,9 @@ try {
   await run("2026-11-09T22:30:00Z", async (page, open) => {
     assert.equal(await dark(page), false, "light at first");
     await page.locator('[data-hpd-smoke="fc-more-open"]').click();
-    assert.match(await row(page).innerText(), /Light map · tap to change/);
+    assert.match(await row(page).innerText(), /Street map · tap to change/);
+    await row(page).click();
+    assert.match(await row(page).innerText(), /Satellite/);
     await row(page).click();
     assert.match(await row(page).innerText(), /Dark map/);
     assert.equal(await dark(page), true);
@@ -42,9 +44,9 @@ try {
     assert.equal(await dark(page), true, "kept after a reload");
     await page.locator('[data-hpd-smoke="fc-more-open"]').click();
     await row(page).click();
-    assert.match(await row(page).innerText(), /Light map/);
+    assert.match(await row(page).innerText(), /Street map/);
     assert.equal(await dark(page), false);
-    await row(page).click(); await row(page).click(); // back to Dark at night for the next check
+    await row(page).click(); await row(page).click(); await row(page).click(); // back to Dark at night for the next check
   });
   // 2 PM: Dark at night is light.
   await run("2026-11-09T19:00:00Z", async (page) => {

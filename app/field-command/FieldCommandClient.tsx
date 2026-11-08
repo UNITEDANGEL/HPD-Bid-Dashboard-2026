@@ -174,6 +174,11 @@ function shiftDay(iso: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+// 📅 The map starts on this year (owner, 8 Nov: "I want to see all jobs for the year"); a day range you pick is kept
+// ("preset" = not picked by you). The Jobs list opens on the last 60 days (JobsList).
+const ALL_DATES = () => currentYearRange();
+const pickedYear = () => ({ ...currentYearRange(), preset: false });
+
 function quickDateBounds(key: QuickDateKey, today: string) {
   if (key === "year") return { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` };
   if (key === "next30") return { from: today, to: shiftDay(today, 30) };
@@ -973,6 +978,10 @@ function PersonIcon() {
 
 const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+// 🛰 Satellite (owner, 8 Nov: "a better map"): the real photo of the buildings, with street names drawn over it.
+const SATELLITE_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const SATELLITE_LABELS_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
+const SATELLITE_PLACES_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 
 function individualPinOffset(index: number, count: number) {
   const columns = Math.min(3, count);
@@ -1063,6 +1072,7 @@ export default function FieldCommandClient() {
   const mapFramingRef = useRef("");
   const restoredMapViewRef = useRef(false);
   const tileLayerRef = useRef<any>(null);
+  const satelliteRef = useRef<any[]>([]);
   const vectorLayerRef = useRef<any>(null);
   const darkTilesRef = useRef(false);
   const layerGroupRef = useRef<any>(null);
@@ -1304,7 +1314,10 @@ export default function FieldCommandClient() {
   // Jobs (owner, 22 Oct: "I need to see the jobs on the map, also the list"): the list sits in the lower half, the map
   // above shows only the jobs of the tab you're on (and frames them); 🗺 Map folds the list down to a bar.
   const [jobsOpen, setJobsOpen] = useState(false);
-  const [jobsTab, setJobsTab] = useState("todo");
+  // The Jobs list opens on the tab you used last (kept on the phone).
+  const [jobsTab, setJobsTabState] = useState("todo");
+  useEffect(() => { try { const t = localStorage.getItem("hpd-jobs-tab"); if (t) setJobsTabState(t); } catch { /* private mode */ } }, []);
+  const setJobsTab = (t: string) => { setJobsTabState(t); try { localStorage.setItem("hpd-jobs-tab", t); } catch { /* private mode */ } };
   const [jobsShown, setJobsShown] = useState<{ key: string; ids: string[] } | null>(null);
   const [jobsMini, setJobsMini] = useState(false);
   const noticeMiniRef = useRef(false);
@@ -1430,15 +1443,15 @@ export default function FieldCommandClient() {
   }, [status, borough]);
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
-  const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string; preset?: boolean }>(currentYearRange);
-  useEffect(() => { setDateRange(previous => previous.preset ? currentYearRange() : previous); }, [calendarDate]);
+  const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string; preset?: boolean }>(ALL_DATES);
+  useEffect(() => { setDateRange(previous => previous.preset ? ALL_DATES() : previous); }, [calendarDate]);
   const [customDateRange, setCustomDateRange] = useState(false);
   const [dateFilterLoaded, setDateFilterLoaded] = useState(false);
   useEffect(() => {
     try {
       const range = JSON.parse(localStorage.getItem("hpd-map-date-range-v2") || "null");
       if (range && Object.hasOwn(JOB_DATE_FIELDS, range.field) && typeof range.from === "string" && typeof range.to === "string"
-        && (!range.from || calendarDay(range.from) !== null) && (!range.to || calendarDay(range.to) !== null)) setDateRange(range.preset ? currentYearRange() : range);
+        && (!range.from || calendarDay(range.from) !== null) && (!range.to || calendarDay(range.to) !== null)) setDateRange(range.preset ? ALL_DATES() : range);
       const saved = range ? localStorage.getItem("hpd-map-award-days") : null;
       if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) {
         setDaysBack(Number(saved));
@@ -3282,6 +3295,9 @@ export default function FieldCommandClient() {
     return jobs.filter((j) => !isTestJob(jobId(j)) && isStaleJob(j as Record<string, unknown>, jobQueue(j), Date.now(), onNotice.has(jobId(j))));
   }, [jobs, noticeOmoKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const staleIds = new Set(staleJobs.map((j) => jobId(j)));
+  // 🧹 Old jobs with nothing on file show on the map faded (owner, 8 Nov: "all jobs for the year"), not hidden.
+  const staleIdsRef = useRef<Set<string>>(new Set());
+  staleIdsRef.current = staleIds;
   // ✉️ Email screen (owner, 6 Nov: "Add email feature to the app"): HPD people from their own emails, Lewis / Gafur first.
   const [emailFor, setEmailFor] = useState<{ job: EmailJob } | null>(null);
   const emailList = useMemo(() => emailPeople(boardRows), [boardThreads]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -3392,7 +3408,6 @@ export default function FieldCommandClient() {
       const isTheTestJob = jobId(job) === TEST_JOB_ID;
       if (!dueOnMap(job) && !isTheTestJob) {
         if (!matchesJobQueue(job, status)) return false;
-        if (status === "pending" && staleIds.has(jobId(job))) return false;
         if (!matchesAwardLookback(job, daysBack)) return false;
         if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       }
@@ -3752,7 +3767,7 @@ export default function FieldCommandClient() {
     setDaysBack(null);
     setCustomDateRange(false);
     const bounds = quickDateBounds(key, calendarDate);
-    setDateRange(key === "year" && dateRange.field === "award" ? currentYearRange() : { field: dateRange.field, preset: false, ...bounds });
+    setDateRange(key === "year" && dateRange.field === "award" ? pickedYear() : { field: dateRange.field, preset: false, ...bounds });
   }
 
   function resetQuickFilters() {
@@ -3761,7 +3776,7 @@ export default function FieldCommandClient() {
     setBorough("ALL");
     setDaysBack(null);
     setCustomDateRange(false);
-    setDateRange(currentYearRange());
+    setDateRange(ALL_DATES());
   }
 
   useEffect(() => {
@@ -3828,6 +3843,17 @@ export default function FieldCommandClient() {
             gl.once("style.load", () => {
               for (const layer of gl.getStyle().layers) {
                 if (layer.type === "symbol" && layer["source-layer"] === "poi") gl.setLayoutProperty(layer.id, "visibility", "none");
+                // 🗺 A cleaner map (owner, 8 Nov): no highway shields, transit, rail, ferries, airports or house numbers.
+                if (/shield|transit|rail|ferry|aerialway|airport|aeroway|housenumber|oneway|poi/.test(layer.id) || (layer["source-layer"] === "transportation" && /rail|transit/.test(JSON.stringify(layer.filter || "")))) gl.setLayoutProperty(layer.id, "visibility", "none");
+                if (layer.type === "symbol" && (layer["source-layer"] === "transportation_name" || /road|highway|street/.test(layer.id))) {
+                  gl.setPaintProperty(layer.id, "text-color", "#1f2937");
+                  gl.setPaintProperty(layer.id, "text-halo-color", "#ffffff");
+                  gl.setPaintProperty(layer.id, "text-halo-width", 1.6);
+                }
+                if (layer.type === "symbol" && layer["source-layer"] === "place") {
+                  gl.setPaintProperty(layer.id, "text-color", "#111827");
+                  gl.setPaintProperty(layer.id, "text-halo-color", "#ffffff");
+                }
                 if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#eef0ed");
                 if (layer.type === "fill") {
                   const colors: Record<string, string> = {
@@ -3910,7 +3936,7 @@ export default function FieldCommandClient() {
               const priority = jobPriority(job);
               const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const screen = map.latLngToContainerPoint(position);
-              const showLabel = reservePinLabel(screen.x, screen.y, occupied);
+              const showLabel = !staleIdsRef.current.has(jobId(job)) && reservePinLabel(screen.x, screen.y, occupied);
               const here = onSite(job as Record<string, unknown>);
               const lit = glowRef.current.get(jobId(job)) || (here ? { tag: `🔨 Working · ${duration(here.minutes)}`, cls: "is-glow is-glow-onsite" } : undefined);
               const html = (showLabel || lit
@@ -3924,7 +3950,8 @@ export default function FieldCommandClient() {
               const zoomClass = map.getZoom() >= 18 ? " is-z18" : map.getZoom() >= 16 ? " is-z16" : "";
               // The pin's tip sits on the building.
               const big = showLabel || Boolean(lit);
-              const icon = L.divIcon({ className: (big ? "fc-label-marker" : "fc-dot-marker") + zoomClass + (lit ? ` ${lit.cls}` : ""), html, iconSize: big ? [36, 42] : [18, 18], iconAnchor: big ? [18, 40] : [9, 9] });
+              const old = !lit && staleIdsRef.current.has(jobId(job)) ? " is-old" : "";
+              const icon = L.divIcon({ className: (big ? "fc-label-marker" : "fc-dot-marker") + zoomClass + old + (lit ? ` ${lit.cls}` : ""), html, iconSize: big ? [36, 42] : [18, 18], iconAnchor: big ? [18, 40] : [9, 9] });
               const marker = L.marker(position, { icon, title: lit ? `${title} - ${lit.tag}` : title, zIndexOffset: lit ? 3000 : showLabel ? 1000 : 0 });
               marker.on("click", () => {
                 if (!big || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
@@ -4063,7 +4090,7 @@ export default function FieldCommandClient() {
 
   // 🌙 Map style, kept on this phone: Light, Dark, or Dark at night (from half an hour after sunset to 6:30 AM).
   const [mapStyle, setMapStyle] = useState<MapStyle>("light");
-  useEffect(() => { try { const v = localStorage.getItem("hpd-map-style"); if (v === "dark" || v === "night") setMapStyle(v); } catch { /* private mode */ } }, []);
+  useEffect(() => { try { const v = localStorage.getItem("hpd-map-style"); if (v === "dark" || v === "night" || v === "satellite") setMapStyle(v); } catch { /* private mode */ } }, []);
   useEffect(() => {
     const apply = () => setDarkTiles(mapStyle === "dark" || (mapStyle === "night" && isNightNy()));
     apply();
@@ -4071,6 +4098,29 @@ export default function FieldCommandClient() {
     const t = window.setInterval(apply, 60000);
     return () => window.clearInterval(t);
   }, [mapStyle]);
+  // 🛰 Satellite: the photo + street names over the map; the street map comes back when you switch away.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    let live = true;
+    void import("leaflet").then((m) => {
+      const L = (m as any).default || m;
+      if (!live || mapRef.current !== map) return;
+      if (mapStyle === "satellite" && !satelliteRef.current.length) {
+        const opts = { maxZoom: 20, maxNativeZoom: 19, zIndex: 5, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" };
+        satelliteRef.current = [L.tileLayer(SATELLITE_TILE_URL, opts), L.tileLayer(SATELLITE_LABELS_URL, { ...opts, zIndex: 6 }), L.tileLayer(SATELLITE_PLACES_URL, { ...opts, zIndex: 7 })];
+        satelliteRef.current.forEach((t) => t.addTo(map));
+        const vc = vectorLayerRef.current?.getContainer(); if (vc) vc.style.visibility = "hidden";
+        map.getContainer().classList.add("is-satellite");
+      } else if (mapStyle !== "satellite" && satelliteRef.current.length) {
+        satelliteRef.current.forEach((t) => t.remove());
+        satelliteRef.current = [];
+        const vc = vectorLayerRef.current?.getContainer(); if (vc) vc.style.visibility = "";
+        map.getContainer().classList.remove("is-satellite");
+      }
+    });
+    return () => { live = false; };
+  }, [mapStyle, routeMapReady]);
   // 🖐 One-hand mode (idea list): search, filters, boroughs and the map buttons move down by the thumb. Kept on the phone.
   const [oneHand, setOneHand] = useState(false);
   useEffect(() => { try { setOneHand(localStorage.getItem("hpd-one-hand") === "1"); } catch { /* private mode */ } }, []);
@@ -4088,7 +4138,7 @@ export default function FieldCommandClient() {
     try { localStorage.setItem("hpd-map-style", style); } catch { /* private mode */ }
   }
   function toggleTileStyle() {
-    chooseMapStyle(darkTiles ? "light" : "dark");
+    chooseMapStyle(mapStyle === "satellite" ? "dark" : mapStyle === "light" ? "satellite" : "light");
   }
 
   async function placeUserMarker(latitude: number, longitude: number) {
@@ -7357,7 +7407,7 @@ export default function FieldCommandClient() {
             ))}
           </div>
           <div className="fc-bar-days">
-            {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs hidden: check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small></button> : null}
+            {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs with nothing on file (faded on the map): check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small></button> : null}
             <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
               <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
             </button>
@@ -7497,9 +7547,9 @@ export default function FieldCommandClient() {
         <div className="fc-award-filter">
           <div className="fc-date-custom">
           <label htmlFor="award-range">Awarded</label>
-          <select id="award-range" aria-label="Award date range" value={dateRange.preset ? "year" : customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? "custom" : daysBack ?? "all"} onChange={(event) => {
+          <select id="award-range" aria-label="Award date range" value={dateRange.from === currentYearRange().from && dateRange.to === currentYearRange().to ? "year" : customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? "custom" : daysBack ?? "all"} onChange={(event) => {
             const selected = event.target.value;
-            setDateRange(selected === "year" ? currentYearRange() : { field: "award", from: "", to: "" });
+            setDateRange(selected === "year" ? pickedYear() : { field: "award", from: "", to: "" });
             setCustomDateRange(selected === "custom");
             if (selected !== "custom") setDaysBack(selected === "all" || selected === "year" ? null : Number(selected));
           }}>
@@ -7524,7 +7574,7 @@ export default function FieldCommandClient() {
               <label>Through<input type="date" aria-label="Date through" value={dateRange.to} onChange={(e) => { setDaysBack(null); setDateRange({ ...dateRange, preset: false, to: e.target.value }); }} /></label>
             </div>
             {dateRange.from && dateRange.to && dateRange.from > dateRange.to ? <span role="alert">From must be on or before Through.</span> : null}
-            <button type="button" onClick={() => { setDateRange(currentYearRange()); setDaysBack(null); setCustomDateRange(false); }}>Current year</button>
+            <button type="button" onClick={() => { setDateRange(pickedYear()); setDaysBack(null); setCustomDateRange(false); }}>Current year</button>
             <button type="button" onClick={() => { setDateRange({ field: "award", from: "", to: "" }); setDaysBack(null); setCustomDateRange(false); }}>All dates</button>
           </div>
         </div>
@@ -7667,7 +7717,7 @@ export default function FieldCommandClient() {
               { key: "ideas", icon: "💡", label: "Upgrade ideas", info: "Claude's next ideas · tap 👍 to build", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); } },
               { key: "ideas-more", icon: "💬", label: "More ideas", info: "Ask Claude for new ideas right now", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void askMoreIdeas(); } },
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
-              { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
+              { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "satellite" : mapStyle === "satellite" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
               { key: "one-hand", icon: "🖐", label: "One-hand mode", info: oneHand ? "On: search and map buttons by your thumb" : "Off · moves the top buttons down by your thumb", go: toggleOneHand },
               { key: "gloves", icon: "🧤", label: "Big buttons (gloves)", info: gloves ? "On: every button bigger for work gloves" : "Off · makes every button bigger for work gloves", go: toggleGloves },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
@@ -7722,11 +7772,11 @@ export default function FieldCommandClient() {
         <div className="fc-map-controls" onTouchStart={() => undefined}>
           <button
             type="button"
-            className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
-            aria-label="Toggle map style" data-tip="Change the map style"
+            className={`fc-map-fab ${darkTiles || mapStyle === "satellite" ? "is-active" : ""}`}
+            aria-label={`Map style: ${MAP_STYLE_LABEL[mapStyle]}. Tap for ${mapStyle === "light" ? "satellite" : mapStyle === "satellite" ? "the dark map" : "the street map"}`} data-tip="Street, satellite or dark map" data-hpd-smoke="fc-map-style" data-style={mapStyle}
             onClick={toggleTileStyle}
           >
-            <LayersIcon /><span className="fc-fab-label">Map</span>
+            <LayersIcon /><span className="fc-fab-label">{mapStyle === "satellite" ? "Photo" : mapStyle === "light" ? "Map" : "Dark"}</span>
           </button>
           <button
             type="button"

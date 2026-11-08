@@ -9,6 +9,8 @@ export type JobRow = { id: string; address: string; borough: string; status: str
   // The tenant (29 Oct): reached / tried / nothing yet / a public-area job.
   contact?: { tone: "none" | "try" | "ok" | "common"; tries: number; phone: boolean; lastAt?: string; triesToday?: number; reachedToday?: boolean } };
 type Tab = "todo" | "closeout" | "secondtry" | "waiting" | "all";
+type Days = "15" | "30" | "60" | "90" | "year" | "all";
+const DAYS: [Days, string][] = [["15", "15 days"], ["30", "30 days"], ["60", "60 days"], ["90", "90 days"], ["year", "This year"], ["all", "All"]];
 
 // "1/15/26", "01/15/2026", "2026-01-15" -> a day number (NaN if unreadable).
 const dayNum = (v: string) => {
@@ -37,18 +39,33 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
   const [q, setQ] = useState("");
   const [toReach, setToReach] = useState(false);
   const today = todayNum();
+  // 📅 Days back (owner, 8 Nov: "by default when I click I would like to see 60 days, then I can pick any day I want"):
+  // jobs awarded in the last 60 days the first time; 15 / 30 / 90 days, this year or all with one tap, kept on the phone.
+  const [days, setDaysState] = useState<Days>(() => {
+    try { const v = localStorage.getItem("hpd-jobs-days"); return DAYS.some(([k]) => k === v) ? (v as Days) : "60"; } catch { return "60"; }
+  });
+  const setDays = (d: Days) => { setDaysState(d); try { localStorage.setItem("hpd-jobs-days", d); } catch { /* private mode */ } };
+  const year = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()).slice(0, 4);
+  const inDays = (r: JobRow) => {
+    if (days === "all") return true;
+    const n = dayNum(r.award);
+    if (!Number.isFinite(n)) return false;
+    if (days === "year") return new Date(n * 86400000).toISOString().slice(0, 4) === year;
+    return today - n <= Number(days);
+  };
+  const inRange = useMemo(() => rows.filter(inDays), [rows, days, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const shown = useMemo(() => {
     const term = q.trim().toUpperCase();
-    return rows
+    return inRange
       .filter((r) => tab === "all" || r.group === tab)
       .filter((r) => !term || r.id.includes(term) || r.address.toUpperCase().includes(term))
       .filter((r) => !toReach || needsCall(r))
       .sort((a, b) => (dayNum(a.due) || 1e9) - (dayNum(b.due) || 1e9));
-  }, [rows, tab, q, toReach]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [inRange, tab, q, toReach]); // eslint-disable-line react-hooks/exhaustive-deps
   // The map above shows these jobs.
   const shownKey = shown.map((r) => r.id).join(",");
-  useEffect(() => { onShown?.(`${tab}|${q.trim()}${toReach ? "|reach" : ""}`, shownKey ? shownKey.split(",") : []); }, [tab, q, shownKey, toReach]); // eslint-disable-line react-hooks/exhaustive-deps
-  const count = (t: Tab) => (t === "all" ? rows.length : rows.filter((r) => r.group === t).length);
+  useEffect(() => { onShown?.(`${tab}|${days}|${q.trim()}${toReach ? "|reach" : ""}`, shownKey ? shownKey.split(",") : []); }, [tab, days, q, shownKey, toReach]); // eslint-disable-line react-hooks/exhaustive-deps
+  const count = (t: Tab) => (t === "all" ? inRange.length : inRange.filter((r) => r.group === t).length);
   const tabs: [Tab, string][] = [["todo", "🔨 To do"], ["closeout", "📋 Close out"], ["secondtry", "🔒 2nd try"], ["waiting", "⏳ Waiting on HPD"], ["all", "All open"]];
   return (
     <div className={`fc-package-sheet fc-summary-sheet fc-jobs-sheet${mini ? " is-mini" : ""}`} role="dialog" aria-label="Jobs" data-hpd-smoke="fc-jobs">
@@ -60,6 +77,9 @@ export default function JobsList({ rows, onOpen, onClose, initialTab, onTab, onS
       <div className="fc-summary-body">
         <div className="fc-notif-tabs" role="tablist">
           {tabs.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "is-on" : ""} data-hpd-smoke={`fc-jobs-tab-${k}`} onClick={() => setTab(k)}>{label} <b>{count(k)}</b></button>)}
+        </div>
+        <div className="fc-jobs-days" role="group" aria-label="Awarded in" data-hpd-smoke="fc-jobs-days">
+          {DAYS.map(([k, label]) => <button key={k} type="button" aria-pressed={days === k} className={days === k ? "is-on" : ""} data-hpd-smoke={`fc-jobs-days-${k}`} onClick={() => setDays(k)}>{label}</button>)}
         </div>
         <input className="fc-jobs-search" data-hpd-smoke="fc-jobs-search" placeholder="Search job # or address" value={q} onChange={(e) => setQ(e.target.value)} />
         {(() => {

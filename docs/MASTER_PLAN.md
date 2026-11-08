@@ -129,6 +129,8 @@ The plan, one by one (✅ = live, ☐ = next):
 62. **📶 Photos with no signal: already there**: photos and videos are saved on the phone first and go to Drive / the package later, so a basement with no signal is fine.
 63. ✅ **🛠 Fixed "bid the usual" losing your price**: a sent bid kept only the first 240 letters of its work, so once the invitation left the list the app could read it as a different kind of work and say "you haven't bid on this before". Now the first 1,200 letters are kept (the size and every kind of work it names). Bids saved before today keep their short text. Also brought 3 old tests up to date (they failed at night and on weekends): arriving now opens the work order first and "we're outside" is under 🚪 No answer at the door; "what job is this" answers after "Not yet" on Have you arrived. Also fixed: on a sideways phone the bid map now fits all of today's invitation pins between the header and the list (it showed 15 of 19; some sat under the list).
 64. Owner, 8 Nov: "open app and do all" -> 61-63.
+65. ✅ Owner, 8 Nov: "every time I click Jobs and close, the jobs disappear"; "I want to see all jobs for the year; when I click Jobs I should be able to pick any days back, but by default 60 days". -> The map starts on this year with every job of the year (124): the old ones with nothing on file (🧹, 3+ weeks past completion) are now small faded dots instead of hidden, so nothing vanishes. The Jobs list has 15 / 30 / 60 / 90 days, This year and All (awarded in), 60 the first time, then the one you picked (kept on the phone); its tab is kept too. A day range picked on the map is kept. Test: test-browser-jobs-stay.
+66. ✅ Owner, 8 Nov: "I want a better map" (picked: cleaner map picture, bigger clearer pins, satellite view). -> The street map hides highway shields, transit, rail, ferries, airports and house numbers, with darker street and place names; dots 20 px and pins about a fifth bigger; old jobs small and grey so the active ones stand out; the Map button goes Street -> Photo (satellite, Esri, free, with street names on top) -> Dark -> Street, kept on the phone (All -> Map style also has Dark at night). Test: test-browser-better-map.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
@@ -280,9 +282,6 @@ The plan, one by one (✅ = live):
    what they want.
 31. ✅ **🧭 Next stop after a job**: when you say a job is done, it offers the nearest open job and how long to get there.
 32. ✅ **🔁 Monday paperwork sweep**: Monday 8 AM, once: the finished jobs whose paperwork isn't sent yet, oldest first.
-33. ☐ **📸 Missing photos, in the brief**: the morning brief says which finished jobs still have no after photos on this phone, so HPD does not reject the paperwork.
-34. ☐ **🌙 Tomorrow's route at 6 PM**: once, at 6 PM on a work day: tomorrow's stops in order, with the first one's drive time.
-35. ☐ **💬 Tenant didn't answer**: a tenant texted 2 days ago with no reply gets a follow-up text written for you to check and send (two taps).
 
 Recommendations (Claude): 13-29 are done; 30-32 are next on the plan (in the app's 📋 card).
 
