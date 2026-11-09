@@ -126,6 +126,13 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
         // No repeats (owner, 22 Oct: "the urgent alert I want to hear once, then it says on screen; ER01987 keeps
         // repeating"): one alert per notice; after that it stays on the board, in 🔔 and in the morning briefing.
       }
+      // ⚠️ HPD found a problem with paperwork you sent (app idea list: "a phone alert the minute HPD writes 'blank' or
+      // 'errors' about paperwork you sent"): once per HPD email, with their first words. Still open on the board only
+      // (not fixed / marked handled since).
+      for (const r of rows.filter((x) => x.problem && x.next && !handled(x) && now - Date.parse(x.problem.at) < 3 * 86400000)) {
+        const words = String(r.problem.text || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").replace(/^(good (day|morning|afternoon)|hello|hi|dear)\b[^,.!:]{0,30}[,.!:]?\s*/i, "").trim();
+        out.push({ key: `p:${h(`${r.omo}|${r.problem.at}`)}`, kind: "notice", title: `⚠️ HPD found a problem · ${r.omo}`, body: `${(r.who || "HPD").split(/[\s,]+/)[0]}: "${words.slice(0, 110)}${words.length > 110 ? "…" : ""}" Fix it with the same dates and send it again.`, url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `p-${r.omo}` });
+      }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.

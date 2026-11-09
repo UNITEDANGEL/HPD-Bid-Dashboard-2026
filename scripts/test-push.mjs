@@ -68,7 +68,7 @@ assert.ok(!titles.some((t) => /EQ00001/.test(t)), "old emails don't alert");
 assert.ok(titles.includes("🧾 New invitation to bid · ER09999"));
 assert.ok(!titles.some((t) => /ER00001/.test(t)), "past invitations don't alert");
 assert.ok(titles.some((t) => /^⏰ EQ99997: \d+ h left on the notice$/.test(t)), titles.join(" | "));
-assert.ok(alerts.every((a) => /^[ebur]:[0-9a-f]{16}$/.test(a.key) || /^[mw]:\d{4}-\d{2}-\d{2}$/.test(a.key)), "kept as short hashes (briefing / wrap-up by their day)");
+assert.ok(alerts.every((a) => /^[ebupr]:[0-9a-f]{16}$/.test(a.key) || /^[mw]:\d{4}-\d{2}-\d{2}$/.test(a.key)), "kept as short hashes (briefing / wrap-up by their day)");
 assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=1&board=1&omo=EP27382", "the alert opens that job on the board");
 assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1&omo=EQ12345", "a rejection opens that job");
 console.log("PASS phone alert finder: a different alert per kind: 💰 award (cha-ching), ⏱ notice, 📋 request (Gafur replied, Lewis status update), 💵 rejection (email + HPD notices), 📩 message, 🧾 invitation, ⏰ under 6 h; old ones left out; short hashes; rejections open the rejections");
@@ -84,6 +84,25 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(new Set(keys.map((k) => k[0])).size, 1, "the same key every time: sent once");
   assert.equal(workingHours(Date.parse("2026-10-24T15:00:00Z")), false, "Saturday");
   console.log("PASS overdue notice: ER01987 alerts once (same key every hour, no 2-hour repeats)");
+}
+
+// ⚠️ HPD found a problem with paperwork you sent (idea list): one alert with HPD's first words, the same key every time.
+{
+  const threads = [{ id: "pb", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#ER05228", omos: ["ER05228"], kind: "past due", people: ["Joy-Ann Lewis"], messages: [
+    { at: "2026-10-16T14:00:00Z", mine: false, hpd: true, from: "Lewis, Joy-Ann (HPD)", subject: "72 HR", text: "Notice lewisj@hpd.nyc.gov" },
+    { at: "2026-10-17T15:00:00Z", mine: true, hpd: false, from: "me", subject: "RE: 72 HR", text: "Attached.", files: ["ER05228 AFF INVOICE.pdf"] },
+    { at: "2026-10-21T14:00:00Z", mine: false, hpd: true, from: "Lewis, Joy-Ann (HPD)", subject: "RE: 72 HR", text: "Good Day Jot, Kindly see attached affidavit & invoice with highlighted errors. Please make corrections & resubmit. [cid:abc]" },
+  ] }];
+  const at = (iso) => findAlerts({ conversations: { threads }, bids: [], sent: {}, requests: {}, now: Date.parse(iso), loadLib });
+  const a1 = (await at("2026-10-21T16:00:00Z")).filter((a) => /problem/.test(a.title));
+  assert.equal(a1.length, 1, "one problem alert");
+  assert.equal(a1[0].title, "⚠️ HPD found a problem · ER05228");
+  assert.match(a1[0].body, /^Joy-Ann: "Kindly see attached affidavit & invoice with highlighted errors\. Please make corrections & resubmit\." Fix it with the same dates/);
+  assert.equal(a1[0].url, "/map/?view=all&map=1&board=1&omo=ER05228");
+  const a2 = (await at("2026-10-22T13:00:00Z")).filter((a) => /problem/.test(a.title));
+  assert.equal(a2[0]?.key, a1[0].key, "same key: sent once");
+  assert.equal((await at("2026-10-28T13:00:00Z")).filter((a) => /problem/.test(a.title)).length, 0, "not after 3 days");
+  console.log("PASS problem alert: HPD's 'highlighted errors… resubmit' -> one alert with their words, once, opens the board");
 }
 
 // ☀️ Morning briefing: once a weekday from 8 AM, the day in one alert.
