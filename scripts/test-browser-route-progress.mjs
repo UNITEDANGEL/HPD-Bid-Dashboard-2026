@@ -9,7 +9,8 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
-const doneAt = new Date(Date.now() - 20 * 60000).toISOString();
+// Finished a moment ago (20 minutes ago was yesterday just after midnight).
+const doneAt = new Date(Date.now() - 30 * 1000).toISOString();
 // Jobs still open at HPD (a job HPD closed is left off the route).
 const route = ["EQ18710", "EQ15239", "EQ24465"];
 

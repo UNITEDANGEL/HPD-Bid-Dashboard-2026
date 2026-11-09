@@ -10010,7 +10010,7 @@ export default function FieldCommandClient() {
             onNext={() => go(noticeWalk.i + 1)} onPrev={() => go(Math.max(0, noticeWalk.i - 1))} onStop={() => setNoticeWalk(null)} onSpeak={say} />
         );
       })() : null}
-      {(!agent || agentTucked) && !selectedJob && !moreOpen && dockEdit < 0 ? (
+      {(!agent || agentTucked) && !selectedJob && !moreOpen && !routeOpen && dockEdit < 0 ? (
         <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
           e.preventDefault();
           const t = chatBarText.trim();
