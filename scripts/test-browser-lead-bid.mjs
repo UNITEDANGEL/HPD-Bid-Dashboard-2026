@@ -103,10 +103,27 @@ try {
   assert.equal(await pin.count(), 1, "ER09991 on the bids map");
   assert.match(await pin.getAttribute("title"), /^ER09991 · Lead abatement · /);
   assert.match(await pin.getAttribute("class"), /is-lead/);
+  // Reopened: the rate boxes show the saved rates (they used to come back empty while the totals counted them).
+  await page.goto(`${baseUrl}/map/?bids=1&omo=ER09991`, { waitUntil: "load", timeout: 180000 });
+  await box.waitFor({ timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('[data-key="Wall|Enclosure|SQFT"]')?.value === "18", null, { timeout: 10000 });
+  assert.equal(await box.locator('[data-key="Baseboard|Replacement|FT"]').inputValue(), "40");
+  // 💡 A new lead bid starts with your last rate for each part (recommended 9 Nov), marked until you change one.
+  await page.evaluate(() => localStorage.removeItem("hpd-lead-rates-ER09991"));
+  await page.goto(`${baseUrl}/map/?bids=1&omo=ER09991`, { waitUntil: "load", timeout: 180000 });
+  await box.waitFor({ timeout: 60000 });
+  const last = box.locator('[data-hpd-smoke="fc-bid-lead-last"]');
+  await last.waitFor({ timeout: 10000 });
+  assert.match(await last.innerText(), /rates from your last lead bid are filled in/);
+  await page.waitForFunction(() => document.querySelector('[data-key="Wall|Enclosure|SQFT"]')?.value === "18", null, { timeout: 10000 });
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-total"]').innerText(), /Apartment total: \$2,576\.00/);
+  await box.locator('[data-key="Baseboard|Replacement|FT"]').fill("42");
+  await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-bid-lead-last"]'), null, { timeout: 5000 });
+  assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991"))), { "Wall|Enclosure|SQFT": 18, "Baseboard|Replacement|FT": 42 }, "changed: saved as this bid's own");
   assert.equal(faxes, 0, "nothing faxed");
   await box.screenshot({ path: `${process.env.TEMP || "/tmp"}/lead-box.png` });
   assert.deepEqual(errors, []);
-  console.log("PASS lead bid: 2 papers (the invitation and HPD's price list), the package waits for every rate, a price that is not the list total is flagged; emailed invitation with who sent it; rates per kind of work price HPD's scope sheet (lines, rooms, apartment $2,576), kept on the phone; Use fills the bid price; nothing faxed");
+  console.log("PASS lead bid: 2 papers (the invitation and HPD's price list), the package waits for every rate, a price that is not the list total is flagged; emailed invitation with who sent it; rates per kind of work price HPD's scope sheet (lines, rooms, apartment $2,576), kept on the phone; Use fills the bid price; reopened rates show in their boxes; a new lead bid starts with your last rate per part; nothing faxed");
 } finally {
   await browser.close();
 }

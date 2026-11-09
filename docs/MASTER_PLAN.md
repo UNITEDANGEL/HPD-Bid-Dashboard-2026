@@ -320,7 +320,7 @@ The plan, one by one (✅ = live, ☐ = next):
    - ✅ 🐞 Something's not working (All menu, and under Ask for a change): one tap sends Claude the last 10 buttons tapped (names and screen, never typed words), errors of the last 30 minutes and the version, as a request. Next time "a button is not working" says which one. Test: test-browser-job-broken-report.
 
 ### 💡 Recommended next upgrades (Claude, 9 Nov; build top first, each with a test and the flow check)
-1. ⏳ **Lead rates remembered**: your baseboard / window / door / wall rates from the last lead bid fill in on the next one (change any).
+1. ✅ **Lead rates remembered**: your baseboard / window / door / wall rates from the last lead bid fill in on the next one, with a note to check them; change any and it's that bid's own. Also fixed: reopening a lead bid showed empty rate boxes while the totals counted the saved rates. Test: test-browser-lead-bid.
 2. ⏳ **Bid all in a row, hands-free**: each bid's summary is read, you say "bid 2,400" (or "skip"), it saves and goes to the next; sending stays two taps.
 3. ⏳ **30-minute deadline alert**: a phone alert when a bid due within 30 minutes is saved but not sent ("ER… not sent, 30 min left").
 4. ⏳ **Morning bid brief (8 AM alert)**: "5 bids due today, best prices about $9,400 in all: tap to start".

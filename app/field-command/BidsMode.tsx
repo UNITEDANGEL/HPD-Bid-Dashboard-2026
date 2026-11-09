@@ -30,7 +30,7 @@ import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, 
 import { buildingHistory } from "../../lib/building-bids";
 import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { loadPapers } from "../../lib/papers";
-import { appendScope, fillLeadScope, groupRate, lineKey, loadLeadRates, priceScope, rateGroups, saveLeadRates, scopeMoney, withGroupRate, type LeadRates } from "../../lib/lead-scope";
+import { appendScope, fillLeadScope, groupRate, lineKey, loadLeadRates, priceScope, rateGroups, saveLeadRates, scopeMoney, startingLeadRates, withGroupRate, type LeadRates } from "../../lib/lead-scope";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
@@ -841,7 +841,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // first), filled and saved like "bid 500"; with none yet, it says the app's best price instead of guessing.
   // 🧪 Your rates for a lead scope sheet, per job (kept on this phone).
   const [leadRates, setLeadRates] = useState<Record<string, LeadRates>>({});
-  useEffect(() => { if (selected?.lead && !leadRates[selected.omo]) setLeadRates((all) => ({ ...all, [selected.omo]: loadLeadRates(selected.omo) })); }, [selected?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (selected?.lead && !leadRates[selected.omo]) setLeadRates((all) => ({ ...all, [selected.omo]: startingLeadRates(selected.lead!, loadLeadRates(selected.omo)) })); }, [selected?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
   const usualRef = useRef<(say: (t: string) => void) => void>(() => {});
   usualRef.current = (say) => {
     if (!selected) { say("Open the bid first."); return; }
@@ -1450,10 +1450,13 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 const lead = selected.lead;
                 const groups = rateGroups(lead);
                 const rates = leadRates[selected.omo] || {};
+                // The boxes are drawn again once this bid's rates are read from the phone (they showed empty on reopen).
+                const loaded = leadRates[selected.omo] ? 1 : 0;
                 const priced = priceScope(lead, rates);
                 const setRate = (key: string, v: string) => {
                   const n = Number(v.replace(/[^0-9.]/g, ""));
                   const next = key.startsWith("line:") ? { ...rates, [key]: n > 0 ? n : 0 } : withGroupRate(lead, rates, key, n);
+                  delete next._fromLast; // you checked them
                   setLeadRates((all) => ({ ...all, [selected.omo]: next }));
                   saveLeadRates(selected.omo, next);
                 };
@@ -1472,10 +1475,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                         {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 View it (blank)</a> : null}
                       </li>
                     </ol>
+                    {rates._fromLast ? <p className="fc-bid-lead-last" data-hpd-smoke="fc-bid-lead-last">💡 Your rates from your last lead bid are filled in. Check each one: change any and it&apos;s yours for this bid.</p> : null}
                     {groups.map((g) => (
                       <label key={g.key} className="fc-bid-lead-rate">
                         <span><b>{g.part}</b> · {g.method.toLowerCase()} · {g.qty.toLocaleString("en-US")} {g.unit} ({g.lines} line{g.lines === 1 ? "" : "s"})</span>
-                        <em>$<input inputMode="decimal" aria-label={`${g.part} ${g.method.toLowerCase()} rate per ${g.unit}`} data-hpd-smoke="fc-bid-lead-rate" data-key={g.key} disabled={sentLocked} defaultValue={rates[g.key] ? String(rates[g.key]) : rates[g.old] ? String(rates[g.old]) : ""} onChange={(e) => setRate(g.key, e.target.value)} placeholder="0.00" /> per {g.unit}</em>
+                        <em>$<input key={`${g.key}-${loaded}`} inputMode="decimal" aria-label={`${g.part} ${g.method.toLowerCase()} rate per ${g.unit}`} data-hpd-smoke="fc-bid-lead-rate" data-key={g.key} disabled={sentLocked} defaultValue={rates[g.key] ? String(rates[g.key]) : rates[g.old] ? String(rates[g.old]) : ""} onChange={(e) => setRate(g.key, e.target.value)} placeholder="0.00" /> per {g.unit}</em>
                       </label>
                     ))}
                     <span className="fc-bid-lead-each">Each line has its own rate box too: leave it empty to use its part&apos;s rate above, or type a different rate for that one line.</span>
@@ -1487,7 +1491,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                           return (
                             <li key={i} className={`fc-bid-lead-line${it.own ? " is-own" : ""}`} data-hpd-smoke="fc-bid-lead-line">
                               <span><b>{it.component}</b> · {it.method.toLowerCase()} · {it.qty} {unit}</span>
-                              <em>$<input inputMode="decimal" aria-label={`Rate for ${it.component} per ${unit}`} data-hpd-smoke="fc-bid-lead-line-rate" data-line={lineKey(ri, i)} disabled={sentLocked} defaultValue={rates[lineKey(ri, i)] ? String(rates[lineKey(ri, i)]) : ""} placeholder={groupRate(rates, it) ? String(groupRate(rates, it)) : "0.00"} onChange={(e) => setRate(lineKey(ri, i), e.target.value)} /> per {unit}</em>
+                              <em>$<input key={`${lineKey(ri, i)}-${loaded}`} inputMode="decimal" aria-label={`Rate for ${it.component} per ${unit}`} data-hpd-smoke="fc-bid-lead-line-rate" data-line={lineKey(ri, i)} disabled={sentLocked} defaultValue={rates[lineKey(ri, i)] ? String(rates[lineKey(ri, i)]) : ""} placeholder={groupRate(rates, it) ? String(groupRate(rates, it)) : "0.00"} onChange={(e) => setRate(lineKey(ri, i), e.target.value)} /> per {unit}</em>
                               <strong data-hpd-smoke="fc-bid-lead-line-cost">{it.rate ? scopeMoney(it.cost) : "—"}</strong>
                             </li>
                           );

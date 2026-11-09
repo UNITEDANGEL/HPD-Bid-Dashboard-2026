@@ -5,6 +5,7 @@
       "date": "Nov 6, 2026",
       "title": "Notices, videos, working here",
       "items": [
+        "🧪 Lead bids: your rates from the last lead bid fill in on the next one (check them, change any). Reopened lead bids show your rates in their boxes again.",
         "🐞 Something's not working (under All): one tap tells Claude the last buttons you tapped, so it knows which button to fix.",
         "🔊 Read it all / 📝 Summary work better on the iPhone, and say so if the phone won't start the voice (ringer on, volume up).",
         "♻️ The app no longer slows down after hours open: it re-reads the jobs only when they changed, and starts fresh after a long day.",

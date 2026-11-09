@@ -952,3 +952,4 @@ i.is-won { background: #16a34a; }
 .fc-itb-summary ul { margin: 4px 0 0; padding-left: 18px; font: 600 14px/1.35 system-ui, sans-serif; }
 .fc-itb-summary button { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border: 0; border-radius: 15px; background: #e2e8f0; color: #0f172a; font: 800 14px system-ui; }
 .fc-itb-voice-note { margin: 4px 8px 0; padding: 6px 10px; border-radius: 10px; background: #fef3c7; color: #78350f; font: 700 13px/1.35 system-ui, sans-serif; }
+.fc-bid-lead-last { margin: 4px 0; padding: 8px 10px; border-radius: 10px; background: #eff6ff; border: 1px solid #93c5fd; color: #1e3a8a; font: 700 13px/1.35 system-ui, sans-serif; }

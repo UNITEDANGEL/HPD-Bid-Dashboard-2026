@@ -125,7 +125,24 @@ export function loadLeadRates(omo: string): LeadRates {
   try { return JSON.parse(localStorage.getItem(`hpd-lead-rates-${omo}`) || "{}"); } catch { return {}; }
 }
 export function saveLeadRates(omo: string, rates: LeadRates) {
-  try { localStorage.setItem(`hpd-lead-rates-${omo}`, JSON.stringify(rates)); } catch { /* private mode */ }
+  try {
+    localStorage.setItem(`hpd-lead-rates-${omo}`, JSON.stringify(rates));
+    // Your rate for each part (baseboard, window, wall…) is remembered for the next lead bid (one line's own rate isn't).
+    const last = JSON.parse(localStorage.getItem(LAST_KEY) || "{}") as LeadRates;
+    for (const [k, v] of Object.entries(rates)) if (!k.startsWith("line:") && !k.startsWith("_") && k.split("|").length === 3 && v > 0) last[k] = v;
+    localStorage.setItem(LAST_KEY, JSON.stringify(last));
+  } catch { /* private mode */ }
+}
+// 💡 Recommended 9 Nov: "your baseboard / window / door / wall rates from the last lead bid fill in on the next one".
+// A new lead bid starts with your last rate for each part it has; "_fromLast" marks them until you change one.
+const LAST_KEY = "hpd-lead-last-rates";
+export function startingLeadRates(scope: LeadScope, saved: LeadRates): LeadRates {
+  if (Object.keys(saved).length) return saved;
+  let last: LeadRates = {};
+  try { last = JSON.parse(localStorage.getItem(LAST_KEY) || "{}"); } catch { return saved; }
+  const from: LeadRates = {};
+  for (const g of rateGroups(scope)) if (last[g.key] > 0) from[g.key] = last[g.key];
+  return Object.keys(from).length ? { ...from, _fromLast: 1 } : saved;
 }
 
 // A part's rate typed: rates saved the old way (one per kind of work) are first copied onto each part they covered, so
