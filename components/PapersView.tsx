@@ -66,6 +66,7 @@ export default function PapersView() {
       <header className="home-head">
         <a className="home-logo" href="/" aria-label="Home">HPD</a>
         <div><h1>Your papers</h1><p>Insurance, license, certificates: I warn you 30 days before one runs out</p></div>
+        <a className="pay-link" href="/map/" data-hpd-smoke="papers-map" style={{ marginLeft: "auto", alignSelf: "center" }}>← Map</a>
       </header>
       <section className="pay-card" data-hpd-smoke="papers-add">
         <h2>Add a paper</h2>

@@ -29,6 +29,7 @@ import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "
 import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
+import { loadPapers } from "../../lib/papers";
 import { appendScope, fillLeadScope, loadLeadRates, priceScope, rateGroups, saveLeadRates, scopeMoney, type LeadRates } from "../../lib/lead-scope";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
@@ -1465,6 +1466,13 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     <b data-hpd-smoke="fc-bid-lead-total">Apartment total: {priced.total ? scopeMoney(priced.total) : "—"}{priced.complete ? "" : ` (${priced.missing.length} rate${priced.missing.length === 1 ? "" : "s"} to go)`}</b>
                     {lead.mold ? <span className="fc-bid-lead-warn">🧽 {lead.mold}</span> : null}
                     {selected.certs ? <span className="fc-bid-lead-warn">📜 HPD asks for valid {selected.certs} certifications.</span> : null}
+                    {(() => {
+                      // Your papers (All → 📜): a lead or mold paper that runs out before the work is done.
+                      const words = String(selected.certs || "lead").toLowerCase().split(/\W+/).filter((w) => /^(lead|mold)$/.test(w));
+                      const end = Date.parse(`${selected.workCompletion && selected.workCompletion > selected.bidDue ? selected.workCompletion : selected.bidDue}T12:00:00`) + 45 * 86400000;
+                      const bad = loadPapers().filter((x) => words.some((w) => x.name.toLowerCase().includes(w)) && Date.parse(`${x.expires}T12:00:00`) < end);
+                      return bad.length ? <span className="fc-bid-lead-warn is-bad" data-hpd-smoke="fc-bid-cert-warn">⚠️ {bad.map((x) => `${x.name} runs out ${new Date(`${x.expires}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`).join("; ")}: before this job would be done. Renew it before you bid.</span> : null;
+                    })()}
                     {!sentLocked && priced.complete ? <button type="button" data-hpd-smoke="fc-bid-lead-use" onClick={() => pickPrice(String(priced.total))}>Use {scopeMoney(priced.total)} as your bid</button> : null}
                     {priced.complete && step1Done && record && Math.abs(record.price - priced.total) >= 0.005 ? <span className="fc-bid-lead-warn" data-hpd-smoke="fc-bid-lead-mismatch">⚠️ Your bid price {money2(record.price)} is not the price list total {scopeMoney(priced.total)}. HPD sees both: tap Use to make them match.</span> : null}
                     {priced.complete ? <small>✓ Both papers go in one bid package: the invitation, then the filled price list.</small> : <small data-hpd-smoke="fc-bid-lead-wait">The package can be filled once every rate is in, so both papers go together.</small>}

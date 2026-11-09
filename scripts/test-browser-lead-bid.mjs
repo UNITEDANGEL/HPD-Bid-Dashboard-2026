@@ -68,6 +68,7 @@ try {
   assert.match(t, /3rd ROOM FROM NORTH: \$1,476\.00/);
   assert.match(t, /Mold abatement from west wall prior to enclosure\./);
   assert.match(t, /HPD asks for valid Mold and Lead certifications\./);
+  assert.equal(await box.locator('[data-hpd-smoke="fc-bid-cert-warn"]').count(), 0, "no papers saved: no warning");
   assert.match(t, /Both papers go in one bid package: the invitation, then the filled price list/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-paper-scope"]').innerText(), /^✓ HPD's price list/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-mismatch"]').innerText(), /\$2,000\.00 is not the price list total \$2,576\.00/);

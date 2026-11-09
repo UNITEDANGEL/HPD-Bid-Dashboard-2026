@@ -912,3 +912,4 @@ i.is-won { background: #16a34a; }
   .fc-bids-welcome span, .fc-bids-welcome em { font-size: 13px; }
   .fc-bids-welcome button { min-height: 40px; font-size: 14px; }
 }
+.fc-bid-lead-warn.is-bad { color: #b91c1c !important; font-weight: 800; }

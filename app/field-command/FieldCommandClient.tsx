@@ -111,6 +111,13 @@ import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import BuildingContact from "./BuildingContact";
+import { daysLeft, expiringSoon, loadPapers, type Paper } from "../../lib/papers";
+
+// "12 days left" / "ran out 3 days ago" for a paper (insurance, license).
+function paperLine(p: Paper, nowMs: number): string {
+  const d = daysLeft(p.expires, nowMs);
+  return d < 0 ? `ran out ${-d} day${d === -1 ? "" : "s"} ago` : d === 0 ? "runs out today" : `${d} day${d === 1 ? "" : "s"} left`;
+}
 import { crewText } from "../../lib/crew-share";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
@@ -4148,6 +4155,10 @@ export default function FieldCommandClient() {
   }
   // 🔘 Bigger buttons with gloves on (idea list): every button at least 56 px tall and wide, bigger letters. Kept on the phone.
   const [gloves, setGloves] = useState(false);
+  // 📜 Insurance and license dates (the Your papers page, kept on this phone): a chip on the map 30 days before one runs out.
+  const [papers, setPapers] = useState<Paper[]>([]);
+  useEffect(() => { setPapers(loadPapers()); }, []);
+  const papersDue = expiringSoon(papers, Date.now());
   useEffect(() => { try { setGloves(localStorage.getItem("hpd-gloves") === "1"); } catch { /* private mode */ } }, []);
   function toggleGloves() {
     setGloves((on) => { try { localStorage.setItem("hpd-gloves", on ? "0" : "1"); } catch { /* private mode */ } return !on; });
@@ -7740,6 +7751,7 @@ export default function FieldCommandClient() {
               { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "satellite" : mapStyle === "satellite" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
               { key: "one-hand", icon: "🖐", label: "One-hand mode", info: oneHand ? "On: search and map buttons by your thumb" : "Off · moves the top buttons down by your thumb", go: toggleOneHand },
               { key: "gloves", icon: "🧤", label: "Big buttons (gloves)", info: gloves ? "On: every button bigger for work gloves" : "Off · makes every button bigger for work gloves", go: toggleGloves },
+              { key: "papers", icon: "📜", label: "Your papers", info: papersDue.length ? `⚠️ ${papersDue[0].name}: ${paperLine(papersDue[0], Date.now())}` : papers.length ? `${papers.length} saved · warned 30 days before one runs out` : "Insurance and license dates · warned before they run out", go: () => { setMoreOpen(false); window.location.href = "/papers/"; } },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
             ];
             return (
@@ -7820,7 +7832,7 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-jobs-kept-x" aria-label="Show all jobs" data-hpd-smoke="fc-jobs-kept-x" onClick={() => { setJobsKept(false); setJobsShown(null); }}>✕ All</button>
             </div>
           ) : null}
-          {(wxChip || aspOffToday || moneyNow.week > 0) && !selectedJob && !agent ? (
+          {(wxChip || aspOffToday || moneyNow.week > 0 || papersDue.length) && !selectedJob && !agent ? (
             <div className="fc-wx-row">
               {wxChip ? (
                 <button type="button" className={`fc-wx-chip${wxChip.alert ? " is-alert" : ""}`} data-hpd-smoke="fc-wx-chip" aria-label={`Weather: ${wxChip.temp} degrees${wxChip.note ? `, ${wxChip.note}` : ""}. Tap for the forecast`} onClick={() => { unlockChime(); agentRef.current("what's the weather"); }}>
@@ -7830,6 +7842,11 @@ export default function FieldCommandClient() {
               {moneyNow.week > 0 ? (
                 <button type="button" className="fc-money-chip" data-hpd-smoke="fc-money-chip" aria-label={`Earned ${dollars(moneyNow.today)} today, ${dollars(moneyNow.week)} this week. Tap for the jobs`} onClick={() => { unlockChime(); agentRef.current("how much did I make today"); }}>
                   <span aria-hidden="true">💵</span><b>{moneyNow.today ? <>$<CountUp value={moneyNow.today} format={(n) => Math.round(n).toLocaleString("en-US")} /></> : "$0"}</b><small>today · {dollars(moneyNow.week)} week</small>
+                </button>
+              ) : null}
+              {papersDue.length ? (
+                <button type="button" className={`fc-paper-chip${papersDue.some((x) => Date.parse(`${x.expires}T12:00:00`) < Date.now()) ? " is-expired" : ""}`} data-hpd-smoke="fc-paper-chip" aria-label={`${papersDue[0].name}: ${paperLine(papersDue[0], Date.now())}. Tap for your papers`} onClick={() => { window.location.href = "/papers/"; }}>
+                  <span aria-hidden="true">📜</span><b>{papersDue[0].name.length > 22 ? `${papersDue[0].name.slice(0, 21)}…` : papersDue[0].name}</b><small>{paperLine(papersDue[0], Date.now())}{papersDue.length > 1 ? ` · +${papersDue.length - 1}` : ""}</small>
                 </button>
               ) : null}
               {aspOffToday ? (
