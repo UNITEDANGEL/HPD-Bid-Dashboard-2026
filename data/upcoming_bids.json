@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T20:12:11.814170+00:00",
+  "generatedAt": "2026-11-09T20:23:04.662567+00:00",
   "days": 14,
   "bids": [
     {
@@ -788,138 +788,6 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.686691,
       "lng": -73.93841
-    },
-    {
-      "omo": "ER09726",
-      "bidDue": "2026-11-09",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-11-10",
-      "workCompletion": "2026-11-20",
-      "address": "2850 CRESTON AVENUE",
-      "borough": "BX",
-      "itbFile": "ER09726_110626114925.pdf",
-      "description": "AT APT: 4E AT: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. 1.TRACE, LOCATE, AND PROPERLY REPAIR THE SOURCE OF THE LEAK CAUSING EXCESSIVE DAMAGE TO THE CEILING AND WALLS. ENSURE THAT THE LEAK DOES NOT RE-OCCUR. PROBABLE CAUSE OF THE LEAK IS FROM THE APARTMENT BATHROOM ABOVE., 2.REMOVE PLASTERED/SHEETROCK CEILING, WALLS, OTHER SURROUNDING DAMAGED/MISSING COMPONENTS BEFORE REPAIR. MAKE ALL NECESSARY RESTORATIONS WITH SIMILAR MATERIALS, (APPROX. AFFECTED AREA 80 SQ.FT.) AND RETURN TO UNDAMAGED CONDITION., 3.REMOVE EXISTING DAMAGED WOODEN WINDOW FRAME AND INSTALL A NEW WOODEN WINDOW FRAME APPROX. 12 L.FT., 4.REMOVE EXISTING VANITY AND INSTALL A NEW VANITY OF SIMILAR SIZE AND TYPE. INSTALL NEW FAUCET, DRAINPIPE, AND HOT AND COLD WATER SUPPLY LINES. ENSURE THERE IS NO LEAKS AND FAUCET IS FUNCTIONING PROPERLY. USE SIMILAR MATERIALS, PLASTER, TAPE, PRIME AND PAINT (2 COATS) CLOSELY MATCHING THE EXISTING COLORS. REMOVE ALL WORK-RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. CALL TENANT FOR MAKING APPOINTMENT FOR ACCESS. IF NOT POSSIBLE VIA TELEPHONE, GO PHYSICALLY TO SITE AT LEAST 2 TIMES. NOTE1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/ OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
-      "notes": "NOTE 2: CONTRACTOR MUST CONTACT H.P.D. EHU OFFICE AT 212 863- 5790, 5697, 6187, 6224 AND/ OR VIA EMAIL TO INFORM THE TARGETTED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK. TENANT CONTACT: (tenant contact: sign in to see) TENANT CONTACT: (tenant contact: sign in to see) NOTE: CONTRACTOR MUST CONTACT HPD / EHU via e mail Campbell Camille CAMPBELC@hpd.nyc.gov, To Serene TOS@hpd.nyc.gov, Ramos Isolina RamosIs@hpd.nyc.gov, Shen Lan Ping shenl@hpd.nyc.gov, Lamazon Sharon lamazons@hpd.nyc.gov, EHUDELEAD @HPD.NYC.GOV WITH OMO START DATE. ***IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE EMAILED.***",
-      "descPages": [
-        3,
-        4
-      ],
-      "receivedAt": 1793983772000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.870765,
-      "lng": -73.891536
     },
     {
       "omo": "ER09762",
@@ -2177,6 +2045,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.766594,
       "lng": -73.828839
+    },
+    {
+      "omo": "ER09726",
+      "bidDue": "2026-11-10",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-10",
+      "workCompletion": "2026-11-20",
+      "address": "2850 CRESTON AVENUE",
+      "borough": "BX",
+      "itbFile": "ER09726_110926030846.pdf",
+      "description": "AT APT: 4E AT: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. 1.TRACE, LOCATE, AND PROPERLY REPAIR THE SOURCE OF THE LEAK CAUSING EXCESSIVE DAMAGE TO THE CEILING AND WALLS. ENSURE THAT THE LEAK DOES NOT RE-OCCUR. PROBABLE CAUSE OF THE LEAK IS FROM THE APARTMENT BATHROOM ABOVE., 2.REMOVE PLASTERED/SHEETROCK CEILING, WALLS, OTHER SURROUNDING DAMAGED/MISSING COMPONENTS BEFORE REPAIR. MAKE ALL NECESSARY RESTORATIONS WITH SIMILAR MATERIALS, (APPROX. AFFECTED AREA 80 SQ.FT.) AND RETURN TO UNDAMAGED CONDITION., 3.REMOVE EXISTING DAMAGED WOODEN WINDOW FRAME AND INSTALL A NEW WOODEN WINDOW FRAME APPROX. 12 L.FT., 4.REMOVE EXISTING VANITY AND INSTALL A NEW VANITY OF SIMILAR SIZE AND TYPE. INSTALL NEW FAUCET, DRAINPIPE, AND HOT AND COLD WATER SUPPLY LINES. ENSURE THERE IS NO LEAKS AND FAUCET IS FUNCTIONING PROPERLY. USE SIMILAR MATERIALS, PLASTER, TAPE, PRIME AND PAINT (2 COATS) CLOSELY MATCHING THE EXISTING COLORS. REMOVE ALL WORK-RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. CALL TENANT FOR MAKING APPOINTMENT FOR ACCESS. IF NOT POSSIBLE VIA TELEPHONE, GO PHYSICALLY TO SITE AT LEAST 2 TIMES. NOTE1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/ OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
+      "notes": "NOTE 2: CONTRACTOR MUST CONTACT H.P.D. EHU OFFICE AT 212 863- 5790, 5697, 6187, 6224 AND/ OR VIA EMAIL TO INFORM THE TARGETTED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK. TENANT CONTACT: (tenant contact: sign in to see) TENANT CONTACT: (tenant contact: sign in to see) NOTE: CONTRACTOR MUST CONTACT HPD / EHU via e mail Campbell Camille CAMPBELC@hpd.nyc.gov, To Serene TOS@hpd.nyc.gov, Ramos Isolina RamosIs@hpd.nyc.gov, Shen Lan Ping shenl@hpd.nyc.gov, Lamazon Sharon lamazons@hpd.nyc.gov, EHUDELEAD @HPD.NYC.GOV WITH OMO START DATE. ***IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE EMAILED.***",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1794254932000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.870765,
+      "lng": -73.891536
     },
     {
       "omo": "ER10033",

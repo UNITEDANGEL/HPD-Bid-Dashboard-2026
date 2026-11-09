@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-09T20:12:33.905324+00:00",
+"generatedAt": "2026-11-09T20:23:28.739389+00:00",
 "since": "2026/10/26",
 "jobs": {
 "EN04541": [
@@ -21115,6 +21115,15 @@
 "outcome": "",
 "subject": "OMO No: ER00857 Issuer: DARNLEY SIMON Boro: Brooklyn Bldg Address: 862, 50 STREET",
 "via": "hpd-staff"
+}
+],
+"ER00898": [
+{
+"date": "2026-11-09",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER00898 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - ER00898 - No Access - 512 EAST 13 STREET, 10009"
 }
 ],
 "ER01032": [
