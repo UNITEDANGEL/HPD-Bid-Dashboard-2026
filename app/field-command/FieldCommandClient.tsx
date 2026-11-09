@@ -111,6 +111,7 @@ import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import BuildingContact from "./BuildingContact";
+import { crewText } from "../../lib/crew-share";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
 import { emailBrief } from "../../lib/email-brief";
@@ -1324,6 +1325,9 @@ export default function FieldCommandClient() {
   // 🔨 After Close, the map keeps the Jobs list's jobs (owner, 8 Nov: "when I click Close it takes all the jobs out")
   // until you pick days, a borough, a search or tap ✕ on the note.
   const [jobsKept, setJobsKept] = useState(false);
+  // 👷 Send a job to a worker: include the tenant (off unless ticked), the last message.
+  const [crewTenant, setCrewTenant] = useState(false);
+  const [crewMsg, setCrewMsg] = useState("");
   // 🗺 Jobs opens on the map (owner, 8 Nov: "when I click Jobs it should show me the jobs, not the list first; I can
   // choose to see the list"): the list folded to its bar, ☰ List opens it. ("hpd-jobs-open" = "list" opens the list.)
   const jobsMapFirst = () => { try { return localStorage.getItem("hpd-jobs-open") !== "list"; } catch { return true; } };
@@ -8741,6 +8745,25 @@ export default function FieldCommandClient() {
                 })()}
                 {!isTestJob(id) ? (
                   <button type="button" className="jc-email" data-hpd-smoke="jc-email" onClick={() => setEmailFor({ job: emailJobOf(selectedJob) })}>✉️ Email {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]} about this job</button>
+                ) : null}
+                {/* 👷 Send this job to a worker (idea list): the phone's share sheet with the address, the work, the photos
+                    HPD needs and the super; the tenant only when ticked. Nothing is sent by the app itself. */}
+                {!isTestJob(id) ? (
+                  <div className="jc-crew" data-hpd-smoke="jc-crew">
+                    <button type="button" className="jc-email" data-hpd-smoke="jc-crew-send" onClick={async () => {
+                      const t = tenantInfo(selectedJob);
+                      let contact = null;
+                      try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
+                      const sum = jobSummary(jobScope(selectedJob));
+                      const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
+                      const text = crewText({ id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) });
+                      const nav = navigator as Navigator & { share?: (d: { title: string; text: string }) => Promise<void> };
+                      if (nav.share) { try { await nav.share({ title: `HPD job ${id}`, text }); setCrewMsg("Sent to your worker's app."); } catch { /* closed the share sheet */ } }
+                      else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
+                    }}>👷 Send to a worker</button>
+                    <label className="jc-crew-tenant"><input type="checkbox" checked={crewTenant} onChange={(e) => setCrewTenant(e.target.checked)} data-hpd-smoke="jc-crew-tenant" /> add the tenant&apos;s name and phone</label>
+                    {crewMsg ? <small role="status" data-hpd-smoke="jc-crew-msg">{crewMsg}</small> : null}
+                  </div>
                 ) : null}
                 {counts.total > 0 ? (
                   <div className="jc-media-see" data-hpd-smoke="jc-media-see-row">
