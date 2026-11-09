@@ -110,6 +110,7 @@ import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
+import BuildingContact from "./BuildingContact";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
 import { emailBrief } from "../../lib/email-brief";
@@ -8887,6 +8888,8 @@ export default function FieldCommandClient() {
                     <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in to see" : "Not listed")}</strong>
                     {!tenant.phone && privateOk === false ? <form className="fc-signin-form" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1" data-hpd-smoke="jc-tenant-signin"><button type="submit">🔑 Sign in with Google</button></form> : null}
                     {tenant.phone ? <span>{tenant.phone} <a className={`fc-call-btn${tenantStep(selectedJob as Record<string, unknown>).state === "call" ? " is-due" : ""}`} data-hpd-smoke="jc-tenant-call" onClick={() => startTenantCall(selectedJob)} href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
+                    {/* 📞 The building's super / contact, saved once for every job at this address (on this phone). */}
+                    {!isTestJob(jobId(selectedJob)) ? <BuildingContact building={buildingKey(jobAddress(selectedJob))} address={jobAddress(selectedJob)} /> : null}
                   </div>
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
