@@ -1157,3 +1157,9 @@
 /* 🔁 Talk both ways; ☎️ HPD calling (5 Nov). */
 .jc-hello button.jc-hello-both { border-color: #0ea5e9; background: #0ea5e9; color: #fff; }
 .jc-hpd-say { white-space: nowrap; }
+
+/* Layout sweep (9 Nov): with no building picture, the free-pictures line and the 360° / Your photo buttons sat on top
+   of each other (and under the ✕ / speaker): one row each, clear of the buttons in the corner. */
+.jc-hero-photo.is-empty { display: grid; gap: 8px; padding: 10px 110px 10px 10px; min-height: 0; }
+.jc-hero-photo.is-empty .jc-hero-count, .jc-hero-photo.is-empty .jc-hero-actions { position: static; transform: none; }
+.jc-hero-photo.is-empty .jc-hero-actions { flex-wrap: wrap; }
