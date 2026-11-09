@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-09T20:01:22.643127+00:00",
+"generatedAt": "2026-11-09T20:12:33.905324+00:00",
 "since": "2026/10/26",
 "jobs": {
 "EN04541": [
@@ -21150,6 +21150,23 @@
 "outcome": "",
 "subject": "OMO No: ER01115 Issuer: KELLY ANN PERROTTE-DAVID Boro: Manhattan Bldg Address: 115, EDGECOMBE AVENUE",
 "via": "hpd-staff"
+}
+],
+"ER01531": [
+{
+"date": "2026-11-09",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER01531 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - ER01531 - No Access - 1019 WOODYCREST AVENUE, 10452",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-09",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER01531 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - ER01531 - No Access - 1019 WOODYCREST AVENUE, 10452"
 }
 ],
 "ER01720": [
