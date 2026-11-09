@@ -66,16 +66,17 @@ try {
   try { await done.waitFor({ timeout: 90000 }); }
   catch { throw new Error(`not sent: ${await list.locator('[data-hpd-smoke="fc-batch-busy"]').innerText().catch(() => "?")}`); }
   assert.equal(faxes.length, 1, "ONE fax");
-  assert.equal(faxes[0].subject, `2 BIDS - OMO ${a.omo}, ${b.omo} - United Angel Construction Corp.`);
+  assert.equal(faxes[0].subject, `2 BIDS - OMO ${[a.omo, b.omo].sort().join(", ")} - United Angel Construction Corp.`); // same due time: by job number
   const pdfs = faxes[0].body.match(/filename="[^"]+\.pdf"/g) || [];
   assert.equal(pdfs.length, 2, "both bid packages attached");
-  assert.ok(pdfs[0].includes(a.omo) && pdfs[1].includes(b.omo), "in the cover's order");
+  const [o1, o2] = [a.omo, b.omo].sort();
+  assert.ok(pdfs[0].includes(o1) && pdfs[1].includes(o2), "in the cover's order");
   assert.ok(!faxes[0].body.includes(c.omo), "the one left out isn't in it");
-  assert.match(await done.innerText(), new RegExp(`1 fax with 2 bids sent .*${a.omo}, ${b.omo}`));
+  assert.match(await done.innerText(), new RegExp(`1 fax with 2 bids sent .*${o1}, ${o2}`));
   const recs = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"));
   for (const x of [a, b]) {
     assert.equal(recs[x.omo].status, "sent");
-    assert.deepEqual(recs[x.omo].batch, [a.omo, b.omo]);
+    assert.deepEqual(recs[x.omo].batch, [o1, o2]);
     assert.match(recs[x.omo].log.at(-1).what, /in one fax with/);
   }
   assert.equal(recs[c.omo].status, "saved", "the third is still to send");
@@ -88,9 +89,9 @@ try {
   // HumbleFax's answer for that fax confirms both (each check carries the fax's OMOs).
   answer = { status: "confirmed", subject: "Successful Transmission", at: new Date().toISOString() };
   await page.waitForFunction(([x, y]) => { const r = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); return r[x]?.status === "confirmed" && r[y]?.status === "confirmed"; }, [a.omo, b.omo], { timeout: 90000, polling: 1000 });
-  assert.ok(checks.some((q) => q.omo === a.omo && q.omos?.join() === `${a.omo},${b.omo}`), "the check names the whole fax");
+  assert.ok(checks.some((q) => q.omo === o1 && q.omos?.join() === `${o1},${o2}`), "the check names the whole fax");
   assert.deepEqual(errors, []);
-  console.log(`PASS one fax for several bids: 3 saved bids offered, one left out, 2 taps sent ONE fax (${a.omo}, ${b.omo}; cover subject names both, both packages in order), both going through, then both confirmed by one HumbleFax answer`);
+  console.log(`PASS one fax for several bids: 3 saved bids offered, one left out, 2 taps sent ONE fax (${o1}, ${o2}; cover subject names both, both packages in order), both going through, then both confirmed by one HumbleFax answer`);
 } finally {
   await browser.close();
 }

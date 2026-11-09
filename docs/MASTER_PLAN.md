@@ -10,6 +10,160 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 🎯 The bids flow: everything we agreed (owner, 9 Nov: "make a list of all the items we talked about in the md plan ... so we stay in the same flow")
+
+A bid goes through these stages in order: invitations come in, they show on the list and map, you open one, read HPD's work, price it (lead abatement bids have their own price sheet), the package is filled, sent by fax, the fax is tracked to confirmed, then on to the next bid in the row; a bid can be a no bid or be revised, and in the end it is won or lost. You can do every step by voice too. The rule: a change to one stage must keep every other stage working. Before every push, `node scripts/flow-tests.mjs` runs every bids and job-card test.
+
+### 1. Invitations come in
+- ✅ New invitations are read all day, not only at night, and the banner shows how many arrived today to compare with the inbox (plan: What the owner asked, Invitations; Done 13 Oct)
+- ✅ An invitation PDF that can't be read shows in a red warning, so none is dropped silently (plan: Done 13 Oct)
+- ✅ HPD's award letters are skipped by the invitation reader, so they don't show as bad invitations (plan: Done 16 Oct, morning bid checklist)
+- ✅ Invitations that HPD staff email themselves are read too, with the due date taken from the email when the PDF has none (plan: 8 Nov, item 72)
+- ✅ A phone alert and a spoken alert for new invitations: "you have three new invitations to bid", no work order numbers read out (plan: 20 Oct items 34, 36; 22 Oct item 58)
+- ✅ Tenant names and phones are kept out of the public files; HPD's invitation pages open only after you sign in with Google (plan: Done 16 Oct, privacy stages 1-3)
+- ✅ "While you were away" lists the new invitations that came in (plan: 3 Nov, item 196)
+- ⏳ Check for invitations every 10 minutes, 6:30 AM to 7:50 PM, from the cloud, so it works when the laptop is off. The code is ready, but the owner has to add two tokens (plan: What the owner asked; Open items, Invitation timer in Cloudflare)
+- ⏳ Remove the old invitation PDFs (which have tenant details) from the repo's history. This can't be undone, so it needs the owner's OK (plan: Done 16 Oct, STILL TO DO; Owner decision needed)
+
+### 2. List and map
+- ✅ Every open invitation is on the map, with Today / Tomorrow / Day after / All buttons and the due time on each (plan: What the owner asked; Done 15 Oct)
+- ✅ Bids open on the map first. The list is a bar you pull up to half or full, and you can hide it to see the map (plan: 16 Oct evening, item 4)
+- ✅ The header is one slim line. The day buttons fold away after you pick one, to leave the most room for the map (plan: 23 Oct, item 81)
+- ✅ Pins stay on their building when you zoom. Each pin shows a picture of the kind of job and a due-day tag, and the pins are bigger on the iPhone (plan: Done 15 Oct; 19 Oct items 19, 22; 20 Oct item 30)
+- ✅ Phone held sideways: the bid map fits all of today's pins between the header and the list (plan: 8 Nov, item 63)
+- ✅ A sent bid shows its price on the map, with colors for going through, confirmed and failed (plan: What the owner asked; Done)
+- ✅ Each list row shows the short job summary, your price when every line has a rate, and a Pages button with a small picture of HPD's page (plan: Done 16 Oct; Next on the plan, invitation pages)
+- ✅ Lead abatement invitations get their own yellow pin with a LEAD tag and a "2 papers" chip on the list (plan: 9 Nov, item 86)
+- ✅ The Bids button at the bottom glows while bids due today are still not sent (plan: 2 Nov, item 177)
+- ✅ The "Let's start bidding" card no longer covers the map buttons, the day buttons or the bids bar (plan: 8-9 Nov, items 79, 83, 85)
+
+### 3. Open a bid
+- ✅ Opening Bids says hello: how many still need a price, which one is next, with ▶ Start, 🎯 Bid all in a row and Later (plan: 3 Nov, item 209)
+- ✅ Going to a bid flies the map slowly to the borough, then to the building, shows the address, the work and the due time, then opens HPD's page (plan: 5 Nov, item B; 2 Nov, items 179, 181)
+- ✅ The bid card is laid out like the job card: building picture, jump buttons, the job summary, HPD's pages, and the building section below the price (plan: 16 Oct evening, item 5)
+- ✅ Street View, 360° view, and Map & photos buttons at the top of every invitation (plan: Done 15 Oct)
+- ✅ Facts about the building on every bid: the year it was built, floors, walk-up or elevator, and open HPD violations, with the ones like this job first (plan: Done 15 Oct, building facts)
+- ✅ Earlier jobs at the same building sit next to the price: what HPD paid, whether you won, your price (plan: Done 15 Oct evening)
+- ✅ A Next ▶ button on every bid card goes to the next bid still to price or send (plan: 2 Nov, item 180)
+- ✅ Going through bids stays on today's bids. Tomorrow's bids open only when you ask for them (plan: 5 Nov, item A)
+- ✅ Tapping a phone alert opens that bid straight away (plan: 21 Oct, item 40)
+
+### 4. Read the work
+- ✅ The full job description in big, easy-to-read text, with numbered items on their own lines and HPD's notes and contacts (plan: What the owner asked; Done 13 Oct evening)
+- ✅ The whole description is read, including when it continues on page 4 or later, and every item is counted (plan: Rule: read the WHOLE job description, 16 Oct)
+- ✅ When page 3 is blank, the work is read from page 2, where HPD sometimes writes it (plan: 2 Nov, item 179)
+- ✅ HPD's own pages show as pictures, every page of the invitation, and you can tap to zoom (plan: Done 15 Oct afternoon; 16 Oct night, whole document)
+- ✅ Pages are kept on the phone for 21 days, and the next 8 bids due are drawn ahead, so they open at once (plan: Next on the plan, done 16 Oct)
+- ✅ Pinch-zoom works on HPD's pages only, not on the rest of the app (plan: 20 Oct, item 29)
+- ✅ "📋 The job" summary on top, e.g. "Vinyl floor · 120 sq ft", with where in the building; HPD's text is one tap away (plan: Owner's requests 16 Oct, item 2)
+- ✅ The page scrolls slowly with you, line by line, and stays on the work. It opens a bit zoomed out, with 🐢 Slower and 🐇 Faster buttons (plan: 5 Nov items 23b, B; 9 Nov item 90)
+- ✅ The read-along stops where the work ends and stays there, instead of going down to HPD's standard notes (plan: 5 Nov, item 23b)
+- ✅ A read-aloud button on the bid sheet reads the job to you (plan: 3 Nov, item 219)
+
+### 5. Price it
+- ✅ Price help from every past HPD award and your own award emails: best price, chance to win, easy wins, should have bid, price history (plan: Done (live))
+- ✅ The price follows what the description says: a new door vs lock or hinge work, how many doors, sq ft, cubic yards, glass and room sizes (plan: Done 13 Oct; Done 16 Oct, measurements)
+- ✅ Expensive parts are priced on their own, like a Secure Tech lock or an electric strike (plan: Done 16 Oct, expensive parts)
+- ✅ Your own rates per sq ft, door or part give "My price" on every bid (plan: Owner's requests 16 Oct, item 1)
+- ✅ A bid calculator builds the price line by line, with extras for stairs, extra locations and far boroughs, plus ±% buttons (plan: Next level, item B)
+- ✅ Your costs list shows the cost, profit and % at your price and at the best price (plan: Next level, item C)
+- ✅ Set your minimum per kind of work, and the best price never goes below it (plan: Done 16 Oct, your price vs best price)
+- ✅ A price 15% or more above the best price shows a warning with "Use $best". A price that is very high needs a second tap to save (plan: Done 16 Oct, your price vs best price)
+- ✅ A win gauge whose needle moves as you type the price, and a price coach showing similar jobs and the trend (plan: 4 Nov, item 229; 3 Nov, item 211)
+- ✅ Your rates, minimums and costs are the same on every phone and computer (plan: 31 Oct, item 173)
+- ✅ The price box, Save and Send sit together at the bottom of the bid (plan: 22 Oct, item 52)
+- ✅ A big "💰 Price it" button on HPD's full-screen page takes you straight to the price box with the keyboard open (plan: 2 Nov, item 182)
+- ✅ A bid opened from the checklist starts at the best price, not your last price (plan: Done 16 Oct, morning bid checklist)
+- ✅ Prices are split by kind of work: lead abatement, AEP, and ERP / regular (plan: Prices and winning more work; Done)
+- ⏳ Lock and latch prices back toward the market price (about $600 to $730) when the job is just a plain lock (plan: Now (in this order), item 0)
+- ⏳ Better prices for jobs with many doors, which are still the weakest: read "per door" and "each" amounts, and jobs that mix new doors with hardware (plan: Now, item 0; Done 15 Oct, multi-door test)
+- ⏳ Count stair treads and risers step by step in the price (plan: Owner's requests 16 Oct, still to do)
+- ⏳ Calculator lines for materials and labor from your costs list, and the number of floors from the building facts (plan: Next level, item B next)
+- ⏳ Use the building's age and walk-up in the price advice, once a test on past jobs shows it pays (plan: Ideas for the bid flow, 15 Oct)
+
+### 6. Lead abatement bids
+- ✅ Lead bids that HPD staff email are found and shown with "📧 Emailed by", the rooms, the mold note and the certifications they ask for (plan: 8 Nov, item 72)
+- ✅ HPD's price sheet is read for what is printed (rooms, items, method, size, unit). HPD's hidden figures are never used (plan: 8 Nov, item 73)
+- ✅ One rate box for each part and kind of work, plus a box on every line; the line costs, room totals and apartment total add up as you type (plan: 9 Nov, items 87, 88)
+- ✅ "Use $X as your bid" fills the price. A bid price that doesn't match the price sheet total is flagged (plan: 8 Nov, item 73; 9 Nov, item 83)
+- ✅ Two papers go to HPD, the invitation and the filled price sheet; the package waits until every rate is in (plan: 9 Nov, items 83, 85)
+- ✅ The cost goes on HPD's own sheet, next to each location's line, with the room totals and the apartment total (plan: 9 Nov, item 86)
+- ✅ The bid warns when your lead or mold license runs out before the job would be done (plan: 9 Nov, item 84)
+
+### 7. The package
+- ✅ The price goes on page 1, page 2 and the Work Description Form, with your company, signature, date and stamp, and you check it before sending (plan: What the owner asked; Done; 8 Nov, item 72)
+- ✅ The package preview shows every page, big, with zoom (plan: 16 Oct night, order 1)
+- ✅ Saying "bid 500" fills the price, saves it and makes the bid package (plan: 23 Oct, item 84)
+- ✅ A lead bid's package holds the filled invitation plus HPD's price sheet with your rates, never the invitation alone (plan: 8 Nov, item 73; 9 Nov, items 83, 85)
+
+### 8. Send
+- ✅ Sent by fax to HPD in two taps (with no pop-up boxes on the iPhone); a red bar shows when Google needs you to reconnect (plan: What the owner asked; Done 14 Oct morning)
+- ✅ Once sent, the bid is locked. The only way to change it is Revise this bid, and every step is logged in the bid history (plan: What the owner asked; Done 13 Oct evening)
+- ✅ "Send now" shows 45 minutes before the deadline and "may arrive too late" under 10 minutes; early deadlines are tagged (plan: Lost although our price was lower, 16 Oct)
+- ✅ One bid per fax, or one fax holding several saved bids, with a cover page listing each work order and price (plan: 16 Oct lost review; 31 Oct, item 172)
+- ✅ After a send, the map moves to the bid due soonest and opens it, with "↩ Come back" (plan: 23 Oct, items 78, 81)
+- ✅ Moving signs while sending, so you can see it's working (plan: 21 Oct, item 38)
+- ✅ "Start bidding" warns about any bid due today that isn't sent, and a note pops up when a bid is due within 60 minutes (plan: What the owner asked; 2 Nov, item 184)
+
+### 9. Track the fax
+- ✅ Each fax is confirmed from HumbleFax's emails: pending, confirmed or failed. Missing faxes are recorded (plan: Done (live))
+- ✅ A live fax tracker in 4 steps, with a burst when it is confirmed and a shake when it fails (plan: 21 Oct, item 41)
+- ✅ A failed fax is sent again by itself, up to 3 times before the deadline, plus a one-tap Resend now (plan: 19 Oct, item 21)
+- ✅ A failed fax just tells you it is being resent. The big red box shows only when it can't be resent (plan: 23 Oct, item 78)
+- ✅ A sound and an alert when a bid or no-bid fax is confirmed or fails (plan: 20 Oct, items 31, 36)
+- ✅ The evening wrap-up lists the day's faxes: confirmed, waiting, failed, and tomorrow's bids not yet sent (plan: 21 Oct, item 43)
+- ✅ When several bids go in one fax, a confirmation that names any of them counts for that fax (plan: 31 Oct, item 172)
+- ⏳ Reconnect Google with "read email" so the phone can confirm faxes by itself, not only while bidding (plan: Open items for the owner)
+
+### 10. Many bids in a row
+- ✅ The morning checklist shows every bid due today and tomorrow, its state, the time left, and the best price with its chance to win (plan: Done 16 Oct, morning bid checklist)
+- ✅ "🎯 Bid all in a row" goes through today's bids one after another, soonest first: "Bid 2 of 6", Skip / Stop, and a summary at the end (plan: Done 16 Oct, multi-bid sitting; 8 Nov, item 70)
+- ✅ In a row, the next bid opens by itself after each send (plan: 3 Nov, item 209)
+- ✅ Bids you skipped come back once after the last one (plan: 9 Nov, item 89)
+- ✅ When today's bids are done it stops, says so and offers notices next. It never moves on to tomorrow by itself (plan: 5 Nov, item A; 5 Nov evening, item 6)
+- ✅ A goal ring shows how many of today's bids are sent, with a cheer when all are out and a streak count of days with bids (plan: 4 Nov, item 227; 3 Nov, item 216; 5 Nov, item 247)
+
+### 11. No bid / revise
+- ✅ 🚫 No bid with quick reasons and Undo. The pin turns grey and the bid leaves the checklist (plan: Owner's requests 16 Oct evening, item 1)
+- ✅ A no bid fills HPD's no-bid form and faxes it; the reason is not sent (plan: 20 Oct, item 27)
+- ✅ After a no bid, the next bid due opens by itself, with Come back (plan: 29 Oct, item 152)
+- ✅ Revise a sent bid: the old price crossed out, the new price with initials and "revised 1x on date", and the cover tells HPD to disregard the old price (plan: What the owner asked; Done)
+- ✅ A revision always goes in its own fax (plan: 31 Oct, item 172)
+
+### 12. Won and lost
+- ✅ An award alert with a cha-ching: "You won ER… · address", with the work in plain words (plan: 20 Oct, item 36; 23 Oct, item 86)
+- ✅ Your real win rate from every bid you faxed, and how your price compares with the app's best price (plan: Done 14 Oct; Done 16 Oct, your price vs best)
+- ✅ Bid stats on their own pages, showing wins by month, kind of work and borough, and how far above the winner you were when you lost (plan: 19 Oct items 22, 24; 3 Nov item 218; 6 Nov item 49)
+- ✅ Lost bids checked: which were late and which went inside another job's fax. The rule now is one bid per fax and send 45 minutes early (plan: Lost although our price was lower, 16 Oct)
+- ✅ Weekly and Friday summaries count the bids sent and won (plan: 5 Nov evening, item 23; 23 Oct, item 92)
+- ⏳ Why the lowest bid still lost (131 jobs): check against HPD's notices and fax receipts, and the owner asks HPD's bid desk about the clear ones (plan: Now, item 0; lost review 16 Oct)
+- ⏳ A history for each kind of work: your cost, your price, the winning price, and the profit (plan: Next level, item D)
+- ⏳ Profit for each job after HPD pays (the PIP amount minus your costs), in Stats (plan: Next level, item C next; recommendations)
+- ⏳ Price alerts when a kind of work keeps losing, or keeps winning by a lot (plan: Next level, recommendations)
+
+### 13. Voice
+- ✅ Say "bid 500" or "price it at 900" to fill and save the price. Sending still takes your two taps (plan: 23 Oct, item 84)
+- ✅ "What should I bid?" and "is 3,200 too high?" get the best price, your chance to win and a verdict (plan: 23 Oct, item 103; 4 Nov, item 233)
+- ✅ "Bid the usual" uses the middle of your last 3 prices on that kind of work (plan: 3 Nov, item 198; 8 Nov, item 63)
+- ✅ "No bid, too far" opens the no-bid reasons with that one picked, and your tap confirms it (plan: 23 Oct, item 109)
+- ✅ "Next bid", "show me the bids in Brooklyn", "tomorrow's bids" and "come back" move the map. Answers come as bid cards (plan: 2 Nov, items 183, 184; 5 Nov, item A)
+- ✅ "Which jobs have I won today" answers, then reads you the work (plan: 22 Oct, items 65, 68)
+- ✅ The quick-question button has Next bid (plan: Quick questions in the chat, 3 Nov)
+
+### Still to build for bids
+1. ⏳ Check for invitations every 10 minutes from the cloud, so it works when the laptop is off. The code is ready, but the owner has to add two tokens (owner, 13 Oct)
+2. ⏳ Lock and latch prices back toward the market price when the job is just a plain lock (Now list)
+3. ⏳ Better prices for jobs with many doors: read "per door" and "each" amounts, and jobs that mix new doors with hardware (Now list)
+4. ⏳ Why the lowest bid still lost: check HPD's notices and fax receipts, and the owner asks HPD's bid desk (Now list)
+5. ⏳ Count stair treads and risers step by step in the price (from the owner's rates request, 16 Oct)
+6. ⏳ Calculator lines for materials and labor from your costs, and the number of floors from the building facts (owner's calculation mode, 16 Oct)
+7. ⏳ A history for each kind of work: your cost, your price, the winning price, and the profit (owner's next-level list, 16 Oct)
+8. ⏳ Remove the old invitation PDFs with tenant details from the repo's history (needs the owner's OK, can't be undone)
+9. ⏳ Reconnect Google with "read email" so the phone confirms faxes by itself (open item)
+10. ⏳ Profit for each job after HPD pays, in Stats (recommendation)
+11. ⏳ Price alerts when a kind of work keeps losing or keeps winning by a lot (recommendation)
+12. ⏳ Use the building's age and walk-up in the price advice, once a test on past jobs shows it pays (idea, 15 Oct)
+
 ## 6 Nov 2026 (afternoon, on the road at ER07610): notices first, the map stays open, the record is safe
 
 The owner's words (chat, 6 Nov), so they never have to be repeated:
@@ -155,6 +309,9 @@ The plan, one by one (✅ = live, ☐ = next):
 88. ✅ Owner, 9 Nov: "for lead jobs each field customizable: replacement for baseboard is a different price from window or door" -> the top rate boxes are now one per part and kind of work (Baseboard · replacement, Window · replacement, Door · replacement, Wall · enclosure …), read from HPD's line names; rates typed before still count and are split per part on the first edit. Line boxes still win for one line.
 89. ✅ Owner, 9 Nov: "any job that I skipped, I want to reopen at the end" -> in "Bid all in a row", the bids you skipped come back once after the last one ("↩ Skipped earlier · 1 of 2"); the last Skip says "back to skipped"; the summary lists what still has no bid.
 90. ✅ Owner, 9 Nov: "work description scrolling much better: it goes right at the edge, zoom out a little, slow down" -> read-along opens at 1.7x (was 2x), pans slower (9 s a line, a stop at each end), keeps the page margin in view at both ends, and 🐢 Slower / 🐇 Faster buttons set your own speed (kept on the phone).
+91. ✅ Idea "Read the bid out loud" + owner, 9 Nov: "I should also have an option for a readout and a summary option, that's very important" -> on HPD's work description, two buttons: 🔊 Read it all (HPD's whole description, word for word) and 📝 Summary (the short version, read and shown on the page). The one you pick is used for every description you open after; 🔇 Stop turns it off; Price it / Close stop the voice. Phone's own voice, nothing paid. Test: test-browser-bid-read-aloud.
+92. ✅ Owner, 9 Nov: "I don't want one flow to upset another flow ... that should not ever happen" -> scripts/flow-tests.mjs (npm run test:flows) runs every bids test and every job-card test together (40 browser tests + the lead price math) before every push; any failure, no push. First run caught the one-fax-for-several-bids test expecting the wrong order (the app orders same-time bids by job number); fixed.
+93. Owner, 9 Nov: "make the bids experience better, the flow, make a list of all the items we talked about in the md plan, and we upgrade that way" -> the 🎯 bids flow list below (every bid item from this plan, by stage, built ✅ or still to build ⏳). Upgrades for bids follow it, top of "Still to build" first.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.

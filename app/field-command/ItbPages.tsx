@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getPages, prunePages, putPages } from "../../lib/page-cache";
 import { usePinchZoom } from "../../lib/use-pinch-zoom";
+import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 
 type Rendered = { page: number; url: string };
 
@@ -130,7 +131,7 @@ function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: 
   return off;
 }
 
-export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice, descChars }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void; descChars?: number }) {
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice, descChars, readAll, readSummary }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void; descChars?: number; readAll?: string; readSummary?: string[] }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -148,6 +149,29 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   const [reading, setReading] = useState<"" | "reading" | "read">("");
   const stopRead = useRef<() => void>(() => {});
   const [speed, setSpeed] = useState(1);
+  // 🔊 Read it to me (idea "Read the bid out loud"; owner, 9 Nov: "an option for a readout and a summary option"): the
+  // phone's own voice reads HPD's whole work description, or a short summary (also shown on the page). The one you pick
+  // is used for every work description you open after (kept on this phone); Stop turns it off.
+  type Voice = "" | "all" | "summary";
+  const [voice, setVoice] = useState<Voice>("");
+  const [speaking, setSpeaking] = useState<Voice>("");
+  const [showSummary, setShowSummary] = useState(false);
+  const canVoice = !!(readAll || readSummary?.length) && canReadAloud();
+  const summaryText = (readSummary || []).join(". ");
+  const say = (v: Voice) => {
+    const text = v === "all" ? readAll : summaryText;
+    if (v === "summary") setShowSummary(true);
+    if (text && readAloud(text, () => setSpeaking("")) ) setSpeaking(v);
+  };
+  const hush = () => { stopReading(); setSpeaking(""); };
+  const pick = (v: Voice) => {
+    const next: Voice = speaking === v ? "" : v;
+    setVoice(next);
+    try { localStorage.setItem("hpd-read-voice", next || "off"); } catch {}
+    if (next) say(next); else { hush(); setShowSummary(false); }
+  };
+  useEffect(() => { try { const v = localStorage.getItem("hpd-read-voice"); setVoice(v === "all" || v === "on" ? "all" : v === "summary" ? "summary" : ""); } catch {} }, []);
+  useEffect(() => () => { stopReading(); }, []);
   useEffect(() => { setSpeed(readSpeed.x); }, []);
   useEffect(() => () => stopRead.current(), []);
   useEffect(() => { if (showDescription) setWantDesc(showDescription); }, [showDescription]);
@@ -213,7 +237,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               </span>
             ) : null}
             <button type="button" data-hpd-smoke="fc-itb-zoom" aria-label="Zoom" onClick={() => zoomTo(zoom >= 2.95 ? 1 : Math.floor(zoom) + 1)}>🔍 {zoom >= 2.95 ? "1×" : `${Math.floor(zoom) + 1}×`}</button>
-            <button type="button" data-hpd-smoke="fc-itb-close" onClick={() => { stopRead.current(); setReading(""); setBig(null); zoomTo(1); }}>Close</button>
+            <button type="button" data-hpd-smoke="fc-itb-close" onClick={() => { hush(); setShowSummary(false); stopRead.current(); setReading(""); setBig(null); zoomTo(1); }}>Close</button>
           </div>
           <div className="fc-itb-full-body" {...bind} data-hpd-smoke="fc-itb-zoombox">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -230,6 +254,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
                 if (!readAlong) return;
                 setReading("reading");
                 stopRead.current();
+                try { const v = localStorage.getItem("hpd-read-voice"); if (canVoice && (v === "all" || v === "on" || v === "summary")) say(v === "summary" ? "summary" : "all"); } catch {}
                 // Page 3: the description fills most of the page; page 2's work box is shorter.
                 stopRead.current = readAlongPage(el, at, big.page === 2 ? at + 0.22 : workEndAt(descChars), () => setReading("read"));
               }));
@@ -244,7 +269,20 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
           )
             : <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>}
           {/* Read it, then one tap to the price box (2 Nov): the page closes and the keyboard opens on the price. */}
-          {onPrice ? <button type="button" className={`fc-itb-price${reading === "read" ? " is-ready" : ""}`} data-hpd-smoke="fc-itb-price" onClick={() => { stopRead.current(); setReading(""); setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
+          {showSummary && readSummary?.length ? (
+            <div className="fc-itb-summary" data-hpd-smoke="fc-itb-summary">
+              <b>📝 The work in short</b>
+              <ul>{readSummary.map((l, i) => <li key={i}>{l}</li>)}</ul>
+              <button type="button" aria-label="Hide the summary" onClick={() => setShowSummary(false)}>✕</button>
+            </div>
+          ) : null}
+          {canVoice ? (
+            <div className="fc-itb-voice-row" data-hpd-smoke="fc-itb-voice-row">
+              {readAll ? <button type="button" className={speaking === "all" ? "is-on" : voice === "all" ? "is-picked" : ""} data-hpd-smoke="fc-itb-voice-all" aria-pressed={speaking === "all"} onClick={() => pick("all")}>{speaking === "all" ? "🔇 Stop" : "🔊 Read it all"}</button> : null}
+              {readSummary?.length ? <button type="button" className={speaking === "summary" ? "is-on" : voice === "summary" ? "is-picked" : ""} data-hpd-smoke="fc-itb-voice-summary" aria-pressed={speaking === "summary"} onClick={() => pick("summary")}>{speaking === "summary" ? "🔇 Stop" : "📝 Summary"}</button> : null}
+            </div>
+          ) : null}
+          {onPrice ? <button type="button" className={`fc-itb-price${reading === "read" ? " is-ready" : ""}`} data-hpd-smoke="fc-itb-price" onClick={() => { hush(); setShowSummary(false); stopRead.current(); setReading(""); setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
         </div>
       ) : null}
     </section>

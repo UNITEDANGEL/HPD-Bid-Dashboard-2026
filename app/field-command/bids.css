@@ -941,3 +941,13 @@ i.is-won { background: #16a34a; }
 .fc-itb-read-row { display: flex; align-items: stretch; gap: 6px; margin: 4px 8px; }
 .fc-itb-read-row .fc-itb-reading { flex: 1; margin: 0; }
 .fc-itb-speed { flex: none; min-height: 40px; padding: 0 10px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 13px system-ui, sans-serif; }
+.fc-itb-bar button.is-on { background: #1d4ed8; border-color: #93c5fd; }
+/* 🔊 Read it all / 📝 Summary on HPD's work description. */
+.fc-itb-voice-row { display: flex; gap: 6px; margin: 4px 8px 0; }
+.fc-itb-voice-row button { flex: 1; min-height: 42px; border-radius: 12px; border: 1px solid #475569; background: #1f2937; color: #fff; font: 800 14px system-ui, sans-serif; }
+.fc-itb-voice-row button.is-on { background: #1d4ed8; border-color: #93c5fd; }
+.fc-itb-voice-row button.is-picked { border-color: #93c5fd; }
+.fc-itb-summary { position: relative; margin: 4px 8px 0; padding: 8px 34px 8px 10px; border-radius: 12px; background: #fff; color: #0f172a; max-height: 30vh; overflow: auto; }
+.fc-itb-summary b { font: 800 14px system-ui, sans-serif; }
+.fc-itb-summary ul { margin: 4px 0 0; padding-left: 18px; font: 600 14px/1.35 system-ui, sans-serif; }
+.fc-itb-summary button { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border: 0; border-radius: 15px; background: #e2e8f0; color: #0f172a; font: 800 14px system-ui; }

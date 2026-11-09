@@ -1419,7 +1419,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </div>
             ) : null}
             <section>
-              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} readAlong={walk} onPrice={sentLocked ? undefined : goToPrice} descChars={(selected.description || "").length} /> : null}
+              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} readAlong={walk} onPrice={sentLocked ? undefined : goToPrice} descChars={(selected.description || "").length} readAll={selected.description ? `${selected.omo}. ${selected.description.replace(/\s+/g, " ").trim()}` : undefined} readSummary={jobSummary(selected.description || "").lines.map(lineText)} /> : null}
               <button type="button" className="fc-bid-walk" data-hpd-smoke="fc-bid-walk" aria-pressed={walk} onClick={toggleWalk}>{walk ? "🗺 Opening a bid: map first, then HPD's page ✓" : "🗺 Opening a bid: map first, then HPD's page (off)"}</button>
               <div className="fc-bid-desc-head">
                 <button type="button" className="fc-bid-text-toggle" data-hpd-smoke="fc-bid-text-toggle" aria-expanded={showText} onClick={() => setShowText((v) => !v)}>{showText ? "▾ HPD's text" : "▸ Show HPD's text"}</button>
