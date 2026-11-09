@@ -1193,6 +1193,10 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const sentLocked = !!record && record.status !== "saved" && !revisedFrom(record) && !revising;
   const faxLocked = sentLocked && state === "confirmed";
   const pickPrice = (v: string) => { if (!sentLocked) setDraft(v); };
+  // 🧪 Lead bids have 2 papers (owner, 9 Nov: "one is a list of prices they request, the other is the same as the jobs we
+  // bid"): the package waits until HPD's price list is priced, so it never goes with only the invitation.
+  const leadPriced = selected?.lead ? priceScope(selected.lead, leadRates[selected.omo] || {}) : null;
+  const leadNotReady = !!leadPriced && !leadPriced.complete;
   // "💰 Price it" on HPD's full-screen page: the price box, in view, with the keyboard up (focus inside the tap, so iPhone opens it).
   function goToPrice() {
     const box = document.querySelector<HTMLInputElement>('[data-hpd-smoke="fc-bid-price"]');
@@ -1433,8 +1437,19 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 };
                 return (
                   <div className="fc-bid-lead" data-hpd-smoke="fc-bid-lead">
-                    <b>🧪 Lead abatement · price HPD&apos;s scope sheet</b>
-                    <span>The sheet&apos;s Rate and Cost boxes are blank for you. Put your rate for each kind of work: the lines, the rooms and the apartment total are worked out and written on the sheet.</span>
+                    <b>🧪 Lead abatement · 2 papers go to HPD</b>
+                    <ol className="fc-bid-papers" data-hpd-smoke="fc-bid-papers">
+                      <li className={step1Done && record && Math.abs(record.price - priced.total) < 0.005 ? "is-done" : ""} data-hpd-smoke="fc-bid-paper-itb">
+                        <b>{step1Done && record && Math.abs(record.price - priced.total) < 0.005 ? "✓" : "①"} The invitation to bid ({selected.pages} pages)</b>
+                        <span>Same as every bid: your price, company, signature and date are filled in.</span>
+                        <a className="fc-bid-link" href={itbPdfUrl(selected.itbFile)} target="_blank" rel="noreferrer">📄 View it</a>
+                      </li>
+                      <li className={priced.complete ? "is-done" : ""} data-hpd-smoke="fc-bid-paper-scope">
+                        <b>{priced.complete ? "✓" : "②"} HPD&apos;s price list (scope sheet)</b>
+                        <span>HPD asks for your rate on every line. Put a rate for each kind of work below: each line&apos;s cost, the room totals and the apartment total are written on the sheet for you.</span>
+                        {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 View it (blank)</a> : null}
+                      </li>
+                    </ol>
                     {groups.map((g) => (
                       <label key={g.key} className="fc-bid-lead-rate">
                         <span>{g.method} · {g.qty.toLocaleString("en-US")} {g.unit} ({g.lines} line{g.lines === 1 ? "" : "s"})</span>
@@ -1450,9 +1465,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     <b data-hpd-smoke="fc-bid-lead-total">Apartment total: {priced.total ? scopeMoney(priced.total) : "—"}{priced.complete ? "" : ` (${priced.missing.length} rate${priced.missing.length === 1 ? "" : "s"} to go)`}</b>
                     {lead.mold ? <span className="fc-bid-lead-warn">🧽 {lead.mold}</span> : null}
                     {selected.certs ? <span className="fc-bid-lead-warn">📜 HPD asks for valid {selected.certs} certifications.</span> : null}
-                    {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 HPD&apos;s scope sheet (blank)</a> : null}
                     {!sentLocked && priced.complete ? <button type="button" data-hpd-smoke="fc-bid-lead-use" onClick={() => pickPrice(String(priced.total))}>Use {scopeMoney(priced.total)} as your bid</button> : null}
-                    {priced.complete ? <small>✓ The filled scope sheet goes in the bid package after the invitation.</small> : <small>Until every rate is in, the package goes without the scope sheet.</small>}
+                    {priced.complete && step1Done && record && Math.abs(record.price - priced.total) >= 0.005 ? <span className="fc-bid-lead-warn" data-hpd-smoke="fc-bid-lead-mismatch">⚠️ Your bid price {money2(record.price)} is not the price list total {scopeMoney(priced.total)}. HPD sees both: tap Use to make them match.</span> : null}
+                    {priced.complete ? <small>✓ Both papers go in one bid package: the invitation, then the filled price list.</small> : <small data-hpd-smoke="fc-bid-lead-wait">The package can be filled once every rate is in, so both papers go together.</small>}
                   </div>
                 );
               })() : null}
@@ -1707,10 +1722,10 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             {record ? (
               <section className={`fc-bid-price fc-bid-step${reviewedSaved ? " is-done" : ""}`} data-hpd-smoke="fc-step-2">
                 <h4>{reviewedSaved ? "✓" : "2"} · Review the package{reviewedSaved ? ` · filled at ${money2(reviewedSaved.price)}` : ""}</h4>
-                <button type="button" className={`fc-bid-fill is-secondary${reviewedSaved ? " is-done" : ""}${busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-review" disabled={busy === "Filling the bid package…" || faxLocked} onClick={() => void review()}>
-                  {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling the package<span className="hpd-dots" /></> : faxLocked ? `🔒 Package sent at ${money2(record.sentPrice || record.price)}` : reviewedSaved ? `✓ Package filled · ${money2(reviewedSaved.price)} · tap to refill` : revisedFrom(record) ? `Fill the revised package: ${money2(revisedFrom(record)!)} → ${money2(record.price)}` : `Fill the package at ${money2(record.price)}`}
+                <button type="button" className={`fc-bid-fill is-secondary${reviewedSaved ? " is-done" : ""}${busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-review" disabled={busy === "Filling the bid package…" || faxLocked || (leadNotReady && !reviewedSaved)} onClick={() => void review()}>
+                  {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling the package<span className="hpd-dots" /></> : leadNotReady && !faxLocked && !reviewedSaved ? `Put every rate on HPD's price list first (${leadPriced!.missing.length} to go)` : faxLocked ? `🔒 Package sent at ${money2(record.sentPrice || record.price)}` : reviewedSaved ? `✓ Package filled · ${money2(reviewedSaved.price)} · tap to refill` : revisedFrom(record) ? `Fill the revised package: ${money2(revisedFrom(record)!)} → ${money2(record.price)}` : `Fill the package at ${money2(record.price)}`}
                 </button>
-                <small className="fc-bid-note">Price on page 1, page 2 and the Work Description Form, plus your company details, signatures, date and the work description.</small>
+                <small className="fc-bid-note">Price on page 1, page 2 and the Work Description Form, plus your company details, signatures, date and the work description.{selected.lead ? " Then HPD's price list with your rates, line costs and totals." : ""}</small>
                 {reviewedSaved ? (
                   <div className="fc-bid-done" data-hpd-smoke="fc-bid-done">
                     <b>✓ Package ready · {money2(reviewedSaved.price)}</b>
@@ -1775,7 +1790,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 }}>
                   {armed === "high" && highPrice && draftValue !== record?.price ? "Tap again: high" : step1Done ? "✓ Saved" : "💾 Save"}
                 </button>
-                <button type="button" className={`fc-bid-quick-send${armed === "send" ? " is-armed" : ""}${busy === "Sending the fax…" || busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-quick-send" disabled={!step1Done || busy === "Sending the fax…" || busy === "Filling the bid package…"} onClick={() => { if (!reviewedSaved) void review(); else void send("main"); }}>
+                <button type="button" className={`fc-bid-quick-send${armed === "send" ? " is-armed" : ""}${busy === "Sending the fax…" || busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-quick-send" disabled={!step1Done || (leadNotReady && !reviewedSaved) || busy === "Sending the fax…" || busy === "Filling the bid package…"} onClick={() => { if (!reviewedSaved) void review(); else void send("main"); }}>
                   {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling</>
                     : busy === "Sending the fax…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending</>
                     : !step1Done ? "📠 Send" : !reviewedSaved ? "📄 Fill" : armed === "send" ? `✅ Tap again: send ${money2(record!.price)}` : "📠 Send"}

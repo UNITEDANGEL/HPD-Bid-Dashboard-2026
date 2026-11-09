@@ -896,3 +896,19 @@ i.is-won { background: #16a34a; }
 
 /* Layout sweep (9 Nov): the "Let's start bidding" card sat under the Map / Locate buttons; it goes on top while it's up. */
 .fc-bids-welcome { z-index: 1700; }
+
+/* 🧪 Lead bid: the 2 papers that go to HPD. */
+.fc-bid-papers { list-style: none; margin: 6px 0 8px; padding: 0; display: grid; gap: 6px; }
+.fc-bid-papers li { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1.5px solid #cbd5e1; color: #0f172a; }
+.fc-bid-papers li.is-done { border-color: #16a34a; background: #f0fdf4; }
+.fc-bid-papers li b { font: 800 14.5px system-ui, sans-serif; color: #0f172a; }
+.fc-bid-papers li.is-done b { color: #15803d; }
+.fc-bid-papers li span { font: 600 13px system-ui, sans-serif; color: #334155; }
+.fc-bid-papers li .fc-bid-link { justify-self: start; }
+/* Sideways phone: the welcome card sits on the right, under Map / Locate, clear of the bids bar on the left. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .fc-bids-welcome { left: auto; right: 8px; transform: none; top: calc(env(safe-area-inset-top, 0px) + 78px); width: min(360px, calc(100vw - 490px)); max-height: calc(100vh - 150px); overflow-y: auto; gap: 4px; padding: 10px 12px; }
+  .fc-bids-welcome b { font-size: 17px; }
+  .fc-bids-welcome span, .fc-bids-welcome em { font-size: 13px; }
+  .fc-bids-welcome button { min-height: 40px; font-size: 14px; }
+}

@@ -40,7 +40,21 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-emailed"]').innerText(), /Emailed by Carvajal Dimas, Juan \(HPD\) · lead abatement/);
   const box = sheet.locator('[data-hpd-smoke="fc-bid-lead"]');
   await box.waitFor();
-  assert.match(await box.innerText(), /🧪 Lead abatement · price HPD's scope sheet/);
+  assert.match(await box.innerText(), /🧪 Lead abatement · 2 papers go to HPD/);
+  // Owner, 9 Nov: "one is a list of prices they request, the other is the same as the jobs we bid".
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-paper-itb"]').innerText(), /① The invitation to bid \(3 pages\)[\s\S]*Same as every bid/);
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-paper-scope"]').innerText(), /② HPD's price list \(scope sheet\)[\s\S]*rate on every line/);
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-wait"]').innerText(), /once every rate is in, so both papers go together/);
+  // A price saved before the rates: the package waits for the price list.
+  const price = sheet.locator('[data-hpd-smoke="fc-bid-price"]');
+  await price.fill("2000");
+  // A high price asks for a second tap to save.
+  const save = async () => { const b = sheet.locator('[data-hpd-smoke="fc-bid-save"]'); await b.click(); await page.waitForTimeout(300); if (await b.isEnabled()) await b.click(); };
+  await save();
+  const reviewBtn = sheet.locator('[data-hpd-smoke="fc-bid-review"]');
+  await reviewBtn.waitFor({ timeout: 5000 });
+  assert.ok(await reviewBtn.isDisabled(), "no package with only the invitation");
+  assert.match(await reviewBtn.innerText(), /Put every rate on HPD's price list first \(2 to go\)/);
   assert.equal(await box.locator('[data-hpd-smoke="fc-bid-lead-use"]').count(), 0, "no total until every rate is in");
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-total"]').innerText(), /2 rates to go/);
   const rates = box.locator('[data-hpd-smoke="fc-bid-lead-rate"]');
@@ -54,15 +68,22 @@ try {
   assert.match(t, /3rd ROOM FROM NORTH: \$1,476\.00/);
   assert.match(t, /Mold abatement from west wall prior to enclosure\./);
   assert.match(t, /HPD asks for valid Mold and Lead certifications\./);
-  assert.match(t, /The filled scope sheet goes in the bid package/);
+  assert.match(t, /Both papers go in one bid package: the invitation, then the filled price list/);
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-paper-scope"]').innerText(), /^✓ HPD's price list/);
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-mismatch"]').innerText(), /\$2,000\.00 is not the price list total \$2,576\.00/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-scope"]').getAttribute("href"), /\/api\/private\/itb\/ER09991\.pdf$/);
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991")), JSON.stringify({ "Enclosure|SQFT": 18, "Replacement|FT": 40 }), "rates kept on the phone");
   await box.locator('[data-hpd-smoke="fc-bid-lead-use"]').click();
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-bid-price"]')?.value?.replace(/[^0-9.]/g, "").replace(/\.0+$/, "") === "2576", null, { timeout: 5000 });
+  await save();
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-bid-paper-itb"]')?.classList.contains("is-done"), null, { timeout: 5000 });
+  assert.equal(await box.locator('[data-hpd-smoke="fc-bid-lead-mismatch"]').count(), 0, "prices match now");
+  assert.ok(await reviewBtn.isEnabled(), "both papers ready: the package can be filled");
+  assert.match(await reviewBtn.innerText(), /Fill the package at \$2,576\.00/);
   assert.equal(faxes, 0, "nothing faxed");
   await box.screenshot({ path: `${process.env.TEMP || "/tmp"}/lead-box.png` });
   assert.deepEqual(errors, []);
-  console.log("PASS lead bid: emailed invitation with who sent it; rates per kind of work price HPD's scope sheet (lines, rooms, apartment $2,576), kept on the phone; Use fills the bid price; nothing faxed");
+  console.log("PASS lead bid: 2 papers (the invitation and HPD's price list), the package waits for every rate, a price that is not the list total is flagged; emailed invitation with who sent it; rates per kind of work price HPD's scope sheet (lines, rooms, apartment $2,576), kept on the phone; Use fills the bid price; nothing faxed");
 } finally {
   await browser.close();
 }
