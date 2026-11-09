@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-09T16:46:43.604Z
+Fetcher run started: 2026-11-09T16:57:53.540Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:00,  9.74it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  9.80it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  9.84it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  9.82it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00,  9.77it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.77it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  9.75it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  9.77it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 185954.36it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.64it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:03,  2.06it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.25it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.32it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.42it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.39it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.37it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.44it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.45it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.34it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:00,  9.66it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  8.39it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  8.46it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  9.21it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00,  9.38it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.72it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  9.56it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  9.36it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 228780.22it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.70it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:03,  2.20it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.46it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  2.54it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.63it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.47it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  2.56it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.67it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.73it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.55it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -130,7 +130,7 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/26
 UPCOMING BIDS QUERY: from:hpd.nyc.gov -from:OMOBid@hpd.nyc.gov has:attachment filename:pdf ("invitation to bid" OR "scope of work") after:2026/10/26
-Upcoming bids: 18 not awarded yet (18 on the map), 5 received today, from 110 emails
+Upcoming bids: 19 not awarded yet (19 on the map), 6 received today, from 111 emails
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
@@ -272,7 +272,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-09T16:54:13.273Z
+Fetcher run finished: 2026-11-09T17:03:02.290Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T16:53:31.753814+00:00",
+  "generatedAt": "2026-11-09T17:02:19.280090+00:00",
   "days": 14,
   "bids": [
     {
@@ -2308,6 +2308,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.823501,
       "lng": -73.938169
+    },
+    {
+      "omo": "ER09782",
+      "bidDue": "2026-11-10",
+      "bidDueTime": "12:00 PM",
+      "workStart": "2026-11-10",
+      "workCompletion": "2026-11-25",
+      "address": "2017 CHURCH AVENUE",
+      "borough": "BK",
+      "itbFile": "ER09782_110926115538.pdf",
+      "description": "AEP AT APT # 1C. REPAIR WATER DAMAGED BATHROOM CEILING, ENTRANCE DOOR SELF-CLOSING, REPLACE KITCHEN SINK WASTE LINE AND CERAMIC TILES. ****1.APT ENTRANCE DOOR – SELF-CLOSING: REPAIR THE APARTMENT ENTRANCE DOOR TO ENSURE PROPER SELF-CLOSING OPERATION. REMOVE EXISTING DEFECTIVE HINGES AND SUPPLY AND INSTALL NEW HINGES AS NECESSARY TO ENSURE THE DOOR CLOSES AND LATCHES PROPERLY. REMOVE THE RUBBER MATERIAL INSTALLED AT THE BOTTOM OF THE DOOR. *****2. KITCHEN FLOOR TILE REPLACEMENT: REMOVE AND DISPOSE OF DEFECTIVE CERAMIC FLOOR TILES AT THE KITCHEN, APPROXIMATELY 75 SQ. FT. MAKE NECESSARY REPAIRS AND PREPARE THE EXISTING SUBSTRATE. SUPPLY AND INSTALL NEW CERAMIC FLOOR TILES WITH MATCHING GROUT, APPROXIMATELY 75 SQ. FT. *****3. BATHROOM CEILING – WATER DAMAGE: TRACE, LOCATE, AND REPAIR THE SOURCE OF WATER LEAKS FROM THE APARTMENT ABOVE. REMOVE AND DISPOSE OF THE WATER-DAMAGED BATHROOM CEILING, APPROXIMATELY 35 SQ. FT. SUPPLY AND INSTALL NEW 5/8\" GWB SHEETROCK, INCLUDING TAPING, JOINT COMPOUND, ONE (1) COAT OF PRIMER, AND TWO (2) COATS OF FINISH PAINT. ****4.BATHROOM WASH BASIN – WASTE LINE/TRAP REPLACEMENT: REMOVE AND REPLACE THE DEFECTIVE, LEAKING WASTE LINE AND TRAP AT THE BATHROOM WASH BASIN. MAKE ALL NECESSARY CONNECTIONS AND ENSURE THE PLUMBING SYSTEM IS PROPERLY SEALED AND FREE OF WATER LEAKS. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM MOHAMMAD ALAM AT 212 863-5971, (phone: sign in to see) EMAIL ALAMMO@HPD.NYC.GOV, OR SUPERVISOR DELLITURRI PASQUALE 212 863-5111 TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 TENANT: (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1794243342000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.650447,
+      "lng": -73.96026
     },
     {
       "omo": "ER10134",
