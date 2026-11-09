@@ -61,7 +61,9 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
       el.classList.add("is-focus");
       window.setTimeout(() => el.classList.remove("is-focus"), 4000);
     }, 350);
-    return () => window.clearTimeout(t);
+    // Again once the cards above have filled in (they grow as the emails and records load), so it stays on screen.
+    const t2 = window.setTimeout(() => document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${focusOmo}"]`)?.scrollIntoView({ block: "start" }), 1600);
+    return () => { window.clearTimeout(t); window.clearTimeout(t2); };
   }, [focusOmo, rows.length]);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [showDone, setShowDone] = useState(false);
@@ -139,6 +141,18 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
     const f = focusOmo ? rows.find((r) => r.omo === focusOmo && r.next) : undefined;
     return f ? (boardSide(f) as "tosend" | "waiting" | "replied") : "tosend";
   });
+  // An alert's link (focusOmo): once its notice has loaded, show the tab it's on (or the done list), so it's on screen.
+  // The notices can arrive after the board opens, so this waits for them (8 Nov: a link landed on To send without it).
+  const focusShown = useRef("");
+  useEffect(() => {
+    if (!focusOmo || focusShown.current === focusOmo) return;
+    const f = rows.find((r) => r.omo === focusOmo);
+    if (!f) return;
+    focusShown.current = focusOmo;
+    if (show !== "all" && f.kind !== show) setShow("all");
+    if (f.next) setSide(boardSide(f) as "tosend" | "waiting" | "replied");
+    else setShowDone(true);
+  }, [focusOmo, rows]); // eslint-disable-line react-hooks/exhaustive-deps
   // next: the notice the board moved on to by itself after a reply went out (owner, 23 Oct: "everything needs to flow
   // auto"); "Back to" scrolls to the one just answered.
   const [moved, setMoved] = useState<{ omo: string; to: string; next?: string } | null>(null);

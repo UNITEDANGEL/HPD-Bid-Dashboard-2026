@@ -5940,7 +5940,8 @@ export default function FieldCommandClient() {
       }
       for (const t of threads || []) for (const m of t.messages) if (t.omos[0] && m.text) docs.push({ job: t.omos[0], kind: "email", text: String(m.text).slice(0, 4000), at: m.at });
       const hits = searchAll(searchQuery(cmd.query), docs);
-      if (!hits.length) { answer(`I didn't find "${searchQuery(cmd.query)}" in your notes, the jobs or HPD's emails.`); return; }
+      // Nothing there: the map search too (it also finds invitations to bid and older jobs), with the list under the box.
+      if (!hits.length) { const q = spokenSearch(cmd.query) || searchQuery(cmd.query); setFindHidden(""); setSearch(q); answer(`I didn't find "${q}" in your notes, the jobs or HPD's emails, so I searched the map for it (invitations too): the list is under the search box.`); return; }
       const where: Record<string, string> = { note: "your note", "job note": "the job card's notes", visit: "the visit history", work: "HPD's work description", email: "HPD's email" };
       cardsRef.current = hits.filter((h) => h.job).map((h) => chatCard(h.job)).filter((c): c is ChatCard => Boolean(c));
       lastJobsRef.current = hits.find((h) => h.job) ? { ids: hits.filter((h) => h.job).map((h) => h.job), at: Date.now() } : lastJobsRef.current;

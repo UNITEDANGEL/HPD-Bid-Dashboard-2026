@@ -31,6 +31,7 @@ try {
     await page.goto(`${baseUrl}/map/?view=all&map=1&board=1`, { waitUntil: "load", timeout: 180000 });
     const rows = page.locator('[data-hpd-smoke="fc-board-row"]');
     await rows.first().waitFor({ timeout: 60000 });
+    await page.waitForTimeout(8000); // the emails and the paperwork on record settle the list (a sent notice leaves it)
     const omos = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
     const target = omos[omos.length - 1];
     await page.goto(`${baseUrl}/map/?view=all&map=1&board=1&omo=${target}`, { waitUntil: "load" });

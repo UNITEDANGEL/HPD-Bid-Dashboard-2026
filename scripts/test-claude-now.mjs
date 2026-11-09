@@ -1,5 +1,5 @@
 // 🤖 Claude right now (3 Nov): each step of Claude's work becomes a fixed plain phrase (never the command or file text),
-// only for HPD work; the hook sends only when the phrase changes, at most every 60 s (2 KV writes each). No network:
+// only for HPD work; the hook sends only when the phrase changes, at most every 20 s (2 KV writes each). No network:
 // the status server is faked with a local server.
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -42,7 +42,7 @@ try {
   assert.equal(got[0].patch.text, "Changing the screen");
   assert.equal(got[0].patch.state, "working");
   await hook({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: `cd ${W} && npm run build` } });
-  assert.equal(got.length, 1, "a new step within 60 s waits");
+  assert.equal(got.length, 1, "a new step within 60 s waits (daily write limit)");
   const s = JSON.parse(fs.readFileSync(state, "utf8")); s.postedAt -= 65000; fs.writeFileSync(state, JSON.stringify(s));
   await hook({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: `cd ${W} && npm run build` } });
   assert.equal(got.length, 2);
@@ -53,7 +53,7 @@ try {
   assert.equal(got[2].patch.state, "idle");
   await hook({ hook_event_name: "Stop" });
   assert.equal(got.length, 3, "once");
-  console.log("PASS claude-now: owner notes since the last look; steps become plain phrases (HPD work only, never the command text); sent on a change at most every 60 s; finishing said once");
+  console.log("PASS claude-now: owner notes since the last look; steps become plain phrases (HPD work only, never the command text); sent on a change at most every 20 s; finishing said once");
 } finally {
   srv.close();
   if (saved) fs.writeFileSync(state, saved); else if (fs.existsSync(state)) fs.unlinkSync(state);

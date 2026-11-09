@@ -91,7 +91,9 @@ try {
 
   // With a job card open: "read me this job".
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
-  await page.locator(".fc-pin").first().evaluate((p) => (p.closest(".leaflet-marker-icon") || p).click());
+  // A job from the Jobs list (a map pin can be a spot with several jobs, which opens a chooser instead).
+  await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-jobs-row"] button').first().click();
   await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
   const cardId = (await page.locator("#fc-job-card").innerText()).match(/[A-Z]{2}\d{5}|TEST-\d+/)?.[0] || "";
   await page.evaluate(() => { window.__hear = "read me this job"; });
