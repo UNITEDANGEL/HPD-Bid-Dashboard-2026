@@ -259,27 +259,63 @@ def previous_bids():
 
 
 # 🧪 Lead abatement (owner, 8 Nov: "ER09991 is a lead abatement bid, it came in the email on Nov 6, can we learn to
-# fill this"): HPD procurement emails these themselves (not OMOBid@), with the usual Invitation To Bid form and a
-# "Lead Abatement Scope" sheet that lists HPD's own estimate per room and item. The invitation is read and filled like
-# any other; the scope sheet gives the estimate, the rooms and whether mold work comes with it.
-LEAD_ITEM = re.compile(r"([A-Za-z0-9][A-Za-z0-9 ,'./&()-]*?)\s+(ENCLOSURE|REPLACEMENT|REMOVAL|ENCAPSULATION|STABILIZATION|PAINTING|ABATEMENT|DEMOLITION)\s+(\d+(?:\.\d+)?)\s*(SQ\s?FT|LF|FT|EA|UNIT|UNITS)\s+\$([\d,]+\.\d{2})")
+# fill this"; "there are 2 PDFs in the lead bid"): HPD procurement emails these themselves (not OMOBid@), with the
+# usual Invitation To Bid form and a "Lead Abatement Scope" sheet: rooms, items, method, size and unit, with blank Rate
+# and Cost boxes and blank room / apartment totals FOR THE CONTRACTOR TO FILL IN. Only what is printed on the sheet is
+# read (HPD's own figures sit under white boxes on the page and are never read or shown), plus where each box is, so
+# the app writes your rates, costs and totals into them.
+LEAD_METHODS = {"ENCLOSURE", "REPLACEMENT", "REMOVAL", "ENCAPSULATION", "STABILIZATION", "PAINTING", "ABATEMENT", "DEMOLITION"}
 
 
 def read_lead_scope(path):
     import fitz  # PyMuPDF
-    text = re.sub(r"\s+", " ", " ".join(p.get_text() for p in fitz.open(path)))
-    if "LEAD ABATEMENT SCOPE" not in text.upper():
+    doc = fitz.open(path)
+    if "LEAD ABATEMENT SCOPE" not in " ".join(p.get_text() for p in doc).upper():
         return None
-    money = lambda v: float(v.replace(",", "")) if v else 0.0
-    total = re.search(r"Estimated Cost For Apartment \$([\d,]+\.\d{2})", text)
-    rooms = []
-    for chunk in re.split(r"Location:", text)[1:]:
-        name = re.match(r"\s*(.+?)\s+AKA:", chunk)
-        cost = re.search(r"Estimated Cost For Room: \$([\d,]+\.\d{2})", chunk)
-        items = [{"component": re.sub(r"^(?:[\d.]+\s+)+", "", clean(m.group(1))), "method": m.group(2).title(), "size": f"{m.group(3)} {m.group(4).replace(' ', '')}", "cost": money(m.group(5))} for m in LEAD_ITEM.finditer(chunk.split("Estimated Cost For Room")[0])]
-        rooms.append({"room": clean(name.group(1)) if name else "", "cost": money(cost.group(1)) if cost else sum(i["cost"] for i in items), "items": items[:30]})
-    mold = re.search(r"(mold[^.]{0,160}\.)", text, re.I)
-    return {"estimate": money(total.group(1)) if total else sum(r["cost"] for r in rooms), "rooms": rooms[:12], "mold": clean(mold.group(1)) if mold else ""}
+    out = {"pages": [], "rooms": [], "mold": ""}
+    for pno, page in enumerate(doc):
+        h = page.rect.height
+        words = page.get_text("words")  # x0, y0, x1, y1, text, block, line, word
+        lines = {}
+        for w in words:
+            lines.setdefault(round(w[1]), []).append(w)
+        rate = next((w for w in words if w[4] == "Rate"), None)
+        cost = next((w for w in words if w[4] == "Cost" and w[1] < h * 0.5 and abs(w[0] - 492) < 40), None) or next((w for w in words if w[4] == "Cost" and w[0] > 470), None)
+        rate_right = (rate[2] + 8) if rate else 460
+        cost_right = (cost[2] - 3) if cost else 505
+        for y in sorted(lines):
+            ws = sorted(lines[y], key=lambda w: w[0])
+            text = " ".join(w[4] for w in ws)
+            if text.startswith("Location:"):
+                room = re.sub(r"\s+AKA:.*$", "", text[len("Location:"):]).strip()
+                out["rooms"].append({"room": room, "items": [], "total": None})
+                continue
+            if text.startswith("Estimated Cost For Room") and out["rooms"]:
+                label = next((w for w in ws if w[4] == "Room:"), ws[-1])
+                out["rooms"][-1]["total"] = {"page": pno, "x": label[2] + 4, "y": h - label[3] + 2}
+                continue
+            if text.startswith("Estimated Cost For Apartment"):
+                label = next((w for w in ws if w[4] == "Apartment"), ws[-1])
+                out["apartment"] = {"page": pno, "x": label[2] + 6, "y": h - label[3] + 2}
+                continue
+            if re.match(r"(?i)^mold", text):
+                out["mold"] = clean((out["mold"] + " " + text) if out["mold"] else text)
+                continue
+            method = next((w for w in ws if w[4] in LEAD_METHODS and 200 < w[0] < 330), None)
+            if not method or not out["rooms"]:
+                continue
+            component = clean(" ".join(w[4] for w in ws if w[0] < method[0] - 4))
+            middle = " ".join(w[4] for w in ws if method[2] < w[0] < (rate[0] - 2 if rate else 430))
+            size = re.search(r"(\d+(?:\.\d+)?)\s*(SQ\s?FT|LF|FT|EA|UNITS?)", middle.upper())
+            if not size:
+                continue
+            out["rooms"][-1]["items"].append({
+                "component": component, "method": method[4].title(), "qty": float(size.group(1)), "um": size.group(2).replace(" ", ""),
+                # Baselines in PDF space (origin bottom-left) for pdf-lib, right edges of the Rate and Cost boxes.
+                "page": pno, "y": h - method[3] + 2, "rateRight": rate_right, "costRight": cost_right,
+            })
+    out["rooms"] = [r for r in out["rooms"] if r["items"]][:12]
+    return out
 
 
 def email_text(payload):

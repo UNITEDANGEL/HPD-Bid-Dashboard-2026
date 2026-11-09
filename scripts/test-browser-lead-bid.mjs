@@ -1,7 +1,7 @@
 // 🧪 Lead abatement bids (owner, 8 Nov: "ER09991 is a lead abatement bid, it came in the email on Nov 6, can we learn
 // to fill this"): an invitation HPD procurement emailed (not OMOBid@) is in the bids with who sent it; the bid screen
-// shows "🧪 Lead abatement · HPD's estimate $6,832" room by room, the mold note, the Mold and Lead certifications and
-// HPD's scope sheet; "Use $6,832" fills the price. Data: the invitation as the fetcher reads it; nothing is faxed.
+// asks for your rate per kind of work for HPD's scope sheet (its Rate / Cost boxes are blank), works out the lines, the
+// rooms and the apartment total, and "Use $X as your bid" fills the price. Nothing is faxed.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
@@ -13,9 +13,12 @@ const lead = {
   omo: "ER09991", address: "306 EAST 116 STREET APT. 2A", borough: "MN", bidDue: tomorrow, bidDueTime: "11:00 AM", workStart: tomorrow, workCompletion: tomorrow,
   itbFile: "ER09991 Invitation To Bid.pdf", description: "AS PER HPD'S LEAD ABATEMENT REQUIREMENT CONTRACTS AND ATTACHED SCOPE OF WORK THOROUGHLY REMOVE ALL LEAD VIOLATIONS", pages: 3, fields: {},
   lat: 40.7966, lng: -73.9393, receivedAt: Date.now() - 86400000, kind: "lead", emailedBy: "Carvajal Dimas, Juan (HPD)", certs: "Mold and Lead", scopeFile: "ER09991.pdf",
-  lead: { estimate: 6832, mold: "Mold abatement from west wall prior to enclosure.", rooms: [
-    { room: "BATHROOM", cost: 975, items: [{ component: "SOUTH WALL", method: "Enclosure", size: "50 SQFT", cost: 800 }, { component: "BASEBOARD AT SOUTH WALL", method: "Replacement", size: "5 FT", cost: 175 }] },
-    { room: "3rd ROOM FROM NORTH", cost: 5857, items: [{ component: "WEST WALL", method: "Enclosure", size: "82 SQFT", cost: 1312 }] },
+  lead: { mold: "Mold abatement from west wall prior to enclosure.", apartment: { page: 0, x: 507, y: 79 }, rooms: [
+    { room: "BATHROOM", total: { page: 0, x: 525, y: 468 }, items: [
+      { component: "SOUTH WALL", method: "Enclosure", qty: 50, um: "SQFT", page: 0, y: 541, rateRight: 459.7, costRight: 505.4 },
+      { component: "BASEBOARD AT SOUTH WALL", method: "Replacement", qty: 5, um: "FT", page: 0, y: 507, rateRight: 459.7, costRight: 505.4 }] },
+    { room: "3rd ROOM FROM NORTH", total: { page: 0, x: 525, y: 114 }, items: [
+      { component: "WEST WALL", method: "Enclosure", qty: 82, um: "SQFT", page: 0, y: 359, rateRight: 459.7, costRight: 505.4 }] },
   ] },
 };
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -37,19 +40,29 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-emailed"]').innerText(), /Emailed by Carvajal Dimas, Juan \(HPD\) · lead abatement/);
   const box = sheet.locator('[data-hpd-smoke="fc-bid-lead"]');
   await box.waitFor();
+  assert.match(await box.innerText(), /🧪 Lead abatement · price HPD's scope sheet/);
+  assert.equal(await box.locator('[data-hpd-smoke="fc-bid-lead-use"]').count(), 0, "no total until every rate is in");
+  assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-total"]').innerText(), /2 rates to go/);
+  const rates = box.locator('[data-hpd-smoke="fc-bid-lead-rate"]');
+  assert.equal(await rates.count(), 2);
+  assert.match(await box.innerText(), /Enclosure · 132 sq ft \(2 lines\)/);
+  await box.locator('[data-key="Enclosure|SQFT"]').fill("18");
+  await box.locator('[data-key="Replacement|FT"]').fill("40");
+  await page.waitForFunction(() => /Apartment total: \$2,576\.00/.test(document.querySelector('[data-hpd-smoke="fc-bid-lead-total"]')?.textContent || ""), null, { timeout: 5000 });
   const t = await box.innerText();
-  assert.match(t, /🧪 Lead abatement · HPD's estimate \$6,832/);
-  assert.match(t, /BATHROOM: \$975 \(2 items\)/);
-  assert.match(t, /3rd ROOM FROM NORTH: \$5,857/);
-  assert.match(t, /Mold work too: Mold abatement from west wall prior to enclosure\./);
+  assert.match(t, /BATHROOM: \$1,100\.00/);
+  assert.match(t, /3rd ROOM FROM NORTH: \$1,476\.00/);
+  assert.match(t, /Mold abatement from west wall prior to enclosure\./);
   assert.match(t, /HPD asks for valid Mold and Lead certifications\./);
+  assert.match(t, /The filled scope sheet goes in the bid package/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-scope"]').getAttribute("href"), /\/api\/private\/itb\/ER09991\.pdf$/);
+  assert.equal(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991")), JSON.stringify({ "Enclosure|SQFT": 18, "Replacement|FT": 40 }), "rates kept on the phone");
   await box.locator('[data-hpd-smoke="fc-bid-lead-use"]').click();
-  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-bid-price"]')?.value?.replace(/[^0-9]/g, "") === "6832", null, { timeout: 5000 });
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-bid-price"]')?.value?.replace(/[^0-9.]/g, "").replace(/\.0+$/, "") === "2576", null, { timeout: 5000 });
   assert.equal(faxes, 0, "nothing faxed");
   await box.screenshot({ path: `${process.env.TEMP || "/tmp"}/lead-box.png` });
   assert.deepEqual(errors, []);
-  console.log("PASS lead bid: emailed invitation shown with who sent it; HPD's estimate $6,832 room by room, mold note, certifications, scope sheet; Use $6,832 fills the price; nothing faxed");
+  console.log("PASS lead bid: emailed invitation with who sent it; rates per kind of work price HPD's scope sheet (lines, rooms, apartment $2,576), kept on the phone; Use fills the bid price; nothing faxed");
 } finally {
   await browser.close();
 }

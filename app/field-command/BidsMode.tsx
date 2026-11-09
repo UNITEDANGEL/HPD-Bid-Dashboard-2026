@@ -29,6 +29,7 @@ import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "
 import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
+import { appendScope, fillLeadScope, loadLeadRates, priceScope, rateGroups, saveLeadRates, scopeMoney, type LeadRates } from "../../lib/lead-scope";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
@@ -835,6 +836,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   }, []);
   // "Bid the usual" (3 Nov, "remember my habits"): the middle of your last 3 prices on this kind of work (sent ones
   // first), filled and saved like "bid 500"; with none yet, it says the app's best price instead of guessing.
+  // 🧪 Your rates for a lead scope sheet, per job (kept on this phone).
+  const [leadRates, setLeadRates] = useState<Record<string, LeadRates>>({});
+  useEffect(() => { if (selected?.lead && !leadRates[selected.omo]) setLeadRates((all) => ({ ...all, [selected.omo]: loadLeadRates(selected.omo) })); }, [selected?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
   const usualRef = useRef<(say: (t: string) => void) => void>(() => {});
   usualRef.current = (say) => {
     if (!selected) { say("Open the bid first."); return; }
@@ -899,12 +903,21 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (filled && filled.price !== draftValue) setFilled(null);
   }
 
+  // 🧪 A lead bid with every scope rate in: HPD's scope sheet, filled, after the invitation pages.
+  async function withScope(bid: UpcomingBid, bytes: Uint8Array) {
+    if (!bid.lead || !bid.scopeFile) return bytes;
+    const rates = leadRates[bid.omo] || loadLeadRates(bid.omo);
+    if (!priceScope(bid.lead, rates).complete) return bytes;
+    const scopePdf = await fetch(itbPdfUrl(bid.scopeFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`scope sheet: HTTP ${r.status}`))));
+    return appendScope(bytes, await fillLeadScope(scopePdf, bid.lead, rates));
+  }
+
   async function buildPackageFor(bid: UpcomingBid, price: number) {
     const [{ fillBidPackage }, pdf] = await Promise.all([
       import("../../lib/bid-fill"),
       fetch(itbPdfUrl(bid.itbFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
     ]);
-    const bytes = await fillBidPackage(pdf, bid, price);
+    const bytes = await withScope(bid, await fillBidPackage(pdf, bid, price));
     return { bytes, name: `${bid.omo}_BID_${Math.round(price)}_${bid.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf` };
   }
 
@@ -1007,7 +1020,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     ]);
     const previous = revisedFrom(records[selected.omo]);
     const rec = records[selected.omo];
-    const bytes = await fillBidPackage(pdf, selected, price, previous ? { previousPrice: previous, count: (rec?.revisions?.length || 0) + 1, date: NY_DAY.format(new Date()) } : undefined);
+    const bytes = await withScope(selected, await fillBidPackage(pdf, selected, price, previous ? { previousPrice: previous, count: (rec?.revisions?.length || 0) + 1, date: NY_DAY.format(new Date()) } : undefined));
     const name = `${selected.omo}_${previous ? "REVISED_" : ""}BID_${Math.round(price)}_${selected.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf`;
     const file = new File([bytes as BlobPart], name, { type: "application/pdf" });
     const old = filled;
@@ -1405,22 +1418,44 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                   {draftValue > 0 && draftValue < rounds[0].price ? <span className="fc-bid-again-warn" data-hpd-smoke="fc-bid-lower-warn">⚠️ {money2(draftValue)} is lower than your last bid of {money2(rounds[0].price)}.</span> : null}
                 </div>
               ) : null}
-              {/* 🧪 Lead abatement (8 Nov): HPD's own estimate from its scope sheet, room by room, as the starting price. */}
-              {selected.lead ? (
-                <div className="fc-bid-lead" data-hpd-smoke="fc-bid-lead">
-                  <b>🧪 Lead abatement · HPD&apos;s estimate {money(selected.lead.estimate)}</b>
-                  {selected.lead.rooms.map((r) => (
-                    <details key={r.room} className="fc-bid-lead-room">
-                      <summary>{r.room || "Room"}: {money(r.cost)} ({r.items.length} item{r.items.length === 1 ? "" : "s"})</summary>
-                      <ul>{r.items.map((it, i) => <li key={i}>{it.component}: {it.method.toLowerCase()}, {it.size} · {money(it.cost)}</li>)}</ul>
-                    </details>
-                  ))}
-                  {selected.lead.mold ? <span className="fc-bid-lead-warn">🧽 Mold work too: {selected.lead.mold}</span> : null}
-                  {selected.certs ? <span className="fc-bid-lead-warn">📜 HPD asks for valid {selected.certs} certifications.</span> : null}
-                  {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 HPD&apos;s scope sheet</a> : null}
-                  {!sentLocked ? <button type="button" data-hpd-smoke="fc-bid-lead-use" onClick={() => pickPrice(String(Math.round(selected.lead!.estimate)))}>Use {money(selected.lead.estimate)}</button> : null}
-                </div>
-              ) : null}
+              {/* 🧪 Lead abatement (8 Nov): price HPD's scope sheet (its Rate / Cost boxes are blank for you); the apartment
+                  total is the bid, and the filled sheet goes in the package after the invitation. */}
+              {selected.lead ? (() => {
+                const lead = selected.lead;
+                const groups = rateGroups(lead);
+                const rates = leadRates[selected.omo] || {};
+                const priced = priceScope(lead, rates);
+                const setRate = (key: string, v: string) => {
+                  const n = Number(v.replace(/[^0-9.]/g, ""));
+                  const next = { ...rates, [key]: n > 0 ? n : 0 };
+                  setLeadRates((all) => ({ ...all, [selected.omo]: next }));
+                  saveLeadRates(selected.omo, next);
+                };
+                return (
+                  <div className="fc-bid-lead" data-hpd-smoke="fc-bid-lead">
+                    <b>🧪 Lead abatement · price HPD&apos;s scope sheet</b>
+                    <span>The sheet&apos;s Rate and Cost boxes are blank for you. Put your rate for each kind of work: the lines, the rooms and the apartment total are worked out and written on the sheet.</span>
+                    {groups.map((g) => (
+                      <label key={g.key} className="fc-bid-lead-rate">
+                        <span>{g.method} · {g.qty.toLocaleString("en-US")} {g.unit} ({g.lines} line{g.lines === 1 ? "" : "s"})</span>
+                        <em>$<input inputMode="decimal" aria-label={`${g.method} rate per ${g.unit}`} data-hpd-smoke="fc-bid-lead-rate" data-key={g.key} disabled={sentLocked} defaultValue={rates[g.key] ? String(rates[g.key]) : ""} onChange={(e) => setRate(g.key, e.target.value)} placeholder="0.00" /> per {g.unit}</em>
+                      </label>
+                    ))}
+                    {priced.rooms.map((r) => (
+                      <details key={r.room} className="fc-bid-lead-room">
+                        <summary>{r.room || "Room"}: {r.total ? scopeMoney(r.total) : "—"} ({r.items.length} item{r.items.length === 1 ? "" : "s"})</summary>
+                        <ul>{r.items.map((it, i) => <li key={i}>{it.component}: {it.method.toLowerCase()}, {it.qty} {it.um === "SQFT" ? "sq ft" : it.um.toLowerCase()}{it.rate ? ` × $${it.rate} = ${scopeMoney(it.cost)}` : ""}</li>)}</ul>
+                      </details>
+                    ))}
+                    <b data-hpd-smoke="fc-bid-lead-total">Apartment total: {priced.total ? scopeMoney(priced.total) : "—"}{priced.complete ? "" : ` (${priced.missing.length} rate${priced.missing.length === 1 ? "" : "s"} to go)`}</b>
+                    {lead.mold ? <span className="fc-bid-lead-warn">🧽 {lead.mold}</span> : null}
+                    {selected.certs ? <span className="fc-bid-lead-warn">📜 HPD asks for valid {selected.certs} certifications.</span> : null}
+                    {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 HPD&apos;s scope sheet (blank)</a> : null}
+                    {!sentLocked && priced.complete ? <button type="button" data-hpd-smoke="fc-bid-lead-use" onClick={() => pickPrice(String(priced.total))}>Use {scopeMoney(priced.total)} as your bid</button> : null}
+                    {priced.complete ? <small>✓ The filled scope sheet goes in the bid package after the invitation.</small> : <small>Until every rate is in, the package goes without the scope sheet.</small>}
+                  </div>
+                );
+              })() : null}
               {easy ? (
                 <div className="fc-bid-easy" data-hpd-smoke="fc-bid-easy">
                   <b>Easy win: bid this one · ~{money(easy.suggested)}</b>
