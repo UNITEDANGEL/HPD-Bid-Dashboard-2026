@@ -913,3 +913,8 @@ i.is-won { background: #16a34a; }
   .fc-bids-welcome button { min-height: 40px; font-size: 14px; }
 }
 .fc-bid-lead-warn.is-bad { color: #b91c1c !important; font-weight: 800; }
+
+/* ☣️ A lead abatement bid stands out on the bids map and list (owner, 9 Nov). */
+.fc-bid-pin.is-lead .fc-bid-in { box-shadow: 0 0 0 4px #facc15, 0 6px 16px rgba(0,0,0,.45); border-radius: 50%; }
+.fc-bid-pin.is-lead .fc-bid-in::after { content: "LEAD"; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 8px; background: #facc15; color: #422006; font: 900 10px/1.4 system-ui, sans-serif; letter-spacing: .04em; white-space: nowrap; }
+.fc-bid-chip.is-lead { background: #fef08a !important; color: #422006 !important; border: 1px solid #ca8a04 !important; font-weight: 800; }

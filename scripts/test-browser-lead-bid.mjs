@@ -82,6 +82,11 @@ try {
   // Both papers ready: saving the price fills the package by itself (or the button does).
   await page.waitForFunction(() => /Package filled · \$2,576\.00|Fill the package at \$2,576\.00/.test(document.querySelector('[data-hpd-smoke="fc-bid-review"]')?.textContent || ""), null, { timeout: 30000 });
   assert.ok(await reviewBtn.isEnabled(), "both papers ready: the package can be filled");
+  // On the bids map: its own yellow LEAD pin, called Lead abatement (owner, 9 Nov: "I want to see the lead abatement job in the bids map").
+  const pin = page.locator('.fc-bid-pin[title^="ER09991 "]');
+  assert.equal(await pin.count(), 1, "ER09991 on the bids map");
+  assert.match(await pin.getAttribute("title"), /^ER09991 · Lead abatement · /);
+  assert.match(await pin.getAttribute("class"), /is-lead/);
   assert.equal(faxes, 0, "nothing faxed");
   await box.screenshot({ path: `${process.env.TEMP || "/tmp"}/lead-box.png` });
   assert.deepEqual(errors, []);

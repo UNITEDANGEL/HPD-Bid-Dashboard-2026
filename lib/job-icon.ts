@@ -68,9 +68,10 @@ export const JOB_GLYPHS: Record<string, { color: string; svg: string }> = {
   block: { color: "#c2410c", svg: '<path d="M10 3h4l4.5 16.5h-13z" class="f"/><path d="M3.5 21h17"/>' },
   shield: { color: "#1e40af", svg: '<path d="M12 2.5 19.5 5.6v6c0 4.4-3.2 7.8-7.5 9.9-4.3-2.1-7.5-5.5-7.5-9.9v-6z" class="f"/>' },
   clip: { color: "#0f766e", svg: '<rect x="4.8" y="4" width="14.4" height="17.5" rx="2"/><path d="M9 3h6v3.2H9zM8.5 11h7M8.5 15h7"/>' },
+  hazard: { color: "#ca8a04", svg: '<path d="M12 2.8 22 20.2H2z" class="f"/><path d="M12 9.2v5" stroke="#ca8a04" stroke-width="2.6"/><circle cx="12" cy="17.2" r="1.4" fill="#ca8a04" stroke="none"/>' },
   repair: { color: "#1e293b", svg: '<path d="M14.6 3.5a4.8 4.8 0 0 0-4.5 6.4L3.5 16.5l4 4 6.6-6.6a4.8 4.8 0 0 0 6.4-4.5l-3 3-3.6-3.6 3-3a4.8 4.8 0 0 0-2.3-.3z" class="f"/>' },
 };
-const KEY_GROUP: Record<string, string> = { "leak": "water", "heat": "heat", "mold": "mold", "plumbing": "pipe", "electric": "power", "detector": "alarm", "roof": "roof", "fire-escape": "ladder", "window-new": "window", "glass": "window", "window-hardware": "window", "hinges": "hinge", "secure-tech": "lock", "electric-strike": "lock", "entrance-lock": "lock", "lock": "lock", "door-new": "door", "closer": "door", "ada-closer": "door", "door-adjust": "door", "pushbar": "door", "intercom": "bell", "hopper-chute": "trash", "compactor-hydraulic": "trash", "paint": "paint", "sheetrock": "wall", "ceiling": "wall", "wall": "wall", "floor": "floor", "masonry": "wall", "metal": "metal", "cabinet": "cabinet", "obstruction": "block", "seal": "shield", "lead": "mold", "aep": "clip" };
+const KEY_GROUP: Record<string, string> = { "leak": "water", "heat": "heat", "mold": "mold", "plumbing": "pipe", "electric": "power", "detector": "alarm", "roof": "roof", "fire-escape": "ladder", "window-new": "window", "glass": "window", "window-hardware": "window", "hinges": "hinge", "secure-tech": "lock", "electric-strike": "lock", "entrance-lock": "lock", "lock": "lock", "door-new": "door", "closer": "door", "ada-closer": "door", "door-adjust": "door", "pushbar": "door", "intercom": "bell", "hopper-chute": "trash", "compactor-hydraulic": "trash", "paint": "paint", "sheetrock": "wall", "ceiling": "wall", "wall": "wall", "floor": "floor", "masonry": "wall", "metal": "metal", "cabinet": "cabinet", "obstruction": "block", "seal": "shield", "lead": "hazard", "aep": "clip" };
 
 // The drawing as SVG markup (for map pins and list rows).
 export function jobGlyphSvg(group: string, size = 26) {
@@ -80,7 +81,10 @@ export function jobGlyphSvg(group: string, size = 26) {
 
 export function jobIcon(description: string): { icon: string; label: string; more: number; group: string; color: string } {
   const items = readScope(description || "").items;
-  const hit = ICONS.find(([k]) => items.includes(k));
+  // A lead abatement contract (owner, 9 Nov: "I want to see the lead abatement job on the bids map") is a lead job,
+  // whatever else it mentions; "lead safe work practices" on a painting job is still painting.
+  const leadJob = /lead abatement|delead|lead[- ]based paint hazards|lbp rc contract/i.test(description || "");
+  const hit = leadJob ? ICONS.find(([k]) => k === "lead") : ICONS.find(([k]) => items.includes(k));
   const group = hit ? KEY_GROUP[hit[0]] || "repair" : "repair";
   const color = (JOB_GLYPHS[group] || JOB_GLYPHS.repair).color;
   return hit ? { icon: hit[1], label: hit[2], more: Math.max(0, items.length - 1), group, color } : { icon: "🛠️", label: "Repair", more: 0, group, color };
