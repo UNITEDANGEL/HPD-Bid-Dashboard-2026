@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-09T16:19:52.238180+00:00",
+"generatedAt": "2026-11-09T16:31:23.353140+00:00",
 "since": "2026/10/26",
 "jobs": {
 "EN04541": [
@@ -1477,6 +1477,14 @@
 "file": "EP08179 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: Status Update",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-09",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>, smelyany@hpd.nyc.gov",
+"file": "EP08179 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Documents",
 "via": "hpd-staff"
 }
 ],
