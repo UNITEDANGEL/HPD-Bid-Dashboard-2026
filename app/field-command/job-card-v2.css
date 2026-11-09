@@ -1163,3 +1163,6 @@
 .jc-hero-photo.is-empty { display: grid; gap: 8px; padding: 10px 110px 10px 10px; min-height: 0; }
 .jc-hero-photo.is-empty .jc-hero-count, .jc-hero-photo.is-empty .jc-hero-actions { position: static; transform: none; }
 .jc-hero-photo.is-empty .jc-hero-actions { flex-wrap: wrap; }
+/* Layout sweep (9 Nov): "✉️ Email Lewis about this job" and "👷 Send to a worker" had near-white words on their light
+   button (a global button colour won); dark blue again. */
+#fc-job-card .jc-email, .jc-email { color: #1e3a8a !important; font-weight: 800 !important; }
