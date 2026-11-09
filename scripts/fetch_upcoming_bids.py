@@ -48,8 +48,9 @@ def normalize_omo(raw):
 
 
 def omo_from_filename(name):
-    """Invitation files are named after the OMO: "ER07193_100626035429.pdf"."""
-    m = re.match(r"([A-Z]{2}\d{5})_", os.path.basename(name).upper())
+    """Invitation files are named after the OMO: "ER07193_100626035429.pdf", or "ER09991 Invitation To Bid.pdf"
+    when an HPD person emails it (lead abatement, 8 Nov)."""
+    m = re.match(r"([A-Z]{2}\d{5})[_ ]", os.path.basename(name).upper())
     return m.group(1) if m else ""
 
 
@@ -257,26 +258,86 @@ def previous_bids():
         return {}
 
 
+# 🧪 Lead abatement (owner, 8 Nov: "ER09991 is a lead abatement bid, it came in the email on Nov 6, can we learn to
+# fill this"): HPD procurement emails these themselves (not OMOBid@), with the usual Invitation To Bid form and a
+# "Lead Abatement Scope" sheet that lists HPD's own estimate per room and item. The invitation is read and filled like
+# any other; the scope sheet gives the estimate, the rooms and whether mold work comes with it.
+LEAD_ITEM = re.compile(r"([A-Za-z0-9][A-Za-z0-9 ,'./&()-]*?)\s+(ENCLOSURE|REPLACEMENT|REMOVAL|ENCAPSULATION|STABILIZATION|PAINTING|ABATEMENT|DEMOLITION)\s+(\d+(?:\.\d+)?)\s*(SQ\s?FT|LF|FT|EA|UNIT|UNITS)\s+\$([\d,]+\.\d{2})")
+
+
+def read_lead_scope(path):
+    import fitz  # PyMuPDF
+    text = re.sub(r"\s+", " ", " ".join(p.get_text() for p in fitz.open(path)))
+    if "LEAD ABATEMENT SCOPE" not in text.upper():
+        return None
+    money = lambda v: float(v.replace(",", "")) if v else 0.0
+    total = re.search(r"Estimated Cost For Apartment \$([\d,]+\.\d{2})", text)
+    rooms = []
+    for chunk in re.split(r"Location:", text)[1:]:
+        name = re.match(r"\s*(.+?)\s+AKA:", chunk)
+        cost = re.search(r"Estimated Cost For Room: \$([\d,]+\.\d{2})", chunk)
+        items = [{"component": re.sub(r"^(?:[\d.]+\s+)+", "", clean(m.group(1))), "method": m.group(2).title(), "size": f"{m.group(3)} {m.group(4).replace(' ', '')}", "cost": money(m.group(5))} for m in LEAD_ITEM.finditer(chunk.split("Estimated Cost For Room")[0])]
+        rooms.append({"room": clean(name.group(1)) if name else "", "cost": money(cost.group(1)) if cost else sum(i["cost"] for i in items), "items": items[:30]})
+    mold = re.search(r"(mold[^.]{0,160}\.)", text, re.I)
+    return {"estimate": money(total.group(1)) if total else sum(r["cost"] for r in rooms), "rooms": rooms[:12], "mold": clean(mold.group(1)) if mold else ""}
+
+
+def email_text(payload):
+    """The plain text of an email (for the bid close date and who sent it)."""
+    out, stack = [], [payload]
+    while stack:
+        part = stack.pop()
+        stack += part.get("parts", []) or []
+        if part.get("mimeType") == "text/plain" and (part.get("body") or {}).get("data"):
+            out.append(base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8", "replace"))
+    return "\n".join(out)
+
+
+def emailed_bid_info(payload):
+    headers = {h.get("name", "").lower(): h.get("value", "") for h in payload.get("headers", [])}
+    body = email_text(payload)
+    sender = re.sub(r"\s*<.*", "", headers.get("from", "")).strip().strip('"')
+    due = re.search(r"Bid close date\s*:?\s*(\d{1,2}/\d{1,2}/\d{2,4})\s*(\d{1,2}:\d{2})\s*([AP]M)", body, re.I)
+    certs = re.search(r"valid ([A-Za-z ,&]+?) certifications", body, re.I)
+    return {
+        "emailedBy": sender[:80],
+        "kind": "lead" if re.search(r"lead abatement", body + headers.get("subject", ""), re.I) else "",
+        "certs": clean(certs.group(1)) if certs else "",
+        "dueFromEmail": (parse_date(due.group(1)), f"{due.group(2)} {due.group(3).upper()}") if due else None,
+    }
+
+
 def fetch(days):
     sys.path.insert(0, ROOT)
     from FetchrMatcherV5 import get_gmail_service
     service = get_gmail_service()
     since = (datetime.datetime.now(NY) - datetime.timedelta(days=days)).strftime("%Y/%m/%d")
-    query = f'from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:{since}'
-    print(f"UPCOMING BIDS QUERY: {query}")
-    messages, token = [], None
-    while True:
-        resp = service.users().messages().list(userId="me", q=query, maxResults=100, pageToken=token).execute(num_retries=3)
-        messages += resp.get("messages", [])
-        token = resp.get("nextPageToken")
-        if not token:
-            break
+    queries = [
+        f'from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:{since}',
+        # Emailed by an HPD person (lead abatement and other special bids): "Invitation To Bid" in a PDF's name.
+        f'from:hpd.nyc.gov -from:OMOBid@hpd.nyc.gov has:attachment filename:pdf ("invitation to bid" OR "scope of work") after:{since}',
+    ]
+    messages, seen_ids = [], set()
+    for query in queries:
+        print(f"UPCOMING BIDS QUERY: {query}")
+        token = None
+        while True:
+            resp = service.users().messages().list(userId="me", q=query, maxResults=100, pageToken=token).execute(num_retries=3)
+            for m in resp.get("messages", []):
+                if m["id"] not in seen_ids:
+                    seen_ids.add(m["id"])
+                    messages.append(m)
+            token = resp.get("nextPageToken")
+            if not token:
+                break
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     awarded, known, found, unread = awarded_omos(), previous_bids(), {}, []
     today = datetime.datetime.now(NY).date()
     for msg in messages:
         data = service.users().messages().get(userId="me", id=msg["id"]).execute(num_retries=3)
         received = int(data.get("internalDate", 0))
+        emailed = emailed_bid_info(data.get("payload", {}))
+        scope = None
         parts, stack = [], [data.get("payload", {})]
         while stack:
             part = stack.pop()
@@ -292,6 +353,14 @@ def fetch(days):
                 raw = service.users().messages().attachments().get(userId="me", messageId=msg["id"], id=attachment).execute(num_retries=3)
                 with open(path, "wb") as f:
                     f.write(base64.urlsafe_b64decode(raw["data"]))
+            # A lead abatement scope sheet with the invitation: HPD's estimate (read once per email).
+            try:
+                lead = read_lead_scope(path)
+            except Exception:
+                lead = None
+            if lead:
+                scope = {**lead, "scopeFile": os.path.basename(name)}
+                continue
             try:
                 page1, last, description, notes, desc_pages = read_pdf(path)
             except Exception as error:
@@ -303,6 +372,8 @@ def fetch(days):
             if "INVITATION TO BID" not in page1.upper():
                 continue  # a COA or other paper, not an invitation
             info = parse_invitation_text(page1, last)
+            if not info["bidDue"] and emailed["dueFromEmail"]:
+                info["bidDue"], info["bidDueTime"] = emailed["dueFromEmail"]
             omo = omo_from_filename(name) or info["omo"]
             if not omo or not info["bidDue"]:
                 # Never drop an invitation silently: the app lists it so it can be opened from the email.
@@ -316,6 +387,15 @@ def fetch(days):
             if omo in found and found[omo]["receivedAt"] >= received:
                 continue  # keep the newest invitation for each OMO
             found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:8000], "notes": notes[:4000], "descPages": desc_pages, "receivedAt": received, **bid_fields(path)}
+            if emailed["emailedBy"] and "omobid" not in emailed["emailedBy"].lower():
+                found[omo].update({k: v for k, v in emailed.items() if k != "dueFromEmail" and v})
+        # The scope sheet can come before or after the invitation in the email: attach it to that email's OMO.
+        if scope:
+            for bid in found.values():
+                if bid.get("receivedAt") == received:
+                    bid["lead"] = {k: v for k, v in scope.items() if k != "scopeFile"}
+                    bid["scopeFile"] = scope["scopeFile"]
+                    bid["kind"] = "lead"
     bids = []
     for omo, bid in sorted(found.items(), key=lambda kv: (kv[1]["bidDue"], kv[1]["bidDueTime"], kv[0])):
         old = known.get(omo, {})
@@ -326,6 +406,8 @@ def fetch(days):
             time.sleep(0.3)
         os.makedirs(PUBLIC_ITB_DIR, exist_ok=True)
         shutil.copyfile(os.path.join(DOWNLOAD_DIR, bid["itbFile"]), os.path.join(PUBLIC_ITB_DIR, bid["itbFile"]))
+        if bid.get("scopeFile") and os.path.exists(os.path.join(DOWNLOAD_DIR, bid["scopeFile"])):
+            shutil.copyfile(os.path.join(DOWNLOAD_DIR, bid["scopeFile"]), os.path.join(PUBLIC_ITB_DIR, bid["scopeFile"]))
         bids.append(bid)
     result = {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "days": days, "bids": bids, "unread": unread}
     for out in OUT_FILES:
@@ -340,8 +422,11 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument("--days", type=int, default=14)
     args.add_argument("--parse", help="read one invitation PDF and print what was found")
+    args.add_argument("--scope", help="read one lead abatement scope sheet and print HPD's estimate")
     opts = args.parse_args()
-    if opts.parse:
+    if opts.scope:
+        print(json.dumps(read_lead_scope(opts.scope), indent=2))
+    elif opts.parse:
         page1, last, description, notes, desc_pages = read_pdf(opts.parse)
         print(json.dumps({**parse_invitation_text(page1, last), "description": description[:160], **bid_fields(opts.parse)}, indent=2))
     else:

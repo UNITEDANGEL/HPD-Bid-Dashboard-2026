@@ -13,6 +13,10 @@ export type UpcomingBid = {
   pages: number; fields: Record<string, BidField>; lat?: number | null; lng?: number | null;
   receivedAt?: number; // when the invitation email arrived (ms)
   descPages?: number[]; // pages the job description is on (3, plus 4+ when a long job continues)
+  // 🧪 Emailed by an HPD person (lead abatement, 8 Nov): who sent it, the certifications asked for, and HPD's estimate
+  // from the Lead Abatement Scope sheet (room by room).
+  kind?: string; emailedBy?: string; certs?: string; scopeFile?: string;
+  lead?: { estimate: number; mold?: string; rooms: { room: string; cost: number; items: { component: string; method: string; size: string; cost: number }[] }[] };
 };
 
 // Same details as Filler_Code/fill_all_pages_FINAL_ALL_PAGES.py.

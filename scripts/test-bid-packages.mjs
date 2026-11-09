@@ -28,10 +28,11 @@ for (const [i, bid] of bids.entries()) {
     const [p1, p2, last] = [await text(1), await text(2), await text(pdf.numPages)];
     const p3 = pdf.numPages >= 3 ? await text(3) : "";
     const checks = [
-      [p1.includes(priceText), "price on page 1"], [p2.includes(priceText), "price on page 2"], [last.includes(priceText), "price on the work form"],
+      // A 3-page invitation (the lead abatement ones HPD emails, 8 Nov) has no Work Description Form to fill.
+      [p1.includes(priceText), "price on page 1"], [p2.includes(priceText), "price on page 2"], [!bid.fields.bidAmount || last.includes(priceText), "price on the work form"],
       [p1.includes("United Angel Construction Corp.") && p1.includes("718-989-1381"), "company on page 1"],
       [p1.includes(bidDateText(bid.bidDue)), "date on page 1"], [p3.includes("UNITED ANGEL CONSTRUCTION CORP."), "page 3 stamp"],
-      [last.includes("Jot Singh") && /REMOVE ALL WORK RELATED DEBRIS\./.test(last), "work form signature and description"],
+      [!bid.fields.bidAmount || (last.includes("Jot Singh") && /REMOVE ALL WORK RELATED DEBRIS\./.test(last)), "work form signature and description"],
       [pdf.numPages === bid.pages, "all pages"],
     ];
     const missing = checks.filter(([good]) => !good).map(([, what]) => what);
@@ -49,7 +50,7 @@ for (const bid of bids) {
   const out = await fillBidPackage(readPrivateFile("itb", bid.itbFile), bid, 1100, { previousPrice: 1250, count: 1, date: "2026-10-12" });
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(out), useSystemFonts: true, verbosity: 0 }).promise;
   const text = async (n) => (await (await pdf.getPage(n)).getTextContent()).items.map((x) => x.str).join(" ");
-  for (const [n, note] of [[1, "PRICE REVISED 1X ON 10/12/26"], [2, "REV. 1X 10/12/26"], [pdf.numPages, "REV. 1X 10/12/26"]]) {
+  for (const [n, note] of [[1, "PRICE REVISED 1X ON 10/12/26"], [2, "REV. 1X 10/12/26"], ...(bid.fields.bidAmount ? [[pdf.numPages, "REV. 1X 10/12/26"]] : [])]) {
     const t = await text(n);
     if (!(t.includes("1,250.00") && t.includes("1,100.00") && t.includes("JS") && t.includes(note))) revisedProblems.push(`${bid.omo} page ${n}`);
   }

@@ -1394,6 +1394,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 </>
               ) : null}
               <a className="fc-bid-link" data-hpd-smoke="fc-bid-view" href={itbPdfUrl(selected.itbFile)} target="_blank" rel="noreferrer">📄 View the invitation ({selected.pages} pages)</a>
+              {selected.emailedBy ? <p className="fc-bid-emailed" data-hpd-smoke="fc-bid-emailed">📧 Emailed by {selected.emailedBy}{selected.kind === "lead" ? " · lead abatement" : ""} (not the usual invitation email): it fills in and sends the same way.</p> : null}
             </section>
             <section id="fc-sec-price" className={`fc-bid-price fc-bid-step${step1Done ? " is-done" : ""}`} data-hpd-smoke="fc-step-1">
               <h4>{step1Done ? "✓" : "1"} · Your bid price{step1Done ? ` · saved ${money2(record!.price)}` : ""}</h4>
@@ -1402,6 +1403,22 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                   <b>🔁 Invited again: you bid this job before</b>
                   {rounds.map((r, i) => <span key={i}>Due {r.bidDue.slice(5).replace("-", "/")}: {money2(r.price)}{r.sentAt && r.status !== "saved" ? ` · sent ${when(r.sentAt)}` : " · not sent"}</span>)}
                   {draftValue > 0 && draftValue < rounds[0].price ? <span className="fc-bid-again-warn" data-hpd-smoke="fc-bid-lower-warn">⚠️ {money2(draftValue)} is lower than your last bid of {money2(rounds[0].price)}.</span> : null}
+                </div>
+              ) : null}
+              {/* 🧪 Lead abatement (8 Nov): HPD's own estimate from its scope sheet, room by room, as the starting price. */}
+              {selected.lead ? (
+                <div className="fc-bid-lead" data-hpd-smoke="fc-bid-lead">
+                  <b>🧪 Lead abatement · HPD&apos;s estimate {money(selected.lead.estimate)}</b>
+                  {selected.lead.rooms.map((r) => (
+                    <details key={r.room} className="fc-bid-lead-room">
+                      <summary>{r.room || "Room"}: {money(r.cost)} ({r.items.length} item{r.items.length === 1 ? "" : "s"})</summary>
+                      <ul>{r.items.map((it, i) => <li key={i}>{it.component}: {it.method.toLowerCase()}, {it.size} · {money(it.cost)}</li>)}</ul>
+                    </details>
+                  ))}
+                  {selected.lead.mold ? <span className="fc-bid-lead-warn">🧽 Mold work too: {selected.lead.mold}</span> : null}
+                  {selected.certs ? <span className="fc-bid-lead-warn">📜 HPD asks for valid {selected.certs} certifications.</span> : null}
+                  {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 HPD&apos;s scope sheet</a> : null}
+                  {!sentLocked ? <button type="button" data-hpd-smoke="fc-bid-lead-use" onClick={() => pickPrice(String(Math.round(selected.lead!.estimate)))}>Use {money(selected.lead.estimate)}</button> : null}
                 </div>
               ) : null}
               {easy ? (
