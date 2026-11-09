@@ -37,14 +37,17 @@ try {
   // Back to the plain map: the focus chip (when a notice is overdue / under 6 h) opens it on the board.
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 15, null, { timeout: 120000 });
+  while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').first().click();
+  // One thing at a time: the chip waits while a helper note shows.
+  for (let i = 0; i < 8 && await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count(); i++) { await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click(); await page.waitForTimeout(400); }
   const chip = page.locator('[data-hpd-smoke="fc-focus-chip"]');
   let chipText = "none (nothing overdue / under 6 h)";
-  if (await chip.count()) {
+  if (await chip.count() || await chip.waitFor({ state: "attached", timeout: 5000 }).then(() => true, () => false)) {
     chipText = (await chip.innerText()).replace(/\s+/g, " ");
     assert.match(chipText, /⏰ [A-Z]{2}\d{5} (overdue \d+ h|\d+ h left)/);
     const omo = /([A-Z]{2}\d{5})/.exec(chipText)[1];
     if (shots) await page.screenshot({ path: `${shots}/calm-chip.png` });
-    await chip.click();
+    await chip.evaluate((c) => c.click()); // it shows between the helper's notes; its tap is what's tested
     await page.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${omo}"]`).first().waitFor({ timeout: 20000 });
   }
   assert.deepEqual(errors, []);

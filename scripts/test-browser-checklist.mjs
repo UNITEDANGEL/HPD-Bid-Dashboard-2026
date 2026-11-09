@@ -53,9 +53,11 @@ try {
   await sheet.waitFor({ timeout: 10000 });
   assert.equal((await sheet.locator("header strong").innerText()).trim(), omo);
   assert.equal(Number(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').inputValue()), price, "best price filled in");
-  // Multi-bid sitting: "Bid all 6 in a row" walks the to-do bids in order, best price filled in each time.
+  // Multi-bid sitting: "Bid all in a row" walks today's to-do bids in order, best price filled in each time.
   await sheet.locator("header button").first().click();
-  const order = await list.locator('[data-hpd-smoke="fc-checklist-row"]').evaluateAll((rs) => rs.map((r) => r.dataset.omo));
+  // Bids stay on today's (owner, 5 Nov): the sitting walks today's to-do bids only.
+  const todays = new Set(bids.filter((b) => b.bidDue === today).map((b) => b.omo));
+  const order = (await list.locator('[data-hpd-smoke="fc-checklist-row"]').evaluateAll((rs) => rs.map((r) => r.dataset.omo))).filter((o) => todays.has(o));
   await list.locator('[data-hpd-smoke="fc-sitting-start"]').click();
   const bar = page.locator('[data-hpd-smoke="fc-sitting-bar"]');
   for (let i = 0; i < order.length; i++) {

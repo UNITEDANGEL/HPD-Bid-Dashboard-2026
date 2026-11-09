@@ -24,3 +24,6 @@ assert.match(dayMoneyAnswer(dayMoney([], now)), /^💵 No jobs finished this wee
 assert.equal(parseCommand("how much did I make today").intent, "day-money");
 assert.equal(parseCommand("what did I earn this week").intent, "day-money");
 console.log("PASS day money: today and this week (Monday on, New York) from finished jobs; no-access not counted; the answer lists today's jobs");
+// The year / month questions keep their own answer (the money report), not the chip's today / week.
+for (const q of ["how much did I make this year", "how much did I make this month", "how much have I earned so far"]) assert.notEqual(parseCommand(q).intent, "day-money", q);
+console.log("PASS day money: year / month questions not taken");
