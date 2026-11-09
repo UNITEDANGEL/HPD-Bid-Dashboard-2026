@@ -449,7 +449,7 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
           <span className={under6 ? "is-hot" : ""}><b>{under6}</b> under 6 h</span>
           <span className={shown.some((r) => noAnswer.includes(r)) ? "is-quiet" : ""}><b>{waiting}</b> waiting on them{shown.some((r) => noAnswer.includes(r)) ? <small data-hpd-smoke="fc-board-quiet-count">⏰ {shown.filter((r) => noAnswer.includes(r)).length} no answer</small> : null}</span>
         </div>
-        <p className="fc-follow-note">Each notice and missing-documents request from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p>
+        <details className="fc-board-how"><summary>ⓘ How the steps work</summary><p className="fc-follow-note">Each notice and missing-documents request from vendor tracking until it&apos;s confirmed: ✉ reply → 📄 paperwork → 📤 sent → ✅ confirmed. Steps tick by themselves from your emails and the paperwork on record; tap a step to tick it by hand.</p></details>
         {locked ? (
           <form className="fc-board-locked" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fview%3Dall%26map%3D1%26board%3D1" data-hpd-smoke="fc-board-locked">
             <b>🔒 Your HPD emails didn&apos;t open on this phone</b>
