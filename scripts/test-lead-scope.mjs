@@ -19,16 +19,27 @@ const scope = { rooms: [
   { room: "3rd ROOM FROM NORTH", total: { page: 0, x: 525, y: 114 }, items: [item("WEST WALL", "Enclosure", 82, "SQFT", 359), item("1st WINDOW FRAME", "Replacement", 17, "FT", 222)] },
 ], apartment: { page: 0, x: 507, y: 79 }, mold: "Mold abatement from west wall prior to enclosure." };
 
-assert.deepEqual(L.rateGroups(scope).map((g) => [g.key, g.qty, g.lines, g.unit]), [["Enclosure|SQFT", 132, 2, "sq ft"], ["Replacement|FT", 22, 2, "ft"]]);
-const half = L.priceScope(scope, { "Enclosure|SQFT": 18 });
-assert.equal(half.complete, false); assert.deepEqual(half.missing, ["Replacement|FT"]);
-const p = L.priceScope(scope, { "Enclosure|SQFT": 18, "Replacement|FT": 40.5 });
+assert.deepEqual(L.rateGroups(scope).map((g) => [g.key, g.qty, g.lines, g.unit]), [["Wall|Enclosure|SQFT", 132, 2, "sq ft"], ["Baseboard|Replacement|FT", 5, 1, "ft"], ["Window|Replacement|FT", 17, 1, "ft"]]);
+const half = L.priceScope(scope, { "Wall|Enclosure|SQFT": 18 });
+assert.equal(half.complete, false); assert.deepEqual(half.missing, ["Baseboard|Replacement|FT", "Window|Replacement|FT"]);
+// Owner, 9 Nov: baseboard, window and door replacement each have their own price.
+assert.deepEqual(["1st WINDOW FRAME FROM SOUTH AT WEST WALL", "BASEBOARD AT EAST WALL", "SOUTH WALL", "ENTRANCE DOOR JAMB", "DOOR CASING", "2nd RADIATOR"].map(L.partOf), ["Window", "Baseboard", "Wall", "Door", "Door", "Radiator"]);
+const split = L.priceScope(scope, { "Wall|Enclosure|SQFT": 18, "Baseboard|Replacement|FT": 30, "Window|Replacement|FT": 50 });
+assert.deepEqual(split.rooms.map((r) => r.total), [900 + 150, 82 * 18 + 17 * 50]);
+// Rates saved the old way (one per kind of work) still count, and are split per part when one part's rate is typed.
+const old = { "Enclosure|SQFT": 18, "Replacement|FT": 40.5 };
+assert.equal(L.priceScope(scope, old).total, 3267);
+const moved = L.withGroupRate(scope, old, "Window|Replacement|FT", 60);
+assert.deepEqual(moved, { "Wall|Enclosure|SQFT": 18, "Baseboard|Replacement|FT": 40.5, "Window|Replacement|FT": 60 });
+assert.equal(L.withGroupRate(scope, moved, "Window|Replacement|FT", 0)["Window|Replacement|FT"], 0);
+assert.equal(L.priceScope(scope, L.withGroupRate(scope, moved, "Window|Replacement|FT", 0)).complete, false, "cleared: no old rate comes back");
+const p = L.priceScope(scope, { "Wall|Enclosure|SQFT": 18, "Baseboard|Replacement|FT": 40.5, "Window|Replacement|FT": 40.5 });
 assert.equal(p.complete, true);
 assert.deepEqual(p.rooms.map((r) => r.total), [1102.5, 2164.5]);
 assert.equal(p.total, 3267);
 assert.equal(L.scopeMoney(3267), "$3,267.00");
 // A rate on one line wins for that line only; a line with its own rate counts as priced.
-const own = L.priceScope(scope, { "Enclosure|SQFT": 18, "Replacement|FT": 40.5, [L.lineKey(0, 0)]: 20 });
+const own = L.priceScope(scope, { "Wall|Enclosure|SQFT": 18, "Baseboard|Replacement|FT": 40.5, "Window|Replacement|FT": 40.5, [L.lineKey(0, 0)]: 20 });
 assert.equal(own.rooms[0].items[0].rate, 20);
 assert.equal(own.rooms[0].items[0].own, true);
 assert.equal(own.total, 3267 + 2 * scope.rooms[0].items[0].qty);

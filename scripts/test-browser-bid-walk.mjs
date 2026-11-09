@@ -50,11 +50,11 @@ try {
   assert.ok((await mapScale()) !== before, "the map moved to the building");
   assert.match(await full.locator(".fc-itb-bar b").innerText(), /^Page 2 of 4$/);
   const box = page.locator('[data-hpd-smoke="fc-itb-zoombox"]');
-  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-itb-zoombox"]')?.getAttribute("data-zoom") === "2.00", null, { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-itb-zoombox"]')?.getAttribute("data-zoom") === "1.70", null, { timeout: 10000 });
   await page.waitForTimeout(300);
   // What shows on the screen, as parts of the page's height: the WORK DESCRIPTION lines (about 0.57-0.68 down) are in it.
   const at = await box.evaluate((el) => ({ top: el.scrollTop / el.scrollHeight, bottom: (el.scrollTop + el.clientHeight) / el.scrollHeight }));
-  assert.ok(at.top > 0.15 && at.top <= 0.57 && at.bottom >= 0.68, `scrolled down to the WORK DESCRIPTION box (${at.top.toFixed(2)}-${at.bottom.toFixed(2)})`);
+  assert.ok(at.top <= 0.57 && at.bottom >= 0.68, `scrolled down to the WORK DESCRIPTION box (${at.top.toFixed(2)}-${at.bottom.toFixed(2)})`);
   await page.screenshot({ path: process.env.SHOT || `${process.env.TEMP || "/tmp"}/bid-walk.png` }).catch(() => {});
   // "💰 Price it": the page closes, the price box is on the screen with the cursor in it.
   await page.locator('[data-hpd-smoke="fc-itb-price"]').click();
@@ -77,7 +77,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-bid-arriving"]', { hasText: other.omo }).waitFor({ timeout: 5000 });
   await full.waitFor({ timeout: 30000 });
   assert.match(await full.locator(".fc-itb-bar b").innerText(), /^Page 3 of \d+$/);
-  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-itb-zoombox"]')?.getAttribute("data-zoom") === "2.00", null, { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-itb-zoombox"]')?.getAttribute("data-zoom") === "1.70", null, { timeout: 10000 });
   await page.waitForTimeout(300);
   const top3 = await box.evaluate((el) => el.scrollTop / el.scrollHeight);
   assert.ok(top3 < 0.25, `page 3: the job description near the top (${top3.toFixed(2)})`);
@@ -104,7 +104,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-bid-arriving"]').count(), 0);
   assert.equal(await full.count(), 0, "off: no full-screen page");
   assert.deepEqual(errors, []);
-  console.log(`PASS going to a bid: list folds, "📍 Queens · 47-46 40 STREET" over the map while it moves, then HPD's page full screen at 2x on the work (ER09499: page 2, the order form, showing ${at.top.toFixed(2)}-${at.bottom.toFixed(2)} of it; 💰 Price it puts the cursor in the price box; Next ▶ to ${other.omo}: page 3 near the top); the switch turns it off`);
+  console.log(`PASS going to a bid: list folds, "📍 Queens · 47-46 40 STREET" over the map while it moves, then HPD's page full screen at 1.7x on the work (ER09499: page 2, the order form, showing ${at.top.toFixed(2)}-${at.bottom.toFixed(2)} of it; 💰 Price it puts the cursor in the price box; Next ▶ to ${other.omo}: page 3 near the top); the switch turns it off`);
 } finally {
   await browser.close();
 }

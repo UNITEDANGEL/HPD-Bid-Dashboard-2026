@@ -30,7 +30,7 @@ import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, 
 import { buildingHistory } from "../../lib/building-bids";
 import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { loadPapers } from "../../lib/papers";
-import { appendScope, fillLeadScope, lineKey, loadLeadRates, priceScope, rateGroups, rateKey, saveLeadRates, scopeMoney, type LeadRates } from "../../lib/lead-scope";
+import { appendScope, fillLeadScope, groupRate, lineKey, loadLeadRates, priceScope, rateGroups, saveLeadRates, scopeMoney, withGroupRate, type LeadRates } from "../../lib/lead-scope";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
@@ -260,7 +260,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const [session, setSession] = useState<BiddingSession | null>(null);
   // The checklist opens by itself the first time you open bids each day; your open / closed choice is kept for the day.
   // Multi-bid sitting: the checklist's to-do bids one after another (OMOs in order), and what happened to each.
-  const [sitting, setSitting] = useState<{ omos: string[]; at: number; skipped: string[]; done: boolean } | null>(null);
+  const [sitting, setSitting] = useState<{ omos: string[]; at: number; skipped: string[]; done: boolean; again?: number } | null>(null);
   const [checklistOpen, setChecklistOpen] = useState(() => {
     try { return localStorage.getItem(`hpd-checklist-${NY_DAY.format(new Date())}`) !== "closed"; } catch { return true; }
   });
@@ -1168,6 +1168,13 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     setChecklistOpen(false);
     openFromChecklist(omos[0]);
   }
+  // Skipped in the first round and still to bid; the one being skipped right now only when others come back with it.
+  function comingBack(skipped: string[], stillToDo: Set<string>) {
+    if (!sitting || sitting.again !== undefined) return [];
+    const back = [...new Set(skipped)].filter((o) => stillToDo.has(o));
+    const now = sitting.omos[sitting.at];
+    return back.length === 1 && back[0] === now ? [] : back;
+  }
   // Next bid in the sitting that still needs a bid (skips ones sent meanwhile); none left: the summary.
   function nextInSitting(skip: boolean) {
     if (!sitting) return;
@@ -1175,6 +1182,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     const stillToDo = new Set(checklist.todo.map((r) => r.omo));
     let at = sitting.at + 1;
     while (at < sitting.omos.length && !stillToDo.has(sitting.omos[at])) at += 1;
+    // The end of the line: the bids you skipped come back once, in the same order (owner, 9 Nov: "any job I skipped,
+    // I want to reopen at the end"). Skipped again: they stay skipped and the sitting ends.
+    const back = comingBack(skipped, stillToDo);
+    if (at >= sitting.omos.length && back.length) {
+      setSitting({ omos: [...sitting.omos, ...back], at: sitting.omos.length, skipped: [], done: false, again: sitting.omos.length });
+      openFromChecklist(back[0]);
+      return;
+    }
     if (at >= sitting.omos.length) {
       setSitting({ ...sitting, skipped, at: sitting.omos.length, done: true });
       setSelected(null);
@@ -1313,13 +1328,15 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           {sitting && !sitting.done && sitting.omos[sitting.at] === selected.omo ? (() => {
             const st = record ? faxState(record) : "";
             const sentNow = st === "waiting" || st === "confirmed" || st === "unconfirmed";
-            const last = sitting.at >= sitting.omos.length - 1;
+            const backAfter = comingBack([...sitting.skipped, selected.omo], new Set(checklist.todo.map((r) => r.omo)));
+            const last = sitting.at >= sitting.omos.length - 1 && !backAfter.length;
+            const round2 = sitting.again !== undefined;
             return (
               <div className={`fc-sitting-bar${sentNow ? " is-sent" : ""}`} data-hpd-smoke="fc-sitting-bar">
-                <b>🎯 Bid {sitting.at + 1} of {sitting.omos.length}{sentNow ? " · sent ✓" : ""}</b>
+                <b>{round2 ? `↩ Skipped earlier · ${sitting.at - (sitting.again || 0) + 1} of ${sitting.omos.length - (sitting.again || 0)}` : `🎯 Bid ${sitting.at + 1} of ${sitting.omos.length}`}{sentNow ? " · sent ✓" : ""}</b>
                 {sentNow
                   ? <button type="button" className="is-next" data-hpd-smoke="fc-sitting-next" onClick={() => nextInSitting(false)}>{last ? "Finish ✓" : "Next bid ▶"}</button>
-                  : <button type="button" data-hpd-smoke="fc-sitting-skip" onClick={() => nextInSitting(true)}>{last ? "Skip & finish" : "Skip ▶"}</button>}
+                  : <button type="button" data-hpd-smoke="fc-sitting-skip" onClick={() => nextInSitting(true)}>{last ? "Skip & finish" : sitting.at >= sitting.omos.length - 1 ? "Skip · back to skipped ▶" : "Skip ▶"}</button>}
                 <button type="button" className="is-stop" data-hpd-smoke="fc-sitting-stop" onClick={() => { setSitting(null); setChecklistOpen(true); }}>Stop</button>
               </div>
             );
@@ -1436,7 +1453,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 const priced = priceScope(lead, rates);
                 const setRate = (key: string, v: string) => {
                   const n = Number(v.replace(/[^0-9.]/g, ""));
-                  const next = { ...rates, [key]: n > 0 ? n : 0 };
+                  const next = key.startsWith("line:") ? { ...rates, [key]: n > 0 ? n : 0 } : withGroupRate(lead, rates, key, n);
                   setLeadRates((all) => ({ ...all, [selected.omo]: next }));
                   saveLeadRates(selected.omo, next);
                 };
@@ -1451,17 +1468,17 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                       </li>
                       <li className={priced.complete ? "is-done" : ""} data-hpd-smoke="fc-bid-paper-scope">
                         <b>{priced.complete ? "✓" : "②"} HPD&apos;s price list (scope sheet)</b>
-                        <span>HPD asks for your rate on every line. Put a rate for each kind of work below: each line&apos;s cost, the room totals and the apartment total are written on the sheet for you.</span>
+                        <span>HPD asks for your rate on every line. Put a rate for each part below (baseboard, window, door, wall each get their own): each line&apos;s cost, the room totals and the apartment total are written on the sheet for you.</span>
                         {selected.scopeFile ? <a className="fc-bid-link" data-hpd-smoke="fc-bid-lead-scope" href={itbPdfUrl(selected.scopeFile)} target="_blank" rel="noreferrer">📄 View it (blank)</a> : null}
                       </li>
                     </ol>
                     {groups.map((g) => (
                       <label key={g.key} className="fc-bid-lead-rate">
-                        <span>{g.method} · {g.qty.toLocaleString("en-US")} {g.unit} ({g.lines} line{g.lines === 1 ? "" : "s"})</span>
-                        <em>$<input inputMode="decimal" aria-label={`${g.method} rate per ${g.unit}`} data-hpd-smoke="fc-bid-lead-rate" data-key={g.key} disabled={sentLocked} defaultValue={rates[g.key] ? String(rates[g.key]) : ""} onChange={(e) => setRate(g.key, e.target.value)} placeholder="0.00" /> per {g.unit}</em>
+                        <span><b>{g.part}</b> · {g.method.toLowerCase()} · {g.qty.toLocaleString("en-US")} {g.unit} ({g.lines} line{g.lines === 1 ? "" : "s"})</span>
+                        <em>$<input inputMode="decimal" aria-label={`${g.part} ${g.method.toLowerCase()} rate per ${g.unit}`} data-hpd-smoke="fc-bid-lead-rate" data-key={g.key} disabled={sentLocked} defaultValue={rates[g.key] ? String(rates[g.key]) : rates[g.old] ? String(rates[g.old]) : ""} onChange={(e) => setRate(g.key, e.target.value)} placeholder="0.00" /> per {g.unit}</em>
                       </label>
                     ))}
-                    <span className="fc-bid-lead-each">Each line has its own rate box too: leave it empty to use the rate above, or type a different rate for that wall.</span>
+                    <span className="fc-bid-lead-each">Each line has its own rate box too: leave it empty to use its part&apos;s rate above, or type a different rate for that one line.</span>
                     {priced.rooms.map((r, ri) => (
                       <details key={`${ri}-${r.room}`} className="fc-bid-lead-room" open>
                         <summary>{r.room || "Room"}: {r.total ? scopeMoney(r.total) : "—"} ({r.items.length} item{r.items.length === 1 ? "" : "s"})</summary>
@@ -1470,7 +1487,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                           return (
                             <li key={i} className={`fc-bid-lead-line${it.own ? " is-own" : ""}`} data-hpd-smoke="fc-bid-lead-line">
                               <span><b>{it.component}</b> · {it.method.toLowerCase()} · {it.qty} {unit}</span>
-                              <em>$<input inputMode="decimal" aria-label={`Rate for ${it.component} per ${unit}`} data-hpd-smoke="fc-bid-lead-line-rate" data-line={lineKey(ri, i)} disabled={sentLocked} defaultValue={rates[lineKey(ri, i)] ? String(rates[lineKey(ri, i)]) : ""} placeholder={rates[rateKey(it)] ? String(rates[rateKey(it)]) : "0.00"} onChange={(e) => setRate(lineKey(ri, i), e.target.value)} /> per {unit}</em>
+                              <em>$<input inputMode="decimal" aria-label={`Rate for ${it.component} per ${unit}`} data-hpd-smoke="fc-bid-lead-line-rate" data-line={lineKey(ri, i)} disabled={sentLocked} defaultValue={rates[lineKey(ri, i)] ? String(rates[lineKey(ri, i)]) : ""} placeholder={groupRate(rates, it) ? String(groupRate(rates, it)) : "0.00"} onChange={(e) => setRate(lineKey(ri, i), e.target.value)} /> per {unit}</em>
                               <strong data-hpd-smoke="fc-bid-lead-line-cost">{it.rate ? scopeMoney(it.cost) : "—"}</strong>
                             </li>
                           );
@@ -1872,7 +1889,12 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </button>
               {sitting?.done ? (
                 <p className="fc-sitting-summary" data-hpd-smoke="fc-sitting-summary">
-                  🎯 Sitting done: {sitting.omos.length - sitting.skipped.length - checklist.todo.filter((r) => sitting.omos.includes(r.omo) && !sitting.skipped.includes(r.omo)).length} sent{sitting.skipped.length ? `, ${sitting.skipped.length} skipped (${sitting.skipped.join(", ")})` : ""}.
+                  {(() => {
+                    const all = [...new Set(sitting.omos)];
+                    const todo = new Set(checklist.todo.map((r) => r.omo));
+                    const left = all.filter((o) => todo.has(o));
+                    return <>🎯 Sitting done: {all.length - left.length} sent{left.length ? `, ${left.length} not bid (${left.join(", ")})` : ""}.</>;
+                  })()}
                   <button type="button" onClick={() => setSitting(null)}>OK</button>
                 </p>
               ) : null}

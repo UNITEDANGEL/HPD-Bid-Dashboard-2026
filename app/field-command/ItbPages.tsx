@@ -71,15 +71,28 @@ export const workEndAt = (descChars?: number) => (descChars && descChars > 0 ? M
 // Read along (owner, 5 Nov: "scroll it slowly left and right, read the whole description, like I'm scrolling it"): the
 // zoomed page pans slowly across each part of the work, then down to the next, to the end of the description. Any
 // touch hands it back to you.
+// Owner, 9 Nov: "zoom out a little so I can see it better, slow down the scrolling, it goes right to the edge": a
+// wider view (1.7x, not 2x), slower pans that stop a moment at each end and keep the page's margin in view, and
+// 🐢 / 🐇 to set your own speed (kept on this phone).
+export const READ_ZOOM = 1.7;
+const readSpeed = { x: (() => { try { return Number(localStorage.getItem("hpd-read-speed")) || 1; } catch { return 1; } })() };
+function setReadSpeed(x: number) {
+  readSpeed.x = Math.max(0.4, Math.min(3, Math.round(x * 100) / 100));
+  try { localStorage.setItem("hpd-read-speed", String(readSpeed.x)); } catch {}
+  return readSpeed.x;
+}
 function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: () => void) {
-  const pace = (() => { try { return navigator.webdriver ? 0.15 : 1; } catch { return 1; } })();
+  const fast = (() => { try { return navigator.webdriver ? 0.12 : 1; } catch { return 1; } })();
+  const pace = () => fast * readSpeed.x; // read at every pan, so 🐢 / 🐇 work while it reads
   let stop = false;
   const off = () => { stop = true; };
   el.addEventListener("pointerdown", off, { once: true });
   el.addEventListener("wheel", off, { once: true, passive: true });
   el.addEventListener("touchstart", off, { once: true, passive: true });
   const ease = (x: number) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
+  const hold = (ms: number) => new Promise<void>((done) => window.setTimeout(done, ms * pace()));
   const glide = (toLeft: number, toTop: number, ms: number) => new Promise<void>((done) => {
+    ms *= pace();
     const fromL = el.scrollLeft, fromT = el.scrollTop, t0 = performance.now();
     const tick = (now: number) => {
       if (stop) return done();
@@ -91,18 +104,24 @@ function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: 
     requestAnimationFrame(tick);
   });
   void (async () => {
-    const left = el.scrollWidth * 0.04;
-    const right = Math.max(left, el.scrollWidth - el.clientWidth - el.scrollWidth * 0.03);
+    // The ends of each line with the page's white margin beside them, so no word sits on the screen's edge.
+    const left = Math.max(0, el.scrollWidth * 0.02);
+    const right = Math.max(left, el.scrollWidth - el.clientWidth);
     const end = Math.min(el.scrollHeight - el.clientHeight, el.scrollHeight * endAt);
     let top = el.scrollHeight * startAt;
-    for (let row = 0; row < 8 && !stop; row += 1) {
-      await glide(right, top, 5500 * pace);            // across the lines, left to right (slowly: 6 Nov)
+    await hold(1200);                                  // a moment to find the start
+    for (let row = 0; row < 10 && !stop; row += 1) {
+      await glide(right, top, 9000);                   // across the lines, left to right (slower: 6 and 9 Nov)
+      if (stop) break;
+      await hold(1000);                                // stop at the end of the line
       if (stop || top >= end) break;
-      top = Math.min(end, top + el.clientHeight * 0.3);
-      await glide(left, top, 1500 * pace);             // back to the left, a little further down
+      top = Math.min(end, top + el.clientHeight * 0.25);
+      await glide(left, top, 2600);                    // back to the left, a little further down
+      if (stop) break;
+      await hold(800);
     }
     // Back up to the start of the work and stay there (it doesn't wander into HPD's standard notes).
-    if (!stop) await glide(left, el.scrollHeight * startAt, 1800 * pace);
+    if (!stop) await glide(left, el.scrollHeight * startAt, 2400);
     el.removeEventListener("pointerdown", off);
     el.removeEventListener("wheel", off);
     el.removeEventListener("touchstart", off);
@@ -128,6 +147,8 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   // "reading" while the page pans by itself; "read" once it reached the end (the price button glows).
   const [reading, setReading] = useState<"" | "reading" | "read">("");
   const stopRead = useRef<() => void>(() => {});
+  const [speed, setSpeed] = useState(1);
+  useEffect(() => { setSpeed(readSpeed.x); }, []);
   useEffect(() => () => stopRead.current(), []);
   useEffect(() => { if (showDescription) setWantDesc(showDescription); }, [showDescription]);
   useEffect(() => {
@@ -200,12 +221,12 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               const at = autoZoom.current;
               if (at === null) return;
               autoZoom.current = null;
-              zoomTo(2);
+              zoomTo(readAlong ? READ_ZOOM : 2);
               // After zoomTo's own scroll: the left margin, at the line where the work starts.
               requestAnimationFrame(() => requestAnimationFrame(() => {
                 const el = bind.ref.current;
                 if (!el) return;
-                el.scrollLeft = el.scrollWidth * 0.04; el.scrollTop = el.scrollHeight * at;
+                el.scrollLeft = el.scrollWidth * 0.02; el.scrollTop = el.scrollHeight * at;
                 if (!readAlong) return;
                 setReading("reading");
                 stopRead.current();
@@ -214,7 +235,13 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               }));
             }} />
           </div>
-          {reading === "reading" ? <button type="button" className="fc-itb-reading" data-hpd-smoke="fc-itb-reading" onClick={() => { stopRead.current(); setReading(""); }}>👀 Reading it with you… tap the page to take over</button>
+          {reading === "reading" ? (
+            <div className="fc-itb-read-row">
+              <button type="button" className="fc-itb-speed" data-hpd-smoke="fc-itb-slower" aria-label="Read slower" onClick={() => setSpeed(setReadSpeed(speed * 1.35))}>🐢 Slower</button>
+              <button type="button" className="fc-itb-reading" data-hpd-smoke="fc-itb-reading" onClick={() => { stopRead.current(); setReading(""); }}>👀 Reading it with you… tap the page to take over</button>
+              <button type="button" className="fc-itb-speed" data-hpd-smoke="fc-itb-faster" aria-label="Read faster" onClick={() => setSpeed(setReadSpeed(speed / 1.35))}>🐇 Faster</button>
+            </div>
+          )
             : <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>}
           {/* Read it, then one tap to the price box (2 Nov): the page closes and the keyboard opens on the price. */}
           {onPrice ? <button type="button" className={`fc-itb-price${reading === "read" ? " is-ready" : ""}`} data-hpd-smoke="fc-itb-price" onClick={() => { stopRead.current(); setReading(""); setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}

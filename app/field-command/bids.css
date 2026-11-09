@@ -936,3 +936,8 @@ i.is-won { background: #16a34a; }
 .fc-bid-price label.fc-bid-lead-rate > span { color: #0f172a; font: 800 15px/1.3 system-ui, sans-serif; }
 .fc-bid-price label.fc-bid-lead-rate em { color: #0f172a; font: 700 14px system-ui, sans-serif; font-style: normal; display: flex; align-items: center; gap: 4px; }
 .fc-bid-price label.fc-bid-lead-rate em input { width: 96px !important; min-height: 44px !important; padding: 0 8px !important; border-radius: 8px !important; border: 1.5px solid #ca8a04 !important; background: #fff !important; color: #0f172a !important; font: 900 18px system-ui, sans-serif !important; }
+
+/* 👀 Read-along: 🐢 slower · reading · 🐇 faster. */
+.fc-itb-read-row { display: flex; align-items: stretch; gap: 6px; margin: 4px 8px; }
+.fc-itb-read-row .fc-itb-reading { flex: 1; margin: 0; }
+.fc-itb-speed { flex: none; min-height: 40px; padding: 0 10px; border-radius: 12px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 13px system-ui, sans-serif; }

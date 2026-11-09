@@ -9,14 +9,33 @@ export type LeadScope = { rooms: { room: string; items: LeadItem[]; total: LeadS
 export type LeadRates = Record<string, number>;
 
 const UNIT: Record<string, string> = { SQFT: "sq ft", FT: "ft", LF: "ft", EA: "each", UNIT: "unit", UNITS: "unit" };
-export const rateKey = (it: { method: string; um: string }) => `${it.method}|${it.um}`;
+// The part of the apartment a line is about (owner, 9 Nov: "replacement for baseboard is a different price from window
+// or door"): "1st WINDOW FRAME FROM SOUTH AT WEST WALL" is a window, "BASEBOARD AT SOUTH WALL" a baseboard, "SOUTH WALL"
+// a wall. The first part named wins; anything else: the line's own words without directions and numbers.
+const PARTS: [RegExp, string][] = [
+  [/\bBASE ?BOARD/i, "Baseboard"], [/\bWINDOW/i, "Window"], [/\bDOOR/i, "Door"], [/\bSTAIR|\bRAIL|\bBALUST|\bNEWEL/i, "Stairs and railing"],
+  [/\bRADIATOR/i, "Radiator"], [/\bCABINET|\bCOUNTER/i, "Cabinet"], [/\bCLOSET/i, "Closet"], [/\bSHELF|\bSHELV/i, "Shelf"],
+  [/\bCASING|\bTRIM|\bMOLDING|\bMOULDING|\bCHAIR ?RAIL/i, "Trim"], [/\bSILL|\bSTOOL|\bAPRON/i, "Sill"], [/\bCEILING/i, "Ceiling"],
+  [/\bFLOOR/i, "Floor"], [/\bPIPE/i, "Pipe"], [/\bCOLUMN|\bPOST\b/i, "Column"], [/\bWALL/i, "Wall"],
+];
+export function partOf(component: string) {
+  for (const [re, name] of PARTS) if (re.test(component)) return name;
+  const w = component.replace(/\b(\d+(st|nd|rd|th)?|north|south|east|west|from|at|of|the|left|right|side)\b/gi, " ").replace(/\s+/g, " ").trim().toLowerCase();
+  return w ? w[0].toUpperCase() + w.slice(1) : "Other";
+}
+// One rate per part and kind of work: "Baseboard|Replacement|FT", "Window|Replacement|FT", "Wall|Enclosure|SQFT".
+export const rateKey = (it: { component: string; method: string; um: string }) => `${partOf(it.component)}|${it.method}|${it.um}`;
+// Rates saved before 9 Nov were per kind of work only ("Replacement|FT"); they still count until a part's own rate is typed.
+const kindKey = (it: { method: string; um: string }) => `${it.method}|${it.um}`;
+export const groupRate = (rates: LeadRates, it: { component: string; method: string; um: string }) =>
+  rates[rateKey(it)] > 0 ? rates[rateKey(it)] : rates[kindKey(it)] > 0 ? rates[kindKey(it)] : 0;
 
-// The kinds of work to price (one rate each), with how much there is of each.
+// The parts and kinds of work to price (one rate each), with how much there is of each.
 export function rateGroups(scope: LeadScope) {
-  const by = new Map<string, { key: string; method: string; um: string; unit: string; qty: number; lines: number }>();
+  const by = new Map<string, { key: string; part: string; method: string; um: string; unit: string; qty: number; lines: number; old: string }>();
   for (const r of scope.rooms) for (const it of r.items) {
     const k = rateKey(it);
-    const g = by.get(k) || { key: k, method: it.method, um: it.um, unit: UNIT[it.um] || it.um.toLowerCase(), qty: 0, lines: 0 };
+    const g = by.get(k) || { key: k, part: partOf(it.component), method: it.method, um: it.um, unit: UNIT[it.um] || it.um.toLowerCase(), qty: 0, lines: 0, old: kindKey(it) };
     g.qty += it.qty; g.lines += 1;
     by.set(k, g);
   }
@@ -29,7 +48,7 @@ export const lineKey = (room: number, item: number) => `line:${room}:${item}`;
 export function lineRate(scope: LeadScope, rates: LeadRates, room: number, item: number) {
   const it = scope.rooms[room]?.items[item];
   if (!it) return 0;
-  return rates[lineKey(room, item)] > 0 ? rates[lineKey(room, item)] : rates[rateKey(it)] || 0;
+  return rates[lineKey(room, item)] > 0 ? rates[lineKey(room, item)] : groupRate(rates, it);
 }
 export function priceScope(scope: LeadScope, rates: LeadRates) {
   // A kind of work still to price: one of its lines has neither its own rate nor the kind's rate.
@@ -107,4 +126,14 @@ export function loadLeadRates(omo: string): LeadRates {
 }
 export function saveLeadRates(omo: string, rates: LeadRates) {
   try { localStorage.setItem(`hpd-lead-rates-${omo}`, JSON.stringify(rates)); } catch { /* private mode */ }
+}
+
+// A part's rate typed: rates saved the old way (one per kind of work) are first copied onto each part they covered, so
+// clearing one part's box never brings back an old shared rate.
+export function withGroupRate(scope: LeadScope, rates: LeadRates, key: string, n: number): LeadRates {
+  const next: LeadRates = { ...rates };
+  for (const g of rateGroups(scope)) if (next[g.old] > 0 && !(next[g.key] > 0)) next[g.key] = next[g.old];
+  for (const g of rateGroups(scope)) delete next[g.old];
+  next[key] = n > 0 ? n : 0;
+  return next;
 }

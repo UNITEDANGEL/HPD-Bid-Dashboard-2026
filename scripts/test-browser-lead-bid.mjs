@@ -59,9 +59,9 @@ try {
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-total"]').innerText(), /2 rates to go/);
   const rates = box.locator('[data-hpd-smoke="fc-bid-lead-rate"]');
   assert.equal(await rates.count(), 2);
-  assert.match(await box.innerText(), /Enclosure · 132 sq ft \(2 lines\)/);
-  await box.locator('[data-key="Enclosure|SQFT"]').fill("18");
-  await box.locator('[data-key="Replacement|FT"]').fill("40");
+  assert.match(await box.innerText(), /Wall · enclosure · 132 sq ft \(2 lines\)/);
+  await box.locator('[data-key="Wall|Enclosure|SQFT"]').fill("18");
+  await box.locator('[data-key="Baseboard|Replacement|FT"]').fill("40");
   await page.waitForFunction(() => /Apartment total: \$2,576\.00/.test(document.querySelector('[data-hpd-smoke="fc-bid-lead-total"]')?.textContent || ""), null, { timeout: 5000 });
   const t = await box.innerText();
   assert.match(t, /BATHROOM: \$1,100\.00/);
@@ -73,7 +73,7 @@ try {
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-paper-scope"]').innerText(), /^✓ HPD's price list/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-mismatch"]').innerText(), /\$2,000\.00 is not the price list total \$2,576\.00/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-scope"]').getAttribute("href"), /\/api\/private\/itb\/ER09991\.pdf$/);
-  assert.equal(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991")), JSON.stringify({ "Enclosure|SQFT": 18, "Replacement|FT": 40 }), "rates kept on the phone");
+  assert.equal(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991")), JSON.stringify({ "Wall|Enclosure|SQFT": 18, "Baseboard|Replacement|FT": 40 }), "rates kept on the phone");
   // A rate box on every line (owner, 9 Nov: "rate box for each item"): empty uses the kind's rate (shown greyed);
   // a rate typed on one wall wins for that wall only.
   const lines = box.locator('[data-hpd-smoke="fc-bid-lead-line"]');

@@ -66,11 +66,20 @@ try {
     assert.equal((await sheet.locator("header strong").innerText()).trim(), order[i], `sitting step ${i + 1} is ${order[i]}`);
     const filled = Number(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').inputValue());
     assert.ok(filled > 0, `best price filled in for ${order[i]}`);
+    if (i === order.length - 1) assert.match(await page.locator('[data-hpd-smoke="fc-sitting-skip"]').innerText(), /back to skipped/);
+    await page.locator('[data-hpd-smoke="fc-sitting-skip"]').click();
+  }
+  // The skipped bids come back once at the end, in the same order (owner, 9 Nov).
+  for (let i = 0; i < order.length; i++) {
+    await bar.waitFor({ timeout: 10000 });
+    await page.waitForFunction((t) => document.querySelector('[data-hpd-smoke="fc-sitting-bar"]')?.textContent?.includes(t), `Skipped earlier · ${i + 1} of ${order.length}`, { timeout: 10000 });
+    assert.equal((await sheet.locator("header strong").innerText()).trim(), order[i], `skipped ${order[i]} reopened`);
+    if (i === order.length - 1) assert.match(await page.locator('[data-hpd-smoke="fc-sitting-skip"]').innerText(), /Skip & finish/);
     await page.locator('[data-hpd-smoke="fc-sitting-skip"]').click();
   }
   const summary = page.locator('[data-hpd-smoke="fc-sitting-summary"]');
   await summary.waitFor({ timeout: 5000 });
-  assert.match(await summary.innerText(), new RegExp(`0 sent, ${order.length} skipped`));
+  assert.match(await summary.innerText(), new RegExp(`0 sent, ${order.length} not bid`));
   await summary.locator("button").click();
   // Stop in the middle brings the checklist back.
   await list.locator('[data-hpd-smoke="fc-sitting-start"]').click();
@@ -89,7 +98,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-checklist"]').waitFor({ timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-checklist-row"]').count(), 0, "closed stays closed today");
   assert.deepEqual(errors, []);
-  console.log(`PASS bid checklist: 6 due today/tomorrow, 0 of 6 sent, 'Bid $${price.toLocaleString()}' opened ${omo} with that price, 6-bid sitting in order with best prices, skip to the summary, stop; closed stays closed`);
+  console.log(`PASS bid checklist: 6 due today/tomorrow, 0 of 6 sent, 'Bid $${price.toLocaleString()}' opened ${omo} with that price, 6-bid sitting in order with best prices, skipped ones reopened at the end, then the summary, stop; closed stays closed`);
 } finally {
   await browser.close();
 }
