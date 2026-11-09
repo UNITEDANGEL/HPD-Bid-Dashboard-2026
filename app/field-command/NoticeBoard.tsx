@@ -8,6 +8,7 @@ import { holidaysBetween } from "../../lib/business-days";
 import SentPaperwork from "./SentPaperwork";
 import type { NoticeFindings } from "../../lib/notice-findings";
 import { isNewSince, noticeConvo, type ConvoItem } from "../../lib/notice-convo";
+import { plainFix, visitUpdate, vtDay, type PlainFix } from "../../lib/notice-fix";
 import { BOARD_STEPS, NUDGE_AFTER_DAYS, boardSide, sentTime, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
@@ -28,6 +29,7 @@ type Props = {
   autoReplyOmo?: string;                            // "answer the notice for …" by voice: open its AI reply right away
   onHandled?: (omo: string, on: boolean) => void;   // ✅ "Already sent / fixed" (5 Nov), on every phone
   factsOf?: (omo: string) => JobFacts | null;       // the job itself: address, work, award, HPD's status (6 Nov)
+  visitOf?: (omo: string) => string;                // the next visit set for the job (yyyy-mm-dd), or "" (9 Nov)
 };
 // The job on each notice (owner, 6 Nov: "I don't see the work order number, the address, everything is missing ...
 // I don't want to see the conversations, that's for you to analyze").
@@ -50,7 +52,7 @@ const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 
 // Email leftovers out of HPD's words: inline-image tags like [cid:…] and extra spaces.
 const noJunk = (t: string) => String(t || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").trim();
 
-export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -108,8 +110,9 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
     );
   };
   // Reply to many (17 Oct): every reply written on one screen; each one still goes out with its own two taps.
+  type Pick = "overdue" | "record" | "none" | "all" | "nudge";
   type BatchItem = { key: string; subject: string; text: string; armed: boolean; status: string; sent: boolean };
-  const [batch, setBatch] = useState<{ pick: "record" | "none" | "all" | "nudge"; items: BatchItem[]; selfStatus: string } | null>(null);
+  const [batch, setBatch] = useState<{ pick: Pick; items: BatchItem[]; selfStatus: string } | null>(null);
   const [reply, setReply] = useState<{ key: string; to: string; subject: string; text: string; armed: boolean; status: string; nudge?: boolean } | null>(null);
   // When we last asked them to confirm, per row (this phone): the no-answer clock starts again from there.
   const [nudged, setNudged] = useState<Record<string, string>>({});
@@ -266,8 +269,17 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
     }
   };
   const noAnswer = rows.filter((r) => r.to && quiet(r) > 0).sort((a, b) => quiet(b) - quiet(a));
-  const batchRows = (pick: "record" | "none" | "all" | "nudge") => pick === "nudge" ? noAnswer : replyable.filter((r) => pick === "all" || (pick === "record" ? !!r.sentAt || r.steps.made.done : !r.sentAt && !r.steps.made.done));
-  const startBatch = (pick: "record" | "none" | "all" | "nudge") => setBatch({ pick, selfStatus: "", items: batchRows(pick).map((r) => { const d = pick === "nudge" ? draftNudge(r, addressOf(r.omo)) : draftReply(r, addressOf(r.omo)); return { key: r.key, subject: d.subject, text: d.text, armed: false, status: "", sent: false }; }) });
+  // 🔥 Every overdue notice with nothing sent (owner, 9 Nov: "all the overdue notices, we need to fix them ... reply back to
+  // Lewis, let her know what's going on, especially with the appointments"): most overdue first.
+  const overdueRows = rows.filter((r) => r.next && r.to && r.kind === "ppn" && !r.steps.sent.done && hoursLeft(r, now) < 0).sort((a, b) => hoursLeft(a, now) - hoursLeft(b, now));
+  const batchDraft = (pick: Pick, r: BoardRow) => {
+    const a = addressOf(r.omo);
+    if (pick === "nudge") return draftNudge(r, a);
+    const vd = visitOf?.(r.omo) || "";
+    return pick === "overdue" && vd && !r.problem ? visitUpdate(r, a, vtDay(vd)) : draftReply(r, a);
+  };
+  const batchRows = (pick: Pick) => pick === "overdue" ? overdueRows : pick === "nudge" ? noAnswer : replyable.filter((r) => pick === "all" || (pick === "record" ? !!r.sentAt || r.steps.made.done : !r.sentAt && !r.steps.made.done));
+  const startBatch = (pick: Pick) => setBatch({ pick, selfStatus: "", items: batchRows(pick).map((r) => { const d = batchDraft(pick, r); return { key: r.key, subject: d.subject, text: d.text, armed: false, status: "", sent: false }; }) });
   const setItem = (key: string, patch: Partial<BatchItem>) => setBatch((b) => (b ? { ...b, items: b.items.map((it) => (it.key === key ? { ...it, ...patch } : it)) } : b));
   const sendItem = async (row: BoardRow, it: BatchItem) => {
     if (!it.armed) { setItem(it.key, { armed: true }); return; }
@@ -298,6 +310,36 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
     }
   };
 
+  // 👉 Do this (owner, 9 Nov: "tell me just very easily: go here, fix this"): one plain line and one button on every
+  // open notice; HPD's fix notes as short steps. The rest of the card folds under "Details".
+  const shortDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "numeric", day: "numeric" });
+  const openReply = (row: BoardRow, address: string, note = "", text = "") => {
+    const d = draftReply(row, address);
+    setReply({ key: row.key, to: row.to, subject: d.subject, text: text || d.text, armed: false, status: "" });
+    if (!text) void writeWithAi(row, note);
+  };
+  const fixHref = (row: BoardRow) => `/paperwork/?job=${encodeURIComponent(row.omo)}&fix=${encodeURIComponent(row.problem?.at || "")}&reason=${encodeURIComponent(noJunk(row.problem?.text || "").slice(0, 280))}${row.to ? "&vt=1" : ""}`;
+  const doThis = (row: BoardRow, address: string) => {
+    if (!row.next || (row.next === "confirmed" && !row.problem)) return null; // waiting / no answer: the line further down says it
+    const vd = visitOf?.(row.omo) || "";
+    const fx: PlainFix | null = plainFix(row, { now, visit: vd ? shortDay(vd) : "" });
+    if (!fx) return null;
+    const btn = fx.action === "correct" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={fixHref(row)} onClick={() => rememberSend(row)}>{fx.button}</a>
+      : fx.action === "resend" || fx.action === "photos" || fx.action === "send" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>{fx.button}</a>
+      : fx.action === "visit" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => { const v = visitUpdate(row, address, vtDay(vd)); openReply(row, address, "", v.text); }}>{fx.button}</button>
+      : fx.action === "reply" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => openReply(row, address, row.filed ? `Our affidavit and invoice for ${row.omo} were emailed on ${day(row.filed.at)} (${row.filed.name}). Tell them that date; don't attach it again.` : "")}>{fx.button}</button>
+      : null;
+    return (
+      <div className={`fc-board-do is-${fx.tone}`} data-hpd-smoke="fc-board-do" data-action={fx.action}>
+        <p>👉 {fx.headline}</p>
+        {fx.steps.length ? <ol data-hpd-smoke="fc-board-fix-steps">{fx.steps.map((t, i) => <li key={i}>{t}</li>)}</ol> : null}
+        {/* "open the document and look at it" (9 Nov): what you sent, right here, next to their fix notes. */}
+        {fx.action === "correct" || fx.action === "resend" ? <SentPaperwork omo={row.omo} /> : null}
+        {fx.action === "paperwork" ? <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={paperHref(row, k)} onClick={() => rememberSend(row)} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div> : btn}
+        {vd && fx.action !== "visit" && !row.steps.sent.done ? <button type="button" className="fc-board-do-visit" data-hpd-smoke="fc-board-do-visit" onClick={() => { const v = visitUpdate(row, address, vtDay(vd)); openReply(row, address, "", v.text); }}>📅 You go {shortDay(vd)}: tell {/lewis/i.test(row.who) ? "Lewis" : (row.who || "them").split(/\s+/)[0]}</button> : null}
+      </div>
+    );
+  };
   const card = (row: BoardRow) => {
     const h = hoursLeft(row, now);
     const late = !row.steps.sent.done && h < 0;
@@ -313,10 +355,15 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
           <span className="fc-board-kind">{row.kind === "docs" ? "AEP · MISSING DOCS" : `ERP · ${row.hours}-HOUR`}</span>
         </div>
         <p className="fc-board-job"><b>{row.omo}</b>{address ? <span className="fc-board-addr">{address}</span> : null}</p>
+        {doThis(row, address)}
         {row.kind !== "docs" && row.dueAt && row.next && !row.steps.sent.done ? (() => {
           const hol = holidaysBetween(row.noticeAt, row.dueAt);
           return <p className="fc-board-due" data-hpd-smoke="fc-board-due">Due <b>{new Date(row.dueAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</b>{hol.length ? <span className="fc-board-hol"> · 🗓 {hol.join(", ")} not counted</span> : null}</p>;
         })() : null}
+        {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
+        {row.handledAt && !row.next ? <p className="fc-board-heard" data-hpd-smoke="fc-board-handled-note">✅ You marked it sent / fixed {day(row.handledAt)}{onHandled ? <> · <button type="button" className="fc-board-undo" data-hpd-smoke="fc-board-handled-undo" onClick={() => onHandled(row.omo, false)}>Undo</button></> : null}</p> : null}
+        <details className="fc-board-more" data-hpd-smoke="fc-board-more">
+        <summary>📋 Details · steps · emails</summary>
         {(() => {
           const f = factsOf?.(row.omo);
           if (!f) return null;
@@ -333,10 +380,8 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
         })()}
         {row.problem && row.next ? <p className="fc-board-problem" data-hpd-smoke="fc-board-problem">⚠️ {(row.who || "HPD").split(/\s+/)[0]} wrote {day(row.problem.at)}: “{noJunk(row.problem.text)}” Fix it with the same dates as the original and send it again, or tap ✅ if you already did.</p> : null}
         {row.answered && !row.problem ? <p className="fc-board-heard" data-hpd-smoke="fc-board-heard">✅ {(row.who || "HPD").split(/\s+/)[0]} answered {day(row.answered.at)}: “{noJunk(row.answered.text).slice(0, 120)}”</p> : null}
-        {row.handledAt && !row.next ? <p className="fc-board-heard" data-hpd-smoke="fc-board-handled-note">✅ You marked it sent / fixed {day(row.handledAt)}{onHandled ? <> · <button type="button" className="fc-board-undo" data-hpd-smoke="fc-board-handled-undo" onClick={() => onHandled(row.omo, false)}>Undo</button></> : null}</p> : null}
         <details className="fc-board-emails" data-hpd-smoke="fc-board-emails"><summary>💬 The emails</summary>{convo(row)}</details>
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
-        {row.kind === "docs" ? <p className="fc-board-want" data-hpd-smoke="fc-board-want">They want: <b>{row.want}</b></p> : null}
         {row.filed ? <p className="fc-board-filed" data-hpd-smoke="fc-board-filed">📎 Already emailed <b>{day(row.filed.at)}</b>: {row.filed.name}{row.filed.here ? "" : " (in another email)"}. Don&apos;t send it again; tell them the date.</p> : null}
         {row.next && findingsOf ? (() => {
           const f = findingsOf(row);
@@ -369,14 +414,8 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
             );
           })}
         </ol>
-        {row.next === "replied" || row.next === "sent" ? (
-          <p className="fc-board-todo">{row.next === "replied" ? "Next: answer them (a reply is ready below)." : "Next: email them the affidavit and invoice: open the paperwork (it sends from there), or tap 📤 if you sent it yourself."}</p>
-        ) : row.next === "made" ? (
-          <>
-            <p className="fc-board-todo">Next: the paperwork. What happened at the job?</p>
-            <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={paperHref(row, k)} onClick={() => rememberSend(row)} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div>
-          </>
-        ) : row.next === "confirmed" && quiet(row) ? (
+        </details>
+        {row.next === "confirmed" && quiet(row) ? (
           <div className="fc-board-quiet" data-hpd-smoke="fc-board-quiet">
             <p>⏰ No answer in <b>{quiet(row)} days</b>{nudged[row.key] ? ` (asked again ${day(nudged[row.key])})` : ""}. Ask them to confirm they got it, or tap ✅ if they did.</p>
             {row.to ? <button type="button" data-hpd-smoke="fc-board-nudge" onClick={() => { const d = draftNudge(row, address); setReply({ key: row.key, to: row.to, subject: d.subject, text: d.text, armed: false, status: "", nudge: true }); }}>⏰ Ask them to confirm</button> : null}
@@ -446,6 +485,7 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
         <div className="fc-board-sum" data-hpd-smoke="fc-board-sum">
           <span><b>{open.length}</b> open</span>
           <span className={overdue ? "is-late" : ""}><b>{overdue}</b> overdue</span>
+          {open.some((r) => r.problem) ? <span className="is-late" data-hpd-smoke="fc-board-fix-count"><b>{open.filter((r) => r.problem).length}</b> to fix</span> : null}
           <span className={under6 ? "is-hot" : ""}><b>{under6}</b> under 6 h</span>
           <span className={shown.some((r) => noAnswer.includes(r)) ? "is-quiet" : ""}><b>{waiting}</b> waiting on them{shown.some((r) => noAnswer.includes(r)) ? <small data-hpd-smoke="fc-board-quiet-count">⏰ {shown.filter((r) => noAnswer.includes(r)).length} no answer</small> : null}</span>
         </div>
@@ -464,7 +504,7 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
               <b data-hpd-smoke="fc-batch-count">{batch.items.filter((i) => i.sent).length} of {batch.items.length} sent</b>
             </div>
             <div className="fc-board-filter" role="tablist">
-              {([["record", "Paperwork on record"], ["none", "No paperwork yet"], ["all", "All"], ["nudge", "⏰ No answer"]] as const).map(([k, label]) => (
+              {([["overdue", "🔥 Overdue"], ["record", "Paperwork on record"], ["none", "No paperwork yet"], ["all", "All"], ["nudge", "⏰ No answer"]] as const).map(([k, label]) => (
                 <button key={k} type="button" role="tab" aria-selected={batch.pick === k} className={batch.pick === k ? "is-on" : ""} data-hpd-smoke={`fc-batch-pick-${k}`} onClick={() => startBatch(k)}>{label} <b>{batchRows(k).length}</b></button>
               ))}
             </div>
@@ -478,7 +518,7 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
                 if (!row) return null;
                 return (
                   <li key={it.key} className={it.sent ? "is-sent" : ""} data-hpd-smoke="fc-batch-item">
-                    <p className="fc-batch-to"><b>{i + 1}. {row.omo}</b> · to {row.who} &lt;{row.to}&gt; · {row.kind === "docs" ? `missing docs (${row.want})` : `${row.hours}-hour notice`}</p>
+                    <p className="fc-batch-to"><b>{i + 1}. {row.omo}</b> · to {row.who} &lt;{row.to}&gt; · {row.kind === "docs" ? `missing docs (${row.want})` : `${row.hours}-hour notice`}{batch.pick === "overdue" ? <em className="fc-batch-late"> · {clock(hoursLeft(row, now))}{visitOf?.(row.omo) ? ` · you go ${shortDay(visitOf(row.omo))}` : ""}</em> : null}</p>
                     <input aria-label="Subject" value={it.subject} disabled={it.sent} onChange={(e) => setItem(it.key, { subject: e.target.value, armed: false })} />
                     <textarea aria-label="Message" rows={7} value={it.text} disabled={it.sent} data-hpd-smoke="fc-batch-text" onChange={(e) => setItem(it.key, { text: e.target.value, armed: false })} />
                     <button type="button" className={it.sent ? "is-sent" : it.armed ? "is-armed" : ""} disabled={it.sent || it.status === "Sending…"} data-hpd-smoke="fc-batch-send" onClick={() => void sendItem(row, it)}>{it.sent ? "✓ Sent" : it.armed ? `✅ Tap again: send to ${row.to}` : "✉ Send"}</button>
@@ -510,6 +550,7 @@ export default function NoticeBoard({ factsOf, onHandled, autoReplyOmo = "", loc
                 ) : <button type="button" className="fc-batch-open" data-hpd-smoke="fc-list-reply-open" onClick={() => startListReply(list)}>✉ Answer the whole list in one email</button>}
               </div>
             )) : null}
+            {overdueRows.length ? <button type="button" className="fc-batch-open is-overdue" data-hpd-smoke="fc-overdue-open" onClick={() => startBatch("overdue")}>🔥 Update all {overdueRows.length} overdue in a row{overdueRows.some((r) => visitOf?.(r.omo)) ? ` (${overdueRows.filter((r) => visitOf?.(r.omo)).length} with the day you go)` : ""}</button> : null}
             {noAnswer.length ? <button type="button" className="fc-batch-open is-nudge" data-hpd-smoke="fc-nudge-open" onClick={() => startBatch("nudge")}>⏰ Ask {noAnswer.length} to confirm (no answer {NUDGE_AFTER_DAYS}+ days)</button> : null}
             {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}
             {!onSide.length ? <p className="fc-follow-note" data-hpd-smoke="fc-board-side-empty">{side === "tosend" ? "Nothing left to send. 🎉" : side === "waiting" ? "Nothing waiting on them." : "No new answers from them."}</p> : null}

@@ -61,6 +61,7 @@ try {
   for (let i = 0; i < 40 && !mails.length; i++) await page.waitForTimeout(500);
   assert.equal(mails.length, 1, "sent by itself");
   assert.equal(mails[0].to, "lewis.test@hpd.nyc.gov");
+  assert.deepEqual(mails[0].cc, ["sauld@hpd.nyc.gov", "jagdeor@hpd.nyc.gov"], "ERP: Saul and Rishi get a copy (9 Nov)");
   assert.match(mails[0].subject, /^OMO# ER02330 - appointment (scheduled for|changed to) /);
   assert.match(mails[0].text, /^Hello Joy-Ann,\n\nRe: OMO# ER02330 - 1020 BOYNTON AVENUE/);
   await page.waitForFunction(() => /✓ Joy-Ann was told about the appointment for ER02330/.test(document.querySelector('[data-hpd-smoke="fc-appt-mail"]')?.textContent || ""), null, { timeout: 5000 });

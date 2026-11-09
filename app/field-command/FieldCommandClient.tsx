@@ -27,7 +27,7 @@ import { loadConversations, reloadConversations, loadNotices, loadPrivate, loadS
 import ItbPages from "./ItbPages";
 import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
-import { emailPeople } from "../../lib/email-people";
+import { ERP_COPIES, VT_LEWIS, emailPeople } from "../../lib/email-people";
 import { buildingHistory, buildingKey, historyLine } from "../../lib/building-history";
 import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd } from "../../lib/job-costs";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
@@ -3356,7 +3356,15 @@ export default function FieldCommandClient() {
   const staleIdsRef = useRef<Set<string>>(new Set());
   staleIdsRef.current = staleIds;
   // ✉️ Email screen (owner, 6 Nov: "Add email feature to the app"): HPD people from their own emails, Lewis / Gafur first.
-  const [emailFor, setEmailFor] = useState<{ job: EmailJob } | null>(null);
+  const [emailFor, setEmailFor] = useState<{ job: EmailJob; vt?: boolean; visitDate?: string } | null>(null);
+  // The next visit set for a job (yyyy-mm-dd): its appointment (requested / confirmed, today or later), else today
+  // when it's on today's route. For "📣 Update vendor tracking" and the board's "You go Tue 11/11" (9 Nov).
+  const nextVisitOf = (j: JobRecord | null | undefined) => {
+    if (!j) return "";
+    const a = j.Appointment as Appointment | undefined;
+    if (a && ["requested", "confirmed"].includes(a.state) && a.date >= nyToday()) return a.date;
+    return todayRouteIds().includes(jobId(j)) ? nyToday() : "";
+  };
   const emailList = useMemo(() => emailPeople(boardRows), [boardThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   // 🏢 Building history (idea list): the other jobs at this building, 2024 to now. The 2024-2025 file loads the first
   // time a job card opens.
@@ -5179,7 +5187,7 @@ export default function FieldCommandClient() {
   // 📅 -> ✉ The appointment goes to vendor tracking by itself (owner, 6 Nov: "that appointment should automatically be
   // sent to Lewis also, just to keep her in the loop"): Lewis for ERP jobs, Gafur for AEP jobs. It goes out 15 seconds
   // after saving (Undo stops it), once per job and time.
-  const [apptMail, setApptMail] = useState<{ key: string; omo: string; to: string; name: string; subject: string; text: string; left: number; status: string } | null>(null);
+  const [apptMail, setApptMail] = useState<{ key: string; omo: string; to: string; cc?: string[]; name: string; subject: string; text: string; left: number; status: string } | null>(null);
   const apptMailTimer = useRef<number | null>(null);
   function tellUnitAboutAppointment(job: JobRecord, appointment: Appointment) {
     const omo = jobId(job);
@@ -5189,16 +5197,18 @@ export default function FieldCommandClient() {
     try { sentKeys = JSON.parse(localStorage.getItem("hpd-appt-told-v1") || "[]"); } catch { /* private mode */ }
     if (sentKeys.includes(key)) return;
     const unit = unitOf(String(job.JobDescription || job.Job_Description || ""));
-    const who = unitEmail(unit, boardRows);
+    // Lewis's address is known even before her emails load (9 Nov: "100% every time ... reply back to Lewis").
+    const who = unitEmail(unit, boardRows) || (unit === "erp" ? { to: VT_LEWIS.to, who: VT_LEWIS.who } : null);
     if (!who) { setOutcomeMessage(`📅 Saved. ${UNIT_NAMES[unit]}'s email wasn't found in your HPD emails, so she wasn't told: forward it from Gmail.`); return; }
     const changed = sentKeys.some((k) => k.startsWith(`${omo}|`));
     const mail = appointmentEmail({ omo, address: jobAddress(job), appointment, who: who.who, changed });
-    setApptMail({ key, omo, to: who.to, name: who.who, ...mail, left: 15, status: "" });
+    // ERP: Saul and Rishi get a copy (owner, 9 Nov: "vendor tracking, which is going to be Lewis and Saul and Rishi").
+    setApptMail({ key, omo, to: who.to, cc: unit === "erp" ? ERP_COPIES.map((p) => p.to) : [], name: who.who, ...mail, left: 15, status: "" });
   }
   async function sendApptMail(m: NonNullable<typeof apptMail>) {
     setApptMail({ ...m, left: 0, status: "Sending…" });
     try {
-      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: m.to, subject: m.subject, text: m.text }) });
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: m.to, subject: m.subject, text: m.text, ...(m.cc?.length ? { cc: m.cc } : {}) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(r.status === 401 ? "sign in with Google on this phone" : d.error || `HTTP ${r.status}`);
       try { const a = JSON.parse(localStorage.getItem("hpd-appt-told-v1") || "[]"); localStorage.setItem("hpd-appt-told-v1", JSON.stringify([...a, m.key].slice(-200))); } catch { /* private mode */ }
@@ -8200,6 +8210,18 @@ export default function FieldCommandClient() {
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
               </header>
+              {(() => {
+                const omo = id;
+                // 📣 Update vendor tracking (owner, 9 Nov: "every job card I should have the option to send a message to
+                // vendor tracking ... we are in touch with this job, we are going on this day"): Lewis, a copy to Saul and
+                // Rishi, the short line written in with the visit day. Sending still takes the tap on Send.
+                const visit = nextVisitOf(selectedJob);
+                return isTestJob(omo) ? null : (
+                  <button type="button" className={`jc-vt${prioByOmo.has(omo) ? " is-hot" : ""}`} data-hpd-smoke="jc-vt" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, visitDate: visit })}>
+                    📣 Update vendor tracking<small>{visit ? `you go ${new Date(`${visit}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "numeric", day: "numeric" })} · ` : ""}in touch · in progress · next week</small>
+                  </button>
+                );
+              })()}
               {/* 👤 The tenant first (owner, 29 Oct: "the first thing I need to do on the job is to contact the tenant; once we
                   made contact it should log it; even no answer; what we send through the app logs on the job card
                   permanently"): reached or not, one tap to call or text, and every call, text, reply and appointment kept
@@ -10367,7 +10389,7 @@ export default function FieldCommandClient() {
           </div>
         );
       })() : null}
-      {emailFor ? <EmailSheet people={emailList} job={emailFor.job} onClose={() => setEmailFor(null)} onSent={(line) => setOutcomeMessage(`✉️ ${line}`)} /> : null}
+      {emailFor ? <EmailSheet people={emailList} job={emailFor.job} vt={!!emailFor.vt} visitDate={emailFor.visitDate || ""} onClose={() => setEmailFor(null)} onSent={(line) => setOutcomeMessage(`✉️ ${line}`)} /> : null}
       {mediaView ? <MediaViewer jobId={mediaView.id} kind={mediaView.kind} onClose={() => setMediaView(null)} /> : null}
       {workView ? (() => {
         const job = jobs.find((j) => jobId(j) === workView.id) || selectedJob;
@@ -10492,6 +10514,7 @@ export default function FieldCommandClient() {
             const work = String(j.JobDescription || j.Job_Description || "").replace(/^[:\s]+/, "").replace(/\s+/g, " ").trim();
             return { address: jobAddress(j), borough: jobBorough(j), amount: String(j.AwardAmount || ""), awarded: String(j.AwardDate || ""), work, hpd, call };
           }}
+          visitOf={(omo) => nextVisitOf(findAnyJob(omo))}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}
           onOpenThread={(id, title) => setThreadView({ ids: [id], title })}

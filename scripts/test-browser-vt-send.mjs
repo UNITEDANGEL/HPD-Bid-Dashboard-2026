@@ -39,6 +39,7 @@ try {
   // A notice with nothing on record yet: tick "Reply sent" -> the paperwork is next.
   const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').filter({ hasText: OMO }).first();
   const omo = await row.locator(".fc-board-job b").innerText();
+  await row.locator('[data-hpd-smoke="fc-board-more"]').evaluate((d) => { d.open = true; }); // steps sit under 📋 Details (9 Nov)
   await row.locator('[data-hpd-smoke="fc-board-step-replied"]').click();
   // Reply sent: it moves to 📤 Sent · waiting (22 Oct board tabs), the paperwork still next.
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
@@ -54,7 +55,8 @@ try {
   // The job was awarded months ago and the work date is today: the old-job date check asks first (20 Oct); here the
   // dates are right (the job is being finished now), so say so.
   const oldDates = page.locator('[data-hpd-smoke="paperwork-old-dates-ok-btn"]');
-  if (await oldDates.waitFor({ timeout: 8000 }).then(() => true).catch(() => false)) await oldDates.click();
+  // (It can close by itself once the dates load, when the machine is busy: then there's nothing to tap.)
+  if (await oldDates.waitFor({ timeout: 8000 }).then(() => true).catch(() => false)) await oldDates.click({ timeout: 5000 }).catch(() => {});
   await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
   await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
   await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor();

@@ -51,6 +51,9 @@ United Angel Construction Corp` } });
   const clocks = await rows.locator('[data-hpd-smoke="fc-board-clock"]').allInnerTexts();
   assert.ok(clocks.every((c) => /left|OVERDUE|Sent · waiting|Waiting \d+ days|Done/.test(c)), `countdowns: ${clocks.slice(0, 4)}`);
   assert.equal(await rows.first().locator('[data-hpd-smoke="fc-board-steps"] li').count(), 4);
+  // 👉 Do this on top of every open notice (9 Nov); the head start and the steps fold under 📋 Details.
+  assert.equal(await board.locator('[data-hpd-smoke="fc-board-row"]:not(.is-done) [data-hpd-smoke="fc-board-do"]').count() + await board.locator('[data-hpd-smoke="fc-board-row"][data-next="confirmed"]').count() >= await board.locator('[data-hpd-smoke="fc-board-row"]:not(.is-done)').count(), true, "every open notice says what to do");
+  await rows.first().locator('[data-hpd-smoke="fc-board-more"]').evaluate((d) => { d.open = true; });
   // A head start on every notice: what's on record (with dates) and the next step, with its button.
   const found = rows.first().locator('[data-hpd-smoke="fc-found"]');
   assert.ok((await found.locator("li").count()) >= 1, "found on record");
@@ -143,6 +146,7 @@ United Angel Construction Corp` } });
   // Tick "Reply sent" by hand: the next step moves on, and it's kept after reload.
   // It moves from 📝 To send to 📤 Sent · waiting right away (22 Oct).
   const toSendBefore = Number(await board.locator('[data-hpd-smoke="fc-board-side-tosend"] b').innerText());
+  await row.locator('[data-hpd-smoke="fc-board-more"]').evaluate((d) => { d.open = true; }); // steps sit under 📋 Details (9 Nov)
   await row.locator('[data-hpd-smoke="fc-board-step-replied"]').click();
   assert.equal(Number(await board.locator('[data-hpd-smoke="fc-board-side-tosend"] b').innerText()), toSendBefore - 1, "left To send");
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
@@ -156,6 +160,7 @@ United Angel Construction Corp` } });
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   const again = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
+  await again.locator('[data-hpd-smoke="fc-board-more"]').evaluate((d) => { d.open = true; });
   assert.match(await again.locator('[data-hpd-smoke="fc-board-step-replied"]').innerText(), /✓/);
   await again.locator('[data-hpd-smoke="fc-board-step-replied"]').click(); // undo
   await board.locator('[data-hpd-smoke="fc-board-close"]').click();

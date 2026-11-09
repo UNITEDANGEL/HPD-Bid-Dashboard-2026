@@ -41,7 +41,9 @@ try {
   assert.equal(await row(NOTHING).getAttribute("data-state"), "todo");
   assert.equal(await row(NOTHING).locator(".fc-fire").count(), 1, "🔥 on a notice still to send");
   assert.equal(await row(BLANK).getAttribute("data-state"), "todo", "HPD said blank: back to send");
-  assert.match(await row(BLANK).locator('[data-hpd-smoke="fc-board-problem"]').innerText(), /Please note the copy you just resubmitted is blank\./);
+  // HPD's words sit under 📋 Details (9 Nov); on top, the plain fix: the copy was blank, send it again.
+  assert.match(await row(BLANK).locator('[data-hpd-smoke="fc-board-problem"]').textContent(), /Please note the copy you just resubmitted is blank\./);
+  assert.match(await row(BLANK).locator('[data-hpd-smoke="fc-board-do"]').innerText(), /Fix it: the copy was blank[\s\S]*send it again/);
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   assert.equal(await row(SENT).getAttribute("data-state"), "ok", "its PDF in another email: green");
   assert.doesNotMatch(await row(SENT).locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /OVERDUE/);

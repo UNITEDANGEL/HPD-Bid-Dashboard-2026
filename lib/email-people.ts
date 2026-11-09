@@ -41,3 +41,14 @@ export function emailDraft(input: { omo?: string; address?: string; who?: string
   const text = `${name ? `Hi ${name},` : "Hello,"}\n\n${input.line || ""}\n\nThank you,\nJot Singh\nUnited Angel Construction Corp`;
   return { subject: subject.slice(0, 200), text };
 }
+
+// Vendor tracking for ERP jobs (owner, 9 Nov: "send a message to vendor tracking ... Lewis and Saul and Rishi, letting
+// them know we are in touch with this job"). Lewis gets it; Saul and Rishi (the ERP contacts on the work orders, "to
+// inform the starting date") get a copy. Their addresses are from their own HPD emails.
+export const VT_LEWIS: EmailPerson = { to: "lewisj@hpd.nyc.gov", who: "Joy-Ann Lewis", unit: "erp" };
+export const ERP_COPIES: EmailPerson[] = [
+  { to: "sauld@hpd.nyc.gov", who: "D. Saul", unit: "" },
+  { to: "jagdeor@hpd.nyc.gov", who: "Rishi Jagdeo", unit: "" },
+];
+// The people list with Lewis always in it (first), even before her emails have loaded on this phone.
+export const withLewis = (people: EmailPerson[]) => (people.some((p) => p.unit === "erp") ? people : [VT_LEWIS, ...people]);

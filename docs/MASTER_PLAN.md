@@ -10,6 +10,26 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 🚨 Vendor tracking and overdue notices: THE PRIORITY (owner, 9 Nov)
+
+The owner's words: "Polish and fix the notices, that's very important, vendor tracking is very important. A lot of jobs we are not responding to. Every job card should have the option to send a message to vendor tracking (Lewis, Saul and Rishi): we are in touch with this job, we are going on this day, we'll try to get it done; or work in progress, scheduled for next week. All the overdue notices, we need to fix them. Tell me very easily: go here, fix this. Open the document, look at what was highlighted: a notary stamp missing, data missing; fix it and send it back. 100% of the time reply to Lewis, especially with the appointments (tenants say next week; jobs on tomorrow's route are in the overdue notices). Overdue has its own map; prioritize the overdues. Communication is open, this is the conversation, let's get it done. Not confusing."
+
+What the real board showed on 9 Nov: 30 notices open, 5 overdue 24/72-hour notices with nothing sent, 5 sent back by HPD to fix (ER05228 highlighted errors + notarized, ER04312 highlighted + missing info + affidavit date = award confirmation date, ER01919 invoice incomplete highlighted areas, ER00272 the copy was blank, EO18305 photos and video wanted), 14 sent and waiting.
+
+Done 9 Nov:
+- ✅ **📣 Update vendor tracking on every job card** (under the address): a short email to Lewis (ERP; Gafur for AEP), copies to D. Saul (sauld@) and Rishi Jagdeo (jagdeor@) ticked on ERP jobs, the line "We are in touch on OMO# … We are going on <day> and will try to get it done that day" already written with the day the job is on the route / its appointment. One-tap lines: 🤝 In touch · going on a day, 🚧 Work in progress, 📅 Scheduled next week, 📞 Waiting on the tenant; a day picker. Sent only on Send (or 📥 Send to me first). The server takes up to 3 copies, @hpd.nyc.gov only.
+- ✅ **👉 Do this on every notice**: one plain line and one button on top (🔥 Overdue: send Lewis a short update · 📅 You go Tue 11/11: tell Lewis · 📄 Make the paperwork · 📤 Send it · 📎 Already emailed: tell her the date). HPD's send-backs as short fix steps from their own email (fix every highlighted spot · fill every empty box · notary stamp and signature on every page · affidavit date = award confirmation date · the copy was blank: send again · photos and video, don't resend the affidavit), "📄 See what you sent" next to them and "🛠 Fix it now" opening the correction with HPD's reason. The board header counts "N to fix".
+- ✅ **Less confusing cards**: the facts, the emails, what's on record and the four steps fold under "📋 Details · steps · emails"; the card shows the job, the deadline, what they want and the one thing to do.
+- ✅ **The notices check before every push**: scripts/flow-tests.mjs now runs the vendor tracking tests too (bids + job cards + notices, 54 browser tests).
+
+Still to build for vendor tracking (in this order):
+1. ✅ **Update all overdue in a row** (9 Nov): "🔥 Update all N overdue in a row" on the board (and a 🔥 Overdue tab in Reply to many): every overdue 24/72-hour notice with nothing sent, most overdue first, its update written ("We are going on <day>" when the job is on the route / has an appointment, else the ready reply), each sent with its own two taps.
+2. ⏳ **Overdue map → tomorrow's route**: on the overdue map, "Put the overdue on tomorrow's route" and, once the route is set, "Tell Lewis the days" for all of them in one go.
+3. ◐ **Appointments always reach Lewis** (9 Nov, done): the automatic appointment email (15 s, Undo) now copies Saul and Rishi on ERP jobs and never stops for "Lewis's email wasn't found" (her address is built in). Still ⏳: **Tenant says "next week"** without an exact appointment: after a call note or appointment for a job with an open notice, the card offers "📅 Tell Lewis: scheduled for next week" right away.
+4. ⏳ **2-day silence alert**: a phone alert when an open notice has had no word from us in 2 working days ("ER… no update to Lewis since Thu").
+5. ⏳ **Weekly status to Lewis** (Friday): one email listing every open ERP job with its state (in touch / scheduled <day> / in progress / paperwork sent <date>), checked by the owner before sending.
+6. ⏳ **Read HPD's marked-up PDF**: open the attachment HPD sent back and list the highlighted fields by name (no paid AI).
+
 ## 🎯 The bids flow: everything we agreed (owner, 9 Nov: "make a list of all the items we talked about in the md plan ... so we stay in the same flow")
 
 A bid goes through these stages in order: invitations come in, they show on the list and map, you open one, read HPD's work, price it (lead abatement bids have their own price sheet), the package is filled, sent by fax, the fax is tracked to confirmed, then on to the next bid in the row; a bid can be a no bid or be revised, and in the end it is won or lost. You can do every step by voice too. The rule: a change to one stage must keep every other stage working. Before every push, `node scripts/flow-tests.mjs` runs every bids and job-card test.

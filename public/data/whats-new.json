@@ -5,6 +5,9 @@
       "date": "Nov 6, 2026",
       "title": "Notices, videos, working here",
       "items": [
+        "📣 Every job card: Update vendor tracking. A short email to Lewis with Saul and Rishi copied (\"we are in touch, going on Tuesday, we'll try to get it done\", work in progress, scheduled next week). The day comes from your route or appointment. Sent only when you tap Send.",
+        "🔥 Notices board: Update all overdue in a row. Every overdue notice with its update to Lewis already written (with the day you go when it's on your route), most overdue first; each one sends with two taps.",
+        "👉 Notices say what to do in one line, with one button: overdue → update Lewis; you go Tuesday → tell Lewis; sent back by HPD → the fix in short steps (highlighted spots, notary stamp, award date, blank copy) and Fix it now. The rest folds under Details.",
         "🧪 Lead bids: your rates from the last lead bid fill in on the next one (check them, change any). Reopened lead bids show your rates in their boxes again.",
         "🐞 Something's not working (under All): one tap tells Claude the last buttons you tapped, so it knows which button to fix.",
         "🔊 Read it all / 📝 Summary work better on the iPhone, and say so if the phone won't start the voice (ringer on, volume up).",

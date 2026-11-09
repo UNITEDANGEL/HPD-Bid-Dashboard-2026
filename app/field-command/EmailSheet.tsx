@@ -5,16 +5,25 @@
 // the same email in your own Gmail to check or forward. Nothing goes out without your tap on Send.
 
 import { useMemo, useState } from "react";
-import { EMAIL_LINES, emailDraft, firstName, isHpdAddress, type EmailPerson } from "../../lib/email-people";
+import { EMAIL_LINES, ERP_COPIES, emailDraft, firstName, isHpdAddress, withLewis, type EmailPerson } from "../../lib/email-people";
+import { VT_LINES, vtDay } from "../../lib/notice-fix";
 
 export type EmailJob = { omo: string; address: string; unit: "erp" | "aep" } | null;
 
-export default function EmailSheet({ people, job, onClose, onSent }: { people: EmailPerson[]; job: EmailJob; onClose: () => void; onSent?: (line: string) => void }) {
+// vt: "📣 Update vendor tracking" from a job card (9 Nov): Lewis, a copy to Saul and Rishi on ERP jobs, the short
+// "in touch, going on <day>" line written in. visitDate: the job's next visit (yyyy-mm-dd), for that line.
+export default function EmailSheet({ people: given, job, onClose, onSent, vt = false, visitDate = "" }: { people: EmailPerson[]; job: EmailJob; onClose: () => void; onSent?: (line: string) => void; vt?: boolean; visitDate?: string }) {
+  const people = useMemo(() => (job?.unit === "erp" || vt ? withLewis(given) : given), [given, job, vt]);
   const start = useMemo(() => (job ? people.find((p) => p.unit === job.unit) : null) || people[0] || null, [people, job]);
   const [to, setTo] = useState(start?.to || "");
   const [other, setOther] = useState("");
   const who = people.find((p) => p.to === to)?.who || "";
-  const first = emailDraft({ omo: job?.omo, address: job?.address, who });
+  const [day, setDay] = useState(visitDate);
+  const first = emailDraft({ omo: job?.omo, address: job?.address, who, line: vt && job ? VT_LINES[0].text(job.omo, vtDay(visitDate)) : "" });
+  if (vt && job) first.subject = `${first.subject} - update`.slice(0, 200);
+  // Copies to Saul and Rishi (ERP jobs): on for a vendor tracking update, off for other emails.
+  const erp = job?.unit === "erp";
+  const [cc, setCc] = useState<string[]>(() => (vt && erp ? ERP_COPIES.map((p) => p.to) : []));
   const [subject, setSubject] = useState(first.subject);
   const [text, setText] = useState(first.text);
   const [status, setStatus] = useState("");
@@ -41,10 +50,11 @@ export default function EmailSheet({ people, job, onClose, onSent }: { people: E
     setBusy(true);
     setStatus(toSelf ? "Sending to you…" : "Sending…");
     try {
-      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: subject.trim(), text: text.trim() } : { to: address, subject: subject.trim(), text: text.trim() }) });
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: subject.trim(), text: text.trim() } : { to: address, subject: subject.trim(), text: text.trim(), ...(erp && cc.length ? { cc: cc.filter((x) => x !== address) } : {}) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(r.status === 401 ? "sign in with Google on this phone" : d.error || `HTTP ${r.status}`);
-      const line = toSelf ? "✓ Sent to your own Gmail to check." : `✓ Sent to ${firstName(who) || address}.`;
+      const copied = !toSelf && Array.isArray(d.cc) && d.cc.length ? ` (copy to ${ERP_COPIES.filter((p) => d.cc.includes(p.to)).map((p) => p.who.split(/\s+/).pop()).join(" and ")})` : "";
+      const line = toSelf ? "✓ Sent to your own Gmail to check." : `✓ Sent to ${firstName(who) || address}${copied}.`;
       setStatus(line);
       if (!toSelf) { onSent?.(line); window.setTimeout(onClose, 1500); }
     } catch (e) {
@@ -57,7 +67,7 @@ export default function EmailSheet({ people, job, onClose, onSent }: { people: E
   return (
     <div className="fc-email-sheet" role="dialog" aria-label="Write an email" data-hpd-smoke="fc-email-sheet">
       <header>
-        <strong>✉️ Email{job ? ` about ${job.omo}` : ""}</strong>
+        <strong>{vt ? "📣 Update vendor tracking" : "✉️ Email"}{job ? ` · ${job.omo}` : ""}</strong>
         <button type="button" data-hpd-smoke="fc-email-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-email-body">
@@ -71,8 +81,26 @@ export default function EmailSheet({ people, job, onClose, onSent }: { people: E
           <button type="button" role="radio" aria-checked={to === "other"} className={to === "other" ? "is-on" : ""} data-hpd-smoke="fc-email-other" onClick={() => pick("other")}>Someone else at HPD</button>
         </div>
         {to === "other" ? <input type="email" inputMode="email" placeholder="name@hpd.nyc.gov" value={other} onChange={(e) => setOther(e.target.value)} data-hpd-smoke="fc-email-other-input" /> : null}
+        {erp ? (
+          <div className="fc-email-cc" data-hpd-smoke="fc-email-cc">
+            <small>Copy to</small>
+            {ERP_COPIES.map((p) => (
+              <label key={p.to} className={cc.includes(p.to) ? "is-on" : ""}>
+                <input type="checkbox" data-hpd-smoke={`fc-email-cc-${p.who.split(/\s+/).pop()!.toLowerCase()}`} checked={cc.includes(p.to)} onChange={(e) => setCc((c) => (e.target.checked ? [...c, p.to] : c.filter((x) => x !== p.to)))} /> {p.who}
+              </label>
+            ))}
+          </div>
+        ) : null}
         <label htmlFor="fc-email-subject">Subject</label>
         <input id="fc-email-subject" value={subject} maxLength={200} onChange={(e) => setSubject(e.target.value.replace(/[\r\n]/g, " "))} placeholder="OMO# ..." data-hpd-smoke="fc-email-subject" />
+        {job ? (
+          <div className="fc-email-vt" data-hpd-smoke="fc-email-vt">
+            <div className="fc-email-day"><small>📣 Short update · the day you go</small><input type="date" value={day} onChange={(e) => setDay(e.target.value)} data-hpd-smoke="fc-email-day" aria-label="The day you go" /></div>
+            <div className="fc-email-lines">
+              {VT_LINES.map((l) => <button key={l.key} type="button" data-hpd-smoke={`fc-email-vt-${l.key}`} onClick={() => addLine(l.text(job.omo, vtDay(day)))}>{l.label}</button>)}
+            </div>
+          </div>
+        ) : null}
         {job ? (
           <div className="fc-email-lines" data-hpd-smoke="fc-email-lines">
             {EMAIL_LINES.map((l) => <button key={l.key} type="button" data-hpd-smoke={`fc-email-line-${l.key}`} onClick={() => addLine(l.text(job.omo))}>{l.label}</button>)}
