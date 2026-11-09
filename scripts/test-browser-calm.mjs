@@ -40,14 +40,12 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').first().click();
   // One thing at a time: the chip waits while a helper note shows.
   for (let i = 0; i < 8 && await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count(); i++) { await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click(); await page.waitForTimeout(400); }
-  const chip = page.locator('[data-hpd-smoke="fc-focus-chip"]');
-  let chipText = "none (nothing overdue / under 6 h)";
-  if (await chip.count() || await chip.waitFor({ state: "attached", timeout: 5000 }).then(() => true, () => false)) {
-    chipText = (await chip.innerText()).replace(/\s+/g, " ");
+  // The chip shows between the helper's notes (one thing at a time): tapped the moment it shows.
+  const chipText = await page.evaluate(() => new Promise((ok) => { const t0 = Date.now(); const tick = () => { const c = document.querySelector('[data-hpd-smoke="fc-focus-chip"]'); if (c) { const t = c.textContent.replace(/\s+/g, " ").trim(); c.click(); ok(t); } else if (Date.now() - t0 > 20000) ok(""); else setTimeout(tick, 50); }; tick(); }));
+  if (chipText) {
     assert.match(chipText, /⏰ [A-Z]{2}\d{5} (overdue \d+ h|\d+ h left)/);
     const omo = /([A-Z]{2}\d{5})/.exec(chipText)[1];
-    if (shots) await page.screenshot({ path: `${shots}/calm-chip.png` });
-    await chip.evaluate((c) => c.click()); // it shows between the helper's notes; its tap is what's tested
+    while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').first().click();
     await page.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${omo}"]`).first().waitFor({ timeout: 20000 });
   }
   assert.deepEqual(errors, []);

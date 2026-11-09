@@ -1391,12 +1391,16 @@ export default function FieldCommandClient() {
   }, [showOlderLayer, olderLayer]);
   // Paid / not paid per OMO, from PIP (scripts/import_pip_agreements.mjs).
   const [pipMap, setPipMap] = useState<Record<string, PipPayment>>({});
+  // ⏰ The deadline alarm and the map's overdue chip wait until HPD's job statuses, the paperwork on record and PIP's
+  // payments have loaded (8 Nov: ER03009 rang "overdue, nothing sent" for the first seconds although it was done).
+  const [followLoaded, setFollowLoaded] = useState(false);
+  const [pipLoaded, setPipLoaded] = useState(false);
   // When PIP's numbers were last brought in (26 Oct): PIP isn't read by itself; its exports are imported.
   const [pipAsOf, setPipAsOf] = useState("");
   const pipAgeDays = pipAsOf ? Math.floor((Date.now() - Date.parse(pipAsOf)) / 86400000) : 0;
   const pipAsOfText = pipAsOf ? new Date(pipAsOf).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
   useEffect(() => afterFirstPaint(() => {
-    fetch("/data/pip_paid.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { setPipMap(d?.jobs || {}); setPipAsOf(String(d?.generatedAt || "")); }).catch(() => {});
+    fetch("/data/pip_paid.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { setPipMap(d?.jobs || {}); setPipAsOf(String(d?.generatedAt || "")); }).catch(() => {}).finally(() => setPipLoaded(true));
   }), []);
   useEffect(() => afterFirstPaint(() => {
     fetch("/data/COA_older.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : [])).then((rows) => setOlderJobs(Array.isArray(rows) ? rows : [])).catch(() => {});
@@ -1409,6 +1413,7 @@ export default function FieldCommandClient() {
     ]).then(([hpd, sent, asked]) => {
       followRef.current = { hpd: hpd?.jobs || {}, sent: sent?.jobs || {}, asked: asked?.jobs || {} };
       setAskedMap(asked?.jobs || {});
+      setFollowLoaded(true);
       reapplyFollowRef.current?.();
     });
   }), []);
@@ -3188,7 +3193,7 @@ export default function FieldCommandClient() {
   for (const t of boardThreads || []) for (const m of t.messages) if (m.mine && (m.files?.length || 0) > 0) for (const o of t.omos) if ((t.omos.length <= 2 || m.text.includes(o)) && (!pdfsByOmo.has(o) || (pdfsByOmo.get(o) || "") < m.at)) pdfsByOmo.set(o, m.at);
   const boardRows = boardThreads ? buildBoard({ threads: boardThreads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs, handled: handledMap, fixed: Object.fromEntries(toPrint.map((c) => [c.omo, c.savedAt])) }) : [];
   const boardOpenRows = boardRows.filter((r) => r.next);
-  const boardUrgent = urgentRows(boardRows);
+  const boardUrgent = followLoaded && pipLoaded ? urgentRows(boardRows) : [];
   // A notice running out of time rings once (under 6 hours, nothing sent yet), only while you're working the notices
   // (owner, 5 Nov: "it keeps saying urgent. Do not do that, only do that when we engage to solve the notices").
   const noticeEngaged = boardOpen || noticesOpen || noticeChooser || !!noticeWalk || followFilter === "notices";
