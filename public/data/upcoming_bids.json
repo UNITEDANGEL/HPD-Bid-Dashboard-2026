@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T01:05:58.162324+00:00",
+  "generatedAt": "2026-11-09T03:26:00.076643+00:00",
   "days": 14,
   "bids": [
     {
@@ -129,6 +129,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.75982,
       "lng": -73.928469
     },
@@ -260,6 +261,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.680214,
       "lng": -73.94299
     },
@@ -391,6 +393,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.868712,
       "lng": -73.89533
     },
@@ -521,6 +524,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.856054,
       "lng": -73.892125
     },
@@ -651,6 +655,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.670224,
       "lng": -73.92927
     },
@@ -781,6 +786,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.638157,
       "lng": -73.955144
     },
@@ -912,6 +918,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.676457,
       "lng": -73.908349
     },
@@ -1042,6 +1049,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.805001,
       "lng": -73.913779
     },
@@ -1172,6 +1180,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.662407,
       "lng": -73.886251
     },
@@ -1302,6 +1311,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.686691,
       "lng": -73.93841
     },
@@ -1433,6 +1443,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.870765,
       "lng": -73.891536
     },
@@ -1563,6 +1574,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.846256,
       "lng": -73.908088
     },
@@ -1694,6 +1706,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.875152,
       "lng": -73.874368
     },
@@ -1825,6 +1838,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.840062,
       "lng": -73.856224
     },
@@ -1956,8 +1970,215 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.782068,
       "lng": -73.949018
+    },
+    {
+      "omo": "ER09991",
+      "bidDue": "2026-11-09",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-10",
+      "workCompletion": "2026-11-09",
+      "address": "306 EAST 116 STREET APT. 2A",
+      "borough": "MN",
+      "itbFile": "ER09991 Invitation To Bid.pdf",
+      "description": "AS PER HPD’S LEAD ABATEMENT REQUIREMENT CONTRACTS AND ATTACHED SCOPE OF WORK THOROUGHLY REMOVE ALL LEAD VIOLATIONS AS PER NEW YORK CITY ADMINISTRATIVE CODE § 27-2056.11 AND AS NOTED IN THE SCOPE OF WORK PURSUANT TO HPD LEAD BASED PAINT RC CONTRACT SPECIFICATIONS. REMEDIATION OF LEAD-BASED PAINT HAZARDS USING APPROVED WORK METHODS BY FIRMS AND WORKERS PROPERLY CERTIFIED TO PERFORM LEAD-BASED PAINT ACTIVITIES. ALL DEBRIS MUST BE REMOVED DAILY AND MUST BE DISPOSED APPROPRIATELY. ALL ROOMS MUST BE DUST TESTED PRIOR TO TENANT RE-OCCUPANCY. TO BE AWARDED AND REPAIRED WITHIN 45 DAYS OF CERT. DATE. NOTE 1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/ OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
+      "notes": "NOTE 2: CONTRACTOR MUST CONTACT H.P.D. EHU OFFICE AT 212 863- 5790, 5697, 6187, 6224 AND/ OR VIA EMAIL TO INFORM THE TARGETTED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK. NOTE 3: NOTE: CONTRACTOR MUST CONTACT HPD / EHU via email Campbell Camille CAMPBELC@hpd.nyc.gov, Serene To Tos@hpd.nyc.gov, Ramos Isolina RamosIs@hpd.nyc.gov, Shen Lan Ping shenl@hpd.nyc.gov, Lamazon Sharon lamazons@hpd.nyc.gov WITH OMO START DATE. TENANT CONTACT: (tenant contact: sign in to see) NOTE 4: IF THE VENDOR IS REFUSED ACCESS EITHER BY TENANT OR OWNER OR REPRESENTATIVE OF THE OWNER, AT START OR AFTER PARTIAL COMPLETION OF WORKS, THE VENDOR MUST IMMEDIATELY INFORM THE EHU OFFICE OVER TELEPHONE [FOLLOWED BY AN AFFIDAVIT BY EMAIL].",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1793979102000,
+      "pages": 3,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.8,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.2,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 324.9,
+          "y": 91.2,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.7,
+          "y": 73.2,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.6,
+          "y": 73.2,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.3,
+          "y": 56.6,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.2,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.3,
+          "y": 40.9,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.6,
+          "rotate": 0
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Carvajal Dimas, Juan (HPD)",
+      "kind": "lead",
+      "certs": "Mold and Lead",
+      "lead": {
+        "pages": [],
+        "rooms": [
+          {
+            "room": "BATHROOM",
+            "items": [
+              {
+                "component": "SOUTH WALL",
+                "method": "Enclosure",
+                "qty": 50,
+                "um": "SQFT",
+                "page": 0,
+                "y": 541.3867797851562,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "BASEBOARD AT SOUTH WALL",
+                "method": "Replacement",
+                "qty": 5,
+                "um": "FT",
+                "page": 0,
+                "y": 506.9467468261719,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              }
+            ],
+            "total": {
+              "page": 0,
+              "x": 525.0379028320312,
+              "y": 468.2245788574219
+            }
+          },
+          {
+            "room": "3rd ROOM FROM NORTH",
+            "items": [
+              {
+                "component": "WEST WALL",
+                "method": "Enclosure",
+                "qty": 82,
+                "um": "SQFT",
+                "page": 0,
+                "y": 359.34674072265625,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "BASEBOARD AT WEST WALL",
+                "method": "Replacement",
+                "qty": 10,
+                "um": "FT",
+                "page": 0,
+                "y": 324.90673828125,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "BASEBOARD AT SOUTH WALL",
+                "method": "Replacement",
+                "qty": 8,
+                "um": "FT",
+                "page": 0,
+                "y": 290.4667663574219,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "BASEBOARD AT EAST WALL",
+                "method": "Replacement",
+                "qty": 10,
+                "um": "FT",
+                "page": 0,
+                "y": 256.02679443359375,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "1st WINDOW FRAME FROM SOUTH AT WEST WALL",
+                "method": "Replacement",
+                "qty": 17,
+                "um": "FT",
+                "page": 0,
+                "y": 221.58673095703125,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "EAST WALL",
+                "method": "Enclosure",
+                "qty": 95,
+                "um": "SQFT",
+                "page": 0,
+                "y": 187.146728515625,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              },
+              {
+                "component": "SOUTH WALL",
+                "method": "Enclosure",
+                "qty": 80,
+                "um": "SQFT",
+                "page": 0,
+                "y": 152.706787109375,
+                "rateRight": 459.6219787597656,
+                "costRight": 505.4043273925781
+              }
+            ],
+            "total": {
+              "page": 0,
+              "x": 525.0379028320312,
+              "y": 113.984619140625
+            }
+          }
+        ],
+        "mold": "Mold abatement from west wall prior to enclosure. Mold violation# 19248047 linked to the Omo.",
+        "apartment": {
+          "page": 0,
+          "x": 506.71856689453125,
+          "y": 79.06463623046875
+        }
+      },
+      "scopeFile": "ER09991.pdf",
+      "lat": 40.796581,
+      "lng": -73.937413
     },
     {
       "omo": "ER09686",
@@ -2086,6 +2307,7 @@
           "rotate": 0
         }
       },
+      "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.730749,
       "lng": -74.004143
     }
