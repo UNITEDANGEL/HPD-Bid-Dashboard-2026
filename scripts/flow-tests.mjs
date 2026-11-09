@@ -11,10 +11,10 @@ import path from "node:path";
 
 const dir = path.join(process.cwd(), "scripts");
 const FLOWS = {
-  bids: /^test-browser-(bid|bids|bidbar|checklist|lead-bid|my-price|price-check|no-bid|batch-fax|faxtrack|package-send|page-zoom|notice-view|building-facts)[\w-]*\.mjs$/,
+  bids: /^test-browser-(bid|bids|bidbar|calculator|checklist|lead-bid|my-price|price-check|no-bid|batch-fax|faxtrack|package-send|page-zoom|notice-view|building-facts)[\w-]*\.mjs$/,
   jobs: /^test-browser-(job|jobs|next-stop|photo|notice-walk|papers-map|claude-now|agent-chat)[\w-]*\.mjs$/,
 };
-const units = ["test-lead-scope.mjs"];
+const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs"];
 const want = process.argv[2] ? [process.argv[2]] : Object.keys(FLOWS);
 const files = fs.readdirSync(dir).filter((f) => want.some((w) => FLOWS[w]?.test(f))).sort();
 console.log(`Flows: ${want.join(" + ")} · ${files.length} browser tests`);

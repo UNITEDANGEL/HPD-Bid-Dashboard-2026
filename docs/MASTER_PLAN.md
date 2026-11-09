@@ -75,9 +75,9 @@ A bid goes through these stages in order: invitations come in, they show on the 
 - ✅ A big "💰 Price it" button on HPD's full-screen page takes you straight to the price box with the keyboard open (plan: 2 Nov, item 182)
 - ✅ A bid opened from the checklist starts at the best price, not your last price (plan: Done 16 Oct, morning bid checklist)
 - ✅ Prices are split by kind of work: lead abatement, AEP, and ERP / regular (plan: Prices and winning more work; Done)
-- ⏳ Lock and latch prices back toward the market price (about $600 to $730) when the job is just a plain lock (plan: Now (in this order), item 0)
-- ⏳ Better prices for jobs with many doors, which are still the weakest: read "per door" and "each" amounts, and jobs that mix new doors with hardware (plan: Now, item 0; Done 15 Oct, multi-door test)
-- ⏳ Count stair treads and risers step by step in the price (plan: Owner's requests 16 Oct, still to do)
+- ✅ Lock and latch prices: checked again 9 Nov on 273 plain lock jobs. The market is now about $420-640 (not $600-730), and the app's best price came in at or under the winner on 103 of the last 120 plain lock jobs. The app's price is right; a high price was the one typed, and the bid screen already warns when a price is more than 15% above the best (plan: Now, item 0; 9 Nov check)
+- ⏳ Better prices for jobs with many doors. Tested 9 Nov on 193 multi-door jobs since March: the app is about 25% off the winner either way, and the misses are one-off jobs (hopper chutes, odd mixes). Changing the door scaling only gained 1 point and lost wins (73% -> 67%), so the model stays as it is until a clear pattern shows (plan: Now, item 0; 9 Nov backtest)
+- ✅ Stair treads and risers counted step by step: "Marble stair tread (#5, #6, #8 from bottom) ×3", "Metal tread ×7 + riser ×7" from "(07 NOS)". Your rate per tread prices it in My price and the calculator; riser pipes are not stairs; tiles on the treads keep their floor line (9 Nov, test-job-summary)
 - ⏳ Calculator lines for materials and labor from your costs list, and the number of floors from the building facts (plan: Next level, item B next)
 - ⏳ Use the building's age and walk-up in the price advice, once a test on past jobs shows it pays (plan: Ideas for the bid flow, 15 Oct)
 
@@ -152,10 +152,10 @@ A bid goes through these stages in order: invitations come in, they show on the 
 
 ### Still to build for bids
 1. ⏳ Check for invitations every 10 minutes from the cloud, so it works when the laptop is off. The code is ready, but the owner has to add two tokens (owner, 13 Oct)
-2. ⏳ Lock and latch prices back toward the market price when the job is just a plain lock (Now list)
-3. ⏳ Better prices for jobs with many doors: read "per door" and "each" amounts, and jobs that mix new doors with hardware (Now list)
+2. ✅ Lock and latch: checked 9 Nov, the app's price already wins most plain lock jobs (see above).
+3. ⏳ Many doors: tested 9 Nov, no change helps yet (see above); look again when more awards come in.
 4. ⏳ Why the lowest bid still lost: check HPD's notices and fax receipts, and the owner asks HPD's bid desk (Now list)
-5. ⏳ Count stair treads and risers step by step in the price (from the owner's rates request, 16 Oct)
+5. ✅ Stair treads and risers counted step by step (9 Nov).
 6. ⏳ Calculator lines for materials and labor from your costs, and the number of floors from the building facts (owner's calculation mode, 16 Oct)
 7. ⏳ A history for each kind of work: your cost, your price, the winning price, and the profit (owner's next-level list, 16 Oct)
 8. ⏳ Remove the old invitation PDFs with tenant details from the repo's history (needs the owner's OK, can't be undone)
@@ -312,6 +312,7 @@ The plan, one by one (✅ = live, ☐ = next):
 91. ✅ Idea "Read the bid out loud" + owner, 9 Nov: "I should also have an option for a readout and a summary option, that's very important" -> on HPD's work description, two buttons: 🔊 Read it all (HPD's whole description, word for word) and 📝 Summary (the short version, read and shown on the page). The one you pick is used for every description you open after; 🔇 Stop turns it off; Price it / Close stop the voice. Phone's own voice, nothing paid. Test: test-browser-bid-read-aloud.
 92. ✅ Owner, 9 Nov: "I don't want one flow to upset another flow ... that should not ever happen" -> scripts/flow-tests.mjs (npm run test:flows) runs every bids test and every job-card test together (40 browser tests + the lead price math) before every push; any failure, no push. First run caught the one-fax-for-several-bids test expecting the wrong order (the app orders same-time bids by job number); fixed.
 93. Owner, 9 Nov: "make the bids experience better, the flow, make a list of all the items we talked about in the md plan, and we upgrade that way" -> the 🎯 bids flow list below (every bid item from this plan, by stage, built ✅ or still to build ⏳). Upgrades for bids follow it, top of "Still to build" first.
+94. ✅ From the bids flow list, 9 Nov: lock / latch prices checked on 273 jobs (the app's price is right; market $420-640); many-door prices tested on 193 jobs (no change helps yet, kept as is); stair treads and risers now counted step by step in the job summary, My price and the calculator. The flow check now also runs the job summary and calculator math.
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.

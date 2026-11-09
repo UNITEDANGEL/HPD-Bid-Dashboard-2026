@@ -15,7 +15,7 @@ const UNIT: Record<string, Unit> = {
   floor: "sqft", sheetrock: "sqft", paint: "sqft", ceiling: "sqft", wall: "sqft", masonry: "sqft", roof: "sqft", mold: "sqft", lead: "sqft",
   closer: "door", hinges: "door", lock: "door", "entrance-lock": "door", pushbar: "door", "door-adjust": "door", "door-new": "door", "ada-closer": "door",
   glass: "window", "window-hardware": "window", "window-new": "window",
-  "secure-tech": "each", "electric-strike": "each", detector: "each", plumbing: "job", leak: "job", intercom: "job",
+  "secure-tech": "each", "electric-strike": "each", detector: "each", "stair-tread": "each", "stair-riser": "each", plumbing: "job", leak: "job", intercom: "job",
 };
 export const unitOf = (key: string): Unit => UNIT[key] || "job";
 
@@ -33,6 +33,28 @@ function countOf(text: string, noun: string) {
   for (const m of text.matchAll(new RegExp(`(?:\\(\\s*)?\\b(\\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|both)\\b(?:\\s*\\))?\\s+(?:new\\s+|defective\\s+|similar\\s+)?(?:\\w+\\s+)?${noun}`, "g"))) best = Math.max(best, WORD[m[1]] || Number(m[1]));
   for (const m of text.matchAll(new RegExp(`${noun}\\w*\\s*\\(\\s*(\\d{1,2})\\s*\\)`, "g"))) best = Math.max(best, Number(m[1]));
   return best;
+}
+
+// Stair treads and risers, step by step (plan: "count stair treads and risers in the price"): HPD names each step
+// ("TREADS #9 AND #10 FROM BOTTOM", "9TH AND 10TH METAL TREAD", "1ST AND 2ND METAL STEPS", "TREADS AND RISERS
+// (07 NOS)"). The steps named are counted once each (the title and the work repeat them); a count given wins if bigger.
+const STEP_NUM = String.raw`(?:#\s*\d{1,2}|\d{1,2}(?:st|nd|rd|th))`;
+const STEP_LIST = String.raw`(${STEP_NUM}(?:\s*(?:,|and|&)\s*${STEP_NUM})*)`;
+export function stairSteps(text: string, noun: "tread" | "riser") {
+  const t = text.toLowerCase().replace(/riser pipes?|risers? (?:line|valve|pipe)|steam riser|water riser|gas riser|heat riser/g, " ");
+  const word = noun === "tread" ? "(?:treads?|steps?)" : "risers?";
+  if (!new RegExp(String.raw`\b${noun}s?\b`).test(t)) return { count: 0, named: [] as string[], material: "" };
+  const kinds = String.raw`(?:(?:ceramic|terrazzo|marble|metal|steel|iron|wood|wooden|concrete|stone|slate|stair|broken|defective|damaged|missing|loose|cracked|uneven|new)\s+){0,3}`;
+  const named = new Set<string>();
+  const add = (list: string) => list.split(/\s*(?:,|and|&)\s*/).forEach((n) => { const d = (/\d{1,2}/.exec(n) || [])[0]; if (d) named.add(String(Number(d))); });
+  for (const m of t.matchAll(new RegExp(String.raw`${STEP_LIST}\s+${kinds}${word}\b`, "g"))) add(m[1]);
+  for (const m of t.matchAll(new RegExp(String.raw`\b${word}[\s,]*${STEP_LIST}`, "g"))) add(m[1]);
+  let count = named.size;
+  for (const m of t.matchAll(new RegExp(String.raw`${word}[^.;]{0,40}?\(\s*(\d{1,2})\s*(?:nos?\.?|pcs?|each)?\s*\)`, "g"))) count = Math.max(count, Number(m[1]));
+  for (const m of t.matchAll(new RegExp(String.raw`\b(\d{1,2}|two|three|four|five|six|seven|eight|nine|ten)\s*(?:\(\s*\d{1,2}\s*\)\s*)?${kinds}${word}`, "g"))) { if (!/\d(?:st|nd|rd|th)/.test(m[0])) count = Math.max(count, WORD[m[1]] || Number(m[1])); }
+  const mat = new RegExp(String.raw`(marble|metal|steel|iron|wood|wooden|concrete|stone|slate|ceramic|terrazzo)\s+(?:stair\s+)?${word}`).exec(t);
+  const material = mat ? (mat[1] === "wooden" ? "wood" : mat[1] === "steel" || mat[1] === "iron" ? "metal" : mat[1]) : "";
+  return { count: Math.max(count, 1), named: [...named].map(Number).sort((a, b) => a - b).map(String), material };
 }
 
 const ROOMS: [RegExp, string][] = [
@@ -117,6 +139,18 @@ export function jobSummary(description: string): JobSummary {
     }
     return { key, label, qty, unit, detail };
   });
+  // Stairs: a line per tread (and per riser); the "floor / tile" line HPD's word "tread" made, with no size, goes.
+  const treads = stairSteps(text, "tread"), risers = stairSteps(text, "riser");
+  const stairText = text.replace(/riser pipes?|risers? (?:line|valve|pipe)|steam riser|water riser|gas riser|heat riser/g, " ");
+  const hasTread = /\btreads?\b/.test(stairText) || /\d(?:st|nd|rd|th)(?:\s*(?:,|and|&)\s*\d{1,2}(?:st|nd|rd|th))*\s+(?:\w+\s+){0,2}steps?\b/.test(stairText);
+  if (hasTread) {
+    const at = (r: ReturnType<typeof stairSteps>) => [r.material, r.named.length ? `#${r.named.join(", #")} from bottom` : ""].filter(Boolean).join(" · ");
+    // Tiles on the treads ("remove the damaged ceramic floor tiles at the stair treads") stay a floor line too.
+    const fi = lines.findIndex((l) => l.key === "floor" && !l.qty);
+    if (fi >= 0 && !/\btiles?\b|\bvct\b|linoleum|vinyl|laminat|carpet/.test(stairText)) lines.splice(fi, 1);
+    lines.push({ key: "stair-tread", label: "stair tread", qty: treads.count, unit: "each", detail: at(treads) });
+    if (/\brisers?\b/.test(stairText)) lines.push({ key: "stair-riser", label: "stair riser", qty: risers.count, unit: "each", detail: at({ ...risers, material: risers.material || treads.material }) }); // "metal treads and risers"
+  }
   const amount = (l: SummaryLine) => (l.unit === "sqft" ? (l.qty ? `${l.qty} sq ft` : "size not given") : l.unit === "door" ? `${l.qty} door${l.qty === 1 ? "" : "s"}` : l.unit === "window" ? `${l.qty} window${l.qty === 1 ? "" : "s"}` : l.unit === "each" ? `×${l.qty}` : "");
   const headline = lines.length
     ? lines.map((l) => [l.detail && l.key === "floor" ? l.detail : l.label, amount(l)].filter(Boolean).join(" · ")).join(" + ")

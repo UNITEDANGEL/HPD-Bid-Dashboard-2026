@@ -60,10 +60,13 @@ try {
   assert.equal((await sheet.locator('[data-hpd-smoke="fc-bid-price"]').inputValue()).replace(/[^0-9]/g, ""), "1678");
   // The rate for floors is kept for the next job; the $700 change was for this job only.
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("hpd-my-rates")))["x-floor"], 25);
+  const closePings = async () => { for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {}); }; // an alert can sit over "← All bids"
+  await closePings();
   await sheet.locator("header button").first().click();
   await openBidList(page);
   await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li', { hasText: "ER90003" }).first().locator("button").first().click();
   assert.match(await calc.locator('[data-hpd-smoke="fc-my-total"]').innerText(), /My price: \$1,275/, "back to the rates when reopened");
+  await closePings();
   await sheet.locator("header button").first().click();
   // All -> What's new; Ask for a change.
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });

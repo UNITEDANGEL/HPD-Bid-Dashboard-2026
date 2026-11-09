@@ -24,4 +24,13 @@ assert.equal(jobSummary("INSTALL (2) NEW ELECTRIC STRIKES AT BLDG ENTRANCE AND V
 assert.ok(jobSummary("REPLACE THE DEFECTIVE ADAM WRITE LOCKSET AT BLDG ENT DOOR").lines.some((l) => l.key === "entrance-lock"));
 // Ceramic tile in a bathroom with a size.
 assert.deepEqual(show("AT APT 3I BATHROOM REMOVE AND REPLACE DEFECTIVE CERAMIC FLOOR TILES APPROX 6 SQ FT"), ["Ceramic floor · 6 sq ft"]);
-console.log("PASS job summary: vinyl 120 sq ft (removed = installed), Secure Tech + electric strike + intercom at the entrance, sheetrock 44 / paint 620 sq ft, 2 doors, (2) strikes, ADAM WRITE = Adams Rite, ceramic 6 sq ft, apartment / floor / rooms");
+// Stair treads and risers, step by step (plan: "count stair treads and risers in the price"): each step named once.
+assert.deepEqual(show("BROKEN MARBLE TREAD #5 AND #6 FROM BOTTOM UP AT 2ND STORY PUBLIC HALL STAIR. ALSO UNEVEN MARBLE TREAD #8 FROM BOTTOM UP AT 1ST STORY PUBLIC HALL STAIR. 1.INSTALL NEW MARBLE TREADS #5 AND #6 SIMILAR TO EXISTING"), ["Stair tread (marble · #5, #6, #8 from bottom) · ×3"]);
+assert.deepEqual(show("REPLACE WITH NEW THE BROKEN 1ST AND 2ND METAL STEPS FROM BOTTOM OF STAIRS. WELD TREADS"), ["Railing / metal work", "Stair tread (metal · #1, #2 from bottom) · ×2"]);
+assert.deepEqual(show("DEMOLISH THE DEFECTIVE METAL TREADS AND RISERS (07 NOS) THROUGH OUT THE STAIRS LEADING TO 1ST STORY PUBLIC HALL"), ["Stair tread (metal) · ×7", "Stair riser (metal) · ×7"]);
+assert.deepEqual(show("REPAIR CRACKED CERAMIC TREAD, 1ST BOTTOM UP AND LANDING AT PUBLIC HALL"), ["Stair tread (ceramic · #1 from bottom) · ×1"]);
+// A riser pipe is plumbing / heat, not a stair.
+assert.ok(!show("CAP THE PIPE CONNECTED TO THE RISER AND REPAIR THE STEAM RISER").some((l) => /Stair/.test(l)));
+// Tiles on the treads keep their floor line.
+assert.ok(show("REMOVE THE DAMAGED CERAMIC FLOOR TILES AND METAL NOSING AT THE STAIR TREADS. INSTALL NEW CERAMIC FLOOR TILES").some((l) => /Ceramic floor/.test(l)));
+console.log("PASS job summary: vinyl 120 sq ft (removed = installed), Secure Tech + electric strike + intercom at the entrance, sheetrock 44 / paint 620 sq ft, 2 doors, (2) strikes, ADAM WRITE = Adams Rite, ceramic 6 sq ft, stair treads / risers counted step by step (#5, #6, #8 = 3; (07 NOS) = 7), riser pipes are not stairs, apartment / floor / rooms");
