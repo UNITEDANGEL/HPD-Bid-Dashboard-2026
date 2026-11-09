@@ -34,6 +34,13 @@ export function setChimeMuted(off: boolean) {
   try { if (off) localStorage.setItem(KEY, "1"); else localStorage.removeItem(KEY); } catch { /* private mode */ }
 }
 
+// The iPhone can refuse to start sound ("Failed to start the audio device", owner's phone 9 Nov: during a call, or
+// after the app sat in the background): the refusal is caught, and the next tap builds the sound fresh.
+function wake() {
+  const c = ctx;
+  if (!c) return;
+  c.resume().catch(() => { if (ctx === c) { try { void c.close().catch(() => {}); } catch { /* closed */ } ctx = null; } });
+}
 export function unlockChime() {
   if (typeof window === "undefined") return;
   try {
@@ -42,7 +49,7 @@ export function unlockChime() {
       if (!AC) return;
       ctx = new AC();
     }
-    if (ctx.state !== "running") void ctx.resume();
+    if (ctx.state !== "running") wake();
     primeVoice();
     playThroughSilent();
     // A silent blip so iOS lets later sounds play.
@@ -56,7 +63,7 @@ export function playChime(kindIn: RingKind | string = "message") {
   try {
     if (!ctx) unlockChime();
     if (!ctx) return false;
-    if (ctx.state !== "running") void ctx.resume();
+    if (ctx.state !== "running") wake();
     const t0 = ctx.currentTime + 0.02;
     if (kind === "award") {
       // "Cha": a short burst of bright noise (the register drawer), then the bell rings.

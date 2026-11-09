@@ -5,6 +5,9 @@
       "date": "Nov 6, 2026",
       "title": "Notices, videos, working here",
       "items": [
+        "🐞 Something's not working (under All): one tap tells Claude the last buttons you tapped, so it knows which button to fix.",
+        "🔊 Read it all / 📝 Summary work better on the iPhone, and say so if the phone won't start the voice (ringer on, volume up).",
+        "♻️ The app no longer slows down after hours open: it re-reads the jobs only when they changed, and starts fresh after a long day.",
         "🪜 Stair jobs: each tread and riser is counted (\"Marble stair tread #5, #6, #8 from bottom ×3\"), so your rate per tread prices it.",
         "🔊 HPD's work description: 🔊 Read it all reads HPD's whole description out loud, 📝 Summary reads the short version and shows it. The one you pick keeps going for the next bids; 🔇 Stop turns it off.",
         "🛡️ Every bids and job-card check now runs together before any change goes live, so fixing one part can't break another.",

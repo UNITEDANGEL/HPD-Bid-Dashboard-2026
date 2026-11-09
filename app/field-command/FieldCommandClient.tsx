@@ -112,6 +112,7 @@ import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import BuildingContact from "./BuildingContact";
 import { daysLeft, expiringSoon, loadPapers, type Paper } from "../../lib/papers";
+import { brokenReport, installTapTrail } from "../../lib/tap-trail";
 
 // "12 days left" / "ran out 3 days ago" for a paper (insurance, license).
 function paperLine(p: Paper, nowMs: number): string {
@@ -1708,6 +1709,29 @@ export default function FieldCommandClient() {
   useEffect(() => { try { setRepliesSeen(localStorage.getItem("hpd-replies-seen") || ""); } catch { /* private mode */ } void loadChangeThreads(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const newReplies = (changeThreads || []).filter((t) => t.updates.some((u) => u.at > repliesSeen)).length;
   // Saves a change request for Claude (What's new box, or said / typed to the helper: 27 Oct). true = on the server.
+  // 🐞 One tap: the last buttons tapped, the screen and recent errors go to Claude as a request (owner, 9 Nov).
+  useEffect(() => { installTapTrail(); }, []);
+  // ♻️ Open for hours (owner, 9 Nov: the app froze after a long day open): coming back to it after 8 hours open and
+  // 5 minutes away, it reloads fresh, unless a job card, a bid or typing is open (everything else is kept on the phone).
+  const freshRef = useRef<{ busy: boolean }>({ busy: false });
+  useEffect(() => {
+    const loadedAt = Date.now();
+    let hiddenAt = 0;
+    const on = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "");
+      if (hiddenAt && Date.now() - loadedAt > 8 * 3600000 && Date.now() - hiddenAt > 5 * 60000 && !freshRef.current.busy && !typing) window.location.reload();
+    };
+    document.addEventListener("visibilitychange", on);
+    return () => document.removeEventListener("visibilitychange", on);
+  }, []);
+  const [brokenNote, setBrokenNote] = useState("");
+  const reportBroken = async (note = "") => {
+    const ok = await sendChangeRequest(brokenReport(note, `${BUILT_NUMBER || ""} ${BUILT_COMMIT || ""}`.trim()));
+    setBrokenNote(ok ? "🐞 Sent to Claude with your last taps, so it knows which button. It shows under Your requests." : "🐞 Couldn't send it (no signal?). Try again in a moment.");
+    window.setTimeout(() => setBrokenNote(""), 12000);
+    return ok;
+  };
   const sendChangeRequest = async (raw: string) => {
     const text = raw.trim();
     if (!text) return false;
@@ -1881,6 +1905,7 @@ export default function FieldCommandClient() {
   const [routeBuildRequest, setRouteBuildRequest] = useState(0);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
+  freshRef.current.busy = !!selectedJob || bidsOpen; // a job card or the bids open: never reloaded under you
   // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number; unsentToday?: number; sentToday?: number; firstTime?: string }>({ today: 0, tomorrow: 0, open: 0 });
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
@@ -2734,13 +2759,21 @@ export default function FieldCommandClient() {
         .then((data) => { if (data && !latestRows) showRows(data); })
         .catch(() => {});
     }
+    // The job file is ~3 MB: read it again only when it changed (owner, 9 Nov: the app froze after hours open, re-reading
+    // it every minute and on every return to the app). Coming back to the app refreshes at most every 20 s.
+    let lastTag = "";
+    let lastRefresh = 0;
     function refreshJobs() {
       if (loading) return;
       loading = true;
+      lastRefresh = Date.now();
       // no-cache: the phone keeps the file and the server answers "unchanged" quickly when it is.
       fetch(JOBS_URL, { cache: "no-cache" })
         .then(async (response) => {
           if (!response.ok) throw new Error("Job refresh failed");
+          const tag = response.headers.get("etag") || response.headers.get("last-modified") || "";
+          if (tag && tag === lastTag && latestRows) { void response.body?.cancel().catch(() => {}); return; } // unchanged
+          lastTag = tag;
           // Copy before reading: once the body is read it can't be copied into the phone's cache.
           if (typeof caches !== "undefined") {
             const copy = response.clone();
@@ -2762,14 +2795,15 @@ export default function FieldCommandClient() {
     const syncSaved = () => scheduleOverrideSync(0);
     refreshJobs();
     syncSaved();
-    window.addEventListener("focus", refreshJobs);
+    const refreshOnReturn = () => { if (Date.now() - lastRefresh > 20000) refreshJobs(); };
+    window.addEventListener("focus", refreshOnReturn);
     window.addEventListener("focus", syncSaved);
     window.addEventListener("online", syncSaved);
     window.addEventListener("storage", onStorage);
     const timer = window.setInterval(() => { refreshJobs(); syncSaved(); }, 60000);
     return () => {
       cancelled = true;
-      window.removeEventListener("focus", refreshJobs);
+      window.removeEventListener("focus", refreshOnReturn);
       window.removeEventListener("focus", syncSaved);
       window.removeEventListener("online", syncSaved);
       window.removeEventListener("storage", onStorage);
@@ -7751,6 +7785,7 @@ export default function FieldCommandClient() {
               { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "satellite" : mapStyle === "satellite" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
               { key: "one-hand", icon: "🖐", label: "One-hand mode", info: oneHand ? "On: search and map buttons by your thumb" : "Off · moves the top buttons down by your thumb", go: toggleOneHand },
               { key: "gloves", icon: "🧤", label: "Big buttons (gloves)", info: gloves ? "On: every button bigger for work gloves" : "Off · makes every button bigger for work gloves", go: toggleGloves },
+              { key: "broken", icon: "🐞", label: "Something's not working", info: "Sends Claude your last taps, so it knows which button", go: () => { setMoreOpen(false); void reportBroken(); } },
               { key: "papers", icon: "📜", label: "Your papers", info: papersDue.length ? `⚠️ ${papersDue[0].name}: ${paperLine(papersDue[0], Date.now())}` : papers.length ? `${papers.length} saved · warned 30 days before one runs out` : "Insurance and license dates · warned before they run out", go: () => { setMoreOpen(false); window.location.href = "/papers/"; } },
               { key: "locate", icon: "📍", label: "Where am I", info: "Show me on the map", go: () => { setMoreOpen(false); locateMe(); } },
             ];
@@ -9174,6 +9209,7 @@ export default function FieldCommandClient() {
           <button type="button" aria-label="Dismiss" onClick={() => setJustUpdated(false)}>✕</button>
         </div>
       ) : null}
+      {brokenNote ? <div className="fc-broken-note" role="status" data-hpd-smoke="fc-broken-note">{brokenNote}<button type="button" aria-label="Close" onClick={() => setBrokenNote("")}>✕</button></div> : null}
       {whatsNewOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-whatsnew-sheet" role="dialog" aria-label="What's new" data-hpd-smoke="fc-whatsnew">
           <header>
@@ -9225,6 +9261,7 @@ export default function FieldCommandClient() {
               <h4>💡 Ask for a change</h4>
               <textarea rows={3} data-hpd-smoke="fc-ask-change-text" placeholder="What should be better? e.g. make the notice text bigger, add 15 days to the filter…" value={changeText} onChange={(e) => setChangeText(e.target.value)} />
               <button type="button" data-hpd-smoke="fc-ask-change-save" disabled={!changeText.trim()} onClick={() => void askForChange()}>Save my request</button>
+              <button type="button" className="fc-broken-btn" data-hpd-smoke="fc-broken-send" onClick={() => { const n = changeText; void reportBroken(n).then((ok) => { if (ok) setChangeText(""); }); }}>🐞 Something&apos;s not working: send my last taps</button>
               {changeStatus ? <p className="fc-follow-note" data-hpd-smoke="fc-ask-change-status">{changeStatus}</p> : null}
             </section>
             <section className="fc-change-threads" data-hpd-smoke="fc-change-threads">

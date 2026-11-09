@@ -4852,3 +4852,8 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-paper-chip.is-expired { border-color: #ef4444; color: #fecaca; }
 .fc-paper-chip span { font-size: 16px; }
 .fc-paper-chip small { margin-left: 3px; font: 700 11px system-ui, sans-serif; color: inherit; opacity: .85; }
+
+/* 🐞 Something's not working: sent note. */
+.fc-broken-note { position: fixed; left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 1300; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: #0f172a; color: #f8fafc; font: 700 14px/1.35 system-ui, sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.fc-broken-note button { flex: none; width: 32px; height: 32px; border-radius: 16px; border: 0; background: #334155; color: #fff; font: 800 14px system-ui; }
+.fc-broken-btn { margin-top: 6px; }

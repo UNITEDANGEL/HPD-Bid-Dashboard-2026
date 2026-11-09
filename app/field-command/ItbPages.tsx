@@ -156,12 +156,14 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   const [voice, setVoice] = useState<Voice>("");
   const [speaking, setSpeaking] = useState<Voice>("");
   const [showSummary, setShowSummary] = useState(false);
+  const [voiceNote, setVoiceNote] = useState("");
   const canVoice = !!(readAll || readSummary?.length) && canReadAloud();
   const summaryText = (readSummary || []).join(". ");
   const say = (v: Voice) => {
     const text = v === "all" ? readAll : summaryText;
     if (v === "summary") setShowSummary(true);
-    if (text && readAloud(text, () => setSpeaking("")) ) setSpeaking(v);
+    setVoiceNote("");
+    if (text && readAloud(text, () => setSpeaking(""), undefined, () => setVoiceNote("🔇 The phone didn't start the voice. Turn the ringer on and the volume up, then tap again."))) setSpeaking(v);
   };
   const hush = () => { stopReading(); setSpeaking(""); };
   const pick = (v: Voice) => {
@@ -276,6 +278,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               <button type="button" aria-label="Hide the summary" onClick={() => setShowSummary(false)}>✕</button>
             </div>
           ) : null}
+          {voiceNote ? <p className="fc-itb-voice-note" role="status" data-hpd-smoke="fc-itb-voice-note">{voiceNote}</p> : null}
           {canVoice ? (
             <div className="fc-itb-voice-row" data-hpd-smoke="fc-itb-voice-row">
               {readAll ? <button type="button" className={speaking === "all" ? "is-on" : voice === "all" ? "is-picked" : ""} data-hpd-smoke="fc-itb-voice-all" aria-pressed={speaking === "all"} onClick={() => pick("all")}>{speaking === "all" ? "🔇 Stop" : "🔊 Read it all"}</button> : null}

@@ -313,6 +313,21 @@ The plan, one by one (✅ = live, ☐ = next):
 92. ✅ Owner, 9 Nov: "I don't want one flow to upset another flow ... that should not ever happen" -> scripts/flow-tests.mjs (npm run test:flows) runs every bids test and every job-card test together (40 browser tests + the lead price math) before every push; any failure, no push. First run caught the one-fax-for-several-bids test expecting the wrong order (the app orders same-time bids by job number); fixed.
 93. Owner, 9 Nov: "make the bids experience better, the flow, make a list of all the items we talked about in the md plan, and we upgrade that way" -> the 🎯 bids flow list below (every bid item from this plan, by stage, built ✅ or still to build ⏳). Upgrades for bids follow it, top of "Still to build" first.
 94. ✅ From the bids flow list, 9 Nov: lock / latch prices checked on 273 jobs (the app's price is right; market $420-640); many-door prices tested on 193 jobs (no change helps yet, kept as is); stair treads and risers now counted step by step in the job summary, My price and the calculator. The flow check now also runs the job summary and calculator math.
+95. Owner, 9 Nov: "keep looking at this app, fix it, button is not working; what else can you recommend, add to the list of upgrades, save to the MD plan, commit, upgrade as we go and test". Found and fixed:
+   - ✅ The app open in the right pane had frozen after hours open: it read the ~3 MB job file again every minute and on every return to the app (4-5 times a minute while tapping). Now it reads it only when the file changed (ETag), at most every 20 s on return; and after 8 hours open + 5 minutes away it reloads fresh (never with a job card, a bid or typing open).
+   - ✅ The owner's iPhone logged "Failed to start the audio device" (12:03 PM, twice): the sound is rebuilt on the next tap instead of staying broken.
+   - ✅ 🔊 Read it all / 📝 Summary on the iPhone: speech started right after a cancel can be dropped silently; now it only cancels when something plays, starts a moment later, asks again once after 1.5 s, and if the phone still won't speak the button says "turn the ringer on and the volume up" instead of doing nothing.
+   - ✅ 🐞 Something's not working (All menu, and under Ask for a change): one tap sends Claude the last 10 buttons tapped (names and screen, never typed words), errors of the last 30 minutes and the version, as a request. Next time "a button is not working" says which one. Test: test-browser-job-broken-report.
+
+### 💡 Recommended next upgrades (Claude, 9 Nov; build top first, each with a test and the flow check)
+1. ⏳ **Lead rates remembered**: your baseboard / window / door / wall rates from the last lead bid fill in on the next one (change any).
+2. ⏳ **Bid all in a row, hands-free**: each bid's summary is read, you say "bid 2,400" (or "skip"), it saves and goes to the next; sending stays two taps.
+3. ⏳ **30-minute deadline alert**: a phone alert when a bid due within 30 minutes is saved but not sent ("ER… not sent, 30 min left").
+4. ⏳ **Morning bid brief (8 AM alert)**: "5 bids due today, best prices about $9,400 in all: tap to start".
+5. ⏳ **Monday lost-bids review**: last week's lost bids, the winner's price next to yours, and what to change.
+6. ⏳ **Tread price from past awards**: the market price per stair tread (marble / metal / wood) as the suggested rate.
+7. ⏳ **Version on the phone**: the error log and 🐞 report always say the exact live version (the build number differs between computers).
+8. ⏳ **Flow check after every deploy on the live site** (the bids + job-card checks on pages.dev, not only on this computer).
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.

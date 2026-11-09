@@ -19,7 +19,7 @@ try {
   await context.addInitScript(() => {
     try { if (!sessionStorage.getItem("walk-set")) { localStorage.setItem("hpd-bid-walk", "on"); sessionStorage.setItem("walk-set", "1"); } } catch { /* private mode */ }
     window.__said = []; window.__cancels = 0;
-    const synth = { speaking: false, getVoices: () => [{ name: "Test", lang: "en-US" }], cancel() { window.__cancels += 1; }, speak(u) { window.__said.push(u.text); }, addEventListener() {}, removeEventListener() {} };
+    const synth = { speaking: false, getVoices: () => [{ name: "Test", lang: "en-US" }], cancel() { window.__cancels += 1; }, speak(u) { window.__said.push(u.text); if (!window.__mute && u.text.trim()) setTimeout(() => u.onstart && u.onstart(), 20); }, resume() {}, addEventListener() {}, removeEventListener() {} };
     Object.defineProperty(window, "speechSynthesis", { value: synth, configurable: true });
     window.SpeechSynthesisUtterance = function (t) { this.text = t; };
   });
@@ -67,6 +67,19 @@ try {
   const box = page.locator('[data-hpd-smoke="fc-itb-summary"]');
   assert.match(await box.innerText(), /The work in short/);
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-read-voice")), "summary");
+  // The phone never starts the voice (owner's iPhone, 9 Nov "button is not working"): asked once more, then it says so.
+  await sum.click(); // stop
+  await page.evaluate(() => { window.__mute = true; });
+  const n0 = (await said()).length;
+  await all.click();
+  const note = page.locator('[data-hpd-smoke="fc-itb-voice-note"]');
+  await note.waitFor({ timeout: 6000 });
+  assert.match(await note.innerText(), /didn't start the voice.*ringer/);
+  assert.equal((await said()).length, n0 + 2, "tried twice");
+  assert.equal((await all.innerText()).trim(), "🔊 Read it all", "the button is ready again");
+  await page.evaluate(() => { window.__mute = false; });
+  await sum.click();
+  await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-itb-voice-note"]'), null, { timeout: 3000 });
   // Price it: the voice stops and the summary goes; the next bid's summary is read by itself.
   const c1 = await page.evaluate(() => window.__cancels);
   await page.locator('[data-hpd-smoke="fc-itb-price"]').click();
@@ -79,7 +92,7 @@ try {
   await box.waitFor({ timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-itb-close"]').click();
   assert.deepEqual(errors, []);
-  console.log("PASS bid read aloud: 🔊 Read it all reads HPD's whole description word for word, 📝 Summary reads the short version and shows it, 🔇 Stop stops; the choice is kept: the next bid's summary is read by itself; Price it stops it; fits the iPhone");
+  console.log("PASS bid read aloud: 🔊 Read it all reads HPD's whole description word for word, 📝 Summary reads the short version and shows it, 🔇 Stop stops; the choice is kept: the next bid's summary is read by itself; when the phone doesn't start the voice it tries again and then says so; Price it stops it; fits the iPhone");
 } finally {
   await browser.close();
 }
