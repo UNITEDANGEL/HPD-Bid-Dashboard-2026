@@ -32,6 +32,8 @@ async function cardFor(job, { withRoute }) {
   await page.goto(`${baseUrl}/map/?omo=${encodeURIComponent(job)}&view=all`, { waitUntil: "load", timeout: 180000 });
   await page.locator("#fc-job-card").waitFor({ timeout: 120000 });
   await page.waitForTimeout(1500);
+  // HPD's status (closed / still open) joins the key dates once its file has loaded.
+  await page.waitForFunction(() => /HPD: /.test(document.querySelector('[data-hpd-smoke="jc-key-dates"]')?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
   const next = page.locator('[data-hpd-smoke="jc-next-job"]');
   const keyDates = await page.locator('[data-hpd-smoke="jc-key-dates"]').innerText().catch(() => "");
   const result = (await next.count())
