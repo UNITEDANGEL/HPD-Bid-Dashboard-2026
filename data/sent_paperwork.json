@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-09T20:23:28.739389+00:00",
+"generatedAt": "2026-11-09T20:34:36.691423+00:00",
 "since": "2026/10/26",
 "jobs": {
 "EN04541": [
@@ -21124,6 +21124,14 @@
 "file": "SIGNED - ER00898 - No Access.pdf",
 "outcome": "no_access",
 "subject": "SIGNED - ER00898 - No Access - 512 EAST 13 STREET, 10009"
+},
+{
+"date": "2026-11-09",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER00898 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - ER00898 - No Access - 512 EAST 13 STREET, 10009",
+"via": "hpd-staff"
 }
 ],
 "ER01032": [
@@ -21214,6 +21222,23 @@
 "outcome": "",
 "subject": "ER01924_072826031046_3525_ROCHAMBEAU_AVENUE_Bronx_NY",
 "via": "hpd-staff"
+}
+],
+"ER01932": [
+{
+"date": "2026-11-09",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER01932 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - ER01932 - No Access - 3885 BROADWAY, 10032",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-09",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER01932 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - ER01932 - No Access - 3885 BROADWAY, 10032"
 }
 ],
 "ER01987": [
