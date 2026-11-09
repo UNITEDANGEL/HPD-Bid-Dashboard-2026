@@ -49,7 +49,7 @@ try {
   // Bids due within 3 hours move to tomorrow too: the flow (failed fax -> automatic resend, which only happens before
   // the deadline) must not race a real 11:30 deadline (20 Oct: CI ran at 11:29).
   const soon = (b) => b.bidDue === today && mins(b.bidDueTime) - (clockNow[0] * 60 + clockNow[1]) < 180;
-  const real = { ...fetched, bids: fetched.bids.map((b) => (stillOpenNow(b) && !soon(b) ? b : { ...b, bidDue: tomorrow })) };
+  const real = { ...fetched, bids: fetched.bids.filter((b) => !b.lead).map((b) => (stillOpenNow(b) && !soon(b) ? b : { ...b, bidDue: tomorrow })) };
   const past = [{ ...real.bids[0], omo: "PAST01", bidDue: yesterday, bidDueTime: "11:00 AM" }, { ...real.bids[0], omo: "PAST02", bidDue: today, bidDueTime: "12:01 AM" }];
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids], unread: [{ file: 'ER09999_101326.pdf', omo: 'ER09999', why: 'no bid due date' }] } }));
   // Fax: the request is checked and answered here; status is "confirmed" for the first bid, "failed" for the second.

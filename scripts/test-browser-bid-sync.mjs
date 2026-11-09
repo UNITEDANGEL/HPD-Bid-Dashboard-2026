@@ -69,6 +69,8 @@ try {
 
   // Day buttons: Today shows only today's invitations (and pins); All brings everything back.
   await page.locator('[data-hpd-smoke="fc-bids-day-pick"]').click();
+  // A "fax confirmed" alert from the real data can sit over the day buttons for a few seconds: close it.
+  for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
   await page.locator('[data-hpd-smoke="fc-bids-day-0"]').click();
   const todayRows = await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').allInnerTexts();
   assert.deepEqual(todayRows.map((t) => t.match(/E[QR]\d{5}/)[0]).sort(), ["ER77779", "ER77780"], "Today: only today's bids");

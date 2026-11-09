@@ -268,6 +268,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // "half" and "full". Tap or drag the bar to change it.
   const [listSize, setListSize] = useState<"peek" | "half" | "full">("peek");
   const listCollapsed = listSize === "peek";
+  // Pulling the list up (or opening it) means you're picking yourself: the welcome card steps aside.
+  useEffect(() => { if (listSize !== "peek") setWelcome(false); }, [listSize]); // eslint-disable-line react-hooks/exhaustive-deps
   const setListCollapsed = (v: boolean | ((x: boolean) => boolean)) => setListSize((cur) => ((typeof v === "function" ? v(cur === "peek") : v) ? "peek" : cur === "peek" ? "half" : cur));
   const dragRef = useRef<{ y: number; size: "peek" | "half" | "full" } | null>(null);
   // Which day's invitations to show: all, today, tomorrow or the day after (remembered on the phone).
@@ -1035,6 +1037,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   async function review() {
     if (!record) return;
     if (busy === "Filling the bid package…") return; // already being made (saving the price starts it)
+    if (leadNotReady) return; // 🧪 a lead bid: HPD's price list needs every rate first (both papers go together)
     setBusy("Filling the bid package…");
     try {
       await buildPackage(record.price);
@@ -1048,6 +1051,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (!autoFill || !record || !(record.price > 0) || record.status !== "saved") return;
     if (filled && filled.price === record.price) { setAutoFill(false); return; }
     setAutoFill(false);
+    if (leadNotReady) return;
     void review();
   }, [autoFill, record]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1227,7 +1231,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         {autoNote ? <small className="fc-bids-autonote" data-hpd-smoke="fc-bids-autonote">{autoNote}</small> : null}
         <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bids ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-today"> · {bids.filter((b) => b.receivedAt && new Date(b.receivedAt).toLocaleDateString("en-US", { timeZone: "America/New_York" }) === new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })).length} received today</small> : null}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
         {unread.length ? <p className="fc-bids-unread" role="alert" data-hpd-smoke="fc-bids-unread">⚠️ {unread.length} invitation{unread.length > 1 ? "s" : ""} couldn&apos;t be read, open in your email: {unread.map((u) => `${u.omo || u.file} (${u.why})`).join(", ")}</p> : null}
-        <button type="button" className={`fc-bids-daypick${dayPick !== "all" ? " is-set" : ""}`} aria-expanded={daysOpen} data-hpd-smoke="fc-bids-day-pick" onClick={() => setDaysOpen((o) => !o)}>
+        <button type="button" className={`fc-bids-daypick${dayPick !== "all" ? " is-set" : ""}`} aria-expanded={daysOpen} data-hpd-smoke="fc-bids-day-pick" onClick={() => { setWelcome(false); setDaysOpen((o) => !o); }}>
           📅 {dayPick === "all" ? "All" : dayPick === "0" ? "Today" : dayPick === "1" ? "Tomorrow" : new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" })}
         </button>
         {boroPick ? <button type="button" className="fc-bids-boro" aria-label={`Only ${BORO_NAME[boroPick] || boroPick}: tap to show every borough`} data-hpd-smoke="fc-bids-boro" onClick={() => { setBoroPick(""); setRefit((n) => n + 1); }}>📍 {BORO_NAME[boroPick] || boroPick} ✕</button> : null}

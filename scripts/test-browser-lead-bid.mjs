@@ -79,8 +79,9 @@ try {
   await save();
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-bid-paper-itb"]')?.classList.contains("is-done"), null, { timeout: 5000 });
   assert.equal(await box.locator('[data-hpd-smoke="fc-bid-lead-mismatch"]').count(), 0, "prices match now");
+  // Both papers ready: saving the price fills the package by itself (or the button does).
+  await page.waitForFunction(() => /Package filled · \$2,576\.00|Fill the package at \$2,576\.00/.test(document.querySelector('[data-hpd-smoke="fc-bid-review"]')?.textContent || ""), null, { timeout: 30000 });
   assert.ok(await reviewBtn.isEnabled(), "both papers ready: the package can be filled");
-  assert.match(await reviewBtn.innerText(), /Fill the package at \$2,576\.00/);
   assert.equal(faxes, 0, "nothing faxed");
   await box.screenshot({ path: `${process.env.TEMP || "/tmp"}/lead-box.png` });
   assert.deepEqual(errors, []);
