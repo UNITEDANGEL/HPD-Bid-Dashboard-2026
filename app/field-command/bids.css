@@ -918,3 +918,21 @@ i.is-won { background: #16a34a; }
 .fc-bid-pin.is-lead .fc-bid-in { box-shadow: 0 0 0 4px #facc15, 0 6px 16px rgba(0,0,0,.45); border-radius: 50%; }
 .fc-bid-pin.is-lead .fc-bid-in::after { content: "LEAD"; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 8px; background: #facc15; color: #422006; font: 900 10px/1.4 system-ui, sans-serif; letter-spacing: .04em; white-space: nowrap; }
 .fc-bid-chip.is-lead { background: #fef08a !important; color: #422006 !important; border: 1px solid #ca8a04 !important; font-weight: 800; }
+
+/* 🧪 A rate box on every line of HPD's price list. */
+.fc-bid-lead-each { font: 600 13px/1.35 system-ui, sans-serif; color: #334155; }
+.fc-bid-lead-room ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.fc-bid-lead-line { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; padding: 8px; border-radius: 10px; background: #fff; border: 1px solid #cbd5e1; color: #0f172a; }
+.fc-bid-lead-line > span { grid-column: 1 / 3; font: 600 13.5px/1.3 system-ui, sans-serif; color: #0f172a; }
+.fc-bid-lead-line > span b { font-weight: 800; }
+.fc-bid-lead-line em { font: 700 14px system-ui, sans-serif; font-style: normal; color: #0f172a; display: flex; align-items: center; gap: 4px; }
+.fc-bid-lead-line em input { width: 90px !important; min-height: 40px !important; padding: 0 8px !important; border-radius: 8px !important; border: 1.5px solid #94a3b8 !important; background: #fff !important; color: #0f172a !important; font: 800 16px system-ui, sans-serif !important; }
+.fc-bid-lead-line em input::placeholder { color: #94a3b8; }
+.fc-bid-lead-line strong { font: 900 15px system-ui, sans-serif; color: #1e3a8a; text-align: right; }
+.fc-bid-lead-line.is-own { border-color: #2563eb; background: #eff6ff; }
+
+/* The rate per kind of work: light card, dark words (the big dark price-box look made "per sq ft" unreadable). */
+.fc-bid-price label.fc-bid-lead-rate { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; padding: 10px 12px; border: 2px solid #ca8a04; background: #fffbeb; }
+.fc-bid-price label.fc-bid-lead-rate > span { color: #0f172a; font: 800 15px/1.3 system-ui, sans-serif; }
+.fc-bid-price label.fc-bid-lead-rate em { color: #0f172a; font: 700 14px system-ui, sans-serif; font-style: normal; display: flex; align-items: center; gap: 4px; }
+.fc-bid-price label.fc-bid-lead-rate em input { width: 96px !important; min-height: 44px !important; padding: 0 8px !important; border-radius: 8px !important; border: 1.5px solid #ca8a04 !important; background: #fff !important; color: #0f172a !important; font: 900 18px system-ui, sans-serif !important; }

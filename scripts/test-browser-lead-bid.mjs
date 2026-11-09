@@ -74,6 +74,22 @@ try {
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-mismatch"]').innerText(), /\$2,000\.00 is not the price list total \$2,576\.00/);
   assert.match(await box.locator('[data-hpd-smoke="fc-bid-lead-scope"]').getAttribute("href"), /\/api\/private\/itb\/ER09991\.pdf$/);
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991")), JSON.stringify({ "Enclosure|SQFT": 18, "Replacement|FT": 40 }), "rates kept on the phone");
+  // A rate box on every line (owner, 9 Nov: "rate box for each item"): empty uses the kind's rate (shown greyed);
+  // a rate typed on one wall wins for that wall only.
+  const lines = box.locator('[data-hpd-smoke="fc-bid-lead-line"]');
+  assert.equal(await lines.count(), 3, "every line of the sheet has its box");
+  const first = lines.nth(0);
+  assert.match(await first.innerText(), /SOUTH WALL · enclosure · 50 sq ft/);
+  assert.equal(await first.locator('[data-hpd-smoke="fc-bid-lead-line-rate"]').getAttribute("placeholder"), "18");
+  assert.match(await first.locator('[data-hpd-smoke="fc-bid-lead-line-cost"]').innerText(), /\$900\.00/);
+  await first.locator('[data-hpd-smoke="fc-bid-lead-line-rate"]').fill("20");
+  await page.waitForFunction(() => /Apartment total: \$2,676\.00/.test(document.querySelector('[data-hpd-smoke="fc-bid-lead-total"]')?.textContent || ""), null, { timeout: 5000 });
+  assert.match(await first.locator('[data-hpd-smoke="fc-bid-lead-line-cost"]').innerText(), /\$1,000\.00/);
+  assert.match(await first.getAttribute("class"), /is-own/);
+  assert.match(await box.innerText(), /BATHROOM: \$1,200\.00/);
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("hpd-lead-rates-ER09991")))["line:0:0"], 20, "line rate kept on the phone");
+  await first.locator('[data-hpd-smoke="fc-bid-lead-line-rate"]').fill("");
+  await page.waitForFunction(() => /Apartment total: \$2,576\.00/.test(document.querySelector('[data-hpd-smoke="fc-bid-lead-total"]')?.textContent || ""), null, { timeout: 5000 });
   await box.locator('[data-hpd-smoke="fc-bid-lead-use"]').click();
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-bid-price"]')?.value?.replace(/[^0-9.]/g, "").replace(/\.0+$/, "") === "2576", null, { timeout: 5000 });
   await save();

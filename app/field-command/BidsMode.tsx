@@ -30,7 +30,7 @@ import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, 
 import { buildingHistory } from "../../lib/building-bids";
 import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { loadPapers } from "../../lib/papers";
-import { appendScope, fillLeadScope, loadLeadRates, priceScope, rateGroups, saveLeadRates, scopeMoney, type LeadRates } from "../../lib/lead-scope";
+import { appendScope, fillLeadScope, lineKey, loadLeadRates, priceScope, rateGroups, rateKey, saveLeadRates, scopeMoney, type LeadRates } from "../../lib/lead-scope";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
@@ -1461,10 +1461,20 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                         <em>$<input inputMode="decimal" aria-label={`${g.method} rate per ${g.unit}`} data-hpd-smoke="fc-bid-lead-rate" data-key={g.key} disabled={sentLocked} defaultValue={rates[g.key] ? String(rates[g.key]) : ""} onChange={(e) => setRate(g.key, e.target.value)} placeholder="0.00" /> per {g.unit}</em>
                       </label>
                     ))}
-                    {priced.rooms.map((r) => (
-                      <details key={r.room} className="fc-bid-lead-room">
+                    <span className="fc-bid-lead-each">Each line has its own rate box too: leave it empty to use the rate above, or type a different rate for that wall.</span>
+                    {priced.rooms.map((r, ri) => (
+                      <details key={`${ri}-${r.room}`} className="fc-bid-lead-room" open>
                         <summary>{r.room || "Room"}: {r.total ? scopeMoney(r.total) : "—"} ({r.items.length} item{r.items.length === 1 ? "" : "s"})</summary>
-                        <ul>{r.items.map((it, i) => <li key={i}>{it.component}: {it.method.toLowerCase()}, {it.qty} {it.um === "SQFT" ? "sq ft" : it.um.toLowerCase()}{it.rate ? ` × $${it.rate} = ${scopeMoney(it.cost)}` : ""}</li>)}</ul>
+                        <ul>{r.items.map((it, i) => {
+                          const unit = it.um === "SQFT" ? "sq ft" : it.um.toLowerCase();
+                          return (
+                            <li key={i} className={`fc-bid-lead-line${it.own ? " is-own" : ""}`} data-hpd-smoke="fc-bid-lead-line">
+                              <span><b>{it.component}</b> · {it.method.toLowerCase()} · {it.qty} {unit}</span>
+                              <em>$<input inputMode="decimal" aria-label={`Rate for ${it.component} per ${unit}`} data-hpd-smoke="fc-bid-lead-line-rate" data-line={lineKey(ri, i)} disabled={sentLocked} defaultValue={rates[lineKey(ri, i)] ? String(rates[lineKey(ri, i)]) : ""} placeholder={rates[rateKey(it)] ? String(rates[rateKey(it)]) : "0.00"} onChange={(e) => setRate(lineKey(ri, i), e.target.value)} /> per {unit}</em>
+                              <strong data-hpd-smoke="fc-bid-lead-line-cost">{it.rate ? scopeMoney(it.cost) : "—"}</strong>
+                            </li>
+                          );
+                        })}</ul>
                       </details>
                     ))}
                     <b data-hpd-smoke="fc-bid-lead-total">Apartment total: {priced.total ? scopeMoney(priced.total) : "—"}{priced.complete ? "" : ` (${priced.missing.length} rate${priced.missing.length === 1 ? "" : "s"} to go)`}</b>

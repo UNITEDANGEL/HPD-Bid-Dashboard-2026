@@ -24,10 +24,18 @@ export function rateGroups(scope: LeadScope) {
 }
 
 const cents = (n: number) => Math.round(n * 100) / 100;
+// A rate for one line (owner, 9 Nov: "rate box for each item"): it wins over the rate for that kind of work.
+export const lineKey = (room: number, item: number) => `line:${room}:${item}`;
+export function lineRate(scope: LeadScope, rates: LeadRates, room: number, item: number) {
+  const it = scope.rooms[room]?.items[item];
+  if (!it) return 0;
+  return rates[lineKey(room, item)] > 0 ? rates[lineKey(room, item)] : rates[rateKey(it)] || 0;
+}
 export function priceScope(scope: LeadScope, rates: LeadRates) {
-  const missing = rateGroups(scope).filter((g) => !(rates[g.key] > 0)).map((g) => g.key);
-  const rooms = scope.rooms.map((r) => {
-    const items = r.items.map((it) => ({ ...it, rate: rates[rateKey(it)] || 0, cost: cents((rates[rateKey(it)] || 0) * it.qty) }));
+  // A kind of work still to price: one of its lines has neither its own rate nor the kind's rate.
+  const missing = [...new Set(scope.rooms.flatMap((r, ri) => r.items.filter((it, ii) => !(lineRate(scope, rates, ri, ii) > 0)).map(rateKey)))];
+  const rooms = scope.rooms.map((r, ri) => {
+    const items = r.items.map((it, ii) => { const rate = lineRate(scope, rates, ri, ii); return { ...it, rate, own: rates[lineKey(ri, ii)] > 0, cost: cents(rate * it.qty) }; });
     return { room: r.room, items, total: cents(items.reduce((a, it) => a + it.cost, 0)) };
   });
   return { rooms, total: cents(rooms.reduce((a, r) => a + r.total, 0)), missing, complete: !missing.length };

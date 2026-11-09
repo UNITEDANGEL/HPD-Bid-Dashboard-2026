@@ -27,6 +27,13 @@ assert.equal(p.complete, true);
 assert.deepEqual(p.rooms.map((r) => r.total), [1102.5, 2164.5]);
 assert.equal(p.total, 3267);
 assert.equal(L.scopeMoney(3267), "$3,267.00");
+// A rate on one line wins for that line only; a line with its own rate counts as priced.
+const own = L.priceScope(scope, { "Enclosure|SQFT": 18, "Replacement|FT": 40.5, [L.lineKey(0, 0)]: 20 });
+assert.equal(own.rooms[0].items[0].rate, 20);
+assert.equal(own.rooms[0].items[0].own, true);
+assert.equal(own.total, 3267 + 2 * scope.rooms[0].items[0].qty);
+const onlyLines = { ...Object.fromEntries(scope.rooms.flatMap((r, ri) => r.items.map((_, ii) => [L.lineKey(ri, ii), 10]))) };
+assert.equal(L.priceScope(scope, onlyLines).complete, true, "every line priced on its own");
 
 const sheet = path.join(root, "ITB_Downloads_V5", "lead", "ER09991.pdf");
 if (fs.existsSync(sheet)) {
