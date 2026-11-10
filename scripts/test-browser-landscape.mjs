@@ -49,11 +49,8 @@ try {
     const scrolled = await body.evaluate(async (b) => { b.scrollTop = 600; await new Promise((r) => setTimeout(r, 100)); return b.scrollHeight <= b.clientHeight || b.scrollTop > 0; });
     assert.ok(scrolled, `${where}: notices scroll`);
     await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
-    // Closing the list leaves the notices picker on the map; The list opens it again; Show all jobs brings every job back.
-    await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
-    await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
-    await page.locator('[data-hpd-smoke="fc-notices-show-all"]').click();
-    assert.equal(await page.locator('[data-hpd-smoke="fc-notices-open"]').getAttribute("aria-pressed"), "false", `${where}: Show all jobs closes the notices`);
+    // Closing the list leaves the notices on the map (10 Nov: no "Show all jobs"; you stay on the notices).
+    assert.equal(await page.locator('[data-hpd-smoke="fc-notices-show-all"]').count(), 0, `${where}: no Show all jobs`);
     // Bids: open, second tap closes.
     await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
     await openBidList(page);

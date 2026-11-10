@@ -28,7 +28,7 @@ try {
 
   // The board: both listed, newest sent first, with the dates.
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const box = page.locator('[data-hpd-smoke="fc-line2"]');
   await box.waitFor({ timeout: 20000 });
   assert.match(await box.locator("summary").innerText(), /🗓 2 affidavits sent with the wrong date on line 2/);

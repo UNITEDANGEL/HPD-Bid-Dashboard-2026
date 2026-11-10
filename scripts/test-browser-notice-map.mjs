@@ -21,7 +21,7 @@ try {
   for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
   const allPins = await page.locator(".leaflet-marker-icon, .fc-pin").count();
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor();
   assert.equal(await board.getAttribute("data-with-map"), "1", "opens with the map");

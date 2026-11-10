@@ -33,7 +33,7 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const all = page.locator('[data-hpd-smoke="fc-board-fix-all"]');
   await all.waitFor({ timeout: 20000 });
   assert.match(await all.innerText(), /^🔧 Fix all \d+, one by one$/);

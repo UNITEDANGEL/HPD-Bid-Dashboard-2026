@@ -4949,3 +4949,36 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-agent-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 .fc-agent-tools button { padding: 7px 10px; border-radius: 10px; border: 1px solid #94a3b8; background: #f8fafc; color: #0f172a; font: 800 13px system-ui; }
 .fc-agent-tools button.is-on { background: #4c1d95; border-color: #4c1d95; color: #fff; }
+
+/* 📩 Notices = the board over the map, the picks on top of the board (10 Nov). */
+.fc-notice-chooser.is-on-board { top: calc(34vh - 6px); bottom: auto !important; left: 0; right: 0; max-width: none; z-index: 200001; border-radius: 18px 18px 0 0; padding: 8px 10px; gap: 6px; animation: none; }
+.fc-notice-chooser.is-on-board header { display: none; }
+.fc-notice-chooser.is-on-board .fc-notice-picks { display: flex !important; flex-wrap: nowrap; overflow-x: auto !important; gap: 6px; }
+.fc-notice-chooser.is-on-board .fc-notice-pick { flex: 0 0 auto; min-height: 44px; padding: 4px 10px; }
+.fc-package-sheet.fc-board-sheet.is-with-map { padding-top: 64px; }
+
+/* The picks on the board: one slim row of small chips, not big tiles (10 Nov). */
+.fc-notice-chooser.is-on-board { display: flex !important; flex-wrap: nowrap; align-items: center; overflow-x: auto; padding: 6px 8px; gap: 6px; background: #0b1220; }
+.fc-notice-chooser.is-on-board > * { flex: 0 0 auto; }
+.fc-notice-chooser.is-on-board .fc-board-row2, .fc-notice-chooser.is-on-board .fc-notice-picks { display: flex !important; gap: 6px; flex-wrap: nowrap; }
+.fc-notice-chooser.is-on-board .fc-board-open, .fc-notice-chooser.is-on-board .fc-notice-check-btn, .fc-notice-chooser.is-on-board .fc-notice-pick { min-height: 40px !important; height: 40px; width: auto !important; padding: 0 10px !important; display: inline-flex !important; align-items: center; gap: 4px; font-size: 13px !important; border-radius: 20px !important; }
+.fc-notice-chooser.is-on-board .fc-board-open small, .fc-notice-chooser.is-on-board .fc-notice-check-btn small, .fc-notice-chooser.is-on-board .fc-notice-pick small { display: none; }
+.fc-notice-chooser.is-on-board .fc-notice-pick-icon { font-size: 16px; }
+.fc-package-sheet.fc-board-sheet.is-with-map { padding-top: 58px; }
+/* The thin bar has no ✕: you stay on the notices (tap Jobs to leave). */
+.fc-notice-chooser.is-mini [data-hpd-smoke="fc-notice-chooser-close"] { display: none; }
+.fc-notice-chooser.is-mini header { grid-template-columns: minmax(0, 1fr) auto auto; }
+
+/* The board over the map stops above the bottom bar: Notices / Jobs / Bids stay tappable (10 Nov). */
+.fc-package-sheet.fc-board-sheet.is-with-map { bottom: var(--fc-dock-total, 84px); border-radius: 18px; }
+/* One label per pin (10 Nov: "overlapping pins information ... asked and sent overlapping"): a lit notice pin shows only
+   its notice tag, not also the day count / sent ✓ chip. */
+.leaflet-marker-icon.is-glow .fc-pin-chip, .leaflet-marker-icon.is-glow .fc-pin-visits { display: none; }
+
+/* ⏱ Board on the thin Notices bar (10 Nov): fold the board, reopen it from the bar; the rest stays hidden. */
+.fc-notice-chooser.is-mini { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.fc-notice-chooser.is-mini .fc-board-row2 { display: flex !important; grid-column: 2; grid-row: 1; }
+.fc-notice-chooser.is-mini .fc-board-row2 .fc-notice-check-btn, .fc-notice-chooser.is-mini .fc-board-row2 .fc-board-open small, .fc-notice-chooser.is-mini .fc-board-row2 .fc-board-open b { display: none; }
+.fc-notice-chooser.is-mini .fc-board-row2 .fc-board-open { min-height: 38px; height: 38px; padding: 0 10px; border-radius: 19px; font-size: 13px; }
+.fc-notice-chooser.is-mini .fc-board-row2 .fc-board-open::after { content: "Board"; font: 800 13px system-ui; margin-left: 4px; }
+.fc-notice-chooser.is-mini header { grid-column: 1; grid-row: 1; }

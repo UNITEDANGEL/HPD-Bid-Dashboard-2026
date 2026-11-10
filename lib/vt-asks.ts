@@ -9,7 +9,9 @@ export const VT_PEOPLE = /\b(lewis|gafur|saul|jagdeo|rishi)\b/i;
 
 export type VtAsk = { omo: string; at: string; who: string; subject: string; threadId: string };
 
-export function vtAsks(threads: HpdThread[] | null | undefined, handled: Record<string, string> = {}): VtAsk[] {
+// sent: job -> when its paperwork went to HPD (the "<OMO> AFF INVOICE" PDF in any sent email; public/data/sent_paperwork):
+// sent after their email = closed out, off the map (owner, 10 Nov: "everything that's been sent, archive it").
+export function vtAsks(threads: HpdThread[] | null | undefined, handled: Record<string, string> = {}, sent: Record<string, { sentAt?: string }> = {}): VtAsk[] {
   const out = new Map<string, VtAsk>();
   for (const t of threads || []) {
     if (!t.waiting || !t.omos?.length) continue;
@@ -20,6 +22,10 @@ export function vtAsks(threads: HpdThread[] | null | undefined, handled: Record<
     for (const omo of t.omos) {
       const h = handled[omo] || "";
       if (h && Date.parse(h) > Date.parse(last.at)) continue;
+      const s = sent[omo]?.sentAt || "";
+      if (s && Date.parse(s) > Date.parse(last.at)) continue;
+      // Our own email in any thread with the job's PDF after their ask also counts as sent.
+      if ((threads || []).some((o) => o.omos?.includes(omo) && (o.messages || []).some((m) => m.mine && Date.parse(m.at) > Date.parse(last.at) && (m.files || []).some((f) => new RegExp(`${omo}.*(AFF|INVOICE)`, "i").test(String(f)))))) continue;
       const prev = out.get(omo);
       // The oldest open ask for the job (it has waited longest).
       if (!prev || last.at < prev.at) out.set(omo, { omo, at: last.at, who, subject: t.subject, threadId: t.id });

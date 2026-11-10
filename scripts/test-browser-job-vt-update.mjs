@@ -83,7 +83,7 @@ try {
   if (!(await board.waitFor({ timeout: 15000 }).then(() => true).catch(() => false))) {
     for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
     await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-    await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+    await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   }
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   const late = board.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${JOB}"]`);

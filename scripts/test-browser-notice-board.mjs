@@ -40,7 +40,7 @@ United Angel Construction Corp` } });
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
 
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor();
   const rows = board.locator('[data-hpd-smoke="fc-board-row"]');
@@ -156,7 +156,7 @@ United Angel Construction Corp` } });
   if (shots) await page.screenshot({ path: `${shots}/board-7-sent.png` });
   await page.reload({ waitUntil: "load" });
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   const again = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ hasText: omo }).first();
@@ -181,8 +181,8 @@ United Angel Construction Corp` } });
   assert.match(await p2.locator('[data-hpd-smoke="fc-notices-open"]').getAttribute("class"), /is-urgent/);
   if (shots) await p2.screenshot({ path: `${shots}/board-3-alert.png` });
   await p2.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  assert.match(await p2.locator('[data-hpd-smoke="fc-notice-board-open"]').innerText(), /under 6 h/);
-  await p2.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  assert.match(await p2.locator('[data-hpd-smoke="fc-notice-board-open"]').textContent(), /under 6 h/);
+  await p2.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await p2.locator('[data-hpd-smoke="fc-board"]').count())) await p2.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   await p2.locator('[data-hpd-smoke="fc-board"]').waitFor();
   assert.ok((await p2.locator('[data-hpd-smoke="fc-board-row"].is-hot').count()) > 0, "hot rows marked");
   await ctx2.close();
@@ -195,7 +195,7 @@ United Angel Construction Corp` } });
   await p3.clock.install({ time: new Date("2026-10-10T14:00:00Z") });
   await p3.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await p3.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await p3.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await p3.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await p3.locator('[data-hpd-smoke="fc-board"]').count())) await p3.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const holRow = p3.locator('[data-hpd-smoke="fc-board-row"]', { hasText: "EQ99998" });
   const due = holRow.locator('[data-hpd-smoke="fc-board-due"]');
   await due.waitFor({ timeout: 20000 });

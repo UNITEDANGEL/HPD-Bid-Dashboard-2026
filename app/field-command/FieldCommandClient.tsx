@@ -1388,7 +1388,7 @@ export default function FieldCommandClient() {
   // jobs stay on the map above the board; closing it leaves them on the map.
   const [boardWithMap, setBoardWithMap] = useState(false);
   // 📋 The notice list at the bottom of the map (10 Nov): open / folded.
-  const [trayOpen, setTrayOpen] = useState(true);
+  const [trayOpen, setTrayOpen] = useState(false);
   const [boardShow, setBoardShow] = useState<"all" | "ppn" | "docs">("all");
   // ✅ "Already sent / fixed" (owner, 5 Nov): job -> when, on every phone (HANDLED-<job> on the status server, and this
   // phone at once). The notice drops to Done.
@@ -3328,7 +3328,7 @@ export default function FieldCommandClient() {
   const heldBy = new Map(payTrack.rows.filter((r) => r.status === "held").map((r) => [r.omo, r.held]));
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
     // 🔥 + every email from Lewis / Gafur still waiting on you, whatever it asks (10 Nov: status update requests too).
-    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap).map((a) => a.omo).filter((o) => findAnyJob(o))]),
+    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => a.omo).filter((o) => findAnyJob(o))]),
     rejected: new Set(openRejections.map((r) => r.omo)),
     corrections: new Set(threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).flatMap((t) => t.omos)),
     print: new Set(toPrint.filter((c) => !c.mailedAt).map((c) => c.omo)),
@@ -3388,7 +3388,10 @@ export default function FieldCommandClient() {
     // Priority / Gafur / Lewis (owner, 10 Nov: "every time I click priority it should open the map where all the jobs are
     // that need attention, with a small drop-down window at the bottom to scroll through them and fix each one by the
     // dates"): the map + the 📋 list at the bottom (fc-notice-tray). The full board is one tap away on the bar.
-    setTrayOpen(true);
+    // The map first; the 📋 list is one line to open (10 Nov: "I should see the map and an option to see the list").
+    setTrayOpen(false);
+    setBoardOpen(false);
+    setBoardWithMap(false);
   };
   // The nearest 24 / 72-hour deadline (for the timer on the Priority chip).
   const nextDue = vendorTodo.filter((p) => p.dueAt).sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)))[0];
@@ -3615,6 +3618,12 @@ export default function FieldCommandClient() {
   const resumeRef = useRef<{ board: boolean; withMap: boolean; filter: string; kind: string }>({ board: false, withMap: false, filter: "", kind: "" });
   resumeRef.current = { board: boardOpen, withMap: boardWithMap, filter: followFilter, kind: noticeKind };
   const [updatedPop, setUpdatedPop] = useState<string[] | null>(null);
+  useEffect(() => {
+    // Stay where you were (owner, 10 Nov: "they keep going back to the regular map ... I need to stay where I am").
+    const save = () => { try { sessionStorage.setItem("hpd-resume-v1", JSON.stringify(resumeRef.current)); } catch { /* private mode */ } };
+    window.addEventListener("pagehide", save);
+    return () => window.removeEventListener("pagehide", save);
+  }, []);
   useEffect(() => {
     if (!BUILT_CODE) return;
     let seen = "";
@@ -7784,12 +7793,20 @@ export default function FieldCommandClient() {
             // Asks what you're looking for (Priority, Payment rejected, Corrections, Print); the pick shows those
             // jobs on the map right away. Tapping again closes. ✕ on the map goes back to every job.
             if (noticesOpen) { setNoticesOpen(false); return; }
-            if (noticeChooser) { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); return; }
+            // Stay on the notices (owner, 10 Nov: "no button that takes me back to the jobs; I want to stay on the notices"):
+            // a second tap folds the board to the thin bar; the notice jobs stay on the map.
+            if (boardOpen) { setBoardOpen(false); setBoardWithMap(false); setNoticeChooser(true); setNoticeMini(true); return; }
+            // 📩 Notices (owner, 10 Nov: "when I click the notices, first I want to see the board; on the board I click the
+            // priority ones and they all come up on the map"): the board opens with the notice jobs on the map above it and
+            // the picks (Priority, Lewis, Gafur, rejected…) on top of the board; a pick shows those jobs on the map.
             closeScreens("notices");
             setFollowFilter("notices");
-            setNoticeKind("all");
+            setNoticeKind("priority");
             setNoticeChooser(true);
             setNoticeMini(false);
+            setBoardShow("all");
+            setBoardWithMap(true);
+            setBoardOpen(true);
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>,
@@ -7872,7 +7889,7 @@ export default function FieldCommandClient() {
                   );
                 })() : <span className="fc-dock-gap" aria-hidden="true" />}
                 {make[dockSlots[2]]("fc-dock-btn")}
-                <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="All: every screen" aria-pressed={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
+                <button type="button" className="fc-dock-btn" data-hpd-smoke="fc-more-open" aria-label="All: every screen" aria-pressed={moreOpen} onClick={() => { if (boardOpen) { setBoardOpen(false); setBoardWithMap(false); if (noticeChooser) setNoticeMini(true); } setMoreOpen((o) => !o); }}>
               <MenuIcon /><span className="fc-fab-label">All</span>{boardUrgent.length || bidsDue.today || followReport.counts.overdue || newReplies ? <span className="fc-more-dot" aria-hidden="true" /> : null}
             </button>
               </nav>
@@ -8253,7 +8270,7 @@ export default function FieldCommandClient() {
                 // "🔥 Asked" on the map, so the card says why too (2 Nov: tapped, and the card didn't say).
                 const asked = !it && !rj ? followReport.hpdAsked.find((r) => r.omo === omo) : undefined;
                 // 🔥 Lewis / Gafur wrote and nothing went back yet (10 Nov: status update requests too).
-                const vt = !it && !rj && !asked ? vtAsks(threads, handledMap).find((a) => a.omo === omo) : undefined;
+                const vt = !it && !rj && !asked ? vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).find((a) => a.omo === omo) : undefined;
                 if (!it && !rj && !asked && !vt) return null;
                 const due = it ? dueText(it.dueAt) : "";
                 const outcomes = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
@@ -9306,17 +9323,7 @@ export default function FieldCommandClient() {
           </button>
         );
       })() : null}
-      {sideOpen && !selectedJob && !whatsNewOpen && !bidsOpen ? (
-        <button type="button" className="fc-side-email" data-hpd-smoke="fc-side-email" onClick={() => setEmailFor({ job: null })}>✉️ Email HPD</button>
-      ) : null}
-      {sideOpen && !selectedJob && !whatsNewOpen && !bidsOpen ? (
-        <div className="fc-text-size" role="group" aria-label="Text size" data-hpd-smoke="fc-text-size">
-          <span aria-hidden="true">🔠</span>
-          {([["1", "A"], ["1.15", "A+"], ["1.3", "A++"]] as const).map(([v, label]) => (
-            <button key={v} type="button" aria-pressed={textSize === v} className={textSize === v ? "is-on" : ""} data-hpd-smoke={`fc-text-${label.length}`} onClick={() => setTextSize(v)}>{label}</button>
-          ))}
-        </div>
-      ) : null}
+
       {sideOpen && newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
         <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
           <strong>🆕 New update includes</strong>
@@ -9575,16 +9582,16 @@ export default function FieldCommandClient() {
         </div>
       ) : null}
       {noticeChooser && !noticesOpen && !selectedJob ? (
-        <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
+        <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}${boardOpen && boardWithMap && !noticeMini ? " is-on-board" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
           <header>
             <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}{noticeMini ? ` · ${filteredJobs.length}` : `: ${filteredJobs.length} on the map${noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}`}</strong>
             {!noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-today-open" onClick={() => { setNoticeChooser(false); setSummaryToday(true); }}>☀️ Today</button> : null}
             {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-change" onClick={() => setNoticeMini(false)}>Change ▴</button> : null}
-            {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-mini-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
-            <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
+            {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-mini-list" onClick={() => { setBoardOpen(false); setBoardWithMap(false); setNoticesOpen(true); }}>List</button> : null}
+            <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Fold" title="Fold (the notices stay on the map)" onClick={() => { setNoticeMini(true); setBoardOpen(false); setBoardWithMap(false); }}>✕</button>
           </header>
           <div className="fc-board-row2">
-          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setFollowFilter("notices"); setNoticeKind("priority"); setBoardShow("all"); setBoardWithMap(true); setBoardOpen(true); }}>
+          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setFollowFilter("notices"); setNoticeKind((k) => k || "priority"); setNoticeChooser(true); setNoticeMini(false); setBoardShow("all"); setBoardWithMap(true); setBoardOpen(true); }}>
             <span aria-hidden="true">⏱</span><b>Vendor tracking board</b><small>{boardOpenRows.filter((r) => r.kind === "ppn").length} notices · {boardOpenRows.filter((r) => r.kind === "docs").length} missing docs{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
           </button>
           <button type="button" className="fc-notice-check-btn" data-hpd-smoke="fc-notice-check" aria-label="Check every notice from my email" onClick={() => { unlockChime(); agentRef.current("check every notice"); }}>🔎<small>Check every notice</small></button>
@@ -9599,7 +9606,7 @@ export default function FieldCommandClient() {
                 <em>{noticeSets[k.key].size}</em>
               </button>
             ))}
-            <button type="button" className="fc-notice-pick is-list" data-hpd-smoke="fc-notice-pick-list" onClick={() => setNoticesOpen(true)}>
+            <button type="button" className="fc-notice-pick is-list" data-hpd-smoke="fc-notice-pick-list" onClick={() => { setBoardOpen(false); setBoardWithMap(false); setNoticesOpen(true); }}>
               <span className="fc-notice-pick-icon" aria-hidden="true">📋</span><b>The list</b>
             </button>
           </div>
@@ -9608,7 +9615,7 @@ export default function FieldCommandClient() {
       {/* 📋 The jobs on the notice map, oldest ask first, at the bottom (10 Nov): who asked what and when, Show on map,
           Answer / Fix. Folds to one line. */}
       {noticeChooser && noticeMini && !noticesOpen && !selectedJob && !boardOpen && noticeKind && noticeKind !== "archive" ? (() => {
-        const asks = new Map(vtAsks(threads, handledMap).map((a) => [a.omo, a]));
+        const asks = new Map(vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => [a.omo, a]));
         const items = [...noticeSets[noticeKind]].map((omo) => {
           const job = findAnyJob(omo);
           const row = boardRows.find((r) => r.omo === omo && r.next);
@@ -9680,7 +9687,7 @@ export default function FieldCommandClient() {
           <header>
             <strong>📩 HPD notices</strong>
             <button type="button" aria-label="Close" onClick={() => setNoticesOpen(false)}>Close (keep on map)</button>
-            <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>Show all jobs</button>
+            {/* No "Show all jobs" here (owner, 10 Nov: "there should be no show all jobs; I want to stay on the notices"). */}
           </header>
           <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
             {/* Two departments, never mixed (owner, 16 Oct): PROCUREMENT pays you (job done, invoice sent; they reject

@@ -31,7 +31,7 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   await board.locator('[data-hpd-smoke="fc-scan-status"]').waitFor();

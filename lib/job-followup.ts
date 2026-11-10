@@ -89,7 +89,9 @@ export function followUpOf(job: Record<string, unknown>, hpd: HpdJobStatus | und
   const askedAt = asked?.askedAt || "";
   // HPD wrote last: their request is newer than your last email to them about it (exact times when known,
   // otherwise newer than the day the paperwork went out).
-  const answered = asked?.askedTs && asked.repliedTs ? asked.repliedTs > asked.askedTs : !!sentAt && askedAt <= sentAt;
+  // Either one closes it (10 Nov: "the asked, if sent already, should auto archive; don't overlap sent and asked"): you
+  // answered their email, or the paperwork went out after they asked (any email).
+  const answered = Boolean(asked?.askedTs && asked.repliedTs && asked.repliedTs > asked.askedTs) || (!!sentAt && askedAt <= sentAt);
   const hpdAsked = !!askedAt && state !== "done" && state !== "hpd-closed" && !answered;
   return { omo, address: String(job.BuildingAddress || job.address || ""), awardDay, startDay, maturityDay, daysLeft, state, status, hpdReason: hpd?.closedReason || "", sentAt, askedAt, askedBy: asked?.by || "", askedFor: asked?.kind || "", hpdAsked };
 }

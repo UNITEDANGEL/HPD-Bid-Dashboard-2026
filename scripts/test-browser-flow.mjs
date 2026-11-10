@@ -11,7 +11,8 @@ const BUTTONS = {
   route: { tap: '[data-hpd-smoke="fc-route-open"]', open: '.fc-route-toggle[aria-expanded="true"]' },
   today: { tap: '[data-hpd-smoke="fc-appts-open"]', open: ".fc-appointment-agenda" },
   stats: { tap: '[data-hpd-smoke="fc-stats-open"]', open: '[data-hpd-smoke="fc-stats-sheet"]', close: '[data-hpd-smoke="fc-stats-sheet"] header button' },
-  notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]', close: '[data-hpd-smoke="fc-notice-chooser-close"]' },
+  // Notices open = the board / the picks; folded to the thin bar = the notice jobs stay on the map (10 Nov).
+  notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]:not(.is-mini)', close: '[data-hpd-smoke="fc-notice-chooser"]:not(.is-mini) [data-hpd-smoke="fc-notice-chooser-close"]' },
   follow: { tap: '[data-hpd-smoke="fc-follow-open"]', open: '[data-hpd-smoke="fc-follow-sheet"]', close: '[data-hpd-smoke="fc-follow-sheet"] header button' },
   bids: { tap: '[data-hpd-smoke="fc-bids-open"]', open: '[data-hpd-smoke="fc-bids-list"]' },
   jobs: { tap: '[data-hpd-smoke="fc-jobs-open"]', open: '[data-hpd-smoke="fc-jobs"]', close: '[data-hpd-smoke="fc-jobs-close"]' },
@@ -106,25 +107,19 @@ try {
     assert.equal(await page.locator(".fc-dock").count(), 0, "the dock hides behind a job card");
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
     await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
-    // Notices: close the list (map still shows the notice jobs), tap Notices again -> the list opens.
+    // Notices (10 Nov): the board opens over the map; a second tap folds it to the thin bar (the notice jobs stay on the
+    // map); List opens the list; there's no "Show all jobs": you stay on the notices.
     await backToMap();
     await page.locator(BUTTONS.notices.tap).click();
     await page.locator(BUTTONS.notices.open).waitFor();
-    await page.locator(BUTTONS.notices.close).click();
-    assert.equal(await page.locator(BUTTONS.notices.tap).getAttribute("aria-pressed"), "false");
+    await page.locator('[data-hpd-smoke="fc-board"]').waitFor();
     await page.locator(BUTTONS.notices.tap).click();
-    await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
+    await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').waitFor();
+    assert.equal(await page.locator('[data-hpd-smoke="fc-board"]').count(), 0, `${where}: folded`);
+    await page.locator('[data-hpd-smoke="fc-notice-mini-list"]').click();
     await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
-    // Show all jobs: list closes, every job is back on the map.
-    // (The app's own job count: pins on screen depend on where the map is looking, and Show all goes back to you.)
-    const jobCount = async () => Number(((await page.locator('[data-hpd-smoke="fc-job-count"]').first().textContent()) || "").replace(/\D/g, "")) || 0;
-    const before = await jobCount();
-    await page.locator('[data-hpd-smoke="fc-notices-show-all"]').click();
-    await page.waitForTimeout(800);
-    assert.equal(await isOpen("notices"), false);
-    const afterCount = await jobCount();
-    // The everyday map leaves old nothing-on-file jobs out (🧹, 6 Nov), so it can hold fewer than the notices view.
-    assert.ok(afterCount > 0 && afterCount !== before, `${where}: back to all jobs on the map (${before} -> ${afterCount} jobs)`);
+    assert.equal(await page.locator('[data-hpd-smoke="fc-notices-show-all"]').count(), 0, `${where}: no Show all jobs`);
+    await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
     // A job card, then a map button: the card closes.
     // A pin on screen (the first one in the page can be off the edge of the map).
     const pin = page.locator(".fc-pin:visible").first();
@@ -139,7 +134,7 @@ try {
     report.push(`${where}: ${pairs} button pairs (${direct} tapped directly, the rest via Close)`);
     await context.close();
   }
-  console.log(`PASS flow: every map button opens its screen alone, a second tap closes it, from every other screen it switches cleanly; Close out (3) and 2nd try (2, 1 due) are round buttons whose lists open jobs; Notices always opens the list, Show all jobs brings the jobs back; ${report.join("; ")}`);
+  console.log(`PASS flow: every map button opens its screen alone, a second tap closes it, from every other screen it switches cleanly; Close out (3) and 2nd try (2, 1 due) are round buttons whose lists open jobs; Notices opens the board, folds to the bar and keeps the notices on the map (no Show all jobs); ${report.join("; ")}`);
 } finally {
   await browser.close();
 }

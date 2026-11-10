@@ -22,7 +22,7 @@ try {
   await page.clock.install({ time: new Date("2026-10-26T16:00:00Z") });
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor();
   const open = board.locator('[data-hpd-smoke="fc-nudge-open"]');

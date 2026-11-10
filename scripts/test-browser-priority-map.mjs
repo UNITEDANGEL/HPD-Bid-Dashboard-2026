@@ -21,6 +21,10 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 20, null, { timeout: 120000 });
 
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  // 10 Nov: Notices opens the board over the map; a second tap folds it to the bar, Change opens the picks.
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 20000 });
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
   const chooser = page.locator('[data-hpd-smoke="fc-notice-chooser"]');
   await chooser.waitFor();
   for (const k of ["all", "priority", "rejected", "corrections", "print", "list"]) assert.equal(await chooser.locator(`[data-hpd-smoke="fc-notice-pick-${k}"]`).count(), 1, `picker has ${k}`);
@@ -28,16 +32,18 @@ try {
   const nPrio = Number(await chooser.locator('[data-hpd-smoke="fc-notice-pick-priority"] em').innerText());
   const title = chooser.locator('[data-hpd-smoke="fc-notice-chooser-title"]');
   // Everything on the map at once, each kind glowing in its own color.
-  assert.match(await title.innerText(), /All notices: \d+ on the map/);
+  await chooser.locator('[data-hpd-smoke="fc-notice-pick-all"]').click();
+  assert.match(await title.innerText(), /All notices( · |: )\d+/);
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon.is-glow").length > 0, null, { timeout: 15000 });
   await page.waitForTimeout(1500);
   const allKinds = await page.locator(".leaflet-marker-icon.is-glow").evaluateAll((els) => [...new Set(els.map((e) => (/is-glow-(priority|rejected|corrections|print)/.exec(e.className) || [])[1]))]);
   assert.ok(allKinds.length >= 2, `all kinds at once: ${allKinds}`);
   assert.equal(await page.locator('[data-hpd-smoke="fc-notices-sheet"]').count(), 0, "map first, no list");
-  if (await chooser.locator('[data-hpd-smoke="fc-notice-timer"]').count()) assert.match(await chooser.locator('[data-hpd-smoke="fc-notice-timer"]').innerText(), /(left|overdue)/);
+  if (await chooser.locator('[data-hpd-smoke="fc-notice-timer"]').isVisible()) assert.match(await chooser.locator('[data-hpd-smoke="fc-notice-timer"]').innerText(), /(left|overdue)/);
   if (shots) await page.screenshot({ path: `${shots}/1-all.png` });
 
   // Priority: just those jobs, glowing with the hours left.
+  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
   await chooser.locator('[data-hpd-smoke="fc-notice-pick-priority"]').click();
   // Priority opens the map with the 📋 list at the bottom, oldest ask first (10 Nov: "it should open the map where
   // all the jobs are that need attention, with a small drop-down window at the bottom"); no board over it.
@@ -45,8 +51,10 @@ try {
   await tray.waitFor({ timeout: 10000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-board"]').count(), 0, "no board over the map");
   assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), /📋 \d+ to do · oldest first/);
+  // The map first: the list is one line (10 Nov: "I should see the map and an option to see the list"); it opens and folds.
+  assert.equal(await tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').count(), 0, "folded at first");
+  await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
   assert.ok(await tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').count() > 0);
-  // Fold it to see the whole map.
   await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
   assert.equal(await tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').count(), 0);
   assert.match(await title.innerText(), /Priority · \d+/);
@@ -80,15 +88,16 @@ try {
   await page.locator('[data-hpd-smoke="fc-notice-pick-rejected"]').click();
   assert.match(await title.innerText(), /Payment rejected · \d+/);
   await page.waitForFunction(() => document.querySelector(".leaflet-marker-icon.is-glow .fc-glow-tag")?.textContent === "💵 Fix", null, { timeout: 15000 });
-  // The list opens on that tab; closing it brings the picker back; ✕ goes back to every job.
+  // The list opens on that tab; closing it brings the thin bar back and the notice jobs stay on the map (10 Nov: "I want
+  // to stay on the notices": no ✕ back to every job on the thin bar).
   await page.locator('[data-hpd-smoke="fc-notice-mini-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notices-rejected"]').waitFor();
   await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-chooser-close"]').click();
-  // (The "👉 Next" job keeps its own glow on the all-jobs map.)
-  await page.waitForFunction(() => !document.querySelector(".leaflet-marker-icon.is-glow:not(.is-glow-next)"), null, { timeout: 10000 });
+  await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').waitFor();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini [data-hpd-smoke="fc-notice-chooser-close"]').isVisible(), false, "no ✕ back to all jobs");
+  assert.ok(await page.locator(".leaflet-marker-icon.is-glow").count() > 0, "the notice jobs stay on the map");
   assert.deepEqual(errors, []);
-  console.log(`PASS priority map: Notices puts every notice job on the map at once (${allKinds.join(', ')}); Priority (${nPrio}) Priority shows only those jobs, ${lit} glowing with countdowns (${[...new Set(tags)].slice(0, 4).join(", ")}); the card says PRIORITY and makes the affidavit for each outcome; Payment rejected switches the map; List; ✕ back to all`);
+  console.log(`PASS priority map: Notices puts every notice job on the map at once (${allKinds.join(', ')}); Priority (${nPrio}) Priority shows only those jobs, ${lit} glowing with countdowns (${[...new Set(tags)].slice(0, 4).join(", ")}); the card says PRIORITY and makes the affidavit for each outcome; Payment rejected switches the map; List; the notices stay on the map`);
   await context.close();
 } finally {
   await browser.close();

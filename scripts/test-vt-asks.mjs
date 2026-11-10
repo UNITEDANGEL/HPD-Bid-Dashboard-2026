@@ -22,6 +22,11 @@ const asks = vtAsks(threads, { ER02222: "2026-10-22T00:00:00Z" });
 assert.deepEqual(asks.map((a) => a.omo), ["EP11387", "EQ14718", "ER07717"]);
 assert.equal(asks.find((a) => a.omo === "ER07717").who, "Lewis");
 assert.equal(asks.find((a) => a.omo === "EP11387").who, "Gafur");
+// Sent after their email = closed out: by the sent list, or our own email with the job's AFF INVOICE PDF.
+assert.deepEqual(vtAsks(threads, {}, { EP11387: { sentAt: "2026-10-30T00:00:00Z" } }).map((a) => a.omo), ["ER02222", "EQ14718", "ER07717"]);
+const withPdf = [...threads, { id: "f", subject: "sent", omos: ["ER07717"], kind: "message", waiting: false, messages: [msg("2026-10-30T10:00:00Z", "You", true)] }];
+withPdf[5].messages[0].files = ["ER07717 AFF INVOICE.pdf"];
+assert.ok(!vtAsks(withPdf).some((a) => a.omo === "ER07717"), "our AFF INVOICE email after her ask");
 let real = "";
 try {
   const { readFileSync } = fs;

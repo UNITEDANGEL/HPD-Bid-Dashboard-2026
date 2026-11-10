@@ -34,7 +34,7 @@ try {
 
   // The board: red for nothing sent / HPD's problem, green for sent; the problem in HPD's words.
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   const row = (omo) => board.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${omo}"]`);
   await row(NOTHING).waitFor({ timeout: 30000 });
