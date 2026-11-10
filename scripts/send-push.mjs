@@ -148,6 +148,18 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       } catch (e) { console.log(`silence check skipped: ${e.message}`); }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }
+  // ⏳ A bid you priced but didn't fax, due within 45 minutes (bids plan: "30-minute deadline alert"): once per bid.
+  {
+    const p = nyParts(now);
+    const today = `${p.year}-${p.month}-${p.day}`;
+    const nowMin = Number(p.hour) * 60 + Number(p.minute);
+    for (const [k, r] of Object.entries(records || {})) {
+      if (!k.startsWith("BID-") || !r || r.status !== "saved" || r.bidDue !== today || !r.bidDueTime) continue;
+      const left = minutesOf(r.bidDueTime) - nowMin;
+      if (left <= 0 || left > 45) continue;
+      out.push({ key: `d:${h(`${r.omo}|${r.bidDue}`)}`, kind: "urgent", title: `⏳ ${r.omo} bid not sent: ${left} min left`, body: `Priced at $${Number(r.price || 0).toLocaleString("en-US")} but not faxed yet (due ${r.bidDueTime}). Tap to send it now.`, url: `/map/?bids=1&omo=${r.omo}`, tag: `d-${r.omo}` });
+    }
+  }
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
   const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib });
   if (brief) out.push(brief);

@@ -101,6 +101,21 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   console.log("PASS overdue notice: ER01987 alerts once (same key every hour, no 2-hour repeats)");
 }
 
+// ⏳ A priced bid not faxed with under 45 minutes left: one alert per bid; sent bids and other days left out.
+{
+  const rec = (omo, status, time, day = "2026-10-22") => [`BID-${omo}`, { omo, status, price: 1250, bidDue: day, bidDueTime: time }];
+  const records = Object.fromEntries([rec("ER1", "saved", "11:00 AM"), rec("ER2", "sent", "11:00 AM"), rec("ER3", "saved", "2:00 PM"), rec("ER4", "saved", "11:00 AM", "2026-10-23")]);
+  const at = (iso) => findAlerts({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, records, now: Date.parse(iso), loadLib }).then((a) => a.filter((x) => x.title.startsWith("⏳")));
+  const a1 = await at("2026-10-22T14:35:00Z"); // 10:35 AM NY
+  assert.deepEqual(a1.map((a) => a.title), ["⏳ ER1 bid not sent: 25 min left"]);
+  assert.match(a1[0].body, /^Priced at \$1,250 but not faxed yet \(due 11:00 AM\)/);
+  assert.equal(a1[0].url, "/map/?bids=1&omo=ER1");
+  assert.equal((await at("2026-10-22T14:50:00Z"))[0].key, a1[0].key, "once");
+  assert.equal((await at("2026-10-22T13:30:00Z")).length, 0, "9:30: too early");
+  assert.equal((await at("2026-10-22T15:05:00Z")).length, 0, "past due");
+  console.log("PASS bid deadline: a priced bid not faxed -> \"⏳ ER1 bid not sent: 25 min left\" once; sent bids and other days left out");
+}
+
 // ⚠️ HPD found a problem with paperwork you sent (idea list): one alert with HPD's first words, the same key every time.
 {
   const threads = [{ id: "pb", subject: "72 HR POOR PERFORMANCE NOTICE - OMO#ER05228", omos: ["ER05228"], kind: "past due", people: ["Joy-Ann Lewis"], messages: [
