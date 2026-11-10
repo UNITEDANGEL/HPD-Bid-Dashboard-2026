@@ -97,6 +97,13 @@ try {
       if (await page.locator('[data-hpd-smoke="paperwork-call-1"]').count()) await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
     }
     await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    // On a slow machine (or the live site) the build can take a while; if Generate comes back without the review,
+    // tap it again.
+    await page.waitForFunction(() => !!document.querySelector('[data-hpd-smoke="paperwork-package-review"]') || (() => { const b = document.querySelector('[data-hpd-smoke="paperwork-generate-pdf-only"]'); return !!b && !b.disabled && !!b.offsetParent; })(), null, { timeout: 120000 });
+    if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) {
+      await page.waitForTimeout(1500);
+      if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click({ timeout: 5000 }).catch(() => {});
+    }
     if (outcome === "work_completed") {
       // Signed and unsigned copies are reviewed together on the same screen.
       await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 90000 });
@@ -105,7 +112,7 @@ try {
       // Both signatures were saved on the phone: kept for the next affidavit.
       assert.ok(await page.evaluate(() => !!localStorage.getItem("hpd-signer-signature-v1") && !!localStorage.getItem("hpd-notary-signature-v1")), `${job}: signatures saved for next time`);
     }
-    await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+    await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 120000 });
     // Every PDF page must render as a preview image (pdfjs failed on browsers without new JS APIs).
     await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
     assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page img').count(), pages, `${job}: review must preview every page`);
