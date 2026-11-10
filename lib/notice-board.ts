@@ -6,7 +6,7 @@
 
 import { dueAfterWeekdays } from "./business-days";
 
-export type BoardMessage = { at: string; text: string; hpd: boolean; mine: boolean; files?: string[] };
+export type BoardMessage = { at: string; text: string; hpd: boolean; mine: boolean; files?: string[]; threadId?: string };
 export type BoardThread = { id: string; subject: string; omos: string[]; people: string[]; kind?: string; messages: BoardMessage[] };
 export type BoardStep = "replied" | "made" | "sent" | "confirmed";
 export type BoardMarks = Record<string, Partial<Record<BoardStep, string>>>; // row key -> step -> when the owner ticked it
@@ -35,7 +35,7 @@ export type BoardRow = {
   generalOnly?: boolean;                      // the only answer was a note to the whole list ("I'll send them today")
   // HPD's answer after our paperwork, in any email about this job (owner, 5 Nov: "it should know from the email I
   // already sent"): a problem with it ("the copy is blank") puts it back to send; otherwise it counts as confirmed.
-  problem?: { at: string; text: string } | null;
+  problem?: { at: string; text: string; threadId?: string; pdf?: string } | null; // pdf: HPD's marked-up PDF's name
   answered?: { at: string; text: string } | null;
   handledAt?: string;                         // the owner said "already sent / fixed" (any phone)
 };
@@ -47,9 +47,10 @@ export function hpdWords(text: string) {
   const cut = String(text || "").split(/\n\s*(?:On .{5,80}wrote:|From: |-----Original|________________)/)[0];
   return cut.replace(/\s+/g, " ").replace(/(Joy-Ann Lewis|Community Associate|Vendor Tracking Unit|Regards,|Thank you,?\s*$).*$/i, "").trim().slice(0, 220);
 }
-export function hpdAnswerAfter(msgs: BoardMessage[], since: string): { ok: { at: string; text: string } | null; problem: { at: string; text: string } | null } {
+export function hpdAnswerAfter(msgs: BoardMessage[], since: string): { ok: { at: string; text: string } | null; problem: { at: string; text: string; threadId?: string; pdf?: string } | null } {
   const after = msgs.filter((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(since)).sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
-    .map((m) => ({ at: m.at, text: hpdWords(m.text) })).filter((m) => m.text && !NOTICE_MAIL.test(m.text));
+    .map((m) => ({ at: m.at, text: hpdWords(m.text), ...(m.threadId ? { threadId: m.threadId } : {}), ...((m.files || []).find((f) => /\.pdf$/i.test(f)) ? { pdf: (m.files || []).find((f) => /\.pdf$/i.test(f)) } : {}) }))
+    .filter((m) => m.text && !NOTICE_MAIL.test(m.text));
   const problem = after.find((m) => PROBLEM.test(m.text)) || null;
   return { problem, ok: problem ? null : after[0] || null };
 }
@@ -120,7 +121,7 @@ export function buildBoard(input: {
   for (const t of input.threads) {
     if (t.omos.length !== 1 || /award/i.test(t.subject)) continue;
     const list = jobMsgs.get(t.omos[0]) || [];
-    list.push(...t.messages);
+    list.push(...t.messages.map((m) => ({ ...m, threadId: t.id })));
     jobMsgs.set(t.omos[0], list);
   }
   // A correction saved in the app after HPD's problem email: fixed (it goes in the mail, signed in ink).

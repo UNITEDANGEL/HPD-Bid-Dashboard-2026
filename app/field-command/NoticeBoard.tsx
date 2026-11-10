@@ -6,9 +6,11 @@
 import { useEffect, useRef, useState } from "react";
 import { holidaysBetween } from "../../lib/business-days";
 import SentPaperwork from "./SentPaperwork";
+import HpdMarked from "./HpdMarked";
 import type { NoticeFindings } from "../../lib/notice-findings";
 import { isNewSince, noticeConvo, type ConvoItem } from "../../lib/notice-convo";
 import { plainFix, visitUpdate, vtDay, type PlainFix } from "../../lib/notice-fix";
+import { line2Href, usDay, type Line2Fix } from "../../lib/affidavit-line2";
 import { BOARD_STEPS, NUDGE_AFTER_DAYS, boardSide, sentTime, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
 type Props = {
@@ -30,6 +32,8 @@ type Props = {
   onHandled?: (omo: string, on: boolean) => void;   // ✅ "Already sent / fixed" (5 Nov), on every phone
   factsOf?: (omo: string) => JobFacts | null;       // the job itself: address, work, award, HPD's status (6 Nov)
   visitOf?: (omo: string) => string;                // the next visit set for the job (yyyy-mm-dd), or "" (9 Nov)
+  awardOf?: (omo: string) => string;                // the job's award date as HPD wrote it ("09/04/26")
+  line2?: Line2Fix[];                               // affidavits sent with the wrong line 2 date (9 Nov)
 };
 // The job on each notice (owner, 6 Nov: "I don't see the work order number, the address, everything is missing ...
 // I don't want to see the conversations, that's for you to analyze").
@@ -52,7 +56,7 @@ const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 
 // Email leftovers out of HPD's words: inline-image tags like [cid:…] and extra spaces.
 const noJunk = (t: string) => String(t || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").trim();
 
-export default function NoticeBoard({ visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ line2 = [], awardOf, visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -318,14 +322,14 @@ export default function NoticeBoard({ visitOf, factsOf, onHandled, autoReplyOmo 
     setReply({ key: row.key, to: row.to, subject: d.subject, text: text || d.text, armed: false, status: "" });
     if (!text) void writeWithAi(row, note);
   };
-  const fixHref = (row: BoardRow) => `/paperwork/?job=${encodeURIComponent(row.omo)}&fix=${encodeURIComponent(row.problem?.at || "")}&reason=${encodeURIComponent(noJunk(row.problem?.text || "").slice(0, 280))}${row.to ? "&vt=1" : ""}`;
+  const fixHref = (row: BoardRow) => `/paperwork/?job=${encodeURIComponent(row.omo)}&fix=${encodeURIComponent(row.problem?.at || "")}&reason=${encodeURIComponent(noJunk(row.problem?.text || "").slice(0, 280))}&auto=1${row.to ? "&vt=1" : ""}${row.problem?.pdf ? `&marked=${encodeURIComponent(row.problem.threadId || row.threadId)}` : ""}`;
   const doThis = (row: BoardRow, address: string) => {
     if (!row.next || (row.next === "confirmed" && !row.problem)) return null; // waiting / no answer: the line further down says it
     const vd = visitOf?.(row.omo) || "";
-    const fx: PlainFix | null = plainFix(row, { now, visit: vd ? shortDay(vd) : "" });
+    const fx: PlainFix | null = plainFix(row, { now, visit: vd ? shortDay(vd) : "", award: awardOf?.(row.omo) || "" });
     if (!fx) return null;
-    const btn = fx.action === "correct" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={fixHref(row)} onClick={() => rememberSend(row)}>{fx.button}</a>
-      : fx.action === "resend" || fx.action === "photos" || fx.action === "send" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>{fx.button}</a>
+    const btn = fx.action === "correct" || fx.action === "resend" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={fixHref(row)} onClick={() => rememberSend(row)}>{fx.button}</a>
+      : fx.action === "photos" || fx.action === "send" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>{fx.button}</a>
       : fx.action === "visit" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => { const v = visitUpdate(row, address, vtDay(vd)); openReply(row, address, "", v.text); }}>{fx.button}</button>
       : fx.action === "reply" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => openReply(row, address, row.filed ? `Our affidavit and invoice for ${row.omo} were emailed on ${day(row.filed.at)} (${row.filed.name}). Tell them that date; don't attach it again.` : "")}>{fx.button}</button>
       : null;
@@ -334,6 +338,7 @@ export default function NoticeBoard({ visitOf, factsOf, onHandled, autoReplyOmo 
         <p>👉 {fx.headline}</p>
         {fx.steps.length ? <ol data-hpd-smoke="fc-board-fix-steps">{fx.steps.map((t, i) => <li key={i}>{t}</li>)}</ol> : null}
         {/* "open the document and look at it" (9 Nov): what you sent, right here, next to their fix notes. */}
+        {row.problem?.pdf ? <HpdMarked threadId={row.problem.threadId || row.threadId} name={row.problem.pdf} /> : null}
         {fx.action === "correct" || fx.action === "resend" ? <SentPaperwork omo={row.omo} /> : null}
         {fx.action === "paperwork" ? <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={paperHref(row, k)} onClick={() => rememberSend(row)} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div> : btn}
         {vd && fx.action !== "visit" && !row.steps.sent.done ? <button type="button" className="fc-board-do-visit" data-hpd-smoke="fc-board-do-visit" onClick={() => { const v = visitUpdate(row, address, vtDay(vd)); openReply(row, address, "", v.text); }}>📅 You go {shortDay(vd)}: tell {/lewis/i.test(row.who) ? "Lewis" : (row.who || "them").split(/\s+/)[0]}</button> : null}
@@ -481,6 +486,20 @@ export default function NoticeBoard({ visitOf, factsOf, onHandled, autoReplyOmo 
             {moved.next ? <button type="button" data-hpd-smoke="fc-board-come-back" onClick={() => { const o = moved.omo; const r = rows.find((x) => x.omo === o && x.next); const sd = r ? boardSide(r) : "waiting"; setReply(null); setSide(sd === "done" ? "waiting" : sd); setMoved(null); scrollToRow(o); }}>↩ Back to {moved.omo}</button>
               : side !== "waiting" ? <button type="button" data-hpd-smoke="fc-board-moved-go" onClick={() => { setSide("waiting"); setMoved(null); }}>See it</button> : null}
           </p>
+        ) : null}
+        {line2.length ? (
+          <details className="fc-line2" data-hpd-smoke="fc-line2" open={line2.length <= 3}>
+            <summary>🗓 <b>{line2.length}</b> affidavit{line2.length === 1 ? "" : "s"} sent with the wrong date on line 2 · fix {line2.length === 1 ? "it" : "them"}</summary>
+            <p>Line 2 (&quot;That on ___ I was directed by HPD&quot;) must be the <b>Confirmation of Award date</b>, not the work date. HPD sends them back for it (ER04312).</p>
+            <ol>
+              {line2.map((f) => (
+                <li key={f.omo} data-hpd-smoke="fc-line2-row" data-omo={f.omo}>
+                  <b>{f.omo}</b> <span>says {usDay(f.sent)}{f.workDate ? " (work date)" : ""} → <b>{usDay(f.award)}</b> award{f.sentAt ? ` · sent ${day(f.sentAt)}` : ""}</span>
+                  <a href={`${line2Href(f, new Date().toISOString().slice(0, 10))}&auto=1`} data-hpd-smoke="fc-line2-fix">✨ Auto-fix it now</a>
+                </li>
+              ))}
+            </ol>
+          </details>
         ) : null}
         <div className="fc-board-sum" data-hpd-smoke="fc-board-sum">
           <span><b>{open.length}</b> open</span>

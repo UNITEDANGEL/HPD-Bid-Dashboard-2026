@@ -11,6 +11,8 @@ assert.ok(f.steps.some((s) => /highlighted/.test(s)) && f.steps.some((s) => /Not
 assert.match(f.steps.at(-1), /same dates/);
 f = fixSteps("Kindly see attached affidavit & invoice with highlighted errors & missing information. Please rectify and resubmit. AFFIDAVIT- date directed by HPD is confirmation date of award.");
 assert.ok(f.steps.some((s) => /award confirmation date/.test(s)) && f.steps.some((s) => /empty box/.test(s)), f.steps.join(" | "));
+f = fixSteps("AFFIDAVIT- date directed by HPD is confirmation date of award.", "09/04/26");
+assert.ok(f.steps.includes('Line 2 date ("directed by HPD on") = 09/04/26, the award confirmation date, not the work date.'), f.steps.join(" | "));
 f = fixSteps("Please see attached invoice for OMO#ER01919 with incomplete highlighted areas.");
 assert.ok(f.steps.some((s) => /empty box/.test(s)));
 f = fixSteps("Hi Jot, Please note the copy you just resubmitted is blank.");

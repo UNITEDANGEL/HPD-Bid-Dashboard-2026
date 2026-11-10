@@ -9,7 +9,7 @@ export type FixAction = "correct" | "resend" | "photos" | "reply" | "visit" | "p
 export type PlainFix = { headline: string; steps: string[]; action: FixAction; button: string; tone: "late" | "fix" | "todo" | "wait" };
 
 // What HPD wrote back, as short steps to fix it.
-export function fixSteps(text: string): { steps: string[]; action: "correct" | "resend" | "photos" } {
+export function fixSteps(text: string, award = ""): { steps: string[]; action: "correct" | "resend" | "photos" } {
   const t = String(text || "");
   const steps: string[] = [];
   if (/\bblank\b|can ?not open|won'?t open|empty/i.test(t)) return { action: "resend", steps: ["The copy you sent was blank: open the PDF to check it, then send it again."] };
@@ -22,7 +22,7 @@ export function fixSteps(text: string): { steps: string[]; action: "correct" | "
   if (/highlight/i.test(t)) steps.push("Open their copy: fix every highlighted spot.");
   if (/incomplete|missing information|missing info|blank (field|area|box)/i.test(t)) steps.push("Fill in every empty box.");
   if (/notari[sz]/i.test(t)) steps.push("Notary stamp and notary signature on every page (a real notary).");
-  if (/confirmation date of award|date directed by hpd|award date/i.test(t)) steps.push("Affidavit date = the award confirmation date.");
+  if (/confirmation date of award|date directed by hpd|award date/i.test(t)) steps.push(`Line 2 date ("directed by HPD on") = ${award ? `${award}, ` : ""}the award confirmation date, not the work date.`);
   if (/not signed|unsigned|signature/i.test(t)) steps.push("Sign it in ink.");
   if (/illegible|not legible|unreadable/i.test(t)) steps.push("Scan it again so every word is clear.");
   if (/invoice/i.test(t) && /amount|total|price/i.test(t)) steps.push("Check the invoice amount matches the award.");
@@ -37,15 +37,15 @@ const hello = (who: string) => (who || "").trim().split(/\s+/)[0] || "";
 const DAY = (iso: string) => new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("en-US", { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric" });
 
 // The one line on top of a notice card. visit: the next visit set for the job ("Tue 11/11"), if any.
-export function plainFix(row: BoardRow, opts: { now?: number; visit?: string; quietDays?: number } = {}): PlainFix | null {
+export function plainFix(row: BoardRow, opts: { now?: number; visit?: string; quietDays?: number; award?: string } = {}): PlainFix | null {
   if (!row.next) return null;
   const now = opts.now ?? Date.now();
   const name = first(row.who);
   const late = row.kind === "ppn" && !row.steps.sent.done && !!row.dueAt && Date.parse(row.dueAt) < now;
   if (row.problem) {
-    const f = fixSteps(row.problem.text);
+    const f = fixSteps(row.problem.text, opts.award);
     const what = f.action === "resend" ? "the copy was blank" : f.action === "photos" ? "they want photos and video" : "they sent it back with errors";
-    return { headline: `🛠 Fix it: ${what}.`, steps: f.steps, action: f.action === "photos" ? "photos" : f.action, button: f.action === "resend" ? "📤 Open it and send again" : f.action === "photos" ? "📸 Send the photos" : "🛠 Fix it now", tone: "fix" };
+    return { headline: `🛠 Fix it: ${what}.`, steps: f.steps, action: f.action === "photos" ? "photos" : f.action, button: f.action === "resend" ? "✨ Make a fresh copy (auto-fix)" : f.action === "photos" ? "📸 Send the photos" : "✨ Auto-fix it now", tone: "fix" };
   }
   if (row.filed && !row.steps.sent.done) return { headline: `📎 Already emailed ${DAY(row.filed.at)}. Tell ${name} the date; don't send it again.`, steps: [], action: "reply", button: `✉ Tell ${name}`, tone: "todo" };
   if (opts.visit && !row.steps.sent.done) return { headline: `📅 You go ${opts.visit}. Tell ${name} so the notice is answered.`, steps: [], action: "visit", button: `✉ Tell ${name} the day`, tone: late ? "late" : "todo" };

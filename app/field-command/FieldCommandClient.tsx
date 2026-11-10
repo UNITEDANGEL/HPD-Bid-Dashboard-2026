@@ -28,6 +28,7 @@ import ItbPages from "./ItbPages";
 import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
 import { ERP_COPIES, VT_LEWIS, emailPeople } from "../../lib/email-people";
+import { line2Fixes, line2Href, usDay, type SentDates } from "../../lib/affidavit-line2";
 import { buildingHistory, buildingKey, historyLine } from "../../lib/building-history";
 import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd } from "../../lib/job-costs";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
@@ -1290,7 +1291,8 @@ export default function FieldCommandClient() {
   // Corrected paperwork saved on this phone to print and sign in ink (lib/correction-store.ts).
   const [toPrint, setToPrint] = useState<SavedCorrection[]>([]);
   const [printArmed, setPrintArmed] = useState("");
-  useEffect(() => { if (noticesOpen) listCorrections().then(setToPrint); }, [noticesOpen]);
+  // On open too (9 Nov): a saved correction takes its job off the "wrong line 2 date" list.
+  useEffect(() => { listCorrections().then(setToPrint).catch(() => {}); }, [noticesOpen]);
   function openCorrectionPdf(c: SavedCorrection) {
     const url = URL.createObjectURL(c.pdf);
     // Same-site file: a plain new tab (with "noopener" the PDF tab can open blank).
@@ -3356,6 +3358,12 @@ export default function FieldCommandClient() {
   const staleIdsRef = useRef<Set<string>>(new Set());
   staleIdsRef.current = staleIds;
   // ✉️ Email screen (owner, 6 Nov: "Add email feature to the app"): HPD people from their own emails, Lewis / Gafur first.
+  // 🗓 Affidavits sent with the wrong line 2 date (owner, 9 Nov: "big error in all affidavits ... line 2 date needs to
+  // be the confirmation of award date, change all"): the dates read from your sent PDFs (correction_dates.json) against
+  // each job's award date. A correction saved after it was sent takes it off.
+  const [sentDateMap, setSentDateMap] = useState<Record<string, SentDates>>({});
+  useEffect(() => { fetch("/data/correction_dates.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.jobs) setSentDateMap(d.jobs); }).catch(() => {}); }, []);
+  const line2List = useMemo(() => line2Fixes(sentDateMap, (o) => String(findAnyJob(o)?.AwardDate || ""), Object.fromEntries(toPrint.map((c) => [c.omo, String(c.savedAt || "").slice(0, 10)]))), [sentDateMap, jobs.length, olderJobs.length, toPrint]); // eslint-disable-line react-hooks/exhaustive-deps
   const [emailFor, setEmailFor] = useState<{ job: EmailJob; vt?: boolean; visitDate?: string } | null>(null);
   // The next visit set for a job (yyyy-mm-dd): its appointment (requested / confirmed, today or later), else today
   // when it's on today's route. For "📣 Update vendor tracking" and the board's "You go Tue 11/11" (9 Nov).
@@ -8211,6 +8219,16 @@ export default function FieldCommandClient() {
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
               </header>
               {(() => {
+                const f = line2List.find((x) => x.omo === id);
+                return f ? (
+                  <div className="jc-line2" data-hpd-smoke="jc-line2">
+                    <b>🗓 The affidavit you sent has the wrong date on line 2</b>
+                    <span>It says {usDay(f.sent)}{f.workDate ? " (the work date)" : ""}. HPD wants the Confirmation of Award date: <b>{usDay(f.award)}</b>.</span>
+                    <a href={`${line2Href(f, new Date().toISOString().slice(0, 10))}&auto=1`} data-hpd-smoke="jc-line2-fix">✨ Auto-fix it now</a>
+                  </div>
+                ) : null;
+              })()}
+              {(() => {
                 const omo = id;
                 // 📣 Update vendor tracking (owner, 9 Nov: "every job card I should have the option to send a message to
                 // vendor tracking ... we are in touch with this job, we are going on this day"): Lewis, a copy to Saul and
@@ -10515,6 +10533,8 @@ export default function FieldCommandClient() {
             return { address: jobAddress(j), borough: jobBorough(j), amount: String(j.AwardAmount || ""), awarded: String(j.AwardDate || ""), work, hpd, call };
           }}
           visitOf={(omo) => nextVisitOf(findAnyJob(omo))}
+          awardOf={(omo) => String(findAnyJob(omo)?.AwardDate || "")}
+          line2={line2List}
           hasJob={(omo) => Boolean(findAnyJob(omo))}
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}
           onOpenThread={(id, title) => setThreadView({ ids: [id], title })}

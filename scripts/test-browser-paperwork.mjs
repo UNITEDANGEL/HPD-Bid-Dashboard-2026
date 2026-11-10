@@ -84,71 +84,26 @@ try {
     page.on("pageerror", (error) => errors.push(String(error)));
 
     await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=${outcome}`, { waitUntil: "networkidle" });
-    // Email/PDF packages are always signed: blocked until a signature is saved (a test squiggle here).
-    await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
-    await page.getByText("Add your signature first").first().waitFor({ timeout: 10000 });
-    if (outcome === "work_completed") {
-      // One tap makes and saves both signatures; they must still be there after a reload.
-      await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
-      await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor({ timeout: 10000 });
-      await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
-      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
-      await page.reload({ waitUntil: "networkidle" });
-      await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor({ timeout: 10000 });
-      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
-      assert.equal(await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').count(), 0, `${job}: saved signer signature must load`);
-      await page.locator('[data-hpd-smoke="paperwork-signature-card"]').screenshot({ path: path.join(outDir, "signer-card.png") });
-      await page.locator('[data-hpd-smoke="paperwork-notary-card"]').screenshot({ path: path.join(outDir, "notary-card.png") });
-      // A saved notary signature is only placed by the notary's one-tap statement that they witnessed it.
-      assert.match(await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').innerText(), /witnessed the signing/i);
-      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
-      await page.getByText("Notarized by Chetanpreet Malhi").first().waitFor({ timeout: 10000 });
-    } else {
-      // Finger signature on the pad.
-      await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
-      const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();
-      await page.mouse.move(pad.x + 30, pad.y + 100);
-      await page.mouse.down();
-      for (let i = 0; i <= 20; i += 1) await page.mouse.move(pad.x + 30 + i * 12, pad.y + 80 + Math.sin(i / 2) * 30);
-      await page.mouse.up();
-      await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
-    }
+    // One tap (owner, 9 Nov: "I don't need to do all the things ... notarize should be automatic, my signature is just
+    // a copy"): no signing or approving taps; your signature and the notary's are made from the printed names the first
+    // time, saved, and put on by themselves, the notary dated the job's last day.
     if (outcome === "no_access") {
-      // Attempts closer than 72 hours, or a missing call date, must block generation.
+      // Attempts closer than 72 hours, or a missing call date, must still block generation.
       await page.fill('[data-hpd-smoke="paperwork-attempt-1"]', "2026-10-01");
       await page.fill('[data-hpd-smoke="paperwork-attempt-2"]', "2026-10-02");
       await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
       await page.getByText("at least 72 hours apart").first().waitFor({ timeout: 10000 });
       await page.fill('[data-hpd-smoke="paperwork-attempt-2"]', "2026-10-04");
-      if (await page.locator('[data-hpd-smoke="paperwork-call-1"]').count()) {
-        await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
-      }
+      if (await page.locator('[data-hpd-smoke="paperwork-call-1"]').count()) await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
     }
+    await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
     if (outcome === "work_completed") {
-      // The notary's approval is the last step: the package builds by itself, no Generate tap.
-      await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
       // Signed and unsigned copies are reviewed together on the same screen.
+      await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 90000 });
       await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
       assert.ok(await page.locator('[data-hpd-smoke="paperwork-download-unsigned"]').getAttribute("download"), `${job}: unsigned copy must be downloadable from the review screen`);
-    } else {
-      // Every affidavit is notarized (HPD rejects one without the notary): the package is checked
-      // first, then the notary's approval builds it.
-      await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
-      await page.getByText(/isn't notarized yet/).first().waitFor({ timeout: 15000 });
-      await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
-      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
-      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
-      // The approval builds the package; on a slow machine it can take a while. Wait for the review screen, or
-      // for Generate to come back (then tap it) - whichever shows first.
-      const genVisible = () => { const b = document.querySelector('[data-hpd-smoke="paperwork-generate-pdf-only"]'); return !!b && !b.disabled && !!b.offsetParent; };
-      await page.waitForFunction(`!!document.querySelector('[data-hpd-smoke="paperwork-package-review"]') || (${genVisible.toString()})()`, null, { timeout: 90000 });
-      if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) {
-        await page.waitForTimeout(1500);
-        if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count()) && await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').isVisible().catch(() => false)) {
-          // It may have started building by itself a moment ago (the button turns disabled): then just wait.
-          await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click({ timeout: 5000 }).catch(() => {});
-        }
-      }
+      // Both signatures were saved on the phone: kept for the next affidavit.
+      assert.ok(await page.evaluate(() => !!localStorage.getItem("hpd-signer-signature-v1") && !!localStorage.getItem("hpd-notary-signature-v1")), `${job}: signatures saved for next time`);
     }
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     // Every PDF page must render as a preview image (pdfjs failed on browsers without new JS APIs).

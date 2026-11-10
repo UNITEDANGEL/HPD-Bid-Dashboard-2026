@@ -12,6 +12,8 @@ export type FixContext = {
   workStart: string;    // dates on the paperwork originally sent (M/D/YYYY), when known
   workComplete: string;
   tenantPhone: string;
+  award?: string;       // the job's Confirmation of Award date (MM/DD/YYYY): line 2 of the earlier affidavit
+  newForm?: boolean;    // awarded Aug 28, 2026 or later: HPD's new form (no date on line 2)
   current: Record<string, string>; // the paperwork's current values (same keys as the changes)
 };
 export type FixChange = { field: "address" | "borough" | "location" | "amount" | "workStart" | "workComplete" | "invoiceDate" | "tenantPhone"; label: string; from: string; to: string };
@@ -49,9 +51,23 @@ export function autoFix(reason: string, ctx: FixContext): FixResult {
   }
   // Address spelled wrong / different.
   if (/address/.test(low)) set("address", "Address", ctx.address);
+  // Line 2 (owner, 9 Nov, ER04312: "AFFIDAVIT- date directed by HPD is confirmation date of award"): the app prints
+  // the Confirmation of Award date there, never the work date. Only this: the work dates stay as sent.
+  const line2 = /confirmation (date )?of award|date directed by hpd|directed by hpd|line\s*#?\s*2\b/i.test(r);
+  if (line2) notes.push(ctx.newForm
+    ? `Line 2: made on HPD's new affidavit form (awarded ${ctx.award || "after Aug 28, 2026"}), whose line 2 says "directed by HPD in the Confirmation of Award" with no date to fill, so the wrong date is gone.`
+    : `Line 2 ("That on ___ I was directed by HPD"): prints the Confirmation of Award date${ctx.award ? `, ${ctx.award}` : ""}, not the work date.`);
+  const workDateTalk = /(start|end|complet\w*|work)\s+(work\s+)?dates?\b|dates? (do not|don't) match|invoice date/i.test(r);
+  // Highlighted / incomplete / missing information (ER04312, ER01919, ER00272): HPD's copy had empty boxes. The app
+  // fills every box and flattens the PDF, so every box prints.
+  if (/highlight|incomplete|missing info|missing information|not filled|left blank|\bblank\b/i.test(r)) {
+    notes.push("Every box prints on the new copy (OMO, trade, borough, address, work location, dates, materials and quantities, bid amount, total, name and title): check each one on the preview against HPD's highlighted copy.");
+    if (/\bblank\b/i.test(r)) notes.push("A fresh PDF is made with every box printed into the page, so it can't come out blank.");
+  }
+  if (/photo|video/i.test(r)) checks.push("Photos and video: send the before-and-after photos and the video from the job card.");
   // Dates: "end work date on the invoice ... to match the end work date on the affidavit which is 03/01/2023",
   // "dates do not match ... use the first day you attempted ... and the very last day".
-  if (/date/.test(low)) {
+  if (/date/.test(low) && (!line2 || workDateTalk)) {
     const target = /(?:end|complet\w*) (?:work )?date[^.]*?(?:which is|is|should be)\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i.exec(r);
     const start = /start\w* (?:work )?date[^.]*?(?:which is|is|should be)\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i.exec(r);
     set("workComplete", "Work completed", target ? slashDate(target[1]) : ctx.workComplete);
@@ -75,7 +91,7 @@ export function autoFix(reason: string, ctx: FixContext): FixResult {
   if (/omo/.test(low) && new RegExp(`\\b(?!${ctx.omo})E[A-Z]\\d{5}\\b`).test(r.toUpperCase())) notes.push(`OMO: every page prints ${ctx.omo}.`);
   // Only the owner can do these.
   if (/sign/.test(low)) checks.push("Signature: sign the affidavit and the invoice by hand in blue ink (no signature pictures).");
-  if (/notar/.test(low)) checks.push("Notary: have the notary sign and stamp it (the notary date is today).");
+  if (/notar/.test(low)) checks.push("Notary: a real notary signs and stamps every page by hand (the notary date is today).");
   if (/dust wipe|lead/.test(low)) checks.push("Dust wipe / lead: this needs the lab paperwork, not just a new affidavit.");
   if (!changes.length && !checks.length && !notes.length) checks.push("The app couldn't tell what to change from HPD's reason: read it on the preview and change it by hand.");
   return { changes, notes: [...new Set(notes)], checks };

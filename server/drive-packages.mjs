@@ -369,6 +369,35 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       emails.sort((a, b) => b.at.localeCompare(a.at));
       return reply({ omo, emails });
     }
+    // 🔎 What HPD marked (owner, 9 Nov: "I should be able to see the thing I need to fix, especially if a PDF is attached and
+    // marked"): the newest PDF HPD attached in one email thread (an @hpd.nyc.gov sender), read-only, to the owner only.
+    if (action === "hpd-thread-pdf") {
+      const body = await request.json().catch(() => null);
+      const threadId = String(body?.threadId || "");
+      if (!validId(threadId)) fail("Invalid thread.", 400);
+      const got = await call(`${GMAIL_API.replace(/\/messages$/, "/threads")}/${encodeURIComponent(threadId)}?format=full`);
+      if (got.status === 403) fail("Seeing HPD's PDF needs read access to email.", 403);
+      if (!got.ok) fail(`Couldn't read that email (HTTP ${got.status}).`);
+      const msgs = ((await got.json()).messages || []).slice().reverse();
+      const header = (m, n) => String((m.payload?.headers || []).find((h) => String(h.name).toLowerCase() === n)?.value || "");
+      let found = null;
+      for (const m of msgs) {
+        if (!/@hpd\.nyc\.gov/i.test(header(m, "from"))) continue;
+        const part = pdfParts(m.payload).find((x) => x.mime === "application/pdf");
+        if (part) { found = { m, part }; break; }
+      }
+      if (!found) fail("HPD didn't attach a PDF in that email.", 404);
+      let data = found.part.data;
+      if (!data) {
+        const a = await call(`${GMAIL_API}/${encodeURIComponent(found.m.id)}/attachments/${encodeURIComponent(found.part.attachmentId)}`);
+        if (!a.ok) fail(`Couldn't open the PDF (HTTP ${a.status}).`);
+        data = String((await a.json()).data || "");
+      }
+      const bin = atob(data.replace(/-/g, "+").replace(/_/g, "/"));
+      const bytes = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+      return new Response(bytes, { status: 200, headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${found.part.name.replace(/[^A-Za-z0-9 ._()-]/g, "_")}"` } });
+    }
     if (action === "hpd-sent-pdf") {
       const body = await request.json().catch(() => null);
       const id = String(body?.id || "");

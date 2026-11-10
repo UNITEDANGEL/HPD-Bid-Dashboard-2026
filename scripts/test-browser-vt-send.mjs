@@ -57,13 +57,10 @@ try {
   const oldDates = page.locator('[data-hpd-smoke="paperwork-old-dates-ok-btn"]');
   // (It can close by itself once the dates load, when the machine is busy: then there's nothing to tap.)
   if (await oldDates.waitFor({ timeout: 8000 }).then(() => true).catch(() => false)) await oldDates.click({ timeout: 5000 }).catch(() => {});
+  // One tap (owner, 9 Nov: "I don't need to do all the things ... notarize should be automatic, my signature is just a
+  // copy"): your signature and the notary's go on by themselves (made from the printed names the first time), no
+  // signing or approving taps.
   await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
-  await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
-  await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor();
-  await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
-  await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor();
-  await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
-  // The notary's approval builds the package by itself.
   await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 120000 });
   const send = page.locator('[data-hpd-smoke="paperwork-vt-send"]');
   await send.waitFor({ timeout: 90000 });
@@ -83,6 +80,27 @@ try {
   assert.match(sent.to, /@hpd\.nyc\.gov$/);
   assert.match(sent.subject, /^RE: .*PERFORMANCE NOTICE/i);
   assert.ok(sent.attachment.data.startsWith("JVBER") && /\.pdf$/.test(sent.attachment.name), "the signed copy PDF is attached");
+  // Line 2 "That on ___ I was directed by HPD" is the Confirmation of Award date (owner, 9 Nov: HPD sent ER04312 back
+  // because line 2 had the work date). EQ15239 was awarded 01/29/26 (earlier form); the work date is today.
+  {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(Buffer.from(sent.attachment.data, "base64")), useSystemFonts: true }).promise;
+    let text = "";
+    for (let p = 1; p <= doc.numPages; p++) text += " " + (await (await doc.getPage(p)).getTextContent()).items.map((i) => i.str).join(" ");
+    text = text.replace(/\s+/g, " ");
+    // The form's text comes first, then the filled boxes in field order: OMO, county, "I, <name>/<company>", then
+    // line 2's date (the "Award Date" box), then the address and the work dates.
+    const line2 = /CONSTRUCTION CORP\s+(\d\d\/\d\d\/\d{2,4})\s/.exec(text);
+    assert.ok(line2, `line 2 date found: ${text.slice(-900)}`);
+    assert.match(line2[1], /^01\/29\/(20)?26$/, `line 2 is the award date (01/29/26), not the work date: "${line2[1]}"`);
+    // The notary is dated the work completion day (owner, 9 Nov: "the notary should be for the same date as the work
+    // completion date, even for the past ones"), not today.
+    const done = /beginning on.*?(\d\d)\/(\d\d)\/(\d\d)\s+(\d\d)\/(\d\d)\/(\d\d)/.exec(text) || /CONSTRUCTION CORP\s+\S+\s+.*?(\d\d)\/(\d\d)\/(\d\d)\s+(\d\d)\/(\d\d)\/(\d\d)/.exec(text);
+    const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+    assert.ok(done, "work completed date found");
+    const [mm, dd] = [Number(done[4]), Number(done[5])];
+    assert.match(text, new RegExp(String.raw`Notary Public\s+${OMO}\s+JOTJAGRAJ SINGH\s+${months[mm - 1]}\s+\d\d\s+${dd}(ST|ND|RD|TH)?\b`), "notary date = work completed date");
+  }
   if (shots) await page.screenshot({ path: `${shots}/vt-2-sent.png` });
 
   // Back on the board: Sent, waiting for them to confirm.

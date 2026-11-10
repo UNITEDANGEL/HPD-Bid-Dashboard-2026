@@ -15,6 +15,23 @@ const phone = autoFix("PLEASE COMPLETE SECTION #5 OF THE AFFIDAVIT. TENANT PHONE
 assert.equal(phone.changes.length, 0); assert.match(phone.checks[0], /Section 5/);
 assert.match(autoFix("PLEASE SUBMIT A NEW AFFIDAVIT SHOWING ON THE SECOND PAGE THE CORECT OMO# EN30847 NOT EO00521.", ctx()).notes.join(" "), /every page prints EN30847/);
 assert.match(autoFix("Invoice is invalid because the invoice is not signed.", ctx()).checks.join(" "), /blue ink/);
+// ER04312 (owner, 9 Nov: "I want the notices to be able to auto fix ER04312"): HPD's exact words. Line 2 gets the award
+// date, every box prints, the work dates stay as sent (no "enter the dates" ask), and the notary is the owner's part.
+{
+  const r = autoFix("Good day Jot, Kindly see attached affidavit & invoice with highlighted errors & missing information. Please rectify and resubmit. AFFIDAVIT- date directed by HPD is confirmation date of award. Thank you.", { ...ctx({ workStart: "9/12/2026", workComplete: "9/12/2026" }), workStart: "9/12/2026", workComplete: "9/12/2026", award: "09/04/2026" });
+  assert.equal(r.changes.length, 0, "the work dates stay as sent");
+  assert.ok(r.notes.includes('Line 2 ("That on ___ I was directed by HPD"): prints the Confirmation of Award date, 09/04/2026, not the work date.'), r.notes.join(" | "));
+  assert.ok(r.notes.some((n) => /^Every box prints on the new copy/.test(n)));
+  assert.ok(!r.checks.some((c) => /Work dates/.test(c)), r.checks.join(" | "));
+}
+// ER04312 itself was awarded 09/04/26: the new HPD form, no date on line 2.
+assert.match(autoFix("AFFIDAVIT- date directed by HPD is confirmation date of award.", { ...ctx(), award: "09/04/2026", newForm: true }).notes.join(" "), /new affidavit form \(awarded 09\/04\/2026\).*no date to fill/);
+{
+  const r = autoFix("Kindly see attached affidavit & invoice with highlighted errors. Please make corrections & resubmit. Also note ALL documents are to be legitimately notarized.", ctx());
+  assert.match(r.checks.join(" "), /real notary signs and stamps every page/);
+  assert.ok(r.notes.some((n) => /^Every box prints/.test(n)));
+}
+assert.ok(autoFix("Hi Jot, Please note the copy you just resubmitted is blank.", ctx()).notes.some((n) => /can't come out blank/.test(n)));
 // Nothing to change when the paperwork already matches HPD's record.
 assert.equal(autoFix("INCORRECT BOROUGH ON THE INVOICE.", ctx({ borough: "Manhattan" })).changes.length, 0);
 console.log("PASS auto-fix: borough (named / HPD record), apartment, address, end date from HPD's text, amount, section 5 phone check, OMO note, signature check, no change when already right");

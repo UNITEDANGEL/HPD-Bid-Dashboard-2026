@@ -2,8 +2,9 @@
 // working for the job cards, for the bids, and then it stops working because of a conflict with something else. That
 // should not ever happen."). Before every push: every bids test and every job-card test runs together, on the build
 // in out/ (python server on 3920). Any failure: no push.
-//   node scripts/flow-tests.mjs            -> bids + job cards + notices
+//   node scripts/flow-tests.mjs            -> bids + job cards + notices + paperwork
 //   node scripts/flow-tests.mjs notices    -> only vendor tracking
+//   node scripts/flow-tests.mjs paperwork  -> only affidavits / invoices / corrections
 //   node scripts/flow-tests.mjs bids       -> only the bids flow
 //   node scripts/flow-tests.mjs jobs       -> only the job-card flow
 import { spawnSync } from "node:child_process";
@@ -17,8 +18,11 @@ const FLOWS = {
   // Vendor tracking (owner, 9 Nov: "vendor tracking is very important ... the overdue notices, we need to fix them"):
   // the board, the replies, the job-card update, the priority map.
   notices: /^test-browser-(notice|nudge|email|priority-map|vt-send|scan|sent-pdf|appt-mail)[\w-]*\.mjs$/,
+  // Paperwork (owner, 9 Nov: "a better flow to generate the affidavit and invoice ... test all, no future errors"):
+  // one-tap packages, corrections, auto-fix, dates.
+  paperwork: /^test-browser-(paperwork|affidavit|correction|autofix|fix-queue)[\w-]*\.mjs$/,
 };
-const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs", "test-notice-fix.mjs", "test-email-people.mjs", "test-notice-convo.mjs"];
+const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs", "test-notice-fix.mjs", "test-email-people.mjs", "test-notice-convo.mjs", "test-affidavit-line2.mjs", "test-auto-fix.mjs"];
 const want = process.argv[2] ? [process.argv[2]] : Object.keys(FLOWS);
 const files = fs.readdirSync(dir).filter((f) => want.some((w) => FLOWS[w]?.test(f))).sort();
 console.log(`Flows: ${want.join(" + ")} · ${files.length} browser tests`);

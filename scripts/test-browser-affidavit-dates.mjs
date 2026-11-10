@@ -44,10 +44,7 @@ try {
   await page.mouse.up();
   await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
   await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
-  await page.getByText(/isn't notarized yet/).first().waitFor({ timeout: 15000 });
-  await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
-  await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
-  await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+  // The notary goes on by itself (9 Nov): no approving tap.
   await page.waitForFunction(() => !!document.querySelector('[data-hpd-smoke="paperwork-package-review"]') || (() => { const b = document.querySelector('[data-hpd-smoke="paperwork-generate-pdf-only"]'); return !!b && !b.disabled && !!b.offsetParent; })(), null, { timeout: 90000 });
   if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) {
     await page.waitForTimeout(1500);

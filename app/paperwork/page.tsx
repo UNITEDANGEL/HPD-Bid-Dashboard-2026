@@ -13,7 +13,7 @@ import { autoFix, type FixResult } from "../../lib/auto-fix";
 import { loadPrivate, withPrivate } from "../../lib/private-data";
 import { checkPaperwork } from "../../lib/paperwork-check";
 import SentPaperworkLink from "../field-command/SentPaperwork";
-import { signatureBytes } from "../../lib/signature";
+import { loadSignature, NOTARY_NAME_KEY, NOTARY_SIGNATURE_KEY, saveSignature, signatureBytes, signatureFromTypedName } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
 import "./paperwork.css";
@@ -29,6 +29,8 @@ import { visitRecordText } from "../../lib/visit-record";
 import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync";
 import { usePinchZoom } from "../../lib/use-pinch-zoom";
 import { oldJobDateCheck } from "../../lib/old-job-dates";
+import { isoDay, usDay } from "../../lib/affidavit-line2";
+import HpdMarked from "../field-command/HpdMarked";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -1273,6 +1275,9 @@ export default function PaperworkPage() {
   // signatures, so the corrected package has no signature pictures, keeps the notary stamp, and the
   // notary date is the day of the correction.
   const [correction, setCorrection] = useState<{ rejectedAt: string; reason: string; attempt: string } | null>(null);
+  // The email thread HPD's marked-up PDF came in (from the notice's Auto-fix link), to show it next to the fix.
+  const [markedThread, setMarkedThread] = useState("");
+  useEffect(() => { try { const m = new URLSearchParams(window.location.search).get("marked") || ""; if (/^[A-Za-z0-9_-]{10,200}$/.test(m)) setMarkedThread(m); } catch { /* no params */ } }, []);
   // The corrected package once you've checked the preview and saved it to print (ISO time), or an error.
   const [correctionSaved, setCorrectionSaved] = useState("");
   // "Fix them one by one" (owner, 19 Oct): the rejections still to fix, in order (session storage "hpd-fix-queue"),
@@ -1284,7 +1289,7 @@ export default function PaperworkPage() {
   // The outcome HPD's closing status shows, picked for you once the job has loaded (same as tapping it).
   const [hpdOutcome, setHpdOutcome] = useState("");
   // The dates on the paperwork you already sent HPD (Gmail Sent, scripts/fetch_sent_paperwork_dates.py).
-  type SentDates = { outcome?: string; workStart?: string; workComplete?: string; attempt1?: string; attempt2?: string; call1?: string; call2?: string; refused?: string; doneByOthers?: string; sentAt?: string };
+  type SentDates = { awardDate?: string; outcome?: string; workStart?: string; workComplete?: string; attempt1?: string; attempt2?: string; call1?: string; call2?: string; refused?: string; doneByOthers?: string; sentAt?: string };
   const [sentDates, setSentDates] = useState<SentDates | null>(null);
   const [sentDatesUsed, setSentDatesUsed] = useState(false);
   // Auto-fix from HPD's reason (lib/auto-fix): what was changed (and the old values, so Reject puts them back).
@@ -1318,6 +1323,27 @@ export default function PaperworkPage() {
   const [notaryApproved, setNotaryApproved] = useState(false);
   const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; setNotaryApproved(Boolean(notary)); }, []);
   const autoWaitScrolledRef = useRef(false);
+  // ✍️ Signatures by themselves (owner, 9 Nov: "I don't need to do all the things ... ask me to notarize. That should
+  // be automatic. My signature is just a copy ... the notary should be for the same date as the work completion date,
+  // even for the past ones"): making the package puts on your saved signature and the notary's (made from the printed
+  // names once if none is saved yet), the notary dated the job's last day (work completed / 2nd attempt), not today.
+  const [savedBoth, setSavedBoth] = useState(false);
+  useEffect(() => { setSavedBoth(Boolean(loadSignature() && loadSignature(NOTARY_SIGNATURE_KEY))); }, []);
+  async function ensureSignatures(activeForm: PackageForm, activeOutcome: PaperworkOutcome) {
+    if (!signatureRef.current) {
+      let sig = loadSignature();
+      if (!sig) { sig = await signatureFromTypedName(activeForm.signer || DEFAULT_PACKAGE_SIGNER).catch(() => ""); if (sig) try { saveSignature(sig); } catch { /* still used for this one */ } }
+      if (sig) rememberSignature(sig);
+    }
+    const day = packageDay(activeForm, activeOutcome);
+    if (notaryRef.current) { notaryRef.current = { ...notaryRef.current, date: day }; return; }
+    let name = DEFAULT_NOTARY_NAME;
+    try { name = localStorage.getItem(NOTARY_NAME_KEY) || DEFAULT_NOTARY_NAME; } catch { /* private mode */ }
+    let notarySig = loadSignature(NOTARY_SIGNATURE_KEY);
+    if (!notarySig) { notarySig = await signatureFromTypedName(name).catch(() => ""); if (notarySig) try { saveSignature(notarySig, NOTARY_SIGNATURE_KEY); localStorage.setItem(NOTARY_NAME_KEY, name); } catch { /* still used */ } }
+    if (notarySig) notaryRef.current = { signature: notarySig, name, date: day };
+    setSavedBoth(true);
+  }
   // Editing after review: the approval and media choice the package was built with, so it can be
   // rebuilt with corrected details without signing again. Cleared when the job changes.
   const packageNotaryRef = useRef<NotaryApproval | null>(null);
@@ -1500,7 +1526,12 @@ export default function PaperworkPage() {
       }
       fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
         const r = d?.jobs?.[job.toUpperCase()];
-        if (r && (r.rejectedReason || !params.get("reason"))) setCorrection({ rejectedAt: r.rejectedAt || fixFor, reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "" });
+        // HPD's words from the notice (in the link) win: the record can hold only their PDF's file name ("INACCURATE&
+        // INCOMPLETE DOCS.pdf", ER04312, 9 Nov), which auto-fix can't read.
+        const fromLink = String(params.get("reason") || "").trim();
+        const recorded = String(r?.rejectedReason || "").trim();
+        const words = fromLink && (!recorded || /\.pdf$/i.test(recorded) || fromLink.length > recorded.length) ? fromLink : recorded || fromLink;
+        if (r && (recorded || !fromLink)) setCorrection({ rejectedAt: r.rejectedAt || fixFor, reason: words.slice(0, 300), attempt: r.rejectedAttempt || "" });
       }).catch(() => {});
     }
     setSelectedId(job);
@@ -1755,6 +1786,8 @@ export default function PaperworkPage() {
       amount: Number(String(form.bidAmount || form.amount || "").replace(/[^0-9.]/g, "")) || 0,
       workStart: iso(sentDates?.workStart) || form.workStart, workComplete: iso(sentDates?.workComplete) || form.workComplete,
       tenantPhone: form.tenantPhone,
+      award: (() => { const a = isoDay(getJobDate(selectedJob, "award")); return a ? `${a.slice(5, 7)}/${a.slice(8, 10)}/${a.slice(0, 4)}` : ""; })(),
+      newForm: affidavitForm(selectedJob)?.legacy === false,
       current: { address: form.address, borough: form.borough, location: form.location, amount: form.amount, workStart: form.workStart, workComplete: form.workComplete, invoiceDate: form.invoiceDate, tenantPhone: form.tenantPhone },
     });
     autoFixBefore.current = Object.fromEntries(result.changes.map((c) => [c.field, form[c.field as keyof PackageForm]])) as Partial<PackageForm>;
@@ -1930,9 +1963,9 @@ export default function PaperworkPage() {
     // either -- the notary signs on paper, so the stamp always shows. Its jurat date is the
     // job's last event (work completed, or the 2nd no-access / refusal date, as edited on this
     // page), not the day the copy is printed: a job closed out days later keeps its real date.
-    const notary = printCopy
-      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: correction ? todayIsoDate() : packageDay(activeForm, activeOutcome) }
-      : options.notary || null;
+    const notary = printCopy && !(correction && options.notary?.signature && options.signatureImage !== false)
+      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: packageDay(activeForm, activeOutcome) }
+      : options.notary ? { ...options.notary, date: packageDay(activeForm, activeOutcome) } : null;
     const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const formVersion = affidavitForm(selectedJob);
@@ -2465,6 +2498,8 @@ export default function PaperworkPage() {
       setPdfStatus("Pick Work Completed or No Work Completed before generating this package.");
       return;
     }
+    // Your signature and the notary go on by themselves (corrections too: a copy, not ink).
+    if (includeSignature && (!printCopy || correction)) await ensureSignatures(activeForm, activeOutcome);
     if (includeSignature && !printCopy && !signatureRef.current) {
       setPdfStatus("Add your signature first (Your Signature card above). Email packages are always signed; use Print Copy to sign in ink.");
       return;
@@ -2534,7 +2569,7 @@ export default function PaperworkPage() {
         formOverride: packageForm,
         outcomeOverride: activeOutcome,
         includeSignature,
-        signatureImage: !printCopy,
+        signatureImage: !printCopy || Boolean(correction),
         notary: notaryRef.current,
         printCopy,
       });
@@ -5849,7 +5884,30 @@ export default function PaperworkPage() {
             </p>
           ) : null}
 
-          {/* Corrections are signed by hand (you and the notary): no signature pad, no notary approval here. */}
+          {/* ✍️ Signatures (9 Nov): they go on by themselves when the package is made; the cards fold away once both are
+              saved (open them to change). Corrections use the same saved copies. */}
+          {!packagePreview && !correction && savedBoth ? (
+            <details className="paperwork-sign-auto" data-hpd-smoke="paperwork-sign-auto">
+              <summary>✍️ Your signature and the notary go on by themselves · notary dated {displayDate(packageDay(form, outcome))} · tap to change</summary>
+          {!packagePreview && !correction ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
+
+              {!packagePreview && !correction && !(editingPackage && packageNotaryRef.current) ? (
+                <NotaryCard
+                  key={notaryKey}
+                  minDate={
+                    (outcome === "work_completed" || outcome === "partial_work_completed"
+                      ? dateInputValue(form.workComplete || form.fieldDate)
+                      : dateInputValue(form.secondAttempt || form.fieldDate)) || todayIsoDate()
+                  }
+                  defaultName={DEFAULT_NOTARY_NAME}
+                  onApprove={rememberNotary}
+                  autoApprove={autoGeneratePackage}
+                />
+              ) : null}
+
+            </details>
+          ) : (
+            <>
           {!packagePreview && !correction ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
 
           {!packagePreview && !correction && !(editingPackage && packageNotaryRef.current) ? (
@@ -5866,6 +5924,9 @@ export default function PaperworkPage() {
             />
           ) : null}
 
+            </>
+          )}
+
           {correction && !packagePreview ? (
             <div className="paperwork-correction" data-hpd-smoke="paperwork-correction">
               <b>❗ Correcting HPD&apos;s rejection of {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} ATTEMPT)` : ""}</b>
@@ -5876,7 +5937,20 @@ export default function PaperworkPage() {
                 </div>
               ) : null}
               {correction.reason ? <span>HPD: {correction.reason}</span> : null}
-              <small>Fix the details above, then preview the corrected package. Nothing is marked or sent until you check the preview and save it. HPD needs original ink signatures: it has <b>no signature pictures</b> (you and the notary sign by hand); the notary stamp stays and is dated <b>today ({todayIsoDate()})</b>. The paperwork check runs first.</small>
+              {/* 🔎 HPD's marked-up copy right on the fix page (9 Nov). */}
+              {markedThread ? <HpdMarked threadId={markedThread} light /> : null}
+              {/* 🗓 Line 2 (owner, 9 Nov: "line 2 date needs to be the confirmation of award date"): shown on every
+                  correction, with what the original said when it was read from your sent email. */}
+              {(() => {
+                const form = affidavitForm(selectedJob);
+                const award = getJobDate(selectedJob, "award");
+                if (!form || !(outcome === "work_completed" || outcome === "partial_work_completed")) return null;
+                const was = isoDay(sentDates?.awardDate);
+                return form.legacy ? (
+                  <p className="paperwork-line2" data-hpd-smoke="paperwork-line2">🗓 Line 2 (&quot;That on ___ I was directed by HPD&quot;) = <b>{usDay(isoDay(award))}</b>, the Confirmation of Award date.{was && was !== isoDay(award) ? <> The one you sent said <s>{usDay(was)}</s>: this fixes it.</> : null}</p>
+                ) : <p className="paperwork-line2" data-hpd-smoke="paperwork-line2">🗓 New HPD form: line 2 names the Confirmation of Award (awarded {usDay(isoDay(award))}); there is no date to fill there.</p>;
+              })()}
+              <small>Fix the details above, then preview the corrected package. Nothing is marked or sent until you check the preview and save it. Your signature and the notary&apos;s go on by themselves (a copy), with the notary stamp dated the job&apos;s last day (<b>{displayDate(packageDay(form, outcome))}</b>, the work completion date), not today. The paperwork check runs first.</small>
               {outcome === "pending" ? (
                 <div className="paperwork-correction-outcome" data-hpd-smoke="paperwork-correction-outcome">
                   <b>What happened on this job?</b>
@@ -6041,6 +6115,7 @@ export default function PaperworkPage() {
                 <div className="pkg-correction" data-hpd-smoke="paperwork-correction-review">
                   <b>❗ Check the correction before saving</b>
                   <span>HPD rejected this on {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} attempt)` : ""}{correction.reason ? <>: <em>{correction.reason}</em></> : null}</span>
+                  {markedThread ? <HpdMarked threadId={markedThread} light /> : null}
                   {autoFixed ? (
                     <div className="paperwork-autofixed" data-hpd-smoke="paperwork-autofixed-review">
                       <b>✨ Auto-fixed{autoFixed.changes.length ? `: ${autoFixed.changes.length} change${autoFixed.changes.length === 1 ? "" : "s"}` : ": nothing needed changing"}</b>
