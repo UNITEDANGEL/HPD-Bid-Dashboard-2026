@@ -4901,3 +4901,5 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-hpd-marked-msg { margin: 6px 0; font: 700 13.5px system-ui; color: #7f1d1d; }
 .fc-hpd-marked-pages { margin-top: 6px; padding: 8px; border-radius: 10px; background: #fff; border: 1px solid #fecaca; }
 .fc-hpd-marked-pages small { display: block; margin-bottom: 6px; font: 700 13px system-ui; color: #7f1d1d; }
+.fc-board-silent { margin: 0 0 6px; padding: 4px 8px; border-radius: 8px; background: #ede9fe; color: #4c1d95; font: 800 13.5px/1.35 system-ui; }
+.fc-batch-open.is-route { background: #0f766e; border-color: #0f766e; color: #fff; font-weight: 800; }

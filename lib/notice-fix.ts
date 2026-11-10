@@ -76,3 +76,34 @@ export function visitUpdate(row: BoardRow, address: string, visitLong: string) {
     text: `Hello${hello(row.who) ? ` ${hello(row.who)}` : ""},\n\nRe: OMO# ${row.omo}${address ? ` - ${address}` : ""}\n\nWe are in touch with the tenant. We are going ${visitLong} and will try to get the work done that day. We will send the affidavit and invoice right after.\n\nThank you,\nJot Singh\nUnited Angel Construction Corp`,
   };
 }
+
+// 💤 No word from us (owner, 9 Nov: "100% every time ... reply back to Lewis, let her know what's going on"): working
+// days since our last email on an open notice (or since their notice when we never wrote), 0 once it's sent/done.
+export function silentDays(row: BoardRow, now = Date.now()) {
+  if (!row.next || row.steps.sent.done) return 0;
+  const last = Math.max(Date.parse(row.lastMineAt || "") || 0, Date.parse(row.steps.replied.at || "") || 0, Date.parse(row.noticeAt) || 0);
+  if (!last) return 0;
+  let days = 0;
+  for (let t = last + 86400000; t <= now; t += 86400000) { const d = new Date(t).getUTCDay(); if (d !== 0 && d !== 6) days++; }
+  return days;
+}
+
+// 📋 One status email to Lewis (owner, 9 Nov: "communication is open, this is the conversation, let's get it done"):
+// a line per open job with where it is, in plain words.
+export function statusLine(row: BoardRow, visit = "") {
+  const what = row.problem ? "we are correcting the paperwork you sent back and will resend it"
+    : row.steps.sent.done ? `the affidavit and invoice were sent${row.steps.sent.at ? ` on ${DAY(row.steps.sent.at)}` : ""}; please confirm you have them`
+    : row.filed ? `the affidavit and invoice were emailed on ${DAY(row.filed.at)}`
+    : visit ? `we are in touch with the tenant and going ${visit}`
+    : row.steps.made.done ? "the paperwork is ready and goes out today"
+    : "we are in touch and setting a day with the tenant";
+  return `- OMO# ${row.omo}: ${what}.`;
+}
+export function statusEmail(rows: BoardRow[], who: string, visitOf: (omo: string) => string = () => "") {
+  const first = hello(who);
+  const lines = rows.map((r) => statusLine(r, visitOf(r.omo)));
+  return {
+    subject: `Status update: ${rows.length} open OMO${rows.length === 1 ? "" : "s"} - United Angel Construction`,
+    text: `Hello${first ? ` ${first}` : ""},\n\nHere is where each open job stands:\n\n${lines.join("\n")}\n\nWe will keep you updated. Please let us know if you need anything else.\n\nThank you,\nJot Singh\nUnited Angel Construction Corp`,
+  };
+}

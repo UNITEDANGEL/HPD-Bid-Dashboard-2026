@@ -9,7 +9,7 @@ import SentPaperwork from "./SentPaperwork";
 import HpdMarked from "./HpdMarked";
 import type { NoticeFindings } from "../../lib/notice-findings";
 import { isNewSince, noticeConvo, type ConvoItem } from "../../lib/notice-convo";
-import { plainFix, visitUpdate, vtDay, type PlainFix } from "../../lib/notice-fix";
+import { plainFix, silentDays, statusEmail, visitUpdate, vtDay, type PlainFix } from "../../lib/notice-fix";
 import { line2Href, usDay, type Line2Fix } from "../../lib/affidavit-line2";
 import { BOARD_STEPS, NUDGE_AFTER_DAYS, boardSide, sentTime, daysWaiting, draftNudge, draftReply, hoursLeft, nudgeDays, type BoardRow, type BoardStep } from "../../lib/notice-board";
 
@@ -33,6 +33,7 @@ type Props = {
   factsOf?: (omo: string) => JobFacts | null;       // the job itself: address, work, award, HPD's status (6 Nov)
   visitOf?: (omo: string) => string;                // the next visit set for the job (yyyy-mm-dd), or "" (9 Nov)
   awardOf?: (omo: string) => string;                // the job's award date as HPD wrote it ("09/04/26")
+  onRouteNextDay?: (omos: string[]) => { ok: boolean; day: string; added: number; why?: string }; // 🗺 overdue on the next day's route
   line2?: Line2Fix[];                               // affidavits sent with the wrong line 2 date (9 Nov)
 };
 // The job on each notice (owner, 6 Nov: "I don't see the work order number, the address, everything is missing ...
@@ -56,7 +57,7 @@ const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 
 // Email leftovers out of HPD's words: inline-image tags like [cid:…] and extra spaces.
 const noJunk = (t: string) => String(t || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").trim();
 
-export default function NoticeBoard({ line2 = [], awardOf, visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -229,6 +230,35 @@ export default function NoticeBoard({ line2 = [], awardOf, visitOf, factsOf, onH
     }
   };
 
+  // 📋 One status email to Lewis (9 Nov): every open 24/72-hour notice to the person who sends most of them, one line
+  // each with where it stands. Two taps to send, or to yourself first.
+  const statusRows = (() => {
+    const open = rows.filter((r) => r.next && r.kind === "ppn" && r.to);
+    const count = new Map<string, number>();
+    for (const r of open) count.set(r.to, (count.get(r.to) || 0) + 1);
+    const to = [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+    return open.filter((r) => r.to === to).sort((a, b) => a.omo.localeCompare(b.omo));
+  })();
+  const [routed, setRouted] = useState("");
+  const [statusMail, setStatusMail] = useState<{ to: string; who: string; subject: string; text: string; armed: boolean; status: string; sent: boolean } | null>(null);
+  const openStatusMail = () => {
+    const who = statusRows[0]?.who || "";
+    const e = statusEmail(statusRows, who, (o) => { const v = visitOf?.(o) || ""; return v ? vtDay(v) : ""; });
+    setStatusMail({ to: statusRows[0]?.to || "", who, ...e, armed: false, status: "", sent: false });
+  };
+  const sendStatusMail = async (toSelf: boolean) => {
+    if (!statusMail) return;
+    if (!toSelf && !statusMail.armed) { setStatusMail({ ...statusMail, armed: true }); return; }
+    setStatusMail({ ...statusMail, status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: statusMail.subject, text: statusMail.text } : { to: statusMail.to, subject: statusMail.subject, text: statusMail.text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      if (toSelf) { setStatusMail({ ...statusMail, armed: false, status: `✓ Sent to you (${d.to}). Nothing went to HPD.` }); return; }
+      for (const row of statusRows) if (!row.steps.replied.done) onMark(row.key, "replied", true);
+      setStatusMail({ ...statusMail, armed: false, sent: true, status: `✓ Sent to ${d.to}: ${statusRows.length} jobs updated.` });
+    } catch (e) { setStatusMail({ ...statusMail, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` }); }
+  };
   // Who can get a reply now: open, their address known, not already waiting on them.
   const replyable = rows.filter((r) => r.next && r.next !== "confirmed" && r.to);
   // Answer a whole missing-documents list in one email (owner, 19 Oct: "Gafur... very important, let's get her updated"):
@@ -336,6 +366,7 @@ export default function NoticeBoard({ line2 = [], awardOf, visitOf, factsOf, onH
     return (
       <div className={`fc-board-do is-${fx.tone}`} data-hpd-smoke="fc-board-do" data-action={fx.action}>
         <p>👉 {fx.headline}</p>
+        {silentDays(row, now) >= 2 ? <p className="fc-board-silent" data-hpd-smoke="fc-board-silent">💤 No word to {(row.who || "them").split(/\s+/).pop()} in {silentDays(row, now)} working days: send a short update.</p> : null}
         {fx.steps.length ? <ol data-hpd-smoke="fc-board-fix-steps">{fx.steps.map((t, i) => <li key={i}>{t}</li>)}</ol> : null}
         {/* "open the document and look at it" (9 Nov): what you sent, right here, next to their fix notes. */}
         {row.problem?.pdf ? <HpdMarked threadId={row.problem.threadId || row.threadId} name={row.problem.pdf} /> : null}
@@ -504,6 +535,7 @@ export default function NoticeBoard({ line2 = [], awardOf, visitOf, factsOf, onH
         <div className="fc-board-sum" data-hpd-smoke="fc-board-sum">
           <span><b>{open.length}</b> open</span>
           <span className={overdue ? "is-late" : ""}><b>{overdue}</b> overdue</span>
+          {open.some((r) => silentDays(r, now) >= 2) ? <span className="is-quiet" data-hpd-smoke="fc-board-silent-count"><b>{open.filter((r) => silentDays(r, now) >= 2).length}</b> 💤 no word 2+ days</span> : null}
           {open.some((r) => r.problem) ? <span className="is-late" data-hpd-smoke="fc-board-fix-count"><b>{open.filter((r) => r.problem).length}</b> to fix</span> : null}
           <span className={under6 ? "is-hot" : ""}><b>{under6}</b> under 6 h</span>
           <span className={shown.some((r) => noAnswer.includes(r)) ? "is-quiet" : ""}><b>{waiting}</b> waiting on them{shown.some((r) => noAnswer.includes(r)) ? <small data-hpd-smoke="fc-board-quiet-count">⏰ {shown.filter((r) => noAnswer.includes(r)).length} no answer</small> : null}</span>
@@ -569,6 +601,26 @@ export default function NoticeBoard({ line2 = [], awardOf, visitOf, factsOf, onH
                 ) : <button type="button" className="fc-batch-open" data-hpd-smoke="fc-list-reply-open" onClick={() => startListReply(list)}>✉ Answer the whole list in one email</button>}
               </div>
             )) : null}
+            {statusRows.length > 1 ? (statusMail ? (
+              <div className="fc-ack fc-status-mail" data-hpd-smoke="fc-status-box">
+                <b>📋 Status email to {statusMail.who} &lt;{statusMail.to}&gt; · {statusRows.length} jobs</b>
+                <label>Subject<input value={statusMail.subject} onChange={(e) => setStatusMail({ ...statusMail, subject: e.target.value.replace(/[\r\n]/g, " "), armed: false })} /></label>
+                <label>Message<textarea rows={12} data-hpd-smoke="fc-status-text" value={statusMail.text} onChange={(e) => setStatusMail({ ...statusMail, text: e.target.value, armed: false })} /></label>
+                <div className="fc-ack-actions">
+                  <button type="button" className={statusMail.armed ? "is-armed" : ""} data-hpd-smoke="fc-status-send" disabled={statusMail.sent || statusMail.status === "Sending…"} onClick={() => void sendStatusMail(false)}>{statusMail.sent ? "✓ Sent" : statusMail.armed ? `✅ Tap again: send to ${statusMail.to}` : "✉ Send"}</button>
+                  <button type="button" data-hpd-smoke="fc-status-me" disabled={statusMail.status === "Sending…"} onClick={() => void sendStatusMail(true)}>📨 Send to me first</button>
+                  <button type="button" onClick={() => setStatusMail(null)}>Close</button>
+                </div>
+                {statusMail.status ? <p className="fc-ack-status" data-hpd-smoke="fc-status-status">{statusMail.status}</p> : null}
+              </div>
+            ) : <button type="button" className="fc-batch-open" data-hpd-smoke="fc-status-open" onClick={openStatusMail}>📋 One status email to {(statusRows[0].who || "vendor tracking").split(/\s+/).pop()}: all {statusRows.length} open jobs</button>) : null}
+            {overdueRows.length && onRouteNextDay ? (() => {
+              // 🗺 The overdue ones with no day yet go on the next working day's route; then "Update all overdue" tells
+              // Lewis the day (9 Nov: "prioritize the overdues and start working on them").
+              const noDay = overdueRows.filter((r) => !visitOf?.(r.omo) && hasJob(r.omo));
+              return noDay.length ? <button type="button" className="fc-batch-open is-route" data-hpd-smoke="fc-overdue-route" onClick={() => { const r = onRouteNextDay(noDay.map((x) => x.omo)); setRouted(r.ok ? `🗺 ${r.added} overdue job${r.added === 1 ? "" : "s"} put on the route for ${shortDay(r.day)}. Now tap 🔥 Update all overdue to tell Lewis the day.` : `Not put on the route: ${r.why}. Finish today's route first, or plan it in Route.`); }}>🗺 Put {noDay.length} overdue on the next day&apos;s route</button> : null;
+            })() : null}
+            {routed ? <p className="fc-follow-note" role="status" data-hpd-smoke="fc-overdue-routed">{routed}</p> : null}
             {overdueRows.length ? <button type="button" className="fc-batch-open is-overdue" data-hpd-smoke="fc-overdue-open" onClick={() => startBatch("overdue")}>🔥 Update all {overdueRows.length} overdue in a row{overdueRows.some((r) => visitOf?.(r.omo)) ? ` (${overdueRows.filter((r) => visitOf?.(r.omo)).length} with the day you go)` : ""}</button> : null}
             {noAnswer.length ? <button type="button" className="fc-batch-open is-nudge" data-hpd-smoke="fc-nudge-open" onClick={() => startBatch("nudge")}>⏰ Ask {noAnswer.length} to confirm (no answer {NUDGE_AFTER_DAYS}+ days)</button> : null}
             {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}

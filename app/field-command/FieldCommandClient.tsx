@@ -650,6 +650,38 @@ function addToTodayRoute(id: string) {
   }
 }
 
+// The day a job is on the saved route (today or a day ahead, as the route panel saved it), or "" (9 Nov: "we have
+// these jobs in the route for tomorrow which are in the overdue notices").
+function routeDayOf(id: string): string {
+  try {
+    const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
+    return saved?.settings?.date >= nyToday() && Array.isArray(saved.ids) && saved.ids.includes(id) ? String(saved.settings.date) : "";
+  } catch {
+    return "";
+  }
+}
+
+// 🗺 Put jobs on the next working day's route (the board's overdue notices, 9 Nov). Added to a route already saved for
+// that day; never over today's route that still has stops (that one is still being driven).
+function addToNextDayRoute(ids: string[]): { ok: boolean; day: string; added: number; why?: string } {
+  const t = new Date(`${nyToday()}T12:00:00Z`);
+  do t.setUTCDate(t.getUTCDate() + 1); while (t.getUTCDay() === 0 || t.getUTCDay() === 6);
+  const day = t.toISOString().slice(0, 10);
+  try {
+    const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
+    const same = saved?.settings?.date === day;
+    if (!same && saved?.settings?.date === nyToday() && Array.isArray(saved.ids) && saved.ids.length) return { ok: false, day, added: 0, why: "today's route still has stops" };
+    const settings = same ? saved.settings : { date: day, start: "08:00", end: "17:00", minutes: 45, borough: "ALL" };
+    const before: string[] = same && Array.isArray(saved.ids) ? saved.ids.filter((x: unknown) => typeof x === "string") : [];
+    const add = ids.filter((id) => !before.includes(id));
+    localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings, ids: [...before, ...add], ...(same && saved.origin ? { origin: saved.origin } : {}) }));
+    window.dispatchEvent(new Event("hpd-route-changed"));
+    return { ok: true, day, added: add.length };
+  } catch {
+    return { ok: false, day, added: 0, why: "this phone won't save it" };
+  }
+}
+
 function removeFromTodayRoute(id: string) {
   try {
     const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
@@ -3371,7 +3403,7 @@ export default function FieldCommandClient() {
     if (!j) return "";
     const a = j.Appointment as Appointment | undefined;
     if (a && ["requested", "confirmed"].includes(a.state) && a.date >= nyToday()) return a.date;
-    return todayRouteIds().includes(jobId(j)) ? nyToday() : "";
+    return todayRouteIds().includes(jobId(j)) ? nyToday() : routeDayOf(jobId(j));
   };
   const emailList = useMemo(() => emailPeople(boardRows), [boardThreads]); // eslint-disable-line react-hooks/exhaustive-deps
   // 🏢 Building history (idea list): the other jobs at this building, 2024 to now. The 2024-2025 file loads the first
@@ -10533,6 +10565,7 @@ export default function FieldCommandClient() {
             return { address: jobAddress(j), borough: jobBorough(j), amount: String(j.AwardAmount || ""), awarded: String(j.AwardDate || ""), work, hpd, call };
           }}
           visitOf={(omo) => nextVisitOf(findAnyJob(omo))}
+          onRouteNextDay={(omos) => addToNextDayRoute(omos.filter((o) => findAnyJob(o)))}
           awardOf={(omo) => String(findAnyJob(omo)?.AwardDate || "")}
           line2={line2List}
           hasJob={(omo) => Boolean(findAnyJob(omo))}

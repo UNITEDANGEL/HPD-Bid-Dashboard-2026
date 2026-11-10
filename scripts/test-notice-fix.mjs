@@ -46,3 +46,17 @@ const v = visitUpdate(row(), "1 MAIN ST", vtDay("2026-11-11"));
 assert.match(v.text, /^Hello Joy-Ann,\n\nRe: OMO# ER01234 - 1 MAIN ST\n\nWe are in touch with the tenant\. We are going on Wednesday, 11\/11/);
 assert.equal(v.subject, "RE: 24 HR Poor Performance Notice");
 console.log("notice-fix ok: HPD's send-backs as plain fix steps, one line per notice, vendor tracking update lines");
+{
+  const { silentDays, statusLine, statusEmail } = await loadLib("notice-fix");
+  const st = (o = {}) => ({ replied: { done: false, at: "", how: "" }, made: { done: false, at: "", how: "" }, sent: { done: false, at: "", how: "" }, confirmed: { done: false, at: "", how: "" }, ...o });
+  const r = (o = {}) => ({ key: "k", omo: "ER01234", threadId: "t", subject: "s", kind: "ppn", hours: 24, who: "Joy-Ann Lewis", to: "lewisj@hpd.nyc.gov", noticeAt: "2026-11-05T14:00:00Z", dueAt: "", followUpAt: "", want: "", steps: st(), next: "replied", sentAt: "", noticeText: "", lastMineAt: "", lastTheirsAt: "", filed: null, problem: null, ...o });
+  // Thu notice, now Mon: Fri + Mon = 2 working days.
+  assert.equal(silentDays(r(), Date.parse("2026-11-09T15:00:00Z")), 2);
+  assert.equal(silentDays(r({ steps: st({ sent: { done: true, at: "2026-11-06", how: "email" } }) }), Date.parse("2026-11-09T15:00:00Z")), 0);
+  assert.equal(statusLine(r(), "on Tuesday, 11/10"), "- OMO# ER01234: we are in touch with the tenant and going on Tuesday, 11/10.");
+  assert.equal(statusLine(r({ problem: { at: "x", text: "blank" } })), "- OMO# ER01234: we are correcting the paperwork you sent back and will resend it.");
+  const e = statusEmail([r(), r({ omo: "ER05678" })], "Joy-Ann Lewis");
+  assert.match(e.text, /^Hello Joy-Ann,\n\nHere is where each open job stands:\n\n- OMO# ER01234: .*\n- OMO# ER05678: /);
+  assert.equal(e.subject, "Status update: 2 open OMOs - United Angel Construction");
+  console.log("notice-fix ok: 💤 working days with no word, 📋 one status email");
+}

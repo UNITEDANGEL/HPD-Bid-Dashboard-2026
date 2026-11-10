@@ -103,6 +103,21 @@ try {
   const href = await doFix.locator('[data-hpd-smoke="fc-board-do-go"]').getAttribute("href");
   assert.match(href, new RegExp(`^/paperwork/\\?job=${FIX}&fix=.+&reason=.+notarized.*&vt=1$`));
   assert.match(await board.locator('[data-hpd-smoke="fc-board-fix-count"]').innerText(), /1\s*to fix/);
+  // 📋 One status email to Lewis: every open notice of hers, one line each (the day you go when it's set); two taps.
+  await board.locator('[data-hpd-smoke="fc-status-open"]').click();
+  const sbox = board.locator('[data-hpd-smoke="fc-status-box"]');
+  const stext = await sbox.locator('[data-hpd-smoke="fc-status-text"]').inputValue();
+  assert.match(stext, /^Hello Joy-Ann,\n\nHere is where each open job stands:\n\n/);
+  assert.match(stext, new RegExp(`- OMO# ${FIX}: we are correcting the paperwork you sent back and will resend it\\.`));
+  assert.match(stext, new RegExp(`- OMO# ${JOB}: we are in touch with the tenant and going on ${esc(weekday)}\\.`));
+  await sbox.locator('[data-hpd-smoke="fc-status-send"]').click();
+  assert.equal(mails.length, 1, "first tap only arms");
+  await sbox.locator('[data-hpd-smoke="fc-status-send"]').click();
+  await sbox.locator('[data-hpd-smoke="fc-status-status"]', { hasText: "Sent to" }).waitFor();
+  assert.equal(mails.length, 2);
+  assert.equal(mails[1].to, "lewis.test@hpd.nyc.gov");
+  assert.match(mails[1].subject, /^Status update: 2 open OMOs/);
+  mails.pop(); // the rest of the test counts from here
   // 🔥 Update all overdue in a row: each overdue notice's update written (the day you go when it's set); two taps each.
   const od = board.locator('[data-hpd-smoke="fc-overdue-open"]');
   assert.match(await od.innerText(), /🔥 Update all \d+ overdue in a row \(1 with the day you go\)/);
