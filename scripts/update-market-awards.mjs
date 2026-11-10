@@ -78,7 +78,12 @@ export function writeDescriptions(raw) {
   const next = JSON.stringify(sorted);
   let same = false;
   try { same = decrypt(fs.readFileSync(RAW_DESCRIPTIONS)).toString("utf8") === next; } catch { same = false; }
-  if (!same) { fs.mkdirSync(path.dirname(RAW_DESCRIPTIONS), { recursive: true }); fs.writeFileSync(RAW_DESCRIPTIONS, encrypt(Buffer.from(next))); }
+  // Without the private key (the GitHub fetcher's safe-update step has none) the encrypted copy is left as it is and
+  // the award prices still update: "Invalid key length" here stopped every nightly award update from 23 Oct to 10 Nov.
+  if (!same) {
+    try { const sealed = encrypt(Buffer.from(next)); fs.mkdirSync(path.dirname(RAW_DESCRIPTIONS), { recursive: true }); fs.writeFileSync(RAW_DESCRIPTIONS, sealed); }
+    catch (e) { console.log(`Full descriptions not re-sealed (${e.message}); award prices still updated.`); }
+  }
   fs.writeFileSync(DESCRIPTIONS, JSON.stringify(Object.fromEntries(Object.entries(sorted).map(([omo, d]) => [omo, { ...d, description: scrubPublic(d.description) }])), null, 0));
 }
 

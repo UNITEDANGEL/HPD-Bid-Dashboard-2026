@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { handlePushSubscribe } from "../server/drive-packages.mjs";
-import { eveningWrapup, findAlerts, moneyReport, morningBriefing, holdQuiet, openSealed, quietHours, workingHours } from "./send-push.mjs";
+import { eveningWrapup, findAlerts, lostReview, moneyReport, morningBriefing, holdQuiet, openSealed, quietHours, workingHours } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const key = crypto.randomBytes(32);
@@ -114,6 +114,27 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal((await at("2026-10-22T13:30:00Z")).length, 0, "9:30: too early");
   assert.equal((await at("2026-10-22T15:05:00Z")).length, 0, "past due");
   console.log("PASS bid deadline: a priced bid not faxed -> \"⏳ ER1 bid not sent: 25 min left\" once; sent bids and other days left out");
+}
+
+// 📉 Monday lost-bids review: faxed bids awarded to someone else in the last 7 days, yours next to the winner's.
+{
+  const market = { jobs: [
+    { omo: "ER1", amount: 900, awardDate: "2026-11-05", won: false },
+    { omo: "ER2", amount: 2000, awardDate: "2026-11-06", won: false },
+    { omo: "ER3", amount: 500, awardDate: "2026-11-06", won: true },
+    { omo: "ER4", amount: 700, awardDate: "2026-10-20", won: false },
+    { omo: "ER5", amount: 650, awardDate: "2026-11-06", won: false },
+  ] };
+  const records = { "BID-ER1": { omo: "ER1", price: 1250, sentAt: "2026-11-01T15:00:00Z", status: "confirmed" }, "BID-ER2": { omo: "ER2", price: 2400, sentPrice: 2400, sentAt: "2026-11-02T15:00:00Z", status: "sent" },
+    "BID-ER3": { omo: "ER3", price: 500, sentAt: "x", status: "sent" }, "BID-ER4": { omo: "ER4", price: 900, sentAt: "x", status: "sent" }, "BID-ER5": { omo: "ER5", price: 800, status: "saved" } };
+  const l = lostReview({ market, records, now: Date.parse("2026-11-09T15:00:00Z") }); // Monday 10 AM NY
+  assert.equal(l.title, "📉 Last week: 2 bids lost");
+  assert.match(l.body, /^ER1: you \$1,250, won at \$900 · ER2: you \$2,400, won at \$2,000\. Winners were 22% under you on average: price these kinds lower\.$/);
+  assert.equal(l.key, "l:2026-11-09");
+  assert.equal(lostReview({ market, records, now: Date.parse("2026-11-10T15:00:00Z") }), null, "Tuesday");
+  assert.equal(lostReview({ market, records, now: Date.parse("2026-11-09T12:00:00Z") }), null, "before 9 AM");
+  assert.equal(lostReview({ market: { jobs: [] }, records, now: Date.parse("2026-11-09T15:00:00Z") }), null, "nothing lost");
+  console.log(`PASS lost-bids review: Mondays from 9 AM: "${l.body}"`);
 }
 
 // ⚠️ HPD found a problem with paperwork you sent (idea list): one alert with HPD's first words, the same key every time.

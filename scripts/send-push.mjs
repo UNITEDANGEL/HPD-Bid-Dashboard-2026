@@ -66,7 +66,7 @@ export function holdQuiet(list, now = Date.now()) {
 }
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {}, descriptions = {} }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {}, descriptions = {}, market = null }) {
   const out = [];
   // The work in plain words, from the job file (for the award alert).
   const jobWords = await (async () => {
@@ -224,7 +224,39 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   // 💵 Friday money report (owner, 22 Oct "next upgrade"): once each Friday from 2 PM, what HPD owes and what holds it up.
   const cash = await moneyReport({ pip, payments, requests, sent, now, loadLib });
   if (cash) out.push(cash);
+  const lost = lostReview({ market, records, now });
+  if (lost) out.push(lost);
   return out;
+}
+
+// 📉 Monday lost-bids review (bids plan item 5): once each Monday from 9 AM, the bids you faxed that HPD awarded to
+// someone else in the last 7 days (NYC Open Data award = the winning price), yours next to it, and how far under you
+// the winners were. Only bids sent from the app (their price is on the status server).
+export function lostReview({ market, records, now = Date.now(), force = false }) {
+  const p = nyParts(now);
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(new Date(now));
+  if (!force && (weekday !== "Mon" || Number(p.hour) < 9 || Number(p.hour) >= 20)) return null;
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const since = new Date(Date.parse(`${today}T12:00:00Z`) - 7 * 86400000).toISOString().slice(0, 10);
+  const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
+  const rows = [];
+  for (const j of market?.jobs || []) {
+    if (j.won || !(j.amount > 0) || !j.awardDate || j.awardDate < since || j.awardDate > today) continue;
+    const r = records?.[`BID-${j.omo}`];
+    const mine = Number(r?.sentPrice || r?.price || 0);
+    if (!r || !r.sentAt || !(mine > 0)) continue;
+    rows.push({ omo: j.omo, mine, won: Number(j.amount), under: (mine - Number(j.amount)) / mine });
+  }
+  if (!rows.length) return null;
+  rows.sort((a, b) => b.under - a.under);
+  const avg = rows.reduce((a, r) => a + r.under, 0) / rows.length;
+  const tip = avg > 0.15 ? `Winners were ${Math.round(avg * 100)}% under you on average: price these kinds lower.` : avg > 0 ? `Close: winners were ${Math.round(avg * 100)}% under you on average.` : "Some went higher than you: those weren't lost on price (late fax or not received?).";
+  return {
+    key: `l:${today}`, kind: "message",
+    title: `📉 Last week: ${rows.length} bid${rows.length === 1 ? "" : "s"} lost`,
+    body: `${rows.slice(0, 3).map((r) => `${r.omo}: you ${usd(r.mine)}, won at ${usd(r.won)}`).join(" · ")}${rows.length > 3 ? ` (+${rows.length - 3} more)` : ""}. ${tip}`,
+    url: "/map/?bids=1", tag: "lost-review",
+  };
 }
 
 // The day's results from the bid records on the status server (BID-<OMO> / NOBID-<OMO>), the emails and tomorrow's bids.
@@ -408,7 +440,9 @@ async function main() {
   const coa = JSON.parse(read(path.join(ROOT, "public/data/COA_Fetcher_2026.json")) || "[]");
   const addresses = Object.fromEntries((Array.isArray(coa) ? coa : coa.jobs || []).map((j) => [String(j.OMO || "").toUpperCase(), j.BuildingAddress || ""]));
   const descriptions = Object.fromEntries((Array.isArray(coa) ? coa : coa.jobs || []).map((j) => [String(j.OMO || "").toUpperCase(), j.ItbPage3Description || j.JobDescription || j.description || ""]));
-  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions });
+  // What HPD paid on each invitation, whoever won (scripts/update-market-awards.mjs): the Monday lost-bids review.
+  const market = JSON.parse(read(path.join(ROOT, "public/data/market_awards.json")) || "null");
+  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions, market });
   if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
   if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
