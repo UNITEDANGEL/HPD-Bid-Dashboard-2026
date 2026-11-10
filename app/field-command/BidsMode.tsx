@@ -111,6 +111,8 @@ const walkPace = () => { try { return navigator.webdriver ? 0.35 : 1; } catch { 
 
 export default function BidsMode({ open, map, history, onClose, notifUnread = 0, onNotifications, focusOmo = "", onFocused, chat = null, onChat }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void; notifUnread?: number; onNotifications?: () => void; focusOmo?: string; onFocused?: () => void; chat?: BidsChat | null; onChat?: (reply: string, cards?: ChatCard[]) => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
+  // Invitations past their deadline (kept a few days by the reader): your sent ones still open from Mine / a link.
+  const [pastBids, setPastBids] = useState<UpcomingBid[]>([]);
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
   const [privOk, setPrivOk] = useState(false);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
@@ -352,7 +354,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       // HPD's notes with the tenant's contact come from the signed-in private route.
       .then(([raw, priv]) => { setPrivOk(!!priv); return [raw, priv] as const; })
       .then(([raw, priv]) => ({ ...raw, bids: Array.isArray(raw?.bids) ? withPrivate(raw.bids, priv?.bids) : raw?.bids }))
-      .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); })
+      .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); setPastBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => !stillOpen(b)) : []); })
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -713,10 +715,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // An alert about a new invitation opens that bid (21 Oct).
   useEffect(() => {
     if (!open || !focusOmo || !bids) return;
-    const bid = bids.find((b) => b.omo.toUpperCase() === focusOmo);
+    // A bid past its deadline opens too (owner, 10 Nov: "I want to revise the bid, open it on the map and do it").
+    const bid = bids.find((b) => b.omo.toUpperCase() === focusOmo) || pastBids.find((b) => b.omo.toUpperCase() === focusOmo);
     if (bid) goToBid(bid);
     onFocused?.();
-  }, [open, focusOmo, bids]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, focusOmo, bids, pastBids]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The day being worked (owner, 5 Nov: "if today's bids are done, stop; don't take me to tomorrow's bid unless I
   // ask"): the day picked on the list, else the day of the bid open (one of tomorrow's tapped), else today.
@@ -945,6 +948,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     if (rows.length < 2 || batchBusy) return;
     if (!batchArmed) { setBatchArmed(true); return; }
     setBatchArmed(false);
+    // 🧪 A lead bid goes only with HPD's price list (scope sheet) filled (owner, 10 Nov, ER09991: "the work description page
+    // is missing"): one with rates still blank stops the fax and says which.
+    const notPriced = rows.map((r) => (bids || []).find((b) => b.omo === r.omo)).filter((b): b is UpcomingBid => Boolean(b?.lead && b.scopeFile))
+      .filter((b) => !priceScope(b.lead!, leadRates[b.omo] || loadLeadRates(b.omo)).complete).map((b) => b.omo);
+    if (notPriced.length) { setBatchBusy(`Not sent: ${notPriced.join(", ")} still need${notPriced.length === 1 ? "s" : ""} every rate on HPD's price list (the lead scope page). Open ${notPriced.length === 1 ? "it" : "them"}, put the rates, then send.`); return; }
     try {
       const items: { bid: UpcomingBid; rec: BidRecord; bytes: Uint8Array; name: string }[] = [];
       for (const [i, r] of rows.entries()) {
@@ -2108,7 +2116,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 const res = bidResult(rec, awarded, today, marketAwards);
                 const yourPrice = rec.sentPrice || rec.price;
                 const fax = faxState(rec);
-                const openBidData = list.find((b) => b.omo === rec.omo);
+                // Past bids open on the map too, to look at, revise or resend (10 Nov).
+                const openBidData = list.find((b) => b.omo === rec.omo) || pastBids.find((b) => b.omo === rec.omo);
                 return (
                   <li key={rec.omo}>
                     <button type="button" data-hpd-smoke="fc-my-bid" onClick={() => (openBidData ? openBid(openBidData) : setOpenRecord((o) => (o === rec.omo ? "" : rec.omo)))}>

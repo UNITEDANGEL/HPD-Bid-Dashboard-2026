@@ -5553,7 +5553,7 @@ export default function PaperworkPage() {
         .paperwork-locked button { justify-self: start; }
       `}</style>
 
-      <section className="paperwork-wrap" data-hpd-smoke="paperwork-package-page">
+      <section className={`paperwork-wrap${correction && packagePreview ? " is-fix-review" : ""}`} data-hpd-smoke="paperwork-package-page">
         {embedded ? null : <header className="paperwork-topbar">
           <a className="paperwork-back" data-hpd-smoke="paperwork-map-link" href={mapBackHref}>← Map</a>
           <h1>{form.jobId ? `${form.jobId} package` : "Affidavit + invoice"}</h1>
@@ -6381,7 +6381,7 @@ export default function PaperworkPage() {
               ) : null}
               {correction && packagePreview.printCopy ? (
                 <div className="pkg-correction" data-hpd-smoke="paperwork-correction-review">
-                  <b>❗ Check the correction before saving</b>
+                  <b>✅ Fixed: look it over, then send it back</b>
                   <span>HPD rejected this on {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} attempt)` : ""}{correction.reason ? <>: <em>{correction.reason}</em></> : null}</span>
                   <HpdMarked threadId={markedThread} omo={selectedJobId} light />
                   {autoFixed ? (
@@ -6396,8 +6396,8 @@ export default function PaperworkPage() {
                   ) : null}
                   <ul>
                     <li>Look at every page below and make sure that problem is fixed.</li>
-                    <li><b>No signature pictures</b>: you and the notary sign by hand in ink (HPD needs original signatures). Sign the affidavit (page 2) <b>and</b> the invoice&apos;s &quot;Signature of Principal&quot; line in <b>blue ink</b>.</li>
-                    <li>The notary stamp stays; the notary date is <b>today, {todayIsoDate()}</b>.</li>
+                    <li>The emailed copy carries your signature and the notary and says <b>COPY</b>; &quot;Download PDF for printing&quot; is the original to sign in ink if HPD asks for it.</li>
+                    <li>The notary date is the job&apos;s last day: <b>{displayDate(packageDay(form, outcome))}</b>.</li>
                   </ul>
                   {correctionSaved && !correctionSaved.startsWith("error:") ? (
                     <p className="pkg-correction-done" data-hpd-smoke="paperwork-correction-saved">✓ Saved on this phone {new Date(correctionSaved).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. It&apos;s in the fixed folder: HPD notices → <b>🖨 To print</b>. Print it, sign in ink with the notary, then mail it to HPD.</p>

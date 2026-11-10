@@ -43,7 +43,7 @@ try {
   catch { throw new Error(`no preview: ${await page.locator(".paperwork-pdf-status, [data-hpd-smoke=paperwork-correction-status]").first().innerText().catch(() => "?")}`); }
   assert.match(await review.innerText(), new RegExp(`${rej.rejectedAt}`));
   if (rej.rejectedReason) assert.ok((await review.innerText()).includes(rej.rejectedReason.slice(0, 30)), "HPD's reason shown");
-  assert.match(await review.innerText(), /No signature pictures/);
+  assert.match(await review.innerText(), /The emailed copy carries your signature and the notary and says COPY/); // 10 Nov
   const pages = await page.locator('[data-hpd-smoke="paperwork-package-pages"] img').count();
   assert.ok(pages >= 3, `affidavit (2) + invoice pages shown (${pages})`);
   // The pages zoom by themselves in full screen (20 Oct: only the job pages zoom, not the app): a two-finger pinch.

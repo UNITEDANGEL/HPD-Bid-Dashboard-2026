@@ -4109,7 +4109,9 @@ export default function FieldCommandClient() {
               const html = (showLabel || lit
                 ? jobPinHtml(job, meta, priority, visit.count)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
-                + (lit ? `<span class="fc-glow-tag">${lit.tag}</span>` : "");
+                // The notice tag only where there's room (10 Nov: "overlapping pins information"): close pins stay lit
+                // without piling their words on each other; zoom in and each gets its tag.
+                + (lit && showLabel ? `<span class="fc-glow-tag">${lit.tag}</span>` : "");
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
@@ -9591,7 +9593,7 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
-      {noticeChooser && !noticesOpen && !selectedJob ? (
+      {noticeChooser && !noticesOpen && !selectedJob && !bidsOpen ? (
         <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}${boardOpen && boardWithMap && !noticeMini ? " is-on-board" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
           <header>
             <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}{noticeMini ? ` · ${filteredJobs.length}` : `: ${filteredJobs.length} on the map${noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}`}</strong>
@@ -9624,7 +9626,7 @@ export default function FieldCommandClient() {
       ) : null}
       {/* 📋 The jobs on the notice map, oldest ask first, at the bottom (10 Nov): who asked what and when, Show on map,
           Answer / Fix. Folds to one line. */}
-      {noticeChooser && noticeMini && !noticesOpen && !selectedJob && !boardOpen && noticeKind && noticeKind !== "archive" ? (() => {
+      {noticeChooser && noticeMini && !noticesOpen && !selectedJob && !boardOpen && !bidsOpen && noticeKind && noticeKind !== "archive" ? (() => {
         const asks = new Map(vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => [a.omo, a]));
         const items = [...noticeSets[noticeKind]].map((omo) => {
           const job = findAnyJob(omo);

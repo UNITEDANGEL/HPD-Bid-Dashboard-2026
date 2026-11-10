@@ -105,3 +105,19 @@ input:disabled[type="date"] { background: #f1f5f9; color: #166534; font-weight: 
 .pkg-vt-next { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; font-weight: 800; color: #065f46; }
 .pkg-vt-next a { padding: 8px 12px; border-radius: 10px; background: #15803d; color: #fff; text-decoration: none; }
 .pkg-vt-next button { padding: 8px 12px; border-radius: 10px; border: 1px solid #94a3b8; background: #fff; color: #0f172a; font-weight: 800; }
+
+/* ✅ The fix screen (10 Nov): the fixed copy first, then what was fixed, then Send it back; the form, the media choice
+   and the long status line step aside ("✏️ Change something" brings the form back). */
+.is-fix-review .package-charge-card, .is-fix-review .paperwork-advanced, .is-fix-review .paperwork-pdf-status, .is-fix-review .pkg-contents { display: none; }
+.is-fix-review .pkg-review { display: flex; flex-direction: column; }
+.is-fix-review .pkg-review > * { order: 10; }
+.is-fix-review .pkg-review > .pkg-review-head { order: 0; }
+.is-fix-review .pkg-review > .pkg-pages { order: 1; }
+.is-fix-review .pkg-review > .pkg-correction { order: 2; background: #052e16; border-color: #22c55e; }
+.is-fix-review .pkg-review > .pkg-vt-send { order: 3; }
+.is-fix-review .pkg-review > .pkg-photos { display: none; }
+
+/* No faded / invisible text (10 Nov, checked on the fix screen): the photo button and the form-version line. */
+.paperwork-real-sig button, .paperwork-real-sig .paperwork-secondary { color: #0f172a !important; background: #fff !important; border: 1px solid #64748b !important; font-weight: 800; }
+.paperwork-real-sig.is-typed button { background: #ea580c !important; color: #fff !important; border-color: #ea580c !important; }
+.paperwork-affidavit-version { color: #0f172a !important; opacity: 1 !important; font-weight: 700; }
