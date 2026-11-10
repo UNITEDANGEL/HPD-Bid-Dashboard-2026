@@ -276,7 +276,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       let bin = "";
       for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
       const page = { name: `${omo} Work Description Form.pdf`, type: "application/pdf", data: btoa(bin), at: new Date().toISOString() };
-      if (saveExtraPages(omo, [page])) setExtraPages((cur) => (selected?.omo === omo && !cur.length ? [page] : cur));
+      saveExtraPages(omo, [page]); // kept on the phone when there's room; shown and used either way
+      setExtraPages((cur) => (cur.some((x) => x.name === page.name) ? cur : [...cur, page]));
     }).catch(() => {});
   }, [selected?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, setBusy] = useState("");
@@ -949,13 +950,29 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     return appendScope(bytes, await fillLeadScope(scopePdf, bid.lead, rates));
   }
 
+  // The pages for a bid's package: yours on this phone, plus the one kept for the job in the private files (ER09991's
+  // Work Description Form), fetched fresh so a full phone can't drop it (owner, 10 Nov: "you did not attach it").
+  async function extraPagesFor(omo: string): Promise<ExtraPage[]> {
+    const mine = loadExtraPages(omo);
+    const shown = selected?.omo === omo ? extraPages : [];
+    const all = [...mine, ...shown.filter((x) => !mine.some((m) => m.name === x.name))];
+    if (all.some((x) => /Work Description Form/i.test(x.name))) return all;
+    try {
+      const r = await fetch(`/api/private/extra/${encodeURIComponent(omo)}.pdf`, { credentials: "same-origin" });
+      if (!r.ok || !/pdf/i.test(r.headers.get("content-type") || "")) return all;
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      return [...all, { name: `${omo} Work Description Form.pdf`, type: "application/pdf", data: btoa(bin), at: new Date().toISOString() }];
+    } catch { return all; }
+  }
   async function buildPackageFor(bid: UpcomingBid, price: number) {
     const [{ fillBidPackage }, pdf] = await Promise.all([
       import("../../lib/bid-fill"),
       fetch(itbPdfUrl(bid.itbFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
     ]);
     // 📎 + the pages you added to this bid (a Work Description Form, a photo), at the end.
-    const bytes = await appendExtraPages(await withScope(bid, await fillBidPackage(pdf, bid, price)), loadExtraPages(bid.omo));
+    const bytes = await appendExtraPages(await withScope(bid, await fillBidPackage(pdf, bid, price)), await extraPagesFor(bid.omo));
     return { bytes, name: `${bid.omo}_BID_${Math.round(price)}_${bid.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf` };
   }
 
@@ -1847,7 +1864,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               <section className={`fc-bid-price fc-bid-step${reviewedSaved ? " is-done" : ""}`} data-hpd-smoke="fc-step-2">
                 <h4>{reviewedSaved ? "✓" : "2"} · Review the package{reviewedSaved ? ` · filled at ${money2(reviewedSaved.price)}` : ""}</h4>
                 <button type="button" className={`fc-bid-fill is-secondary${reviewedSaved ? " is-done" : ""}${busy === "Filling the bid package…" ? " hpd-sending" : ""}`} data-hpd-smoke="fc-bid-review" disabled={busy === "Filling the bid package…" || faxLocked || (leadNotReady && !reviewedSaved)} onClick={() => void review()}>
-                  {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling the package<span className="hpd-dots" /></> : leadNotReady && !faxLocked && !reviewedSaved ? `Put every rate on HPD's price list first (${leadPriced!.missing.length} to go)` : faxLocked ? `🔒 Package sent at ${money2(record.sentPrice || record.price)}` : reviewedSaved ? `✓ Package filled · ${money2(reviewedSaved.price)} · tap to refill` : revisedFrom(record) ? `Fill the revised package: ${money2(revisedFrom(record)!)} → ${money2(record.price)}` : `Fill the package at ${money2(record.price)}`}
+                  {busy === "Filling the bid package…" ? <><span className="hpd-spin" aria-hidden="true" /> Filling the package<span className="hpd-dots" /></> : leadNotReady && !faxLocked && !reviewedSaved ? `Put every rate on HPD's price list first (${leadPriced!.missing.length} to go)` : faxLocked ? `🔒 Package sent at ${money2(record.sentPrice || record.price)}` : reviewedSaved ? `✓ Package filled · ${money2(reviewedSaved.price)} · tap to refill` : revisedFrom(record) ? `Fill the revised package: ${money2(revisedFrom(record)!)} → ${money2(record.price)}${extraPages.length ? ` + ${extraPages.length} added page${extraPages.length === 1 ? "" : "s"}` : ""}` : `Fill the package at ${money2(record.price)}${extraPages.length ? ` + ${extraPages.length} added page${extraPages.length === 1 ? "" : "s"}` : ""}`}
                 </button>
                 <small className="fc-bid-note">Price on page 1, page 2 and the Work Description Form, plus your company details, signatures, date and the work description.{selected.lead ? " Then HPD's price list with your rates, line costs and totals." : ""}</small>
                 {reviewedSaved ? (

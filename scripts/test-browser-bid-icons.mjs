@@ -19,6 +19,8 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
   await page.waitForFunction(() => document.querySelectorAll(".fc-bid-pin .fc-bid-ico").length > 0, null, { timeout: 30000 });
+  // The bids screen's colors load with it: wait until the pins have them (a moment under load).
+  await page.waitForFunction(() => [...document.querySelectorAll(".fc-bid-pin .fc-bid-in")].every((e) => !/^rgb\(255, 255, 255\)$/.test(getComputedStyle(e).backgroundColor)), null, { timeout: 15000 }).catch(() => {});
   const pins = await page.locator(".fc-bid-pin").evaluateAll((els) => els.map((e) => ({ ico: e.querySelector(".fc-bid-ico")?.getAttribute("data-icon") || "", glyph: !!e.querySelector(".fc-bid-ico svg path, .fc-bid-ico svg rect, .fc-bid-ico svg circle"), kind: getComputedStyle(e.querySelector(".fc-bid-in")).backgroundColor, ring: getComputedStyle(e.querySelector(".fc-bid-in")).boxShadow, bang: e.querySelectorAll("em.is-bad").length, failed: e.classList.contains("is-fax-failed"), day: e.querySelector("b")?.textContent || "", title: e.getAttribute("title") || "" })));
   assert.ok(pins.length > 0 && pins.every((p) => p.ico && p.day), `every pin has a picture and a day: ${JSON.stringify(pins.slice(0, 3))}`);
   assert.ok(pins.every((p) => / · [A-Z][^·]+ · /.test(p.title)), "the kind of job is in the pin's name");
