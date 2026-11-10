@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-10T18:25:21.625488+00:00",
+"generatedAt": "2026-11-10T18:36:55.087890+00:00",
 "since": "2026/10/27",
 "jobs": {
 "EN04541": [
@@ -22007,6 +22007,14 @@
 "file": "ER09991_BID_10860_306-EAST-116-STREET-APT-2A.pdf",
 "outcome": "",
 "subject": "Fwd: Bid - OMO ER09991 - 306 EAST 116 STREET APT. 2A - United Angel Construction Corp.",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-10",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "image.png",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Fwd: Bid - OMO ER09991 - 306 EAST 116 STREET APT. 2A - United Angel Construction Corp.",
 "via": "hpd-staff"
 }
 ]
