@@ -29,9 +29,11 @@ try {
   } } }));
   const sends = [];
   const marked = [];
+  const replies = [];
   // HPD's marked-up PDF from the email (here: an HPD form standing in for it).
   const pdf = (await import("node:fs")).readFileSync("public/templates/work-performed-affidavit-2025.pdf");
   await c.route("**/api/drive/**", (r) => {
+    if (r.request().url().endsWith("/api/drive/hpd-reply")) { const b = JSON.parse(r.request().postData() || "{}"); replies.push(b); return r.fulfill({ json: { sent: true, to: b.toSelf ? "owner@example.test" : b.to, attached: b.attachment?.name || "" } }); }
     if (r.request().url().endsWith("/api/drive/hpd-thread-pdf")) { marked.push(JSON.parse(r.request().postData() || "{}")); return r.fulfill({ status: 200, contentType: "application/pdf", body: pdf }); } if (/hpd-reply|email-package|fax/.test(r.request().url())) sends.push(r.request().url()); return r.fulfill({ status: 401, json: { reconnectRequired: true } }); });
   const page = await c.newPage();
   page.setDefaultTimeout(60000);
@@ -67,9 +69,24 @@ try {
   assert.ok(!/Work dates: HPD says/.test(said), "work dates kept as sent");
   // And on the fix page, next to HPD's words.
   await page.locator('[data-hpd-smoke="fc-hpd-marked-open"]').first().waitFor({ timeout: 30000 });
-  assert.equal(sends.length, 0, "nothing sent");
+  assert.equal(sends.length, 0, "nothing sent by itself");
+  assert.equal(replies.length, 0, "nothing sent by itself");
+  // 📤 Send the fixed copy back to who asked (owner, 9 Nov: "after fix I should be able to resend the fixed back to the
+  // requested source"): Lewis, the corrected PDF attached, two taps.
+  const back = page.locator('[data-hpd-smoke="paperwork-vt-send"]');
+  await back.waitFor({ timeout: 30000 });
+  assert.match(await back.innerText(), /Send the fixed copy back: Joy-Ann Lewis <lewis\.test@hpd\.nyc\.gov>/);
+  assert.match(await back.locator('[data-hpd-smoke="paperwork-vt-text"]').inputValue(), /Attached is the corrected affidavit and invoice for this job\.\n- Every highlighted spot is fixed\.\n- Every box is filled in\.\n- Made on HPD's current affidavit form/);
+  await back.locator('[data-hpd-smoke="paperwork-vt-send-btn"]').click();
+  assert.equal(replies.length, 0, "first tap only arms");
+  await back.locator('[data-hpd-smoke="paperwork-vt-send-btn"]').click();
+  await back.locator('[data-hpd-smoke="paperwork-vt-status"]', { hasText: "Sent to" }).waitFor({ timeout: 30000 });
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].to, "lewis.test@hpd.nyc.gov");
+  assert.match(replies[0].subject, /^RE: 24 HR POOR PERFORMANCE NOTICE - OMO#ER04312/);
+  assert.ok(replies[0].attachment?.data?.startsWith("JVBER"), "the corrected PDF is attached");
   assert.deepEqual(errors, []);
-  console.log("PASS notice auto-fix: ER04312's board card names the fix (line 2 = 09/04/26), Auto-fix it now opens the paperwork that fixes itself from HPD's words (new form: no date on line 2; every box prints; same work dates), nothing sent");
+  console.log("PASS notice auto-fix: ER04312's board card names the fix (line 2 = 09/04/26), Auto-fix it now opens the paperwork that fixes itself from HPD's words (new form: no date on line 2; every box prints; same work dates), then 📤 Send the fixed copy back went to Lewis with the corrected PDF on two taps");
 } finally {
   await browser.close();
 }

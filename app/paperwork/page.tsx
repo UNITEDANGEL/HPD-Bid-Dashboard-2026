@@ -30,6 +30,7 @@ import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync"
 import { usePinchZoom } from "../../lib/use-pinch-zoom";
 import { oldAttemptCheck, oldJobDateCheck } from "../../lib/old-job-dates";
 import { isoDay, usDay } from "../../lib/affidavit-line2";
+import { fixSteps } from "../../lib/notice-fix";
 import HpdMarked from "../field-command/HpdMarked";
 import {
   type PaperworkOutcome,
@@ -1390,6 +1391,8 @@ export default function PaperworkPage() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
       if (toSelf) { setVtSend({ ...vtSend, armed: false, status: `✓ Sent to you (${d.to}) with the PDF. Nothing went to HPD.` }); return; }
+      // A correction that went back to HPD counts as fixed: kept with the job like "save to print" did.
+      if (correction && !correctionSaved) void saveCorrectionForPrinting();
       if (vtSend.notice) {
         try {
           const marks = JSON.parse(localStorage.getItem("hpd-notice-board-v1") || "{}");
@@ -1888,6 +1891,25 @@ export default function PaperworkPage() {
     runAutoFix();
   }); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 📤 Send the fix back to who asked (owner, 9 Nov: "after fix I should be able to resend the fixed back to the requested
+  // source, I want easy flow"): a correction's review shows the same Send box. From a notice it goes to whoever sent
+  // it; otherwise to vendor tracking for the job (Lewis for ERP, Gafur for AEP), and you can change the address.
+  useEffect(() => {
+    if (!correction || !selectedJob || !selectedId) return;
+    const job = selectedId.toUpperCase();
+    const why = String(correction.reason || "").replace(/\s+/g, " ").trim();
+    // What was fixed, in short lines from HPD's own words (not their whole email back).
+    const awardIso = isoDay(getJobDate(selectedJob, "award"));
+    const done = why && !/\.pdf$/i.test(why) ? fixSteps(why, usDay(awardIso)).steps.filter((x) => !/^Keep the same dates|^Open their email/.test(x))
+      .map((x) => x.replace(/^Open their copy: fix every highlighted spot\.$/, "Every highlighted spot is fixed.").replace(/^Fill in every empty box\.$/, "Every box is filled in.").replace(/^Line 2 date \("directed by HPD on"\) = (.*?), the award confirmation date, not the work date\.$/, affidavitForm(selectedJob)?.legacy === false ? "Made on HPD's current affidavit form (line 2: directed by HPD in the Confirmation of Award)." : "Line 2 shows the Confirmation of Award date, $1.").replace(/^Notary stamp and notary signature on every page \(a real notary\)\.$/, "Notarized, with the notary stamp.")) : [];
+    const fixedText = (first: string) => `Hello${first ? ` ${first}` : ""},\n\nRe: OMO# ${job}\n\nAttached is the corrected affidavit and invoice for this job.${done.length ? `\n${done.map((x) => `- ${x}`).join("\n")}` : ""}\n\nPlease let us know if anything else is needed.\n\nThank you,\nJot Singh\nUnited Angel Construction Corp`;
+    setVtSend((cur) => {
+      if (cur) return cur.text.includes("corrected affidavit") ? cur : { ...cur, text: fixedText(cur.name.split(/\s+/)[0] || "") };
+      const aep = /AEP|alternative enforcement/i.test(String(selectedJob.JobDescription || selectedJob.Job_Description || ""));
+      const who = aep ? { to: "gafurd@hpd.nyc.gov", name: "Deoranie Gafur" } : { to: "lewisj@hpd.nyc.gov", name: "Joy-Ann Lewis" };
+      return { ...who, notice: "", subject: `OMO# ${job} - corrected affidavit and invoice`, armed: false, status: "", sent: false, text: fixedText(who.name.split(/\s+/)[0]) };
+    });
+  }, [correction?.reason, selectedJob, selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
   async function saveCorrectionForPrinting() {
     if (!packagePreview || !correction || !selectedId) return;
     try {
@@ -6157,10 +6179,11 @@ export default function PaperworkPage() {
                 </button>
               </div>
 
-              {vtSend && !packagePreview.printCopy ? (
+              {vtSend && (!packagePreview.printCopy || correction) ? (
                 <div className="pkg-vt-send" data-hpd-smoke="paperwork-vt-send">
-                  <b>📤 Send to vendor tracking: {vtSend.name || "HPD"} &lt;{vtSend.to}&gt;</b>
-                  <small>The signed copy (shown below) is attached. Look it over first.</small>
+                  <b>📤 {correction ? "Send the fixed copy back" : "Send to vendor tracking"}: {vtSend.name || "HPD"} &lt;{vtSend.to}&gt;</b>
+                  <small>{correction ? "The corrected copy (shown below) is attached. Look it over first." : "The signed copy (shown below) is attached. Look it over first."}</small>
+                  {correction ? <label>To<input type="email" inputMode="email" data-hpd-smoke="paperwork-vt-to" value={vtSend.to} onChange={(e) => setVtSend({ ...vtSend, to: e.target.value.trim().toLowerCase(), name: "", armed: false })} /></label> : null}
                   <label>Subject<input value={vtSend.subject} onChange={(e) => setVtSend({ ...vtSend, subject: e.target.value.replace(/[\r\n]/g, " "), armed: false })} /></label>
                   <label>Message<textarea rows={7} data-hpd-smoke="paperwork-vt-text" value={vtSend.text} onChange={(e) => setVtSend({ ...vtSend, text: e.target.value, armed: false })} /></label>
                   <div className="pkg-vt-actions">
