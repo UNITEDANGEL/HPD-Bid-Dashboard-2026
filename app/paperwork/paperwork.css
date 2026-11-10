@@ -87,3 +87,4 @@ input:disabled[type="date"] { background: #f1f5f9; color: #166534; font-weight: 
 .paperwork-invoice-check li.is-warn { background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; }
 .paperwork-line2 { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #fef3c7; color: #78350f; font: 700 13.5px/1.4 system-ui; }
 .paperwork-sign-auto { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; } .paperwork-sign-auto > summary { cursor: pointer; font: 800 14px/1.35 system-ui; }
+.paperwork-resumed { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #eff6ff; color: #1e3a8a; border: 1px solid #93c5fd; font: 700 13.5px/1.4 system-ui; } .paperwork-resumed button { margin-left: 8px; }

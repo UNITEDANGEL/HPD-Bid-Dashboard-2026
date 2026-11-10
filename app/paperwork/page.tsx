@@ -28,7 +28,7 @@ import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/fi
 import { visitRecordText } from "../../lib/visit-record";
 import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync";
 import { usePinchZoom } from "../../lib/use-pinch-zoom";
-import { oldJobDateCheck } from "../../lib/old-job-dates";
+import { oldAttemptCheck, oldJobDateCheck } from "../../lib/old-job-dates";
 import { isoDay, usDay } from "../../lib/affidavit-line2";
 import HpdMarked from "../field-command/HpdMarked";
 import {
@@ -1659,6 +1659,49 @@ export default function PaperworkPage() {
     setSentDatesUsed(true);
   }, [correction, sentDates, sentDatesUsed, selectedJob, outcome]);
   const datesLocked = Boolean(correction && sentDatesUsed && sentDates && !datesUnlocked && (sentDates.workStart || sentDates.workComplete || sentDates.attempt1 || sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers));
+  // ↩ Pick up where you left off (owner, 9 Nov: "everything should pick up where I left off"): what you picked and
+  // typed on a job (what happened, the dates, names, notes) is kept on this phone; opening the job again (a reload,
+  // coming back to the app) puts it back. Not for a correction (it uses the dates you sent HPD). Cleared once the
+  // package is approved, or with "Start over".
+  const DRAFT_KEY = "hpd-paperwork-draft-v1";
+  const DRAFT_FIELDS: (keyof PackageForm)[] = ["workStart", "workComplete", "fieldDate", "firstAttempt", "secondAttempt", "phone1Date", "phone2Date", "deniedName", "deniedRelationship", "deniedDescription", "deniedPhone", "tenantPhone", "phoneNote", "partialReason", "partialWorkDone", "materialsText", "notes", "location"];
+  type Draft = { outcome: string; at: string; fields: Partial<Record<keyof PackageForm, string>> };
+  const readDrafts = (): Record<string, Draft> => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") || {}; } catch { return {}; } };
+  const writeDrafts = (all: Record<string, Draft>) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(Object.fromEntries(Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, 40)))); } catch { /* private mode */ } };
+  const clearDraft = (omo: string) => { const all = readDrafts(); if (all[omo.toUpperCase()]) { delete all[omo.toUpperCase()]; writeDrafts(all); } };
+  const editedRef = useRef<Set<keyof PackageForm>>(new Set());
+  const outcomeTouchedRef = useRef(false);
+  const draftDoneRef = useRef("");
+  const [resumed, setResumed] = useState<Draft | null>(null);
+  useEffect(() => {
+    if (!selectedId || packageJobLoading || draftDoneRef.current === selectedId) return;
+    draftDoneRef.current = selectedId;
+    editedRef.current = new Set();
+    outcomeTouchedRef.current = false;
+    setResumed(null);
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("fix") || correction) return;
+    const d = readDrafts()[selectedId.toUpperCase()];
+    if (!d || Date.now() - Date.parse(d.at) > 30 * 86400000) return;
+    const keys = (Object.keys(d.fields) as (keyof PackageForm)[]).filter((k) => DRAFT_FIELDS.includes(k) && typeof d.fields[k] === "string");
+    const urlOutcome = q.get("outcome") || q.get("package") || "";
+    const sameOutcome = !urlOutcome || paperworkOutcomeFromValue(urlOutcome) === paperworkOutcomeFromValue(d.outcome);
+    if (!sameOutcome) return; // you opened it for something else this time
+    if (!urlOutcome && d.outcome && d.outcome !== "pending") { setOutcome(paperworkOutcomeFromValue(d.outcome)); outcomeTouchedRef.current = true; }
+    if (keys.length) setForm((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, d.fields[k] as string])) }));
+    editedRef.current = new Set(keys);
+    setResumed(d);
+  }, [selectedId, packageJobLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!selectedId || packageJobLoading || draftDoneRef.current !== selectedId || correction) return;
+    if (!editedRef.current.size && !outcomeTouchedRef.current) return;
+    const t = window.setTimeout(() => {
+      const all = readDrafts();
+      all[selectedId.toUpperCase()] = { outcome, at: new Date().toISOString(), fields: Object.fromEntries([...editedRef.current].map((k) => [k, String(form[k] ?? "")])) };
+      writeDrafts(all);
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [form, outcome, selectedId, packageJobLoading]); // eslint-disable-line react-hooks/exhaustive-deps
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy && !locked);
   // Revise on the page (owner, 19 Oct: the iPhone app blocks pop-up boxes, so "Revise paperwork" did nothing): pick why
   // (e.g. "It was completed"), tap again to confirm; the sent version is kept and the new outcome is set.
@@ -1888,6 +1931,7 @@ export default function PaperworkPage() {
   }
 
   function chooseOutcome(value: string) {
+    outcomeTouchedRef.current = true;
     clearPackagePreview();
     const nextOutcome = paperworkOutcomeFromValue(value);
     setOutcome(nextOutcome);
@@ -1907,12 +1951,14 @@ export default function PaperworkPage() {
   }
 
   function update(key: keyof PackageForm, value: string) {
+    if (DRAFT_FIELDS.includes(key)) editedRef.current.add(key);
     clearPackagePreview();
     setForm((current) => ({ ...current, [key]: value }));
   }
 
   async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean; emailTo?: string[]; receipt?: { messageId: string; inInbox: boolean } }) {
     if (!jobId) return "Package generated.";
+    if (approved) clearDraft(jobId); // done: nothing left to pick up
 
     const generatedAt = new Date().toISOString();
     const emailNote = delivery?.emailed ? "Emailed" : "Not emailed";
@@ -2018,6 +2064,13 @@ export default function PaperworkPage() {
     const oldDates = useWorkTemplate && !correction ? oldJobDateCheck({ omo: jobId, award: getJobDate(selectedJob, "award"), start: activeForm.workStart, complete: activeForm.workComplete || activeForm.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") }) : null;
     if (oldDates && datesOkKey !== oldDates.key) {
       setPdfStatus(`Check the work dates first: ${oldDates.text} Fix them, or tap "These dates are right".`);
+      return null;
+    }
+    // No access / refused on an old job (9 Nov): attempts inside the award window, or confirmed.
+    const oldTries = (activeOutcome === "no_access" || activeOutcome === "refused_access") && !correction
+      ? oldAttemptCheck({ omo: jobId, award: getJobDate(selectedJob, "award"), first: activeOutcome === "no_access" ? activeForm.firstAttempt : "", second: activeForm.secondAttempt || activeForm.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") }) : null;
+    if (oldTries && (oldTries.before || datesOkKey !== oldTries.key)) {
+      setPdfStatus(oldTries.before ? oldTries.text : `Check the attempt dates first: ${oldTries.text} Fix them, or tap "These dates are right".`);
       return null;
     }
 
@@ -5502,6 +5555,19 @@ export default function PaperworkPage() {
                 />
                 <small>Pick the real day, a past day too. It prints on the affidavit and on the invoice.</small>
               </label>
+                {(() => {
+                  // 🗓 Old job, no access / refused (owner, 9 Nov): attempts inside the award window, or say they're right.
+                  if (outcome !== "refused_access" || correction) return null;
+                  const old = oldAttemptCheck({ omo: selectedId || "", award: getJobDate(selectedJob, "award"), first: "", second: form.secondAttempt || form.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") });
+                  if (!old) return null;
+                  if (!old.before && datesOkKey === old.key) return <small className="paperwork-old-dates-ok" data-hpd-smoke="paperwork-old-attempts-ok">✓ You said these dates are right ({old.work}).</small>;
+                  return (
+                    <div className="paperwork-old-dates" role="alert" data-hpd-smoke="paperwork-old-attempts">
+                      <p>{old.text}</p>
+                      {old.before ? null : <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-old-attempts-ok-btn" onClick={() => setDatesOkKey(old.key)}>These dates are right (old job closed out later)</button>}
+                    </div>
+                  );
+                })()}
               <label className="paperwork-field">
                 2. Person who refused (description, item 7b)
                 <input
@@ -5716,6 +5782,20 @@ export default function PaperworkPage() {
                     />
                   </label>
                 </div>
+                {(() => {
+                  // 🗓 Old job, no access / refused (owner, 9 Nov): attempts inside the award window, or say they're right.
+                  if (outcome !== "no_access" || correction) return null;
+                  const old = oldAttemptCheck({ omo: selectedId || "", award: getJobDate(selectedJob, "award"), first: outcome === "no_access" ? form.firstAttempt : "", second: form.secondAttempt || form.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") });
+                  if (!old) return null;
+                  if (!old.before && datesOkKey === old.key) return <small className="paperwork-old-dates-ok" data-hpd-smoke="paperwork-old-attempts-ok">✓ You said these dates are right ({old.work}).</small>;
+                  return (
+                    <div className="paperwork-old-dates" role="alert" data-hpd-smoke="paperwork-old-attempts">
+                      <p>{old.text}</p>
+                      {old.attempts && outcome === "no_access" ? <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-old-attempts-use" onClick={() => { update("firstAttempt", old.attempts!.first); update("secondAttempt", old.attempts!.second); }}>Use HPD&apos;s window: {old.attempts.first} and {old.attempts.second}</button> : null}
+                      {old.before ? null : <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-old-attempts-ok-btn" onClick={() => setDatesOkKey(old.key)}>These dates are right (old job closed out later)</button>}
+                    </div>
+                  );
+                })()}
                 {form.tenantPhone ? (
                   <>
                     <small>Tenant phone {form.tenantPhone}. Enter the dates you called.</small>
@@ -5878,6 +5958,12 @@ export default function PaperworkPage() {
             </div>
           ) : null}
 
+          {resumed && !packagePreview ? (
+            <p className="paperwork-resumed" data-hpd-smoke="paperwork-resumed">
+              ↩ Picked up where you left off ({new Date(resumed.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}): what happened and the dates you entered are back.
+              <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-start-over" onClick={() => { clearDraft(selectedId); window.location.reload(); }}>Start over</button>
+            </p>
+          ) : null}
           {selectedJob && !packagePreview ? (
             <p className="paperwork-affidavit-version" data-hpd-smoke="paperwork-affidavit-version" data-legacy={affidavitForm(selectedJob)?.legacy ? "1" : "0"}>
               📄 {affidavitForm(selectedJob)?.label || "Award date missing: check it before the affidavit is made"}

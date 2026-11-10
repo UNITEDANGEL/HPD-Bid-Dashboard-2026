@@ -20,3 +20,17 @@ assert.equal(oldJobDateCheck({ omo: "X", award: "2026-08-25", complete: "2026-10
 // The "these dates are right" answer is tied to the dates.
 assert.notEqual(oldJobDateCheck({ omo: "EP27382", award: "2025-05-21", complete: "10/21/2026" }).key, c.key);
 console.log("PASS old-job dates: EP27382 (05/21/2025 -> 10/20/2026, 17 months) asks; HPD's dates offered when they fit; jobs done in time / no award date never ask; a yes only covers those dates");
+
+// No access / refused on old jobs (owner, 9 Nov): before the award is stopped; long after asks, offering HPD's window.
+{
+  const { oldAttemptCheck } = await loadLib("old-job-dates");
+  const before = oldAttemptCheck({ omo: "EQ1", award: "05/21/2025", first: "2025-05-10", second: "2025-05-14" });
+  assert.equal(before.before, true);
+  assert.match(before.text, /can't be before the award \(05\/21\/2025\)/);
+  assert.equal(oldAttemptCheck({ omo: "EQ1", award: "05/21/2025", first: "2025-05-22", second: "2025-05-26" }), null, "within 60 days: fine");
+  const late = oldAttemptCheck({ omo: "EQ1", award: "05/21/2025", first: "2026-02-01", second: "2026-02-05", hpdStart: "05/22/2025", hpdComplete: "05/29/2025" });
+  assert.equal(late.before, false);
+  assert.match(late.text, /last access attempt says 02\/05\/2026 \(9 months later\)/);
+  assert.deepEqual(late.attempts, { first: "05/22/2025", second: "05/25/2025" }, "HPD's window, 72 hours apart");
+  console.log("PASS old-job attempts: before the award stopped, 60+ days later asked with HPD's window as the two attempts");
+}

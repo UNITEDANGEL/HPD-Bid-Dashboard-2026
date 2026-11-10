@@ -35,6 +35,9 @@ try {
   await setDate("paperwork-refused-date", "2026-10-22");
   assert.match(await page.locator('[data-hpd-smoke="paperwork-date-card"]').innerText(), /10\/22\/26/, "changed again");
   if (shots) await page.screenshot({ path: `${shots}/affidavit-refused-date.png` });
+  // EQ15239 was awarded 01/29/26: a refusal in October is an old job closed out later, so it asks first (9 Nov).
+  assert.match(await page.locator('[data-hpd-smoke="paperwork-old-attempts"]').innerText(), /awarded 01\/29\/2026, but the last access attempt says 10\/22\/2026/);
+  await page.locator('[data-hpd-smoke="paperwork-old-attempts-ok-btn"]').click();
   // The date that prints: sign, notarize, build the package and read the affidavit PDF's text.
   await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
   const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();

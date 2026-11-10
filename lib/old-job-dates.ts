@@ -41,3 +41,32 @@ export function oldJobDateCheck(input: { omo: string; award?: string; start?: st
     suggest,
   };
 }
+
+// No access / refused on an old job (owner, 9 Nov: "for old affidavits we want to stay within the award, start and
+// completion dates; that's when we have no access / refused; it could be afterwards because it's old"): an attempt
+// before the award can't be (stop); attempts more than 60 days after the award are asked about, with HPD's own
+// start / complete-by window offered as the two attempt days (72 hours apart). "These dates are right" lets old
+// ones go after it.
+export type OldAttempts = OldJobDates & { before: boolean; attempts: { first: string; second: string } | null };
+export function oldAttemptCheck(input: { omo: string; award?: string; first?: string; second?: string; hpdStart?: string; hpdComplete?: string }): OldAttempts | null {
+  const award = readDay(input.award);
+  const a1 = readDay(input.first), a2 = readDay(input.second || input.first);
+  if (!Number.isFinite(award) || !Number.isFinite(a2)) return null;
+  const firstDay = Number.isFinite(a1) ? Math.min(a1, a2) : a2;
+  if (firstDay < award) {
+    return { key: `${input.omo}|before|${showDay(firstDay)}`, award: showDay(award), work: showDay(firstDay), months: 0, before: true, suggest: null, attempts: null,
+      text: `An access attempt (${showDay(firstDay)}) can't be before the award (${showDay(award)}). Fix the date.` };
+  }
+  const days = Math.round((a2 - award) / DAY);
+  if (days <= OLD_JOB_DAYS) return null;
+  const hs = readDay(input.hpdStart), hc = readDay(input.hpdComplete);
+  const start = Number.isFinite(hs) && hs >= award ? hs : award;
+  const second = start + 3 * DAY;
+  const attempts = (!Number.isFinite(hc) || second <= Math.max(hc, start + 3 * DAY)) && second - award <= OLD_JOB_DAYS * DAY ? { first: showDay(start), second: showDay(second) } : null;
+  const months = Math.max(1, Math.round(days / 30.4));
+  return {
+    key: `${input.omo}|${showDay(Number.isFinite(a1) ? a1 : a2)}|${showDay(a2)}`,
+    award: showDay(award), work: showDay(a2), months, before: false, suggest: null, attempts,
+    text: `This job was awarded ${showDay(award)}, but the last access attempt says ${showDay(a2)} (${months} month${months === 1 ? "" : "s"} later). Were the attempts really then?`,
+  };
+}
