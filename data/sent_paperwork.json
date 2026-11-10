@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-10T13:11:17.197478+00:00",
+"generatedAt": "2026-11-10T13:24:10.331562+00:00",
 "since": "2026/10/27",
 "jobs": {
 "EN04541": [
@@ -20984,6 +20984,14 @@
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: INVOICE IS INCOMPLETE- OMO#ER00272",
 "via": "hpd-staff"
+},
+{
+"date": "2026-11-10",
+"to": "lewisj@hpd.nyc.gov",
+"file": "ER00272-work-completed-PRINT-COPY-unsigned-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "OMO# ER00272 - corrected affidavit and invoice",
+"via": "hpd-staff"
 }
 ],
 "ER00291": [
@@ -21407,6 +21415,14 @@
 "file": "ER04312 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: OMO No: ER04312 Issuer: MATHEWS MATHI Boro: Bronx Bldg Address: 1050, CARROLL PLACE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-10",
+"to": "lewisj@hpd.nyc.gov",
+"file": "ER04312-work-completed-PRINT-COPY-unsigned-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "RE: 24 HR POOR PERFORMANCE NOTICE - OMO#ER04312",
 "via": "hpd-staff"
 }
 ],
