@@ -90,6 +90,14 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(s1[0].title, /^💤 1 notice: no word to Lewis in 2\+ working days$/);
   assert.match(s1[0].body, /^ER01987 \(\d+ d\)\. Tap 📋 One status email/);
   assert.equal(s1[0].key, s2[0].key, "once a day");
+  // 📋 Friday from 1 PM: one reminder for the status email (not on Thursday, not Friday morning).
+  const fri = (iso) => at(iso).then((a) => a.filter((x) => x.title.startsWith("📋 Friday")));
+  assert.equal((await fri("2026-10-22T19:00:00Z")).length, 0, "Thursday");
+  assert.equal((await fri("2026-10-23T14:00:00Z")).length, 0, "Friday 10 AM");
+  const f1 = await fri("2026-10-23T19:00:00Z");
+  assert.equal(f1.length, 1);
+  assert.match(f1[0].title, /^📋 Friday: one status email to Lewis \(1 open job\)$/);
+  assert.equal(f1[0].key, (await fri("2026-10-23T21:00:00Z"))[0].key, "once that Friday");
   console.log("PASS overdue notice: ER01987 alerts once (same key every hour, no 2-hour repeats)");
 }
 

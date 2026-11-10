@@ -6046,7 +6046,7 @@ export default function PaperworkPage() {
               ) : null}
               {correction.reason ? <span>HPD: {correction.reason}</span> : null}
               {/* 🔎 HPD's marked-up copy right on the fix page (9 Nov). */}
-              {markedThread ? <HpdMarked threadId={markedThread} light /> : null}
+              <HpdMarked threadId={markedThread} omo={selectedJobId} light />
               {/* 🗓 Line 2 (owner, 9 Nov: "line 2 date needs to be the confirmation of award date"): shown on every
                   correction, with what the original said when it was read from your sent email. */}
               {(() => {
@@ -6224,7 +6224,7 @@ export default function PaperworkPage() {
                 <div className="pkg-correction" data-hpd-smoke="paperwork-correction-review">
                   <b>❗ Check the correction before saving</b>
                   <span>HPD rejected this on {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} attempt)` : ""}{correction.reason ? <>: <em>{correction.reason}</em></> : null}</span>
-                  {markedThread ? <HpdMarked threadId={markedThread} light /> : null}
+                  <HpdMarked threadId={markedThread} omo={selectedJobId} light />
                   {autoFixed ? (
                     <div className="paperwork-autofixed" data-hpd-smoke="paperwork-autofixed-review">
                       <b>✨ Auto-fixed{autoFixed.changes.length ? `: ${autoFixed.changes.length} change${autoFixed.changes.length === 1 ? "" : "s"}` : ": nothing needed changing"}</b>

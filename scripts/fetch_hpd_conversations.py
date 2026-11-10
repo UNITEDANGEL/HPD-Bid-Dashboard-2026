@@ -187,3 +187,9 @@ if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--days", type=int, default=180)
     main(a.parse_args().days)
+    # 🖍 Then the boxes HPD marked on paperwork they sent back (scripts/fetch_hpd_marks.py); never stops this step.
+    try:
+        import fetch_hpd_marks
+        fetch_hpd_marks.main(90, 15)
+    except Exception as e:  # noqa: BLE001
+        print(f"HPD marks skipped: {type(e).__name__}: {e}")

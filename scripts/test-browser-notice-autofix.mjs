@@ -26,7 +26,12 @@ try {
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   await c.route(/\/data\/correction_dates\.json/, (r) => r.fulfill({ json: { generatedAt: "2026-11-09T00:00:00Z", jobs: {
     [OMO]: { awardDate: "2026-09-12", workStart: "2026-09-12", workComplete: "2026-09-12", outcome: "work_completed", sentAt: "2026-10-19" },
-  } } }));
+  },
+  // 🖍 The boxes HPD marked, read from their scan ahead of time (scripts/fetch_hpd_marks.py; the real ER04312 copy).
+  marks: { "t-er04312-notice": { omos: [OMO], at: ago(20), file: "x.pdf", pages: [
+    { form: "work affidavit", page: 1, boxes: ["Line 2 date (directed by HPD)", "Work completion date"] },
+    { form: "invoice", page: 3, boxes: ["OMO #", "Invoice #", "Invoice date", "Date work started", "Date work completed", "Trade", "Borough", "Building address", "Materials list"] },
+  ] } } } }));
   const sends = [];
   const marked = [];
   const replies = [];
@@ -49,6 +54,13 @@ try {
   assert.equal(await todo.getAttribute("data-action"), "correct");
   const steps = await todo.locator('[data-hpd-smoke="fc-board-fix-steps"] li').allInnerTexts();
   assert.ok(steps.some((s) => /^Line 2 date \("directed by HPD on"\) = 09\/04\/26, the award confirmation date, not the work date\.$/.test(s)), steps.join(" | "));
+  // 🖍 What HPD marked, in words, before opening anything.
+  const boxes = todo.locator('[data-hpd-smoke="fc-hpd-marked-boxes"]');
+  await boxes.waitFor({ timeout: 15000 });
+  assert.deepEqual(await boxes.locator("li").allInnerTexts(), [
+    "Affidavit: Line 2 date (directed by HPD), Work completion date",
+    "Invoice: almost every box (9) — it reached HPD blank. The new copy prints every box.",
+  ]);
   // 🔎 HPD's marked copy opens right on the card.
   const see = todo.locator('[data-hpd-smoke="fc-hpd-marked-open"]');
   assert.equal(await see.innerText(), "🔎 See what HPD marked (OMO#ER04312-INACCURATE&INCOMPLETE DOCS)");
@@ -69,6 +81,7 @@ try {
   assert.ok(!/Work dates: HPD says/.test(said), "work dates kept as sent");
   // And on the fix page, next to HPD's words.
   await page.locator('[data-hpd-smoke="fc-hpd-marked-open"]').first().waitFor({ timeout: 30000 });
+  assert.match(await page.locator('[data-hpd-smoke="fc-hpd-marked-boxes"]').first().innerText(), /HPD marked:[\s\S]*Affidavit: Line 2 date \(directed by HPD\), Work completion date/);
   assert.equal(sends.length, 0, "nothing sent by itself");
   assert.equal(replies.length, 0, "nothing sent by itself");
   // 📤 Send the fixed copy back to who asked (owner, 9 Nov: "after fix I should be able to resend the fixed back to the

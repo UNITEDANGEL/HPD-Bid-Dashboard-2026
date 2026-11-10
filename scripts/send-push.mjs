@@ -140,6 +140,11 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
         const quiet = rows.filter((r) => r.next && !handled(r) && silentDays(r, now) >= 2).sort((a, b) => silentDays(b, now) - silentDays(a, now));
         const day = new Date(now).toISOString().slice(0, 10);
         if (quiet.length) out.push({ key: `s:${h(day)}`, kind: "notice", title: `💤 ${quiet.length} notice${quiet.length === 1 ? "" : "s"}: no word to ${(quiet[0].who || "vendor tracking").split(/\s+/).pop()} in 2+ working days`, body: `${quiet.slice(0, 4).map((r) => `${r.omo} (${silentDays(r, now)} d)`).join(", ")}${quiet.length > 4 ? "…" : ""}. Tap 📋 One status email to update them all.`, url: "/map/?view=all&map=1&board=1", tag: "silent-notices" });
+        // 📋 Friday afternoon (owner's list, 9 Nov: a Friday reminder for the status email): once, from 1 PM, while
+        // notices are open: one email tells Lewis where every job stands before the weekend.
+        const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
+        const open = rows.filter((r) => r.next && !handled(r));
+        if (p.weekday === "Fri" && Number(p.hour) >= 13 && open.length) out.push({ key: `f:${h(day)}`, kind: "notice", title: `📋 Friday: one status email to ${(open[0].who || "vendor tracking").split(/\s+/).pop()} (${open.length} open job${open.length === 1 ? "" : "s"})`, body: "Tell them where every job stands before the weekend: tap 📋 One status email on the notices board, then Send.", url: "/map/?view=all&map=1&board=1", tag: "friday-status" });
       } catch (e) { console.log(`silence check skipped: ${e.message}`); }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }

@@ -369,7 +369,7 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
         {silentDays(row, now) >= 2 ? <p className="fc-board-silent" data-hpd-smoke="fc-board-silent">💤 No word to {(row.who || "them").split(/\s+/).pop()} in {silentDays(row, now)} working days: send a short update.</p> : null}
         {fx.steps.length ? <ol data-hpd-smoke="fc-board-fix-steps">{fx.steps.map((t, i) => <li key={i}>{t}</li>)}</ol> : null}
         {/* "open the document and look at it" (9 Nov): what you sent, right here, next to their fix notes. */}
-        {row.problem?.pdf ? <HpdMarked threadId={row.problem.threadId || row.threadId} name={row.problem.pdf} /> : null}
+        {row.problem?.pdf ? <HpdMarked threadId={row.problem.threadId || row.threadId} name={row.problem.pdf} omo={row.omo} /> : fx.action === "correct" || fx.action === "resend" ? <HpdMarked threadId="" omo={row.omo} /> : null}
         {fx.action === "correct" || fx.action === "resend" ? <SentPaperwork omo={row.omo} /> : null}
         {fx.action === "paperwork" ? <div className="fc-prio-outcomes">{OUTCOMES.map(([k, label]) => <a key={k} href={paperHref(row, k)} onClick={() => rememberSend(row)} data-hpd-smoke={`fc-board-outcome-${k}`}>{label}</a>)}</div> : btn}
         {vd && fx.action !== "visit" && !row.steps.sent.done ? <button type="button" className="fc-board-do-visit" data-hpd-smoke="fc-board-do-visit" onClick={() => { const v = visitUpdate(row, address, vtDay(vd)); openReply(row, address, "", v.text); }}>📅 You go {shortDay(vd)}: tell {/lewis/i.test(row.who) ? "Lewis" : (row.who || "them").split(/\s+/)[0]}</button> : null}

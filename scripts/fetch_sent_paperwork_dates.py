@@ -277,7 +277,9 @@ def main(omos, everything, limit=0):
             json.dump({"generatedAt": now, "jobs": dict(sorted(known.items()))}, f, indent=1)
     with open(PUBLIC_OUT, "w", encoding="utf-8") as f:
         json.dump({"generatedAt": now, "jobs": {o: {k: v for k, v in d.items() if k != "files"} for o, d in sorted(known.items())},
-                   "checked": dict(sorted(checked.items()))}, f)
+                   "checked": dict(sorted(checked.items())),
+                   # What HPD marked on their scans (scripts/fetch_hpd_marks.py, run after the conversations).
+                   "marks": load_json(PUBLIC_OUT).get("marks", {})}, f)
     print(f"Sent paperwork dates: {found} of {len(omos)} jobs read; {len(known)} on file")
 
 
