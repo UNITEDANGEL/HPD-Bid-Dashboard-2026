@@ -516,7 +516,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           const latest = recordsRef.current[rec.omo];
           if (latest && latest.sentAt === rec.sentAt && latest.status === "sent") {
             await update(withLog({ ...latest, status: result.status, confirmedAt: result.at, faxNote: result.subject, updatedAt: new Date().toISOString() }, result.status === "confirmed" ? "HumbleFax: Successful Transmission" : `HumbleFax: FAX FAILED (${result.subject})`, result.at || new Date().toISOString()));
-            notify(result.status === "confirmed"
+            // Said once per fax, ever (owner, 10 Nov: "it keeps saying fax confirmed, stop it now"): a record that comes
+            // back as "sent" from another phone doesn't announce the same fax again.
+            const toldKey = `${rec.omo}|${rec.sentAt}|${result.status}`;
+            let told: string[] = [];
+            try { told = JSON.parse(localStorage.getItem("hpd-fax-told") || "[]"); } catch { /* private mode */ }
+            const already = told.includes(toldKey);
+            if (!already) { try { localStorage.setItem("hpd-fax-told", JSON.stringify([...told, toldKey].slice(-200))); } catch { /* private mode */ } }
+            if (!already) notify(result.status === "confirmed"
               ? { kind: "fax-ok", go: "bids", omo: rec.omo, title: `Bid fax went through · ${rec.omo}`, text: `${money2(latest.sentPrice || latest.price)} · confirmed by HumbleFax` }
               // Resent by itself when it can (owner, 23 Oct: "it should auto resend and just tell me", no snooze);
               // the red box only when it can't (3 tries used / too close to the deadline).

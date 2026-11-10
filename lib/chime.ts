@@ -102,7 +102,9 @@ export function setAlertsAwake(on: boolean) { awake = on; }
 export function ring(n: AppNotice) {
   if (quietHours() && !awake) return false;
   const played = playChime(n.kind);
-  if (played) speak(spokenAlert(n), kindOf(n.kind) === "award" ? 1500 : 950);
+  // A fax that went through is said by the little chime and the banner only, never out loud (owner, 10 Nov: "my
+  // microphone keeps freezing; I don't need voice for fax confirmed": speaking took the mic over).
+  if (played && kindOf(n.kind) !== "fax-ok") speak(spokenAlert(n), kindOf(n.kind) === "award" ? 1500 : 950);
   return played;
 }
 export function notify(n: AppNotice) {

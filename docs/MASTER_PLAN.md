@@ -78,6 +78,25 @@ auto-following this plan."
 21. ✅ **One Claude on the map** (10 Nov): the ✉-with-a-number side tab is gone; its count is on Claude's face, the
     label says "Working 40%" while Claude works, and 🆕 Updates · ✉ Email HPD · A / A+ / A++ are in Claude's chat; the
     chat bar says "💬 Talk to Claude". A bubble already shown today isn't shown again.
+22. ✅ **"Fax confirmed" once, silent** (10 Nov: "it keeps saying fax confirmed, stop it now; my microphone keeps
+    freezing, I don't need voice for fax confirmed"): each fax is announced once ever (hpd-fax-told), with a chime and
+    the banner, never spoken.
+23. ⏳ **Asked but already sent = archived** (10 Nov: "fix the asked: if sent already it should auto archive, unless they
+    come back; don't overlap sent and asked"): an ask from Lewis / Gafur is off Priority once the job's AFF INVOICE went
+    out after it (sent list or our own email with the PDF); a new email from them after that brings it back.
+24. ⏳ **Notices = the board first, over the map** (10 Nov): tap Notices → the board with the notice jobs on the map
+    above it, the picks as one row on top; a pick lights those jobs on the map with the 📋 list; tap Notices again /
+    ✕ folds to the thin bar; never back to all jobs (Jobs leaves). The board stops above the bottom bar.
+25. ⏳ **Pending vs Follow-up** (10 Nov: "what's the difference?"): Follow-up = the late pending jobs; one Pending button
+    with ⏰ Late / Due this week inside, Follow-up removed.
+26. ⏳ **In touch / next week → calls and the route** (10 Nov: "I like the in touch button; we need to call these
+    tenants, make appointments, put them in the route; AI handles all the messages in and out and summarizes; nothing
+    doubled").
+27. ⏳ **Past bids** (10 Nov: "I should be able to see past bids also").
+28. ❌ **The notary's handwritten signature on copies**: not done, on purpose: a notary's signature certifies she
+    watched the signing; copying it onto papers she didn't see would be a forged notarization. Offered instead: New
+    York remote online notarization (the notary signs the PDF on a short video call; the app sends it and attaches the
+    signed copy).
 18. ✅ **Talk to Claude on the computer from the phone** (10 Nov): Remote Control is on for this session: the Claude app
     on the phone shows it, and messages go straight to Claude here. (In-app "Ask for a change" still works too.)
 
