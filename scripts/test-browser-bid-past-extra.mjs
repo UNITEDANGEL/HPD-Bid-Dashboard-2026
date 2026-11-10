@@ -45,6 +45,15 @@ try {
   const past = page.locator('[data-hpd-smoke="fc-bids-past"]');
   await past.waitFor({ timeout: 10000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-bids-days"]').count(), 0, "the calendar closed by itself");
+  // Yesterday / Last 7 days are one tap too.
+  await past.locator('[data-hpd-smoke="fc-bids-past-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-day-pick"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-past-yesterday"]').click();
+  await past.locator(`[data-hpd-smoke="fc-bids-past-row"][data-omo="${A.omo}"]`).waitFor({ timeout: 10000 });
+  await past.locator('[data-hpd-smoke="fc-bids-past-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-day-pick"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-past-week"]').click();
+  assert.match(await past.innerText(), /Sent in the last 7 days: 1/);
   const row = past.locator(`[data-hpd-smoke="fc-bids-past-row"][data-omo="${A.omo}"]`);
   assert.match(await row.innerText(), /\$1,450\.00/);
   await row.locator('[data-hpd-smoke="fc-bids-past-revise"]').click();

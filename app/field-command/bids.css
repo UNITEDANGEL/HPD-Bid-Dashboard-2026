@@ -983,3 +983,6 @@ i.is-won { background: #16a34a; }
 .fc-bid-extra li button { padding: 4px 10px; border-radius: 8px; border: 1px solid #94a3b8; background: #fff; color: #0f172a; font: 700 13px system-ui; }
 .fc-bid-extra-add { margin-top: 6px; padding: 8px 12px; border-radius: 10px; border: 0; background: #ea580c; color: #fff; font: 800 14px system-ui; }
 .fc-bid-extra small { display: block; margin-top: 4px; color: #431407; }
+
+.fc-bids-pastquick { display: flex; gap: 6px; margin-top: 6px; }
+.fc-bids-pastquick button { flex: 1; min-height: 42px; border-radius: 12px; border: 1px solid #64748b; background: #1e293b; color: #f8fafc; font: 800 14px system-ui; }

@@ -1322,6 +1322,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
           })}
           {/* 🗓 A past day (owner, 10 Nov: "pick from the calendar which bids I sent in the past, with the option to revise
               them"): pick a day and the list of bids you sent that day opens; the calendar closes by itself. */}
+          {/* Quick past picks (owner, 10 Nov: "options for bids: yesterday, last week and a custom calendar"). */}
+          <div className="fc-bids-pastquick" data-hpd-smoke="fc-bids-pastquick">
+            <button type="button" data-hpd-smoke="fc-bids-past-yesterday" onClick={() => { setPastDay(NY_DAY.format(new Date(Date.now() - 86400000))); setDaysOpen(false); }}>📠 Yesterday</button>
+            <button type="button" data-hpd-smoke="fc-bids-past-week" onClick={() => { setPastDay("week"); setDaysOpen(false); }}>📠 Last 7 days</button>
+          </div>
           <label className="fc-bids-pastday" data-hpd-smoke="fc-bids-pastday">
             <b>🗓 Sent on a past day</b>
             <input type="date" max={dayKeys[0]} data-hpd-smoke="fc-bids-pastday-input" onChange={(e) => { if (e.target.value) { setPastDay(e.target.value); setDaysOpen(false); } }} />
@@ -1330,19 +1335,22 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       </div>
       {pastDay ? (() => {
         const nyDay = (iso?: string) => (iso ? NY_DAY.format(new Date(iso)) : "");
-        const sentThatDay = Object.values(records).filter((r) => nyDay(r.sentAt) === pastDay || (r.rounds || []).some((x) => nyDay(x.sentAt) === pastDay));
-        const label = new Date(`${pastDay}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+        // A day, or the last 7 days (today included).
+        const weekFrom = NY_DAY.format(new Date(Date.now() - 6 * 86400000));
+        const inRange = (iso?: string) => { const d = nyDay(iso); return !!d && (pastDay === "week" ? d >= weekFrom && d <= dayKeys[0] : d === pastDay); };
+        const sentThatDay = Object.values(records).filter((r) => inRange(r.sentAt) || (r.rounds || []).some((x) => inRange(x.sentAt))).sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+        const label = pastDay === "week" ? "in the last 7 days" : new Date(`${pastDay}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
         return (
           <div className="fc-bids-past" role="dialog" aria-label="Bids sent that day" data-hpd-smoke="fc-bids-past">
             <header><b>📠 Sent {label}: {sentThatDay.length}</b><button type="button" aria-label="Close" data-hpd-smoke="fc-bids-past-close" onClick={() => setPastDay("")}>✕</button></header>
             {!sentThatDay.length ? <p>No bids sent that day.</p> : null}
             <ol>{sentThatDay.map((r) => {
               const bid = list.find((b) => b.omo === r.omo) || pastBids.find((b) => b.omo === r.omo);
-              const round = (r.rounds || []).find((x) => nyDay(x.sentAt) === pastDay);
-              const price = nyDay(r.sentAt) === pastDay ? (r.sentPrice || r.price) : round?.price || r.price;
+              const round = (r.rounds || []).find((x) => inRange(x.sentAt));
+              const price = inRange(r.sentAt) ? (r.sentPrice || r.price) : round?.price || r.price;
               return (
                 <li key={r.omo} data-hpd-smoke="fc-bids-past-row" data-omo={r.omo}>
-                  <span><b>{r.omo}</b> {money2(price)} · {r.address}{r.borough ? ` · ${r.borough}` : ""}<small>{FAX_TEXT[faxState(r) as keyof typeof FAX_TEXT] || ""}</small></span>
+                  <span><b>{r.omo}</b> {money2(price)}{pastDay === "week" && r.sentAt ? ` · sent ${new Date(r.sentAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}` : ""} · {r.address}{r.borough ? ` · ${r.borough}` : ""}<small>{FAX_TEXT[faxState(r) as keyof typeof FAX_TEXT] || ""}</small></span>
                   {bid ? <button type="button" data-hpd-smoke="fc-bids-past-revise" onClick={() => { setPastDay(""); goToBid(bid); }}>🔁 Open · revise</button>
                     : <small>The invitation is no longer on file (HPD's PDF is gone): its history is under Mine.</small>}
                 </li>
