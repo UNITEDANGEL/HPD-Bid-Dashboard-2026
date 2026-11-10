@@ -22,7 +22,7 @@ const FLOWS = {
   // one-tap packages, corrections, auto-fix, dates.
   paperwork: /^test-browser-(paperwork|affidavit|correction|autofix|fix-queue)[\w-]*\.mjs$/,
 };
-const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs", "test-notice-fix.mjs", "test-email-people.mjs", "test-notice-convo.mjs", "test-affidavit-line2.mjs", "test-auto-fix.mjs", "test-old-job-dates.mjs", "test-hpd-marks.mjs"];
+const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs", "test-notice-fix.mjs", "test-email-people.mjs", "test-notice-convo.mjs", "test-affidavit-line2.mjs", "test-auto-fix.mjs", "test-old-job-dates.mjs", "test-hpd-marks.mjs", "test-tread-price.mjs"];
 const want = process.argv[2] ? [process.argv[2]] : Object.keys(FLOWS);
 const files = fs.readdirSync(dir).filter((f) => want.some((w) => FLOWS[w]?.test(f))).sort();
 console.log(`Flows: ${want.join(" + ")} · ${files.length} browser tests`);

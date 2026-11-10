@@ -34,6 +34,7 @@ import { appendScope, fillLeadScope, groupRate, lineKey, loadLeadRates, priceSco
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
+import { treadLine, treadRate } from "../../lib/tread-price";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -1645,6 +1646,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                   </>
                 ) : <small className="fc-my-hint">Tap a line to set what you charge (per sq ft, per door, each part, per floor up, per extra location). Saved on this phone for every job like it; ✎ changes a line for this job only.</small>}
               </div>
+              {/* 🪜 Stair treads: the per-tread price HPD awarded (bids plan item 6). */}
+              {(() => { const t = market?.length ? treadRate(selected.description, market) : null; return t ? <p className="fc-bid-tread" data-hpd-smoke="fc-bid-tread">{treadLine(t)}</p> : null; })()}
               {help ? (
                 <div className={`fc-bid-help is-${help.confidence}`} data-hpd-smoke="fc-bid-help">
                   <em data-hpd-smoke="fc-bid-confidence">{help.confidence === "good" ? "Good match" : help.confidence === "fair" ? "Fair match" : "Rough guide: check it"}</em>

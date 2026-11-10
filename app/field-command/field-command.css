@@ -4910,3 +4910,6 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 
 /* 🔧 Fix all HPD's send-backs, one by one (10 Nov). */
 .fc-board-fix-all { display: inline-block; margin: 6px 0; padding: 10px 14px; border-radius: 10px; background: #b91c1c; color: #fff; font: 800 15px system-ui; text-decoration: none; }
+
+/* 🪜 Per-tread price from past awards (10 Nov). */
+.fc-bid-tread { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #ecfeff; border: 1px solid #67e8f9; color: #164e63; font: 700 14px system-ui; }
