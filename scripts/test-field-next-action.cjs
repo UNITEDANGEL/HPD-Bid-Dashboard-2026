@@ -58,7 +58,7 @@ const start = page.indexOf('  async function markPackageGenerated(');
 const end = page.indexOf('  async function generateAffidavitPdf(', start);
 const marker = ts.transpileModule(page.slice(start, end) + '\nthis.mark = markPackageGenerated;', { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 const patches = [];
-const context = { saveLocalPackageOverride: (id, patch) => patches.push(patch), HPD_STATUS_WORKER_URL: 'https://test.invalid', fetch: async () => ({ok:true}), lastChargeRef: { current: null } };
+const context = { saveLocalPackageOverride: (id, patch) => patches.push(patch), HPD_STATUS_WORKER_URL: 'https://test.invalid', fetch: async () => ({ok:true}), lastChargeRef: { current: null }, flushOverrideOutbox: async () => ({ waiting: 0 }), clearDraft: () => {} };
 new Function(`with(this) { ${marker} }`).call(context);
 (async () => {
   await context.mark('TEST');

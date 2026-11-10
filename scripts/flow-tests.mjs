@@ -26,6 +26,18 @@ const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs
 const want = process.argv[2] ? [process.argv[2]] : Object.keys(FLOWS);
 const files = fs.readdirSync(dir).filter((f) => want.some((w) => FLOWS[w]?.test(f))).sort();
 console.log(`Flows: ${want.join(" + ")} · ${files.length} browser tests`);
+// The deploy's own checks (9 Nov: a push passed here and the live deploy still stopped on one of these): every
+// "node scripts/test-*" and "npm run test:*" line in the deploy workflow runs here too, before the browser tests.
+const wf = fs.readFileSync(path.join(process.cwd(), ".github/workflows/deploy-cloudflare-pages.yml"), "utf8");
+const deployCmds = [...new Set([...wf.matchAll(/^\s*(?:run:\s*)?((?:node scripts\/test-[\w.-]+\.(?:c?js|mjs))|(?:npm run (?:lint|test:[\w-]+)))\s*$/gm)].map((m) => m[1]))];
+if (!process.argv[2] || process.argv[2] === "deploy") {
+  console.log(`Deploy checks: ${deployCmds.length}`);
+  for (const cmd of deployCmds) {
+    const r = spawnSync(cmd, { shell: true, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+    if (r.status) { console.error(r.stdout.slice(-2000), r.stderr.slice(-2000)); console.error(`FLOW CHECK FAILED (deploy check): ${cmd}`); process.exit(1); }
+  }
+  if (process.argv[2] === "deploy") { console.log("DEPLOY CHECKS OK"); process.exit(0); }
+}
 for (const u of units) {
   const r = spawnSync(process.execPath, [path.join(dir, u)], { stdio: "inherit" });
   if (r.status) { console.error(`FLOW CHECK FAILED: ${u}`); process.exit(1); }
