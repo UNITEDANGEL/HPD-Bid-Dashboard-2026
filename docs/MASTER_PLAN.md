@@ -357,7 +357,7 @@ The plan, one by one (✅ = live, ☐ = next):
 1. ✅ **Lead rates remembered**: your baseboard / window / door / wall rates from the last lead bid fill in on the next one, with a note to check them; change any and it's that bid's own. Also fixed: reopening a lead bid showed empty rate boxes while the totals counted the saved rates. Test: test-browser-lead-bid.
 2. ⏳ **Bid all in a row, hands-free**: each bid's summary is read, you say "bid 2,400" (or "skip"), it saves and goes to the next; sending stays two taps.
 3. ✅ **30-minute deadline alert** (9 Nov): a bid you priced (saved) but didn't fax, due within 45 minutes → one phone alert "⏳ ER… bid not sent: 25 min left · Priced at $1,250 but not faxed yet (due 11:00 AM)"; tap opens that bid. Sent bids and other days stay quiet. Like every phone alert, it needs the alert sender to run in that window (this PC on). Test: test-push.
-4. ⏳ **Morning bid brief (8 AM alert)**: "5 bids due today, best prices about $9,400 in all: tap to start".
+4. ✅ **Morning bid brief (8 AM alert)** (10 Nov): on a bid day the morning alert says "☀️ Good morning: 5 bids due today" with "🧾 5 bids due today (first 11:00 AM), 2 priced ($9,400)"; tapping opens the bids to start (a late notice still comes first). Test: test-push.
 5. ⏳ **Monday lost-bids review**: last week's lost bids, the winner's price next to yours, and what to change.
 6. ⏳ **Tread price from past awards**: the market price per stair tread (marble / metal / wood) as the suggested rate.
 7. ✅ **Version on the phone** (9 Nov): every error, 🐞 report, request and voice check now carries the build number and the exact code (commit), e.g. "2709 5f5e7b3"; the version line at the bottom shows both. (lib/app-errors.ts withCode; FieldCommandClient APP_VERSION.)

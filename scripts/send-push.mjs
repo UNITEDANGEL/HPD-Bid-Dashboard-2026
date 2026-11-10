@@ -161,7 +161,7 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
     }
   }
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
-  const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib });
+  const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib, records });
   if (brief) out.push(brief);
   // 🌆 Evening wrap-up (owner, 21 Oct "next upgrade"): once each weekday from 6 PM, what got done and what's left.
   const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib });
@@ -315,7 +315,7 @@ export async function moneyReport({ pip, payments, requests, sent, now = Date.no
 
 const nyParts = (now) => Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
 const minutesOf = (t) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
-export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib, force = false }) {
+export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib, force = false, records = {} }) {
   if (!force && !workingHours(now)) return null;
   const p = nyParts(now);
   const today = `${p.year}-${p.month}-${p.day}`;
@@ -323,7 +323,11 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
   const lines = [];
   // Bids due today (still open).
   const dueToday = (bids || []).filter((b) => b.bidDue === today && minutesOf(b.bidDueTime) > nowMin).sort((a, b) => minutesOf(a.bidDueTime) - minutesOf(b.bidDueTime));
-  if (dueToday.length) lines.push(`🧾 ${dueToday.length} bid${dueToday.length === 1 ? "" : "s"} due today (first ${dueToday[0].bidDueTime})`);
+  // 🧾 Morning bid brief (bids plan item 4): how many are priced already and for how much; the alert opens the bids.
+  const priced = dueToday.map((b) => records?.[`BID-${b.omo}`]).filter((r) => r && Number(r.price) > 0);
+  const pricedSum = priced.reduce((a, r) => a + Number(r.price), 0);
+  if (dueToday.length) lines.push(`🧾 ${dueToday.length} bid${dueToday.length === 1 ? "" : "s"} due today (first ${dueToday[0].bidDueTime})${priced.length ? `, ${priced.length} priced ($${pricedSum.toLocaleString("en-US")})` : ""}`);
+  let lateNotices = 0;
   // Notices: overdue / due today, and documents requests waiting.
   if (loadLib && conversations?.threads) {
     try {
@@ -333,6 +337,7 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
       const open = rows.filter((r) => r.kind === "ppn" && !r.steps.sent.done);
       const overdue = open.filter((r) => hoursLeft(r, now) < 0);
       const dueSoon = open.filter((r) => hoursLeft(r, now) >= 0 && hoursLeft(r, now) < 24);
+      lateNotices = overdue.length;
       if (overdue.length) lines.push(`⏰ ${overdue.length} notice${overdue.length === 1 ? "" : "s"} overdue (${overdue.slice(0, 3).map((r) => r.omo).join(", ")})`);
       if (dueSoon.length) lines.push(`⏱ ${dueSoon.length} notice${dueSoon.length === 1 ? "" : "s"} due within 24 h`);
       const docs = rows.filter((r) => r.kind === "docs" && !r.steps.sent.done);
@@ -344,9 +349,10 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
   if (toFix.length) lines.push(`💵 ${toFix.length} payment rejection${toFix.length === 1 ? "" : "s"} to fix`);
   return {
     key: `m:${today}`, kind: "message",
-    title: lines.length ? "☀️ Good morning: your day" : "☀️ Good morning: nothing urgent today",
+    title: dueToday.length ? `☀️ Good morning: ${dueToday.length} bid${dueToday.length === 1 ? "" : "s"} due today` : lines.length ? "☀️ Good morning: your day" : "☀️ Good morning: nothing urgent today",
     body: lines.length ? lines.join(" · ") : "No bids due, no notices running late. Open HPD Field for the map.",
-    url: "/map/?view=all&map=1&today=1", tag: "morning",
+    // Bids due and no late notice: straight to the bids, to start pricing. A late notice comes first otherwise.
+    url: dueToday.length && !lateNotices ? "/map/?bids=1" : "/map/?view=all&map=1&today=1", tag: "morning",
   };
 }
 

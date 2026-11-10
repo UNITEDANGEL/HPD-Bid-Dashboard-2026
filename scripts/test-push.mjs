@@ -151,6 +151,11 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.match(b.body, /💵 2 payment rejections to fix/);
   assert.equal(await morningBriefing({ conversations: { threads }, bids, sent, requests, now: Date.parse("2026-10-22T10:30:00Z"), loadLib }), null, "not before 8 AM");
   assert.equal(await morningBriefing({ conversations: { threads }, bids, sent, requests, now: Date.parse("2026-10-24T14:00:00Z"), loadLib }), null, "not on Saturday");
+  assert.equal(b.title, "☀️ Good morning: 2 bids due today");
+  // 🧾 Bid brief: priced ones counted with their total; with no late notice it opens the bids.
+  const b2 = await morningBriefing({ conversations: { threads: [] }, bids, sent: {}, requests: {}, records: { "BID-ER1": { omo: "ER1", price: 1250, status: "saved" }, "BID-ER2": { omo: "ER2", price: 8150, status: "saved" } }, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
+  assert.match(b2.body, /^🧾 2 bids due today \(first 11:00 AM\), 2 priced \(\$9,400\)$/);
+  assert.equal(b2.url, "/map/?bids=1");
   const quiet = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
   assert.match(quiet.title, /nothing urgent today/);
   console.log(`PASS morning briefing: weekdays from 8 AM, once a day: "${b.body}"; nothing before 8 or on weekends; a quiet day says so`);
