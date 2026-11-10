@@ -13,7 +13,8 @@ import { autoFix, type FixResult } from "../../lib/auto-fix";
 import { loadPrivate, withPrivate } from "../../lib/private-data";
 import { checkPaperwork } from "../../lib/paperwork-check";
 import SentPaperworkLink from "../field-command/SentPaperwork";
-import { loadSignature, NOTARY_NAME_KEY, NOTARY_SIGNATURE_KEY, saveSignature, signatureBytes, signatureFromTypedName } from "../../lib/signature";
+import { signJitter } from "../../lib/sign-jitter";
+import { loadSignature, NOTARY_NAME_KEY, NOTARY_SIGNATURE_KEY, saveSignature, shareSignatureChange, signatureBytes, signatureFromPhoto, signatureFromTypedName } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
 import "./paperwork.css";
@@ -1330,11 +1331,59 @@ export default function PaperworkPage() {
   // even for the past ones"): making the package puts on your saved signature and the notary's (made from the printed
   // names once if none is saved yet), the notary dated the job's last day (work completed / 2nd attempt), not today.
   const [savedBoth, setSavedBoth] = useState(false);
+  // 📷 The real signature from a photo (10 Nov).
+  const realSigFile = useRef<HTMLInputElement | null>(null);
+  const [realSigTyped, setRealSigTyped] = useState(false);
+  const [realSigPreview, setRealSigPreview] = useState("");
+  const [realSigMsg, setRealSigMsg] = useState("");
+  useEffect(() => {
+    try { const sig = loadSignature(); setRealSigPreview(sig); setRealSigTyped(!sig || localStorage.getItem("hpd-signature-typed") === "1"); } catch { /* private mode */ }
+  }, []);
+  // The real signature kept in the private files (signed in only): used once, then saved on this phone.
+  async function loadRealSignature(): Promise<string> {
+    try {
+      const r = await fetch("/api/private/signature", { credentials: "same-origin", cache: "no-store" });
+      if (!r.ok || !/image\/png/.test(r.headers.get("content-type") || "")) return "";
+      const blob = await r.blob();
+      const url = await new Promise<string>((ok, bad) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result || "")); fr.onerror = () => bad(fr.error); fr.readAsDataURL(blob); });
+      if (!url.startsWith("data:image/png")) return "";
+      saveSignature(url);
+      try { localStorage.removeItem("hpd-signature-typed"); } catch { /* private mode */ }
+      return url;
+    } catch { return ""; }
+  }
+  useEffect(() => {
+    if (!realSigTyped) return;
+    void loadRealSignature().then((real) => { if (real) { rememberSignature(real); setRealSigPreview(real); setRealSigTyped(false); } });
+  }, [realSigTyped]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function useRealSignature(file?: File) {
+    if (!file) return;
+    setRealSigMsg("Reading your signature…");
+    try {
+      const sig = await signatureFromPhoto(file);
+      saveSignature(sig);
+      shareSignatureChange({ signer: sig });
+      try { localStorage.removeItem("hpd-signature-typed"); } catch { /* private mode */ }
+      rememberSignature(sig);
+      setRealSigPreview(sig);
+      setRealSigTyped(false);
+      setRealSigMsg("✓ Saved. Every copy from now on carries this signature (on every phone).");
+    } catch (e) {
+      setRealSigMsg(e instanceof Error ? e.message : "That picture could not be used.");
+    } finally {
+      if (realSigFile.current) realSigFile.current.value = "";
+    }
+  }
   useEffect(() => { setSavedBoth(Boolean(loadSignature() && loadSignature(NOTARY_SIGNATURE_KEY))); }, []);
   async function ensureSignatures(activeForm: PackageForm, activeOutcome: PaperworkOutcome) {
+    // Your real ink signature (owner, 10 Nov: from the signed ER05228 copy) in place of typed letters.
+    if (!signatureRef.current || realSigTyped) {
+      const real = await loadRealSignature();
+      if (real) { rememberSignature(real); setRealSigPreview(real); setRealSigTyped(false); }
+    }
     if (!signatureRef.current) {
       let sig = loadSignature();
-      if (!sig) { sig = await signatureFromTypedName(activeForm.signer || DEFAULT_PACKAGE_SIGNER).catch(() => ""); if (sig) try { saveSignature(sig); } catch { /* still used for this one */ } }
+      if (!sig) { sig = await signatureFromTypedName(activeForm.signer || DEFAULT_PACKAGE_SIGNER).catch(() => ""); if (sig) try { saveSignature(sig); localStorage.setItem("hpd-signature-typed", "1"); } catch { /* still used for this one */ } }
       if (sig) rememberSignature(sig);
     }
     const day = packageDay(activeForm, activeOutcome);
@@ -1402,7 +1451,15 @@ export default function PaperworkPage() {
           localStorage.setItem("hpd-notice-board-v1", JSON.stringify(marks));
         } catch { /* private mode */ }
       }
-      setVtSend({ ...vtSend, armed: false, sent: true, status: `✓ Sent to ${d.to} with ${d.attached || "the PDF"}. The board shows 📤 Sent.` });
+      // ✅ Fixed and sent (owner, 10 Nov: "when we made a correction it should auto mark fixed and sent and archive from
+      // board"): the notice goes to ✅ Done on the board, on every phone (HANDLED-<job> on the status server).
+      const doneOmo = String(selectedId || "").toUpperCase();
+      if (correction && doneOmo) {
+        const at = new Date().toISOString();
+        try { const h = JSON.parse(localStorage.getItem("hpd-handled-v1") || "{}"); h[doneOmo] = at; localStorage.setItem("hpd-handled-v1", JSON.stringify(h)); } catch { /* private mode */ }
+        void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `HANDLED-${doneOmo}`, patch: { at, how: `auto: corrected copy sent back to ${d.to}` } }) }).catch(() => {});
+      }
+      setVtSend({ ...vtSend, armed: false, sent: true, status: correction ? `✓ Sent to ${d.to} with ${d.attached || "the PDF"}. Marked fixed and sent: it moved to ✅ Done on the board.` : `✓ Sent to ${d.to} with ${d.attached || "the PDF"}. The board shows 📤 Sent.` });
     } catch (e) {
       setVtSend({ ...vtSend, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
     }
@@ -1422,6 +1479,9 @@ export default function PaperworkPage() {
   const pdfZoom = usePinchZoom(); // pinch / double-tap zoom on the pages (the app itself doesn't zoom)
   // Old-job date check (20 Oct, after EP27382): the dates the owner said are right, for this job.
   const [datesOkKey, setDatesOkKey] = useState("");
+  // ✨ Dates fixed by themselves (owner, 10 Nov: "auto fix all dates ... I want to see preview of paperwork"): what was
+  // changed, with Undo (your own dates back, kept as they are).
+  const [autoDates, setAutoDates] = useState<{ text: string; undo: () => void } | null>(null);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
   // Drive links of the files saved on approve, so a resent email can still link a big video.
   const deliveredFileLinksRef = useRef<Record<string, string>>({});
@@ -1973,6 +2033,46 @@ export default function PaperworkPage() {
     chooseOutcome(nextOutcome);
   }
 
+  // ✨ Auto-fix the dates (10 Nov): an old job's work dates outside the award window take HPD's own start / complete
+  // dates when HPD has them; otherwise (an old job closed out later) they're kept as they are. No access: the attempts
+  // take HPD's window too. Only an attempt before the award still stops (it can't be). Undo puts yours back.
+  useEffect(() => {
+    if (correction || !selectedJob || !selectedId) return;
+    const award = getJobDate(selectedJob, "award"), hpdStart = getJobDate(selectedJob, "start"), hpdComplete = getJobDate(selectedJob, "complete");
+    if (outcome === "work_completed" || outcome === "partial_work_completed") {
+      const old = oldJobDateCheck({ omo: selectedId, award, start: form.workStart, complete: form.workComplete || form.fieldDate, hpdStart, hpdComplete });
+      if (!old || datesOkKey === old.key) return;
+      // Only a date left at today's default is replaced (what went wrong on 20 Oct); a date you typed is kept.
+      const todayShown = displayDate(new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
+      if (old.suggest && displayDate(form.workComplete || form.fieldDate) === todayShown) {
+        // Undo puts back exactly the dates that were showing (start, complete) and lets them through.
+        const was = { start: form.workStart || form.workComplete || form.fieldDate, complete: form.workComplete || form.fieldDate };
+        setForm((f) => ({ ...f, workStart: old.suggest!.start, workComplete: old.suggest!.complete }));
+        setAutoDates({ text: `Work dates set to HPD's: ${old.suggest.start} – ${old.suggest.complete} (yours said ${old.work}, ${old.months} month${old.months === 1 ? "" : "s"} after the award).`, undo: () => { setForm((f) => ({ ...f, workStart: was.start, workComplete: was.complete })); setDatesOkKey(oldJobDateCheck({ omo: selectedId, award, start: was.start, complete: was.complete, hpdStart, hpdComplete })?.key || old.key); setAutoDates(null); } });
+      } else {
+        setDatesOkKey(old.key);
+        const hpd = old.suggest;
+        setAutoDates({ text: hpd ? `Old job: your work dates ${old.work} are kept (HPD's are ${hpd.start} – ${hpd.complete}; Undo uses HPD's).` : `Old job: work dates kept as ${old.work} (HPD has no start / complete dates to use).`,
+          undo: () => { if (hpd) setForm((f) => ({ ...f, workStart: hpd.start, workComplete: hpd.complete })); setAutoDates(null); } });
+      }
+      return;
+    }
+    if (outcome === "no_access" || outcome === "refused_access") {
+      const old = oldAttemptCheck({ omo: selectedId, award, first: outcome === "no_access" ? form.firstAttempt : "", second: form.secondAttempt || form.fieldDate, hpdStart, hpdComplete });
+      if (!old || old.before || datesOkKey === old.key) return;
+      const todayShown = displayDate(new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
+      if (old.attempts && outcome === "no_access" && displayDate(form.secondAttempt || form.fieldDate) === todayShown) {
+        const was = { first: form.firstAttempt, second: form.secondAttempt };
+        setForm((f) => ({ ...f, firstAttempt: old.attempts!.first, secondAttempt: old.attempts!.second }));
+        setAutoDates({ text: `Access attempts set to HPD's window: ${old.attempts.first} and ${old.attempts.second}.`, undo: () => { setForm((f) => ({ ...f, firstAttempt: was.first, secondAttempt: was.second })); setDatesOkKey(old.key); setAutoDates(null); } });
+      } else {
+        setDatesOkKey(old.key);
+        setAutoDates({ text: `Old job: the date ${old.work} is kept (closed out later).`, undo: () => setAutoDates(null) });
+      }
+    }
+  }, [correction, selectedJob, selectedId, outcome, form.workStart, form.workComplete, form.fieldDate, form.firstAttempt, form.secondAttempt, datesOkKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setAutoDates(null); }, [selectedId]);
+
   function update(key: keyof PackageForm, value: string) {
     if (DRAFT_FIELDS.includes(key)) editedRef.current.add(key);
     clearPackagePreview();
@@ -2417,8 +2517,10 @@ export default function PaperworkPage() {
         const box = legacyForm
           ? useWorkTemplate ? { x: 398, y: 570, width: 128, height: 30 } : { x: 362, y: 466, width: 158, height: 36 }
           : useWorkTemplate ? { x: 398, y: 261, width: 150, height: 32 } : { x: 362, y: 347, width: 160, height: 40 };
-        const scale = Math.min(box.width / signatureImage.width, box.height / signatureImage.height);
-        affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x, y: box.y, width: signatureImage.width * scale, height: signatureImage.height * scale });
+        // A little different on every job, like a real hand (owner, 10 Nov; lib/sign-jitter.ts).
+        const jit = signJitter(form.jobId || selectedId || "", "affidavit");
+        const scale = Math.min(box.width / signatureImage.width, box.height / signatureImage.height) * jit.scale;
+        affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x + jit.dx, y: box.y + jit.dy, width: signatureImage.width * scale, height: signatureImage.height * scale, rotate: degrees(jit.rotate) });
       }
 
       // Notary's own in-person signature above the "Notary Public" line (email/Drive copy
@@ -2487,6 +2589,7 @@ export default function PaperworkPage() {
         signerName: invoiceValues["NAME Please Print"],
         title: invoiceValues["TITLE"],
         signature: includeSignatureImage && signatureRef.current ? signatureBytes(signatureRef.current) : undefined,
+        signatureSeed: form.jobId || selectedId || "",
       });
 
       // Mark every page of the emailed/Drive copy as a reproduction, not the wet-ink original.
@@ -5578,6 +5681,7 @@ export default function PaperworkPage() {
                 />
                 <small>Pick the real day, a past day too. It prints on the affidavit and on the invoice.</small>
               </label>
+                {autoDates ? <p className="paperwork-auto-dates" role="status" data-hpd-smoke="paperwork-auto-dates">✨ Dates fixed: {autoDates.text} <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-auto-dates-undo" onClick={autoDates.undo}>Undo</button></p> : null}
                 {(() => {
                   // 🗓 Old job, no access / refused (owner, 9 Nov): attempts inside the award window, or say they're right.
                   if (outcome !== "refused_access" || correction) return null;
@@ -5708,11 +5812,12 @@ export default function PaperworkPage() {
                 </label>
               </div>
               {workDatesProblem(form) ? <small data-hpd-smoke="paperwork-work-dates-status">{workDatesProblem(form)}</small> : null}
+              {autoDates ? <p className="paperwork-auto-dates" role="status" data-hpd-smoke="paperwork-auto-dates">✨ Dates fixed: {autoDates.text} <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-auto-dates-undo" onClick={autoDates.undo}>Undo</button></p> : null}
               {(() => {
                 if (correction) return null;
                 const old = oldJobDateCheck({ omo: selectedId || "", award: getJobDate(selectedJob, "award"), start: form.workStart, complete: form.workComplete || form.fieldDate, hpdStart: getJobDate(selectedJob, "start"), hpdComplete: getJobDate(selectedJob, "complete") });
                 if (!old) return null;
-                if (datesOkKey === old.key) return <small className="paperwork-old-dates-ok" data-hpd-smoke="paperwork-old-dates-ok">✓ You said these dates are right ({old.work}).</small>;
+                if (datesOkKey === old.key) return <small className="paperwork-old-dates-ok" data-hpd-smoke="paperwork-old-dates-ok">✓ {autoDates ? "Kept as old-job dates" : "You said these dates are right"} ({old.work}).</small>;
                 return (
                   <div className="paperwork-old-dates" role="alert" data-hpd-smoke="paperwork-old-dates">
                     <b>⚠️ Check the dates</b>
@@ -5805,6 +5910,7 @@ export default function PaperworkPage() {
                     />
                   </label>
                 </div>
+                {outcome === "no_access" || outcome === "refused_access" ? autoDates ? <p className="paperwork-auto-dates" role="status" data-hpd-smoke="paperwork-auto-dates">✨ Dates fixed: {autoDates.text} <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-auto-dates-undo" onClick={autoDates.undo}>Undo</button></p> : null : null}
                 {(() => {
                   // 🗓 Old job, no access / refused (owner, 9 Nov): attempts inside the award window, or say they're right.
                   if (outcome !== "no_access" || correction) return null;
@@ -5995,6 +6101,19 @@ export default function PaperworkPage() {
 
           {/* ✍️ Signatures (9 Nov): they go on by themselves when the package is made; the cards fold away once both are
               saved (open them to change). Corrections use the same saved copies. */}
+          {!packagePreview ? (
+            <>
+            {/* 📷 Your real signature (owner, 10 Nov: "make my signature more real; can I upload a sample"): a photo of it
+                on white paper becomes the ink on every copy. Shown up front while the typed stand-in is in use. */}
+            <div className={`paperwork-real-sig${realSigTyped ? " is-typed" : ""}`} data-hpd-smoke="paperwork-real-sig">
+              {realSigPreview ? <img src={realSigPreview} alt="Your signature" /> : null}
+              <span>{realSigTyped ? "✍️ Your signature is typed letters now. Upload a photo of your real one (sign on white paper):" : "✍️ Your signature on every copy."}</span>
+              <button type="button" className={realSigTyped ? "paperwork-print" : "paperwork-secondary"} data-hpd-smoke="paperwork-real-sig-upload" onClick={() => realSigFile.current?.click()}>📷 {realSigTyped ? "Upload my real signature" : "Change it (photo)"}</button>
+              <input ref={realSigFile} hidden type="file" accept="image/*" data-hpd-smoke="paperwork-real-sig-file" onChange={(e) => void useRealSignature(e.target.files?.[0])} />
+              {realSigMsg ? <small data-hpd-smoke="paperwork-real-sig-msg">{realSigMsg}</small> : null}
+            </div>
+            </>
+          ) : null}
           {!packagePreview && !correction && savedBoth ? (
             <details className="paperwork-sign-auto" data-hpd-smoke="paperwork-sign-auto">
               <summary>✍️ Your signature and the notary go on by themselves · notary dated {displayDate(packageDay(form, outcome))} · tap to change</summary>

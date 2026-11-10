@@ -26,39 +26,27 @@ try {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
   await page.locator('[data-hpd-smoke="paperwork-work-start"]').fill(today);
   await complete.fill(today);
-  const warn = page.locator('[data-hpd-smoke="paperwork-old-dates"]');
-  await warn.waitFor();
-  assert.match(await warn.innerText(), /This job was awarded 01\/05\/2026, but the work date says \d\d\/\d\d\/20\d\d \(\d+ months later\)/);
-  await warn.scrollIntoViewIfNeeded();
-  if (shots) await page.screenshot({ path: `${shots}/old-dates-1.png` });
-  // Nothing is made while it asks.
-  await page.locator('[data-hpd-smoke="paperwork-generate-print"]').click();
-  await page.waitForTimeout(800);
-  assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count(), 0, "not made yet");
-  assert.match(await page.locator("main").innerText(), /Check the work dates first/);
-  // HPD's dates, when the job has them; otherwise a real past date typed in.
-  const use = warn.locator('[data-hpd-smoke="paperwork-old-dates-use"]');
-  let fixedWith = "";
-  if (await use.count()) {
-    fixedWith = (await use.innerText()).replace(/^Use HPD's dates: /, "");
-    await use.click();
-  } else {
-    await page.locator('[data-hpd-smoke="paperwork-work-start"]').fill("2025-01-24");
-    await complete.fill("2025-01-24");
-    fixedWith = "01/24/2025 typed";
+  // ✨ Fixed by itself (owner, 10 Nov: "auto fix all dates"): HPD's own dates when the job has them, else the old job's
+  // dates are kept; a note says which, with Undo. No question in the way.
+  const note = page.locator('[data-hpd-smoke="paperwork-auto-dates"]');
+  await note.waitFor({ timeout: 15000 });
+  const said = await note.innerText();
+  assert.match(said, /^✨ Dates fixed: (Work dates set to HPD's: \d\d\/\d\d\/\d{4} – \d\d\/\d\d\/\d{4} \(yours said .+ months? after the award\)\.|Old job: work dates kept as .+)/);
+  assert.equal(await page.locator('[data-hpd-smoke="paperwork-old-dates"]').count(), 0, "no question");
+  const fixedWith = said.includes("HPD's:") ? said.replace(/^.*HPD's: ([^ ]+ – [^ ]+).*$/s, "$1") : "kept (no HPD dates)";
+  if (said.includes("HPD's:")) {
+    assert.notEqual(await complete.inputValue(), today, "HPD's complete date filled in");
+    // Undo: your own dates back, and they're let through as they are.
+    await note.locator('[data-hpd-smoke="paperwork-auto-dates-undo"]').click();
+    await page.locator('[data-hpd-smoke="paperwork-old-dates-ok"]').waitFor();
+    assert.equal(await complete.inputValue(), today, "yours back");
+    await page.waitForTimeout(500);
+    assert.equal(await complete.inputValue(), today, "not changed again");
   }
-  await page.waitForTimeout(300);
-  assert.equal(await warn.count(), 0, "the warning goes away with real dates");
-  // Back to a late date -> "These dates are right" lets exactly those dates through.
-  await complete.fill(today);
-  await page.locator('[data-hpd-smoke="paperwork-work-start"]').fill(today);
-  await warn.waitFor();
-  await warn.locator('[data-hpd-smoke="paperwork-old-dates-ok-btn"]').click();
-  await page.locator('[data-hpd-smoke="paperwork-old-dates-ok"]').waitFor();
   await page.locator('[data-hpd-smoke="paperwork-generate-print"]').click();
   await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS old-job dates: ${OLD} (awarded 01/05/2026) with today's date -> "Check the dates", nothing made; fixed with ${fixedWith} -> warning gone; "These dates are right" -> made with those dates`);
+  console.log(`PASS old-job dates: ${OLD} (awarded 01/05/2026) with today's date -> fixed by itself (${fixedWith}), Undo keeps yours, the package is made`);
   await context.close();
 } finally {
   await browser.close();

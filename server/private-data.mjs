@@ -35,6 +35,7 @@ export async function handlePrivate(request, env, signedIn = signedInOwner) {
   else if (name === "tenants") { asset = "/private/tenants.json.enc"; type = "application/json"; }
   else if (name === "notices") { asset = "/private/notices.json.enc"; type = "application/json"; }
   else if (name === "conversations") { asset = "/private/conversations.json.enc"; type = "application/json"; }
+  else if (name === "signature") { asset = "/private/signature.png.enc"; type = "image/png"; } // your ink signature (10 Nov)
   else if (name === "search") { asset = "/private/search.json.enc"; type = "application/json"; } // find any job (scripts/build-search-index.mjs)
   else if (/^notice\/[A-Za-z0-9_.-]+\.pdf$/.test(name) && !name.includes("..")) { asset = `/private/notices/${name.slice(7)}.enc`; type = "application/pdf"; }
   else return new Response("Not found", { status: 404, headers: NO_STORE });

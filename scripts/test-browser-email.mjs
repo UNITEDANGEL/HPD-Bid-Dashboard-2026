@@ -64,8 +64,9 @@ try {
   // 2) From the side panel (no job): opens with no subject.
   await page.locator(".fc-job-sheet-close").first().click();
   await page.waitForFunction(() => !document.querySelector("#fc-job-card"), null, { timeout: 10000 }).catch(() => {});
-  if (!(await page.locator('[data-hpd-smoke="fc-side-email"]').count())) await page.locator('[data-hpd-smoke="fc-side-tab"]').click();
-  await page.locator('[data-hpd-smoke="fc-side-email"]').click();
+  // ✉ Email HPD is in Claude's chat (10 Nov: one Claude, no side tab).
+  await page.locator('[data-hpd-smoke="fc-claude-orb"]').dispatchEvent("click"); // the face keeps moving (it breathes)
+  await page.locator('[data-hpd-smoke="fc-agent-email-hpd"]').click();
   await sheet.waitFor({ timeout: 5000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-email-subject"]').inputValue(), "");
   assert.equal(await page.locator('[data-hpd-smoke="fc-email-lines"]').count(), 0);

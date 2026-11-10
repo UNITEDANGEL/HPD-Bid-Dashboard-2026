@@ -30,8 +30,9 @@ try {
   // Tapping Bids starts with a hello: what's left to bid and the next one.
   const hello = page.locator('[data-hpd-smoke="fc-bids-welcome"]');
   await hello.waitFor({ timeout: 15000 });
-  assert.match(await hello.innerText(), /Let's start bidding/);
-  assert.equal((await page.locator('[data-hpd-smoke="fc-bids-welcome-count"]').innerText()).trim(), "2 invitations still need a price: 2 due tomorrow.");
+  // A slim strip under the top bar now, not a pop-up (10 Nov): the words are kept for the screen reader.
+  assert.match(await hello.textContent(), /Let's start bidding/);
+  assert.equal((await page.locator('[data-hpd-smoke="fc-bids-welcome-count"]').textContent()).trim(), "2 invitations still need a price: 2 due tomorrow.");
   assert.match(await page.locator('[data-hpd-smoke="fc-bids-welcome-next"]').innerText(), /^Next: ER\d{5} · /);
   assert.equal(await page.locator('[data-hpd-smoke="fc-bids-welcome-all"]').count(), 1, "bid all in a row");
   const r = await hello.boundingBox();

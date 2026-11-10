@@ -57,7 +57,8 @@ try {
   await handled.click();
   await page.waitForFunction((o) => !document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${o}"]:not(.is-done)`), BLANK, { timeout: 8000 });
   assert.ok(posted.some((p) => p.key === `HANDLED-${BLANK}` && p.patch?.at), "saved for every phone");
-  await board.locator('[data-hpd-smoke="fc-board-done-toggle"]').click();
+  // ✅ Done (10 Nov): its own tab, the archive.
+  await board.locator('[data-hpd-smoke="fc-board-side-done"]').click();
   await row(BLANK).locator('[data-hpd-smoke="fc-board-handled-undo"]').waitFor();
   await board.locator('[data-hpd-smoke="fc-board-close"]').click();
 
@@ -100,14 +101,14 @@ try {
   await page.waitForFunction((o) => new RegExp(`${o} marked sent`).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), NOTHING, { timeout: 5000 });
   assert.ok(posted.some((p) => p.key === `HANDLED-${NOTHING}`));
 
-  // 📋 Picking Gafur opens her board right away (missing documents filter).
+  // 📋 Picking Gafur: her jobs on the map with the list at the bottom (10 Nov), no board over it.
   if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-pick-aep"]').click();
-  await board.waitFor({ timeout: 5000 });
-  assert.equal(await board.locator('[data-hpd-smoke="fc-board-show-docs"]').getAttribute("aria-selected"), "true");
+  await page.waitForTimeout(800);
+  assert.equal(await board.count(), 0, "the map, not the board");
   assert.deepEqual(errors, []);
-  console.log(`PASS notice walk: board red / green with 🔥, HPD's "blank" shown and sent back, ✅ Already sent / fixed (two taps, every phone, Undo); go through my notices walked ${total} (${seen.join(", ")}), sent & fixed skipped, ends "That's all"; "I already sent …" by voice; Gafur opens her board`);
+  console.log(`PASS notice walk: board red / green with 🔥, HPD's "blank" shown and sent back, ✅ Already sent / fixed (two taps, every phone, Undo); go through my notices walked ${total} (${seen.join(", ")}), sent & fixed skipped, ends "That's all"; "I already sent …" by voice; Gafur shows her jobs on the map`);
 } finally {
   await browser.close();
 }

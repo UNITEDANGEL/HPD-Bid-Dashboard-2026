@@ -50,16 +50,35 @@ export async function signatureFromPhoto(file: File): Promise<string> {
     const context = canvas.getContext("2d")!;
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-    let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
-    for (let y = 0; y < canvas.height; y += 1) {
-      for (let x = 0; x < canvas.width; x += 1) {
-        const i = (y * canvas.width + x) * 4;
+    // A phone photo of a signature on paper (owner, 10 Nov: "make my signature more real; can I upload a sample"): the
+    // paper is lit unevenly, so the cut follows the paper around each spot (a 32-px block's brightness), not one fixed
+    // gray; the ink keeps its own color (blue pen stays blue) and soft edges, so it looks like real ink on the copy.
+    const W = canvas.width, H = canvas.height, B = 32;
+    const bw = Math.ceil(W / B), bh = Math.ceil(H / B);
+    const paper = new Float32Array(bw * bh);
+    for (let by = 0; by < bh; by += 1) for (let bx = 0; bx < bw; bx += 1) {
+      const vals: number[] = [];
+      for (let y = by * B; y < Math.min(H, by * B + B); y += 4) for (let x = bx * B; x < Math.min(W, bx * B + B); x += 4) {
+        const i = (y * W + x) * 4;
+        vals.push((pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3);
+      }
+      vals.sort((a, b) => a - b);
+      paper[by * bw + bx] = vals[Math.floor(vals.length * 0.8)] || 255; // the paper is the bright majority
+    }
+    let minX = W, minY = H, maxX = -1, maxY = -1;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const i = (y * W + x) * 4;
         const light = (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
-        if (light > 150) {
+        const bg = paper[Math.floor(y / B) * bw + Math.floor(x / B)];
+        const dark = bg - light; // how much darker than the paper around it
+        if (dark < 28 || light > 200) {
           pixels.data[i + 3] = 0;
         } else {
-          pixels.data[i + 3] = Math.min(255, Math.round((150 - light) * 2.2));
-          minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+          pixels.data[i + 3] = Math.min(255, Math.round((dark - 28) * 3.2));
+          // A touch deeper, like fresh ink.
+          pixels.data[i] = Math.round(pixels.data[i] * 0.75); pixels.data[i + 1] = Math.round(pixels.data[i + 1] * 0.75); pixels.data[i + 2] = Math.round(pixels.data[i + 2] * 0.85);
+          if (pixels.data[i + 3] > 60) { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); }
         }
       }
     }

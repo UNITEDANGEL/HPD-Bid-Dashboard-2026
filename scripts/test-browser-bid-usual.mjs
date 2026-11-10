@@ -9,7 +9,9 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
 const day = (n) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(Date.now() + n * 86400000));
-const src = fetched.bids.filter((b) => b.itbFile).slice(0, 4);
+// Bids HPD hasn't awarded yet (an awarded one brings its own description from the award data, 10 Nov).
+const awarded = new Set(((await (await fetch(`${baseUrl}/data/market_awards.json`)).json()).jobs || []).map((j) => j.omo));
+const src = fetched.bids.filter((b) => b.itbFile && !awarded.has(b.omo)).slice(0, 4);
 const description = src[0].description;
 const bids = src.map((b, i) => ({ ...b, description, bidDue: i === 0 ? day(1) : day(-3 - i), bidDueTime: "11:00 AM" }));
 const ago = (d) => new Date(Date.now() - d * 86400000).toISOString();

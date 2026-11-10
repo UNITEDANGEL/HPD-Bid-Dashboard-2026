@@ -953,3 +953,13 @@ i.is-won { background: #16a34a; }
 .fc-itb-summary button { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border: 0; border-radius: 15px; background: #e2e8f0; color: #0f172a; font: 800 14px system-ui; }
 .fc-itb-voice-note { margin: 4px 8px 0; padding: 6px 10px; border-radius: 10px; background: #fef3c7; color: #78350f; font: 700 13px/1.35 system-ui, sans-serif; }
 .fc-bid-lead-last { margin: 4px 0; padding: 8px 10px; border-radius: 10px; background: #eff6ff; border: 1px solid #93c5fd; color: #1e3a8a; font: 700 13px/1.35 system-ui, sans-serif; }
+
+/* ▶ Start bidding in the top bar, not a pop-up (owner, 10 Nov: "when I click bids they ask me to start the bidding
+   process; that should be right where the 9 bids today and the little bell are; it shouldn't be a pop-up"): a slim
+   strip tucked under the bar, one line, no long text over the map. */
+.fc-bids-welcome { top: calc(env(safe-area-inset-top, 0px) + 58px); width: min(440px, calc(100vw - 20px)); gap: 2px; padding: 6px 10px; border-radius: 0 0 14px 14px; border-width: 0 2px 2px; box-shadow: 0 6px 16px rgba(0, 0, 0, .35); animation: none; }
+.fc-bids-welcome b, .fc-bids-welcome span, .fc-bids-welcome small { display: none; }
+.fc-bids-welcome em { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-bids-welcome div { flex-wrap: nowrap; gap: 6px; margin-top: 2px; }
+.fc-bids-welcome button { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.fc-bids-welcome button.is-later { margin-left: auto; padding: 0 10px; }

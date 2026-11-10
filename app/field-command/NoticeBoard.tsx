@@ -22,6 +22,8 @@ type Props = {
   onOpenThread: (threadId: string, title: string) => void;
   onMark: (key: string, step: BoardStep, on: boolean) => void;
   onClose: () => void;
+  withMap?: boolean;          // 🗺 the map stays on top (the notice jobs on it), the board below
+  onMapToggle?: () => void;
   initialShow?: "all" | "ppn" | "docs";
   findingsOf?: (row: BoardRow) => NoticeFindings; // what the app already has for the job (a head start)
   onScan?: () => void;                              // "Check my emails now"
@@ -57,7 +59,7 @@ const day = (iso: string) => (iso && iso !== "closed" ? new Date(iso.length === 
 // Email leftovers out of HPD's words: inline-image tags like [cid:…] and extra spaces.
 const noJunk = (t: string) => String(t || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").trim();
 
-export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
+export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextDay, line2 = [], awardOf, visitOf, factsOf, onHandled, autoReplyOmo = "", locked = false, focusOmo = "", rows, addressOf, hasJob, onOpenJob, onOpenThread, onMark, onClose, initialShow = "all", findingsOf, onScan, scanStatus = "", scanChanged = [] }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!focusOmo) return;
@@ -73,7 +75,6 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
     return () => { window.clearTimeout(t); window.clearTimeout(t2); };
   }, [focusOmo, rows.length]);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
-  const [showDone, setShowDone] = useState(false);
   const [handledArmed, setHandledArmed] = useState("");
   // When you last looked at each notice (this phone): what came in since is highlighted NEW. Saved a few seconds after
   // the board opens, so the highlight stays while you read.
@@ -145,9 +146,9 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
   const [show, setShow] = useState<"all" | "ppn" | "docs">(initialShow);
   const shown = rows.filter((r) => show === "all" || r.kind === show);
   // To send / Sent · waiting / They replied (owner, 22 Oct): a job moves to Sent the moment you send it.
-  const [side, setSide] = useState<"tosend" | "waiting" | "replied">(() => {
+  const [side, setSide] = useState<"tosend" | "waiting" | "replied" | "done">(() => {
     const f = focusOmo ? rows.find((r) => r.omo === focusOmo && r.next) : undefined;
-    return f ? (boardSide(f) as "tosend" | "waiting" | "replied") : "tosend";
+    return f ? (boardSide(f) as "tosend" | "waiting" | "replied" | "done") : "tosend";
   });
   // An alert's link (focusOmo): once its notice has loaded, show the tab it's on (or the done list), so it's on screen.
   // The notices can arrive after the board opens, so this waits for them (8 Nov: a link landed on To send without it).
@@ -158,8 +159,8 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
     if (!f) return;
     focusShown.current = focusOmo;
     if (show !== "all" && f.kind !== show) setShow("all");
-    if (f.next) setSide(boardSide(f) as "tosend" | "waiting" | "replied");
-    else setShowDone(true);
+    if (f.next) setSide(boardSide(f) as "tosend" | "waiting" | "replied" | "done");
+    else setSide("done");
   }, [focusOmo, rows]); // eslint-disable-line react-hooks/exhaustive-deps
   // next: the notice the board moved on to by itself after a reply went out (owner, 23 Oct: "everything needs to flow
   // auto"); "Back to" scrolls to the one just answered.
@@ -173,7 +174,7 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
     window.setTimeout(() => el.classList.remove("is-focus"), 4000);
   }, 250);
   const open = shown.filter((r) => r.next);
-  const onSide = open.filter((r) => boardSide(r) === side);
+  const onSide = side === "done" ? shown.filter((r) => !r.next) : open.filter((r) => boardSide(r) === side);
   const done = shown.filter((r) => !r.next);
   const under6 = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 6 && hoursLeft(r, now) >= 0).length;
   const overdue = open.filter((r) => !r.steps.sent.done && hoursLeft(r, now) < 0).length;
@@ -488,9 +489,10 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
   };
 
   return (
-    <div className="fc-package-sheet fc-summary-sheet fc-board-sheet" role="dialog" aria-label="Vendor tracking board" data-hpd-smoke="fc-board">
+    <div className={`fc-package-sheet fc-summary-sheet fc-board-sheet${withMap ? " is-with-map" : ""}`} role="dialog" aria-label="Vendor tracking board" data-hpd-smoke="fc-board" data-with-map={withMap ? "1" : undefined}>
       <header>
         <strong>⏱ Vendor tracking board</strong>
+        {onMapToggle ? <button type="button" className="fc-board-map-btn" data-hpd-smoke="fc-board-map" onClick={onMapToggle}>{withMap ? "⬆ Full screen" : "🗺 Map"}</button> : null}
         <button type="button" aria-label="Close" data-hpd-smoke="fc-board-close" onClick={onClose}>Close</button>
       </header>
       <div className="fc-summary-body">
@@ -507,8 +509,8 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
           ))}
         </div>
         <div className="fc-board-sides" role="tablist" data-hpd-smoke="fc-board-sides">
-          {([["tosend", "📝 To send"], ["waiting", "📤 Sent · waiting"], ["replied", "💬 They replied"]] as const).map(([k, label]) => (
-            <button key={k} type="button" role="tab" aria-selected={side === k} className={`is-${k}${side === k ? " is-on" : ""}`} data-hpd-smoke={`fc-board-side-${k}`} onClick={() => { setSide(k); setMoved(null); }}>{label} <b>{open.filter((r) => boardSide(r) === k).length}</b></button>
+          {([["tosend", "📝 To send"], ["waiting", "📤 Sent · waiting"], ["replied", "💬 They replied"], ["done", "✅ Done"]] as const).map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={side === k} className={`is-${k}${side === k ? " is-on" : ""}`} data-hpd-smoke={`fc-board-side-${k}`} onClick={() => { setSide(k); setMoved(null); }}>{label} <b>{k === "done" ? done.length : open.filter((r) => boardSide(r) === k).length}</b></button>
           ))}
         </div>
         {moved ? (
@@ -633,16 +635,11 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
             {overdueRows.length ? <button type="button" className="fc-batch-open is-overdue" data-hpd-smoke="fc-overdue-open" onClick={() => startBatch("overdue")}>🔥 Update all {overdueRows.length} overdue in a row{overdueRows.some((r) => visitOf?.(r.omo)) ? ` (${overdueRows.filter((r) => visitOf?.(r.omo)).length} with the day you go)` : ""}</button> : null}
             {noAnswer.length ? <button type="button" className="fc-batch-open is-nudge" data-hpd-smoke="fc-nudge-open" onClick={() => startBatch("nudge")}>⏰ Ask {noAnswer.length} to confirm (no answer {NUDGE_AFTER_DAYS}+ days)</button> : null}
             {replyable.length ? <button type="button" className="fc-batch-open" data-hpd-smoke="fc-batch-open" onClick={() => startBatch(batchRows("record").length ? "record" : "all")}>✉ Reply to many at once ({replyable.length})</button> : null}
-            {!onSide.length ? <p className="fc-follow-note" data-hpd-smoke="fc-board-side-empty">{side === "tosend" ? "Nothing left to send. 🎉" : side === "waiting" ? "Nothing waiting on them." : "No new answers from them."}</p> : null}
+            {side === "done" && onSide.length ? <p className="fc-follow-note" data-hpd-smoke="fc-board-done-note">✅ Fixed and sent, or confirmed by HPD: off the board, kept here. Undo puts one back.</p> : null}
+            {!onSide.length ? <p className="fc-follow-note" data-hpd-smoke="fc-board-side-empty">{side === "tosend" ? "Nothing left to send. 🎉" : side === "waiting" ? "Nothing waiting on them." : side === "done" ? "Nothing done yet." : "No new answers from them."}</p> : null}
             <ol className="fc-board-list">{onSide.map(card)}</ol>
           </>
         )}
-        {done.length && !batch ? (
-          <>
-            <button type="button" className="fc-board-done-toggle" data-hpd-smoke="fc-board-done-toggle" onClick={() => setShowDone((v) => !v)}>{showDone ? "Hide" : "Show"} done ({done.length})</button>
-            {showDone ? <ol className="fc-board-list">{done.map(card)}</ol> : null}
-          </>
-        ) : null}
       </div>
     </div>
   );

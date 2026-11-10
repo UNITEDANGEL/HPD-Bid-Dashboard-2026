@@ -1279,14 +1279,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         const todayN = todo.filter((r) => r.day === "today").length;
         const what = first ? [first.omo, BORO_NAME[String(first.borough || "").toUpperCase()] || first.borough, jobSummary(first.description || "").lines.map(lineText)[0], dueLabel(first)].filter(Boolean).join(" · ") : "";
         return (
-          <div className="fc-bids-welcome" role="dialog" aria-label="Start bidding" data-hpd-smoke="fc-bids-welcome">
+          <div className="fc-bids-welcome" role="status" aria-label="Start bidding" data-hpd-smoke="fc-bids-welcome">
             <b>👋 {todo.length ? "Let's start bidding" : first ? "Nothing due today or tomorrow" : "No bids open right now"}</b>
             <span data-hpd-smoke="fc-bids-welcome-count">{todo.length ? `${todo.length} invitation${todo.length === 1 ? "" : "s"} still need${todo.length === 1 ? "s" : ""} a price: ${todayN ? `${todayN} due today` : ""}${todayN && todo.length - todayN ? ", " : ""}${todo.length - todayN ? `${todo.length - todayN} due tomorrow` : ""}.` : first ? "Everything due today and tomorrow is sent. Want to get ahead on the next one?" : "New invitations show up here as soon as HPD sends them."}</span>
             {first ? <em data-hpd-smoke="fc-bids-welcome-next">Next: {what}</em> : null}
             <div>
-              {first ? <button type="button" className="is-go" data-hpd-smoke="fc-bids-welcome-start" onClick={() => { setWelcome(false); if (todo.length) openFromChecklist(first.omo); else goToBid(first); }}>▶ Start with the next one</button> : null}
-              {(todayN || todo.length) > 1 ? <button type="button" data-hpd-smoke="fc-bids-welcome-all" onClick={() => { setWelcome(false); startSitting(); }}>🎯 Bid all {todayN || todo.length}{todayN ? " of today's" : ""} in a row</button> : null}
-              <button type="button" className="is-later" data-hpd-smoke="fc-bids-welcome-later" onClick={() => setWelcome(false)}>Later</button>
+              {first ? <button type="button" className="is-go" data-hpd-smoke="fc-bids-welcome-start" onClick={() => { setWelcome(false); if (todo.length) openFromChecklist(first.omo); else goToBid(first); }}>▶ Start bidding</button> : null}
+              {(todayN || todo.length) > 1 ? <button type="button" data-hpd-smoke="fc-bids-welcome-all" onClick={() => { setWelcome(false); startSitting(); }}>🎯 All {todayN || todo.length} in a row</button> : null}
+              <button type="button" className="is-later" aria-label="Later" data-hpd-smoke="fc-bids-welcome-later" onClick={() => setWelcome(false)}>✕</button>
             </div>
             {first && walk ? <small>Each one: the map flies slowly to the building, shows its photo, then reads HPD&apos;s work description with you. After you send, it goes to the next one of {todayN ? "today's" : "the day's"} by itself and stops when they&apos;re done.</small> : null}
           </div>

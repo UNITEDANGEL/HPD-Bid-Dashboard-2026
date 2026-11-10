@@ -10,6 +10,78 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 🧭 10 Nov: a clear flow on the map: notices first (owner's words, in order)
+
+"Every notice should auto fix and I should be able to see the fix and approve and send; that is the flow I need. You can
+handle the fixing part in the back; I should be able to see it if I want, I don't need it on screen." · "When I close
+the notices board all disappear: I want to see notices on the map, very important." · "I want better filters on the map:
+closed, open etc. What are follow-ups? Pending I understand (not done); completed I understand. Automatically archive
+them: approved, out of the map. Priority notices first on the map. I don't like that board: a map view of everything:
+click the person (ERP / Lewis) and all the notices come on the map, with a list at the bottom to correct from there." ·
+"Pending = all pending, no 60/90-day limit; completed = all completed; then pick dates to narrow it." · "Auto refresh:
+a little pop-up 'new update, enjoy' that hides by itself, and pick up where I left off." · "The calendar: just pick the
+date and it goes away, no drop-down menu. Everything done goes away by itself: next step / next notice / 'archived'.
+Sent notices must not stay as overdue: check everything sent, mark the emails clearly. No light / faded text. Double,
+triple check before pushing. What is the mailbox with 3 on the right?" · "Better talking with Claude on the map, like on
+the computer; a percentage next to the Working icon." · "My signature should appear real on the copy." · "Keep
+auto-following this plan."
+
+1. ✅ **Notices stay on the map** (10 Nov): the vendor tracking board opens below the map (the notice jobs on the map
+   above it; ⬆ Full screen / 🗺 Map switches) and Close leaves the notice jobs on the map with the small Notices bar.
+   Test: test-browser-notice-map.
+2. ✅ **Fixed & sent goes away by itself** (10 Nov): a corrected copy sent back to HPD marks the notice fixed and sent
+   (HANDLED-<job>, every phone); it moves to the new **✅ Done** tab (the archive), off To send / Waiting.
+3. ✅ **Dates fix themselves** (10 Nov): an old job's work date left at today's default takes HPD's start / complete
+   dates; a date you typed is kept (no question in the way); no-access attempts the same with HPD's window; a note
+   "✨ Dates fixed: …" with Undo. Only an attempt before the award still stops. Tests: old-dates, paperwork-old-attempts,
+   affidavit-dates.
+4. ⏳ **Every notice auto-fixed in the back → see it, approve, send**: the fix page opens as just the finished copy
+   (preview) + Approve & send (two taps); the fixing details folded ("🔧 See what was fixed").
+5. ✅ **Notices map + list at the bottom** (10 Nov): Priority / Lewis · ERP / Gafur · AEP (any pick) shows those jobs on
+   the map with "📋 N to do · oldest first" at the bottom (who asked what and when; 📍 Show · ✉ Answer · ✨ Fix); it
+   folds to one line; no board over the map any more (the full board is on the bar). The thin Notices bar is really
+   thin now (an old rule kept the big menu over the map). **Every email from Lewis / Gafur still waiting on you is a
+   priority**, whatever it asks (status update requests too, e.g. ER07717 on 10/29): lib/vt-asks.ts, 38 jobs on the
+   real email. Email is read every 30 minutes, 7 AM-9 PM. Tests: test-vt-asks, priority-map, notice-walk.
+6. ⏳ **Simple map filter**: Pending (all, any date) · Completed (all) · Closed · Notices; dates only as an extra pick;
+   "Follow-up" renamed or explained in plain words.
+7. ⏳ **Calendar**: tap a date and it closes by itself; no drop-down menu.
+8. ⏳ **Sent but still "overdue"**: check every notice against what was sent (Gmail Sent, PDF named "<OMO> AFF
+   INVOICE"); mark them clearly (📤 Sent on <day>) and stop calling them overdue.
+9. ⏳ **No light / faded text** anywhere on the map and board; the "📬 3" on the right says what it is.
+10. ✅ **Update pop-up** (10 Nov): after a new version loads, "✨ New update · enjoy!" with the newest 3 changes for 7
+    seconds, then it hides (tap hides it now); the board / notices on the map that were open come back. Test:
+    test-browser-updated-pop.
+11. ⏳ **Talk to Claude on the map like on the computer**; a % next to the Working icon while it works.
+12. ✅ **Real signature on the copies** (10 Nov; sample: the owner's signed ER05228 copy): the blue-ink signature cut from
+    the scanned invoice (pen line smoothed, paper and print removed) is kept encrypted (public/private/signature.png.enc,
+    /api/private/signature, signed in only) and replaces the typed-letters stand-in on every phone; "📷 Upload my real
+    signature / Change it (photo)" is on the paperwork screen (a phone photo on white paper: shadows removed, ink color
+    kept). Placed a little differently on every job (±6 pt, ±3 pt, ±2.5°, 92-106%; the same when a job's copy is made
+    again): lib/sign-jitter.ts. The notary's signature stays as it was (it is the notary's own). Tests:
+    test-sign-jitter, test-browser-paperwork-real-signature.
+13. ⏸ **Hands-free bids** (bids item 2): built, put aside until the notices flow is done (git stash "hands-free bids").
+14. ⏳ **One tap makes the paperwork** (owner, 10 Nov: "don't keep asking me to generate it; with one click I should be
+    able to generate the affidavit; a button to review everything / change notary data, but not a long page or another
+    page"): the job's paperwork made in the back from what the app knows; on screen just the finished copy + Approve &
+    send; "✏️ Review / change" folds open in place.
+15. ⏳ **Approve → send → mark → archive at once**: after Send the notice is done and leaves the map / list; the next one
+    comes up ("Next: ER… →").
+16. ⏳ **Close out second tries and old pending jobs**: go through them with the owner (they're all "pending" now).
+17. ⏳ **The helper on the phone acts, doesn't repeat** (owner, 10 Nov: "it keeps repeating the same thing ... a real
+    person that helps me fix, build, go through my day; 3 notices to fix: let's start fixing the 1st one and take me
+    there; fix it, review it, send it"): no repeated messages; "Let's fix the first one" opens it; after each, the next.
+19. ✅ **Bids: no "Let's start bidding" pop-up** (10 Nov): a slim strip under the top bar ("18 bids · 0 today", 📅,
+    🔔): ▶ Start bidding · 🎯 All N in a row · ✕. Test: test-browser-bids-welcome.
+20. ✅ **Re-sent invitations on the bids map** (10 Nov, ER09991 "( 3rd Sequence )" from Juan Carvajal, HPD): the
+    email's "Bid close date" wins over the old date on the re-sent PDF (scripts/fetch_upcoming_bids.py).
+21. ✅ **One Claude on the map** (10 Nov): the ✉-with-a-number side tab is gone; its count is on Claude's face, the
+    label says "Working 40%" while Claude works, and 🆕 Updates · ✉ Email HPD · A / A+ / A++ are in Claude's chat; the
+    chat bar says "💬 Talk to Claude". A bubble already shown today isn't shown again.
+18. ✅ **Talk to Claude on the computer from the phone** (10 Nov): Remote Control is on for this session: the Claude app
+    on the phone shows it, and messages go straight to Claude here. (In-app "Ask for a change" still works too.)
+
+
 ## 🚨 Vendor tracking and overdue notices: THE PRIORITY (owner, 9 Nov)
 
 The owner's words: "Polish and fix the notices, that's very important, vendor tracking is very important. A lot of jobs we are not responding to. Every job card should have the option to send a message to vendor tracking (Lewis, Saul and Rishi): we are in touch with this job, we are going on this day, we'll try to get it done; or work in progress, scheduled for next week. All the overdue notices, we need to fix them. Tell me very easily: go here, fix this. Open the document, look at what was highlighted: a notary stamp missing, data missing; fix it and send it back. 100% of the time reply to Lewis, especially with the appointments (tenants say next week; jobs on tomorrow's route are in the overdue notices). Overdue has its own map; prioritize the overdues. Communication is open, this is the conversation, let's get it done. Not confusing."

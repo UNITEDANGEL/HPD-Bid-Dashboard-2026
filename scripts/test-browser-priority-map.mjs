@@ -39,9 +39,16 @@ try {
 
   // Priority: just those jobs, glowing with the hours left.
   await chooser.locator('[data-hpd-smoke="fc-notice-pick-priority"]').click();
-  // Priority opens the board right away (5 Nov); closing it leaves those jobs on the map.
-  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 });
-  await page.locator('[data-hpd-smoke="fc-board-close"]').click();
+  // Priority opens the map with the 📋 list at the bottom, oldest ask first (10 Nov: "it should open the map where
+  // all the jobs are that need attention, with a small drop-down window at the bottom"); no board over it.
+  const tray = page.locator('[data-hpd-smoke="fc-notice-tray"]');
+  await tray.waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('[data-hpd-smoke="fc-board"]').count(), 0, "no board over the map");
+  assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), /📋 \d+ to do · oldest first/);
+  assert.ok(await tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').count() > 0);
+  // Fold it to see the whole map.
+  await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
+  assert.equal(await tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').count(), 0);
   assert.match(await title.innerText(), /Priority · \d+/);
   await page.waitForTimeout(1500);
   const lit = await page.locator(".leaflet-marker-icon.is-glow").count();

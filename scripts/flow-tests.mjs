@@ -17,12 +17,12 @@ const FLOWS = {
   jobs: /^test-browser-(job|jobs|next-stop|photo|notice-walk|papers-map|claude-now|agent-chat|call-ask|tenant-contact)[\w-]*\.mjs$/,
   // Vendor tracking (owner, 9 Nov: "vendor tracking is very important ... the overdue notices, we need to fix them"):
   // the board, the replies, the job-card update, the priority map.
-  notices: /^test-browser-(notice|nudge|email|priority-map|vt-send|scan|sent-pdf|appt-mail)[\w-]*\.mjs$/,
+  notices: /^test-browser-(notice|nudge|email|priority-map|priorities|updated-pop|vt-send|scan|sent-pdf|appt-mail)[\w-]*\.mjs$/,
   // Paperwork (owner, 9 Nov: "a better flow to generate the affidavit and invoice ... test all, no future errors"):
   // one-tap packages, corrections, auto-fix, dates.
   paperwork: /^test-browser-(paperwork|affidavit|correction|autofix|fix-queue)[\w-]*\.mjs$/,
 };
-const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs", "test-notice-fix.mjs", "test-email-people.mjs", "test-notice-convo.mjs", "test-affidavit-line2.mjs", "test-auto-fix.mjs", "test-old-job-dates.mjs", "test-hpd-marks.mjs", "test-tread-price.mjs"];
+const units = ["test-lead-scope.mjs", "test-job-summary.mjs", "test-bid-calc.mjs", "test-notice-fix.mjs", "test-email-people.mjs", "test-notice-convo.mjs", "test-affidavit-line2.mjs", "test-auto-fix.mjs", "test-old-job-dates.mjs", "test-hpd-marks.mjs", "test-tread-price.mjs", "test-vt-asks.mjs", "test-sign-jitter.mjs"];
 const want = process.argv[2] ? [process.argv[2]] : Object.keys(FLOWS);
 const files = fs.readdirSync(dir).filter((f) => want.some((w) => FLOWS[w]?.test(f))).sort();
 console.log(`Flows: ${want.join(" + ")} · ${files.length} browser tests`);

@@ -15,11 +15,13 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
-  const tab = page.locator('[data-hpd-smoke="fc-side-tab"]');
-  await tab.waitFor({ timeout: 60000 });
-  assert.equal(await page.locator('[data-hpd-smoke="fc-text-size"]').count(), 0, "closed: only the small button");
-  await tab.click();
-  await page.locator('[data-hpd-smoke="fc-text-3"]').click();
+  // 🤖 One Claude (10 Nov): no side tab on the map edge; the text size is in Claude's chat.
+  const orb = page.locator('[data-hpd-smoke="fc-claude-orb"]');
+  await orb.waitFor({ timeout: 60000 });
+  assert.equal(await page.locator('[data-hpd-smoke="fc-side-tab"]').count(), 0, "no side tab on the map");
+  await orb.click();
+  await page.locator('[data-hpd-smoke="fc-agent-tools"]').waitFor({ timeout: 15000 });
+  await page.locator('[data-hpd-smoke="fc-agent-text-3"]').click();
   assert.equal(await page.evaluate(() => document.documentElement.dataset.textSize), "1.3");
   await page.reload({ waitUntil: "load" });
   await page.waitForFunction(() => document.documentElement.dataset.textSize === "1.3", null, { timeout: 30000 });
@@ -27,7 +29,7 @@ try {
   const zoom = await page.locator('[data-hpd-smoke="fc-notice-chooser"]').evaluate((el) => getComputedStyle(el).zoom);
   assert.equal(String(zoom), "1.3", "the notices box is bigger");
   assert.deepEqual(errors, []);
-  console.log("PASS text size: A++ from the side button, cards and sheets bigger, kept after a reload");
+  console.log("PASS text size: A++ from Claude's chat (no side tab), cards and sheets bigger, kept after a reload");
 } finally {
   await browser.close();
 }

@@ -28,6 +28,7 @@ import ItbPages from "./ItbPages";
 import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
 import { ERP_COPIES, VT_LEWIS, emailPeople } from "../../lib/email-people";
+import { vtAsks } from "../../lib/vt-asks";
 import { line2Fixes, line2Href, usDay, type SentDates } from "../../lib/affidavit-line2";
 import { buildingHistory, buildingKey, historyLine } from "../../lib/building-history";
 import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd } from "../../lib/job-costs";
@@ -1383,6 +1384,11 @@ export default function FieldCommandClient() {
   const [noticeKind, setNoticeKind] = useState<NoticeKind>("");
   // The 24 / 72-hour board (17 Oct) and the steps ticked by hand on this phone.
   const [boardOpen, setBoardOpen] = useState(false);
+  // 🗺 The board over the map (owner, 10 Nov: "when I click on vendor tracking board it should open map"): the notice
+  // jobs stay on the map above the board; closing it leaves them on the map.
+  const [boardWithMap, setBoardWithMap] = useState(false);
+  // 📋 The notice list at the bottom of the map (10 Nov): open / folded.
+  const [trayOpen, setTrayOpen] = useState(true);
   const [boardShow, setBoardShow] = useState<"all" | "ppn" | "docs">("all");
   // ✅ "Already sent / fixed" (owner, 5 Nov): job -> when, on every phone (HANDLED-<job> on the status server, and this
   // phone at once). The notice drops to Done.
@@ -2075,7 +2081,20 @@ export default function FieldCommandClient() {
   const [voiceTick, setVoiceTick] = useState(0);
   // 🗨 The helper says short news in a speech bubble over the 🤖 (owner's pick, 4 Nov), without opening the chat; a
   // tap opens it in the chat and reads it out loud. Any screen can ask with the "hpd-helper-say" event.
-  const [orbSay, setOrbSay] = useState<{ text: string; full: string; at: number; run?: string } | null>(null);
+  const [orbSay, setOrbSay] = useState<{ text: string; full: string; at: number; run?: string; force?: boolean } | null>(null);
+  // 🗣 No repeats (owner, 10 Nov: "it keeps repeating the same thing ... I don't want the repeating messages"): a bubble
+  // already shown today isn't shown again (what a screen asks it to say right now, like the hands-free bids, still is).
+  useEffect(() => {
+    if (!orbSay || orbSay.force) return;
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    const key = orbSay.text.replace(/\s+/g, " ").trim().toLowerCase();
+    try {
+      const seen = JSON.parse(localStorage.getItem("hpd-orb-said") || "{}") as { day?: string; said?: string[] };
+      const said = seen.day === day ? seen.said || [] : [];
+      if (said.includes(key)) { setOrbSay(null); return; }
+      localStorage.setItem("hpd-orb-said", JSON.stringify({ day, said: [...said, key].slice(-80) }));
+    } catch { /* private mode: show it */ }
+  }, [orbSay]);
   useEffect(() => {
     if (!orbSay) return;
     const at = orbSay.at;
@@ -2086,7 +2105,7 @@ export default function FieldCommandClient() {
     const on = (e: Event) => {
       const d = (e as CustomEvent<{ text: string; full?: string; speak?: boolean }>).detail;
       if (!d?.text) return;
-      setOrbSay({ text: d.text, full: d.full || d.text, at: Date.now() });
+      setOrbSay({ text: d.text, full: d.full || d.text, at: Date.now(), force: true });
       if (d.speak) speak(d.full || d.text, 150, () => { if (convoRef.current && !listenRef.current) startListeningRef.current(); });
     };
     window.addEventListener("hpd-helper-say", on);
@@ -3308,7 +3327,8 @@ export default function FieldCommandClient() {
   const payTrack = trackPayments({ rejections, corrections: toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }> });
   const heldBy = new Map(payTrack.rows.filter((r) => r.status === "held").map((r) => [r.omo, r.held]));
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
-    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo)]),
+    // 🔥 + every email from Lewis / Gafur still waiting on you, whatever it asks (10 Nov: status update requests too).
+    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap).map((a) => a.omo).filter((o) => findAnyJob(o))]),
     rejected: new Set(openRejections.map((r) => r.omo)),
     corrections: new Set(threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).flatMap((t) => t.omos)),
     print: new Set(toPrint.filter((c) => !c.mailedAt).map((c) => c.omo)),
@@ -3365,9 +3385,10 @@ export default function FieldCommandClient() {
     if (kind && kind !== "all" && kind !== "aep" && kind !== "erp" && kind !== "archive") setNoticesTab(kind);
     setNoticeChooser(true);
     setNoticeMini(true);
-    // Gafur / Priority (owner, 5 Nov: "when I pick Gafur it should auto start her notices board, not a little box"):
-    // her board opens right away; closing it leaves her jobs on the map.
-    if (kind === "aep" || kind === "priority") { setBoardShow(kind === "aep" ? "docs" : "ppn"); setBoardOpen(true); }
+    // Priority / Gafur / Lewis (owner, 10 Nov: "every time I click priority it should open the map where all the jobs are
+    // that need attention, with a small drop-down window at the bottom to scroll through them and fix each one by the
+    // dates"): the map + the 📋 list at the bottom (fc-notice-tray). The full board is one tap away on the bar.
+    setTrayOpen(true);
   };
   // The nearest 24 / 72-hour deadline (for the timer on the Priority chip).
   const nextDue = vendorTodo.filter((p) => p.dueAt).sort((a, b) => String(a.dueAt).localeCompare(String(b.dueAt)))[0];
@@ -3588,6 +3609,29 @@ export default function FieldCommandClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openJobKey, routeMapReady]);
 
+  // ✨ Updated pop-up (owner, 10 Nov: "auto refresh and just a pop-up: hey, new updates, enjoy ... pick up where we left
+  // off"): after a new version loads, a small bubble with the newest changes shows for 7 seconds and hides by itself;
+  // the board / the notices on the map that were open come back.
+  const resumeRef = useRef<{ board: boolean; withMap: boolean; filter: string; kind: string }>({ board: false, withMap: false, filter: "", kind: "" });
+  resumeRef.current = { board: boardOpen, withMap: boardWithMap, filter: followFilter, kind: noticeKind };
+  const [updatedPop, setUpdatedPop] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!BUILT_CODE) return;
+    let seen = "";
+    try { seen = localStorage.getItem("hpd-seen-code") || ""; localStorage.setItem("hpd-seen-code", BUILT_CODE); } catch { return; }
+    try {
+      const r = JSON.parse(sessionStorage.getItem("hpd-resume-v1") || "null") as typeof resumeRef.current | null;
+      sessionStorage.removeItem("hpd-resume-v1");
+      if (r?.filter === "notices") { setFollowFilter("notices"); setNoticeKind((r.kind || "priority") as NoticeKind); if (!r.board) { setNoticeChooser(true); setNoticeMini(true); } }
+      if (r?.board) { setBoardShow("all"); setBoardWithMap(r.withMap); setBoardOpen(true); }
+    } catch { /* nothing to resume */ }
+    if (!seen || seen === BUILT_CODE || navigator.webdriver && !new URLSearchParams(window.location.search).get("updated")) return;
+    void fetch("/data/whats-new.json", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).then((d: { versions?: { items?: string[] }[] } | null) => {
+      const items = (d?.versions?.[0]?.items || []).slice(0, 3);
+      setUpdatedPop(items.length ? items : ["The app was updated."]);
+      window.setTimeout(() => setUpdatedPop(null), 7000);
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Automatic update: an iPhone app left in the background keeps running the old version, so
   // whenever you come back to it (and every 10 minutes) check /version.json; if a newer version
   // was deployed, reload -- only when no job card is open and nothing is saving.
@@ -3613,6 +3657,8 @@ export default function FieldCommandClient() {
         try { tried = sessionStorage.getItem("hpd-reloaded-for") || ""; } catch {}
         if (safeToReloadRef.current && !document.hidden && tried !== commit) {
           try { sessionStorage.setItem("hpd-reloaded-for", commit); } catch {}
+          // Pick up where you left off (10 Nov): what was open comes back after the update.
+          try { sessionStorage.setItem("hpd-resume-v1", JSON.stringify(resumeRef.current)); } catch {}
           window.location.reload();
         } else setUpdateReady(true);
       } catch { /* offline: try again later */ }
@@ -7471,6 +7517,12 @@ export default function FieldCommandClient() {
     if (j) { setBidsOpen(false); closeScreens(); openIssueJob(j, true); }
   }
 
+  // 🤖 One Claude (owner, 10 Nov: "Claude and Ask me is the same thing; why is there an icon over there (the ✉ 3)? It should
+  // all be one"): the side tab is gone; its count is on Claude's face, "Working 40%" is its label, and the updates / text
+  // size / Email HPD open from Claude's chat (fc-agent-tools).
+  const sideCount = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (missed.length && !voiceOff() ? 1 : 0) + (allowAlerts ? 1 : 0) + (dataIssues.length ? 1 : 0);
+  const claudeWork = (changeThreads || []).find((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
+  const claudePct = claudeWork && claudeWork.steps.length ? Math.round((claudeWork.steps.filter((x) => x.done).length / claudeWork.steps.length) * 100) : null;
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}${oneHand ? " fc-one-hand" : ""}${gloves ? " fc-gloves" : ""}`}>
       <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>
@@ -7811,7 +7863,7 @@ export default function FieldCommandClient() {
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
-                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : wonToday ? "proud" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">{asks} question{asks === 1 ? "" : "s"}</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label">{mode === "working" ? "Working" : "Claude"}</span>
+                      <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : wonToday ? "proud" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">{asks} question{asks === 1 ? "" : "s"}</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label" data-hpd-smoke="fc-claude-label">{mode === "working" || claudePct !== null ? `Working${claudePct !== null ? ` ${claudePct}%` : ""}` : "Claude"}</span>{sideCount && !asks ? <b className="fc-claude-orb-count" data-hpd-smoke="fc-claude-orb-count" aria-label={`${sideCount} new`}>{sideCount}</b> : null}
                     </button>
                     {orbSay && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
@@ -8200,7 +8252,9 @@ export default function FieldCommandClient() {
                 // HPD asked about the job (an email naming it, nothing sent since) without a timed notice: it glows
                 // "🔥 Asked" on the map, so the card says why too (2 Nov: tapped, and the card didn't say).
                 const asked = !it && !rj ? followReport.hpdAsked.find((r) => r.omo === omo) : undefined;
-                if (!it && !rj && !asked) return null;
+                // 🔥 Lewis / Gafur wrote and nothing went back yet (10 Nov: status update requests too).
+                const vt = !it && !rj && !asked ? vtAsks(threads, handledMap).find((a) => a.omo === omo) : undefined;
+                if (!it && !rj && !asked && !vt) return null;
                 const due = it ? dueText(it.dueAt) : "";
                 const outcomes = [["work_completed", "✅ Work completed"], ["refused_access", "🚫 Refused access"], ["no_access", "🚪 No access"], ["completed_by_others", "👷 Completed by others"], ["partial_work_completed", "🔁 Partly done / going back"]] as const;
                 return (
@@ -8219,6 +8273,14 @@ export default function FieldCommandClient() {
                       <div className="fc-notice-actions">
                         {it.threadId ? <button type="button" onClick={() => setThreadView({ ids: [it.threadId], title: `${omo}: ${it.title}` })}>💬 Their email</button> : null}
                         <button type="button" onClick={() => { setNoticesTab("priority"); setNoticesOpen(true); }}>✉ Reply / Handled</button>
+                      </div>
+                    </> : null}
+                    {vt ? <>
+                      <p className="fc-prio-card-head"><b>🔥 PRIORITY</b> · {vt.who} is waiting on you</p>
+                      <p className="fc-prio-card-due" data-hpd-smoke="fc-prio-card-due">{vt.who} wrote {new Date(vt.at).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}: {vt.subject.replace(/\s+/g, " ").slice(0, 90)}</p>
+                      <div className="fc-notice-actions">
+                        <button type="button" data-hpd-smoke="fc-prio-vt-email" onClick={() => setThreadView({ ids: [vt.threadId], title: `${omo}: ${vt.subject}` })}>💬 Their email</button>
+                        <button type="button" data-hpd-smoke="fc-prio-vt-answer" onClick={() => { setSelectedJob(null); setBoardShow("all"); setBoardFocus(omo); setBoardWithMap(true); setBoardOpen(true); }}>✉ Answer {vt.who}</button>
                       </div>
                     </> : null}
                     {asked ? <>
@@ -9232,7 +9294,7 @@ export default function FieldCommandClient() {
       ) : null}
       {/* ✉ The side tab (6 Nov): one small icon on the right edge with a count; open it for the updates, the plan and
           Claude's work, close it with ◂. */}
-      {!selectedJob && !whatsNewOpen && !bidsOpen ? (() => {
+      {sideOpen && !selectedJob && !whatsNewOpen && !bidsOpen ? (() => {
         const hint = sideHintRef.current;
         sideHintRef.current = 0;
         const n = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (claudeWorkingRef.current || claudeLiveRef.current ? 1 : 0) + hint + (missed.length && !voiceOff() ? 1 : 0) + (allowAlerts ? 1 : 0) + (dataIssues.length ? 1 : 0);
@@ -9522,7 +9584,7 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Close" title="Back to all jobs" onClick={() => { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); }}>✕</button>
           </header>
           <div className="fc-board-row2">
-          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setBoardShow("all"); setBoardOpen(true); }}>
+          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setFollowFilter("notices"); setNoticeKind("priority"); setBoardShow("all"); setBoardWithMap(true); setBoardOpen(true); }}>
             <span aria-hidden="true">⏱</span><b>Vendor tracking board</b><small>{boardOpenRows.filter((r) => r.kind === "ppn").length} notices · {boardOpenRows.filter((r) => r.kind === "docs").length} missing docs{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
           </button>
           <button type="button" className="fc-notice-check-btn" data-hpd-smoke="fc-notice-check" aria-label="Check every notice from my email" onClick={() => { unlockChime(); agentRef.current("check every notice"); }}>🔎<small>Check every notice</small></button>
@@ -9543,6 +9605,48 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {/* 📋 The jobs on the notice map, oldest ask first, at the bottom (10 Nov): who asked what and when, Show on map,
+          Answer / Fix. Folds to one line. */}
+      {noticeChooser && noticeMini && !noticesOpen && !selectedJob && !boardOpen && noticeKind && noticeKind !== "archive" ? (() => {
+        const asks = new Map(vtAsks(threads, handledMap).map((a) => [a.omo, a]));
+        const items = [...noticeSets[noticeKind]].map((omo) => {
+          const job = findAnyJob(omo);
+          const row = boardRows.find((r) => r.omo === omo && r.next);
+          const ask = asks.get(omo);
+          const at = ask?.at || row?.noticeAt || String(job?.HpdAskedAt || "") || "";
+          const what = ask ? `${ask.who}: ${ask.subject.replace(/\s+/g, " ").slice(0, 70)}` : row ? `${row.kind === "docs" ? "Gafur" : (row.who || "Lewis").split(/\s+/)[0]}: ${row.subject ? row.subject.slice(0, 70) : "notice"}` : String(job?.HpdAskedFor || "HPD asked");
+          return { omo, job, row, at, what };
+        }).filter((x) => x.job).sort((a, b) => (a.at || "9").localeCompare(b.at || "9"));
+        if (!items.length) return null;
+        const day = (iso: string) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
+        return (
+          <div className={`fc-notice-tray${trayOpen ? " is-open" : ""}`} data-hpd-smoke="fc-notice-tray">
+            <button type="button" className="fc-notice-tray-head" data-hpd-smoke="fc-notice-tray-toggle" aria-expanded={trayOpen} onClick={() => setTrayOpen((v) => !v)}>
+              <b>📋 {items.length} to do · oldest first</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
+            </button>
+            {trayOpen ? (
+              <ol>
+                {items.map((x) => (
+                  <li key={x.omo} data-hpd-smoke="fc-notice-tray-row" data-omo={x.omo}>
+                    <div className="fc-notice-tray-text">
+                      <b>{x.omo}</b> <span>{jobAddress(x.job!)}</span>
+                      <small>{x.at ? `${day(x.at)} · ` : ""}{x.what}</small>
+                    </div>
+                    <div className="fc-notice-tray-btns">
+                      <button type="button" data-hpd-smoke="fc-notice-tray-show" onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }}>📍 Show</button>
+                      {x.row?.problem ? (
+                        <a data-hpd-smoke="fc-notice-tray-fix" href={`/paperwork/?job=${encodeURIComponent(x.omo)}&fix=${encodeURIComponent(x.row.problem.at || "")}&auto=1`}>✨ Fix</a>
+                      ) : (
+                        <button type="button" data-hpd-smoke="fc-notice-tray-answer" onClick={() => { setBoardShow("all"); setBoardFocus(x.omo); setBoardWithMap(true); setBoardOpen(true); }}>✉ Answer</button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </div>
+        );
+      })() : null}
       {staleOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-stale-sheet" role="dialog" aria-label="Old jobs" data-hpd-smoke="fc-stale-sheet">
           <header>
@@ -10169,7 +10273,7 @@ export default function FieldCommandClient() {
           {/* 💡 always here (owner, 3 Nov: "always have a more ideas button available"): Claude's ideas, one tap. */}
           <button type="button" className="fc-chatbar-ideas" aria-label="Ideas from Claude" data-hpd-smoke="fc-chatbar-ideas" onClick={() => { unlockChime(); goTo("requests", ""); setTimeout(() => document.querySelector('[data-hpd-smoke="fc-ideas"]')?.scrollIntoView({ block: "start", behavior: "smooth" }), 400); }}>💡</button>
           {chatTip ? <p className="fc-chatbar-tip" data-hpd-smoke="fc-chatbar-tip" role="status">{chatTip}<button type="button" aria-label="Close the tip" onClick={() => setChatTip("")}>✕</button></p> : null}
-          <input ref={chatInputRef} value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "Ask me, or \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
+          <input ref={chatInputRef} value={chatBarText} onChange={(e) => setChatBarText(e.target.value)} placeholder={bidsOpen ? "Try \"next bid\" or \"bids in Queens\"" : "💬 Talk to Claude: type or 🎙, e.g. \"bids in Brooklyn\""} aria-label="Chat with your AI helper" data-hpd-smoke="fc-chatbar-input" enterKeyHint="send" autoComplete="off" />
           {canSpeak ? <button type="button" className={`fc-chatbar-voice${voiceMuted ? " is-off" : ""}`} aria-label={voiceMuted ? "Answers are silent: tap to hear them out loud" : "Answers are said out loud: tap for silent"} aria-pressed={!voiceMuted} data-hpd-smoke="fc-chatbar-voice" onClick={() => { const off = !voiceMuted; setVoiceOff(off); setVoiceMuted(off); if (off) stopSpeaking(); else { unlockChime(); speak("Voice on. I'll say my answers out loud.", 50); } }}>{voiceMuted ? "🔇" : "🔊"}</button> : null}
           {chatBarText.trim() ? <button type="submit" aria-label="Send" data-hpd-smoke="fc-chatbar-send">➤</button>
             : <button type="button" aria-label="Talk to the AI" data-hpd-smoke="fc-chatbar-mic" data-listen={canListen ? "app" : "keyboard"} onClick={() => {
@@ -10187,6 +10291,15 @@ export default function FieldCommandClient() {
         <div className={`fc-agent${driving ? " is-driving" : ""}${agentTucked ? " is-tucked" : ""}${agentFromDock ? " is-from-dock" : ""}${agentFromDock && !selectedJob && !bidsOpen && !driving ? " is-big" : ""}`} role="dialog" aria-label="Voice helper" data-hpd-smoke="fc-agent" data-tucked={agentTucked ? "1" : undefined}
           onPointerDown={() => setTuckPoke((n) => n + 1)} onKeyDown={() => setTuckPoke((n) => n + 1)}>
           {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => { bubbleModeRef.current = false; setAgentTucked(false); }}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} />{bubbleAnswer && bubbleModeRef.current ? <small className="is-answer" data-hpd-smoke="fc-agent-bubble-answer">{agent.reply}</small> : <small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small>}</button> : null}
+          {agentFromDock && !selectedJob && !bidsOpen && !driving && !agentTucked ? (
+            <div className="fc-agent-tools" data-hpd-smoke="fc-agent-tools">
+              <button type="button" data-hpd-smoke="fc-agent-updates" onClick={() => { setAgent(null); setSideOpen(true); }}>🆕 Updates{sideCount ? ` (${sideCount})` : ""}</button>
+              <button type="button" data-hpd-smoke="fc-agent-email-hpd" onClick={() => { setAgent(null); setEmailFor({ job: null }); }}>✉ Email HPD</button>
+              {([["1", "A"], ["1.15", "A+"], ["1.3", "A++"]] as const).map(([v, label]) => (
+                <button key={v} type="button" aria-pressed={textSize === v} className={textSize === v ? "is-on" : ""} data-hpd-smoke={`fc-agent-text-${label.length}`} onClick={() => setTextSize(v)}>{label}</button>
+              ))}
+            </div>
+          ) : null}
           {driving ? <button type="button" className="fc-agent-driving" data-hpd-smoke="fc-agent-driving" onClick={() => setDrivingMode(false)}>🚗 Driving: short answers, I keep listening · tap to stop</button> : null}
           {/* Earlier turns only over the map: over a sheet (bid, job) the panel stays small so it doesn't hide its buttons. */}
           {!selectedJob && !bidsOpen && agentHistory.length > 3 ? (
@@ -10552,6 +10665,12 @@ export default function FieldCommandClient() {
           <button type="button" aria-label="Close" data-hpd-smoke="fc-hpd-ping-ok" onClick={() => setPing(null)}>OK</button>
         </div>
       ) : null}
+      {updatedPop ? (
+        <div className="fc-updated-pop" role="status" data-hpd-smoke="fc-updated-pop" onClick={() => setUpdatedPop(null)}>
+          <b>✨ New update · enjoy!</b>
+          <ul>{updatedPop.map((t) => <li key={t}>{t}</li>)}</ul>
+        </div>
+      ) : null}
       {boardOpen ? (
         <NoticeBoard
           locked={threads === null}
@@ -10582,7 +10701,11 @@ export default function FieldCommandClient() {
           onOpenJob={(omo) => { const j = findAnyJob(omo); if (j) { setBoardOpen(false); setSelectedJob(j); } }}
           onOpenThread={(id, title) => setThreadView({ ids: [id], title })}
           onMark={markBoard}
-          onClose={() => setBoardOpen(false)}
+          withMap={boardWithMap}
+          onMapToggle={() => setBoardWithMap((v) => !v)}
+          // Closing the board leaves the notices on the map (owner, 10 Nov: "when I close the notices board all disappear;
+          // I want to see notices on map, very important"), with the small Notices bar to change or reopen them.
+          onClose={() => { setBoardOpen(false); setBoardWithMap(false); setSelectedJob(null); setFollowFilter("notices"); setNoticeKind((k) => k || "priority"); setNoticeChooser(true); setNoticeMini(true); }}
         />
       ) : null}
       {summaryToday && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen ? (
