@@ -52,6 +52,16 @@ try {
   const rems = await page.evaluate(() => JSON.parse(localStorage.getItem("hpd-reminders-v1") || "[]"));
   assert.ok(rems.some((r) => r.time === "10:00" && r.what.includes(JOB)), "call-again reminder");
   assert.equal(await ask.count(), 0, "the card goes away");
+  // 📣 Tell vendor tracking what's happening (owner, 9 Nov: "I'm calling these tenants ... we need to reply back to
+  // Lewis"): not reached yet -> one tap writes "we are calling the tenant"; nothing goes out before Send.
+  const tell = page.locator('[data-hpd-smoke="jc-contact-tell-calling"]');
+  await tell.waitFor({ timeout: 10000 });
+  assert.match(await tell.innerText(), /📞 Still calling the tenant: tell (Lewis|Gafur)/);
+  await tell.scrollIntoViewIfNeeded();
+  await tell.click({ timeout: 8000 }).catch(() => tell.dispatchEvent("click")); // the card can still be settling
+  await page.locator('[data-hpd-smoke="fc-email-sheet"]').waitFor();
+  assert.match(await page.locator('[data-hpd-smoke="fc-email-text"]').inputValue(), new RegExp(`We are calling the tenant on OMO# ${JOB} to set a day for access\\.`));
+  await page.locator('[data-hpd-smoke="fc-email-close"]').click();
   assert.deepEqual(errors, []);
   console.log(`PASS after the call: 📞 Call on ${JOB} -> back in the app "How did the call go?" -> No answer noted on the job and a reminder for tomorrow 10 AM`);
   await c.close();

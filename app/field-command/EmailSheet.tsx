@@ -12,14 +12,14 @@ export type EmailJob = { omo: string; address: string; unit: "erp" | "aep" } | n
 
 // vt: "📣 Update vendor tracking" from a job card (9 Nov): Lewis, a copy to Saul and Rishi on ERP jobs, the short
 // "in touch, going on <day>" line written in. visitDate: the job's next visit (yyyy-mm-dd), for that line.
-export default function EmailSheet({ people: given, job, onClose, onSent, vt = false, visitDate = "" }: { people: EmailPerson[]; job: EmailJob; onClose: () => void; onSent?: (line: string) => void; vt?: boolean; visitDate?: string }) {
+export default function EmailSheet({ people: given, job, onClose, onSent, vt = false, visitDate = "", line = "touch" }: { people: EmailPerson[]; job: EmailJob; onClose: () => void; onSent?: (line: string) => void; vt?: boolean; visitDate?: string; line?: string }) {
   const people = useMemo(() => (job?.unit === "erp" || vt ? withLewis(given) : given), [given, job, vt]);
   const start = useMemo(() => (job ? people.find((p) => p.unit === job.unit) : null) || people[0] || null, [people, job]);
   const [to, setTo] = useState(start?.to || "");
   const [other, setOther] = useState("");
   const who = people.find((p) => p.to === to)?.who || "";
   const [day, setDay] = useState(visitDate);
-  const first = emailDraft({ omo: job?.omo, address: job?.address, who, line: vt && job ? VT_LINES[0].text(job.omo, vtDay(visitDate)) : "" });
+  const first = emailDraft({ omo: job?.omo, address: job?.address, who, line: vt && job ? (VT_LINES.find((l) => l.key === line) || VT_LINES[0]).text(job.omo, vtDay(visitDate)) : "" });
   if (vt && job) first.subject = `${first.subject} - update`.slice(0, 200);
   // Copies to Saul and Rishi (ERP jobs): on for a vendor tracking update, off for other emails.
   const erp = job?.unit === "erp";

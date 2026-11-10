@@ -3396,7 +3396,7 @@ export default function FieldCommandClient() {
   const [sentDateMap, setSentDateMap] = useState<Record<string, SentDates>>({});
   useEffect(() => { fetch("/data/correction_dates.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.jobs) setSentDateMap(d.jobs); }).catch(() => {}); }, []);
   const line2List = useMemo(() => line2Fixes(sentDateMap, (o) => String(findAnyJob(o)?.AwardDate || ""), Object.fromEntries(toPrint.map((c) => [c.omo, String(c.savedAt || "").slice(0, 10)]))), [sentDateMap, jobs.length, olderJobs.length, toPrint]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [emailFor, setEmailFor] = useState<{ job: EmailJob; vt?: boolean; visitDate?: string } | null>(null);
+  const [emailFor, setEmailFor] = useState<{ job: EmailJob; vt?: boolean; visitDate?: string; line?: string } | null>(null);
   // The next visit set for a job (yyyy-mm-dd): its appointment (requested / confirmed, today or later), else today
   // when it's on today's route. For "📣 Update vendor tracking" and the board's "You go Tue 11/11" (9 Nov).
   const nextVisitOf = (j: JobRecord | null | undefined) => {
@@ -8336,6 +8336,14 @@ export default function FieldCommandClient() {
                       if (appt) return <p className={`jc-contact-appt is-${appt.state}`} data-hpd-smoke="jc-contact-appt">📅 Appointment {appointmentLabel(appt)} · {appt.state === "confirmed" ? "confirmed" : "not confirmed yet"}</p>;
                       return reachedAt && !tenant.commonArea ? <button type="button" className="jc-contact-book" data-hpd-smoke="jc-contact-book" onClick={openAppointment}>📅 Reached: book the visit</button> : null;
                     })()}
+                    {/* 📣 What the tenant said, straight to vendor tracking (owner, 9 Nov: "I'm calling these tenants and they
+                        tell me they're available next week ... we need to reply back to Lewis"): one tap writes it. */}
+                    {!isTestJob(id) && !activeAppointment(selectedJob) && (reachedAt || tries) ? (
+                      <div className="jc-contact-tell" data-hpd-smoke="jc-contact-tell">
+                        {reachedAt ? <button type="button" data-hpd-smoke="jc-contact-tell-nextweek" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, line: "nextweek" })}>🗓 They said next week: tell {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]}</button> : null}
+                        {!reachedAt ? <button type="button" data-hpd-smoke="jc-contact-tell-calling" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, line: "tenant" })}>📞 Still calling the tenant: tell {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]}</button> : null}
+                      </div>
+                    ) : null}
                     {hist.length ? (
                       <ul className="jc-tenant-history" data-hpd-smoke="jc-tenant-history">
                         {(contactAll ? newest : newest.slice(0, 4)).map((v, i) => <li key={i}><span>{label(v)}</span><small>{when(v.recordedAt)}</small></li>)}
@@ -10439,7 +10447,7 @@ export default function FieldCommandClient() {
           </div>
         );
       })() : null}
-      {emailFor ? <EmailSheet people={emailList} job={emailFor.job} vt={!!emailFor.vt} visitDate={emailFor.visitDate || ""} onClose={() => setEmailFor(null)} onSent={(line) => setOutcomeMessage(`✉️ ${line}`)} /> : null}
+      {emailFor ? <EmailSheet people={emailList} job={emailFor.job} vt={!!emailFor.vt} visitDate={emailFor.visitDate || ""} line={emailFor.line || "touch"} onClose={() => setEmailFor(null)} onSent={(line) => setOutcomeMessage(`✉️ ${line}`)} /> : null}
       {mediaView ? <MediaViewer jobId={mediaView.id} kind={mediaView.kind} onClose={() => setMediaView(null)} /> : null}
       {workView ? (() => {
         const job = jobs.find((j) => jobId(j) === workView.id) || selectedJob;
