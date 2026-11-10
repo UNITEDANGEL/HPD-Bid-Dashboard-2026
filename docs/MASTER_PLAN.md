@@ -78,6 +78,19 @@ auto-following this plan."
 21. ✅ **One Claude on the map** (10 Nov): the ✉-with-a-number side tab is gone; its count is on Claude's face, the
     label says "Working 40%" while Claude works, and 🆕 Updates · ✉ Email HPD · A / A+ / A++ are in Claude's chat; the
     chat bar says "💬 Talk to Claude". A bubble already shown today isn't shown again.
+34. ✅ **The fix screen** (10 Nov, checked on screen): the fixed copy first, then "✅ Fixed: look it over, then send it
+    back" (HPD's words, what HPD marked, what was fixed), then Send it back, then the original to print; the form,
+    the media choice and the long status line step aside; the wrong "no signature pictures / notary date today" text is
+    corrected (the emailed COPY carries your signature and the notary; notary date = the job's last day). The photo
+    button and the form-version line had faded / invisible text: fixed.
+35. ✅ **Past bids** (10 Nov: "I want to see past bids; pick from the calendar which bids I sent and revise them"): 📅 →
+    "🗓 Sent on a past day" (pick a day, the calendar closes by itself) lists what you sent that day with "🔁 Open ·
+    revise"; Mine and links open bids past their deadline too. Test: test-browser-bid-past-extra.
+36. ✅ **📎 Pages added to a bid** (10 Nov, ER09991: Juan asked for the Work Description Form): add a PDF or a photo to
+    any bid; it goes at the end of every package for it (fill, send, resend). ER09991's filled form (lead + mold, 2
+    rooms, $10,860, your signature) is kept for it (encrypted, /api/private/extra/ER09991.pdf) and attaches by itself.
+37. ✅ **Lead bids in one fax only with the priced scope sheet** (10 Nov): "Send N saved bids in one fax" stops and names
+    a lead bid whose rates aren't all in (it went without its scope page before).
 29. ✅ **Emailed = COPY, printed = original** (10 Nov): every fix emailed back carries the COPY watermark on every page
     (even when the preview was made for printing); the printed original has no watermark for the ink signature. Test:
     test-browser-notice-autofix reads COPY on the emailed PDF.

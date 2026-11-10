@@ -34,6 +34,7 @@ import { appendScope, fillLeadScope, groupRate, lineKey, loadLeadRates, priceSco
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 import { notify } from "../../lib/chime";
 import FaxTracker from "./FaxTracker";
+import { appendExtraPages, fileToExtraPage, loadExtraPages, saveExtraPages, type ExtraPage } from "../../lib/bid-extra-pages";
 import { treadLine, treadRate } from "../../lib/tread-price";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
@@ -113,6 +114,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   // Invitations past their deadline (kept a few days by the reader): your sent ones still open from Mine / a link.
   const [pastBids, setPastBids] = useState<UpcomingBid[]>([]);
+  const [pastDay, setPastDay] = useState("");
+  // 📎 Pages added to the open bid.
+  const extraInput = useRef<HTMLInputElement | null>(null);
+  const [extraPages, setExtraPages] = useState<ExtraPage[]>([]);
+  const [extraMsg, setExtraMsg] = useState("");
   // HPD's pages: signed in (private route answers), small page pictures on the list, one bid's pages full screen.
   const [privOk, setPrivOk] = useState(false);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
@@ -256,6 +262,23 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const [bigText, setBigText] = useState(false);
   useEffect(() => { try { setBigText(localStorage.getItem("hpd-bid-text") === "xl"); } catch {} }, []);
   const [filled, setFilled] = useState<{ omo: string; price: number; previous?: number; url: string; name: string; file: File; bytes: Uint8Array } | null>(null);
+  useEffect(() => {
+    setExtraMsg("");
+    if (!selected) { setExtraPages([]); return; }
+    const omo = selected.omo;
+    const mine = loadExtraPages(omo);
+    setExtraPages(mine);
+    // A page kept for the job in the private files (ER09991's Work Description Form, 10 Nov): added by itself once.
+    if (mine.length) return;
+    void fetch(`/api/private/extra/${encodeURIComponent(omo)}.pdf`, { credentials: "same-origin" }).then(async (r) => {
+      if (!r.ok || !/pdf/i.test(r.headers.get("content-type") || "")) return;
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      const page = { name: `${omo} Work Description Form.pdf`, type: "application/pdf", data: btoa(bin), at: new Date().toISOString() };
+      if (saveExtraPages(omo, [page])) setExtraPages((cur) => (selected?.omo === omo && !cur.length ? [page] : cur));
+    }).catch(() => {});
+  }, [selected?.omo]); // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
   const [fullText, setFullText] = useState(false);
@@ -931,7 +954,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       import("../../lib/bid-fill"),
       fetch(itbPdfUrl(bid.itbFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
     ]);
-    const bytes = await withScope(bid, await fillBidPackage(pdf, bid, price));
+    // 📎 + the pages you added to this bid (a Work Description Form, a photo), at the end.
+    const bytes = await appendExtraPages(await withScope(bid, await fillBidPackage(pdf, bid, price)), loadExtraPages(bid.omo));
     return { bytes, name: `${bid.omo}_BID_${Math.round(price)}_${bid.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf` };
   }
 
@@ -1279,8 +1303,37 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </button>
             );
           })}
+          {/* 🗓 A past day (owner, 10 Nov: "pick from the calendar which bids I sent in the past, with the option to revise
+              them"): pick a day and the list of bids you sent that day opens; the calendar closes by itself. */}
+          <label className="fc-bids-pastday" data-hpd-smoke="fc-bids-pastday">
+            <b>🗓 Sent on a past day</b>
+            <input type="date" max={dayKeys[0]} data-hpd-smoke="fc-bids-pastday-input" onChange={(e) => { if (e.target.value) { setPastDay(e.target.value); setDaysOpen(false); } }} />
+          </label>
         </div> : null}
       </div>
+      {pastDay ? (() => {
+        const nyDay = (iso?: string) => (iso ? NY_DAY.format(new Date(iso)) : "");
+        const sentThatDay = Object.values(records).filter((r) => nyDay(r.sentAt) === pastDay || (r.rounds || []).some((x) => nyDay(x.sentAt) === pastDay));
+        const label = new Date(`${pastDay}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+        return (
+          <div className="fc-bids-past" role="dialog" aria-label="Bids sent that day" data-hpd-smoke="fc-bids-past">
+            <header><b>📠 Sent {label}: {sentThatDay.length}</b><button type="button" aria-label="Close" data-hpd-smoke="fc-bids-past-close" onClick={() => setPastDay("")}>✕</button></header>
+            {!sentThatDay.length ? <p>No bids sent that day.</p> : null}
+            <ol>{sentThatDay.map((r) => {
+              const bid = list.find((b) => b.omo === r.omo) || pastBids.find((b) => b.omo === r.omo);
+              const round = (r.rounds || []).find((x) => nyDay(x.sentAt) === pastDay);
+              const price = nyDay(r.sentAt) === pastDay ? (r.sentPrice || r.price) : round?.price || r.price;
+              return (
+                <li key={r.omo} data-hpd-smoke="fc-bids-past-row" data-omo={r.omo}>
+                  <span><b>{r.omo}</b> {money2(price)} · {r.address}{r.borough ? ` · ${r.borough}` : ""}<small>{FAX_TEXT[faxState(r) as keyof typeof FAX_TEXT] || ""}</small></span>
+                  {bid ? <button type="button" data-hpd-smoke="fc-bids-past-revise" onClick={() => { setPastDay(""); goToBid(bid); }}>🔁 Open · revise</button>
+                    : <small>The invitation is no longer on file (HPD's PDF is gone): its history is under Mine.</small>}
+                </li>
+              );
+            })}</ol>
+          </div>
+        );
+      })() : null}
       {sentNote && !selected ? (
         <div className="fc-bid-sent-note" role="status" data-hpd-smoke="fc-bid-sent-note">
           <b>{sentNote.noBid ? `🚫 ${sentNote.omo}: NO BID faxed to HPD` : `📠 ${sentNote.omo} sent to HPD · ${money2(sentNote.price)}`}</b>
@@ -1358,6 +1411,16 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             );
           })() : null}
           <div className="fc-bid-body">
+            {/* 📎 Pages you add to this bid go in every package made for it (10 Nov, ER09991's Work Description Form). */}
+            <div className="fc-bid-extra" data-hpd-smoke="fc-bid-extra">
+              <b>📎 Pages added to this bid</b>
+              {extraPages.length ? <ul>{extraPages.map((x, i) => (
+                <li key={`${x.name}-${x.at}`} data-hpd-smoke="fc-bid-extra-row"><span>{x.name}</span><button type="button" aria-label={`Remove ${x.name}`} data-hpd-smoke="fc-bid-extra-remove" onClick={() => { const next = extraPages.filter((_, j) => j !== i); saveExtraPages(selected.omo, next); setExtraPages(next); setFilled(null); }}>Remove</button></li>
+              ))}</ul> : <small>None. Add a PDF or a photo (like a Work Description Form) and it goes at the end of this bid&apos;s package.</small>}
+              <button type="button" className="fc-bid-extra-add" data-hpd-smoke="fc-bid-extra-add" onClick={() => extraInput.current?.click()}>📎 Add a page (PDF or photo)</button>
+              <input ref={extraInput} hidden type="file" accept="application/pdf,image/*" data-hpd-smoke="fc-bid-extra-file" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; void fileToExtraPage(f).then((x) => { const next = [...extraPages, x]; if (!saveExtraPages(selected.omo, next)) { setExtraMsg("Not saved: the phone is out of room for it."); return; } setExtraPages(next); setFilled(null); setExtraMsg(`✓ ${x.name} added: it goes in the package. Fill the package again, then send.`); }).catch((err: Error) => setExtraMsg(err.message)); }} />
+              {extraMsg ? <small data-hpd-smoke="fc-bid-extra-msg">{extraMsg}</small> : null}
+            </div>
             <h3>{selected.address}{selected.borough ? ` · ${selected.borough}` : ""}</h3>
             {looking === selected.omo ? <p className="fc-bid-looking" role="status" data-hpd-smoke="fc-bid-looking">🏢 The building · opening the work description…</p> : null}
             {/* The building, like the awarded job card: your photo or Google Street View, 360° and camera. */}

@@ -64,7 +64,7 @@ export async function routePrivate(context, opts = {}) {
   await context.route(/\/api\/private\//, (route) => {
     if (!k) return route.fulfill({ status: 401, json: { error: "not signed in (test)" } });
     const rel = decodeURIComponent(new URL(route.request().url()).pathname.replace(/^\/api\/private\//, ""));
-    const target = rel === "tenants" ? "tenants.json.enc" : rel === "notices" ? "notices.json.enc" : rel === "conversations" ? "conversations.json.enc" : rel === "search" ? "search.json.enc" : rel === "signature" ? "signature.png.enc" : rel.startsWith("itb/") ? `itb/${rel.slice(4)}.enc` : rel.startsWith("itb-page/") ? `itb-pages/${rel.slice(9)}.enc` : rel.startsWith("notice/") ? `notices/${rel.slice(7)}.enc` : "";
+    const target = rel === "tenants" ? "tenants.json.enc" : rel === "notices" ? "notices.json.enc" : rel === "conversations" ? "conversations.json.enc" : rel === "search" ? "search.json.enc" : rel === "signature" ? "signature.png.enc" : /^extra\/[A-Z]{2}\d{5}\.pdf$/.test(rel) ? `extra/${rel.slice(6)}.enc` : rel.startsWith("itb/") ? `itb/${rel.slice(4)}.enc` : rel.startsWith("itb-page/") ? `itb-pages/${rel.slice(9)}.enc` : rel.startsWith("notice/") ? `notices/${rel.slice(7)}.enc` : "";
     const file = target && path.join(ROOT, "public", "private", target);
     if (!file || rel.includes("..") || !fs.existsSync(file)) return route.fulfill({ status: 404, body: "Not found" });
     const type = rel === "tenants" || rel === "notices" || rel === "conversations" || rel === "search" ? "application/json" : rel.endsWith(".png") || rel === "signature" ? "image/png" : "application/pdf";

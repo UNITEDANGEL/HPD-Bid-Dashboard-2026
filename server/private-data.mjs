@@ -35,6 +35,7 @@ export async function handlePrivate(request, env, signedIn = signedInOwner) {
   else if (name === "tenants") { asset = "/private/tenants.json.enc"; type = "application/json"; }
   else if (name === "notices") { asset = "/private/notices.json.enc"; type = "application/json"; }
   else if (name === "conversations") { asset = "/private/conversations.json.enc"; type = "application/json"; }
+  else if (/^extra\/[A-Z]{2}\d{5}\.pdf$/.test(name)) { asset = `/private/extra/${name.slice(6)}.enc`; type = "application/pdf"; } // a page kept for a bid (10 Nov)
   else if (name === "signature") { asset = "/private/signature.png.enc"; type = "image/png"; } // your ink signature (10 Nov)
   else if (name === "search") { asset = "/private/search.json.enc"; type = "application/json"; } // find any job (scripts/build-search-index.mjs)
   else if (/^notice\/[A-Za-z0-9_.-]+\.pdf$/.test(name) && !name.includes("..")) { asset = `/private/notices/${name.slice(7)}.enc`; type = "application/pdf"; }
