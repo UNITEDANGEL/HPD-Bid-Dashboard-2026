@@ -100,3 +100,8 @@ input:disabled[type="date"] { background: #f1f5f9; color: #166534; font-weight: 
 .paperwork-real-sig span { flex: 1 1 200px; }
 .paperwork-real-sig small { flex-basis: 100%; color: #065f46; }
 
+
+/* ⏭ Next fix after sending (10 Nov). */
+.pkg-vt-next { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; font-weight: 800; color: #065f46; }
+.pkg-vt-next a { padding: 8px 12px; border-radius: 10px; background: #15803d; color: #fff; text-decoration: none; }
+.pkg-vt-next button { padding: 8px 12px; border-radius: 10px; border: 1px solid #94a3b8; background: #fff; color: #0f172a; font-weight: 800; }

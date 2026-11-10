@@ -1387,6 +1387,8 @@ export default function FieldCommandClient() {
   // 🗺 The board over the map (owner, 10 Nov: "when I click on vendor tracking board it should open map"): the notice
   // jobs stay on the map above the board; closing it leaves them on the map.
   const [boardWithMap, setBoardWithMap] = useState(false);
+  const boardOverMapRef = useRef(false);
+  boardOverMapRef.current = boardOpen && boardWithMap;
   // 📋 The notice list at the bottom of the map (10 Nov): open / folded.
   const [trayOpen, setTrayOpen] = useState(false);
   const [boardShow, setBoardShow] = useState<"all" | "ppn" | "docs">("all");
@@ -4145,7 +4147,7 @@ export default function FieldCommandClient() {
       // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
       // filters just change which pins show; the map stays on you.
       // The HPD notices layer frames its jobs too (they're spread over the city).
-      const framing = `${borough}|${search}|${followFilter === "notices" ? `notices-${noticeKind}` : ""}|${showOlderLayer ? "older" : ""}|${jobsOpenRef.current && jobsShownRef.current ? `jobs-${jobsShownRef.current.key}-${jobsMiniRef.current ? "mini" : ""}` : ""}`;
+      const framing = `${borough}|${search}|${followFilter === "notices" ? `notices-${noticeKind}-${boardOverMapRef.current ? "board" : "map"}` : ""}|${showOlderLayer ? "older" : ""}|${jobsOpenRef.current && jobsShownRef.current ? `jobs-${jobsShownRef.current.key}-${jobsMiniRef.current ? "mini" : ""}` : ""}`;
       if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
         // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
@@ -4168,7 +4170,15 @@ export default function FieldCommandClient() {
           else map.fitBounds(points.map((p) => [p.lat, p.lng]) as [number, number][], { padding: [40, 40], maxZoom: 15 });
         } else if (points.length > 1) {
           const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
-          if (followFilter === "notices") map.fitBounds(bounds, { paddingTopLeft: [16, 150], paddingBottomRight: [84, noticeMiniRef.current ? 110 : 360], maxZoom: 15 });
+          // Framed in the part of the map you can see (10 Nov, checked live: the pins were under the board): above the
+          // board when it's open over the map, above the thin bar and the list line otherwise; never more padding than
+          // the screen has.
+          if (followFilter === "notices") {
+            const h = window.innerHeight;
+            const below = boardOverMapRef.current ? Math.round(h * 0.66) + 10 : noticeMiniRef.current ? 170 : 360;
+            const top = Math.min(130, Math.max(60, h - below - 120));
+            map.fitBounds(bounds, { paddingTopLeft: [16, top], paddingBottomRight: [84, Math.min(below, h - top - 60)], maxZoom: 15 });
+          }
           else map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
         }
       }
@@ -4179,7 +4189,7 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter, showOlderLayer, jobsMini]);
+  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter, showOlderLayer, jobsMini, boardOpen && boardWithMap]);
 
   useEffect(() => {
     darkTilesRef.current = darkTiles;
@@ -10300,6 +10310,7 @@ export default function FieldCommandClient() {
           {agentTucked ? <button type="button" className="fc-agent-bubble" data-hpd-smoke="fc-agent-bubble" aria-label="Open the chat" onClick={() => { bubbleModeRef.current = false; setAgentTucked(false); }}><HelperFace mode={speakingNow ? "talking" : "idle"} size={40} />{bubbleAnswer && bubbleModeRef.current ? <small className="is-answer" data-hpd-smoke="fc-agent-bubble-answer">{agent.reply}</small> : <small>{agent.reply.replace(/\s+/g, " ").slice(0, 34)}…</small>}</button> : null}
           {agentFromDock && !selectedJob && !bidsOpen && !driving && !agentTucked ? (
             <div className="fc-agent-tools" data-hpd-smoke="fc-agent-tools">
+              <button type="button" data-hpd-smoke="fc-agent-upgrade" onClick={() => { setAgent(null); goTo("requests", ""); }}>🛠 Upgrade</button>
               <button type="button" data-hpd-smoke="fc-agent-updates" onClick={() => { setAgent(null); setSideOpen(true); }}>🆕 Updates{sideCount ? ` (${sideCount})` : ""}</button>
               <button type="button" data-hpd-smoke="fc-agent-email-hpd" onClick={() => { setAgent(null); setEmailFor({ job: null }); }}>✉ Email HPD</button>
               {([["1", "A"], ["1.15", "A+"], ["1.3", "A++"]] as const).map(([v, label]) => (

@@ -1432,7 +1432,14 @@ export default function PaperworkPage() {
     if (!toSelf && !vtSend.armed) { setVtSend({ ...vtSend, armed: true }); return; }
     setVtSend({ ...vtSend, status: "Sending…" });
     try {
-      const bytes = new Uint8Array(await (await fetch(packagePreview.pdfUrl)).arrayBuffer());
+      let bytes = new Uint8Array(await (await fetch(packagePreview.pdfUrl)).arrayBuffer());
+      // Emailed = a copy: the COPY watermark goes on every page (the print preview is made without it, for ink).
+      if (packagePreview.printCopy) {
+        const doc = await PDFDocument.load(bytes);
+        const font = await doc.embedFont(StandardFonts.HelveticaBold);
+        doc.getPages().forEach((page) => drawCenteredWatermark(page, COPY_WATERMARK_TEXT, font, 90, 45));
+        bytes = new Uint8Array(await doc.save());
+      }
       if (bytes.byteLength > 9_500_000) throw new Error(`the PDF is ${(bytes.byteLength / 1_000_000).toFixed(1)} MB, too big to attach; use Save PDF only and attach it in Gmail`);
       let bin = "";
       for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -1464,6 +1471,25 @@ export default function PaperworkPage() {
       setVtSend({ ...vtSend, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
     }
   }
+  // ⏭ After a fixed copy goes back: 4 s, then the next fix in the line (Stay stops it).
+  const [autoNextIn, setAutoNextIn] = useState(0);
+  useEffect(() => {
+    if (!vtSend?.sent || !correction || !selectedId) return;
+    const next = queueAfter(selectedId)[0];
+    if (!next) return;
+    setAutoNextIn(4);
+  }, [vtSend?.sent]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (autoNextIn <= 0) return;
+    const t = window.setTimeout(() => {
+      if (autoNextIn === 1) {
+        const next = selectedId ? queueAfter(selectedId)[0] : undefined;
+        if (next) window.location.href = nextFixHref(next);
+        setAutoNextIn(0);
+      } else setAutoNextIn(autoNextIn - 1);
+    }, 1000);
+    return () => window.clearTimeout(t);
+  }, [autoNextIn]); // eslint-disable-line react-hooks/exhaustive-deps
   // What the package carries, shown on the review screen before approving.
   // Email choice on the review screen: before + after media, or after only (Drive always gets all).
   const [emailBeforeMedia, setEmailBeforeMedia] = useState(() => {
@@ -2520,7 +2546,7 @@ export default function PaperworkPage() {
         // A little different on every job, like a real hand (owner, 10 Nov; lib/sign-jitter.ts).
         const jit = signJitter(form.jobId || selectedId || "", "affidavit");
         const scale = Math.min(box.width / signatureImage.width, box.height / signatureImage.height) * jit.scale;
-        affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x + jit.dx, y: box.y + jit.dy, width: signatureImage.width * scale, height: signatureImage.height * scale, rotate: degrees(jit.rotate) });
+        affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x + jit.dx, y: box.y + jit.dy, width: signatureImage.width * scale * jit.stretch, height: signatureImage.height * scale, rotate: degrees(jit.rotate), xSkew: degrees(jit.skew) });
       }
 
       // Notary's own in-person signature above the "Notary Public" line (email/Drive copy
@@ -6311,7 +6337,20 @@ export default function PaperworkPage() {
                     <button type="button" data-hpd-smoke="paperwork-vt-me" disabled={vtSend.status === "Sending…"} onClick={() => void sendToVendorTracking(true)}>📨 Send to me first</button>
                   </div>
                   {vtSend.status ? <p data-hpd-smoke="paperwork-vt-status">{vtSend.status}</p> : null}
-                  {vtSend.sent ? <a href="/map/?view=all&map=1">← Back to the map</a> : null}
+                  {vtSend.sent ? (() => {
+                    // ✅ Sent, marked, archived → on to the next (owner, 10 Nov: "approve, send, mark it, archive it right
+                    // away ... go to the next notice"): the next fix in 4 s by itself (Stay keeps you here); none left →
+                    // back to the notices on the map.
+                    const next = selectedId ? queueAfter(selectedId)[0] : undefined;
+                    const back = () => { try { sessionStorage.setItem("hpd-resume-v1", JSON.stringify({ board: false, withMap: false, filter: "notices", kind: "priority" })); } catch { /* private mode */ } };
+                    return next ? (
+                      <p className="pkg-vt-next" data-hpd-smoke="paperwork-vt-next">
+                        {autoNextIn > 0 ? `✓ Archived. Next: ${next.omo} in ${autoNextIn} s` : `✓ Archived.`}{" "}
+                        <a href={nextFixHref(next)} data-hpd-smoke="paperwork-vt-next-go">Next: {next.omo} →</a>
+                        {autoNextIn > 0 ? <button type="button" data-hpd-smoke="paperwork-vt-next-stay" onClick={() => setAutoNextIn(-1)}>Stay</button> : null}
+                      </p>
+                    ) : <a href="/map/?view=all&map=1" onClick={back} data-hpd-smoke="paperwork-vt-back">← Back to the notices on the map</a>;
+                  })() : null}
                 </div>
               ) : null}
 

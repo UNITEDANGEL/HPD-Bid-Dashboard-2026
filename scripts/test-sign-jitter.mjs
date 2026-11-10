@@ -12,7 +12,7 @@ const { signJitter } = m.exports;
 const jobs = ["ER05228", "ER04312", "EQ15239", "ER00460", "EQ30935", "ER01919", "ER07717", "EP27382"];
 const all = jobs.flatMap((j) => [signJitter(j, "affidavit"), signJitter(j, "invoice")]);
 for (const j of all) {
-  assert.ok(Math.abs(j.dx) <= 6 && Math.abs(j.dy) <= 3 && Math.abs(j.rotate) <= 2.5 && j.scale >= 0.92 && j.scale <= 1.06, JSON.stringify(j));
+  assert.ok(Math.abs(j.dx) <= 6 && Math.abs(j.dy) <= 3 && Math.abs(j.rotate) <= 2.5 && j.scale >= 0.92 && j.scale <= 1.06 && Math.abs(j.skew) <= 3 && j.stretch >= 0.94 && j.stretch <= 1.06, JSON.stringify(j));
 }
 assert.deepEqual(signJitter("ER05228", "invoice"), signJitter("er05228", "invoice"), "same job, same copy");
 assert.equal(new Set(all.map((j) => JSON.stringify(j))).size, all.length, "every page different");

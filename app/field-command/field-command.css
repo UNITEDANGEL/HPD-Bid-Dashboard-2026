@@ -4982,3 +4982,12 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-notice-chooser.is-mini .fc-board-row2 .fc-board-open { min-height: 38px; height: 38px; padding: 0 10px; border-radius: 19px; font-size: 13px; }
 .fc-notice-chooser.is-mini .fc-board-row2 .fc-board-open::after { content: "Board"; font: 800 13px system-ui; margin-left: 4px; }
 .fc-notice-chooser.is-mini header { grid-column: 1; grid-row: 1; }
+
+/* Picks on the board (10 Nov, checked live): Priority first, no doubled "Vendor tracking board" (the board is open),
+   no scrollbar line. */
+.fc-notice-chooser.is-on-board .fc-board-row2 .fc-board-open { display: none !important; }
+.fc-notice-chooser.is-on-board .fc-board-row2 { order: 5; }
+.fc-notice-chooser.is-on-board .fc-notice-pick.is-priority { order: -2; }
+.fc-notice-chooser.is-on-board .fc-notice-pick.is-erp, .fc-notice-chooser.is-on-board .fc-notice-pick.is-aep { order: -1; }
+.fc-notice-chooser.is-on-board, .fc-notice-chooser.is-on-board .fc-notice-picks { scrollbar-width: none; }
+.fc-notice-chooser.is-on-board::-webkit-scrollbar, .fc-notice-chooser.is-on-board .fc-notice-picks::-webkit-scrollbar { display: none; }

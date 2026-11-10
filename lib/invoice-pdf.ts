@@ -326,7 +326,7 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
     // A little different on every job, like a real hand (lib/sign-jitter.ts).
     const j = signJitter(data.signatureSeed || data.omo || "", "invoice");
     const scale = Math.min(230 / image.width, 34 / image.height) * j.scale;
-    page.drawImage(image, { x: left + 8 + j.dx, y: PAGE.height - (signTop + 13) + j.dy, width: image.width * scale, height: image.height * scale, rotate: degrees(j.rotate) });
+    page.drawImage(image, { x: left + 8 + j.dx, y: PAGE.height - (signTop + 13) + j.dy, width: image.width * scale * j.stretch, height: image.height * scale, rotate: degrees(j.rotate), xSkew: degrees(j.skew) });
   }
   c.line(left, signTop + 14, left + 250, signTop + 14, INK, RULE);
   c.text("Signature of Principal (blue ink only)", left, signTop + 18, 8, fonts.regular, MUTED);

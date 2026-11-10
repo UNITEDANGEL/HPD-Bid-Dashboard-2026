@@ -78,6 +78,17 @@ auto-following this plan."
 21. ✅ **One Claude on the map** (10 Nov): the ✉-with-a-number side tab is gone; its count is on Claude's face, the
     label says "Working 40%" while Claude works, and 🆕 Updates · ✉ Email HPD · A / A+ / A++ are in Claude's chat; the
     chat bar says "💬 Talk to Claude". A bubble already shown today isn't shown again.
+29. ✅ **Emailed = COPY, printed = original** (10 Nov): every fix emailed back carries the COPY watermark on every page
+    (even when the preview was made for printing); the printed original has no watermark for the ink signature. Test:
+    test-browser-notice-autofix reads COPY on the emailed PDF.
+30. ✅ **Your signature varies a little in the writing** (10 Nov): a slight slant (±3°) and width (94-106%) per job, on
+    top of the placement change (lib/sign-jitter.ts). The notary stays digital as it is (owner, 10 Nov).
+31. ✅ **🛠 Upgrade** in Claude's chat (10 Nov): one tap to ask for a change from the map.
+32. ✅ **After a fix is sent, the next one opens by itself** (4 s, Stay keeps you); none left → "← Back to the notices
+    on the map" (the map comes back on the notices).
+33. ✅ **Notices checked live in the pane** (10 Nov): Priority first in the picks on the board; no doubled "Vendor
+    tracking board" chip; no scrollbar; the map frames the notice pins in the part you can see (above the board / the
+    thin bar), and re-frames when the board folds.
 22. ✅ **"Fax confirmed" once, silent** (10 Nov: "it keeps saying fax confirmed, stop it now; my microphone keeps
     freezing, I don't need voice for fax confirmed"): each fax is announced once ever (hpd-fax-told), with a chime and
     the banner, never spoken.

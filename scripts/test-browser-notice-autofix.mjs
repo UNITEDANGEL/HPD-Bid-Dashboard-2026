@@ -98,6 +98,18 @@ try {
   assert.equal(replies[0].to, "lewis.test@hpd.nyc.gov");
   assert.match(replies[0].subject, /^RE: 24 HR POOR PERFORMANCE NOTICE - OMO#ER04312/);
   assert.ok(replies[0].attachment?.data?.startsWith("JVBER"), "the corrected PDF is attached");
+  // 📄 Emailed = a copy (10 Nov): the attached PDF carries the COPY watermark.
+  {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(Buffer.from(replies[0].attachment.data, "base64")), verbosity: 0 }).promise;
+    const words = (await (await doc.getPage(1)).getTextContent()).items.map((i) => i.str).join(" ");
+    assert.match(words, /COPY$/, "the emailed fix says COPY");
+  }
+  // ✅ Marked fixed and sent, archived (10 Nov): the status says so, it's saved for every phone, and with nothing else
+  // in line the way back is to the notices on the map.
+  assert.match(await back.locator('[data-hpd-smoke="paperwork-vt-status"]').innerText(), /Marked fixed and sent: it moved to ✅ Done on the board/);
+  assert.equal(await page.evaluate((o) => Boolean(JSON.parse(localStorage.getItem("hpd-handled-v1") || "{}")[o]), OMO), true, "handled on this phone");
+  await back.locator('[data-hpd-smoke="paperwork-vt-back"]').waitFor({ timeout: 10000 });
   assert.deepEqual(errors, []);
   console.log("PASS notice auto-fix: ER04312's board card names the fix (line 2 = 09/04/26), Auto-fix it now opens the paperwork that fixes itself from HPD's words (new form: no date on line 2; every box prints; same work dates), then 📤 Send the fixed copy back went to Lewis with the corrected PDF on two taps");
 } finally {
