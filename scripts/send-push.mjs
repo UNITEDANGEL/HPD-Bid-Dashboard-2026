@@ -133,6 +133,14 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
         const words = String(r.problem.text || "").replace(/\[cid:[^\]]*\]/gi, " ").replace(/\s+/g, " ").replace(/^(good (day|morning|afternoon)|hello|hi|dear)\b[^,.!:]{0,30}[,.!:]?\s*/i, "").trim();
         out.push({ key: `p:${h(`${r.omo}|${r.problem.at}`)}`, kind: "notice", title: `⚠️ HPD found a problem · ${r.omo}`, body: `${(r.who || "HPD").split(/[\s,]+/)[0]}: "${words.slice(0, 110)}${words.length > 110 ? "…" : ""}" Fix it with the same dates and send it again.`, url: `/map/?view=all&map=1&board=1&omo=${r.omo}`, tag: `p-${r.omo}` });
       }
+      // 💤 No word to vendor tracking in 2+ working days (owner, 9 Nov: "100% every time ... reply back to Lewis, let
+      // her know what's going on"): one alert a day for all of them together, not one per notice.
+      try {
+        const { silentDays } = await loadLib("notice-fix");
+        const quiet = rows.filter((r) => r.next && !handled(r) && silentDays(r, now) >= 2).sort((a, b) => silentDays(b, now) - silentDays(a, now));
+        const day = new Date(now).toISOString().slice(0, 10);
+        if (quiet.length) out.push({ key: `s:${h(day)}`, kind: "notice", title: `💤 ${quiet.length} notice${quiet.length === 1 ? "" : "s"}: no word to ${(quiet[0].who || "vendor tracking").split(/\s+/).pop()} in 2+ working days`, body: `${quiet.slice(0, 4).map((r) => `${r.omo} (${silentDays(r, now)} d)`).join(", ")}${quiet.length > 4 ? "…" : ""}. Tap 📋 One status email to update them all.`, url: "/map/?view=all&map=1&board=1", tag: "silent-notices" });
+      } catch (e) { console.log(`silence check skipped: ${e.message}`); }
     } catch (e) { console.log(`notice check skipped: ${e.message}`); }
   }
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.

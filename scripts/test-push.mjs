@@ -68,7 +68,7 @@ assert.ok(!titles.some((t) => /EQ00001/.test(t)), "old emails don't alert");
 assert.ok(titles.includes("🧾 New invitation to bid · ER09999"));
 assert.ok(!titles.some((t) => /ER00001/.test(t)), "past invitations don't alert");
 assert.ok(titles.some((t) => /^⏰ EQ99997: \d+ h left on the notice$/.test(t)), titles.join(" | "));
-assert.ok(alerts.every((a) => /^[ebupr]:[0-9a-f]{16}$/.test(a.key) || /^[mw]:\d{4}-\d{2}-\d{2}$/.test(a.key)), "kept as short hashes (briefing / wrap-up by their day)");
+assert.ok(alerts.every((a) => /^[ebuprs]:[0-9a-f]{16}$/.test(a.key) || /^[mw]:\d{4}-\d{2}-\d{2}$/.test(a.key)), "kept as short hashes (briefing / wrap-up by their day)");
 assert.equal(alerts.find((a) => /Gafur/.test(a.title)).url, "/map/?view=all&map=1&board=1&omo=EP27382", "the alert opens that job on the board");
 assert.equal(alerts.find((a) => /EQ12345/.test(a.title)).url, "/map/?view=all&map=1&money=1&omo=EQ12345", "a rejection opens that job");
 console.log("PASS phone alert finder: a different alert per kind: 💰 award (cha-ching), ⏱ notice, 📋 request (Gafur replied, Lewis status update), 💵 rejection (email + HPD notices), 📩 message, 🧾 invitation, ⏰ under 6 h; old ones left out; short hashes; rejections open the rejections");
@@ -83,6 +83,13 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.ok(keys.every((k) => k.length === 1 && !k[0].startsWith("o:")), `one urgent alert each time, no repeat reminders: ${JSON.stringify(keys)}`);
   assert.equal(new Set(keys.map((k) => k[0])).size, 1, "the same key every time: sent once");
   assert.equal(workingHours(Date.parse("2026-10-24T15:00:00Z")), false, "Saturday");
+  // 💤 No word to Lewis in 2+ working days (9 Nov): one alert a day for all of them, the same key all day.
+  const s1 = (await at("2026-10-21T22:00:00Z")).filter((a) => a.title.startsWith("💤"));
+  const s2 = (await at("2026-10-21T23:30:00Z")).filter((a) => a.title.startsWith("💤"));
+  assert.equal(s1.length, 1, "one silence alert");
+  assert.match(s1[0].title, /^💤 1 notice: no word to Lewis in 2\+ working days$/);
+  assert.match(s1[0].body, /^ER01987 \(\d+ d\)\. Tap 📋 One status email/);
+  assert.equal(s1[0].key, s2[0].key, "once a day");
   console.log("PASS overdue notice: ER01987 alerts once (same key every hour, no 2-hour repeats)");
 }
 
