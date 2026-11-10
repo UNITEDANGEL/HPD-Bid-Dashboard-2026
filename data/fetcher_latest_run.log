@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-10T21:56:57.082Z
+Fetcher run started: 2026-11-10T22:07:42.541Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,14 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/10 [00:00<?, ?it/s]Downloading COA messages:  10%|█         | 1/10 [00:00<00:01,  8.79it/s]Downloading COA messages:  30%|███       | 3/10 [00:00<00:00, 10.06it/s]Downloading COA messages:  50%|█████     | 5/10 [00:00<00:00, 10.97it/s]Downloading COA messages:  70%|███████   | 7/10 [00:00<00:00, 11.14it/s]Downloading COA messages:  90%|█████████ | 9/10 [00:00<00:00,  9.80it/s]Downloading COA messages: 100%|██████████| 10/10 [00:00<00:00, 10.15it/s]
-Geocoding COA addresses:   0%|          | 0/10 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 10/10 [00:00<00:00, 249660.95it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/10 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  10%|█         | 1/10 [00:00<00:05,  1.65it/s]Fetching ITBs for COA OMOs:  20%|██        | 2/10 [00:00<00:03,  2.22it/s]Fetching ITBs for COA OMOs:  30%|███       | 3/10 [00:01<00:02,  2.52it/s]Fetching ITBs for COA OMOs:  40%|████      | 4/10 [00:01<00:02,  2.61it/s]Fetching ITBs for COA OMOs:  50%|█████     | 5/10 [00:01<00:01,  2.75it/s]Fetching ITBs for COA OMOs:  60%|██████    | 6/10 [00:02<00:01,  2.80it/s]Fetching ITBs for COA OMOs:  70%|███████   | 7/10 [00:02<00:01,  2.82it/s]Fetching ITBs for COA OMOs:  80%|████████  | 8/10 [00:03<00:00,  2.87it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 9/10 [00:03<00:00,  2.90it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.44it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.57it/s]
+Downloading COA messages:   0%|          | 0/10 [00:00<?, ?it/s]Downloading COA messages:  20%|██        | 2/10 [00:00<00:00,  9.35it/s]Downloading COA messages:  40%|████      | 4/10 [00:00<00:00,  9.50it/s]Downloading COA messages:  60%|██████    | 6/10 [00:00<00:00,  9.69it/s]Downloading COA messages:  70%|███████   | 7/10 [00:00<00:00,  9.48it/s]Downloading COA messages:  80%|████████  | 8/10 [00:00<00:00,  7.24it/s]Downloading COA messages: 100%|██████████| 10/10 [00:01<00:00,  8.47it/s]Downloading COA messages: 100%|██████████| 10/10 [00:01<00:00,  8.70it/s]
+Geocoding COA addresses:   0%|          | 0/10 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 10/10 [00:00<00:00, 267153.12it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/10 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  10%|█         | 1/10 [00:00<00:05,  1.59it/s]Fetching ITBs for COA OMOs:  20%|██        | 2/10 [00:00<00:03,  2.18it/s]Fetching ITBs for COA OMOs:  30%|███       | 3/10 [00:01<00:02,  2.45it/s]Fetching ITBs for COA OMOs:  40%|████      | 4/10 [00:01<00:02,  2.61it/s]Fetching ITBs for COA OMOs:  50%|█████     | 5/10 [00:02<00:01,  2.68it/s]Fetching ITBs for COA OMOs:  60%|██████    | 6/10 [00:02<00:01,  2.71it/s]Fetching ITBs for COA OMOs:  70%|███████   | 7/10 [00:02<00:01,  2.76it/s]Fetching ITBs for COA OMOs:  80%|████████  | 8/10 [00:03<00:00,  2.88it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 9/10 [00:03<00:00,  2.74it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:04<00:00,  2.33it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:04<00:00,  2.49it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER09991: stored 9996.00, COA 9996.00
 Award amount check ER08707: stored 415.00, COA 415.00
 Award amount check ER09417: stored 1190.00, COA 1190.00
 Award amount check ER09579: stored 472.00, COA 472.00
@@ -42,14 +43,14 @@ Award amount check ER08795: stored 465.00, COA 465.00
 Award amount check ER08570: stored 415.00, COA 415.00
 Award amount check ER07663: stored 406.00, COA 406.00
 Safe merge complete
-Master before: 706
+Master before: 707
 Incoming rows: 10
-Added new OMOs: 1
-Skipped existing OMOs: 9
+Added new OMOs: 0
+Skipped existing OMOs: 10
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 707
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -57,9 +58,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER09991 306 EAST 116 STREET, 10029 40.796581 -73.937413 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -84,15 +84,13 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER09991 ER09991_111026044658.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER09991', 'Address': '306 EAST 116 STREET, 10029', 'RecoveredFrom': 'ER09991_111026044658.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
 
 Synced 3 data file(s) to public/data.
 
@@ -281,13 +279,13 @@ PAPERWORK DATA QUALITY CHECKED
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=1.
 
 
-Fetcher run finished: 2026-11-10T22:04:36.100Z
+Fetcher run finished: 2026-11-10T22:15:15.424Z
 {
   "fetchedCoaItems": 10,
   "fetchedItbItems": 10,
   "fetchedFinalJobRows": 10,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 9,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 10,
   "rawRows": 707,
   "rows2026": 656,
   "mapped2026": 656,
