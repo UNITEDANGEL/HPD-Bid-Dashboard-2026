@@ -537,6 +537,15 @@ export default function NoticeBoard({ onRouteNextDay, line2 = [], awardOf, visit
           <span className={overdue ? "is-late" : ""}><b>{overdue}</b> overdue</span>
           {open.some((r) => silentDays(r, now) >= 2) ? <span className="is-quiet" data-hpd-smoke="fc-board-silent-count"><b>{open.filter((r) => silentDays(r, now) >= 2).length}</b> 💤 no word 2+ days</span> : null}
           {open.some((r) => r.problem) ? <span className="is-late" data-hpd-smoke="fc-board-fix-count"><b>{open.filter((r) => r.problem).length}</b> to fix</span> : null}
+          {(() => {
+            // 🔧 Fix all (owner, 10 Nov: "fix all"): every paperwork HPD sent back, one after another: each opens
+            // auto-fixed with HPD's words and marked copy, then "Next: <OMO> →". Nothing is sent without your taps.
+            const fixes = open.filter((r) => r.problem && r.problem.at);
+            if (fixes.length < 2) return null;
+            const queue = fixes.map((r) => ({ omo: r.omo, at: r.problem?.at || "", href: fixHref(r) }));
+            const start = () => { try { sessionStorage.setItem("hpd-fix-queue", JSON.stringify(queue)); } catch { /* private mode */ } };
+            return <a className="fc-board-fix-all" data-hpd-smoke="fc-board-fix-all" href={queue[0].href} onClick={start}>🔧 Fix all {fixes.length}, one by one</a>;
+          })()}
           <span className={under6 ? "is-hot" : ""}><b>{under6}</b> under 6 h</span>
           <span className={shown.some((r) => noAnswer.includes(r)) ? "is-quiet" : ""}><b>{waiting}</b> waiting on them{shown.some((r) => noAnswer.includes(r)) ? <small data-hpd-smoke="fc-board-quiet-count">⏰ {shown.filter((r) => noAnswer.includes(r)).length} no answer</small> : null}</span>
         </div>

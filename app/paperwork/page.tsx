@@ -1283,10 +1283,11 @@ export default function PaperworkPage() {
   const [correctionSaved, setCorrectionSaved] = useState("");
   // "Fix them one by one" (owner, 19 Oct): the rejections still to fix, in order (session storage "hpd-fix-queue"),
   // so after this one is saved the next one is one tap away.
-  const [fixQueue, setFixQueue] = useState<{ omo: string; at: string }[]>([]);
+  const [fixQueue, setFixQueue] = useState<{ omo: string; at: string; href?: string }[]>([]);
   useEffect(() => { try { setFixQueue(JSON.parse(sessionStorage.getItem("hpd-fix-queue") || "[]")); } catch { /* private mode */ } }, []);
   const queueAfter = (omo: string) => { const i = fixQueue.findIndex((q) => q.omo === omo.toUpperCase()); return i >= 0 ? fixQueue.slice(i + 1) : []; };
-  const nextFixHref = (q: { omo: string; at: string }) => `/paperwork/?job=${encodeURIComponent(q.omo)}&fix=${encodeURIComponent(q.at)}&auto=1`;
+  // From the notices board the link carries HPD's words and marked copy too (10 Nov "fix all").
+  const nextFixHref = (q: { omo: string; at: string; href?: string }) => (q.href && q.href.startsWith("/paperwork/") ? q.href : `/paperwork/?job=${encodeURIComponent(q.omo)}&fix=${encodeURIComponent(q.at)}&auto=1`);
   // The outcome HPD's closing status shows, picked for you once the job has loaded (same as tapping it).
   const [hpdOutcome, setHpdOutcome] = useState("");
   // The dates on the paperwork you already sent HPD (Gmail Sent, scripts/fetch_sent_paperwork_dates.py).

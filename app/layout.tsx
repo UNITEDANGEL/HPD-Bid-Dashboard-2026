@@ -16,7 +16,9 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "HPD Field", statusBarStyle: "black-translucent" },
   icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
   // Older iPhones only go full screen with this tag.
-  other: { "apple-mobile-web-app-capable": "yes" },
+  // No auto-translate: a phone's translator rewrites the page under React and crashes it ("Failed to execute
+  // 'insertBefore' on 'Node'", Android, 4 Nov). With <html translate="no"> below.
+  other: { "apple-mobile-web-app-capable": "yes", google: "notranslate" },
 };
 
 export const viewport: Viewport = {
@@ -46,7 +48,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" translate="no" className="notranslate">
       <head>
         {/* Right after a deploy a page can ask for an app file that isn't published yet (or is gone):
             the map then sat on "Loading jobs..." until reloaded. Reload by itself, at most twice in 5 minutes. */}
