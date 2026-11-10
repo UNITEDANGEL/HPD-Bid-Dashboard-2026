@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-10T21:46:04.864Z
+Fetcher run started: 2026-11-10T21:56:57.082Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -16,18 +16,18 @@ $ python FetchrMatcherV5.py --update --days 14
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
 GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/10/27 before:2026/11/11
-COA items parsed (latest per OMO): 9
-ITB items parsed (latest per OMO): 9
-Final JobRows: 9
+COA items parsed (latest per OMO): 10
+ITB items parsed (latest per OMO): 10
+Final JobRows: 10
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:00,  9.91it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  9.95it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 10.58it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 10.30it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.52it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00,  9.93it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 245121.66it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.75it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:03,  2.23it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.42it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.35it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.40it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.50it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  2.60it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.64it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.65it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.49it/s]
+Downloading COA messages:   0%|          | 0/10 [00:00<?, ?it/s]Downloading COA messages:  10%|█         | 1/10 [00:00<00:01,  8.79it/s]Downloading COA messages:  30%|███       | 3/10 [00:00<00:00, 10.06it/s]Downloading COA messages:  50%|█████     | 5/10 [00:00<00:00, 10.97it/s]Downloading COA messages:  70%|███████   | 7/10 [00:00<00:00, 11.14it/s]Downloading COA messages:  90%|█████████ | 9/10 [00:00<00:00,  9.80it/s]Downloading COA messages: 100%|██████████| 10/10 [00:00<00:00, 10.15it/s]
+Geocoding COA addresses:   0%|          | 0/10 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 10/10 [00:00<00:00, 249660.95it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/10 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  10%|█         | 1/10 [00:00<00:05,  1.65it/s]Fetching ITBs for COA OMOs:  20%|██        | 2/10 [00:00<00:03,  2.22it/s]Fetching ITBs for COA OMOs:  30%|███       | 3/10 [00:01<00:02,  2.52it/s]Fetching ITBs for COA OMOs:  40%|████      | 4/10 [00:01<00:02,  2.61it/s]Fetching ITBs for COA OMOs:  50%|█████     | 5/10 [00:01<00:01,  2.75it/s]Fetching ITBs for COA OMOs:  60%|██████    | 6/10 [00:02<00:01,  2.80it/s]Fetching ITBs for COA OMOs:  70%|███████   | 7/10 [00:02<00:01,  2.82it/s]Fetching ITBs for COA OMOs:  80%|████████  | 8/10 [00:03<00:00,  2.87it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 9/10 [00:03<00:00,  2.90it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.44it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.57it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -43,22 +43,23 @@ Award amount check ER08570: stored 415.00, COA 415.00
 Award amount check ER07663: stored 406.00, COA 406.00
 Safe merge complete
 Master before: 706
-Incoming rows: 9
-Added new OMOs: 0
+Incoming rows: 10
+Added new OMOs: 1
 Skipped existing OMOs: 9
 Updated existing OMOs: 0
-Need geocode: 0
+Need geocode: 1
 Missing ITB: 0
-Missing description: 0
-Master after: 706
+Missing description: 1
+Master after: 707
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 0
-Geocoded: 0
+Need geocode: 1
+OK ER09991 306 EAST 116 STREET, 10029 40.796581 -73.937413 NYC_PLANNING_OK
+Geocoded: 1
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -83,13 +84,15 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 12
-Descriptions patched: 0
+Matched ITBs needing description: 13
+DESCRIPTION OK ER09991 ER09991_111026044658.pdf
+Descriptions patched: 1
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
+{'OMO': 'ER09991', 'Address': '306 EAST 116 STREET, 10029', 'RecoveredFrom': 'ER09991_111026044658.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
 
 Synced 3 data file(s) to public/data.
 
@@ -99,20 +102,21 @@ $ node scripts/render-itb-page3-assets.js --copy-pdfs
   "rendered": 0,
   "reused": 706,
   "copiedPdfs": 0,
-  "missingSource": 0,
+  "missingSource": 1,
   "failed": 0
 }
 ITB page manifest written to /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/public/data/itb_source_manifest.json
+1 ITB refs have no source PDF yet.
 
 
 ========== Sync ITB page 3 descriptions ==========
 $ python scripts/sync-itb-page3-descriptions.py
 {
-  "jobs": 706,
+  "jobs": 707,
   "manifestEntries": 706,
   "descriptionsAdded": 8,
   "legacyDescriptionReplaced": 0,
-  "missingManifestEntry": 698,
+  "missingManifestEntry": 699,
   "extractFailed": 0
 }
 
@@ -130,7 +134,7 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/27
 UPCOMING BIDS QUERY: from:hpd.nyc.gov -from:OMOBid@hpd.nyc.gov has:attachment filename:pdf ("invitation to bid" OR "scope of work") after:2026/10/27
-Upcoming bids: 22 not awarded yet (22 on the map), 14 received today, from 129 emails
+Upcoming bids: 21 not awarded yet (21 on the map), 13 received today, from 129 emails
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
   warnings.warn(
@@ -177,7 +181,7 @@ HPD requests: 33 OMOs HPD asked about (paperwork / status) from 37 staff emails 
 
 ========== Update HPD job status from NYC Open Data ==========
 $ node scripts/update-hpd-job-status.mjs
-HPD job status: 934 of 1015 jobs found, 185 still open at HPD, 749 closed
+HPD job status: 935 of 1016 jobs found, 186 still open at HPD, 749 closed
 
 
 ========== Update market awards from NYC Open Data ==========
@@ -188,10 +192,10 @@ Market awards: 3814 awarded jobs with full descriptions (980 yours, 2834 other c
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 706
-2026 rows: 655
-2026 rows with any Latitude/Longitude: 655
-2026 rows with valid NYC coordinates: 655
+Raw JSON rows: 707
+2026 rows: 656
+2026 rows with any Latitude/Longitude: 656
+2026 rows with valid NYC coordinates: 656
 2026 rows NOT valid mapped: 0
 
 Not mapped sample:
@@ -228,7 +232,7 @@ Missing sample:
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 706
+Total jobs: 707
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
 ┌─────────┐
@@ -240,15 +244,15 @@ Exported: ./data/missing_itb_jobs_2026.csv
 ========== Verify paperwork required data ==========
 $ node scripts/verify-paperwork-data.js --write-report
 PAPERWORK DATA QUALITY
-Total jobs: 706
+Total jobs: 707
 Missing addresses: 0
 Missing descriptions: 0
-Missing ITB page 3 descriptions: 0
+Missing ITB page 3 descriptions: 1
 Bad/boilerplate descriptions: 0
 Junk-only descriptions (need ITB re-extraction): 0
 Source review jobs: 0
 Missing ITB files: 0
-Missing page 3 images: 0
+Missing page 3 images: 1
 Public data in sync: yes
 
 Source review sample:
@@ -261,7 +265,11 @@ Missing description sample:
 (none)
 
 Missing ITB page 3 description sample:
-(none)
+┌─────────┬───────────┬──────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ OMO       │ Address                      │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
+├─────────┼───────────┼──────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'ER09991' │ '306 EAST 116 STREET, 10029' │ 'ER09991_111026044658.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+└─────────┴───────────┴──────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 Bad description sample:
 (none)
@@ -270,23 +278,25 @@ Junk-only description sample:
 (none)
 PAPERWORK DATA QUALITY CHECKED
 
+PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=1.
 
-Fetcher run finished: 2026-11-10T21:53:32.507Z
+
+Fetcher run finished: 2026-11-10T22:04:36.100Z
 {
-  "fetchedCoaItems": 9,
-  "fetchedItbItems": 9,
-  "fetchedFinalJobRows": 9,
-  "addedNewOmos": 0,
+  "fetchedCoaItems": 10,
+  "fetchedItbItems": 10,
+  "fetchedFinalJobRows": 10,
+  "addedNewOmos": 1,
   "skippedExistingOmos": 9,
-  "rawRows": 706,
-  "rows2026": 655,
-  "mapped2026": 655,
+  "rawRows": 707,
+  "rows2026": 656,
+  "mapped2026": 656,
   "notMapped2026": 0,
   "missingAddresses": 0,
   "badDescriptions": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 0,
+  "missingItbPage3Descriptions": 1,
   "sourceReviewJobs": 0,
-  "missingPage3Images": 0,
+  "missingPage3Images": 1,
   "missingItbJobs": 0
 }

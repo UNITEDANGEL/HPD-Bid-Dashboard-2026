@@ -1,23 +1,41 @@
 {
-  "generatedAt": "2026-11-10T21:53:32.455Z",
-  "totalJobs": 706,
+  "generatedAt": "2026-11-10T22:04:36.087Z",
+  "totalJobs": 707,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 0,
+  "missingItbPage3Descriptions": 1,
   "badDescriptions": 0,
   "junkOnlyDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 0,
+  "missingPage3Images": 1,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [],
+    "missingItbPage3Descriptions": [
+      {
+        "OMO": "ER09991",
+        "Address": "306 EAST 116 STREET, 10029",
+        "ITB": "ER09991_111026044658.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      }
+    ],
     "badDescriptions": [],
     "junkOnlyDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
-    "missingPage3Images": []
+    "missingPage3Images": [
+      {
+        "OMO": "ER09991",
+        "Address": "306 EAST 116 STREET, 10029",
+        "ITB": "ER09991_111026044658.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      }
+    ]
   }
 }

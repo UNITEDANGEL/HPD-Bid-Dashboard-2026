@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-10T21:46:22.435Z",
+  "generatedAt": "2026-11-10T21:57:16.265Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 706,
-  "uniqueItbRefs": 706,
+  "totalJobs": 707,
+  "uniqueItbRefs": 707,
   "sourceDirectories": [
     "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5"
   ],
@@ -4955,7 +4955,7 @@
     "rendered": 0,
     "reused": 706,
     "copiedPdfs": 0,
-    "missingSource": 0,
+    "missingSource": 1,
     "failed": 0
   }
 }
