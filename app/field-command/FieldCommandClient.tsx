@@ -259,11 +259,13 @@ const OUTCOME_ICONS: Record<string, string> = { NO_ACCESS_1_WAITING_72H: "🔒",
 const BUILT_COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
 const BUILT_CODE = process.env.NEXT_PUBLIC_APP_CODE || ""; // the code version (data-only deploys don't change it)
 const BUILT_NUMBER = process.env.NEXT_PUBLIC_APP_NUMBER || "";
+// What every report says: the build number and the exact code (commit), e.g. "2709 5f5e7b3".
+const APP_VERSION = `${BUILT_NUMBER} ${BUILT_CODE || process.env.NEXT_PUBLIC_APP_COMMIT || ""}`.trim();
 const BUILT_AT = process.env.NEXT_PUBLIC_APP_BUILT_AT || "";
 // "Updated Oct 16, 4:10 PM · #312": when this version was made, in New York time.
 const versionLabel = () => {
   const when = BUILT_AT ? new Date(BUILT_AT).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-  return [when ? `Updated ${when}` : "", BUILT_NUMBER ? `#${BUILT_NUMBER}` : BUILT_COMMIT ? `v${BUILT_COMMIT}` : ""].filter(Boolean).join(" · ");
+  return [when ? `Updated ${when}` : "", [BUILT_NUMBER ? `#${BUILT_NUMBER}` : "", BUILT_CODE || BUILT_COMMIT].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
 };
 type WhatsNew = { date: string; title: string; items: string[] }[];
 // Is Claude on right now (owner, 2 Nov: "the request just tells me to wait, how many minutes? do I have to leave Claude
@@ -1559,7 +1561,7 @@ export default function FieldCommandClient() {
     const ua = navigator.userAgent;
     const browser = /CriOS/.test(ua) ? "Chrome on iPhone" : /FxiOS/.test(ua) ? "Firefox on iPhone" : /iPhone|iPad/.test(ua) ? "Safari on iPhone" : /Android/.test(ua) ? "Android" : /Edg\//.test(ua) ? "Edge computer" : /Chrome/.test(ua) ? "Chrome computer" : "other";
     const homeScreen = Boolean(window.matchMedia?.("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone);
-    void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "VOICE-CHECK", patch: { at: new Date().toISOString(), what: what.slice(0, 80), browser, homeScreen, canListen, canSpeak: voiceSupported(), spokenAnswersOff: voiceOff(), version: BUILT_NUMBER || BUILT_COMMIT } }) }).catch(() => {});
+    void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "VOICE-CHECK", patch: { at: new Date().toISOString(), what: what.slice(0, 80), browser, homeScreen, canListen, canSpeak: voiceSupported(), spokenAnswersOff: voiceOff(), version: APP_VERSION } }) }).catch(() => {});
   };
   useEffect(() => { if (search.trim().length < 3) return; const t = window.setTimeout(() => { rememberSearch(search); setRecent(recentSearches()); }, 2500); return () => window.clearTimeout(t); }, [search]);
   const listen = () => { if (listening) { listenRef.current?.stop(); return; } startListening(); };
@@ -1761,7 +1763,7 @@ export default function FieldCommandClient() {
   }, []);
   const [brokenNote, setBrokenNote] = useState("");
   const reportBroken = async (note = "") => {
-    const ok = await sendChangeRequest(brokenReport(note, `${BUILT_NUMBER || ""} ${BUILT_COMMIT || ""}`.trim()));
+    const ok = await sendChangeRequest(brokenReport(note, APP_VERSION));
     setBrokenNote(ok ? "🐞 Sent to Claude with your last taps, so it knows which button. It shows under Your requests." : "🐞 Couldn't send it (no signal?). Try again in a moment.");
     window.setTimeout(() => setBrokenNote(""), 12000);
     return ok;
@@ -1774,7 +1776,7 @@ export default function FieldCommandClient() {
     setMyRequests(list);
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: APP_VERSION } }) });
       if (r.ok) void loadChangeThreads();
       return r.ok;
     } catch { return false; }
@@ -1850,7 +1852,7 @@ export default function FieldCommandClient() {
     setMyRequests(list);
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: APP_VERSION } }) });
       if (r.ok) void loadChangeThreads();
       return r.ok;
     } catch { return false; }
@@ -1889,7 +1891,7 @@ export default function FieldCommandClient() {
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
     setChangeText("");
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: APP_VERSION } }) });
       setChangeStatus(r.ok ? `📥 Received. ${pickupLabel(claudeSeenAt)}; progress shows below, live.` : "Saved on this phone; it will be sent when the server answers.");
       if (r.ok) void loadChangeThreads();
     } catch { setChangeStatus("Saved on this phone (offline)."); }

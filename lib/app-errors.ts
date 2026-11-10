@@ -60,7 +60,15 @@ async function flush(version: string) {
   } catch { /* offline: sent with the next one */ }
 }
 
+// The exact code that ran (the commit /version.json says), next to the build number: the number alone differs between
+// the GitHub build and a build on this computer (bids plan item 7: "version on the phone").
+const CODE = process.env.NEXT_PUBLIC_APP_CODE || process.env.NEXT_PUBLIC_APP_COMMIT || "";
+export function withCode(version = "") {
+  return CODE && !version.includes(CODE) ? `${version} ${CODE}`.trim() : version;
+}
+
 export function recordError(kind: AppError["kind"], message: unknown, where: unknown = "", version = "") {
+  version = withCode(version);
   if (typeof window === "undefined" || (navigator.webdriver && !(window as unknown as { __hpdReportInTests?: boolean }).__hpdReportInTests)) return;
   const msg = cleanError(message);
   if (ignoredError(msg)) return;

@@ -358,7 +358,7 @@ The plan, one by one (✅ = live, ☐ = next):
 4. ⏳ **Morning bid brief (8 AM alert)**: "5 bids due today, best prices about $9,400 in all: tap to start".
 5. ⏳ **Monday lost-bids review**: last week's lost bids, the winner's price next to yours, and what to change.
 6. ⏳ **Tread price from past awards**: the market price per stair tread (marble / metal / wood) as the suggested rate.
-7. ⏳ **Version on the phone**: the error log and 🐞 report always say the exact live version (the build number differs between computers).
+7. ✅ **Version on the phone** (9 Nov): every error, 🐞 report, request and voice check now carries the build number and the exact code (commit), e.g. "2709 5f5e7b3"; the version line at the bottom shows both. (lib/app-errors.ts withCode; FieldCommandClient APP_VERSION.)
 8. ⏳ **Flow check after every deploy on the live site** (the bids + job-card checks on pages.dev, not only on this computer).
 
 The owner's words, later on 6 Nov:
