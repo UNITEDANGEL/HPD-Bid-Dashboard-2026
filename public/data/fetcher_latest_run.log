@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-10T15:34:03.717Z
+Fetcher run started: 2026-11-10T15:44:16.449Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:00,  8.16it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  8.15it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  7.36it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  8.19it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  8.56it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  9.14it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.26it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  8.89it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 241979.08it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.68it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:03,  1.97it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.11it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.16it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.23it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.33it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.45it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.46it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.51it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.32it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  7.90it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  7.57it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  8.13it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  8.62it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00,  7.23it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  7.55it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:01<00:00,  6.96it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  7.56it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  7.61it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 249991.63it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:05,  1.41it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:03,  1.84it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.01it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.19it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.12it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.13it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.16it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.22it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.12it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.08it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -154,10 +154,10 @@ $ python scripts/fetch_sent_paperwork.py --since 2026/10/27
 
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
-Reading 168 sent emails with attachments...
-  0/168
-  100/168
-Sent paperwork: 982 OMOs with an affidavit / invoice sent (44 with the affidavit type read) from 168 emails since 2026/10/27
+Reading 171 sent emails with attachments...
+  0/171
+  100/171
+Sent paperwork: 982 OMOs with an affidavit / invoice sent (45 with the affidavit type read) from 171 emails since 2026/10/27
 
 
 ========== Read HPD requests for paperwork ==========
@@ -168,7 +168,7 @@ $ python scripts/fetch_hpd_requests.py --since 2026/10/27
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 Reading 31 emails from HPD staff...
-Reading 40 emails you sent HPD staff...
+Reading 42 emails you sent HPD staff...
 HPD requests: 32 OMOs HPD asked about (paperwork / status) from 31 staff emails since 2026/10/27
 
 /home/runner/.local/lib/python3.12/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
@@ -271,7 +271,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-10T15:40:51.405Z
+Fetcher run finished: 2026-11-10T15:50:57.830Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,

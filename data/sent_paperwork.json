@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-10T15:40:24.321736+00:00",
+"generatedAt": "2026-11-10T15:50:35.955539+00:00",
 "since": "2026/10/27",
 "jobs": {
 "EN04541": [
@@ -20707,6 +20707,21 @@
 "outcome": "",
 "subject": "Re: 24 HR POOR PERFORMANCE NOTICE- OMO#EQ31220",
 "via": "hpd-staff"
+},
+{
+"date": "2026-11-10",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - EQ31220 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - EQ31220 - No Access - 418 AMBER STREET, 11208",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-10",
+"to": "uac525@gmail.com",
+"file": "SIGNED - EQ31220 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - EQ31220 - No Access - 418 AMBER STREET, 11208"
 }
 ],
 "EQ31364": [
@@ -21976,6 +21991,14 @@
 "file": "image.png",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: ER09991 ( 2nd Sequence )",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-10",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "ER09991_BID_10860_306-EAST-116-STREET-APT-2A.pdf",
+"outcome": "",
+"subject": "Fwd: Bid - OMO ER09991 - 306 EAST 116 STREET APT. 2A - United Angel Construction Corp.",
 "via": "hpd-staff"
 }
 ]
