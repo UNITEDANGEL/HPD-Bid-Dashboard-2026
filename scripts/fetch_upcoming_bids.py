@@ -408,7 +408,9 @@ def fetch(days):
             if "INVITATION TO BID" not in page1.upper():
                 continue  # a COA or other paper, not an invitation
             info = parse_invitation_text(page1, last)
-            if not info["bidDue"] and emailed["dueFromEmail"]:
+            # An HPD person's email ("ER09991 ( 3rd Sequence )", Juan Carvajal, 10 Nov) re-sends the same invitation PDF
+            # with the first round's date on it: the email's "Bid close date" is the real one, so it wins.
+            if emailed["dueFromEmail"] and (not info["bidDue"] or (emailed["emailedBy"] and "omobid" not in emailed["emailedBy"].lower())):
                 info["bidDue"], info["bidDueTime"] = emailed["dueFromEmail"]
             omo = omo_from_filename(name) or info["omo"]
             if not omo or not info["bidDue"]:
