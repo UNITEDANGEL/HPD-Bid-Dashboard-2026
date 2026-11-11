@@ -22,8 +22,9 @@ try {
   // The picker: "$X held" on Payment rejected; picking it tags each pin with its dollars.
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
   const held = page.locator('[data-hpd-smoke="fc-notice-held"]');
-  await held.waitFor({ timeout: 20000 });
-  const heldText = await held.innerText();
+  // On the board the picks are a compact strip (their small lines are hidden there, 10 Nov): the amount is still in it.
+  await held.waitFor({ state: "attached", timeout: 20000 });
+  const heldText = ((await held.textContent()) || "").trim();
   assert.match(heldText, /^\$[\d,]+ held$/);
   await page.locator('[data-hpd-smoke="fc-notice-pick-rejected"]').click();
   await page.waitForFunction(() => [...document.querySelectorAll(".is-glow .fc-glow-tag")].some((t) => /^💵 \$[\d,]+$/.test(t.textContent || "")), null, { timeout: 15000 });

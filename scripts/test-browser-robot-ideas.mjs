@@ -42,6 +42,9 @@ try {
   const say = async (text, re) => {
     if (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()) await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
     if (await page.locator(".fc-job-sheet-close").count()) await page.locator(".fc-job-sheet-close").first().click().catch(() => {});
+    // A planned day opens Today's route, which covers the chat bar (by voice it keeps listening): fold it to type.
+    if (await page.locator('.fc-route-toggle[aria-expanded="true"]').count()) await page.locator('.fc-route-toggle[aria-expanded="true"]').first().click().catch(() => {});
+    await page.locator('[data-hpd-smoke="fc-chatbar-input"]').waitFor({ timeout: 8000 }).catch(async () => { throw new Error(`"${text}": no chat bar; on screen: ${await page.evaluate(() => [...document.querySelectorAll("[data-hpd-smoke]")].filter((e) => e.checkVisibility() && /sheet|panel|agent|route|more|card|dock-edit/.test(e.getAttribute("data-hpd-smoke") || "")).map((e) => e.getAttribute("data-hpd-smoke")).slice(0, 25).join(", "))}`); });
     await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill(text);
     await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
     await page.waitForFunction((src) => new RegExp(src).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 20000 }).catch(async () => { throw new Error(`"${text}" got: ${await reply.innerText().catch(() => "no chat")}`); });

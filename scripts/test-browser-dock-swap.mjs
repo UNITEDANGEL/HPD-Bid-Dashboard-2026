@@ -74,7 +74,7 @@ try {
   // Stays after a reload.
   await load();
   assert.deepEqual(await dockLabels(), ["Notices", "Late", "Claude", "Jobs", "All"]);
-  assert.match(await (await page.locator('[data-hpd-smoke="fc-more-open"]').click(), page.locator('[data-hpd-smoke="fc-more-dock"]')).innerText(), /Notices · Follow-up · Jobs/);
+  assert.match(await (await page.locator('[data-hpd-smoke="fc-more-open"]').click(), page.locator('[data-hpd-smoke="fc-more-dock"]')).innerText(), /Notices · Late · Jobs/);
   await page.locator('[data-hpd-smoke="fc-more-dock"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-reset"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-done"]').click();

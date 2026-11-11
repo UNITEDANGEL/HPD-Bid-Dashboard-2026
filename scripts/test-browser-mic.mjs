@@ -77,7 +77,7 @@ try {
   await page.waitForFunction(() => /OK\. Tap 💬 when you want to talk again\./.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 30000 });
   const conv = await page.evaluate(() => ({ starts: window.__starts, said: window.__said.slice(-4) }));
   assert.ok(conv.starts >= 3, `listened again by itself (${conv.starts} times)`);
-  assert.ok(conv.said.some((t) => /^Today: /.test(t)) && conv.said.some((t) => /notices? waiting/.test(t)), `both answered out loud: ${conv.said.join(" | ").slice(0, 200)}`);
+  assert.ok(conv.said.some((t) => /^Today: |^Nothing urgent today\./.test(t)) && conv.said.some((t) => /notices? waiting/.test(t)), `both answered out loud: ${conv.said.join(" | ").slice(0, 200)}`);
   results.push(["💬 what do I have today → which notices are open → stop", "answered both, stopped"]);
   await page.evaluate(() => { delete window.__queue; });
   // Plan the day, then go to the first stop.

@@ -41,9 +41,10 @@ try {
   const seen = await page.evaluate(() => localStorage.getItem("hpd-summary-seen"));
   assert.equal(seen, await page.evaluate(() => new Date().toLocaleDateString("en-CA")));
 
-  // Reopen it from the notices picker; the money line opens 💰 To get paid.
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-today-open"]').click();
+  // Reopen it from All -> ☀️ Today's summary (11 Nov: Notices opens the board, its header button is hidden there);
+  // the money line opens 💰 To get paid.
+  await page.locator('[data-hpd-smoke="fc-more-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-more-today"]').click();
   await card.waitFor();
   await card.locator('[data-hpd-smoke="fc-today-money"]').click();
   await page.locator('[data-hpd-smoke="fc-money"]').waitFor();

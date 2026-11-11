@@ -93,7 +93,9 @@ try {
     assert.match((await chip.innerText()).replace(/\s+/g, " "), /Next: Call the tenant at .* \(no answer to the text\)/);
     // 👉 Its pin glows on the map with a "Next" tag.
     await p.locator('.fc-label-marker.is-glow-next[title*="EQ15239"]').waitFor({ timeout: 15000 });
-    assert.match(await p.locator('.fc-label-marker.is-glow-next .fc-glow-tag').innerText(), /Next/);
+    // Its words only where there's room (10 Nov: close pins stay lit without piling tags on each other).
+    const tag = p.locator('.fc-label-marker.is-glow-next[title*="EQ15239"] .fc-glow-tag');
+    if (await tag.count()) assert.match(await tag.innerText(), /Next/);
     await chip.click();
     await p.locator("#fc-job-card").waitFor({ timeout: 15000 });
     assert.match(await p.locator("#fc-job-card").innerText(), /EQ15239/);

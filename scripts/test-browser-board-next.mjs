@@ -29,7 +29,8 @@ try {
   const row = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).first();
   await row.waitFor({ timeout: 30000 });
   const omo = await row.getAttribute("data-omo");
-  const toAnswer = await board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).count();
+  // Different jobs to answer (a job can have two notices; the board moves on to another job first).
+  const toAnswer = new Set(await board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")))).size;
   await row.locator('[data-hpd-smoke="fc-board-reply"]').click();
   const send = row.locator('[data-hpd-smoke="fc-board-reply-send"]');
   await send.click();

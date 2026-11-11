@@ -7938,6 +7938,8 @@ export default function FieldCommandClient() {
               {moreOpen ? (() => {
             const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
             const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
+              // ☀️ The day's summary again (11 Nov): its only way back was the notices header, hidden since Notices opens the board.
+              { key: "today", icon: "☀️", label: "Today's summary", info: "Notices, bids and money for today", go: () => { setMoreOpen(false); closeScreens("today"); setBoardWithMap(false); setSummaryToday(true); } },
               { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
               { key: "parking", icon: "🅿️", label: "Parking (street cleaning)", info: aspOffToday ? `No street cleaning today · ${aspOffToday}` : "Street cleaning rules today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
               { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },

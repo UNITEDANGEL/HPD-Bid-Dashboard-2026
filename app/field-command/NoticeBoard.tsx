@@ -216,7 +216,8 @@ export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextD
       window.setTimeout(() => {
         const next = rows
           .filter((r) => r.key !== row.key && r.next && boardSide(r) === "tosend" && r.to)
-          .sort((a, b) => hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
+          // Another job first (11 Nov: a second notice on the same job read "Next: EO18305" right after EO18305).
+          .sort((a, b) => Number(a.omo === row.omo) - Number(b.omo === row.omo) || hoursLeft(a, Date.now()) - hoursLeft(b, Date.now()))[0];
         setMoved({ omo: row.omo, to: sentTo, next: next?.omo });
         if (!next) return;
         setSide("tosend");

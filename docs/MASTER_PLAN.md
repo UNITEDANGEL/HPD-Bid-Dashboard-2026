@@ -102,6 +102,11 @@ auto-following this plan."
 38. ✅ **One Pending** (10 Nov: "what's the difference between follow-up and pending? pending = all"): the status row is
     Pending · Completed · Archive · All jobs. 2nd tries, appointments and jobs waiting on HPD are inside Pending; the old
     Follow-up button is now "⏰ Late" (late or due this week, all in Pending).
+41. ✅ **The after-deploy browser tests green again** (11 Nov): the 150-test job after each deploy had 8 failing since
+    10 Nov (tests behind the app: Follow-up → Late, Notices opens the board, tags only where there's room, no overdue
+    today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
+    and after answering a notice the board moved on to the same job's second notice (now another job first).
+    The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
 40. ✅ **Pending and Completed: every job, any date** (11 Nov): the map opens on Pending with 📅 "Any date" (253
     pending jobs; the this-year default had hidden 31 older ones); a date you pick narrows it ("This year" → 222);
     Archive / All jobs keep the this-year default. Test: test-browser-jobs-pending-any-date. The priorities test now
