@@ -207,7 +207,14 @@ jobs:
       # packages, notary date, watermark. Google and the live status server are answered by the
       # test itself, so nothing is uploaded, emailed or written to real jobs.
       - name: Install browser for paperwork test
-        run: npx playwright install --with-deps chromium
+        # The runner already has almost everything Chromium needs; --with-deps adds the rest from Ubuntu's package server.
+        # When that server can't be reached (11 Nov: "Temporary failure resolving azure.archive.ubuntu.com" stopped every
+        # deploy for an hour), install the browser alone instead of failing the deploy.
+        run: |
+          npx playwright install --with-deps chromium || {
+            echo "::warning::Ubuntu packages unreachable, installing Chromium without --with-deps"
+            npx playwright install chromium
+          }
 
       # Live sooner (2 Nov, "keep upgrading": the full browser tests took ~17 minutes before anything went live, so an
       # upgrade reached the phone 20-30 minutes after the push): a quick check first (privacy, every button, update
@@ -301,7 +308,14 @@ jobs:
         run: npm run build:cloudflare
 
       - name: Install browser
-        run: npx playwright install --with-deps chromium
+        # The runner already has almost everything Chromium needs; --with-deps adds the rest from Ubuntu's package server.
+        # When that server can't be reached (11 Nov: "Temporary failure resolving azure.archive.ubuntu.com" stopped every
+        # deploy for an hour), install the browser alone instead of failing the deploy.
+        run: |
+          npx playwright install --with-deps chromium || {
+            echo "::warning::Ubuntu packages unreachable, installing Chromium without --with-deps"
+            npx playwright install chromium
+          }
 
       - name: Test paperwork, stats and route in a browser (after going live)
         run: |
