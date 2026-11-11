@@ -73,6 +73,8 @@ try {
   await go.click();
   await page.waitForURL(/\/paperwork\//);
   // It fixes itself and makes the preview.
+  // The fixing details are folded under 🔧 See what was fixed (plan item 4): open it to read them.
+  await page.locator('[data-hpd-smoke="paperwork-fixed-more"] > summary').click({ timeout: 120000 });
   const fixed = page.locator('[data-hpd-smoke="paperwork-autofixed"], [data-hpd-smoke="paperwork-autofixed-review"]').first();
   await fixed.waitFor({ timeout: 120000 });
   const said = await fixed.innerText();

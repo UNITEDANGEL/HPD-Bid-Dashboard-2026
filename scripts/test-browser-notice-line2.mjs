@@ -56,6 +56,8 @@ try {
   const note = page.locator('[data-hpd-smoke="paperwork-line2"]');
   await note.waitFor({ timeout: 30000 });
   assert.match(await note.innerText(), /Line 2 \("That on ___ I was directed by HPD"\) = 01\/29\/26, the Confirmation of Award date\. The one you sent said 02\/12\/26: this fixes it\./);
+  // Folded under 🔧 See what was fixed (plan item 4): open it to read.
+  await page.locator('[data-hpd-smoke="paperwork-fixed-more"] > summary').click({ timeout: 120000 });
   const fixed = page.locator('[data-hpd-smoke="paperwork-autofixed"], [data-hpd-smoke="paperwork-autofixed-review"]').first();
   await fixed.waitFor({ timeout: 90000 });
   assert.match(await fixed.innerText(), /Line 2 \("That on ___ I was directed by HPD"\): prints the Confirmation of Award date, 01\/29\/2026, not the work date\./);

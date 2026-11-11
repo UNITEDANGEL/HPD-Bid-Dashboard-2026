@@ -6390,6 +6390,10 @@ export default function PaperworkPage() {
                 <div className="pkg-correction" data-hpd-smoke="paperwork-correction-review">
                   <b>✅ Fixed: look it over, then send it back</b>
                   <span>HPD rejected this on {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} attempt)` : ""}{correction.reason ? <>: <em>{correction.reason}</em></> : null}</span>
+                  {/* The fixing details step aside (plan item 4, 10 Nov: "you can handle the fixing part in the back; I should be
+                      able to see it if I want, I don't need it on screen"): the copy, then Accept / Send; this opens on a tap. */}
+                  <details className="pkg-fixed-more" data-hpd-smoke="paperwork-fixed-more">
+                  <summary>🔧 See what was fixed{autoFixed && autoFixed.changes.length ? ` (${autoFixed.changes.length} change${autoFixed.changes.length === 1 ? "" : "s"})` : ""}</summary>
                   <HpdMarked threadId={markedThread} omo={selectedJobId} light />
                   {autoFixed ? (
                     <div className="paperwork-autofixed" data-hpd-smoke="paperwork-autofixed-review">
@@ -6406,6 +6410,7 @@ export default function PaperworkPage() {
                     <li>The emailed copy carries your signature and the notary and says <b>COPY</b>; &quot;Download PDF for printing&quot; is the original to sign in ink if HPD asks for it.</li>
                     <li>The notary date is the job&apos;s last day: <b>{displayDate(packageDay(form, outcome))}</b>.</li>
                   </ul>
+                  </details>
                   {correctionSaved && !correctionSaved.startsWith("error:") ? (
                     <p className="pkg-correction-done" data-hpd-smoke="paperwork-correction-saved">✓ Saved on this phone {new Date(correctionSaved).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. It&apos;s in the fixed folder: HPD notices → <b>🖨 To print</b>. Print it, sign in ink with the notary, then mail it to HPD.</p>
                   ) : null}

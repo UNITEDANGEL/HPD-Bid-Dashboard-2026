@@ -50,6 +50,8 @@ try {
   // Fixed by itself, then the preview.
   const review = page.locator('[data-hpd-smoke="paperwork-correction-review"]');
   await review.waitFor({ timeout: 90000 });
+  // Folded under 🔧 See what was fixed (plan item 4, 11 Nov): the copy and Accept come first; open it to read.
+  await review.locator('[data-hpd-smoke="paperwork-fixed-more"] > summary').click();
   const box = review.locator('[data-hpd-smoke="paperwork-autofixed-review"]');
   const listed = await box.innerText();
   assert.match(listed, /Auto-fixed/);

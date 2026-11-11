@@ -35,7 +35,7 @@ auto-following this plan."
    dates; a date you typed is kept (no question in the way); no-access attempts the same with HPD's window; a note
    "✨ Dates fixed: …" with Undo. Only an attempt before the award still stops. Tests: old-dates, paperwork-old-attempts,
    affidavit-dates.
-4. ⏳ **Every notice auto-fixed in the back → see it, approve, send**: the fix page opens as just the finished copy
+4. ✅ **Every notice auto-fixed in the back → see it, approve, send** (11 Nov: the fix page is the fixed copy, HPD's words, Accept / Change, then 📤 Send it back; what HPD marked, the auto-fix list and the checks are folded under "🔧 See what was fixed"; Send went from ~1,740 px down the page to ~1,080 px. Tests: test-browser-autofix, -notice-autofix, -notice-line2): the fix page opens as just the finished copy
    (preview) + Approve & send (two taps); the fixing details folded ("🔧 See what was fixed").
 5. ✅ **Notices map + list at the bottom** (10 Nov): Priority / Lewis · ERP / Gafur · AEP (any pick) shows those jobs on
    the map with "📋 N to do · oldest first" at the bottom (who asked what and when; 📍 Show · ✉ Answer · ✨ Fix); it
@@ -43,7 +43,7 @@ auto-following this plan."
    thin now (an old rule kept the big menu over the map). **Every email from Lewis / Gafur still waiting on you is a
    priority**, whatever it asks (status update requests too, e.g. ER07717 on 10/29): lib/vt-asks.ts, 38 jobs on the
    real email. Email is read every 30 minutes, 7 AM-9 PM. Tests: test-vt-asks, priority-map, notice-walk.
-6. ⏳ **Simple map filter**: Pending (all, any date) · Completed (all) · Closed · Notices; dates only as an extra pick;
+6. ✅ **Simple map filter** (done by items 38 and 40: Pending · Completed · Archive · All jobs, Pending / Completed any date, dates as an extra pick, Follow-up → ⏰ Late): Pending (all, any date) · Completed (all) · Closed · Notices; dates only as an extra pick;
    "Follow-up" renamed or explained in plain words.
 7. ✅ **Calendar** (11 Nov): 📅 menu → From and Through right in it (no "Custom dates…" panel or drop-down);
    once both are picked the dates apply and the menu closes by itself. Test: test-browser-notice-depts.
@@ -76,7 +76,7 @@ auto-following this plan."
 15. ✅ **Approve → send → mark → archive at once** (11 Nov: answered on the board = off 🔥 Priority and the map at once, not after the next Gmail read; HPD writing again brings it back; the board moves on to another job; test-browser-board-next): after Send the notice is done and leaves the map / list; the next one
     comes up ("Next: ER… →").
 16. ⏳ **Close out second tries and old pending jobs**: go through them with the owner (they're all "pending" now).
-17. ⏳ **The helper on the phone acts, doesn't repeat** (owner, 10 Nov: "it keeps repeating the same thing ... a real
+17. ✅ **The helper on the phone acts, doesn't repeat** (11 Nov: "let's start fixing the first one", "fix the first one", "start fixing", "fix it, review it, send it" start the notice walk on the first one (to fix first, then to send, nearest deadline first; Next after each); not repeating: items 22 and 24 below; test-notice-flow) (owner, 10 Nov: "it keeps repeating the same thing ... a real
     person that helps me fix, build, go through my day; 3 notices to fix: let's start fixing the 1st one and take me
     there; fix it, review it, send it"): no repeated messages; "Let's fix the first one" opens it; after each, the next.
 19. ✅ **Bids: no "Let's start bidding" pop-up** (10 Nov): a slim strip under the top bar ("18 bids · 0 today", 📅,
@@ -134,10 +134,10 @@ auto-following this plan."
     ✕ folds to the thin bar; never back to all jobs (Jobs leaves). The board stops above the bottom bar.
 25. ✅ **Pending vs Follow-up** (10 Nov: "what's the difference?"): Follow-up = the late pending jobs; one Pending button
     with ⏰ Late / Due this week inside, Follow-up removed.
-26. ⏳ **In touch / next week → calls and the route** (10 Nov: "I like the in touch button; we need to call these
+26. ✅ **In touch / next week → calls and the route** (11 Nov: on 📤 Sent · waiting, "🗺 Put N in-touch jobs with no day on the next day's route"; each route stop says if the tenant was reached (🔴 call first) with Call / Text on its card; today's route with stops is left alone; test-browser-notice-route-touch) (10 Nov: "I like the in touch button; we need to call these
     tenants, make appointments, put them in the route; AI handles all the messages in and out and summarizes; nothing
     doubled").
-27. ⏳ **Past bids** (10 Nov: "I should be able to see past bids also").
+27. ✅ **Past bids** (10 Nov: "I should be able to see past bids also"): done as item 35.
 28. ❌ **The notary's handwritten signature on copies**: not done, on purpose: a notary's signature certifies she
     watched the signing; copying it onto papers she didn't see would be a forged notarization. Offered instead: New
     York remote online notarization (the notary signs the PDF on a short video call; the app sends it and attaches the

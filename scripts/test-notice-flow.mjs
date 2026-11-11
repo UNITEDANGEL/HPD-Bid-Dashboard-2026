@@ -70,6 +70,14 @@ assert.deepEqual(said("go through my notices"), { intent: "notice-walk", next: f
 assert.deepEqual(said("work on the notices"), { intent: "notice-walk", next: false });
 assert.deepEqual(said("let's do the notices"), { intent: "notice-walk", next: false });
 assert.deepEqual(said("next notice"), { intent: "notice-walk", next: true });
+// The owner's words, 10 Nov (plan item 17): start on the first one.
+assert.deepEqual(said("let's start fixing the first one"), { intent: "notice-walk", next: false }, "let's start fixing the first one");
+assert.deepEqual(said("let's start fixing the 1st one and take me there"), { intent: "notice-walk", next: false }, "let's start fixing the 1st one and take me there");
+assert.deepEqual(said("fix the first one"), { intent: "notice-walk", next: false }, "fix the first one");
+assert.deepEqual(said("start with the first one"), { intent: "notice-walk", next: false }, "start with the first one");
+assert.deepEqual(said("start fixing"), { intent: "notice-walk", next: false }, "start fixing");
+assert.deepEqual(said("let's fix it, review it, send it"), { intent: "notice-walk", next: false }, "let's fix it, review it, send it");
+assert.notDeepEqual(said("open the first one"), { intent: "notice-walk", next: false }, "a list's first line still opens");
 assert.deepEqual(said("I already sent it"), { intent: "notice-handled", ref: "" });
 assert.deepEqual(said("ER00272 is already fixed"), { intent: "notice-handled", ref: "ER00272" });
 assert.deepEqual(said("I already answered ER 00272"), { intent: "notice-handled", ref: "ER00272" });

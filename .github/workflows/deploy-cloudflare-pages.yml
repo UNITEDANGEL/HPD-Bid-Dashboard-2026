@@ -361,6 +361,7 @@ jobs:
             scripts/test-browser-notice-board.mjs \
             scripts/test-browser-board-next.mjs \
             scripts/test-browser-answered-off-priority.mjs \
+            scripts/test-browser-notice-route-touch.mjs \
             scripts/test-browser-scan.mjs \
             scripts/test-browser-bid-icons.mjs \
             scripts/test-browser-open-fast.mjs \

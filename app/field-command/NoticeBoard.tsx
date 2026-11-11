@@ -632,6 +632,14 @@ export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextD
               const noDay = overdueRows.filter((r) => !visitOf?.(r.omo) && hasJob(r.omo));
               return noDay.length ? <button type="button" className="fc-batch-open is-route" data-hpd-smoke="fc-overdue-route" onClick={() => { const r = onRouteNextDay(noDay.map((x) => x.omo)); setRouted(r.ok ? `🗺 ${r.added} overdue job${r.added === 1 ? "" : "s"} put on the route for ${shortDay(r.day)}. Now tap 🔥 Update all overdue to tell Lewis the day.` : `Not put on the route: ${r.why}. Finish today's route first, or plan it in Route.`); }}>🗺 Put {noDay.length} overdue on the next day&apos;s route</button> : null;
             })() : null}
+            {side === "waiting" && onRouteNextDay ? (() => {
+              // 🤝 Told HPD "in touch" but no day yet (10 Nov, plan item 26: "we need to call these tenants, make
+              // appointments, put them in the route"): on the next working day's route, where each stop says whether the
+              // tenant was reached ("🔴 call first") with Call / Text on its card. Not the overdue ones (their own button).
+              const late = new Set(overdueRows.map((r) => r.omo));
+              const noDay = [...new Set(onSide.filter((r) => !visitOf?.(r.omo) && hasJob(r.omo) && !late.has(r.omo)).map((r) => r.omo))];
+              return noDay.length ? <button type="button" className="fc-batch-open is-route" data-hpd-smoke="fc-touch-route" onClick={() => { const r = onRouteNextDay(noDay); setRouted(r.ok ? `🗺 ${r.added} in-touch job${r.added === 1 ? "" : "s"} put on the route for ${shortDay(r.day)}. Each stop says if the tenant was reached: call the ones marked 🔴 first.` : `Not put on the route: ${r.why}. Finish today's route first, or plan it in Route.`); }}>🗺 Put {noDay.length} in-touch job{noDay.length === 1 ? "" : "s"} with no day on the next day's route</button> : null;
+            })() : null}
             {routed ? <p className="fc-follow-note" role="status" data-hpd-smoke="fc-overdue-routed">{routed}</p> : null}
             {overdueRows.length ? <button type="button" className="fc-batch-open is-overdue" data-hpd-smoke="fc-overdue-open" onClick={() => startBatch("overdue")}>🔥 Update all {overdueRows.length} overdue in a row{overdueRows.some((r) => visitOf?.(r.omo)) ? ` (${overdueRows.filter((r) => visitOf?.(r.omo)).length} with the day you go)` : ""}</button> : null}
             {noAnswer.length ? <button type="button" className="fc-batch-open is-nudge" data-hpd-smoke="fc-nudge-open" onClick={() => startBatch("nudge")}>⏰ Ask {noAnswer.length} to confirm (no answer {NUDGE_AFTER_DAYS}+ days)</button> : null}

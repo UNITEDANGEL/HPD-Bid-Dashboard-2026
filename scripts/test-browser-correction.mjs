@@ -43,6 +43,8 @@ try {
   catch { throw new Error(`no preview: ${await page.locator(".paperwork-pdf-status, [data-hpd-smoke=paperwork-correction-status]").first().innerText().catch(() => "?")}`); }
   assert.match(await review.innerText(), new RegExp(`${rej.rejectedAt}`));
   if (rej.rejectedReason) assert.ok((await review.innerText()).includes(rej.rejectedReason.slice(0, 30)), "HPD's reason shown");
+  // The details are folded under 🔧 See what was fixed (plan item 4, 11 Nov); the reason stays in view.
+  await review.locator('[data-hpd-smoke="paperwork-fixed-more"] > summary').click();
   assert.match(await review.innerText(), /The emailed copy carries your signature and the notary and says COPY/); // 10 Nov
   const pages = await page.locator('[data-hpd-smoke="paperwork-package-pages"] img').count();
   assert.ok(pages >= 3, `affidavit (2) + invoice pages shown (${pages})`);

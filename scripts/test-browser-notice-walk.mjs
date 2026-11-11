@@ -68,7 +68,8 @@ try {
     await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill(text);
     await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
   };
-  await say("go through my notices");
+  // The owner's own words (10 Nov, plan item 17) start the same walk.
+  await say("let's start fixing the first one");
   const walk = page.locator('[data-hpd-smoke="fc-walk"]');
   await walk.waitFor({ timeout: 10000 });
   const total = Number((await walk.locator('[data-hpd-smoke="fc-walk-count"]').innerText()).match(/of (\d+)/)[1]);

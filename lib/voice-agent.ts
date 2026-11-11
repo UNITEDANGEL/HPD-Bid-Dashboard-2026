@@ -436,6 +436,11 @@ export function parseCommand(heard: string): AgentCommand {
   // detail ... take me to the notice, tell me what they're asking, what should we do now").
   if (/^(ok |okay |so |now )?(let'?s )?(go|walk|work|run|help) (me )?(through|on|with) (all |each )?(of )?(my |the )?(notices|vendor tracking)( one by one| in detail| each)?$|^(let'?s )?(do|work on|start|fix|handle|answer) (all )?(my |the )?notices( one by one| in detail)?$|^notices one by one$/.test(t)) return { intent: "notice-walk", next: false };
   if (/^(ok |okay |so )?(go to |open |show me |take me to )?(the )?next notice( please)?$/.test(t)) return { intent: "notice-walk", next: true };
+  // The owner's words (10 Nov: "3 notices to fix: let's start fixing the 1st one and take me there; fix it, review it,
+  // send it"): the walk, first one up. A verb is needed: "open the first one" still opens a list's first line.
+  if (/^(ok |okay |so |now |yes )?(let'?s |let us )?((start|begin) )?(fixing|fix|answering|answer|doing|do|handling|handle|with|on) (the )?(first|1st|top) (one|notice|thing)( (and|then) take me there)?$/.test(t)
+    || /^(ok |okay |so |now |yes )?(let'?s |let us )?(start|begin) (fixing|answering)( them| the notices| my notices)?$/.test(t)
+    || /^(let'?s )?fix it,? review it,? (and )?send it$/.test(t)) return { intent: "notice-walk", next: false };
   // ✅ "I already sent it" / "ER00272 is already fixed" / "this one's done" (5 Nov: "a button that says I already sent it,
   // I already fixed this notice").
   if (!/\bbids?\b/.test(t) && (/\balready (sent|answered|fixed|handled|resent|replied|did|done)\b|\b(been|was) (fixed|handled|sent|answered) already\b/.test(t) || /^(this|that|the) (one|notice)('?s| is| was| has been) (done|fixed|handled|sent|answered)$/.test(t))) return { intent: "notice-handled", ref: (/\b([a-z]{2})\s?(\d{5})\b/.exec(t) || []).slice(1).join("").toUpperCase() };

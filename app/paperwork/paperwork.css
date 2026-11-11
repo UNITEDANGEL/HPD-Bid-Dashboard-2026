@@ -11,6 +11,10 @@
 .pkg-correction > b { font-size: 16px; }
 .pkg-correction em { font-style: normal; color: #fff; font-weight: 800; }
 .pkg-correction ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.pkg-fixed-more { display: grid; gap: 6px; }
+.pkg-fixed-more > summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; padding: 6px 12px; border-radius: 10px; background: rgba(255,255,255,0.12); color: #fff; font: 800 14px/1.3 system-ui; list-style: none; }
+.pkg-fixed-more > summary::-webkit-details-marker { display: none; }
+.pkg-fixed-more[open] > summary { margin-bottom: 4px; }
 .pkg-correction-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 4px; }
 .pkg-correction-actions button { min-height: 48px; }
 .pkg-correction-done { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: #052e16; color: #bbf7d0; font-weight: 700; }
