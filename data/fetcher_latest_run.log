@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-11T17:07:30.273Z
+Fetcher run started: 2026-11-11T17:21:53.917Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:01,  7.62it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00, 10.22it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 10.00it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  9.93it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  9.92it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 10.43it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 10.12it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 174762.67it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:03,  2.29it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:02,  2.65it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.64it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  2.66it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.40it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.49it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  2.61it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.45it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.20it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:03<00:00,  2.40it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:01,  6.92it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:01,  6.98it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  7.11it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  6.98it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  7.54it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00,  8.02it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  7.54it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:01<00:00,  7.17it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  7.48it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  7.39it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 172368.66it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:04,  1.93it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:03,  2.04it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.18it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.20it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.18it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.01it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.09it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.18it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  1.80it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  1.99it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -175,17 +175,14 @@ HPD requests: 31 OMOs HPD asked about (paperwork / status) from 32 staff emails 
 
 ========== Update HPD job status from NYC Open Data ==========
 $ node scripts/update-hpd-job-status.mjs
-HPD job status not updated: NYC Open Data answered 503
+HPD job status: 935 of 1016 jobs found, 185 still open at HPD, 750 closed
 
-WARNING: HPD job status was not refreshed: Update HPD job status from NYC Open Data failed with exit code 1
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
 Full descriptions not re-sealed (Invalid key length); award prices still updated.
+Market awards: 3822 awarded jobs with full descriptions (981 yours, 2841 other contractors) from 4201 invitations; 0 new descriptions kept tonight; 41507 awards in Open Data since 2025-01-01
 
-Market awards not updated: NYC Open Data answered 503
-
-WARNING: Market awards were not refreshed: Update market awards from NYC Open Data failed with exit code 1
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
@@ -278,7 +275,7 @@ PAPERWORK DATA QUALITY CHECKED
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=1.
 
 
-Fetcher run finished: 2026-11-11T17:15:55.431Z
+Fetcher run finished: 2026-11-11T17:30:39.943Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,
