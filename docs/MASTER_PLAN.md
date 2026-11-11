@@ -60,7 +60,7 @@ auto-following this plan."
 10. ✅ **Update pop-up** (10 Nov): after a new version loads, "✨ New update · enjoy!" with the newest 3 changes for 7
     seconds, then it hides (tap hides it now); the board / notices on the map that were open come back. Test:
     test-browser-updated-pop.
-11. ⏳ **Talk to Claude on the map like on the computer**; a % next to the Working icon while it works.
+11. ✅ **Talk to Claude on the map like on the computer**; a % next to the Working icon while it works (11 Nov): the 🤖 button reads "Working 50%" and its card "50% · 2 of 4 steps" while Claude works through the plan too (not only on a request): scripts/claude-now.mjs --task … --steps "Look|Build|Test|Push", then --done after each step. 💬 on the card sends Claude a message (it reads it within a minute). Test: test-browser-claude-now.
 12. ✅ **Real signature on the copies** (10 Nov; sample: the owner's signed ER05228 copy): the blue-ink signature cut from
     the scanned invoice (pen line smoothed, paper and print removed) is kept encrypted (public/private/signature.png.enc,
     /api/private/signature, signed in only) and replaces the typed-letters stand-in on every phone; "📷 Upload my real
@@ -73,7 +73,7 @@ auto-following this plan."
     tap); now the finished screen starts with the signed copy (first screen, was 2 screens down), then the checklist
     and 📤 Send (was 4 screens down, now under 2), then the print copy. The form folds away; "✏️ Review / change"
     opens it right there (signatures kept, Update package rebuilds). Test: test-browser-paperwork.
-15. ⏳ **Approve → send → mark → archive at once**: after Send the notice is done and leaves the map / list; the next one
+15. ✅ **Approve → send → mark → archive at once** (11 Nov: answered on the board = off 🔥 Priority and the map at once, not after the next Gmail read; HPD writing again brings it back; the board moves on to another job; test-browser-board-next): after Send the notice is done and leaves the map / list; the next one
     comes up ("Next: ER… →").
 16. ⏳ **Close out second tries and old pending jobs**: go through them with the owner (they're all "pending" now).
 17. ⏳ **The helper on the phone acts, doesn't repeat** (owner, 10 Nov: "it keeps repeating the same thing ... a real
@@ -126,13 +126,13 @@ auto-following this plan."
 22. ✅ **"Fax confirmed" once, silent** (10 Nov: "it keeps saying fax confirmed, stop it now; my microphone keeps
     freezing, I don't need voice for fax confirmed"): each fax is announced once ever (hpd-fax-told), with a chime and
     the banner, never spoken.
-23. ⏳ **Asked but already sent = archived** (10 Nov: "fix the asked: if sent already it should auto archive, unless they
+23. ✅ **Asked but already sent = archived** (10 Nov: "fix the asked: if sent already it should auto archive, unless they
     come back; don't overlap sent and asked"): an ask from Lewis / Gafur is off Priority once the job's AFF INVOICE went
     out after it (sent list or our own email with the PDF); a new email from them after that brings it back.
-24. ⏳ **Notices = the board first, over the map** (10 Nov): tap Notices → the board with the notice jobs on the map
+24. ✅ **Notices = the board first, over the map** (10 Nov): tap Notices → the board with the notice jobs on the map
     above it, the picks as one row on top; a pick lights those jobs on the map with the 📋 list; tap Notices again /
     ✕ folds to the thin bar; never back to all jobs (Jobs leaves). The board stops above the bottom bar.
-25. ⏳ **Pending vs Follow-up** (10 Nov: "what's the difference?"): Follow-up = the late pending jobs; one Pending button
+25. ✅ **Pending vs Follow-up** (10 Nov: "what's the difference?"): Follow-up = the late pending jobs; one Pending button
     with ⏰ Late / Due this week inside, Follow-up removed.
 26. ⏳ **In touch / next week → calls and the route** (10 Nov: "I like the in touch button; we need to call these
     tenants, make appointments, put them in the route; AI handles all the messages in and out and summarizes; nothing

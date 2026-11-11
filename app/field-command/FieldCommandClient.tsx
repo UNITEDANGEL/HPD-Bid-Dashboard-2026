@@ -297,7 +297,9 @@ function SecondsAgo({ at, bare }: { at: string; bare?: boolean }) {
 }
 // 🤖 Claude right now (owner, 3 Nov: "I need to know every second what's going on"): what Claude is doing on the office
 // computer, written by scripts/claude-now.mjs as it works (CLAUDE-NOW). Fresh = said in the last 10 minutes.
-type ClaudeNow = { at: string; text: string; task: string; state: string; log: { at: string; text: string }[] };
+type ClaudeNow = { at: string; text: string; task: string; state: string; log: { at: string; text: string }[]; steps?: { text: string; done: boolean }[] };
+// "Working 40%" (11 Nov, plan item 11): the share of the plan's steps done, when Claude posted its steps (--steps / --done).
+export const claudeNowPct = (n: ClaudeNow | null) => (n?.steps?.length ? Math.round((n.steps.filter((x) => x.done).length / n.steps.length) * 100) : null);
 const claudeNowFresh = (n: ClaudeNow | null) => Boolean(n && n.state === "working" && n.text && Date.now() - Date.parse(n.at) < 10 * 60000);
 // One-tap answers that fit Claude's question (owner, 4 Nov: "it gives me 2 options, it doesn't let me pick"): when it
 // asks you to type something exact, that's the Yes button; a "Want me to…?" gets Yes / No; a choice gets You decide.
@@ -314,6 +316,7 @@ function ClaudeNowLines({ now }: { now: ClaudeNow }) {
   return (
     <span className="fc-claude-now" data-hpd-smoke="fc-claude-now">
       <span className="fc-claude-now-main"><span className="fc-working-dots" aria-hidden="true"><i /><i /><i /></span><b data-hpd-smoke="fc-claude-now-text">{now.text}</b> <SecondsAgo at={now.at} /></span>
+      {now.steps?.length ? <span className="fc-claude-now-steps" data-hpd-smoke="fc-claude-now-steps"><b>{claudeNowPct(now)}%</b> · {now.steps.filter((x) => x.done).length} of {now.steps.length} steps</span> : null}
       {before.length ? <span className="fc-claude-now-log" data-hpd-smoke="fc-claude-now-log">{before.map((l) => <span key={l.at}>✓ {l.text} <SecondsAgo at={l.at} /></span>)}</span> : null}
     </span>
   );
@@ -1733,7 +1736,7 @@ export default function FieldCommandClient() {
       { const h = Object.entries(all).filter(([k]) => k.startsWith("HANDLED-")).map(([k, v]) => [k.slice(8), String((v as { at?: string } | undefined)?.at || "")] as [string, string]);
         if (h.length) setHandledMap((cur) => { const next = { ...cur }; for (const [o, at] of h) if (!cur[o] || (at && at > cur[o]) || (!at && cur[o] && false)) next[o] = at; return next; }); }
       const cn = all["CLAUDE-NOW"] as Partial<ClaudeNow> | undefined;
-      const nowValue: ClaudeNow | null = cn?.text ? { at: String(cn.at || ""), text: String(cn.text).slice(0, 120), task: String(cn.task || "").slice(0, 120), state: String(cn.state || ""), log: Array.isArray(cn.log) ? cn.log.slice(-8).map((l) => ({ at: String(l?.at || ""), text: String(l?.text || "").slice(0, 120) })) : [] } : null;
+      const nowValue: ClaudeNow | null = cn?.text ? { at: String(cn.at || ""), text: String(cn.text).slice(0, 120), task: String(cn.task || "").slice(0, 120), state: String(cn.state || ""), log: Array.isArray(cn.log) ? cn.log.slice(-8).map((l) => ({ at: String(l?.at || ""), text: String(l?.text || "").slice(0, 120) })) : [], steps: Array.isArray(cn.steps) ? cn.steps.slice(0, 12).map((x) => ({ text: String(x?.text || "").slice(0, 80), done: Boolean(x?.done) })) : [] } : null;
       setClaudeNow(nowValue);
       setAutoUpgrade(Boolean((all["AUTO-UPGRADE"] as { on?: boolean } | undefined)?.on));
       { const au = all["AUTO-UPGRADE"] as { on?: boolean; lastAt?: string; lastTitle?: string; doneToday?: number } | undefined; setAutoInfo({ lastAt: String(au?.lastAt || ""), lastTitle: String(au?.lastTitle || "").slice(0, 80), doneToday: Number(au?.doneToday || 0) }); }
@@ -3326,7 +3329,10 @@ export default function FieldCommandClient() {
   // One truth for "sent" (owner, 5 Nov, ER01720: "I already sent the paperwork, it says overdue 8 days"): a job the board
   // knows is sent (its AFF INVOICE email in any thread), fixed or marked done is off the to-do list.
   const boardOmos = new Set(boardRows.map((r) => r.omo));
-  const boardUnsent = new Set(boardRows.filter((r) => r.next && !r.steps.sent.done).map((r) => r.omo));
+  // Still on you: to send, or HPD wrote back since (11 Nov, plan item 15: after Send the notice leaves the map at once,
+  // not after the next Gmail read). Answered and waiting on HPD = off Priority; a new email from them brings it back.
+  const boardUnsent = new Set(boardRows.filter((r) => r.next && boardSide(r) !== "waiting").map((r) => r.omo));
+  const boardAnswered = new Set(boardRows.filter((r) => r.next && boardSide(r) === "waiting" && !boardUnsent.has(r.omo)).map((r) => r.omo));
   const noticeCheckList = checkNotices(boardRows, boardThreads || []);
   const vendorTodo = priorities.filter((p) => (p.kind === "24h" || p.kind === "72h" || p.kind === "missing") && (!boardOmos.has(p.omo) || boardUnsent.has(p.omo)) && !(handledMap[p.omo] && handledMap[p.omo] > p.askedAt));
   // Rejections tracked to the money (17 Oct): rejected -> fixed -> printed -> emailed -> mailed -> paid in PIP.
@@ -3334,7 +3340,7 @@ export default function FieldCommandClient() {
   const heldBy = new Map(payTrack.rows.filter((r) => r.status === "held").map((r) => [r.omo, r.held]));
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
     // 🔥 + every email from Lewis / Gafur still waiting on you, whatever it asks (10 Nov: status update requests too).
-    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => a.omo).filter((o) => findAnyJob(o))]),
+    priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => a.omo).filter((o) => findAnyJob(o))].filter((o) => !boardAnswered.has(o))),
     rejected: new Set(openRejections.map((r) => r.omo)),
     corrections: new Set(threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).flatMap((t) => t.omos)),
     print: new Set(toPrint.filter((c) => !c.mailedAt).map((c) => c.omo)),
@@ -7551,7 +7557,7 @@ export default function FieldCommandClient() {
   // size / Email HPD open from Claude's chat (fc-agent-tools).
   const sideCount = (newItems.length ? 1 : 0) + (justUpdated ? 1 : 0) + (updateReady ? 1 : 0) + (planAsk && plan ? 1 : 0) + (missed.length && !voiceOff() ? 1 : 0) + (allowAlerts ? 1 : 0) + (dataIssues.length ? 1 : 0);
   const claudeWork = (changeThreads || []).find((t) => t.status !== "Done" && Boolean(t.workingAt) && Date.now() - Date.parse(t.workingAt) < 30 * 60000);
-  const claudePct = claudeWork && claudeWork.steps.length ? Math.round((claudeWork.steps.filter((x) => x.done).length / claudeWork.steps.length) * 100) : null;
+  const claudePct = claudeWork && claudeWork.steps.length ? Math.round((claudeWork.steps.filter((x) => x.done).length / claudeWork.steps.length) * 100) : claudeNowFresh(claudeNow) ? claudeNowPct(claudeNow) : null;
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}${oneHand ? " fc-one-hand" : ""}${gloves ? " fc-gloves" : ""}`}>
       <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>

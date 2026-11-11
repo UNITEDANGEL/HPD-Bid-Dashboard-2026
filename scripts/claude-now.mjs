@@ -6,6 +6,8 @@
 //   node scripts/claude-now.mjs --task "Remove the duplicate AI button"   (what Claude is working on; also says it)
 //   node scripts/claude-now.mjs --say "Testing on my computer"
 //   node scripts/claude-now.mjs --idle                                     (finished: waiting for the owner)
+//   node scripts/claude-now.mjs --task "Item 11" --steps "Look|Build|Test|Push"   (the phone shows "Working 0%")
+//   node scripts/claude-now.mjs --done                                     (the next step is done: "Working 25%")
 //   node scripts/claude-now.mjs --hook                                     (Claude Code hook: reads the event on stdin)
 //   node scripts/claude-now.mjs --inbox                                    (hook after each step: what the owner just wrote)
 //   node scripts/claude-now.mjs --live "Try 💡 Ideas"                       (it's live: one phone alert, then idle)
@@ -72,7 +74,9 @@ export function phraseFor(ev) {
 async function post(s, patch) {
   const at = new Date().toISOString();
   const log = [...(s.log || []), ...(patch.text && patch.text !== s.text ? [{ at, text: patch.text }] : [])].slice(-8);
-  const value = { at, text: patch.text ?? s.text ?? "", task: patch.task ?? s.task ?? "", state: patch.state || "working", log };
+  // steps: the plan for this task (11 Nov: "a % next to the Working icon"); a new --task without --steps clears them.
+  const steps = (patch.steps ?? s.steps ?? []).slice(0, 12).map((x) => ({ text: String(x.text || "").slice(0, 80), done: Boolean(x.done) }));
+  const value = { at, text: patch.text ?? s.text ?? "", task: patch.task ?? s.task ?? "", state: patch.state || "working", log, steps };
   const day = nyDay();
   const sent = s.day === day ? s.sent || 0 : 0;
   const next = { ...s, ...value, day, sent: sent + 1, postedAt: Date.now() };
@@ -165,8 +169,15 @@ if (isMain) {
     const s = load();
     const task = arg("task");
     if (argv.includes("--idle")) await post(s, { text: arg("idle") || "Finished for now: waiting for your next message", state: "idle" });
-    else if (task !== null) { await post(s, { task: task.slice(0, 120), text: `Starting: ${task.slice(0, 100)}` }); alert("🤖 Claude started", task); }
-    else if (arg("live") !== null) { await post(s, { text: `✅ Live now${arg("live") ? `: ${arg("live").slice(0, 100)}` : ""}`, state: "idle" }); alert("✅ It's live: try it", `${s.task || "Your upgrade"}${arg("live") ? `. ${arg("live")}` : ""}`); }
+    else if (task !== null) { const steps = (arg("steps") || "").split("|").map((x) => x.trim()).filter(Boolean).map((text) => ({ text, done: false })); await post(s, { task: task.slice(0, 120), text: steps[0] ? `Now: ${steps[0].text}` : `Starting: ${task.slice(0, 100)}`, steps }); alert("🤖 Claude started", task); }
+    else if (argv.includes("--done")) {
+      const steps = (s.steps || []).map((x) => ({ ...x }));
+      const i = steps.findIndex((x) => !x.done);
+      if (i >= 0) steps[i].done = true;
+      const next = steps.find((x) => !x.done);
+      await post(s, { steps, text: next ? `Now: ${next.text}` : `✓ ${steps[i]?.text || "Done"}` });
+    }
+    else if (arg("live") !== null) { await post(s, { steps: (s.steps || []).map((x) => ({ ...x, done: true })), text: `✅ Live now${arg("live") ? `: ${arg("live").slice(0, 100)}` : ""}`, state: "idle" }); alert("✅ It's live: try it", `${s.task || "Your upgrade"}${arg("live") ? `. ${arg("live")}` : ""}`); }
     else if (arg("say")) await post(s, { text: arg("say").slice(0, 120) });
     else { console.log("Use --task, --say, --live, --idle, --hook or --inbox"); process.exit(1); }
     console.log("CLAUDE-NOW:", load().text);

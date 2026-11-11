@@ -52,6 +52,10 @@ try {
   // 2) A new step comes in by itself.
   overrides["CLAUDE-NOW"] = { ...overrides["CLAUDE-NOW"], at: ago(0), text: "Testing on my computer", log: [...overrides["CLAUDE-NOW"].log, { at: ago(0), text: "Testing on my computer" }] };
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-claude-now-text"]')?.textContent === "Testing on my computer", null, { timeout: 12000 });
+  // 2b) Its plan's steps (claude-now --steps / --done, 11 Nov): "Working 50%" on 🤖 and "50% · 2 of 4 steps" on the card.
+  overrides["CLAUDE-NOW"] = { ...overrides["CLAUDE-NOW"], at: ago(0), steps: [{ text: "Look", done: true }, { text: "Build", done: true }, { text: "Test", done: false }, { text: "Push", done: false }] };
+  await page.waitForFunction(() => /Working 50%/.test(document.querySelector('[data-hpd-smoke="fc-claude-label"]')?.textContent || ""), null, { timeout: 12000 });
+  assert.match(await card.locator('[data-hpd-smoke="fc-claude-now-steps"]').innerText(), /50% · 2 of 4 steps/);
 
   // 3) 🤖 grows into the talking helper (face at the top); 📋 in it opens Your requests with the live step.
   await orb.click();

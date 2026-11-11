@@ -26,11 +26,18 @@ try {
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor({ timeout: 60000 });
   // To send side: the first notice with a reply button.
-  const row = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).first();
-  await row.waitFor({ timeout: 30000 });
+  await board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).first().waitFor({ timeout: 30000 });
+  // A job with one notice when there is one (so answering it takes it off 🔥 Priority).
+  const replyOmos = await board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
+  // ... and one lit 🔥 Priority on the map (its pin's title starts with the job number).
+  const lit = await page.evaluate(() => [...document.querySelectorAll(".is-glow-priority[title]")].map((e) => (e.getAttribute("title") || "").split(" ")[0]));
+  const single = replyOmos.find((o) => replyOmos.filter((x) => x === o).length === 1 && lit.includes(o)) || replyOmos.find((o) => replyOmos.filter((x) => x === o).length === 1);
+  const row = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).filter(single ? { has: page.locator(`xpath=self::*[@data-omo="${single}"]`) } : {}).first();
   const omo = await row.getAttribute("data-omo");
   // Different jobs to answer (a job can have two notices; the board moves on to another job first).
   const toAnswer = new Set(await board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")))).size;
+  // Whether this job has another notice still to answer.
+  const sameJobOpen = await board.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${omo}"]`).filter({ has: page.locator('[data-hpd-smoke="fc-board-reply"]') }).count();
   await row.locator('[data-hpd-smoke="fc-board-reply"]').click();
   const send = row.locator('[data-hpd-smoke="fc-board-reply-send"]');
   await send.click();
@@ -39,6 +46,8 @@ try {
   const note = board.locator('[data-hpd-smoke="fc-board-moved"]');
   await note.waitFor({ timeout: 10000 });
   assert.equal(sent.length, 1);
+  // Plan item 15: answered = off 🔥 Priority (and the map) right away, not after the next Gmail read.
+  if (sameJobOpen === 1 && lit.includes(omo)) await page.waitForFunction((o) => ![...document.querySelectorAll(".is-glow-priority[title]")].some((e) => (e.getAttribute("title") || "").startsWith(`${o} `)), omo, { timeout: 10000 }).catch(() => { throw new Error(`${omo} still lit 🔥 Priority on the map after answering it`); });
   if (toAnswer > 1) {
     const nextEl = note.locator('[data-hpd-smoke="fc-board-next"]');
     await nextEl.waitFor({ timeout: 10000 });
