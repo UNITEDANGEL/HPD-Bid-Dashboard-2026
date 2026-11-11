@@ -91,6 +91,10 @@ auto-following this plan."
     rooms, $10,860, your signature) is kept for it (encrypted, /api/private/extra/ER09991.pdf) and attaches by itself.
 37. ✅ **Lead bids in one fax only with the priced scope sheet** (10 Nov): "Send N saved bids in one fax" stops and names
     a lead bid whose rates aren't all in (it went without its scope page before).
+38. ✅ **One Pending** (10 Nov: "what's the difference between follow-up and pending? pending = all"): the status row is
+    Pending · Completed · Archive · All jobs. 2nd tries, appointments and jobs waiting on HPD are inside Pending; the old
+    Follow-up button is now "⏰ Late" (late or due this week, all in Pending). Next: Pending ignores the date picker.
+39. ✅ **Bids calendar: 📠 Yesterday, 📠 Last 7 days, 🗓 a custom day** (10 Nov), each with 🔁 Open · revise.
 29. ✅ **Emailed = COPY, printed = original** (10 Nov): every fix emailed back carries the COPY watermark on every page
     (even when the preview was made for printing); the printed original has no watermark for the ink signature. Test:
     test-browser-notice-autofix reads COPY on the emailed PDF.

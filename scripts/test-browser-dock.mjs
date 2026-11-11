@@ -43,13 +43,13 @@ try {
   const sheet = page.locator('[data-hpd-smoke="fc-more-sheet"]');
   await sheet.waitFor({ timeout: 5000 });
   const tiles = (await sheet.locator('[data-hpd-smoke="fc-all-tiles"] .fc-fab-label').allInnerTexts()).map((t) => t.trim());
-  assert.deepEqual(tiles, ["Route", "Appts", "Follow-up", "Stats", "Alerts", "What's new"]);
+  assert.deepEqual(tiles, ["Route", "Appts", "Late", "Stats", "Alerts", "What's new"]);
   const fills = await sheet.locator('[data-hpd-smoke="fc-all-tiles"] svg').evaluateAll((els) => els.map((s) => { const c = getComputedStyle(s); return `${c.backgroundColor} ${c.borderRadius}`; }));
   assert.equal(new Set(fills).size, 6, `each tile has its own color: ${fills.join(" | ")}`);
   assert.ok(fills.every((f) => f.endsWith("50%") && !f.startsWith("rgb(51, 65, 85)")), `round colored tiles: ${fills.join(" | ")}`);
   const tileBox = await sheet.locator('[data-hpd-smoke="fc-stats-open"]').boundingBox();
   assert.ok(tileBox.width >= 100 && tileBox.height >= 100, `big tiles: ${JSON.stringify(tileBox)}`);
-  assert.match(await sheet.locator('[data-hpd-smoke="fc-follow-open"]').innerText(), /Follow-up\s*\d+/, "Follow-up shows its count");
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-follow-open"]').innerText(), /Late\s*\d+/, "Late shows its count");
   const rows = (await sheet.locator(".fc-more-row b").allInnerTexts()).map((t) => t.trim());
   for (const want of ["Weather", "Parking (street cleaning)", "Year and dates", "Talk to the AI", "Bottom buttons", "Map style", "Where am I"]) assert.ok(rows.includes(want), `All has ${want}: ${rows.join(", ")}`);
   for (const gone of ["Today's route", "My stats", "What's new"]) assert.ok(!rows.includes(gone), `${gone} is a tile, not a row too`);

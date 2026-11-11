@@ -162,7 +162,10 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
   { key: "SI", label: "Staten Is.", center: [40.5795, -74.1502], color: "#30d158" },
 ];
 
-const STATUS_FILTERS = JOB_QUEUES;
+// One Pending (owner, 10 Nov: "what's the difference between follow-up and pending? pending = all pending"): 2nd tries,
+// appointments and jobs waiting on HPD are in Pending; Follow-up is no longer its own status button.
+const STATUS_FILTERS = JOB_QUEUES.filter(({ key }) => key !== "followup");
+const inStatus = (job: JobRecord, status: string) => (status === "pending" ? ["pending", "followup"].includes(jobQueue(job)) : matchesJobQueue(job, status));
 
 // Borough bar icons (one tap each).
 const BOROUGH_ICONS: Record<BoroughKey, string> = { MN: "🏙️", BK: "🌉", QN: "👑", BX: "⚾", SI: "⛴️" };
@@ -1096,7 +1099,7 @@ const USD0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD"
 const DOCK_STRIP_ORDER = ["route", "appts", "follow", "stats", "jobs", "bids", "notices"] as const;
 type DockKey = (typeof DOCK_STRIP_ORDER)[number];
 const DOCK_DEFAULT: DockKey[] = ["jobs", "bids", "notices"];
-const DOCK_LABEL: Record<DockKey, string> = { route: "Route", appts: "Appts", follow: "Follow-up", stats: "Stats", jobs: "Jobs", bids: "Bids", notices: "Notices" };
+const DOCK_LABEL: Record<DockKey, string> = { route: "Route", appts: "Appts", follow: "Late", stats: "Stats", jobs: "Jobs", bids: "Bids", notices: "Notices" };
 const DOCK_SLOTS_KEY = "hpd-dock-slots-v1";
 
 const CHAT_DAY_KEY = "hpd-chat-day";
@@ -3540,7 +3543,7 @@ export default function FieldCommandClient() {
       // The test job is always on the map (any status, date or borough filter); search still applies.
       const isTheTestJob = jobId(job) === TEST_JOB_ID;
       if (!dueOnMap(job) && !isTheTestJob) {
-        if (!matchesJobQueue(job, status)) return false;
+        if (!inStatus(job, status)) return false;
         if (!matchesAwardLookback(job, daysBack)) return false;
         if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       }
@@ -3896,6 +3899,7 @@ export default function FieldCommandClient() {
       const g = jobQueue(job);
       if (g in counts) counts[g] += 1;
     });
+    counts.pending += counts.followup; // one Pending (10 Nov)
     return counts;
   }, [jobs]);
 
@@ -3922,7 +3926,7 @@ export default function FieldCommandClient() {
       out[key] = jobs.filter((job) => {
         if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
         const isTheTestJob = jobId(job) === TEST_JOB_ID;
-        if (!dueOnMap(job) && !isTheTestJob && (!matchesJobQueue(job, status) || !matchesJobDateRange(job, dateRange.field, b.from, b.to))) return false;
+        if (!dueOnMap(job) && !isTheTestJob && (!inStatus(job, status) || !matchesJobDateRange(job, dateRange.field, b.from, b.to))) return false;
         if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
         return !q || [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase().includes(q);
       }).length;
@@ -7625,7 +7629,7 @@ export default function FieldCommandClient() {
             <button type="button" onClick={resetQuickFilters}>Reset</button>
             <button type="button" onClick={() => setFiltersOpen(false)}>Done</button>
           </div>
-          <span className="fc-quick-label">Follow-up</span>
+          <span className="fc-quick-label">⏰ Late or waiting (inside Pending)</span>
           <div className="fc-quick-chips" data-hpd-smoke="fc-follow-chips">
             {([["", "Off", null], ["hpd-asked", "HPD asked", followReport.counts.hpdAsked], ["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
               <button key={key || "off"} type="button" className={followFilter === key ? "is-active" : ""} aria-pressed={followFilter === key} data-hpd-smoke={`fc-follow-${key || "off"}`} onClick={() => setFollowFilter(key)}>
@@ -7822,8 +7826,8 @@ export default function FieldCommandClient() {
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>,
-            follow: (cls) => <button key="follow" type="button" className={`${cls} fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
-            <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
+            follow: (cls) => <button key="follow" type="button" className={`${cls} fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Late: jobs past due or due this week" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
+            <FollowIcon /><span className="fc-fab-label">Late</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>,
             appts: (cls) => <button key="appts" type="button" className={cls} aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" data-hpd-smoke="fc-appts-open" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Appts</span></button>,
             route: (cls) => <button key="route"
@@ -9980,7 +9984,7 @@ export default function FieldCommandClient() {
         <div className="fc-package-sheet fc-summary-sheet fc-follow-sheet" role="dialog" aria-label="Follow-up report" data-hpd-smoke="fc-follow-sheet">
           <header>
             <button type="button" onClick={() => setFollowOpen(false)}>← Map</button>
-            <strong>Follow-up report</strong>
+            <strong>⏰ Late and due this week (all in Pending)</strong>
           </header>
           <div className="fc-summary-body">
             <p className="fc-follow-note">Status from the app, the affidavits / invoices you sent HPD, and HPD&apos;s own closing reason (updated nightly). Maturity = the job&apos;s work completion date.</p>

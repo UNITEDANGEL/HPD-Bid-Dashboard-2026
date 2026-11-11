@@ -51,9 +51,9 @@ try {
   await page.locator('[data-hpd-smoke="fc-dock-pick-1-follow"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-done"]').click();
   await edit.waitFor({ state: "detached" });
-  assert.deepEqual(await dockLabels(), ["Jobs", "Follow-up", "Claude", "Notices", "All"]);
+  assert.deepEqual(await dockLabels(), ["Jobs", "Late", "Claude", "Notices", "All"]);
   const tiles = await tileLabels();
-  assert.ok(tiles.includes("Bids") && !tiles.includes("Follow-up"), `Bids moved under All: ${tiles}`);
+  assert.ok(tiles.includes("Bids") && !tiles.includes("Late"), `Bids moved under All: ${tiles}`);
   // Bids still works from its tile; Follow-up works from the dock.
   await page.locator('[data-hpd-smoke="fc-more-open"]').click();
   await page.locator('[data-hpd-smoke="fc-all-tiles"] [data-hpd-smoke="fc-bids-open"]').click();
@@ -69,11 +69,11 @@ try {
   await edit.waitFor({ timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-dock-pick-0-notices"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-done"]').click();
-  assert.deepEqual(await dockLabels(), ["Notices", "Follow-up", "Claude", "Jobs", "All"]);
+  assert.deepEqual(await dockLabels(), ["Notices", "Late", "Claude", "Jobs", "All"]);
 
   // Stays after a reload.
   await load();
-  assert.deepEqual(await dockLabels(), ["Notices", "Follow-up", "Claude", "Jobs", "All"]);
+  assert.deepEqual(await dockLabels(), ["Notices", "Late", "Claude", "Jobs", "All"]);
   assert.match(await (await page.locator('[data-hpd-smoke="fc-more-open"]').click(), page.locator('[data-hpd-smoke="fc-more-dock"]')).innerText(), /Notices · Follow-up · Jobs/);
   await page.locator('[data-hpd-smoke="fc-more-dock"]').click();
   await page.locator('[data-hpd-smoke="fc-dock-reset"]').click();
