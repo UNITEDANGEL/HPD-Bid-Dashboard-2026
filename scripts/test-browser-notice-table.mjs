@@ -31,6 +31,8 @@ try {
   // 1) 🧹 Old jobs: ER02772 (due 9/17, nothing on file) is off the map and in the list; ✅ Closed takes it off.
   const stale = page.locator('[data-hpd-smoke="fc-stale-open"]');
   await stale.waitFor({ timeout: 20000 });
+  // It says what it is (owner, 10 Nov: "what is the mailbox with 3 on the right?"): the count, then "old".
+  assert.match((await stale.innerText()).replace(/\s+/g, " "), /🧹 \d+ old/, "the 🧹 tab reads N old");
   await stale.click();
   const row = page.locator('[data-hpd-smoke="fc-stale-row"][data-omo="ER02772"]');
   await row.waitFor({ timeout: 10000 });

@@ -7605,7 +7605,7 @@ export default function FieldCommandClient() {
             ))}
           </div>
           <div className="fc-bar-days">
-            {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs with nothing on file (faded on the map): check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small></button> : null}
+            {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs with nothing on file (faded on the map): check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small><small className="fc-stale-word">old</small></button> : null}
             <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
               <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : statusIgnoresDefaultDates(status, dateRange.preset) ? "Any date" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
             </button>

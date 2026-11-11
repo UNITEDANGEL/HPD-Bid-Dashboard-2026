@@ -53,7 +53,10 @@ auto-following this plan."
    11/10: both "sent · waiting"); the job's conversation says "Found in your Gmail Sent". Still to send (real): EO18305
    (HPD asked again for before/after photos 10/23) and 8 AEP missing-documents jobs with nothing sent since the list.
    Test: test-notice-sent-record.
-9. ⏳ **No light / faded text** anywhere on the map and board; the "📬 3" on the right says what it is.
+9. ✅ **No light / faded text** (11 Nov): measured every line of text on the map and the notices board at iPhone
+   size (contrast 4.5:1 or better): the only light ones were the Bids count badge (darker orange now) and the new
+   word on the 🧹 tab. The "📬 3" on the right was the old ✉ tab (gone 10 Nov, item 21); the 🧹 tab there now reads
+   "N old" (old jobs with nothing on file, faded on the map). Test: test-browser-notice-table.
 10. ✅ **Update pop-up** (10 Nov): after a new version loads, "✨ New update · enjoy!" with the newest 3 changes for 7
     seconds, then it hides (tap hides it now); the board / notices on the map that were open come back. Test:
     test-browser-updated-pop.
