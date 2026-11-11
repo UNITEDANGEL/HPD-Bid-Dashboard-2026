@@ -93,7 +93,11 @@ auto-following this plan."
     a lead bid whose rates aren't all in (it went without its scope page before).
 38. ✅ **One Pending** (10 Nov: "what's the difference between follow-up and pending? pending = all"): the status row is
     Pending · Completed · Archive · All jobs. 2nd tries, appointments and jobs waiting on HPD are inside Pending; the old
-    Follow-up button is now "⏰ Late" (late or due this week, all in Pending). Next: Pending ignores the date picker.
+    Follow-up button is now "⏰ Late" (late or due this week, all in Pending).
+40. ✅ **Pending and Completed: every job, any date** (11 Nov): the map opens on Pending with 📅 "Any date" (253
+    pending jobs; the this-year default had hidden 31 older ones); a date you pick narrows it ("This year" → 222);
+    Archive / All jobs keep the this-year default. Test: test-browser-jobs-pending-any-date. The priorities test now
+    passes on a day with nothing urgent ("Nothing waiting").
 39. ✅ **Bids calendar: 📠 Yesterday, 📠 Last 7 days, 🗓 a custom day** (10 Nov), each with 🔁 Open · revise.
 29. ✅ **Emailed = COPY, printed = original** (10 Nov): every fix emailed back carries the COPY watermark on every page
     (even when the preview was made for printing); the printed original has no watermark for the ink signature. Test:

@@ -26,7 +26,8 @@ try {
   const jobsTitle = async () => Number(/(\d+) (?:jobs|on the map)/.exec(await page.locator('[data-hpd-smoke="fc-jobs-title"]').innerText())[1]);
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await ready();
-  assert.match(await days(), /Year ▾/, "the map starts on this year");
+  // Pending opens on every pending job, any date (owner, 10 Nov: "pending = all pending"); the year applies once picked.
+  assert.match(await days(), /Any date ▾/, "Pending starts on every pending job, any date");
   const year = await count();
   // Jobs: on the map first (one slim line), all jobs; pick days in it.
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
@@ -53,7 +54,7 @@ try {
   await kept.waitFor({ timeout: 5000 });
   assert.match(await kept.innerText(), new RegExp(`Your Jobs list · ${sixty} job`));
   assert.equal(await count(), sixty, "the jobs you saw stay on the map");
-  // ✕ All: the whole year again.
+  // ✕ All: the starting view again (every pending job).
   await page.locator('[data-hpd-smoke="fc-jobs-kept-x"]').click();
   await page.waitForTimeout(800);
   assert.equal(await kept.count(), 0);
@@ -75,7 +76,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
   await page.locator('[data-hpd-smoke="fc-days-year"]').click();
   assert.deepEqual(errors, []);
-  console.log(`PASS jobs on the map: the map starts on the year (${year}); Jobs opens on the map with all jobs (${all}; 60: ${sixty}; 15: ${fifteen}), ☰ List when wanted; Close keeps the ${sixty} on the map, ✕ All gives ${year} back; 30 days remembered`);
+  console.log(`PASS jobs on the map: Pending starts on any date (${year}); Jobs opens on the map with all jobs (${all}; 60: ${sixty}; 15: ${fifteen}), ☰ List when wanted; Close keeps the ${sixty} on the map, ✕ All gives ${year} back; 30 days remembered`);
 } finally {
   await browser.close();
 }

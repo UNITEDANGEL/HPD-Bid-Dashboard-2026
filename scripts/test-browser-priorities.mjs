@@ -19,7 +19,19 @@ try {
   const box = page.locator('[data-hpd-smoke="fc-priorities"]');
   await box.waitFor({ timeout: 15000 });
   const items = box.locator('[data-hpd-smoke="fc-prio-item"]');
-  await items.first().waitFor({ timeout: 20000 });
+  // The real emails decide what's here: a day with nothing urgent (11 Nov: every 24h / 72h / missing-document notice
+  // answered) shows "Nothing waiting" instead of an empty list.
+  await page.waitForFunction(() => {
+    const b = document.querySelector('[data-hpd-smoke="fc-priorities"]');
+    return b && (b.querySelector('[data-hpd-smoke="fc-prio-item"]') || /Nothing waiting/.test(b.textContent || ""));
+  }, null, { timeout: 20000 });
+  if (!(await items.count())) {
+    assert.match(await box.innerText(), /\(0\)[\s\S]*Nothing waiting/, "an empty list says so, with 0 in the title");
+    assert.deepEqual(errors, []);
+    console.log("PASS priorities: nothing waiting in the real emails today: the list says (0) and Nothing waiting");
+    await context.close();
+    process.exit(0);
+  }
   const kinds = await items.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
   const order = ["24h", "72h", "rejection", "missing", "print"];
   assert.deepEqual([...kinds].sort((a, b) => order.indexOf(a) - order.indexOf(b)), kinds, "most urgent first");

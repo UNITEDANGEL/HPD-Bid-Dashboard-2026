@@ -165,6 +165,7 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
 // One Pending (owner, 10 Nov: "what's the difference between follow-up and pending? pending = all pending"): 2nd tries,
 // appointments and jobs waiting on HPD are in Pending; Follow-up is no longer its own status button.
 const STATUS_FILTERS = JOB_QUEUES.filter(({ key }) => key !== "followup");
+const statusIgnoresDefaultDates = (status: string, preset?: boolean) => Boolean(preset) && (status === "pending" || status === "completed");
 const inStatus = (job: JobRecord, status: string) => (status === "pending" ? ["pending", "followup"].includes(jobQueue(job)) : matchesJobQueue(job, status));
 
 // Borough bar icons (one tap each).
@@ -3527,6 +3528,9 @@ export default function FieldCommandClient() {
     if (showOlderLayer && !followFilter && olderLayer) {
       return olderLayer.filter((job) => (borough === "ALL" || jobBorough(job) === borough) && (!q || [jobId(job), jobAddress(job)].join(" ").toLowerCase().includes(q)));
     }
+    // Pending and Completed show every job, any date, until you pick dates yourself (owner, 10 Nov: "pending = all
+    // pending, no 60/90-day limit; completed = all completed; then pick dates to narrow it").
+    const anyDate = statusIgnoresDefaultDates(status, dateRange.preset);
     return [...jobs, ...olderOnNotices].filter((job) => {
       // Follow-up filter (from the report or the quick filters): only those jobs, any status or date.
       if (followFilter) {
@@ -3545,7 +3549,7 @@ export default function FieldCommandClient() {
       if (!dueOnMap(job) && !isTheTestJob) {
         if (!inStatus(job, status)) return false;
         if (!matchesAwardLookback(job, daysBack)) return false;
-        if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
+        if (!anyDate && !matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       }
       if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
       if (q) {
@@ -7603,7 +7607,7 @@ export default function FieldCommandClient() {
           <div className="fc-bar-days">
             {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs with nothing on file (faded on the map): check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small></button> : null}
             <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
-              <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
+              <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : statusIgnoresDefaultDates(status, dateRange.preset) ? "Any date" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
             </button>
             {daysMenuOpen ? (
               <div className="fc-days-menu" role="menu" data-hpd-smoke="fc-days-menu">
