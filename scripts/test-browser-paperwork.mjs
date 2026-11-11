@@ -188,6 +188,13 @@ try {
     await page.waitForTimeout(2500);
     assert.equal(emails.length, 0, `${job}: nothing is emailed before the Send tap, got ${emails.length}`);
     assert.match(await page.locator('[data-hpd-smoke="paperwork-check-after-photos"]').innerText(), /After photos: 0 \(none yet\)/);
+    // Built: the finished copy and Send come first, the form folds away until ✏️ Review / change (owner, 10 Nov: "with
+    // one click I should be able to generate the affidavit; a button to review everything, but not a long page").
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-work-complete"]').isVisible(), false, `${job}: the form is folded once built`);
+    const tops = await page.evaluate(() => ["paperwork-signed-head", "paperwork-approve-save", "paperwork-unsigned-copy"]
+      .map((k) => document.querySelector(`[data-hpd-smoke="${k}"]`).getBoundingClientRect().top + scrollY));
+    assert.ok(tops[0] < 900 && tops[0] < tops[1] && tops[1] < tops[2], `${job}: signed copy on the first screen, then Send, then the print copy: ${tops.map(Math.round)}`);
+    assert.match(await page.locator('[data-hpd-smoke="paperwork-package-edit"]').innerText(), /Review \/ change/);
     await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
     assert.equal(emails.length, 1, `${job}: the Send tap emails the signed package once, got ${emails.length}`);

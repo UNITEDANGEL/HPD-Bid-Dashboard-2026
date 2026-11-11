@@ -69,10 +69,10 @@ auto-following this plan."
     again): lib/sign-jitter.ts. The notary's signature stays as it was (it is the notary's own). Tests:
     test-sign-jitter, test-browser-paperwork-real-signature.
 13. ⏸ **Hands-free bids** (bids item 2): built, put aside until the notices flow is done (git stash "hands-free bids").
-14. ⏳ **One tap makes the paperwork** (owner, 10 Nov: "don't keep asking me to generate it; with one click I should be
-    able to generate the affidavit; a button to review everything / change notary data, but not a long page or another
-    page"): the job's paperwork made in the back from what the app knows; on screen just the finished copy + Approve &
-    send; "✏️ Review / change" folds open in place.
+14. ✅ **One tap makes the paperwork** (11 Nov): it already built by itself (saved signature + notary, no Generate
+    tap); now the finished screen starts with the signed copy (first screen, was 2 screens down), then the checklist
+    and 📤 Send (was 4 screens down, now under 2), then the print copy. The form folds away; "✏️ Review / change"
+    opens it right there (signatures kept, Update package rebuilds). Test: test-browser-paperwork.
 15. ⏳ **Approve → send → mark → archive at once**: after Send the notice is done and leaves the map / list; the next one
     comes up ("Next: ER… →").
 16. ⏳ **Close out second tries and old pending jobs**: go through them with the owner (they're all "pending" now).

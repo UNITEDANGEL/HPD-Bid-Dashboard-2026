@@ -1905,7 +1905,7 @@ export default function PaperworkPage() {
   // Owner, 4 Nov (ER07663): it used to email itself while he was still taking after videos; nothing goes out by itself now.
   useEffect(() => {
     if (!packagePreview || packagePreview.printCopy || packageApproved || packageBusy) return;
-    setPdfStatus("Package ready, not sent. Check the list below, then tap 📤 Send package. Still taking photos or videos? Go back to the job first.");
+    setPdfStatus("Package ready, not sent. Look it over, then tap 📤 Send package. ✏️ Review / change opens the details. Still taking photos or videos? Go back to the job first.");
   }, [packagePreview, packageApproved, packageBusy]);
 
   // Review -> Edit: back to the details with the signatures kept, then one tap rebuilds both copies.
@@ -4259,6 +4259,8 @@ export default function PaperworkPage() {
           line-height: 1.3;
         }
 
+        .paperwork-form-part { display: contents; }
+        .paperwork-form-part.is-folded { display: none; }
         .paperwork-advanced {
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 8px;
@@ -5618,6 +5620,10 @@ export default function PaperworkPage() {
             </p>
           ) : null}
 
+          {/* Built: the finished copy and Send come first; the form folds away until "✏️ Review / change" (owner,
+              10 Nov: "with one click I should be able to generate the affidavit; a button to review everything,
+              but not a long page or another page"). */}
+          <div className={`paperwork-form-part${packagePreview ? " is-folded" : ""}`} data-hpd-smoke="paperwork-form-part">
           {selectedId && !showJobPicker ? (
             <div className="paperwork-job-summary" data-hpd-smoke="paperwork-job-summary">
               <div>
@@ -6103,6 +6109,7 @@ export default function PaperworkPage() {
           </label>
             </div>
           </details>
+          </div>
 
           {!packagePreview && editingPackage && packageNotaryRef.current ? (
             <div className="pkg-update-bar" data-hpd-smoke="paperwork-update-package">
@@ -6321,7 +6328,7 @@ export default function PaperworkPage() {
                   <p>{packageStatusLabel(outcome)} · Total {form.amount || "$0.00"}</p>
                 </div>
                 <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={editPackageDetails}>
-                  Edit details
+                  ✏️ Review / change
                 </button>
               </div>
 
@@ -6442,28 +6449,6 @@ export default function PaperworkPage() {
                 )}
               </div>
 
-              {packagePreview.unsigned ? (
-                <div className="pkg-unsigned" data-hpd-smoke="paperwork-unsigned-copy">
-                  <div className="pkg-copy-head">
-                    <strong>Unsigned print copy</strong>
-                    <small>Print, sign and notarize in ink. Saved to the same Google Drive folder when you approve -- not emailed.</small>
-                  </div>
-                  <div className="pkg-pages" aria-label="Unsigned print copy pages">
-                    {packagePreview.unsigned.imageUrls.length ? (
-                      packagePreview.unsigned.imageUrls.map((url, index) => (
-                        <a className="pkg-page" key={url} href={packagePreview.unsigned!.url} target="_blank" rel="noopener noreferrer">
-                          <img src={url} alt={`${packagePreview.jobId} unsigned page ${index + 1}`} />
-                          <span>{index === packagePreview.unsigned!.imageUrls.length - 1 ? "Invoice (unsigned)" : `Affidavit page ${index + 1} (unsigned)`}</span>
-                        </a>
-                      ))
-                    ) : null}
-                  </div>
-                  <a className="pkg-unsigned-download" data-hpd-smoke="paperwork-download-unsigned" href={packagePreview.unsigned.url} download={packagePreview.unsigned.fileName}>
-                    Download unsigned copy to print
-                  </a>
-                </div>
-              ) : null}
-
               <div className="pkg-photos" data-hpd-smoke="paperwork-package-photos">
                 <strong>
                   Photos in package · {packagePreview.imageCount}
@@ -6571,6 +6556,29 @@ export default function PaperworkPage() {
                 <small className="pkg-google-note">
                   Drive is connected. To also email packages, <a href="/storage/">reconnect Google</a> and allow sending email.
                 </small>
+              ) : null}
+
+              {/* The print copy (sign in ink) after Send: the signed copy and Send come first (11 Nov). */}
+              {packagePreview.unsigned ? (
+                <div className="pkg-unsigned" data-hpd-smoke="paperwork-unsigned-copy">
+                  <div className="pkg-copy-head">
+                    <strong>Unsigned print copy</strong>
+                    <small>Print, sign and notarize in ink. Saved to the same Google Drive folder when you approve -- not emailed.</small>
+                  </div>
+                  <div className="pkg-pages" aria-label="Unsigned print copy pages">
+                    {packagePreview.unsigned.imageUrls.length ? (
+                      packagePreview.unsigned.imageUrls.map((url, index) => (
+                        <a className="pkg-page" key={url} href={packagePreview.unsigned!.url} target="_blank" rel="noopener noreferrer">
+                          <img src={url} alt={`${packagePreview.jobId} unsigned page ${index + 1}`} />
+                          <span>{index === packagePreview.unsigned!.imageUrls.length - 1 ? "Invoice (unsigned)" : `Affidavit page ${index + 1} (unsigned)`}</span>
+                        </a>
+                      ))
+                    ) : null}
+                  </div>
+                  <a className="pkg-unsigned-download" data-hpd-smoke="paperwork-download-unsigned" href={packagePreview.unsigned.url} download={packagePreview.unsigned.fileName}>
+                    Download unsigned copy to print
+                  </a>
+                </div>
               ) : null}
 
               <details className="pkg-more" data-hpd-smoke="paperwork-package-more">
