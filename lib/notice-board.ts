@@ -125,7 +125,26 @@ export function buildBoard(input: {
     jobMsgs.set(t.omos[0], list);
   }
   // A correction saved in the app after HPD's problem email: fixed (it goes in the mail, signed in ink).
-  const settle = (omo: string, h: ReturnType<typeof hpdAnswerAfter>) => { const f = input.fixed?.[omo] || ""; return h.problem && f && Date.parse(f) > Date.parse(h.problem.at) ? { ok: null, problem: null } : h; };
+  // Also a corrected copy that went out after it (Gmail Sent: sent_paperwork.json, by day; owner, 10 Nov: "sent notices
+  // must not stay as overdue: check everything sent").
+  const settle = (omo: string, h: ReturnType<typeof hpdAnswerAfter>) => {
+    if (!h.problem) return h;
+    const f = input.fixed?.[omo] || "";
+    const r = input.sent[omo]?.sentAt || "";
+    return (f && Date.parse(f) > Date.parse(h.problem.at)) || (r && r > h.problem.at.slice(0, 10)) ? { ok: null, problem: null } : h;
+  };
+  // Sent: our email with the paperwork, or the Gmail Sent record (any email or fax with the job's AFF INVOICE) from the
+  // notice's day on, whichever is later (owner, 22 Oct: "I don't want to repeat what I've sent").
+  const sentStep = (emailAt: string, recordAt: string, noticeAt: string, tap: string | undefined) => {
+    const rec = recordAt && recordAt >= noticeAt.slice(0, 10) ? recordAt : "";
+    return emailAt && (!rec || emailAt.slice(0, 10) >= rec) ? step(emailAt, "", tap) : step("", rec, tap);
+  };
+  // HPD's answer confirms only what came before it: a send we know only from the Gmail record (later than any email
+  // here, e.g. a corrected copy) needs an answer from a later day, or HPD's own send-back would read as "confirmed".
+  const confirmedAt = (at: string, emailAt: string, recordAt: string, noticeAt: string) => {
+    const rec = recordAt && recordAt >= noticeAt.slice(0, 10) && (!emailAt || recordAt > emailAt.slice(0, 10)) ? recordAt : "";
+    return at && (!rec || at.slice(0, 10) > rec) ? at : "";
+  };
   const handledOf = (omo: string, noticeAt: string) => { const h = input.handled?.[omo] || ""; return h && Date.parse(h) > Date.parse(noticeAt) ? h : ""; };
   const finish = (row: Omit<BoardRow, "next">) => {
     const s = row.steps;
@@ -169,7 +188,7 @@ export function buildBoard(input: {
         key, omo, threadId: t.id, subject: t.subject, kind: "ppn", hours, who, to,
         noticeAt: notice.at, dueAt: dueAfterWeekdays(notice.at, hours), followUpAt: "", // weekdays only: Friday's 24-hour notice is due Monday
         want: "the affidavit and invoice, or an update on the job",
-        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(heard.problem ? "" : withFiles?.at || "", "", mark.sent), confirmed: step(heard.problem ? "" : answer?.at || heard.ok?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
+        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: heard.problem ? step("", "", mark.sent) : sentStep(withFiles?.at || "", sentAt, notice.at, mark.sent), confirmed: step(heard.problem ? "" : confirmedAt(answer?.at || heard.ok?.at || "", withFiles?.at || "", sentAt, notice.at), closed.has(omo) ? "closed" : "", mark.confirmed) },
         sentAt, noticeText: notice.text.slice(0, 2500),
       });
       continue;
@@ -215,7 +234,7 @@ export function buildBoard(input: {
         key, omo, threadId: t.id, subject: t.subject, kind: "docs", hours: 0, who, to,
         noticeAt: listed.at, dueAt: "", followUpAt: follow?.at || "",
         want: line ? line[1].trim().replace(/\s+/g, " ") : "documents / an update",
-        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: step(heard.problem ? "" : withFiles?.at || "", "", mark.sent), confirmed: step(heard.problem ? "" : answer?.at || heard.ok?.at || "", closed.has(omo) ? "closed" : "", mark.confirmed) },
+        steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: heard.problem ? step("", "", mark.sent) : sentStep(withFiles?.at || "", photosOnly ? "" : sentAt, listed.at, mark.sent), confirmed: step(heard.problem ? "" : confirmedAt(answer?.at || heard.ok?.at || "", withFiles?.at || "", photosOnly ? "" : sentAt, listed.at), closed.has(omo) ? "closed" : "", mark.confirmed) },
         sentAt, noticeText: listed.text.slice(0, 2500),
       });
     }

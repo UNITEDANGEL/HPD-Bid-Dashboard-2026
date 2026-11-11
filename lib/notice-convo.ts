@@ -37,11 +37,13 @@ export function noticeConvo(row: BoardRow): ConvoItem[] {
   const s = row.steps.sent;
   if (s.done || row.filed) {
     // Verified only when an email with this job's PDF is really in your sent mail.
-    const verified = Boolean(row.filed) || s.how === "email";
+    // Also from the Gmail Sent record (an email or fax with the job's AFF INVOICE, maybe to another HPD address).
+    const fromRecord = s.how === "record";
+    const verified = Boolean(row.filed) || s.how === "email" || fromRecord;
     items.push({
-      id: "sent", side: "ours", at: row.filed?.at || (s.at === "closed" ? "" : s.at), icon: "📤",
+      id: "sent", side: "ours", at: fromRecord ? s.at : row.filed?.at || (s.at === "closed" ? "" : s.at), icon: "📤",
       title: verified ? "Sent the paperwork to vendor tracking" : "Marked as sent",
-      detail: verified ? (row.filed && !row.filed.here ? "In another email, not this thread" : undefined) : "Not found in your sent email yet",
+      detail: fromRecord ? "Found in your Gmail Sent (email or fax with its AFF INVOICE)" : verified ? (row.filed && !row.filed.here ? "In another email, not this thread" : undefined) : "Not found in your sent email yet",
       proof: verified ? "email" : "you", file: row.filed?.name,
     });
   }

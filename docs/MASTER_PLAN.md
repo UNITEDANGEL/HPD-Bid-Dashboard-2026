@@ -47,8 +47,12 @@ auto-following this plan."
    "Follow-up" renamed or explained in plain words.
 7. ✅ **Calendar** (11 Nov): 📅 menu → From and Through right in it (no "Custom dates…" panel or drop-down);
    once both are picked the dates apply and the menu closes by itself. Test: test-browser-notice-depts.
-8. ⏳ **Sent but still "overdue"**: check every notice against what was sent (Gmail Sent, PDF named "<OMO> AFF
-   INVOICE"); mark them clearly (📤 Sent on <day>) and stop calling them overdue.
+8. ✅ **Sent but still "overdue"** (11 Nov): the Gmail Sent record (any email or fax with the job's AFF INVOICE)
+   from the notice's day on now counts as 📤 sent, and a corrected copy sent after HPD's send-back settles it;
+   HPD's send-back no longer reads as "confirmed". Real email: overdue 2 → 0 (ER03009 sent 10/23, ER04312 corrected
+   11/10: both "sent · waiting"); the job's conversation says "Found in your Gmail Sent". Still to send (real): EO18305
+   (HPD asked again for before/after photos 10/23) and 8 AEP missing-documents jobs with nothing sent since the list.
+   Test: test-notice-sent-record.
 9. ⏳ **No light / faded text** anywhere on the map and board; the "📬 3" on the right says what it is.
 10. ✅ **Update pop-up** (10 Nov): after a new version loads, "✨ New update · enjoy!" with the newest 3 changes for 7
     seconds, then it hides (tap hides it now); the board / notices on the map that were open come back. Test:

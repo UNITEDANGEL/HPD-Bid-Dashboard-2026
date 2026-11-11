@@ -45,7 +45,7 @@ export function checkNotices(rows: BoardRow[], threads: BoardThread[], now = Dat
       lines.unshift(`HPD: "${r.problem.text.slice(0, 140)}"`);
     } else if (sent.done) {
       const file = r.filed?.name || "";
-      const where = sent.how === "email" ? (r.filed && !r.filed.here ? ` (in your email "${subjectOf(r.filed.at) || "another thread"}")` : " (in this thread)") : sent.how === "tap" ? " (you marked it sent)" : "";
+      const where = sent.how === "email" ? (r.filed && !r.filed.here ? ` (in your email "${subjectOf(r.filed.at) || "another thread"}")` : " (in this thread)") : sent.how === "tap" ? " (you marked it sent)" : sent.how === "record" ? " (found in your Gmail Sent: an email or fax with its AFF INVOICE)" : "";
       const confirmed = !r.next;
       tone = confirmed ? "done" : "sent";
       head = `✅ Already sent ${md(sent.at)}${file ? `: ${file}` : ""}. Don't send it again`;

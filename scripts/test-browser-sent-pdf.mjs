@@ -38,12 +38,15 @@ try {
   // On a notice HPD sent back it sits in 👉 Do this; otherwise under 📋 Details (9 Nov): open them all.
   await board.locator('[data-hpd-smoke="fc-sent-open"]').first().waitFor({ state: "attached", timeout: 20000 });
   await board.locator('[data-hpd-smoke="fc-board-more"]').evaluateAll((ds) => ds.forEach((d) => { d.open = true; }));
-  const btn = board.locator('[data-hpd-smoke="fc-sent-open"]').first();
+  // The first one on the tab you see (a job sent and waiting sits on its own tab: 11 Nov, ER04312).
+  const btn = board.locator('[data-hpd-smoke="fc-sent-open"]:visible').first();
   await btn.waitFor({ timeout: 20000 });
-  const omo = (await board.locator('[data-hpd-smoke="fc-board-row"]', { has: page.locator('[data-hpd-smoke="fc-sent-open"]') }).first().locator(".fc-board-job b").innerText()).trim();
-  const row = board.locator('[data-hpd-smoke="fc-board-row"]').filter({ has: page.locator(".fc-board-job b", { hasText: omo }) }).first();
-  await btn.scrollIntoViewIfNeeded();
-  await btn.click();
+  // The row the button is in (a job can have two rows: a notice and a list), pinned before the tap changes the page.
+  const omo = (await btn.evaluate((b) => { const r = b.closest('[data-hpd-smoke="fc-board-row"]'); r.setAttribute("data-test-picked", "1"); return r.querySelector(".fc-board-job b").textContent; })).trim();
+  const row = board.locator('[data-test-picked="1"]');
+  const pick = row.locator('[data-hpd-smoke="fc-sent-open"]');
+  await pick.scrollIntoViewIfNeeded();
+  await pick.click();
   const box = row.locator('[data-hpd-smoke="fc-sent"]');
   await box.locator('[data-hpd-smoke="fc-sent-email"]').waitFor();
   assert.deepEqual(asked, [omo]);
