@@ -2,6 +2,14 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 11, 2026",
+      "title": "Pending: every job · dates in one tap",
+      "items": [
+        "📅 Custom dates: pick From and Through right in the 📅 menu; it closes by itself. No drop-down.",
+        "📋 Pending shows every pending job, any date (31 older ones were hidden by the year). Pick dates to narrow it."
+      ]
+    },
+    {
       "date": "Nov 6, 2026",
       "title": "Notices, videos, working here",
       "items": [

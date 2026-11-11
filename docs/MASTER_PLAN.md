@@ -45,7 +45,8 @@ auto-following this plan."
    real email. Email is read every 30 minutes, 7 AM-9 PM. Tests: test-vt-asks, priority-map, notice-walk.
 6. ⏳ **Simple map filter**: Pending (all, any date) · Completed (all) · Closed · Notices; dates only as an extra pick;
    "Follow-up" renamed or explained in plain words.
-7. ⏳ **Calendar**: tap a date and it closes by itself; no drop-down menu.
+7. ✅ **Calendar** (11 Nov): 📅 menu → From and Through right in it (no "Custom dates…" panel or drop-down);
+   once both are picked the dates apply and the menu closes by itself. Test: test-browser-notice-depts.
 8. ⏳ **Sent but still "overdue"**: check every notice against what was sent (Gmail Sent, PDF named "<OMO> AFF
    INVOICE"); mark them clearly (📤 Sent on <day>) and stop calling them overdue.
 9. ⏳ **No light / faded text** anywhere on the map and board; the "📬 3" on the right says what it is.

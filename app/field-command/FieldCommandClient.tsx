@@ -7617,7 +7617,29 @@ export default function FieldCommandClient() {
                     {dayCounts[key] !== undefined ? <b className="fc-days-count" data-hpd-smoke={`fc-days-count-${key}`}>{dayCounts[key]} {dayCounts[key] === 1 ? "job" : "jobs"}</b> : null}
                   </button>
                 ))}
-                <button type="button" role="menuitem" data-hpd-smoke="fc-days-custom" onClick={() => { setDaysMenuOpen(false); setFiltersOpen(true); }}>Custom dates…</button>
+                {/* Pick From and Through right here: the menu closes by itself once both are in (owner, 10 Nov: "the
+                    calendar: just pick the date and it goes away, no drop-down menu"). "change" fires when the phone's
+                    calendar closes, so it never shuts while you're still turning the wheels. */}
+                <div className="fc-days-pick" data-hpd-smoke="fc-days-pick" role="group" aria-label="Pick dates">
+                  {(["from", "to"] as const).map((end) => (
+                    <label key={end}>{end === "from" ? "From" : "Through"}
+                      <input type="date" data-hpd-smoke={`fc-days-${end}`}
+                        ref={(el) => {
+                          if (!el || el.dataset.wired) return;
+                          el.dataset.wired = "1";
+                          el.addEventListener("change", () => {
+                            const [from, to] = [...(el.closest(".fc-days-pick")?.querySelectorAll("input") || [])].map((i) => (i as HTMLInputElement).value);
+                            if (!from || !to) return;
+                            setDaysBack(null);
+                            setCustomDateRange(false);
+                            setShowOlderLayer(false);
+                            setDateRange((prev) => ({ field: prev.field, preset: false, from: from <= to ? from : to, to: from <= to ? to : from }));
+                            setDaysMenuOpen(false);
+                          });
+                        }} />
+                    </label>
+                  ))}
+                </div>
                 <button type="button" role="menuitemcheckbox" aria-checked={showOlderLayer} className={showOlderLayer ? "is-active fc-older-chip" : "fc-older-chip"} data-hpd-smoke="fc-older-layer" title="Your 2024-2025 jobs (HPD Open Data + PIP paid status)" onClick={() => { setSelectedJob(null); setFollowFilter(""); setShowOlderLayer((v) => !v); setDaysMenuOpen(false); }}>
                   {showOlderLayer ? `✓ 2024-25 jobs · ${olderLayer ? olderLayer.length : "…"}` : "2024-25 jobs"}
                 </button>

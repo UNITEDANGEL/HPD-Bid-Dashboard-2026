@@ -26,14 +26,17 @@ try {
   const menu = page.locator('[data-hpd-smoke="fc-days-menu"]');
   await menu.waitFor();
   const items = await menu.locator("button").allInnerTexts();
-  for (const want of ["Last 15 days", "Last 30 days", "Last 45 days", "Last 60 days", "Last 90 days", "This year", "All dates", "Custom dates…", "2024-25 jobs"]) assert.ok(items.some((t) => t.includes(want)), `menu has ${want}: ${items}`);
+  for (const want of ["Last 15 days", "Last 30 days", "Last 45 days", "Last 60 days", "Last 90 days", "This year", "All dates", "2024-25 jobs"]) assert.ok(items.some((t) => t.includes(want)), `menu has ${want}: ${items}`);
   await page.locator('[data-hpd-smoke="fc-days-last45"]').click();
   await menu.waitFor({ state: "detached" });
   assert.match(await btn.innerText(), /45d/);
+  // Custom dates right in the menu, no drop-down: From, then Through, and the menu closes by itself (10 Nov).
   await btn.click();
-  await page.locator('[data-hpd-smoke="fc-days-custom"]').click();
-  await page.locator('[data-hpd-smoke="fc-quick-filters"]').waitFor();
-  await page.locator('[data-hpd-smoke="fc-quick-filters"] button', { hasText: "Done" }).click();
+  await page.locator('[data-hpd-smoke="fc-days-from"]').fill("2026-09-01");
+  assert.equal(await menu.count(), 1, "the menu waits for Through");
+  await page.locator('[data-hpd-smoke="fc-days-to"]').fill("2026-09-30");
+  await menu.waitFor({ state: "detached" });
+  assert.match(await btn.innerText(), /Custom/, "the picked dates are on the map");
 
   // Icons pop when pressed.
   const qn = bar.locator('button[aria-label="Queens"]');
