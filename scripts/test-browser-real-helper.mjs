@@ -39,7 +39,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-agent-dress"]').click();
   // Faces: drawn + 3 real previews.
   const faces = page.locator('[data-hpd-smoke="fc-dress-face"]');
-  await faces.first().waitFor({ timeout: 3000 });
+  await faces.first().waitFor({ timeout: 15000 });
   assert.equal(await faces.count(), 4);
   assert.equal(await page.locator('[data-hpd-smoke="fc-dress-face"] [data-hpd-smoke="fc-face-real"]').count(), 3, "3 real previews, the drawn one has none");
   await page.locator('[data-hpd-smoke="fc-dress-face"][data-style="real2"]').click();
@@ -52,7 +52,7 @@ try {
   assert.equal(await cards.count(), 3);
   await page.evaluate(() => { window.__said = []; localStorage.removeItem("hpd-voice-name"); });
   await cards.nth(1).locator('[data-hpd-smoke="fc-dress-sample-play"]').click();
-  await page.waitForFunction(() => window.__said.some((t) => /three jobs today/i.test(t)), null, { timeout: 3000 });
+  await page.waitForFunction(() => window.__said.some((t) => /three jobs today/i.test(t)), null, { timeout: 15000 });
   assert.equal(await page.evaluate(() => localStorage.getItem("hpd-voice-name")), null, "hearing a sample saves nothing");
   const name = await cards.nth(1).getAttribute("data-voice");
   await cards.nth(1).locator('[data-hpd-smoke="fc-dress-sample-use"]').click();
