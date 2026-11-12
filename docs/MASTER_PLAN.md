@@ -10,6 +10,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 ---
 
+## 📞 12 Nov: the helper calls the tenant (idea from the app, waiting for the owner)
+
+☐ Idea (12 Nov): the helper dials the tenant, says who you are and asks for a time; you hear it and can take over any time. Needs Twilio Voice on the existing number (about 1-2 cents a minute, tenant consent / recording rules), a live-audio AI voice service, and a listen-in / take-over button. Not built: the 29 Oct rule says the owner makes the call himself, and no paid services without the owner's yes. Question asked in the app: build it (what monthly cap?) or keep calls manual.
+
 ## 🧭 10 Nov: a clear flow on the map: notices first (owner's words, in order)
 
 "Every notice should auto fix and I should be able to see the fix and approve and send; that is the flow I need. You can
