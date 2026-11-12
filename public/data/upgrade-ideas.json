@@ -407,6 +407,48 @@
    "kind": "new",
    "title": "Who pays slowly",
    "why": "A short list of the jobs HPD has not paid yet, oldest first, with one tap to write the follow-up for you to check."
+  },
+  {
+   "id": "pip-paid-alert",
+   "icon": "💰",
+   "kind": "new",
+   "title": "Alert when HPD pays",
+   "why": "The robot rings when a payment you were waiting on shows as paid, with the job number and amount."
+  },
+  {
+   "id": "pay-chase-list",
+   "icon": "📋",
+   "kind": "new",
+   "title": "Who to chase for money",
+   "why": "One list of finished jobs not paid yet, oldest first, with how many days each has waited."
+  },
+  {
+   "id": "duplicate-guard",
+   "icon": "🛡",
+   "kind": "upgrade",
+   "title": "Stop double sends",
+   "why": "Before anything goes to HPD the app checks if that job number was already sent and says so in plain words."
+  },
+  {
+   "id": "tenant-text-time",
+   "icon": "🕒",
+   "kind": "upgrade",
+   "title": "Best time to text",
+   "why": "The robot picks the hour tenants answer most and holds the first text until then."
+  },
+  {
+   "id": "day-end-recap",
+   "icon": "🌙",
+   "kind": "new",
+   "title": "End of day recap",
+   "why": "At 6 PM one short note: what got done, what is left for tomorrow, and which notice is due first."
+  },
+  {
+   "id": "photo-missing-check",
+   "icon": "📸",
+   "kind": "upgrade",
+   "title": "Missing photo warning",
+   "why": "Before you finish a job the app says which required photo (before, after, close-up) is still missing."
   }
  ],
  "plan": {
