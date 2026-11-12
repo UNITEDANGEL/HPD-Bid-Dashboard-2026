@@ -449,6 +449,34 @@
    "kind": "upgrade",
    "title": "Missing photo warning",
    "why": "Before you finish a job the app says which required photo (before, after, close-up) is still missing."
+  },
+  {
+   "id": "late-pay-chase",
+   "icon": "💰",
+   "kind": "new",
+   "title": "Unpaid jobs reminder",
+   "why": "Jobs finished and sent but not paid after 30 days show on the morning brief, with the day count."
+  },
+  {
+   "id": "same-block",
+   "icon": "📍",
+   "kind": "upgrade",
+   "title": "Same-block jobs together",
+   "why": "When two jobs are on the same block, the route puts them back to back so you park once."
+  },
+  {
+   "id": "tenant-no-show-log",
+   "icon": "🚪",
+   "kind": "upgrade",
+   "title": "No-access proof in one tap",
+   "why": "When a tenant is not home, one tap saves the time, the door photo and the call tries for the no-access paperwork."
+  },
+  {
+   "id": "price-memory",
+   "icon": "📊",
+   "kind": "upgrade",
+   "title": "Price hint from your past wins",
+   "why": "On a bid, the app shows the prices you won at for the same kind of work, so you can choose faster."
   }
  ],
  "plan": {
