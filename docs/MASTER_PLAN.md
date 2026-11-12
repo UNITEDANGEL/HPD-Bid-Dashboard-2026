@@ -107,6 +107,10 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+43. ✅ **🗂 Notices first, every morning** (11 Nov, idea list "Notices every morning"): when a notice answer is still
+    to send, the 8 AM ☀️ Good morning card has a third button, "🗂 Notices first (N)"; one tap starts the notice walk
+    on the most urgent one. A button, not said out loud (owner, 5 Nov: no notice deadlines in the greeting).
+    Test: test-browser-morning-notices (in the local gate and after each deploy).
 42. ✅ **The map never flies out to the whole US** (11 Nov, found by the after-deploy tests): on a sideways phone (390 px
     tall) reopening the map flew to today's route with 150 + 238 px of padding, leaving 2 px of map, so Leaflet went
     out to zoom 4 (the US). Every frame-the-pins move (route, notices, Jobs list) now keeps at least 40% of the map for

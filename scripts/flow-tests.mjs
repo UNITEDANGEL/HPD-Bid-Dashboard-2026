@@ -17,7 +17,7 @@ const FLOWS = {
   jobs: /^test-browser-(flow|job|jobs|next-stop|photo|notice-walk|papers-map|claude-now|agent-chat|call-ask|tenant-contact)[\w-]*\.mjs$/,
   // Vendor tracking (owner, 9 Nov: "vendor tracking is very important ... the overdue notices, we need to fix them"):
   // the board, the replies, the job-card update, the priority map.
-  notices: /^test-browser-(notice|board-next|answered-off|nudge|email|priority-map|priorities|updated-pop|vt-send|scan|sent-pdf|appt-mail)[\w-]*\.mjs$/,
+  notices: /^test-browser-(notice|morning-notices|board-next|answered-off|nudge|email|priority-map|priorities|updated-pop|vt-send|scan|sent-pdf|appt-mail)[\w-]*\.mjs$/,
   // Paperwork (owner, 9 Nov: "a better flow to generate the affidavit and invoice ... test all, no future errors"):
   // one-tap packages, corrections, auto-fix, dates.
   paperwork: /^test-browser-(paperwork|affidavit|correction|autofix|fix-queue)[\w-]*\.mjs$/,
