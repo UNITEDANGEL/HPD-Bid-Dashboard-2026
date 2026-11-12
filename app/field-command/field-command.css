@@ -4997,3 +4997,12 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-notice-chooser.is-on-board .fc-notice-pick.is-erp, .fc-notice-chooser.is-on-board .fc-notice-pick.is-aep { order: -1; }
 .fc-notice-chooser.is-on-board, .fc-notice-chooser.is-on-board .fc-notice-picks { scrollbar-width: none; }
 .fc-notice-chooser.is-on-board::-webkit-scrollbar, .fc-notice-chooser.is-on-board .fc-notice-picks::-webkit-scrollbar { display: none; }
+
+/* Shorter notice cards (11-12 Nov, live check: one card was 724 px on an iPhone, the board shows ~440 px). Every button
+   stays: the outcomes go three to a row, the actions an even 2 x 2; taps stay 48 px. Gloves mode keeps the big ones. */
+.fc-app:not(.fc-gloves) .fc-board-row .fc-prio-outcomes { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.fc-app:not(.fc-gloves) .fc-board-row .fc-prio-outcomes a { min-height: 48px; padding: 3px 4px; font-size: 13.5px; line-height: 1.15; }
+.fc-app:not(.fc-gloves) .fc-board-row .fc-prio-outcomes a:nth-child(4) { grid-column: span 1; }
+.fc-app:not(.fc-gloves) .fc-board-row .fc-prio-outcomes a:nth-child(5) { grid-column: span 2; }
+.fc-app:not(.fc-gloves) .fc-board-sheet .fc-board-row .fc-notice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fc-app:not(.fc-gloves) .fc-board-sheet .fc-board-row .fc-notice-actions > button, .fc-app:not(.fc-gloves) .fc-board-sheet .fc-board-row .fc-notice-actions > a { min-height: 48px; padding: 0 8px; justify-content: center; text-align: center; font-size: 14px; }

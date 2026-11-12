@@ -107,6 +107,9 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+44. ✅ **Shorter notice cards** (12 Nov, live check at iPhone size: one card was 724 px, the board shows ~440 px): on the
+    board the outcome buttons go three to a row (174 -> 106 px) and the actions an even 2 x 2 (154 -> 102 px); every
+    button stays, taps stay 48 px; 🧤 gloves mode keeps the big ones.
 43. ✅ **🗂 Notices first, every morning** (11 Nov, idea list "Notices every morning"): when a notice answer is still
     to send, the 8 AM ☀️ Good morning card has a third button, "🗂 Notices first (N)"; one tap starts the notice walk
     on the most urgent one. A button, not said out loud (owner, 5 Nov: no notice deadlines in the greeting).
