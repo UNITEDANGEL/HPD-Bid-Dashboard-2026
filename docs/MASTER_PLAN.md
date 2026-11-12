@@ -107,6 +107,11 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+45. ✅ **ER09991's work description was HPD's award letter** (12 Nov, found by the data-quality report): the $9,996 lead
+    job at 306 East 116 Street (start 11/14) showed "You have been deemed the lowest responsive bidder…" as its work.
+    The saved fax was the award letter, so page 3 of the ITB was never read. Fixed: the real scope from page 3 of
+    "ER09991 Invitation To Bid.pdf" (tenant contact masked in the public data); the award letter's body is junk in
+    every check (app, fetcher, data report); the page-3 sync falls back to the downloaded ITB when its list has no entry.
 44. ✅ **Shorter notice cards** (12 Nov, live check at iPhone size: one card was 724 px, the board shows ~440 px): on the
     board the outcome buttons go three to a row (174 -> 106 px) and the actions an even 2 x 2 (154 -> 102 px); every
     button stays, taps stay 48 px; 🧤 gloves mode keeps the big ones.

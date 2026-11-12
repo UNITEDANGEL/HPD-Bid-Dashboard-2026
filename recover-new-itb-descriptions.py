@@ -22,6 +22,8 @@ BAD_MARKERS = [
     "submit invoice in quadruplicate",
     # ITB site-visit instructions captured instead of the scope (ER04964).
     "evidence of the required site visit",
+    # The award letter's body captured instead of the scope (ER09991, 12 Nov).
+    "deemed the lowest responsive",
 ]
 # Printed labels of the blank HPD work-description form. A scanned (faxed) ITB has only these in its
 # text layer -- the real scope is in the image -- and they contain work words ("Provide/Install",

@@ -27,6 +27,17 @@ def clean_document_file_name(raw):
     return file_name if file_name.lower().endswith(".pdf") else ""
 
 
+def invitation_pdf(omo):
+    omo = str(omo or "").strip().upper()
+    if not re.fullmatch(r"[A-Z]{2}\d{5}", omo):
+        return None
+    for folder in (ROOT / "ITB_Downloads_V5", ROOT / "public" / "documents" / "itb"):
+        candidate = folder / f"{omo} Invitation To Bid.pdf"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def normalize_description(text):
     value = str(text or "")
     value = value.replace("\r", "\n").replace("\f", "\n")
@@ -109,18 +120,19 @@ def main():
             or job.get("PDFFile")
             or job.get("pdfFile")
         )
-        entry = entries.get(file_name)
-        if not entry:
-            stats["missingManifestEntry"] += 1
-            continue
-
+        entry = entries.get(file_name) or {}
         page_number = int(entry.get("page") or SOURCE_PAGE)
-
         source_file = entry.get("sourceFile") or ""
-        source_path = Path(source_file)
-        if not source_path.is_file():
-            stats["missingManifestEntry"] += 1
-            continue
+        source_path = Path(source_file) if source_file else None
+        if not source_path or not source_path.is_file():
+            # No manifest entry (ER09991, 12 Nov: the saved fax was the award letter, not the ITB): the downloaded
+            # "<OMO> Invitation To Bid.pdf", page 3.
+            fallback = invitation_pdf(job.get("OMO") or job.get("id"))
+            if not fallback:
+                stats["missingManifestEntry"] += 1
+                continue
+            source_path, source_file, page_number = fallback, str(fallback), SOURCE_PAGE
+            stats["invitationFallback"] = stats.get("invitationFallback", 0) + 1
 
         cache_key = f"{source_file}::p{page_number}"
         description = extracted_by_file.get(cache_key)
@@ -141,7 +153,7 @@ def main():
         job["ItbPage3SourceFile"] = Path(source_file).name
         stats["descriptionsAdded"] += 1
 
-        if re.search(r"confirmation of award|100 Gold Street, 8th floor You have been deemed", previous, flags=re.IGNORECASE):
+        if re.search(r"confirmation of award|deemed the lowest responsive", previous, flags=re.IGNORECASE):
             job["description"] = description
             job["JobDescription"] = description
             job["Job_Description"] = description

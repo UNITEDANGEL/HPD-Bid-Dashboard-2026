@@ -63,6 +63,7 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /GC:\s*ELEV\s*ATOR/i,
   /General\s+Decision\s+Number/i,
   /Confirma\s*t?\s*ion\s+of\s+Award/i,
+  /deemed\s+the\s+lowest\s+responsive/i,
   /Submit\s+Invoice\*?\s+In\s+Quadruplicate/i,
   /evidence\s+of\s+the\s+required\s+Site\s+visit/i,
 ];

@@ -19,6 +19,8 @@ const real = 'REPAIR VESTIBULE DOOR';
 assert.ok(isJunkDescription(formJunk));
 assert.ok(isJunkDescription(wageJunk));
 assert.ok(!isJunkDescription(real));
+// The award letter's body without its title (ER09991).
+assert.ok(isJunkDescription('100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO.'));
 assert.ok(!isJunkDescription(undefined));
 
 // A longer junk field must not hide a shorter real one.

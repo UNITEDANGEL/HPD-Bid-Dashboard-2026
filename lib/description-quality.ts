@@ -14,6 +14,8 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /General\s+Decision\s+Number/i,
   // HPD Confirmation of Award letter captured in place of the scope.
   /Confirma\s*t?\s*ion\s+of\s+Award/i,
+  // The award letter's body without its title ("You have been deemed the lowest responsive…", ER09991, 12 Nov).
+  /deemed\s+the\s+lowest\s+responsive/i,
   // Purchase-order header (budget code, "submit invoice in quadruplicate") with no scope (ER04964).
   /Submit\s+Invoice\*?\s+In\s+Quadruplicate/i,
   // ITB site-visit instructions captured in place of the scope (ER04964).
