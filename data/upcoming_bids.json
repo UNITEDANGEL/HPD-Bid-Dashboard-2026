@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T21:09:58.292433+00:00",
+  "generatedAt": "2026-11-12T21:18:47.109734+00:00",
   "days": 14,
   "bids": [
     {
@@ -132,137 +132,6 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.79505,
       "lng": -73.934644
-    },
-    {
-      "omo": "ER09865",
-      "bidDue": "2026-11-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-11-12",
-      "workCompletion": "2026-11-20",
-      "address": "5106 7 AVENUE",
-      "borough": "BK",
-      "itbFile": "ER09865_111026031615.pdf",
-      "description": "INSTALL NEW LOCK AT VESTIBULE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK” AT VESTIBULE DOOR, 1ST. STORY, PUBLIC HALL – INSTALL NEW MORTISE STYLE LOCK **USE SAME KEY CYLINDER** AND SET LOCK INTO UNLOCKED POSITION, ADJUST SELF CLOSING HINGES AND MAKE ALL NECESSARY REPAIRS ADJUSTMENTS/ ALIGNMENT TO DOOR AND ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC CODE AND RESTORE DOOR TO SAFE ORDER. TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
-      "notes": "NOTE – CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1794341780000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.641839,
-      "lng": -74.006859
     },
     {
       "omo": "ER10033",
@@ -1313,6 +1182,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.719662,
       "lng": -73.956664
+    },
+    {
+      "omo": "ER09959",
+      "bidDue": "2026-11-13",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-14",
+      "workCompletion": "2026-11-24",
+      "address": "2389 LORILLARD PLACE",
+      "borough": "BX",
+      "itbFile": "ER09959_111226040528.pdf",
+      "description": "AT APT: # 6 LOCATION: BATHROOM REPAIR ACTIVE LEAK AND RESTORE BROKEN PLASTER 1) TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CONCEALED WATER LEAK(S) AT CEILING AND WALLS. THE PROBABLE SOURCE IS AT UPSTAIR’S APT. ENSURE THAT THE LEAK(S) DOES NOT RE-OCCUR. 2) REMOVE ALL DAMAGED SURFACES, LOOSE & UNKEYED PLASTER AND OTHER ELEMENTS BEFORE REPAIRS. PROVIDE APPROXIMATELY 50 SQ. FT. OF RESTORATION TO ALL DAMAGED SURFACES. 3) ENSURE PROPER VENTILLATION IN THE BATHROOM.. 4) TAPE, PLASTER, PRIME AND PAINT WITH ONE COAT OF PRIMER & TWO (2) COATS OF PAINT TO THE ENTIRE SHEETROCK/ PLAASTER PORTION AT BATHROOM REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE COMPLETED AS PER RELEVANT HPD SPECTIFICATIONS. CONTRACTOR MUST SIGN AND RETURN BID. CALL TENANT FOR MAKING APPOINTMENT FOR ACCESS. IF NOT POSSIBLE VIA TELEPHONE, GO PHYSICALLY TO SITE AT LEAST 2 TIMES. NOTE1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/ OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
+      "notes": "NOTE 2: CONTRACTOR MUST CONTACT H.P.D. EHU OFFICE AT 212 863- 5790, 5697, 6187, 6224 AND/ OR VIA EMAIL TO INFORM THE TARGETTED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK. NOTE 3: NOTE: CONTRACTOR MUST CONTACT HPD / EHU via email Campbell Camille CAMPBELC@hpd.nyc.gov, Ramos Isolina RamosIs@hpd.nyc.gov, Shen Lan Ping shenl@hpd.nyc.gov, Lamazon Sharon lamazons@hpd.nyc.gov, Hollington Talia HollingT@hpd.nyc.gov WITH OMO START DATE. TENANT CONTACT : (tenant contact: sign in to see) TENANT CONTACT : (tenant contact: sign in to see) NOTE 4: IF THE VENDOR IS REFUSED ACCESS EITHER BY TENANT OR OWNER OR REPRESENTATIVE OF THE OWNER, AT START OR AFTER PARTIAL COMPLETION OF WORKS, THE VENDOR MUST IMMEDIATELY INFORM THE EHU OFFICE OVER TELEPHONE [FOLLOWED BY AN AFFIDAVIT BY EMAIL].",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1794517530000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.856296,
+      "lng": -73.889589
     },
     {
       "omo": "ER10076",
