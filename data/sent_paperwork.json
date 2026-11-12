@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-12T16:41:30.026268+00:00",
+"generatedAt": "2026-11-12T16:52:48.180554+00:00",
 "since": "2026/10/29",
 "jobs": {
 "EN04541": [
@@ -21170,6 +21170,14 @@
 "file": "SIGNED - ER00898 - No Access.pdf",
 "outcome": "no_access",
 "subject": "Fwd: SIGNED - ER00898 - No Access - 512 EAST 13 STREET, 10009",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-12",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-ze1chfuu.png",
+"outcome": "",
+"subject": "Re: omo#ER00898-CONTACT INFO",
 "via": "hpd-staff"
 }
 ],
