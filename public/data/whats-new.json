@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 12, 2026",
+      "title": "Stats tabs out of the way",
+      "items": [
+        "📊 Bids → Stats: when you scroll down, the Progress / Wins / Costs tabs now stay under Open · Mine · Stats · History instead of covering them, so you can jump to History without scrolling back up."
+      ]
+    },
+    {
       "date": "Nov 11, 2026",
       "title": "Pending: every job · dates in one tap",
       "items": [

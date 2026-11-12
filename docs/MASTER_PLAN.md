@@ -113,6 +113,11 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+46. ✅ **Flow check on the live site after every deploy** (12 Nov, recommended upgrade 8): the after-deploy tests now
+    start with one bids, jobs, notices and paperwork test run against pages.dev itself. Its first run found a real
+    one: on the live site (Google / unread-invitation warnings above the panel) the Stats page tabs stuck on top of
+    Open / Mine / Stats / History, so leaving a scrolled Stats meant scrolling all the way back up; the Stats tabs
+    now stick just under the bids tabs.
 45. ✅ **ER09991's work description was HPD's award letter** (12 Nov, found by the data-quality report): the $9,996 lead
     job at 306 East 116 Street (start 11/14) showed "You have been deemed the lowest responsive bidder…" as its work.
     The saved fax was the award letter, so page 3 of the ITB was never read. Fixed: the real scope from page 3 of
@@ -510,9 +515,9 @@ The plan, one by one (✅ = live, ☐ = next):
    - ✅ The owner's iPhone logged "Failed to start the audio device" (12:03 PM, twice): the sound is rebuilt on the next tap instead of staying broken.
    - ✅ 🔊 Read it all / 📝 Summary on the iPhone: speech started right after a cancel can be dropped silently; now it only cancels when something plays, starts a moment later, asks again once after 1.5 s, and if the phone still won't speak the button says "turn the ringer on and the volume up" instead of doing nothing.
    - ✅ 🐞 Something's not working (All menu, and under Ask for a change): one tap sends Claude the last 10 buttons tapped (names and screen, never typed words), errors of the last 30 minutes and the version, as a request. Next time "a button is not working" says which one. Test: test-browser-job-broken-report.
-96. ☐ 12 Nov plan: 🗂 Notices every morning (8 AM the helper starts "go through my notices" when something is still to send).
-97. ☐ 12 Nov plan: 🌐 Remember the tenant's language (every text to a tenant who wrote in Spanish/Chinese/Russian goes in that language).
-98. ☐ 12 Nov plan: 🧾 Receipt photo on the job (photo of the store receipt adds the amount to that job's costs).
+96. ✅ (item 43, 11 Nov) 12 Nov plan: 🗂 Notices every morning (8 AM the helper starts "go through my notices" when something is still to send).
+97. ✅ (item 40 of the ideas list) 12 Nov plan: 🌐 Remember the tenant's language (every text to a tenant who wrote in Spanish/Chinese/Russian goes in that language).
+98. ✅ (ideas 36, 38; receipt amount read by the free picture AI, 12 Nov) 12 Nov plan: 🧾 Receipt photo on the job (photo of the store receipt adds the amount to that job's costs).
 
 ### 💡 Recommended next upgrades (Claude, 9 Nov; build top first, each with a test and the flow check)
 1. ✅ **Lead rates remembered**: your baseboard / window / door / wall rates from the last lead bid fill in on the next one, with a note to check them; change any and it's that bid's own. Also fixed: reopening a lead bid showed empty rate boxes while the totals counted the saved rates. Test: test-browser-lead-bid.
@@ -523,7 +528,7 @@ The plan, one by one (✅ = live, ☐ = next):
    Also fixed (10 Nov): the nightly award-price update had failed every night since 23 Oct ("Invalid key length": the GitHub step has no private key, and re-sealing the full descriptions threw). Now the prices update anyway and the sealed copy is left as is; 3,812 awarded jobs (was 3,751).
 6. ✅ **Tread price from past awards** (10 Nov): a bid with a tread count shows "🪜 ≈ $460 a marble tread (middle of 8 awards) × 3 = $1,380" above the price help (lib/tread-price.ts: count from HPD's wording, the kind's middle award per tread; all kinds when fewer than 3 of its own). Tests: test-tread-price, test-browser-bid-tread.
 7. ✅ **Version on the phone** (9 Nov): every error, 🐞 report, request and voice check now carries the build number and the exact code (commit), e.g. "2709 5f5e7b3"; the version line at the bottom shows both. (lib/app-errors.ts withCode; FieldCommandClient APP_VERSION.)
-8. ⏳ **Flow check after every deploy on the live site** (the bids + job-card checks on pages.dev, not only on this computer).
+8. ✅ **Flow check after every deploy on the live site** (12 Nov, item 46) (the bids + job-card checks on pages.dev, not only on this computer).
 
 The owner's words, later on 6 Nov:
 - "I have Claude on my iPhone also, can we link that so we don't have issues to push?" -> Remote Control is on.
