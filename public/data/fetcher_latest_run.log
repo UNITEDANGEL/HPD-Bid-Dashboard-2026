@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-12T13:11:27.624Z
+Fetcher run started: 2026-11-12T13:21:57.339Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 16.43it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 16.75it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 16.72it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 17.11it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 17.23it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 306900.29it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:02,  3.52it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:01,  3.83it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:00<00:01,  3.64it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  3.26it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:01<00:01,  3.54it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:01<00:00,  3.72it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:01<00:00,  4.02it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:02<00:00,  4.18it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.63it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.69it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:00,  8.58it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  7.96it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  8.19it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  7.20it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00,  8.53it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  8.83it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  8.90it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  8.73it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 153450.15it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:03,  2.33it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:02,  2.44it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:02,  2.41it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  1.96it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.05it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.01it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:00,  2.14it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  2.19it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.04it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.11it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -182,8 +182,10 @@ WARNING: HPD job status was not refreshed: Update HPD job status from NYC Open D
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
 Full descriptions not re-sealed (Invalid key length); award prices still updated.
-Market awards: 3822 awarded jobs with full descriptions (981 yours, 2841 other contractors) from 4201 invitations; 0 new descriptions kept tonight; 41507 awards in Open Data since 2025-01-01
 
+Market awards not updated: NYC Open Data answered 503
+
+WARNING: Market awards were not refreshed: Update market awards from NYC Open Data failed with exit code 1
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
@@ -276,7 +278,7 @@ PAPERWORK DATA QUALITY CHECKED
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=1.
 
 
-Fetcher run finished: 2026-11-12T13:16:25.476Z
+Fetcher run finished: 2026-11-12T13:29:43.045Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,
