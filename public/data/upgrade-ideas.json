@@ -477,6 +477,41 @@
    "kind": "upgrade",
    "title": "Price hint from your past wins",
    "why": "On a bid, the app shows the prices you won at for the same kind of work, so you can choose faster."
+  },
+  {
+   "id": "overdue-first",
+   "icon": "🚨",
+   "kind": "upgrade",
+   "title": "Overdue notices on top, always",
+   "why": "Anything overdue from HPD sits at the very top of the home screen in red, before the map and everything else."
+  },
+  {
+   "id": "offline-mode",
+   "icon": "📶",
+   "kind": "upgrade",
+   "title": "Works in a basement with no signal",
+   "why": "Jobs, photos and forms save on the phone and send themselves when the signal comes back."
+  },
+  {
+   "id": "pay-tracker",
+   "icon": "💰",
+   "kind": "new",
+   "title": "Where is my money?",
+   "why": "One list: finished jobs, invoice sent, paid or waiting, with the days waiting counted so you know who to chase."
+  },
+  {
+   "id": "bid-win-rate",
+   "icon": "🎯",
+   "kind": "new",
+   "title": "Bid price that wins",
+   "why": "Shows what prices won on similar jobs before and suggests a price in the winning range."
+  },
+  {
+   "id": "one-tap-call",
+   "icon": "☎️",
+   "kind": "upgrade",
+   "title": "Tap a job, tap to call",
+   "why": "Every job card gets big Call / Text / Navigate buttons so you never copy a number again."
   }
  ],
  "plan": {
