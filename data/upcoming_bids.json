@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T15:04:11.130796+00:00",
+  "generatedAt": "2026-11-12T15:13:06.797044+00:00",
   "days": 14,
   "bids": [
     {
@@ -1837,6 +1837,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.713923,
       "lng": -73.782341
+    },
+    {
+      "omo": "ER09622",
+      "bidDue": "2026-11-19",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-20",
+      "workCompletion": "2026-11-30",
+      "address": "1449 FULTON STREET",
+      "borough": "BK",
+      "itbFile": "ER09622_111226095837.pdf",
+      "description": "AEP AT CELLAR BOILER ROOM CLEAR DEBRIS, REPLACE BURNT, ROTTEN AND CRACKED JOISTS AND SUBFLOOR at CEILING, REPAIR FOUNDATION STONE WALL, TERRA COTTA WALLS AND FLOOR, FIRE PROTECT ENTIRE BOILER ROOM AND REPLACE BOILER ROOM DOOR AND FRAME. VENDOR IS REQUIRED A NYS P.E. LICENSE ENGINEER ON SITE. AT CELLAR BOILER ROOM, APPROX. 42'-6\" X 18'-6\", APPROX. 790 SQ.FT., 9 FT TALL CEILING ALL PROSPECTIVE VENDORS MUST ATTEND A MANDATORY PRE-BID SITE MEETING ON 11/17/26 BETWEEN 11:00 AM AND 12:00 PM TO MEET WITH RAPPRESENTATIVE FROM AEP.. FIELD DIMENSION MUST BE VERIFIED AT SITE MEETING. VENDOR TO PROVIDE PE/RA FOR JOIST WORK AND FILE WITH DOB. OBTAIN ALL PERMITS. PROVIDE TEMPORARY SUPPORT DURING JOIST WORK. 1….REMOVE ALL DIRT, DEBRIS AND LOOSE STONES FROM BOILER ROOM. LEGALLY DISPOSE. 2….JOISTS: REMOVE AND REPLACE ALL BURNT, ROTTEN AND CRACKED WOOD JOISTS AND HEADER APPROX. 200 LIN.FT., 3\" X 10\", FROM CELLAR FOUNDATION STONE WALL TO WOOD GIRDER. FULL BEARING AT BOTH ENDS. REPLACE ROTTED WOOD PLATE AT TOP OF WALLS AND ROTTED SUBFLOOR COMMERCIAL SPACE ABOVE REPLACED JOISTS. CLOSE ALL OPENINGS IN FLOOR ABOVE AFTER REPLACEMENT OF JOISTS. 3….REPOINT/RECEMENT FOUNDATION STONE WALL, APPROX.50 LIN.FT. X 9 FT HIGH AS REQUIRED: INCLUDING RESET OF ALL LOOSE STONES AND REPLACE MISSING STONES. RAKE OUT AND REPOINT ALL OPEN JOINTS. 4…AT TERRA COTTA 3 WALLS APPOX. 70 LF: REPLACE/RESET BROKEN/CRACKED AND LOOSE TERRA COTTA WALL TILES. CEMENT PLASTER WITH WIRE MESH AT INTERIOR BOILER ROOM WALLS APROX 630 SQ. FT.. 5…AT BOILER ROOM FLOOR, APPROX. 790 SQ.FT.: REMOVE ALL BROKEN AND CRACKED CONCRETE. PROVIDE GRAVEL BASE AND POUR NEW 4\" CONCRETE FLOOR WITH WIRE MESH, LEVEL AND PITCHED TO FLOOR DRAIN. CREATE A NEW SUMP PUMP HOLE AS PER CODE FOR THE INSTALLATION OF A NEW BOILER. WORK IN COORDINATION WITH THE BOILER VENDOR. 6….FIRE PROTECTION: REMOVE ALL TORN, LOOSE AND HANGING CEILING MATERIAL. AFTER JOISTS INSTALLATION REPAIR AND PROVIDE METAL CEILING AS NEEDED. DUCT AND WIRE OPENINGS IN CEILING AND WALLS WITH FIRE STOP. 7…. PROVIDE AND INSTALL NEW 3 HOUR (A-LABEL) FIRE RATED HOLLOW METAL DOOR AND FRAME SWINGING OUT OF BOILER ROOM COMPLETE WITH ALL HINGES AND FRAME, SWINGING OUT OF BOILER ROOM, COMPLETE WITH ALL HINGES, SELF-CLOSING DEVICE, STRIKE PLATE AND LATCHING HARDWARE. ENSURE THE DOOR HANGS PLUMB, FITS TIGHTLY WITHIN THE FRAME, SELF-CLOSES AND SELF-LATCHES SECURELY. PRIME AND PAINT DOOR AND FRAME. PE/RA TO SUBMIT SIGNED LETTER THAT JOISTS ARE SAFE. REMOVE ALL DEBRIS. LEAVE BOILER ROOM BROOM CLEAN. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM LIJO RAJU CHACKO AT CELL (phone: sign in to see) AND EMAIL CHACKOL@HPD.NYC.GOV ALSO EMAIL SUPERVISORS PASQUALE DELLITURRI AT 212 863 5111, (phone: sign in to see) DELLITUP@HPD.NYC.GOV, OR ASAAD EMAD 212 863 8346 CELL (phone: sign in to see) TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWING PLAN. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 (TENANT:- (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1794495550000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.680214,
+      "lng": -73.94299
     }
   ],
   "unread": []
