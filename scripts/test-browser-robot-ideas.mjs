@@ -174,7 +174,7 @@ try {
   await retake.waitFor({ timeout: 30000 });
   assert.match(await retake.innerText(), /That before photo looks too dark/);
   await page.waitForFunction(() => window.__said.some((t) => /photo looks too dark/.test(t)), null, { timeout: 5000 });
-  const [again] = await Promise.all([page.waitForEvent("filechooser", { timeout: 5000 }), page.locator('[data-hpd-smoke="jc-retake-go"]').click()]);
+  const [again] = await Promise.all([page.waitForEvent("filechooser", { timeout: 15000 }), page.locator('[data-hpd-smoke="jc-retake-go"]').click()]);
   assert.ok(again, "Retake opens the camera again");
   assert.equal(await retake.count(), 0);
   await page.locator(".fc-job-sheet-close").click().catch(() => {});

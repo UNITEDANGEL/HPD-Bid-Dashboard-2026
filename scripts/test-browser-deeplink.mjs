@@ -38,7 +38,8 @@ try {
     const row = page.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${target}"]`).first();
     await row.waitFor({ timeout: 60000 });
     await page.waitForFunction((o) => document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${o}"]`)?.classList.contains("is-focus"), target, { timeout: 10000 });
-    await page.waitForTimeout(900);
+    // The smooth scroll can take longer on the build machine (11 Nov: still at y 1486 after 0.9 s): up to 8 s.
+    for (let i = 0; i < 32; i++) { const b = await row.boundingBox(); if (b && b.y < 844 && b.y + 40 > 0) break; await page.waitForTimeout(250); }
     const box = await row.boundingBox();
     assert.ok(box && box.y < 844 && box.y + 40 > 0, `${target} scrolled into view (y ${box?.y})`);
     if (shots) await page.screenshot({ path: `${shots}/deeplink-board.png` });

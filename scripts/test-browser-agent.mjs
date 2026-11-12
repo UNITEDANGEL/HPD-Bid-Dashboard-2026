@@ -77,6 +77,7 @@ try {
   const done = await page.evaluate((o) => JSON.stringify(JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[o] || {}), omo);
   // 🗂 One-card close-out (plan item 24): the paperwork is next, to check, with a button for it.
   assert.match(savedText, /(The package opens|The affidavit and invoice open) next/);
+  await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Check the paperwork now" }).first().waitFor({ timeout: 10000 }).catch(() => {});
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-action"]', { hasText: "Check the paperwork now" }).count(), 1);
   assert.ok(/WORK_COMPLETED/.test(done) || saved.length > before, `saved for ${omo}`);
 

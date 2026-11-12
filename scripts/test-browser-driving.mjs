@@ -37,7 +37,7 @@ try {
   // 1) The offer.
   const nudge = page.locator('[data-hpd-smoke="fc-chat-nudge"]');
   for (let i = 0; i < 6; i++) {
-    await nudge.waitFor({ timeout: 20000 });
+    await nudge.waitFor({ timeout: 40000 });
     if ((await nudge.getAttribute("data-kind")) === "drive") break;
     await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').click();
   }
@@ -58,7 +58,8 @@ try {
   assert.ok(said.length <= 220 && said.length < shown.length - 20,`said ${said.length} of ${shown.length}: ${said}`);
   // 4) Silence: still listening after several quiet turns.
   const s0 = await page.evaluate(() => window.__starts);
-  await page.waitForTimeout(5000);
+  // Up to 15 s for 3 more starts (a fixed 5 s saw only 2 on the busy build machine, 11 Nov).
+  await page.waitForFunction((s) => window.__starts - s >= 3, s0, { timeout: 15000 }).catch(() => {});
   const s1 = await page.evaluate(() => window.__starts);
   assert.ok(s1 - s0 >= 3, `kept listening (${s1 - s0} more starts)`);
   assert.doesNotMatch(await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText(), /Stopped listening/);
