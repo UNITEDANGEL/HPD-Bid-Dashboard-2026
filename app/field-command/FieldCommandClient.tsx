@@ -744,6 +744,15 @@ function jobLatLng(job: JobRecord) {
   return { lat, lng };
 }
 
+// Room for the pins (11 Nov, CI: on a sideways phone, 390 px tall, the route's 150 + 238 px padding left 2 px of map and
+// Leaflet flew out to the whole US). The paddings shrink together so at least 40% of the map is left for what's framed.
+function roomyPad(map: { getSize: () => { x: number; y: number } }, tl: [number, number], br: [number, number], share = 0.4) {
+  const size = map.getSize();
+  const fit = (a: number, b: number, total: number) => { const max = total * (1 - share); const k = a + b > max && a + b > 0 ? max / (a + b) : 1; return [Math.round(a * k), Math.round(b * k)]; };
+  const [l, r] = fit(tl[0], br[0], size.x), [t, d] = fit(tl[1], br[1], size.y);
+  return { paddingTopLeft: [l, t] as [number, number], paddingBottomRight: [r, d] as [number, number] };
+}
+
 function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const toRad = (n: number) => (n * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
@@ -4177,7 +4186,7 @@ export default function FieldCommandClient() {
           map.setView([points[0].lat, points[0].lng], 15);
         } else if (points.length > 1 && jobsOpenRef.current && jobsShownRef.current) {
           // The Jobs list covers the lower half (or a bar when folded): frame the jobs in the map above it.
-          map.fitBounds(points.map((p) => [p.lat, p.lng]) as [number, number][], { paddingTopLeft: [20, 120], paddingBottomRight: [70, jobsMiniRef.current ? 170 : Math.round(window.innerHeight * 0.52) + 30], maxZoom: 15 });
+          map.fitBounds(points.map((p) => [p.lat, p.lng]) as [number, number][], { ...roomyPad(map, [20, 120], [70, jobsMiniRef.current ? 170 : Math.round(window.innerHeight * 0.52) + 30]), maxZoom: 15 });
         } else if (points.length > 1 && borough === "ALL" && !search.trim() && followFilter !== "notices" && !showOlderLayer) {
           // Back to All: return to you, never to a fixed point in the city.
           const me = lastPositionRef.current;
@@ -4193,7 +4202,7 @@ export default function FieldCommandClient() {
             const h = window.innerHeight;
             const below = boardOverMapRef.current ? Math.round(h * 0.66) + 10 : noticeMiniRef.current ? 170 : 360;
             const top = Math.min(130, Math.max(60, h - below - 120));
-            map.fitBounds(bounds, { paddingTopLeft: [16, top], paddingBottomRight: [84, Math.min(below, h - top - 60)], maxZoom: 15 });
+            map.fitBounds(bounds, { ...roomyPad(map, [16, top], [84, Math.min(below, h - top - 60)]), maxZoom: 15 });
           }
           else map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
         }
@@ -5109,7 +5118,7 @@ export default function FieldCommandClient() {
     // Right away: just the numbered stops. No straight stop-to-stop lines; the street route follows.
     show(stopMarkers());
     // Fit the route into the part of the map above the route panel and below the pills.
-    mapRef.current.flyToBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15, duration: 2, easeLinearity: 0.1 });
+    mapRef.current.flyToBounds(dayRouteLayerRef.current.getBounds(), { ...roomyPad(mapRef.current, [28, 150], [56, Math.round(window.innerHeight * 0.38) + 90]), maxZoom: 15, duration: 2, easeLinearity: 0.1 });
     if (!stops.length) return null;
     const road = await fetchRoadRoute(points);
     if (!road || request !== dayRouteRequest.current || !mapRef.current) return request === dayRouteRequest.current ? road : null;

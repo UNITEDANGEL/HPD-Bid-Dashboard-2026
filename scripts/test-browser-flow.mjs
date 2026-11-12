@@ -106,7 +106,12 @@ try {
     assert.equal(await isOpen("jobs"), false);
     assert.equal(await page.locator(".fc-dock").count(), 0, "the dock hides behind a job card");
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
-    await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
+    // 11 Nov: on a sideways phone the route's fly-in left 2 px of map and went out to the whole US (zoom 4).
+    await page.waitForTimeout(3500);
+    const viewZoom = JSON.parse((await page.evaluate(() => localStorage.getItem("hpd-map-view-v1"))) || "{}").zoom;
+    assert.ok(!(viewZoom < 8), `${where}: the map stays on the city after reopening (zoom ${viewZoom})`);
+    // It reopens on 🔥 Priority (17 here since answered notices leave it), so fewer pins than All.
+    await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 20, null, { timeout: 120000 });
     // Notices (10 Nov): the board opens over the map; a second tap folds it to the thin bar (the notice jobs stay on the
     // map); List opens the list; there's no "Show all jobs": you stay on the notices.
     await backToMap();

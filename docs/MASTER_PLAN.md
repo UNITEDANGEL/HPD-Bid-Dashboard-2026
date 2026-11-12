@@ -107,6 +107,10 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+42. ✅ **The map never flies out to the whole US** (11 Nov, found by the after-deploy tests): on a sideways phone (390 px
+    tall) reopening the map flew to today's route with 150 + 238 px of padding, leaving 2 px of map, so Leaflet went
+    out to zoom 4 (the US). Every frame-the-pins move (route, notices, Jobs list) now keeps at least 40% of the map for
+    the pins (roomyPad). test-browser-flow checks the map stays on the city after reopening and is in the local gate.
 40. ✅ **Pending and Completed: every job, any date** (11 Nov): the map opens on Pending with 📅 "Any date" (253
     pending jobs; the this-year default had hidden 31 older ones); a date you pick narrows it ("This year" → 222);
     Archive / All jobs keep the this-year default. Test: test-browser-jobs-pending-any-date. The priorities test now
