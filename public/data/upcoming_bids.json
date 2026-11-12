@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T17:21:47.316584+00:00",
+  "generatedAt": "2026-11-12T17:32:22.835402+00:00",
   "days": 14,
   "bids": [
     {
@@ -263,137 +263,6 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.79505,
       "lng": -73.934644
-    },
-    {
-      "omo": "ER09852",
-      "bidDue": "2026-11-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-11-12",
-      "workCompletion": "2026-12-10",
-      "address": "148 NORTH 10 STREET",
-      "borough": "BK",
-      "itbFile": "ER09852_111026035049.pdf",
-      "description": "DEFECTIVE WOODEN FLOOR TILES IN THE KITCHEN LOCATED AT APT 3D, 3rd STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ BUCKLED FLOORING APPROXIMATLEY 12 SQ.FT CAREFULLY RELOCATE TENANTS FURNITURE/APPLIANCES AWAY FROM WORK AREA AS NEEDED. PROPERLY DEMO AND REMOVE THE DEFECTIVE FLOORING, REPAIR SUB FLOOR WHERE NEEDED. REPLACE WITH SIMILAR TO EXISTING WOOD FLOORING. RESTORE ALL AFFECTED AREAS: WALLS, DOORS, MOLDINGS ECT. AT APT 3D, 3rd STORY, 2nd APARTMENT FROM SOUTH AT WEST. RETURN FLOOR TO A PROPER LEVEL AND IN A SAFE MANNER. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
-      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD. DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE. VENDOR BLIND BID WILL BE SUBJECTED TO COMPLETE WORK AS SPECIFIED IN THIS OMO IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863-6008.",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1794343853000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.719662,
-      "lng": -73.956664
     },
     {
       "omo": "ER09865",
@@ -1575,6 +1444,137 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.709382,
       "lng": -73.95336
+    },
+    {
+      "omo": "ER09852",
+      "bidDue": "2026-11-13",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-13",
+      "workCompletion": "2026-12-10",
+      "address": "148 NORTH 10 STREET",
+      "borough": "BK",
+      "itbFile": "ER09852_111226121804.pdf",
+      "description": "DEFECTIVE WOODEN FLOOR TILES IN THE KITCHEN LOCATED AT APT 3D, 3rd STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ BUCKLED FLOORING APPROXIMATLEY 12 SQ.FT CAREFULLY RELOCATE TENANTS FURNITURE/APPLIANCES AWAY FROM WORK AREA AS NEEDED. PROPERLY DEMO AND REMOVE THE DEFECTIVE FLOORING, REPAIR SUB FLOOR WHERE NEEDED. REPLACE WITH SIMILAR TO EXISTING WOOD FLOORING. RESTORE ALL AFFECTED AREAS: WALLS, DOORS, MOLDINGS ECT. AT APT 3D, 3rd STORY, 2nd APARTMENT FROM SOUTH AT WEST. RETURN FLOOR TO A PROPER LEVEL AND IN A SAFE MANNER. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD. DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE. VENDOR BLIND BID WILL BE SUBJECTED TO COMPLETE WORK AS SPECIFIED IN THIS OMO IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1794503888000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.719662,
+      "lng": -73.956664
     },
     {
       "omo": "ER10208",
