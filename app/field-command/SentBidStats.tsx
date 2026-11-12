@@ -15,7 +15,7 @@ type Stats = {
   byBoro: (Group & { boro: string })[];
   byMonth: (Group & { month: string })[];
   vsBest?: { total: VsBest; byMonth: (VsBest & { month: string })[] };
-  last30?: { since: string; awarded: number; bid: number; notBid: number; notBidValue: number; won: number; lostHigher: number; medianGapPct: number | null; lostBelow: number; byWork: { work: string; lost: number; medianGapPct: number | null }[] };
+  last30?: { since: string; awarded: number; bid: number; notBid: number; notBidValue: number; won: number; lostHigher: number; medianGapPct: number | null; lostBelow: number; byWork: { work: string; lost: number; medianGapPct: number | null }[]; lostList?: { omo: string; work: string; boro: string; awardDate: string; winPrice: number; gapPct: number }[] };
 };
 
 const money = (n: number | null) => (n === null ? "-" : `$${Math.round(n).toLocaleString()}`);
@@ -61,6 +61,18 @@ export default function SentBidStats() {
             <div><b>{s.last30.lostBelow}</b><small>lost although your price was lower</small></div>
           </div>
           {s.last30.byWork.length ? <p className="fc-stats-note">Biggest price gaps: {s.last30.byWork.map((g) => `${g.work} (${g.lost} lost, ${g.medianGapPct}% above)`).join(" · ")}. The price box now warns when a price would win fewer than 1 in 4 jobs like it.</p> : null}
+        </div>
+      ) : null}
+      {s.last30?.lostList?.length ? (
+        <div className="fc-lostlist" data-hpd-smoke="fc-lostlist">
+          <h4>Why you lost: the winning price next to yours</h4>
+          <table className="fc-sent-table">
+            <thead><tr><th>Job</th><th>Winner paid</th><th>You were</th></tr></thead>
+            <tbody>{s.last30.lostList.map((l) => (
+              <tr key={l.omo}><td>{l.omo}<br /><small>{l.work}{l.boro ? ` · ${l.boro}` : ""}</small></td><td><b>{money(l.winPrice)}</b></td><td className={l.gapPct > 0 ? "is-above" : "is-below"}>{l.gapPct > 0 ? `${l.gapPct}% above` : l.gapPct < 0 ? `${-l.gapPct}% below` : "same"}{l.gapPct > 0 && l.gapPct <= 10 ? " · close" : ""}{l.gapPct <= 0 ? " · check the fax" : ""}</td></tr>
+            ))}</tbody>
+          </table>
+          <p className="fc-stats-note">The last {s.last30.lostList.length} bids you lost in 30 days. Next time, price near the winner: under 10% above is one small cut away from winning.</p>
         </div>
       ) : null}
       <h4>Bids you sent: win rate</h4>

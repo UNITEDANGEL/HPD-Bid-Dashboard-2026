@@ -75,6 +75,9 @@ const last30 = (() => {
     notBidValue: Math.round(notBid.reduce((sum, j) => sum + j.amount, 0)),
     won: mine.filter((r) => r.won).length, lostHigher: lostHigher.length, medianGapPct: median(gaps),
     lostBelow: mine.filter((r) => !r.won && r.price <= r.winPrice).length, byWork,
+    // Each lost bid, newest first: the winning price (public HPD award) and how far you were above (+) or below (-). Your own dollar price is not published.
+    lostList: mine.filter((r) => !r.won).map((r) => ({ omo: r.omo, work: r.work, boro: r.boro, awardDate: awards.get(r.omo).awardDate, winPrice: Math.round(r.winPrice), gapPct: Math.round((r.price / r.winPrice - 1) * 100) }))
+      .sort((a, b) => b.awardDate.localeCompare(a.awardDate)).slice(0, 15),
   };
 })();
 

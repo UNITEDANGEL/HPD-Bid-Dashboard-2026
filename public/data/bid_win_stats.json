@@ -1,12 +1,12 @@
 {
- "generatedAt": "2026-10-16T11:25:37.888Z",
+ "generatedAt": "2026-11-12T19:09:55.241Z",
  "note": "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
  "ocrCheck": {
   "wonJobsChecked": 625,
   "exact": 573
  },
  "total": {
-  "bids": 1547,
+  "bids": 1549,
   "won": 625,
   "winRate": 40,
   "lostAboveBy": 405,
@@ -15,52 +15,74 @@
   "lostBelow": 131
  },
  "last30": {
-  "since": "2026-09-16",
-  "awarded": 103,
-  "bid": 64,
-  "notBid": 39,
-  "notBidValue": 68395,
-  "won": 14,
-  "lostHigher": 41,
+  "since": "2026-10-13",
+  "awarded": 140,
+  "bid": 8,
+  "notBid": 132,
+  "notBidValue": 179952,
+  "won": 3,
+  "lostHigher": 5,
   "medianGapPct": 61,
-  "lostBelow": 8,
+  "lostBelow": 0,
   "byWork": [
    {
-    "work": "lock / latch",
-    "lost": 9,
-    "medianGapPct": 98
-   },
-   {
     "work": "floor / tile",
-    "lost": 8,
-    "medianGapPct": 63
-   },
-   {
-    "work": "hinges",
-    "lost": 5,
-    "medianGapPct": 10
-   },
-   {
-    "work": "entrance lock (Adams Rite / mortise / electric strike)",
-    "lost": 3,
-    "medianGapPct": 91
-   },
-   {
-    "work": "new door",
     "lost": 2,
-    "medianGapPct": 53
+    "medianGapPct": 61
+   }
+  ],
+  "lostList": [
+   {
+    "omo": "ER06360",
+    "work": "floor / tile",
+    "boro": "Queens",
+    "awardDate": "2026-10-27",
+    "winPrice": 1000,
+    "gapPct": 16
+   },
+   {
+    "omo": "ER05994",
+    "work": "Secure Tech lock",
+    "boro": "Manhattan",
+    "awardDate": "2026-10-15",
+    "winPrice": 840,
+    "gapPct": 137
+   },
+   {
+    "omo": "ER07554",
+    "work": "floor / tile",
+    "boro": "Brooklyn",
+    "awardDate": "2026-10-13",
+    "winPrice": 2989,
+    "gapPct": 61
+   },
+   {
+    "omo": "ER07648",
+    "work": "door adjust (self-close & latch)",
+    "boro": "Brooklyn",
+    "awardDate": "2026-10-13",
+    "winPrice": 450,
+    "gapPct": 116
+   },
+   {
+    "omo": "ER07390",
+    "work": "window glass",
+    "boro": "Manhattan",
+    "awardDate": "2026-10-13",
+    "winPrice": 487,
+    "gapPct": 12
    }
   ]
  },
  "vsBest": {
   "total": {
-   "bids": 1547,
+   "bids": 1549,
    "won": 625,
    "wonAmount": 423722,
-   "bestWon": 964,
-   "bestAmount": 795066,
+   "bestWon": 978,
+   "bestAmount": 807949,
    "abovePct": 16,
-   "over15Pct": 50,
+   "over15Pct": 51,
    "chanceYours": 39,
    "chanceBest": 80
   },
@@ -70,23 +92,23 @@
     "bids": 113,
     "won": 38,
     "wonAmount": 35460,
-    "bestWon": 84,
-    "bestAmount": 71277,
-    "abovePct": 31,
-    "over15Pct": 58,
-    "chanceYours": 30,
-    "chanceBest": 79
+    "bestWon": 83,
+    "bestAmount": 70822,
+    "abovePct": 28,
+    "over15Pct": 59,
+    "chanceYours": 31,
+    "chanceBest": 78
    },
    {
     "month": "2025-12",
     "bids": 135,
     "won": 66,
     "wonAmount": 44155,
-    "bestWon": 63,
-    "bestAmount": 63127,
+    "bestWon": 65,
+    "bestAmount": 64925,
     "abovePct": 4,
     "over15Pct": 33,
-    "chanceYours": 62,
+    "chanceYours": 61,
     "chanceBest": 79
    },
    {
@@ -94,8 +116,8 @@
     "bids": 173,
     "won": 89,
     "wonAmount": 54823,
-    "bestWon": 100,
-    "bestAmount": 90625,
+    "bestWon": 105,
+    "bestAmount": 94606,
     "abovePct": 12,
     "over15Pct": 48,
     "chanceYours": 50,
@@ -106,11 +128,11 @@
     "bids": 89,
     "won": 46,
     "wonAmount": 28275,
-    "bestWon": 48,
-    "bestAmount": 42314,
-    "abovePct": 1,
-    "over15Pct": 35,
-    "chanceYours": 68,
+    "bestWon": 50,
+    "bestAmount": 43481,
+    "abovePct": 2,
+    "over15Pct": 36,
+    "chanceYours": 63,
     "chanceBest": 80
    },
    {
@@ -118,8 +140,8 @@
     "bids": 155,
     "won": 75,
     "wonAmount": 48573,
-    "bestWon": 91,
-    "bestAmount": 73309,
+    "bestWon": 89,
+    "bestAmount": 72395,
     "abovePct": 13,
     "over15Pct": 48,
     "chanceYours": 42,
@@ -130,8 +152,8 @@
     "bids": 187,
     "won": 63,
     "wonAmount": 45270,
-    "bestWon": 117,
-    "bestAmount": 108492,
+    "bestWon": 119,
+    "bestAmount": 111076,
     "abovePct": 22,
     "over15Pct": 55,
     "chanceYours": 37,
@@ -142,9 +164,9 @@
     "bids": 154,
     "won": 60,
     "wonAmount": 35836,
-    "bestWon": 102,
-    "bestAmount": 62023,
-    "abovePct": 19,
+    "bestWon": 103,
+    "bestAmount": 62607,
+    "abovePct": 20,
     "over15Pct": 53,
     "chanceYours": 37,
     "chanceBest": 81
@@ -155,19 +177,19 @@
     "won": 61,
     "wonAmount": 39919,
     "bestWon": 97,
-    "bestAmount": 71793,
-    "abovePct": 23,
+    "bestAmount": 71648,
+    "abovePct": 22,
     "over15Pct": 51,
     "chanceYours": 43,
-    "chanceBest": 79
+    "chanceBest": 80
    },
    {
     "month": "2026-07",
     "bids": 189,
     "won": 75,
     "wonAmount": 59942,
-    "bestWon": 111,
-    "bestAmount": 104898,
+    "bestWon": 112,
+    "bestAmount": 106078,
     "abovePct": 18,
     "over15Pct": 52,
     "chanceYours": 29,
@@ -179,33 +201,33 @@
     "won": 10,
     "wonAmount": 5584,
     "bestWon": 42,
-    "bestAmount": 31291,
+    "bestAmount": 32203,
     "abovePct": 30,
     "over15Pct": 64,
     "chanceYours": 21,
-    "chanceBest": 79
+    "chanceBest": 81
    },
    {
     "month": "2026-09",
     "bids": 131,
     "won": 36,
     "wonAmount": 21369,
-    "bestWon": 96,
-    "bestAmount": 65064,
-    "abovePct": 24,
+    "bestWon": 99,
+    "bestAmount": 66580,
+    "abovePct": 25,
     "over15Pct": 57,
-    "chanceYours": 25,
+    "chanceYours": 20,
     "chanceBest": 80
    },
    {
     "month": "2026-10",
-    "bids": 19,
+    "bids": 21,
     "won": 6,
     "wonAmount": 4516,
-    "bestWon": 13,
-    "bestAmount": 10853,
+    "bestWon": 14,
+    "bestAmount": 11528,
     "abovePct": 17,
-    "over15Pct": 68,
+    "over15Pct": 67,
     "chanceYours": 29,
     "chanceBest": 81
    }
@@ -214,12 +236,12 @@
  "byWork": [
   {
    "work": "lock / latch",
-   "bids": 302,
-   "won": 151,
-   "winRate": 50,
-   "lostAboveBy": 176,
-   "lostAbovePct": 22,
-   "closeLosses": 36,
+   "bids": 281,
+   "won": 137,
+   "winRate": 49,
+   "lostAboveBy": 180,
+   "lostAbovePct": 26,
+   "closeLosses": 34,
    "lostBelow": 25
   },
   {
@@ -244,7 +266,7 @@
   },
   {
    "work": "floor / tile",
-   "bids": 139,
+   "bids": 140,
    "won": 28,
    "winRate": 20,
    "lostAboveBy": 650,
@@ -263,14 +285,14 @@
    "lostBelow": 10
   },
   {
-   "work": "entrance lock (Adams Rite / mortise / electric strike)",
-   "bids": 125,
-   "won": 50,
-   "winRate": 40,
-   "lostAboveBy": 264,
-   "lostAbovePct": 30,
+   "work": "entrance lock (Adams Rite / mortise)",
+   "bids": 119,
+   "won": 59,
+   "winRate": 50,
+   "lostAboveBy": 174,
+   "lostAbovePct": 23,
    "closeLosses": 16,
-   "lostBelow": 7
+   "lostBelow": 6
   },
   {
    "work": "trace & repair leak",
@@ -294,9 +316,9 @@
   },
   {
    "work": "door adjust (self-close & latch)",
-   "bids": 58,
-   "won": 38,
-   "winRate": 66,
+   "bids": 57,
+   "won": 37,
+   "winRate": 65,
    "lostAboveBy": 440,
    "lostAbovePct": 67,
    "closeLosses": 2,
@@ -343,6 +365,16 @@
    "lostBelow": 0
   },
   {
+   "work": "Secure Tech lock",
+   "bids": 15,
+   "won": 0,
+   "winRate": 0,
+   "lostAboveBy": 1229,
+   "lostAbovePct": 69,
+   "closeLosses": 1,
+   "lostBelow": 1
+  },
+  {
    "work": "sheetrock / plaster",
    "bids": 15,
    "won": 4,
@@ -351,6 +383,16 @@
    "lostAbovePct": 35,
    "closeLosses": 2,
    "lostBelow": 3
+  },
+  {
+   "work": "electric strike",
+   "bids": 14,
+   "won": 6,
+   "winRate": 43,
+   "lostAboveBy": 589,
+   "lostAbovePct": 61,
+   "closeLosses": 1,
+   "lostBelow": 0
   },
   {
    "work": "new window",
@@ -426,20 +468,20 @@
   },
   {
    "boro": "Manhattan",
-   "bids": 305,
+   "bids": 306,
    "won": 127,
    "winRate": 42,
-   "lostAboveBy": 598,
+   "lostAboveBy": 605,
    "lostAbovePct": 57,
    "closeLosses": 23,
    "lostBelow": 16
   },
   {
    "boro": "Queens",
-   "bids": 246,
+   "bids": 247,
    "won": 106,
    "winRate": 43,
-   "lostAboveBy": 440,
+   "lostAboveBy": 438,
    "lostAbovePct": 38,
    "closeLosses": 18,
    "lostBelow": 31
@@ -568,9 +610,9 @@
   },
   {
    "month": "2026-10",
-   "bids": 19,
+   "bids": 21,
    "won": 6,
-   "winRate": 32,
+   "winRate": 29,
    "lostAboveBy": 605,
    "lostAbovePct": 63,
    "closeLosses": 1,

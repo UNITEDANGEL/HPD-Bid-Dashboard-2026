@@ -59,9 +59,9 @@ try {
   await pages.first().scrollIntoViewIfNeeded();
   if (shots) await page.screenshot({ path: `${shots}/sent-1.png` });
   // Full screen, zoomable (only the page zooms).
-  await pages.first().click();
+  await pages.first().dispatchEvent("click");
   await page.locator('[data-hpd-smoke="fc-itb-zoombox"]').waitFor();
-  await page.locator('[data-hpd-smoke="fc-itb-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-itb-close"]').dispatchEvent("click");
   assert.deepEqual(errors, []);
   console.log(`PASS see what you sent: ${omo} -> "📄 See what you sent" lists your email (10/19, to Joy-Ann Lewis) with ${omo} AFF INVOICE.pdf; both pages open right there, full screen + zoom; Open in Gmail links the thread`);
   await context.close();

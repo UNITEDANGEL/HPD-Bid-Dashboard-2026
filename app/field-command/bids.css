@@ -994,3 +994,7 @@ i.is-won { background: #16a34a; }
 .fc-itb-voice-row { margin: 2px 8px 0; }
 .fc-itb-voice-row button { min-height: 34px; font-size: 13px; }
 .fc-itb-price { min-height: 44px; margin-top: 4px; font-size: 16px; }
+
+.fc-lostlist { margin-bottom: 12px; }
+.fc-lostlist td.is-above { color: #fca5a5; font-weight: 700; }
+.fc-lostlist td.is-below { color: #fcd34d; font-weight: 700; }
