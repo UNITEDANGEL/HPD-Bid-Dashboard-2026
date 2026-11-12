@@ -31,13 +31,6 @@
    "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
   },
   {
-   "id": "papers-list",
-   "icon": "🗂",
-   "kind": "new",
-   "title": "Your papers in one place",
-   "why": "Insurance, license and certificates with their dates; the helper warns you 30 days before one runs out."
-  },
-  {
    "id": "voice-only-day",
    "icon": "🚗",
    "kind": "new",
@@ -407,6 +400,41 @@
    "kind": "upgrade",
    "title": "Works better with weak signal",
    "why": "The map and job list stay usable with weak signal and say \"waiting for signal\" instead of freezing."
+  },
+  {
+   "id": "job-cost-total",
+   "icon": "💵",
+   "kind": "new",
+   "title": "What each job really made",
+   "why": "After a job closes, the app adds your receipts and your time and shows what you made on it, so you know which kind of work pays."
+  },
+  {
+   "id": "tenant-no-show",
+   "icon": "🚪",
+   "kind": "new",
+   "title": "Tenant no-show, one tap",
+   "why": "When you arrive and nobody answers, one tap texts and calls them, starts the no-access timer and keeps the proof for the affidavit."
+  },
+  {
+   "id": "photo-order",
+   "icon": "🖼",
+   "kind": "upgrade",
+   "title": "Photos in the order HPD likes",
+   "why": "Before / after photos are lined up in pairs on the paperwork, so HPD reads them at a glance and rejects fewer packages."
+  },
+  {
+   "id": "bid-recheck",
+   "icon": "🔁",
+   "kind": "new",
+   "title": "Second look before a bid is sent",
+   "why": "The helper reads the finished bid once more (price, name, job number, date) and says \"all good\" or what looks off."
+  },
+  {
+   "id": "slow-payers",
+   "icon": "⏳",
+   "kind": "new",
+   "title": "Who pays slowly",
+   "why": "A short list of the jobs HPD has not paid yet, oldest first, with one tap to write the follow-up for you to check."
   }
  ],
  "plan": {

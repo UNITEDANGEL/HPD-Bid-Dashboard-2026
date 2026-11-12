@@ -264,9 +264,9 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
           </div>
           {reading === "reading" ? (
             <div className="fc-itb-read-row">
-              <button type="button" className="fc-itb-speed" data-hpd-smoke="fc-itb-slower" aria-label="Read slower" onClick={() => setSpeed(setReadSpeed(speed * 1.35))}>🐢 Slower</button>
-              <button type="button" className="fc-itb-reading" data-hpd-smoke="fc-itb-reading" onClick={() => { stopRead.current(); setReading(""); }}>👀 Reading it with you… tap the page to take over</button>
-              <button type="button" className="fc-itb-speed" data-hpd-smoke="fc-itb-faster" aria-label="Read faster" onClick={() => setSpeed(setReadSpeed(speed / 1.35))}>🐇 Faster</button>
+              <button type="button" className="fc-itb-speed" data-hpd-smoke="fc-itb-slower" aria-label="Read slower" onClick={() => setSpeed(setReadSpeed(speed * 1.35))}>🐢</button>
+              <button type="button" className="fc-itb-reading" data-hpd-smoke="fc-itb-reading" onClick={() => { stopRead.current(); setReading(""); }}>👀 Reading with you · tap to take over</button>
+              <button type="button" className="fc-itb-speed" data-hpd-smoke="fc-itb-faster" aria-label="Read faster" onClick={() => setSpeed(setReadSpeed(speed / 1.35))}>🐇</button>
             </div>
           )
             : <small className="fc-itb-hint">Pinch or double-tap the page to zoom · drag to move</small>}

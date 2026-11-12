@@ -986,3 +986,11 @@ i.is-won { background: #16a34a; }
 
 .fc-bids-pastquick { display: flex; gap: 6px; margin-top: 6px; }
 .fc-bids-pastquick button { flex: 1; min-height: 42px; border-radius: 12px; border: 1px solid #64748b; background: #1e293b; color: #f8fafc; font: 800 14px system-ui; }
+
+/* 12 Nov: the bid page gets the room (owner: "the description page needs to be bigger"): the speed, voice and price rows are slim strips at the bottom. */
+.fc-itb-read-row { margin: 2px 8px; gap: 4px; }
+.fc-itb-read-row .fc-itb-reading { margin: 0; padding: 2px 8px; font-size: 12px; line-height: 1.2; }
+.fc-itb-speed { min-height: 32px; padding: 0 12px; font-size: 16px; }
+.fc-itb-voice-row { margin: 2px 8px 0; }
+.fc-itb-voice-row button { min-height: 34px; font-size: 13px; }
+.fc-itb-price { min-height: 44px; margin-top: 4px; font-size: 16px; }

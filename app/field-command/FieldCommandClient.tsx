@@ -35,6 +35,7 @@ import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd 
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
 import { nextStop, nextStopLine, workInWords } from "../../lib/next-stop";
+import { followUpText, isRouteTime, photoGapLine, quietTenants, tomorrowRouteLine } from "../../lib/quiet-follow";
 import { isMondaySweepTime, mondaySweepLine, paperworkLeft as sweepLeft } from "../../lib/monday-sweep";
 import { itbPdfUrl } from "../../lib/private-data";
 import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
@@ -2348,6 +2349,19 @@ export default function FieldCommandClient() {
     });
     return () => { onSaidChange(null); window.clearTimeout(t); };
   }, []);
+  // 📸 Finished jobs, paperwork not sent, with no after photo on this phone (plan item 36): read once jobs are loaded.
+  const photoGapRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!jobs.length) return;
+    let live = true;
+    void (async () => {
+      const left = sweepLeft(jobs as Record<string, unknown>[], (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).slice(0, 12);
+      const gaps: string[] = [];
+      for (const x of left) { const rows = await listFieldEvidenceLite(x.id).catch(() => null); if (rows && !rows.some((m) => m.kind === "after")) gaps.push(x.id); }
+      if (live) photoGapRef.current = gaps;
+    })();
+    return () => { live = false; };
+  }, [jobs]);
   const offerNext = (done: Part) => {
     const day = nyToday();
     noteSaid(day, `part:${done}`, done === "bids" ? "today's bids done" : done === "notices" ? "notices walked" : "jobs done for now");
@@ -2392,6 +2406,7 @@ export default function FieldCommandClient() {
       const overnight = h < 12 ? overnightLine((threads || []) as unknown as Parameters<typeof overnightLine>[0]) : "";
       // 🔁 Monday paperwork sweep (plan item 32): Monday from 8 AM, in the once-a-day brief.
       const sweep = isMondaySweepTime(new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })).getDay(), h) ? mondaySweepLine(sweepLeft(jobs as Record<string, unknown>[], (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>)) : "";
+      const photoGaps = photoGapLine(photoGapRef.current);
       markBrief(day);
       if (bidsDue.unsentToday) noteSaid(day, `bids:${day}`, `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today`);
       if (step) noteSaid(day, `first:${nextOmoRef.current || step.text}`, step.text.replace(/\.$/, ""));
@@ -2399,7 +2414,7 @@ export default function FieldCommandClient() {
       // "I'm not happy with the robot": a tap used to jump straight to Your requests whenever Claude had a question).
       const ask = (changeThreads || []).find((x) => x.status === "Waiting for you");
       const askWhat = ask ? ask.text.replace(/^\(idea\)\s*/i, "").split(/[:.!?]/)[0].trim().slice(0, 60) : "";
-      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${overnight ? ` ${overnight}` : ""}${sweep ? ` ${sweep}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
+      const hello = `${h >= 22 || h < 6 ? "Yawn… you're up late! " : ""}Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${name}!${parts.length ? ` You have ${parts.join(" and ")}.` : ""}${backFromSnooze.length ? ` Back from yesterday: ${backFromSnooze.slice(0, 3).join("; ")}.` : ""}${promised ? ` ${promised}` : ""}${overnight ? ` ${overnight}` : ""}${sweep ? ` ${sweep}` : ""}${photoGaps ? ` ${photoGaps}` : ""}${ask ? ` Claude has a question for you about ${askWhat}.` : ""}${(() => { try { const o: Record<string, string> = JSON.parse(localStorage.getItem("hpd-habits") || "{}"); const n: Record<string, number> = {}; for (const k of Object.values(o)) n[k] = (n[k] || 0) + 1; const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return h >= 5 && h < 11 && !o[nyToday()] && best && best[1] >= 3 ? ` You usually start with ${best[0] === "bids" ? "bids" : "notices"}.` : ""; } catch { return ""; } })()}${step ? ` First thing: ${step.text.replace(/\.$/, "")}.` : ""} What can I do for you?`;
       setMagicAt(Date.now());
       moodSound("magic");
       // 🧠 Your usual start (3 of the last 14 mornings), offered before 11 if you haven't opened it yet today.
@@ -10277,6 +10292,18 @@ export default function FieldCommandClient() {
           if (bits.length || sum.tomorrow.length) {
             all.push({ key: `day|${today}`, kind: "day", text: `🌆 Today: ${bits.length ? bits.join(", ") : "no visits"}. Tomorrow: ${sum.tomorrow.length ? `${sum.tomorrow.length} job${sum.tomorrow.length === 1 ? "" : "s"}` : "nothing booked"}.`, label: "Open", go: () => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); } });
           }
+        }
+        // 🗺 Tomorrow's route at 6 PM (plan item 37): once, tomorrow's stops in order.
+        if (jobs.length && isRouteTime(Math.floor(nowMin / 60)) && !nudgeSeen.includes(`route|${today}`)) {
+          const sum2 = daySummary(jobs, { id: jobId, address: jobAddress });
+          const line = tomorrowRouteLine(sum2.tomorrow.map((r) => ({ address: noZip(r.address), text: r.text })));
+          if (line) all.push({ key: `route|${today}`, kind: "route", text: line, label: "Open", go: () => agentRef.current("my appointments tomorrow") });
+        }
+        // 📱 A tenant who went quiet (plan item 38): 2 days with no answer: a follow-up text to check, then send.
+        {
+          const quiet = quietTenants(jobs as Record<string, unknown>[], now)[0];
+          const qj = quiet ? jobs.find((j) => jobId(j) === quiet.id) : null;
+          if (qj && tenantInfo(qj).phone && !tenantInfo(qj).commonArea) all.push({ key: `quiet|${quiet!.id}|${today}`, kind: "quiet", text: `📱 No answer from the tenant at ${noZip(jobAddress(qj))} in 2 days. A follow-up text is ready: check it and send.`, label: "📱 Text", href: smsHref(tenantInfo(qj).phone, followUpText(noZip(jobAddress(qj)), tenantInfo(qj).apt)) });
         }
         const nudge = all.find((n) => !nudgeSeen.includes(n.key));
         if (!nudge) return null;
