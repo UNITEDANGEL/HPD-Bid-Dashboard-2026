@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-12T16:18:13.001820+00:00",
+  "generatedAt": "2026-11-12T16:29:23.286985+00:00",
   "days": 14,
   "bids": [
     {
@@ -1837,6 +1837,137 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.713923,
       "lng": -73.782341
+    },
+    {
+      "omo": "KR00732",
+      "bidDue": "2026-11-16",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-17",
+      "workCompletion": "2026-11-27",
+      "address": "2188 AMSTERDAM AVENUE",
+      "borough": "MN",
+      "itbFile": "KR00732_111226112006.pdf",
+      "description": "2188 Amsterdam Avenue: Building contact is TA President Cedar De La Rosa (phone: sign in to see). The inspector monitoring this job is Michael Megalla 212-863-7595 or (phone: sign in to see). **** Please see scanned scope of work******* All work under this OMO must be done using safe work procedures pursuant to the EPA Lead Renovation, Repair and Painting Program rules (40 CFR Part 745) and/or Local Law 1 of NYC to protect against lead-based paint hazards that can occur during renovation, repair and painting activities. You must also complete a dust verification test in compliance with the appropriate above statute at the conclusion of the work to confirm that proper cleaning has been completed. In addition, tenant notification and record-keeping requirements pursuant to both of those laws must be complied with; you may be audited.",
+      "notes": "",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1794500425000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.840387,
+      "lng": -73.936886
     },
     {
       "omo": "ER09622",
