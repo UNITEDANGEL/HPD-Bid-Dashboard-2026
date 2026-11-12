@@ -8,6 +8,8 @@ first), check every number against real data (HPD Open Data, Gmail, the job file
 without asking, and show the live app. Keep the repo on D:. Never send anything real (fax, email) without
 the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
+
+**Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
 ## 📞 12 Nov: the helper calls the tenant (idea from the app, waiting for the owner)
