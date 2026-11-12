@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-12T13:29:43.029Z",
+  "generatedAt": "2026-11-12T13:41:01.718Z",
   "totalJobs": 707,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 1,
+  "missingItbPage3Descriptions": 0,
   "badDescriptions": 0,
   "junkOnlyDescriptions": 0,
   "sourceReviewJobs": 0,
@@ -13,16 +13,7 @@
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [
-      {
-        "OMO": "ER09991",
-        "Address": "306 EAST 116 STREET, 10029",
-        "ITB": "ER09991_111026044658.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
-      }
-    ],
+    "missingItbPage3Descriptions": [],
     "badDescriptions": [],
     "junkOnlyDescriptions": [],
     "sourceReviewJobs": [],
@@ -32,9 +23,9 @@
         "OMO": "ER09991",
         "Address": "306 EAST 116 STREET, 10029",
         "ITB": "ER09991_111026044658.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Source": "PDF_PAGE_3",
         "Status": "MATCHED",
-        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+        "Preview": "AS PER HPD'S LEAD ABATEMENT REQUIREMENT CONTRACTS AND ATTACHED SCOPE OF WORK THOROUGHLY REMOVE ALL LEAD VIOLATIONS AS PER NEW YORK CITY ADMI"
       }
     ]
   }

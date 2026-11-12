@@ -1,7 +1,7 @@
 {
   "state": "complete",
-  "startedAt": "2026-11-12T13:21:57.339Z",
-  "finishedAt": "2026-11-12T13:29:43.045Z",
+  "startedAt": "2026-11-12T13:33:30.249Z",
+  "finishedAt": "2026-11-12T13:41:01.732Z",
   "ok": true,
   "error": "",
   "summary": {
@@ -17,7 +17,7 @@
     "missingAddresses": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
-    "missingItbPage3Descriptions": 1,
+    "missingItbPage3Descriptions": 0,
     "sourceReviewJobs": 0,
     "missingPage3Images": 1,
     "missingItbJobs": 0
