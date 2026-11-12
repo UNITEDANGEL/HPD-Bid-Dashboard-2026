@@ -39,7 +39,7 @@ United Angel Construction Corp` } });
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
 
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); // the board can already be open full screen (12 Nov)
   await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor();
@@ -155,7 +155,7 @@ United Angel Construction Corp` } });
   assert.match(await ticked.locator('[data-hpd-smoke="fc-board-clock"]').innerText(), /📤 Sent .* waiting/);
   if (shots) await page.screenshot({ path: `${shots}/board-7-sent.png` });
   await page.reload({ waitUntil: "load" });
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); // the board can already be open full screen (12 Nov)
   await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });

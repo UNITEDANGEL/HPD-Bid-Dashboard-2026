@@ -7877,7 +7877,7 @@ export default function FieldCommandClient() {
             setNoticeChooser(true);
             setNoticeMini(false);
             setBoardShow("all");
-            setBoardWithMap(true);
+            setBoardWithMap(false);
             setBoardOpen(true);
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
@@ -9656,7 +9656,7 @@ export default function FieldCommandClient() {
         </div>
       ) : null}
       {noticeChooser && !noticesOpen && !selectedJob && !bidsOpen ? (
-        <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}${boardOpen && boardWithMap && !noticeMini ? " is-on-board" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
+        <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}${boardOpen && !noticeMini ? " is-on-board" : ""}${boardOpen && !boardWithMap && !noticeMini ? " is-full" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
           <header>
             <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}{noticeMini ? ` · ${filteredJobs.length}` : `: ${filteredJobs.length} on the map${noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}`}</strong>
             {!noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-today-open" onClick={() => { setNoticeChooser(false); setSummaryToday(true); }}>☀️ Today</button> : null}

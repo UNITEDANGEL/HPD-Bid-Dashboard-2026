@@ -5006,3 +5006,7 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-app:not(.fc-gloves) .fc-board-row .fc-prio-outcomes a:nth-child(5) { grid-column: span 2; }
 .fc-app:not(.fc-gloves) .fc-board-sheet .fc-board-row .fc-notice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .fc-app:not(.fc-gloves) .fc-board-sheet .fc-board-row .fc-notice-actions > button, .fc-app:not(.fc-gloves) .fc-board-sheet .fc-board-row .fc-notice-actions > a { min-height: 48px; padding: 0 8px; justify-content: center; text-align: center; font-size: 14px; }
+
+/* 12 Nov: the notices board opens full screen; the picks are the slim strip at its top, so nothing sits on top of the notices */
+.fc-notice-chooser.is-on-board.is-full { top: 0 !important; border-radius: 0; padding-top: max(6px, env(safe-area-inset-top)); }
+.fc-package-sheet.fc-board-sheet.is-full { padding-top: calc(58px + env(safe-area-inset-top)); }

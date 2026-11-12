@@ -24,14 +24,14 @@ try {
   await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor();
-  assert.equal(await board.getAttribute("data-with-map"), "1", "opens with the map");
-  const top = (await board.boundingBox()).y;
-  assert.ok(top > 844 * 0.25, `the map shows above the board (board starts at ${Math.round(top)} px)`);
-  // Full screen and back.
-  await board.locator('[data-hpd-smoke="fc-board-map"]').click();
-  assert.equal(await board.getAttribute("data-with-map"), null);
+  assert.equal(await board.getAttribute("data-with-map"), null, "opens full screen, not half-way up (owner, 12 Nov)");
+  assert.ok((await board.boundingBox()).y < 844 * 0.1, "board starts at the top of the screen");
+  { const cb = await page.locator('[data-hpd-smoke="fc-notice-chooser"]').boundingBox(); assert.ok(!cb || cb.y + cb.height < 90, "the picks are a slim strip at the top, not a box over the notices (owner, 12 Nov)"); }
+  // Map toggle and back.
   await board.locator('[data-hpd-smoke="fc-board-map"]').click();
   assert.equal(await board.getAttribute("data-with-map"), "1");
+  await board.locator('[data-hpd-smoke="fc-board-map"]').click();
+  assert.equal(await board.getAttribute("data-with-map"), null);
   // ✅ Done is a tab.
   assert.match(await board.locator('[data-hpd-smoke="fc-board-side-done"]').innerText(), /✅ Done\s+\d+/);
   // Close: the notices stay on the map.

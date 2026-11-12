@@ -490,7 +490,7 @@ export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextD
   };
 
   return (
-    <div className={`fc-package-sheet fc-summary-sheet fc-board-sheet${withMap ? " is-with-map" : ""}`} role="dialog" aria-label="Vendor tracking board" data-hpd-smoke="fc-board" data-with-map={withMap ? "1" : undefined}>
+    <div className={`fc-package-sheet fc-summary-sheet fc-board-sheet${withMap ? " is-with-map" : " is-full"}`} role="dialog" aria-label="Vendor tracking board" data-hpd-smoke="fc-board" data-with-map={withMap ? "1" : undefined}>
       <header>
         <strong>⏱ Vendor tracking board</strong>
         {onMapToggle ? <button type="button" className="fc-board-map-btn" data-hpd-smoke="fc-board-map" onClick={onMapToggle}>{withMap ? "⬆ Full screen" : "🗺 Map"}</button> : null}
