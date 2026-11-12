@@ -17,13 +17,6 @@
    "why": "From \"start my day\" to the last package: the robot leads every step by voice while you drive and work."
   },
   {
-   "id": "talk-right-away",
-   "icon": "🗣",
-   "kind": "new",
-   "title": "The robot starts talking right away",
-   "why": "It says the first sentence while the rest of the answer is still coming, like a person, so you don't wait in silence."
-  },
-  {
    "id": "weekly-score",
    "icon": "🏆",
    "kind": "new",
