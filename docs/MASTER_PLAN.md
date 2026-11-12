@@ -504,6 +504,9 @@ The plan, one by one (✅ = live, ☐ = next):
    - ✅ The owner's iPhone logged "Failed to start the audio device" (12:03 PM, twice): the sound is rebuilt on the next tap instead of staying broken.
    - ✅ 🔊 Read it all / 📝 Summary on the iPhone: speech started right after a cancel can be dropped silently; now it only cancels when something plays, starts a moment later, asks again once after 1.5 s, and if the phone still won't speak the button says "turn the ringer on and the volume up" instead of doing nothing.
    - ✅ 🐞 Something's not working (All menu, and under Ask for a change): one tap sends Claude the last 10 buttons tapped (names and screen, never typed words), errors of the last 30 minutes and the version, as a request. Next time "a button is not working" says which one. Test: test-browser-job-broken-report.
+96. ☐ 12 Nov plan: 🗂 Notices every morning (8 AM the helper starts "go through my notices" when something is still to send).
+97. ☐ 12 Nov plan: 🌐 Remember the tenant's language (every text to a tenant who wrote in Spanish/Chinese/Russian goes in that language).
+98. ☐ 12 Nov plan: 🧾 Receipt photo on the job (photo of the store receipt adds the amount to that job's costs).
 
 ### 💡 Recommended next upgrades (Claude, 9 Nov; build top first, each with a test and the flow check)
 1. ✅ **Lead rates remembered**: your baseboard / window / door / wall rates from the last lead bid fill in on the next one, with a note to check them; change any and it's that bid's own. Also fixed: reopening a lead bid showed empty rate boxes while the totals counted the saved rates. Test: test-browser-lead-bid.

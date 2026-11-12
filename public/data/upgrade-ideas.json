@@ -3,27 +3,6 @@
  "updated": "2026-11-12",
  "ideas": [
   {
-   "id": "notice-walk-auto",
-   "icon": "🗂",
-   "kind": "new",
-   "title": "Notices every morning",
-   "why": "At 8 AM the helper starts \"go through my notices\" by itself when something is still to send."
-  },
-  {
-   "id": "tenant-lang-remember",
-   "icon": "🌐",
-   "kind": "new",
-   "title": "Remember the tenant's language",
-   "why": "Once a tenant texts in Spanish, Chinese or Russian, every text to them (reminders, on my way) goes in their language."
-  },
-  {
-   "id": "shop-receipt-photo",
-   "icon": "🧾",
-   "kind": "new",
-   "title": "Receipt photo on the job",
-   "why": "Take a photo of the store receipt and the helper adds the amount to that job's costs."
-  },
-  {
    "id": "helper-call-tenant",
    "icon": "📞",
    "kind": "new",
@@ -438,26 +417,26 @@
   }
  ],
  "plan": {
-  "id": "2026-11-08-a",
-  "title": "Next on the plan: photos, tomorrow's route, and tenants who went quiet",
+  "id": "2026-11-12-a",
+  "title": "Next on the plan: morning notices, tenant language, and receipt photos",
   "items": [
    {
-    "id": "missing-photos",
-    "icon": "📸",
-    "title": "Missing photos, in the brief",
-    "why": "The morning brief says which finished jobs still have no after photos, so HPD does not reject the paperwork."
+    "id": "notice-walk-auto",
+    "icon": "🗂",
+    "title": "Notices every morning",
+    "why": "At 8 AM the helper starts \"go through my notices\" by itself when something is still to send."
    },
    {
-    "id": "tomorrow-route",
-    "icon": "🌙",
-    "title": "Tomorrow's route at 6 PM",
-    "why": "Once, at 6 PM: tomorrow's stops in order, with the first drive time."
+    "id": "tenant-lang-remember",
+    "icon": "🌐",
+    "title": "Remember the tenant's language",
+    "why": "Once a tenant texts in Spanish, Chinese or Russian, every text to them (reminders, on my way) goes in their language."
    },
    {
-    "id": "tenant-quiet",
-    "icon": "💬",
-    "title": "Tenant didn't answer",
-    "why": "A tenant with no reply after 2 days gets a follow-up text written for you to check and send."
+    "id": "shop-receipt-photo",
+    "icon": "🧾",
+    "title": "Receipt photo on the job",
+    "why": "Take a photo of the store receipt and the helper adds the amount to that job's costs."
    }
   ]
  }
