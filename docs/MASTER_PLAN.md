@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 🚗 13 Nov: hands-free day button (idea from the app)
+
+✅ The morning card has a 🚗 Hands-free day button (same as saying "lead me through my day"). Test: test-browser-morning.
+
 ## 📞 12 Nov: the helper calls the tenant (idea from the app, waiting for the owner)
 
 ☐ Idea (12 Nov): the helper dials the tenant, says who you are and asks for a time; you hear it and can take over any time. Needs Twilio Voice on the existing number (about 1-2 cents a minute, tenant consent / recording rules), a live-audio AI voice service, and a listen-in / take-over button. Not built: the 29 Oct rule says the owner makes the call himself, and no paid services without the owner's yes. Question asked in the app: build it (what monthly cap?) or keep calls manual.

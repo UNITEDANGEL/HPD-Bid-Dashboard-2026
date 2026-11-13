@@ -26,6 +26,7 @@ try {
   const card = page.locator('[data-hpd-smoke="fc-morning"]');
   await card.waitFor({ timeout: 60000 });
   if (shots) await page.screenshot({ path: `${shots}/morning-card.png` });
+  assert.equal(await card.locator('[data-hpd-smoke="fc-morning-handsfree"]').count(), 1, "the card offers a hands-free day");
   await card.locator('[data-hpd-smoke="fc-morning-go"]').click();
   await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""; return /Today:|Nothing urgent today/.test(t) && /Your day:|stops?/.test(t); }, null, { timeout: 30000 }).catch(async (e) => { console.log("REPLY:", await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText().catch(() => "-")); throw e; });
   const reply = await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText();

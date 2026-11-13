@@ -10,13 +10,6 @@
    "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
   },
   {
-   "id": "voice-only-day",
-   "icon": "🚗",
-   "kind": "new",
-   "title": "A whole day hands-free",
-   "why": "From \"start my day\" to the last package: the robot leads every step by voice while you drive and work."
-  },
-  {
    "id": "weekly-score",
    "icon": "🏆",
    "kind": "new",

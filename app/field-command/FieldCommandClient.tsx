@@ -10682,6 +10682,7 @@ export default function FieldCommandClient() {
             {/* 🗂 Notices every morning (idea list): when answers are still to send, start with them in one tap. A button,
                 not said out loud (owner, 5 Nov: notice deadlines aren't said in the greeting). */}
             {(() => { const n = boardOpenRows.filter((r) => r.next && boardSide(r) === "tosend").length; return n ? <button type="button" data-hpd-smoke="fc-morning-notices" onClick={() => { doneMorning(); unlockChime(); agentRef.current("go through my notices"); }}>🗂 Notices first ({n})</button> : null; })()}
+            <button type="button" data-hpd-smoke="fc-morning-handsfree" onClick={() => { doneMorning(); unlockChime(); agentRef.current("lead me through my day"); }}>🚗 Hands-free day</button>
             <button type="button" data-hpd-smoke="fc-morning-no" onClick={doneMorning}>Not today</button>
           </div>
         </div>

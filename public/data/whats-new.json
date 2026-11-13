@@ -5,6 +5,7 @@
       "date": "Nov 13, 2026",
       "title": "A smarter helper about prices",
       "items": [
+        "🚗 The morning card has a Hands-free day button: one tap and the helper leads you through the day by voice (say \"go\" for each next step).",
         "⏭ Next on a bid sends it to the back of the line, so you decide on it last. Bids not sent yet have a 📤 Send / 🔁 Resend button right in the list: tap twice, no need to open the bid.",
         "💡 New ideas show first in the Ideas list (with Show more), and when you run low the app asks Claude for more by itself, once a day.",
         "🧠 Ask the helper about bids or prices: it now uses your whole bid record (win rate by kind of work and borough, winners' prices, recent losses) and gives real numbers.",
