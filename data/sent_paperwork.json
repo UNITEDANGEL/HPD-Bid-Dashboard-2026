@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-13T14:51:07.002149+00:00",
+"generatedAt": "2026-11-13T15:03:48.834777+00:00",
 "since": "2026/10/30",
 "jobs": {
 "EN04541": [
@@ -20722,6 +20722,39 @@
 "file": "SIGNED - EQ31220 - No Access.pdf",
 "outcome": "no_access",
 "subject": "SIGNED - EQ31220 - No Access - 418 AMBER STREET, 11208"
+}
+],
+"EQ31289": [
+{
+"date": "2026-11-13",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - EQ31289 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "Fwd: SIGNED - EQ31289 - Work Completed - 560 ISHAM STREET, 10034",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-13",
+"to": "uac525@gmail.com",
+"file": "SIGNED - EQ31289 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "SIGNED - EQ31289 - Work Completed - 560 ISHAM STREET, 10034"
+},
+{
+"date": "2026-11-13",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-1qcc4jgi.png",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: OMO#EQ31289- STOP WORK NOTICE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-13",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "Outlook-0rm021pl.png",
+"outcome": "",
+"subject": "Re: OMO#EQ31289- STOP WORK NOTICE",
+"via": "hpd-staff"
 }
 ],
 "EQ31364": [
