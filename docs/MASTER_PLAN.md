@@ -117,7 +117,8 @@ auto-following this plan."
     since 12 Nov on driving and asp-chip. driving read the real status server, so the owner's open question for
     Claude covered the map in the test; it and 5 more tests (big-words, did-you-mean, papers, photo, push) now answer
     the status server themselves and can never write to the real one. asp-chip seeded "texted 2 days ago", which now
-    rightly shows the 12 Nov "follow-up text is ready" card first; the test closes it, then checks the Next pill.
+    rightly shows the 12 Nov "follow-up text is ready" card first; the test closes it, then checks the Next pill
+    (next-chip too).
     robot-steps waits up to 15 s (5 s was too short on the build machine).
 49. ✅ **Floors from the building facts in the calculator** (12 Nov, Next level item B "the number of floors from the
     building facts"): the 🏢 Building box (NYC Open Data) now feeds the 🧮 calculator's floors-up line. Elevator

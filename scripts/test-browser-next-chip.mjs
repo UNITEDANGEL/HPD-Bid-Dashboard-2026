@@ -63,6 +63,13 @@ async function page({ notices, noBids = false, texted = "", midday = false, appt
   await p.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await p.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await p.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await p.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
+  // Texted 2 days ago with no answer: the "follow-up text is ready" card comes first (12 Nov) and the Next pill
+  // waits under it; close the card.
+  if (texted) {
+    const nudge = p.locator('[data-hpd-smoke="fc-chat-nudge-close"]');
+    await Promise.race([nudge.waitFor({ timeout: 30000 }), p.locator('[data-hpd-smoke="fc-next-chip"]').waitFor({ timeout: 30000 })]).catch(() => {});
+    if (await nudge.count()) await nudge.click();
+  }
   return { c, p, errors };
 }
 try {
