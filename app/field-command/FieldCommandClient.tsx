@@ -6734,6 +6734,24 @@ export default function FieldCommandClient() {
           allJobs: jobRows.slice(0, 160).map((r) => ({ job: r.id, address: r.address.replace(/,\s*\d{5}$/, ""), boro: r.borough, stage: r.group, status: r.status, awarded: r.award.slice(0, 10), due: r.due.slice(0, 10), note: (r.note || "").slice(0, 60), amount: Number(String(value(jobs.find((j) => jobId(j) === r.id) || {}, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || undefined })),
           allJobsByStage: jobRows.reduce((m: Record<string, number>, r) => { m[r.group] = (m[r.group] || 0) + 1; return m; }, {}),
           bidsDueToday: { stillToSend: bidsDue.unsentToday || 0, sentToday: bidsDue.sentToday || 0, firstDue: bidsDue.firstTime || "", tomorrow: bidsDue.tomorrow },
+          // 🧠 Better AI part 1 (owner, 12 Nov): your whole bid record, so price questions get real numbers.
+          bidRecord: /(bid|bids|price|prices|pricing|win|won|lose|lost|losing|rate|charge|quote|cheap|expensive|beat|market|competition|winner|raise|lower)/i.test(cmd.question) ? await fetch("/data/market_awards.json").then((x) => (x.ok ? x.json() : null)).then(async (data) => {
+            if (!Array.isArray(data?.jobs) || !data.jobs.length) return null;
+            const { bidStats } = await import("../../lib/bid-stats");
+            const st = bidStats(data.jobs);
+            const pct = (n: number) => Math.round(n * 100);
+            const g = (x: typeof st.overall) => ({ invitations: x.invitations, won: x.won, winRatePct: pct(x.winRate), yourUsualWinningPrice: x.yourPrice, othersUsualWinningPrice: x.othersPrice, advice: x.advice });
+            return {
+              overall: g(st.overall),
+              last90Days: { invitations: st.last90.invitations, won: st.last90.won, winRatePct: pct(st.last90.winRate) },
+              byKindOfWork: st.byTrade.slice(0, 10).map((x) => ({ work: x.name, ...g(x), youWereUnderWinnersBy: x.under != null ? pct(1 - x.under) + "%" : "", winnersWereUnderYouBy: x.beaten != null ? pct(1 - x.beaten) + "%" : "" })),
+              byBorough: st.byBoro.slice(0, 6).map((x) => ({ boro: x.name, ...g(x) })),
+              wherePriceShouldChange: st.moves.map((x) => ({ where: x.name, advice: x.advice, winRatePct: pct(x.winRate), yourPrice: x.yourPrice, othersPrice: x.othersPrice })),
+              priceList: st.priceList.slice(0, 12).map((p) => ({ work: p.label, yourUsual: p.yours, othersUsual: p.others, suggested: p.suggested })),
+              recentLosses: st.losses.slice(0, 10).map((l) => ({ job: l.omo, work: l.trade, area: l.area, winningPrice: l.amount, date: l.awardDate })),
+              byMonth: st.byMonth.slice(0, 6).map((m) => ({ month: m.month, invitations: m.invitations, won: m.won, winRatePct: pct(m.winRate) })),
+            };
+          }).catch(() => null) : null,
           appChanges: /\b(app|button|screen|where is|how do i|how can i|can i|does it|feature|setting|robot|claude|update|new)\b/i.test(cmd.question) ? await loadWhatsNew().then((v) => (Array.isArray(v) ? v.slice(0, 3).flatMap((x: { items?: string[] }) => x.items || []).slice(0, 30).map((t: string) => t.split(/(?<=[.!?])\s/)[0].slice(0, 160)) : [])).catch(() => []) : [],
           // 🧠 What you told it to remember (last 30), so answers use your own rules.
           myNotes: loadNotes().slice(-30).map((n) => ({ note: n.text, saved: String(n.at || "").slice(0, 10) })),

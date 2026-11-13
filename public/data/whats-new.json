@@ -5,6 +5,7 @@
       "date": "Nov 13, 2026",
       "title": "A smarter helper about prices",
       "items": [
+        "🧠 Ask the helper about bids or prices: it now uses your whole bid record (win rate by kind of work and borough, winners' prices, recent losses) and gives real numbers.",
         "🧠 Ask the helper about prices (\"why am I losing door bids?\", \"what's my win rate on locks?\", \"what should I charge for window glass?\"): it now answers from your whole bid record (win rate per kind of work, how far above the winner you were, recent losses with the winning price) and your usual price on this phone."
       ]
     },
