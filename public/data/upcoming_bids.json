@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T17:33:24.921718+00:00",
+  "generatedAt": "2026-11-13T17:51:13.417320+00:00",
   "days": 14,
   "bids": [
     {
@@ -790,137 +790,6 @@
       "lng": -73.782341
     },
     {
-      "omo": "ER10401",
-      "bidDue": "2026-11-13",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-11-13",
-      "workCompletion": "2026-11-25",
-      "address": "515 ST MARKS AVENUE",
-      "borough": "BK",
-      "itbFile": "ER10401_111226032916.pdf",
-      "description": "DEFECTIVE LATCH AT: AT THE DOOR AT SOUTH ENTRANCE (SOUTH), AT PUBLIC HALL, 1ST STORY. AT VESTIBULE DOOR EAST, AT PUBLIC HALL, 1ST STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR AT SOUTH ENTRANCE, AT PUBLIC HALL, 1ST STORY. AT VESTIBULE (EAST) DOOR, AT PUBLIC HALL, 1ST STORY. INSTALL A NEW SECURITECH LOCK, KEEPING THE EXISTING CYLINDERS FOR RE-INSTALLATION. MAKE ALL ADJUSTMENTS AND ALIGNMENTS TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. TOTAL DOORS= (2) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE PER HPD GUIDELINES.",
-      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1794515359000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.676351,
-      "lng": -73.956926
-    },
-    {
       "omo": "ER09099",
       "bidDue": "2026-11-16",
       "bidDueTime": "11:00 AM",
@@ -1443,6 +1312,137 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.589995,
       "lng": -73.97129
+    },
+    {
+      "omo": "ER09540",
+      "bidDue": "2026-11-16",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-17",
+      "workCompletion": "2026-11-27",
+      "address": "1272 CLAY AVENUE",
+      "borough": "BX",
+      "itbFile": "ER09540_111326123253.pdf",
+      "description": "REPLACE DEFECTIVE LOCKSET ON BUILDING ENTRANCE DOOR. TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION -\"ESSENTIALS SERVICE WORK\" AT BUILDING ENTRANCE DOOR: REPLACE DEFECTIVE SECURETECH LOCKSET, USE BACK THE SAME CYLINDER SO THAT THE SAME KEY CAN BE USED ON THE LOCK. ENSURE DOOR IS SELF CLOSING AND LATCHING. NUMBER OF DOOR (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "notes": "CONTRACTOR MUST CONTACT HPD D. SUTCHEN@ 212 863 6046; S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; D. SAUL @ 212 863 5527; R. JAGDEO @ 212 863 5893 WITH START DATE. ¿ IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1794591189000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.833867,
+      "lng": -73.909527
     },
     {
       "omo": "ER09554",
@@ -2231,6 +2231,138 @@
       "lng": -73.866229
     },
     {
+      "omo": "ER10259",
+      "bidDue": "2026-11-16",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-16",
+      "workCompletion": "2026-11-30",
+      "address": "1449 FULTON STREET",
+      "borough": "BK",
+      "itbFile": "ER10259_111326124119.pdf",
+      "description": "AEP AT APT B2, KITCHEN AND BATHROOM REPLACE KITCHEN SUBFLOOR AND CERAMIC FLOOR TILES, ROTTED SINK BASE CABINET AND SECURE COUNTERTOP, REPAIR KITCHEN SINK WASTE LINE. INSTALL NEW ANTI-SCALD SHOWER BODY AT BATHTUB, REPAIR BATHROOM CEILING LEAK AND WASH BASIN WASTE LINE, PLASTER AND PAINT BATHROOM CEILING AND ALL WALLS. KITCHEN 1….REMOVE ALL CERAMIC FLOOR TILES AND DEFECTIVE SUBFLOOR, APPROX. 120 SQ.FT. PROVIDE AND INSTALL NEW 3/4\" PLYWOOD SUBFLOOR, CEMENT BACKER BOARD AND NEW CERAMIC FLOOR TILES. TILE TO MATCH EXISTING. GROUT. NEW SADDLE AT DOORWAY. 2….REMOVE ROTTED WOOD SINK BASE CABINET, APPROX. 5.5 LIN.FT. PROVIDE AND INSTALL NEW SINK BASE CABINET, APPROX. 5.5 LIN.FT., WITH DOORS AND HARDWARE. REINSTALL COUNTERTOP AND SINK. SECURE COUNTERTOP TO CABINET, LEVEL AND TIGHT TO WALL. CAULK AT WALL. 3….REPLACE DEFECTIVE WASTE LINE UNDER KITCHEN SINK FROM SINK TO WALL CONNECTION, WITH NEW TRAP. RESTORE WATER AND TEST HOT AND COLD WATER. NO LEAKS AND SINK DRAINS FREELY. XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX BATHROOM 4….TRACE, LOCATE AND REPAIR THE SOURCE OF THE LEAK AT BATHROOM CEILING. TEST. NO LEAKS. AFTER LEAK IS REPAIRED, REMOVE WATER DAMAGED CEILING, APPROX. 20 SQ.FT., AND INSTALL NEW 5/8\" MOISTURE RESISTANT SHEETROCK. TAPE AND SPACKLE. SCRAPE ALL LOOSE AND PEELING PAINT AND PLASTER AT CEILING AND ALL WALLS. PATCH, PLASTER AND SKIM COAT SMOOTH. PRIME WITH STAIN KILLING PRIMER AND PAINT 2 COATS SEMI-GLOSS, CEILING AND ALL WALLS, APPROX. 120 SQ.FT. COLOR TO MATCH EXISTING. 5….REMOVE DEFECTIVE SHOWER BODY AT BATHTUB. PROVIDE AND INSTALL NEW ANTI-SCALDING SHOWER BODY WITH NEW TRIM, HANDLE, TUB SPOUT AND SHOWER HEAD. PATCH WALL AND TILE AT VALVE OPENING, TILE TO MATCH EXISTING. RESTORE WATER AND TEST HOT AND COLD WATER. NO LEAKS. 6….REPLACE DEFECTIVE WASTE LINE UNDER WASH BASIN FROM BASIN TO WALL CONNECTION, WITH NEW TRAP. TEST. NO LEAKS AND BASIN DRAINS FREELY. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM LIJO RAJU CHACKO AT CELL (phone: sign in to see) AND EMAIL CHACKOL@HPD.NYC.GOV ALSO EMAIL SUPERVISORS PASQUALE DELLITURRI AT 212 863 5111, (phone: sign in to see) DELLITUP@HPD.NYC.GOV, OR ASAAD EMAD 212 863 8346 CELL (phone: sign in to see) TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWING PLAN. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 (TENANT:- (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1794591682000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.680214,
+      "lng": -73.94299
+    },
+    {
       "omo": "ER10265",
       "bidDue": "2026-11-16",
       "bidDueTime": "11:00 AM",
@@ -2360,6 +2492,137 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.859497,
       "lng": -73.86882
+    },
+    {
+      "omo": "ER10401",
+      "bidDue": "2026-11-16",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-16",
+      "workCompletion": "2026-11-28",
+      "address": "515 ST MARKS AVENUE",
+      "borough": "BK",
+      "itbFile": "ER10401_111326123457.pdf",
+      "description": "DEFECTIVE LATCH AT: AT THE DOOR AT SOUTH ENTRANCE (SOUTH), AT PUBLIC HALL, 1ST STORY. AT VESTIBULE DOOR EAST, AT PUBLIC HALL, 1ST STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR AT SOUTH ENTRANCE, AT PUBLIC HALL, 1ST STORY. AT VESTIBULE (EAST) DOOR, AT PUBLIC HALL, 1ST STORY. INSTALL A NEW SECURITECH LOCK, KEEPING THE EXISTING CYLINDERS FOR RE-INSTALLATION. MAKE ALL ADJUSTMENTS AND ALIGNMENTS TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. TOTAL DOORS= (2) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE PER HPD GUIDELINES.",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1794591299000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.676351,
+      "lng": -73.956926
     },
     {
       "omo": "ER10489",
