@@ -9,6 +9,7 @@ const iso = (n) => { const d = new Date(Date.now() + n * 86400000); return `${d.
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }))); // never the real status server
   await c.route("**/api/drive/hpd-photo", (r) => r.fulfill({ json: { ai: true, text: `General liability insurance. Expires ${new Date(Date.now() + 50 * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.` } }));
   const page = await c.newPage();
   const errors = [];

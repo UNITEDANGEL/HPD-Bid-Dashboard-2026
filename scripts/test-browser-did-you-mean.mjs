@@ -11,6 +11,7 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const asked = [];
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }))); // never the real status server
   await routePrivate(c);
   await c.route(/\/api\/drive\/hpd-ask/, (r) => { asked.push(r.request().postDataJSON()?.question); return r.fulfill({ json: { ai: true, text: "Answer from the AI." } }); });
   await c.addInitScript(() => { if (window.speechSynthesis) window.speechSynthesis.speak = (u) => setTimeout(() => u.onend?.(), 30); });

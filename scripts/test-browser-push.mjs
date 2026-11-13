@@ -13,6 +13,7 @@ try {
   // 1. Safari on the iPhone (no push in the browser tab): explains the Home Screen step.
   {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: IPHONE });
+    await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }))); // never the real status server
     await context.addInitScript(() => { delete window.PushManager; });
     const page = await context.newPage();
     await page.goto(`${baseUrl}/alerts/`, { waitUntil: "load", timeout: 180000 });
@@ -25,6 +26,7 @@ try {
   // 2. The Home Screen app: turn on -> permission -> address to the server -> On; test alert; turn off.
   {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, userAgent: IPHONE });
+    await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }))); // never the real status server
     await context.grantPermissions(["notifications"], { origin: new URL(baseUrl).origin });
     const posts = [];
     await context.route("**/api/drive/push-subscribe", (r) => { const b = JSON.parse(r.request().postData() || "{}"); posts.push(b); return r.fulfill({ json: { ok: true, id: "0123456789abcdef", off: b.off === true } }); });

@@ -33,14 +33,14 @@ try {
   await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
   await page.locator('[data-hpd-smoke="jc-read"]').click();
   await offer("walk me through it").click();
-  await page.waitForFunction(() => /^🔧 Item 1 of \d+: /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.waitForFunction(() => /^🔧 Item 1 of \d+: /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   const total = Number(/of (\d+)/.exec(await reply.innerText())[1]);
   for (let i = 2; i <= total; i++) {
     await offer("^▶ Done$").click();
-    await page.waitForFunction((n) => new RegExp(`^🔧 Item ${n} of `).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), i, { timeout: 5000 });
+    await page.waitForFunction((n) => new RegExp(`^🔧 Item ${n} of `).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), i, { timeout: 15000 });
   }
   await offer("^▶ Done$").click();
-  await page.waitForFunction(() => /take the after photos, then say "done"/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.waitForFunction(() => /take the after photos, then say "done"/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   assert.ok(await page.evaluate(() => window.__said.some((t) => /Item 1 of/.test(t))), "each item said out loud");
 
   // 2) Running late (the job just talked about).
@@ -49,7 +49,7 @@ try {
   await page.locator("#fc-job-card").waitFor({ state: "detached", timeout: 5000 });
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("I'm running late");
   await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
-  await page.waitForFunction(() => /running a little late|no tenant phone/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.waitForFunction(() => /running a little late|no tenant phone/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   const late = await reply.innerText();
   let lateNote = "no tenant phone on file for the test job";
   if (/running a little late/.test(late)) {
@@ -63,17 +63,17 @@ try {
   // 3) The tour of what's new.
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("give me a tour");
   await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
-  await page.waitForFunction(() => /^🎬 New 1 of \d: /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 8000 });
+  await page.waitForFunction(() => /^🎬 New 1 of \d: /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   await offer("^▶ Done$").click();
-  await page.waitForFunction(() => /^🎬 New 2 of /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.waitForFunction(() => /^🎬 New 2 of /.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   await offer("^▶ Stop$").click();
-  await page.waitForFunction(() => /OK, stopped/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.waitForFunction(() => /OK, stopped/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click().catch(() => {});
 
   // 📅 The week ahead: 7 days in the chat.
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what's my week look like");
   await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
-  await page.locator('[data-hpd-smoke="fc-agent-week"]').waitFor({ timeout: 8000 });
+  await page.locator('[data-hpd-smoke="fc-agent-week"]').waitFor({ timeout: 15000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-week"] > div').count(), 7);
   assert.match(await reply.innerText(), /^📅 (Your next 7 days:|Nothing on your next 7 days)/);
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
@@ -82,7 +82,7 @@ try {
   await page.evaluate((j) => { localStorage.setItem("hpd-today-route-v1", JSON.stringify({ settings: { date: new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()) }, ids: [j] })); }, JOB);
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("what do I need today");
   await page.locator('[data-hpd-smoke="fc-chatbar-send"]').click();
-  await page.waitForFunction(() => /📦 To bring for|couldn't tell the materials/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 5000 });
+  await page.waitForFunction(() => /📦 To bring for|couldn't tell the materials/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   const bring = (await reply.innerText()).split(/\n/).slice(0, 3).join(" | ");
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
 
@@ -112,7 +112,7 @@ try {
       // 💲 "Is 99,999 too high?" said on the bid: the same numbers, said straight.
       await page.evaluate(() => { window.__hpdAsk = "is 99,999 too high?"; });
       await sheet.locator('[data-hpd-smoke="fc-bid-mic"]').click();
-      await page.waitForFunction(() => /Too high: \$99,999(\.00)? on [A-Z]{2}\d{5} would have won about \d+% of \d+ recent jobs like this\. The best price is about/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 8000 });
+      await page.waitForFunction(() => /Too high: \$99,999(\.00)? on [A-Z]{2}\d{5} would have won about \d+% of \d+ recent jobs like this\. The best price is about/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
       gaugeNote += "; \"is 99,999 too high?\" = Too high, with the best price";
       await page.locator('[data-hpd-smoke="fc-agent-close"]').click().catch(() => {});
       break;

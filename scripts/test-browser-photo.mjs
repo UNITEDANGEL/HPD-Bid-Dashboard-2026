@@ -14,6 +14,7 @@ const sent = [];
 let signedIn = true;
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }))); // never the real status server
   await routePrivate(c);
   await c.route(/\/api\/drive\/hpd-photo/, (r) => {
     sent.push(r.request().postDataJSON());

@@ -52,6 +52,11 @@ try {
   {
     const { c, page, errors } = await open({ at: wed, gps: true, texted: "EQ15239" });
     const pill = page.locator('[data-hpd-smoke="fc-next-chip"]');
+    // Texted 2 days ago with no answer: the "follow-up text is ready" card comes first (12 Nov) and the Next pill
+    // waits under it; close the card.
+    const nudge = page.locator('[data-hpd-smoke="fc-chat-nudge-close"]');
+    await Promise.race([nudge.waitFor({ timeout: 30000 }), pill.waitFor({ timeout: 30000 })]).catch(() => {});
+    if (await nudge.count()) await nudge.click();
     await pill.waitFor({ timeout: 30000 });
     assert.equal(await page.locator('[data-hpd-smoke="fc-asp-chip"]').count(), 0, "street cleaning is on: no chip");
     await page.locator('[data-hpd-smoke="fc-next-drive"]').waitFor({ timeout: 20000 });
