@@ -111,6 +111,7 @@ import NotificationsPanel from "./NotificationsPanel";
 import JobsList, { type JobRow, tenantsToCall } from "./JobsList";
 import FindJob from "./FindJob";
 import { jobSummary, lineText } from "../../lib/job-summary";
+import { readScope } from "../../lib/bid-price";
 import { markNudgeSeen, nudgesSeen, omosIn, type ChatCard } from "../../lib/chat-cards";
 import { firstSentence, readAnswerStream, restAfter } from "../../lib/stream-talk";
 import BuildingContact from "./BuildingContact";
@@ -6753,6 +6754,32 @@ export default function FieldCommandClient() {
               return { month: m, daysCounted: m === months[0] ? Number(today.slice(8, 10)) : "whole month", bidsSent: sent.length, avgBidSent: sent.length ? Math.round(sent.reduce((a, r) => a + Number(r.sentPrice || r.price || 0), 0) / sent.length) : 0, jobsWon: won.length, moneyAwarded: Math.round(amounts.reduce((a, n) => a + n, 0)), avgAward: amounts.length ? Math.round(amounts.reduce((a, n) => a + n, 0) / amounts.length) : 0, winRate: sent.length ? `${Math.round((won.length / sent.length) * 100)}%` : "", wonMost: Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} (${n})`) };
             });
           })(),
+          // 💲 Smarter about prices (owner, 12 Nov: "I want better ai" → "Everything"; first part: answers about jobs and
+          // prices): asked about prices, bids, winning or losing, the AI gets the whole bid record (public totals, no job's
+          // price) and the usual sent price per kind of work from this phone.
+          prices: /\b(price|prices|pricing|bid|bids|bidding|win|wins|won|winning|lose|lost|losing|cheap|expensive|charge|higher|lower|gap|rate|winner|competitor|others?)\b/i.test(cmd.question) ? await (async () => {
+            const s = await fetch("/data/bid_win_stats.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+            const myPrices = (() => {
+              try {
+                const recs = Object.values(JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}")) as { work?: string; sentPrice?: number; price?: number; sentAt?: string }[];
+                const by: Record<string, number[]> = {};
+                for (const r of recs.filter((x) => x && x.sentAt && x.work).sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)))) {
+                  const k = readScope(String(r.work)).labels[0] || "";
+                  const p = Number(r.sentPrice || r.price || 0);
+                  if (k && p > 0 && (by[k] = by[k] || []).length < 8) by[k].push(p);
+                }
+                return Object.entries(by).map(([work, ps]) => ({ work, usual: [...ps].sort((a, b) => a - b)[Math.floor(ps.length / 2)], bids: ps.length })).sort((a, b) => b.bids - a.bids).slice(0, 15);
+              } catch { return []; }
+            })();
+            if (!s) return myPrices.length ? { myPrices } : null;
+            return {
+              total: s.total,
+              byWork: (s.byWork || []).slice(0, 18).map((w: { work: string; bids: number; won: number; winRate: number; lostAbovePct: number }) => ({ work: w.work, bids: w.bids, won: w.won, winRate: w.winRate, lostAbovePct: w.lostAbovePct })),
+              alerts: s.priceAlerts || [],
+              last30: s.last30 ? { since: s.last30.since, hpdAwarded: s.last30.awarded, youBid: s.last30.bid, notBid: s.last30.notBid, notBidValue: s.last30.notBidValue, won: s.last30.won, recentLosses: (s.last30.lostList || []).slice(0, 10) } : null,
+              myPrices,
+            };
+          })() : null,
           // 📩 Asked about emails: the full text of HPD's 10 newest (last 14 days).
           hpdEmails: /\b(email|e-mail|emails|wrote|write|said|say|message|messages|lewis|gafur|hpd asked|asked for|inspector|vendor tracking)\b/i.test(cmd.question) ? (threads || []).flatMap((t) => t.messages.filter((m) => m.hpd && !m.mine && Date.now() - Date.parse(m.at) < 14 * 86400000).map((m) => ({ ts: Date.parse(m.at), at: new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }), from: senderName(m.from || ""), job: t.omos[0] || "", subject: t.subject.slice(0, 120), text: String(m.text || "").replace(/\s+/g, " ").slice(0, 1200) }))).sort((a, b) => b.ts - a.ts).slice(0, 10).map(({ ts: _ts, ...e }) => e) : [],
           // What was just said (last 4 turns, last 15 minutes), so "and that one?" or "text them" follows on.

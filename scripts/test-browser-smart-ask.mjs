@@ -21,7 +21,7 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 20); };
     localStorage.setItem("hpd-job-notes", JSON.stringify({ ER06362: [{ text: "Tenant said the dog bites, call first.", at: "2026-11-01T12:00:00Z" }] }));
     localStorage.setItem("hpd-chat-notes", JSON.stringify([{ text: "I always bid door closers at 450", at: "2026-11-01T12:00:00Z" }]));
-    localStorage.setItem("hpd-bid-records-v1", JSON.stringify({ ER77777: { omo: "ER77777", address: "1 Test St", bidDue: "2026-11-04", price: 1200, sentPrice: 1200, status: "confirmed", sentAt: new Date().toISOString(), savedAt: new Date().toISOString(), attempts: 1, updatedAt: new Date().toISOString() } }));
+    localStorage.setItem("hpd-bid-records-v1", JSON.stringify({ ER77777: { omo: "ER77777", address: "1 Test St", bidDue: "2026-11-04", price: 1200, sentPrice: 1200, work: "REMOVE AND REPLACE APARTMENT ENTRANCE DOOR WITH NEW METAL DOOR AND FRAME", status: "confirmed", sentAt: new Date().toISOString(), savedAt: new Date().toISOString(), attempts: 1, updatedAt: new Date().toISOString() } }));
   });
   const page = await c.newPage();
   const errors = [];
@@ -54,6 +54,12 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
   assert.ok(f1.trends.every((m) => /^\d{4}-\d{2}$/.test(m.month) && typeof m.jobsWon === "number" && typeof m.bidsSent === "number"));
   assert.equal(f1.trends[0].bidsSent, 1, "this month's sent bid");
   assert.deepEqual(f1.hpdEmails, [], "no email text unless asked about emails");
+  // 💲 Asked about bids: the whole bid record goes along (12 Nov, "better AI": answers about jobs and prices).
+  assert.ok(f1.prices && f1.prices.total.bids > 100 && f1.prices.byWork.length > 5, "the bid record");
+  assert.ok(f1.prices.byWork.every((w) => !("omo" in w) && typeof w.winRate === "number"), "totals per kind of work");
+  assert.ok(Array.isArray(f1.prices.alerts), "price alerts");
+  assert.deepEqual(f1.prices.myPrices[0], { work: f1.prices.myPrices[0].work, usual: 1200, bids: 1 }, "usual price per kind from this phone");
+  assert.match(f1.prices.myPrices[0].work, /door/);
   // 2) A job named in the question goes in full.
   await ask("Is ER06362 finished yet, and what is left to do there?", 2);
   const named = asked[1].facts.jobsNamed;
@@ -64,6 +70,7 @@ ASK: Which notice is the oldest?` : `Answer ${asked.length}.` } }); });
   // 📩 About emails: HPD's newest emails go along in full (a list, empty when there are none on this phone).
   await ask("What did Lewis say in her last email about my notices?", 3);
   assert.ok(Array.isArray(asked[2].facts.hpdEmails));
+  assert.equal(asked[2].facts.prices, null, "no bid record when the question is not about prices");
   // 4) About the app: the newest changes go along.
   await ask("How do I change the robot's voice in the app?", 4);
   assert.ok(asked[3].facts.appChanges.length > 5, "the newest changes");

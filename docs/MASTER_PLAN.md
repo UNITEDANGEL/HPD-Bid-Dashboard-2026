@@ -113,6 +113,12 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+51. ✅ **Better AI, part 1: smarter about prices** (owner request 12 Nov "I want better ai" → answered "Everything";
+    done 13 Nov): a question about prices, bids, winning or losing now sends the helper's AI your whole bid record
+    (win rate per kind of work, how far above the winner you lost, the price alerts, HPD awards you didn't bid on, the
+    recent losses with the winning price) and your usual sent price per kind from the phone; the AI answers with the real
+    numbers and suggests a price only from them. Next parts (one at a time): understanding you more often, then the voice.
+    Test: test-browser-smart-ask.
 50. ✅ **After-deploy tests: no real status server, steadier** (12 Nov): the 150-test run after each deploy had failed
     since 12 Nov on driving and asp-chip. driving read the real status server, so the owner's open question for
     Claude covered the map in the test; it and 5 more tests (big-words, did-you-mean, papers, photo, push) now answer
