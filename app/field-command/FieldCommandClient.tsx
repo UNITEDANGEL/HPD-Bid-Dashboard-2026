@@ -1866,7 +1866,10 @@ export default function FieldCommandClient() {
       return list;
     } catch { setIdeas([]); return []; }
   };
-  const openIdeas = (list: Idea[] | null = ideas) => (list || []).filter((x) => !ideasPicked[x.id]);
+  // Newest first (owner, 13 Nov: "I want to see new ideas, I do not see them in the list"): new ideas are added at the end of
+  // the file, so the screen shows the list from the end; "Show more" opens the rest.
+  const openIdeas = (list: Idea[] | null = ideas) => [...(list || [])].reverse().filter((x) => !ideasPicked[x.id]);
+  const [ideasAll, setIdeasAll] = useState(false);
   const markIdea = (id: string, how: string) => {
     setIdeasPicked((m) => { const next = { ...m, [id]: `${how}|${new Date().toISOString()}` }; try { localStorage.setItem("hpd-ideas-picked", JSON.stringify(next)); } catch { /* private mode */ } return next; });
   };
@@ -1904,6 +1907,13 @@ export default function FieldCommandClient() {
     setIdeasNote(ok ? `💬 Asked Claude for more ideas. They show here when ready. ${pickupLabel(claudeSeenAt)}.` : "Saved on this phone (offline).");
     return ok;
   };
+  // Ideas keep coming by themselves (owner, 13 Nov: "keep generating automatically"): fewer than 6 left to pick = the app
+  // asks Claude for more, once a day.
+  useEffect(() => {
+    if (ideas === null || openIdeas().length >= 6) return;
+    try { if (localStorage.getItem("hpd-ideas-auto") === nyToday()) return; localStorage.setItem("hpd-ideas-auto", nyToday()); } catch { return; }
+    void askMoreIdeas();
+  }, [ideas, ideasPicked]); // eslint-disable-line react-hooks/exhaustive-deps
   const setAutoUpgradeOn = async (on: boolean) => {
     setAutoUpgrade(on);
     try { await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "AUTO-UPGRADE", patch: { on, at: new Date().toISOString() } }) }); } catch { /* offline */ }
@@ -9507,7 +9517,7 @@ export default function FieldCommandClient() {
               <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
               {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
                 <ol className="fc-idea-list">
-                  {openIdeas().slice(0, 6).map((x) => (
+                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x) => (
                     <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
                       <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}</b>
                       <span>{x.why}</span>
@@ -9519,6 +9529,7 @@ export default function FieldCommandClient() {
                   ))}
                 </ol>
               )}
+              {openIdeas().length > 6 ? <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-showmore" onClick={() => setIdeasAll((v) => !v)}>{ideasAll ? "Show fewer" : `Show more (${openIdeas().length - 6} more)`}</button> : null}
               <div className="fc-idea-row">
                 <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
                 <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>

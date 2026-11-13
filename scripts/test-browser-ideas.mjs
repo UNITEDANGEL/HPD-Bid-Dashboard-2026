@@ -34,6 +34,13 @@ try {
   const idea = page.locator('[data-hpd-smoke="fc-idea"]');
   await idea.first().waitFor({ timeout: 15000 });
   const n0 = await idea.count();
+  // Newest first: the last idea in the file is the first one shown (owner, 13 Nov).
+  const fileIdeas = (await (await fetch(`${baseUrl}/data/upgrade-ideas.json`)).json()).ideas;
+  assert.equal(await idea.first().getAttribute("data-id"), fileIdeas[fileIdeas.length - 1].id, "newest idea first");
+  assert.equal(await idea.count() <= 6, true, "6 shown at first");
+  await page.locator('[data-hpd-smoke="fc-ideas-showmore"]').click();
+  assert.ok((await idea.count()) > 6, "Show more opens the rest");
+  await page.locator('[data-hpd-smoke="fc-ideas-showmore"]').click();
   assert.ok(n0 >= 3, `ideas shown: ${n0}`);
   const firstTitle = (await idea.first().locator("b").innerText()).replace(/^\S+\s/, "").replace(/ · check-up$/, "");
   const id1 = await idea.first().getAttribute("data-id");

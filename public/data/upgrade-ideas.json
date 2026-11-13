@@ -1,6 +1,6 @@
 {
  "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
- "updated": "2026-11-12",
+ "updated": "2026-11-13",
  "ideas": [
   {
    "id": "helper-call-tenant",
@@ -512,6 +512,48 @@
    "kind": "upgrade",
    "title": "Tap a job, tap to call",
    "why": "Every job card gets big Call / Text / Navigate buttons so you never copy a number again."
+  },
+  {
+   "id": "bid-skip-last",
+   "icon": "⏭",
+   "kind": "upgrade",
+   "title": "Skipped bids wait at the end",
+   "why": "Anything you skip with Next goes to the back of the line, so you decide on it last."
+  },
+  {
+   "id": "unsent-bid-alert",
+   "icon": "🔔",
+   "kind": "upgrade",
+   "title": "Alert when a bid is saved but not sent",
+   "why": "If a bid has a price but no fax by 2 hours before it is due, the phone alerts you with a one-tap Send."
+  },
+  {
+   "id": "price-win-note",
+   "icon": "🏆",
+   "kind": "new",
+   "title": "Why this price",
+   "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
+  },
+  {
+   "id": "day-start-bids",
+   "icon": "🌅",
+   "kind": "upgrade",
+   "title": "Bids first thing in the morning",
+   "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
+  },
+  {
+   "id": "photo-count-live",
+   "icon": "📷",
+   "kind": "upgrade",
+   "title": "Photo count on every job card",
+   "why": "See how many photos are still needed on a job before you leave the building."
+  },
+  {
+   "id": "sent-today-total",
+   "icon": "💵",
+   "kind": "new",
+   "title": "Today: bids sent and money in sight",
+   "why": "A single line: how many bids went out today and what they add up to."
   }
  ],
  "plan": {

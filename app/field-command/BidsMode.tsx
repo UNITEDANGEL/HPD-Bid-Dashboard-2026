@@ -770,14 +770,19 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   }
   // "Next ▶" on the bid card (owner, 2 Nov: "when I go through each bid, go to the next bid"): the bids still to price
   // or send, by deadline; the one after this, or back to the first one left.
+  // Skipped with Next = last in line (owner, 13 Nov: "when I skip a bid or do next it should go to be the last bid"):
+  // the bid you leave goes behind everything else, in the order you left them.
+  const [parked, setParked] = useState<string[]>([]);
+  const park = (omo: string) => { if (omo) setParked((p) => [...p.filter((o) => o !== omo), omo]); };
   function nextInLine(omo: string) {
     const day = workDay(omo);
     const line = [...shownBids]
       .filter((b) => b.omo === omo || (b.bidDue === day && !noBidOf(b) && !["sent", "confirmed"].includes(currentRecord(b, records)?.status || "")))
       .sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime) + a.omo).localeCompare(b.bidDue + minutesOf(b.bidDueTime) + b.omo));
-    const at = line.findIndex((b) => b.omo === omo);
     const left = line.filter((b) => b.omo !== omo);
-    return { next: line[at + 1] || left[0], left: left.length };
+    const rank = (b: { omo: string }) => parked.indexOf(b.omo);
+    const ordered = [...left.filter((b) => rank(b) < 0), ...left.filter((b) => rank(b) >= 0).sort((a, b) => rank(a) - rank(b))];
+    return { next: ordered[0], left: left.length };
   }
   // "Come back" (button or the helper): the bid just sent, opened again with the map on it.
   function comeBack() {
@@ -839,6 +844,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       reply(`${day === dayKeys[0] ? "That's all of today's bids" : "That's all the bids for that day"}${boroPick ? ` in ${BORO_NAME[boroPick] || boroPick}` : ""}. 👍${later ? ` ${later} more are due later: say "tomorrow's bids" when you want them.` : ""} Time for your jobs?`);
       return;
     }
+    park(selected?.omo || "");
     goToBid(next, undefined, true);
     // The bid opens by itself: no card for it.
     const what = jobSummary(next.description || "").lines.map(lineText)[0];
@@ -1065,6 +1071,35 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       setAutoNote(`❌ ${rec.omo}: couldn't send it again (${err instanceof Error ? err.message : String(err)}).`);
     } finally {
       resending.current.delete(rec.omo);
+    }
+  }
+  // One tap from the list (owner, 13 Nov: "when a bid has not been sent I want a button to resend, we do not need to open the
+  // bid again, it's already filled out"): a saved price goes out as it is, to the main HPD line; a failed one to the next line.
+  const [rowArm, setRowArm] = useState("");
+  async function sendFromList(omo: string) {
+    const rec = records[omo];
+    const bid = (bids || []).find((b) => b.omo === omo);
+    if (!rec || !bid || !(rec.price > 0)) return;
+    if (rowArm !== omo) { setRowArm(omo); window.setTimeout(() => setRowArm((a) => (a === omo ? "" : a)), 6000); return; }
+    setRowArm("");
+    if (rec.status === "failed") { void resendFailed(rec, nextLine(rec), false); return; }
+    if (rec.status !== "saved" || resending.current.has(omo)) return;
+    resending.current.add(omo);
+    try {
+      setAutoNote(`📤 ${omo}: sending the saved price ${money2(rec.price)}…`);
+      const pkg = await buildPackageFor(bid, rec.price);
+      const result = await sendBidFax(bid, rec.price, pkg.bytes, pkg.name, fetch, undefined, "main");
+      if (!result.ok) {
+        await update(withLog({ ...rec, updatedAt: new Date().toISOString() }, `Fax NOT sent to main line: ${result.error}`));
+        setAutoNote(`❌ ${omo}: not sent (${result.error}). Open the bid and send it.`);
+        return;
+      }
+      await update(withLog({ ...rec, status: "sent", sentAt: result.sentAt, sentPrice: rec.price, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts: (rec.attempts || 0) + 1, updatedAt: result.sentAt }, `Fax sent to HPD main line at ${money2(rec.price)} (one tap from the list)`, result.sentAt));
+      setAutoNote(`📤 ${omo}: sent at ${money2(rec.price)}. Waiting for HumbleFax to confirm.`);
+    } catch (err) {
+      setAutoNote(`❌ ${omo}: not sent (${err instanceof Error ? err.message : String(err)}).`);
+    } finally {
+      resending.current.delete(omo);
     }
   }
   const nextLine = (rec: BidRecord): FaxLine => FAX_LINES[(FAX_LINES.findIndex((l) => l.id === lineOf(rec.faxTo)) + 1) % FAX_LINES.length].id;
@@ -1412,7 +1447,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             <button type="button" className="fc-bid-read" aria-label="Read this bid to me" data-hpd-smoke="fc-bid-read" onClick={() => { const b = selected; window.dispatchEvent(new CustomEvent("hpd-read-aloud", { detail: { title: `Bid ${b.omo}`, go: b.address ? `https://waze.com/ul?q=${encodeURIComponent(`${b.address}${b.borough ? `, ${BORO_NAME[String(b.borough).toUpperCase()] || b.borough}` : ""}, NY`)}&navigate=yes` : undefined, text: `${b.omo}, ${b.address || ""}${b.borough ? `, ${BORO_NAME[String(b.borough).toUpperCase()] || b.borough}` : ""}. Due ${dueLabel(b)}. The work: ${jobSummary(b.description || "").lines.map(lineText).join("; ") || "see HPD's page"}.` } })); }}>🔊</button>
             {!(sitting && !sitting.done) ? (() => {
               const { next, left } = nextInLine(selected.omo);
-              return next ? <button type="button" className="fc-bid-next" data-hpd-smoke="fc-bid-next" aria-label={`Next bid: ${next.omo} (${left} left)`} onClick={() => goToBid(next, undefined, true)}>Next ▶<small>{left} left</small></button> : null;
+              return next ? <button type="button" className="fc-bid-next" data-hpd-smoke="fc-bid-next" aria-label={`Next bid: ${next.omo} (${left} left)`} onClick={() => { park(selected.omo); goToBid(next, undefined, true); }}>Next ▶<small>{left} left</small></button> : null;
             })() : null}
           </header>
           {/* Moved on after a send: the note rides in this card, so an alert at the top can't cover "Come back". */}
@@ -2075,6 +2110,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                               : u === "too-late" ? <small className="fc-cl-urgent is-late" data-hpd-smoke="fc-cl-urgent">⛔ It may arrive too late: send it now and call HPD to say it&apos;s coming.</small> : null;
                           })()}
                         </span>
+                        {bid && !bid.lead && (r.state === "saved" || r.state === "failed") && (records[r.omo]?.price || 0) > 0 ? (
+                          <button type="button" className="is-primary" data-hpd-smoke="fc-checklist-send" onClick={() => void sendFromList(r.omo)}>{rowArm === r.omo ? "Tap again to send" : r.state === "failed" ? "🔁 Resend now" : `📤 Send ${money(records[r.omo].price)}`}</button>
+                        ) : null}
                         {bid && (r.state === "not-priced" || r.state === "saved" || r.state === "failed") ? (
                           <button type="button" data-hpd-smoke="fc-checklist-bid" onClick={() => openFromChecklist(r.omo)}>{r.state === "not-priced" && r.best ? <>Bid {money(r.best)}<small>wins ~{Math.round((r.chance || 0) * 100)}%</small></> : r.state === "failed" ? "Resend" : "Review & send"}</button>
                         ) : null}
