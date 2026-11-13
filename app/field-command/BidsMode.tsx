@@ -245,7 +245,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // "Price saved" shown for a few seconds after saving.
   const [savedFlash, setSavedFlash] = useState(0);
   const [shareNote, setShareNote] = useState("");
-  const [sentStats, setSentStats] = useState<{ byWork: { work: string; bids: number; won: number; winRate: number; lostAboveBy: number | null; lostAbovePct: number | null }[] } | null>(null);
+  const [sentStats, setSentStats] = useState<{ byWork: { work: string; bids: number; won: number; winRate: number; lostAboveBy: number | null; lostAbovePct: number | null }[]; priceAlerts?: { work: string; kind: "losing" | "under"; lost?: number; of?: number; gapPct?: number; won?: number; underPct?: number }[] } | null>(null);
   useEffect(() => {
     if (!open || sentStats) return;
     fetch("/data/bid_win_stats.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then(setSentStats).catch(() => {});
@@ -1762,6 +1762,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     const best = bestWithFloor(help, selFloor);
                     const move = stats?.allMoves.find((g) => g.name === `${tradeOf(selected.description)} · ${selected.borough === "MN" ? "Manhattan" : selected.borough === "BK" ? "Brooklyn" : selected.borough === "QN" ? "Queens" : selected.borough === "BX" ? "Bronx" : selected.borough === "SI" ? "Staten Island" : selected.borough}`);
                     const mineForWork = sentStats?.byWork.find((g) => g.work === scope.labels[0]);
+                    const alert = sentStats?.priceAlerts?.find((a) => a.work === scope.labels[0]);
                     return (
                       <div className="fc-bid-best" data-hpd-smoke="fc-bid-best">
                         <span>💰 Best price</span>
@@ -1785,6 +1786,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                         </div>
                         {move ? <p className={`fc-bid-move is-${move.advice}`} data-hpd-smoke="fc-bid-move">{move.advice === "raise" ? "📈 Raise your price" : "📉 Others win cheaper"} on {move.name}: you win {Math.round(move.winRate * 100)}% · you usually get {money(move.yourPrice)}, others win at {money(move.othersPrice)}.</p> : null}
                         {mineForWork && mineForWork.bids >= 5 ? <p className="fc-bid-move" data-hpd-smoke="fc-bid-mine-work">Your bids on {mineForWork.work}: won {mineForWork.won} of {mineForWork.bids} ({mineForWork.winRate}%){mineForWork.lostAboveBy ? ` · when you lost, you were ~${money(mineForWork.lostAboveBy)} above the winner` : ""}.</p> : null}
+                        {alert ? <p className={`fc-bid-alert is-${alert.kind}`} data-hpd-smoke="fc-bid-price-alert">{alert.kind === "losing"
+                          ? <>⚠️ <b>{alert.work}: you lost {alert.lost} of your last {alert.of} bids</b> on price, typically {alert.gapPct}% above the winner. {(alert.gapPct || 0) <= 15 ? "A small cut wins these." : "Price this one lower."}</>
+                          : <>💡 <b>{alert.work}: your last {alert.won} wins were about {alert.underPct}% under</b> what other contractors got for jobs like it. You can go a bit higher.</>}</p> : null}
                       </div>
                     );
                   })()}

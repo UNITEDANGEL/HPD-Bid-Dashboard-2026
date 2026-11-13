@@ -113,6 +113,13 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+47. ✅ **Price alerts by kind of work** (12 Nov, Next level recommendation "when my price for a kind of work keeps
+    losing, or keeps winning by a lot, say so"): the bid's 💰 Best price box shows ⚠️ "new door: you lost 6 of your
+    last 6 bids on price, typically 40% above the winner. Price this one lower." (a small cut when 15% or less), or 💡
+    "window glass: your last 3 wins were about 26% under what other contractors got. You can go a bit higher."
+    From your bids of the last 120 days (scripts/build-bid-win-stats.mjs priceAlerts; percentages only, no job's
+    price published). Today: 7 kinds keep losing (Secure Tech lock, new door, new window, floor / tile, leak, AEP,
+    hinges), window glass wins far under. Test: test-browser-bid-price-alert.
 46. ✅ **Flow check on the live site after every deploy** (12 Nov, recommended upgrade 8): the after-deploy tests now
     start with one bids, jobs, notices and paperwork test run against pages.dev itself. Its first run found a real
     one: on the live site (Google / unread-invitation warnings above the panel) the Stats page tabs stuck on top of
@@ -336,7 +343,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 - ⏳ Why the lowest bid still lost (131 jobs): check against HPD's notices and fax receipts, and the owner asks HPD's bid desk about the clear ones (plan: Now, item 0; lost review 16 Oct)
 - ⏳ A history for each kind of work: your cost, your price, the winning price, and the profit (plan: Next level, item D)
 - ⏳ Profit for each job after HPD pays (the PIP amount minus your costs), in Stats (plan: Next level, item C next; recommendations)
-- ⏳ Price alerts when a kind of work keeps losing, or keeps winning by a lot (plan: Next level, recommendations)
+- ✅ Price alerts when a kind of work keeps losing, or keeps winning by a lot (12 Nov, item 47)
 
 ### 13. Voice
 - ✅ Say "bid 500" or "price it at 900" to fill and save the price. Sending still takes your two taps (plan: 23 Oct, item 84)
@@ -358,7 +365,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 8. ⏳ Remove the old invitation PDFs with tenant details from the repo's history (needs the owner's OK, can't be undone)
 9. ⏳ Reconnect Google with "read email" so the phone confirms faxes by itself (open item)
 10. ⏳ Profit for each job after HPD pays, in Stats (recommendation)
-11. ⏳ Price alerts when a kind of work keeps losing or keeps winning by a lot (recommendation)
+11. ✅ Price alerts when a kind of work keeps losing or keeps winning by a lot (12 Nov, item 47)
 12. ⏳ Use the building's age and walk-up in the price advice, once a test on past jobs shows it pays (idea, 15 Oct)
 
 ## 6 Nov 2026 (afternoon, on the road at ER07610): notices first, the map stays open, the record is safe

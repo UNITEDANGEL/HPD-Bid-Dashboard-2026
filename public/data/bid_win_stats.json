@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-12T19:09:55.241Z",
+ "generatedAt": "2026-11-13T03:08:45.227Z",
  "note": "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
  "ocrCheck": {
   "wonJobsChecked": 625,
@@ -15,22 +15,16 @@
   "lostBelow": 131
  },
  "last30": {
-  "since": "2026-10-13",
-  "awarded": 140,
-  "bid": 8,
-  "notBid": 132,
-  "notBidValue": 179952,
-  "won": 3,
-  "lostHigher": 5,
-  "medianGapPct": 61,
+  "since": "2026-10-14",
+  "awarded": 130,
+  "bid": 2,
+  "notBid": 128,
+  "notBidValue": 173046,
+  "won": 0,
+  "lostHigher": 2,
+  "medianGapPct": 137,
   "lostBelow": 0,
-  "byWork": [
-   {
-    "work": "floor / tile",
-    "lost": 2,
-    "medianGapPct": 61
-   }
-  ],
+  "byWork": [],
   "lostList": [
    {
     "omo": "ER06360",
@@ -47,33 +41,66 @@
     "awardDate": "2026-10-15",
     "winPrice": 840,
     "gapPct": 137
-   },
-   {
-    "omo": "ER07554",
-    "work": "floor / tile",
-    "boro": "Brooklyn",
-    "awardDate": "2026-10-13",
-    "winPrice": 2989,
-    "gapPct": 61
-   },
-   {
-    "omo": "ER07648",
-    "work": "door adjust (self-close & latch)",
-    "boro": "Brooklyn",
-    "awardDate": "2026-10-13",
-    "winPrice": 450,
-    "gapPct": 116
-   },
-   {
-    "omo": "ER07390",
-    "work": "window glass",
-    "boro": "Manhattan",
-    "awardDate": "2026-10-13",
-    "winPrice": 487,
-    "gapPct": 12
    }
   ]
  },
+ "priceAlerts": [
+  {
+   "work": "AEP program",
+   "kind": "losing",
+   "lost": 4,
+   "of": 4,
+   "gapPct": 25
+  },
+  {
+   "work": "floor / tile",
+   "kind": "losing",
+   "lost": 6,
+   "of": 6,
+   "gapPct": 79
+  },
+  {
+   "work": "hinges",
+   "kind": "losing",
+   "lost": 4,
+   "of": 6,
+   "gapPct": 8
+  },
+  {
+   "work": "new door",
+   "kind": "losing",
+   "lost": 6,
+   "of": 6,
+   "gapPct": 40
+  },
+  {
+   "work": "new window",
+   "kind": "losing",
+   "lost": 5,
+   "of": 5,
+   "gapPct": 57
+  },
+  {
+   "work": "Secure Tech lock",
+   "kind": "losing",
+   "lost": 6,
+   "of": 6,
+   "gapPct": 61
+  },
+  {
+   "work": "trace & repair leak",
+   "kind": "losing",
+   "lost": 5,
+   "of": 6,
+   "gapPct": 225
+  },
+  {
+   "work": "window glass",
+   "kind": "under",
+   "won": 3,
+   "underPct": 26
+  }
+ ],
  "vsBest": {
   "total": {
    "bids": 1549,

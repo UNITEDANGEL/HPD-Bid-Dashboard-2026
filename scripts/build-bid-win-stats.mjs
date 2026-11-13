@@ -111,12 +111,43 @@ const vsBest = (() => {
   return { total: out(all), byMonth: Object.values(months).sort((a, b) => a.month.localeCompare(b.month)).filter((m) => m.bids >= 5).map(out) };
 })();
 
+// Price alerts by kind of work (plan, Next level recommendations: "when my price for a kind of work keeps losing,
+// or keeps winning by a lot, say so"). From your last bids of each kind in 120 days: losing = 4+ of your last bids
+// lost on price (the typical gap above the winner); winning by a lot = your last 3+ wins were typically 25%+ under
+// what other contractors got for jobs like it (money left on the table). Percentages only, no job's price.
+const priceAlerts = (() => {
+  const since = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
+  const market = [...awards.values()].filter((j) => j.amount > 0).map((j) => ({ id: j.omo, description: j.description || "", amount: j.amount, date: j.awardDate || "", won: !!j.won })).sort((a, b) => a.date.localeCompare(b.date));
+  const byWork = {};
+  for (const r of rows) if (!r.check && (awards.get(r.omo)?.awardDate || "") >= since) (byWork[r.work] ||= []).push(r);
+  const out = [];
+  for (const [work, list] of Object.entries(byWork)) {
+    list.sort((a, b) => (awards.get(b.omo).awardDate || "").localeCompare(awards.get(a.omo).awardDate || ""));
+    const last = list.slice(0, 6);
+    const lost = last.filter((r) => !r.won && r.price > r.winPrice);
+    if (last.length >= 4 && lost.length >= 4 && last.filter((r) => r.won).length <= 1) {
+      out.push({ work, kind: "losing", lost: lost.length, of: last.length, gapPct: median(lost.map((r) => Math.round((r.price / r.winPrice - 1) * 100))) });
+      continue;
+    }
+    const wins = list.filter((r) => r.won).slice(0, 5).map((r) => {
+      const job = awards.get(r.omo);
+      const prior = market.filter((m) => m.date < (job.awardDate || "") && !m.won);
+      const h = priceHelp(job.description || "", prior, 12, new Date(job.awardDate || Date.now()));
+      return h && h.prices.length >= 5 ? Math.round((1 - r.price / h.middle) * 100) : null;
+    }).filter((x) => x !== null);
+    const under = median(wins);
+    if (wins.length >= 3 && under >= 25) out.push({ work, kind: "under", won: wins.length, underPct: under });
+  }
+  return out.sort((a, b) => a.work.localeCompare(b.work));
+})();
+
 const stats = {
   generatedAt: new Date().toISOString(),
   note: "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
   ocrCheck: { wonJobsChecked: checked, exact }, // how often the price read from the PDF matched HPD's award
   total: summary(rows),
   last30,
+  priceAlerts,
   vsBest,
   byWork: group("work"),
   byBoro: group("boro"),
@@ -125,5 +156,6 @@ const stats = {
 fs.mkdirSync(path.join(ROOT, "data", "private"), { recursive: true });
 fs.writeFileSync(path.join(ROOT, "data", "private", "bid_results.json"), JSON.stringify({ generatedAt: stats.generatedAt, rows }, null, 1));
 fs.writeFileSync(path.join(ROOT, "public", "data", "bid_win_stats.json"), JSON.stringify(stats, null, 1));
+console.log(`Price alerts: ${priceAlerts.map((a) => `${a.work} ${a.kind === "losing" ? `lost ${a.lost}/${a.of}, ${a.gapPct}% above` : `won ${a.won} ${a.underPct}% under`}`).join(" · ") || "none"}`);
 console.log(`Vs best price: ${vsBest.total.bids} bids, you won ${vsBest.total.won} ($${vsBest.total.wonAmount}), best price would have won ${vsBest.total.bestWon} ($${vsBest.total.bestAmount}); your prices a median ${vsBest.total.abovePct}% above best`);
 console.log(`Bid results: ${rows.length} bids with an award (${rows.filter((r) => r.check).length} to check), won ${stats.total.won} (${stats.total.winRate}%); lost by a median $${stats.total.lostAboveBy} (${stats.total.lostAbovePct}%); ${stats.total.closeLosses} lost within 10%; price read matched the award on ${exact} of ${checked} wins`);

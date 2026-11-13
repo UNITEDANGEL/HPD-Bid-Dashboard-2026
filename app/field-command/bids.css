@@ -1003,3 +1003,9 @@ i.is-won { background: #16a34a; }
    covered Open / Mine / Stats / History (scroll all the way back up to leave Stats). */
 .fc-bid-tabs { z-index: 3; }
 .fc-stats-pages { top: 65px; }
+
+/* Price alert for this kind of work (12 Nov, plan: keeps losing / keeps winning by a lot). */
+.fc-bid-alert { grid-column: 1 / -1; margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; font: 600 13.5px/1.35 system-ui, sans-serif; }
+.fc-bid-alert.is-losing { background: #fef2f2; color: #7f1d1d; border: 1px solid #fca5a5; }
+.fc-bid-alert.is-under { background: #f0fdf4; color: #14532d; border: 1px solid #86efac; }
+.fc-bid-best .fc-bid-alert b, .fc-bid-alert b { color: inherit; font-weight: 900; }

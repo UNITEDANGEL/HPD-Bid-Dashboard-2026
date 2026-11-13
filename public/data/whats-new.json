@@ -3,8 +3,9 @@
   "versions": [
     {
       "date": "Nov 12, 2026",
-      "title": "Stats tabs out of the way",
+      "title": "Price alerts on bids · Stats tabs",
       "items": [
+        "⚠️ Price alerts on bids: when a kind of work keeps losing (e.g. new doors: lost your last 6, about 40% above the winner) the 💰 Best price box says so; when you keep winning far under the others (window glass) it says you can go a bit higher.",
         "📊 Bids → Stats: when you scroll down, the Progress / Wins / Costs tabs now stay under Open · Mine · Stats · History instead of covering them, so you can jump to History without scrolling back up."
       ]
     },
