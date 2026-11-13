@@ -113,6 +113,10 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+48. ✅ **Cost and profit for each kind of work** (12 Nov, Next level item D): Bids → Stats → Wins & prices → tap a
+    kind of work: under its price history "💵 Your cost for a job like this ≈ $700 · profit at your usual $1,390: $690
+    (50%) · at other winners' $1,340: $640 (48%)" (your costs list, on this phone, applied to the newest job of that
+    kind; parts with no cost named). No costs yet: how to add them. Test: test-browser-work-profit.
 47. ✅ **Price alerts by kind of work** (12 Nov, Next level recommendation "when my price for a kind of work keeps
     losing, or keeps winning by a lot, say so"): the bid's 💰 Best price box shows ⚠️ "new door: you lost 6 of your
     last 6 bids on price, typically 40% above the winner. Price this one lower." (a small cut when 15% or less), or 💡
@@ -341,7 +345,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 - ✅ Lost bids checked: which were late and which went inside another job's fax. The rule now is one bid per fax and send 45 minutes early (plan: Lost although our price was lower, 16 Oct)
 - ✅ Weekly and Friday summaries count the bids sent and won (plan: 5 Nov evening, item 23; 23 Oct, item 92)
 - ⏳ Why the lowest bid still lost (131 jobs): check against HPD's notices and fax receipts, and the owner asks HPD's bid desk about the clear ones (plan: Now, item 0; lost review 16 Oct)
-- ⏳ A history for each kind of work: your cost, your price, the winning price, and the profit (plan: Next level, item D)
+- ✅ A history for each kind of work: your cost, your price, the winning price, and the profit (12 Nov, item 48)
 - ⏳ Profit for each job after HPD pays (the PIP amount minus your costs), in Stats (plan: Next level, item C next; recommendations)
 - ✅ Price alerts when a kind of work keeps losing, or keeps winning by a lot (12 Nov, item 47)
 
@@ -361,7 +365,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 4. ⏳ Why the lowest bid still lost: check HPD's notices and fax receipts, and the owner asks HPD's bid desk (Now list)
 5. ✅ Stair treads and risers counted step by step (9 Nov).
 6. ⏳ Calculator lines for materials and labor from your costs, and the number of floors from the building facts (owner's calculation mode, 16 Oct)
-7. ⏳ A history for each kind of work: your cost, your price, the winning price, and the profit (owner's next-level list, 16 Oct)
+7. ✅ A history for each kind of work: your cost, your price, the winning price, and the profit (12 Nov, item 48)
 8. ⏳ Remove the old invitation PDFs with tenant details from the repo's history (needs the owner's OK, can't be undone)
 9. ⏳ Reconnect Google with "read email" so the phone confirms faxes by itself (open item)
 10. ⏳ Profit for each job after HPD pays, in Stats (recommendation)

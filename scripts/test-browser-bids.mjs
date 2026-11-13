@@ -349,6 +349,8 @@ try {
   const wh = page.locator('[data-hpd-smoke="fc-work-history"]');
   await wh.waitFor({ timeout: 10000 });
   assert.match(await wh.innerText(), /You[\s\S]*Other winners/);
+  // Cost and profit for this kind of work (plan item D): your costs list on the newest job like it, or how to add costs.
+  assert.match(await wh.locator('[data-hpd-smoke="fc-work-profit"]').innerText(), /^💵 (Your cost for a job like this ≈ \$[\d,]+( · profit at your usual \$[\d,]+: -?\$-?[\d,]+ \(-?\d+%\))?|Add your costs)/);
   assert.ok(await wh.locator("svg path.line.is-others").count() === 1 && await wh.locator("svg circle.dot").count() >= 6, "both lines and monthly dots drawn");
   const rects = wh.locator("svg rect");
   await rects.nth(await rects.count() - 2).click();

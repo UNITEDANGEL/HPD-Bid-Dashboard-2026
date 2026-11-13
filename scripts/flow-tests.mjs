@@ -13,7 +13,7 @@ import path from "node:path";
 
 const dir = path.join(process.cwd(), "scripts");
 const FLOWS = {
-  bids: /^test-browser-(bid|bids|bidbar|calculator|checklist|lead-bid|my-price|price-check|no-bid|batch-fax|faxtrack|package-send|page-zoom|notice-view|building-facts)[\w-]*\.mjs$/,
+  bids: /^test-browser-(bid|bids|bidbar|calculator|checklist|lead-bid|my-price|price-check|no-bid|batch-fax|faxtrack|package-send|page-zoom|notice-view|building-facts|work-profit)[\w-]*\.mjs$/,
   jobs: /^test-browser-(flow|job|jobs|next-stop|photo|notice-walk|papers-map|claude-now|agent-chat|call-ask|tenant-contact)[\w-]*\.mjs$/,
   // Vendor tracking (owner, 9 Nov: "vendor tracking is very important ... the overdue notices, we need to fix them"):
   // the board, the replies, the job-card update, the priority map.

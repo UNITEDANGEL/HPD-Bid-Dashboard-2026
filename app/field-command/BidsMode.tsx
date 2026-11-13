@@ -2533,6 +2533,16 @@ function JobHistory({ jobs, loading }: { jobs: MarketJob[]; loading: boolean }) 
 // Month-by-month winning prices for one kind of work: yours (blue) and other contractors' (orange).
 function WorkHistoryView({ jobs, work }: { jobs: MarketJob[]; work: WorkPrice }) {
   const h = useMemo(() => workHistory(jobs, work.key), [jobs, work.key]);
+  // Cost and profit for this kind of work (plan, Next level item D, 12 Nov): your costs list (on this phone) applied to
+  // the newest job of this kind, then the profit at your usual winning price and at other winners' typical price.
+  const money5 = useMemo(() => {
+    const newest = h.jobs[0] && jobs.find((j) => j.omo === h.jobs[0].omo);
+    if (!newest) return null;
+    const sm = jobSummary(newest.description);
+    if (!sm.lines.length) return null;
+    const cost = jobCost(calcPrice(sm, readRates(), calcContext(sm, readScope(newest.description).tasks, "")).lines, readCosts());
+    return cost.total ? cost : null;
+  }, [h.jobs, jobs]);
   const [tip, setTip] = useState<number | null>(null);
   const [table, setTable] = useState(false);
   const [all, setAll] = useState(false);
@@ -2572,6 +2582,9 @@ function WorkHistoryView({ jobs, work }: { jobs: MarketJob[]; work: WorkPrice })
         {h.months.map((m, i) => <rect key={m.month} x={x(i) - (W - L - R) / Math.max(h.months.length - 1, 1) / 2} y={T} width={(W - L - R) / Math.max(h.months.length - 1, 1)} height={H - T - B} fill="transparent" onMouseEnter={() => setTip(i)} onClick={() => setTip(i)} />)}
       </svg>
       <p className="fc-workhist-tip" data-hpd-smoke="fc-work-tip">{t ? <><b>{label(t.month)}</b> · other winners {t.others != null ? `${money(t.others)} (${t.othersN} job${t.othersN === 1 ? "" : "s"})` : "none"} · you {t.yours != null ? `${money(t.yours)} (${t.yoursN} win${t.yoursN === 1 ? "" : "s"})` : "none"}</> : "Tap a month to see its prices."}</p>
+      {money5 ? (() => { const you = work.yoursN ? profitAt(work.yours, money5.total) : null; const oth = work.othersN ? profitAt(work.others, money5.total) : null; return (
+        <p className="fc-workhist-profit" data-hpd-smoke="fc-work-profit">💵 Your cost for a job like this ≈ <b>{money(money5.total)}</b>{you ? <> · profit at your usual {money(work.yours)}: <b className={you.profit < 0 ? "is-loss" : ""}>{money(you.profit)} ({you.pct}%)</b></> : null}{oth ? <> · at other winners&apos; {money(work.others)}: <b className={oth.profit < 0 ? "is-loss" : ""}>{money(oth.profit)} ({oth.pct}%)</b></> : null}{money5.missing.length ? <small> (no cost set for {money5.missing.map((k) => COST_ITEMS.find((c) => c.key === k)?.label || k).join(", ")})</small> : null}</p>
+      ); })() : <p className="fc-workhist-profit is-empty" data-hpd-smoke="fc-work-profit">💵 Add your costs (🧾 Costs &amp; rates) to see the profit on this kind of work.</p>}
       <button type="button" className="fc-bid-link" onClick={() => setTable((v) => !v)}>{table ? "Hide table" : "Show as a table"}</button>
       {table ? (
         <table className="fc-workhist-table" data-hpd-smoke="fc-work-table">

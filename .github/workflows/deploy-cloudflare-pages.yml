@@ -430,6 +430,7 @@ jobs:
             scripts/test-browser-did-you-mean.mjs \
             scripts/test-browser-bid-usual.mjs \
             scripts/test-browser-bid-price-alert.mjs \
+            scripts/test-browser-work-profit.mjs \
             scripts/test-browser-driving.mjs \
             scripts/test-browser-fluid-talk.mjs \
             scripts/test-browser-photo.mjs \

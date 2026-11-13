@@ -1009,3 +1009,7 @@ i.is-won { background: #16a34a; }
 .fc-bid-alert.is-losing { background: #fef2f2; color: #7f1d1d; border: 1px solid #fca5a5; }
 .fc-bid-alert.is-under { background: #f0fdf4; color: #14532d; border: 1px solid #86efac; }
 .fc-bid-best .fc-bid-alert b, .fc-bid-alert b { color: inherit; font-weight: 900; }
+/* Cost and profit for a kind of work, in its price history (12 Nov, plan item D). */
+.fc-workhist-profit { margin: 8px 0 4px; padding: 8px 10px; border-radius: 10px; background: #f8fafc; color: #0f172a; font: 600 13.5px/1.4 system-ui, sans-serif; }
+.fc-workhist-profit b { color: #14532d; } .fc-workhist-profit b.is-loss { color: #b91c1c; }
+.fc-workhist-profit.is-empty { color: #334155; font-weight: 600; }
