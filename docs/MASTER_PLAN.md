@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 🧹 13 Nov: vendor tracking board layout (owner: "the layout is no good")
+
+✅ Slimmer email check, four lists in one row, counts in a 3-column grid; the first job shows sooner. Test: the notice board tests.
+
 ## 🚗 13 Nov: hands-free day button (idea from the app)
 
 ✅ The morning card has a 🚗 Hands-free day button (same as saying "lead me through my day"). Test: test-browser-morning.

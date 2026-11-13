@@ -5010,3 +5010,19 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 /* 12 Nov: the notices board opens full screen; the picks are the slim strip at its top, so nothing sits on top of the notices */
 .fc-notice-chooser.is-on-board.is-full { top: 0 !important; border-radius: 0; padding-top: max(6px, env(safe-area-inset-top)); }
 .fc-package-sheet.fc-board-sheet.is-full { padding-top: calc(58px + env(safe-area-inset-top)); bottom: var(--fc-dock-total, 84px); }
+/* 13 Nov (owner: "the layout is no good"): the vendor tracking board gets to the list sooner: a slim email check, the four
+   lists in one row, the counts in a tidy 3-column grid, a one-line title. */
+.fc-board-sheet > header strong { white-space: nowrap; font-size: 16px; }
+.fc-board-sheet .fc-scan { grid-template-columns: 1fr; gap: 4px; padding: 6px; margin-bottom: 8px; }
+.fc-board-sheet .fc-scan button { min-height: 44px; font-size: 15px; }
+.fc-board-sheet .fc-scan > small { display: none; }
+.fc-board-sheet .fc-scan p { margin: 0; font-size: 12.5px; }
+.fc-board-sheet .fc-board-filter { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 6px; }
+.fc-board-sheet .fc-board-filter button { min-height: 42px; padding: 0 4px; font-size: 12.5px; white-space: normal; line-height: 1.1; }
+.fc-board-sheet .fc-board-sides { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 6px 0; }
+.fc-board-sheet .fc-board-sides button { min-height: 58px; padding: 3px 2px; font-size: 11.5px; display: grid; align-content: center; justify-items: center; }
+.fc-board-sheet .fc-board-sides button b { font-size: 18px; }
+.fc-board-sheet .fc-board-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.fc-board-sheet .fc-board-sum span { display: grid; justify-items: center; align-content: center; border-radius: 12px; padding: 5px 4px; text-align: center; font-size: 12px; min-height: 48px; }
+.fc-board-sheet .fc-board-sum b { font-size: 18px; }
+.fc-board-sheet .fc-board-sum .fc-board-fix-all { grid-column: 1 / -1; }
