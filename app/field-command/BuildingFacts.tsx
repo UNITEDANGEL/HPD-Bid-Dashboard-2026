@@ -2,14 +2,18 @@
 
 // The building on an invitation: year built, floors, apartments, walk-up or elevator, open HPD
 // violations, and the open ones that match this bid's work (NYC Open Data, read from the phone).
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadBuildingFacts, type BuildingFacts as Facts } from "../../lib/building-facts";
 
 const CACHE_MS = 12 * 60 * 60 * 1000;
 const cacheKey = (address: string, borough: string) => `hpd-building-v2:${address}|${borough}`;
 
-export default function BuildingFacts({ address, borough, description }: { address: string; borough: string; description: string }) {
+export default function BuildingFacts({ address, borough, description, onFacts }: { address: string; borough: string; description: string; onFacts?: (f: Facts | null) => void }) {
   const [facts, setFacts] = useState<Facts | null | undefined>(undefined);
+  // The bid calculator uses the floors and walk-up / elevator (plan item B, 12 Nov).
+  const onFactsRef = useRef(onFacts);
+  onFactsRef.current = onFacts;
+  useEffect(() => { if (facts !== undefined) onFactsRef.current?.(facts); }, [facts]);
   const [failed, setFailed] = useState(false);
   const [tries, setTries] = useState(0);
 

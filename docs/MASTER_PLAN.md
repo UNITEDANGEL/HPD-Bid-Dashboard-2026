@@ -113,6 +113,12 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+49. ✅ **Floors from the building facts in the calculator** (12 Nov, Next level item B "the number of floors from the
+    building facts"): the 🏢 Building box (NYC Open Data) now feeds the 🧮 calculator's floors-up line. Elevator
+    building: no floors-up charge, and it says why. Walk-up with no floor in HPD's words: the apartment tells it
+    ("apartment 5A: 5th floor of a 6-floor walk-up: 3 above the 2nd"; only when the building has that many floors);
+    roof / bulkhead work = the top floor. Your materials and labor costs already show under the calculator (16 Oct).
+    Tests: test-bid-calc, test-browser-bid-floors.
 48. ✅ **Cost and profit for each kind of work** (12 Nov, Next level item D): Bids → Stats → Wins & prices → tap a
     kind of work: under its price history "💵 Your cost for a job like this ≈ $700 · profit at your usual $1,390: $690
     (50%) · at other winners' $1,340: $640 (48%)" (your costs list, on this phone, applied to the newest job of that
@@ -286,7 +292,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 - ✅ Lock and latch prices: checked again 9 Nov on 273 plain lock jobs. The market is now about $420-640 (not $600-730), and the app's best price came in at or under the winner on 103 of the last 120 plain lock jobs. The app's price is right; a high price was the one typed, and the bid screen already warns when a price is more than 15% above the best (plan: Now, item 0; 9 Nov check)
 - ⏳ Better prices for jobs with many doors. Tested 9 Nov on 193 multi-door jobs since March: the app is about 25% off the winner either way, and the misses are one-off jobs (hopper chutes, odd mixes). Changing the door scaling only gained 1 point and lost wins (73% -> 67%), so the model stays as it is until a clear pattern shows (plan: Now, item 0; 9 Nov backtest)
 - ✅ Stair treads and risers counted step by step: "Marble stair tread (#5, #6, #8 from bottom) ×3", "Metal tread ×7 + riser ×7" from "(07 NOS)". Your rate per tread prices it in My price and the calculator; riser pipes are not stairs; tiles on the treads keep their floor line (9 Nov, test-job-summary)
-- ⏳ Calculator lines for materials and labor from your costs list, and the number of floors from the building facts (plan: Next level, item B next)
+- ✅ Calculator lines for materials and labor from your costs list, and the number of floors from the building facts (12 Nov, item 49)
 - ⏳ Use the building's age and walk-up in the price advice, once a test on past jobs shows it pays (plan: Ideas for the bid flow, 15 Oct)
 
 ### 6. Lead abatement bids
@@ -364,7 +370,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 3. ⏳ Many doors: tested 9 Nov, no change helps yet (see above); look again when more awards come in.
 4. ⏳ Why the lowest bid still lost: check HPD's notices and fax receipts, and the owner asks HPD's bid desk (Now list)
 5. ✅ Stair treads and risers counted step by step (9 Nov).
-6. ⏳ Calculator lines for materials and labor from your costs, and the number of floors from the building facts (owner's calculation mode, 16 Oct)
+6. ✅ Calculator lines for materials and labor from your costs, and the number of floors from the building facts (12 Nov, item 49)
 7. ✅ A history for each kind of work: your cost, your price, the winning price, and the profit (12 Nov, item 48)
 8. ⏳ Remove the old invitation PDFs with tenant details from the repo's history (needs the owner's OK, can't be undone)
 9. ⏳ Reconnect Google with "read email" so the phone confirms faxes by itself (open item)

@@ -632,7 +632,11 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const [draftDoc, setDraftDoc] = useState<{ omo: string; url: string } | null>(null);
   const [autoFill, setAutoFill] = useState(false);
   const [overrideEdit, setOverrideEdit] = useState<{ key: string; value: string } | null>(null);
-  const calc = useMemo(() => calcPrice(summary, rates, calcContext(summary, scope.tasks, selected?.borough || ""), calcOverride, calcAdjust), [summary, rates, scope.tasks, selected?.borough, calcOverride, calcAdjust]);
+  // The building's floors and walk-up / elevator (🏢 Building, NYC Open Data) feed the floors-up line (plan item B, 12 Nov).
+  const [bldg, setBldg] = useState<{ omo: string; floors: number; kind: string } | null>(null);
+  const bldgHere = bldg && selected && bldg.omo === selected.omo ? { floors: bldg.floors, kind: bldg.kind, description: selected.description } : null;
+  const calcCtx = useMemo(() => calcContext(summary, scope.tasks, selected?.borough || "", bldgHere), [summary, scope.tasks, selected?.borough, bldgHere?.floors, bldgHere?.kind, bldgHere?.description]); // eslint-disable-line react-hooks/exhaustive-deps
+  const calc = useMemo(() => calcPrice(summary, rates, calcCtx, calcOverride, calcAdjust), [summary, rates, calcCtx, calcOverride, calcAdjust]);
   const myCalc = { total: calc.total, complete: calc.complete, missing: calc.missing };
   // The bid form filled in when the invitation opens (company, owner, address, phone, dates, description), with the
   // price left for the owner: no automatic price (owner, 16 Oct).
@@ -1685,6 +1689,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               ) : null}
               <div className="fc-my-price" data-hpd-smoke="fc-my-price">
                 <b>🧮 Price calculator (your rates)</b>
+                {calcCtx.floorWhy && !calcCtx.floor ? <small className="fc-calc-floorwhy" data-hpd-smoke="fc-calc-floorwhy">🏢 No floors-up charge: {calcCtx.floorWhy} (building facts).</small> : null}
                 {calc.lines.map((l) => {
                   const k = l.key;
                   const editing = rateEdit[k] !== undefined;
@@ -1844,7 +1849,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             </section>
             <section id="fc-sec-building" className="fc-bid-building" data-hpd-smoke="fc-bid-building">
               <h4>🏢 The building</h4>
-              <BuildingFacts address={selected.address} borough={selected.borough} description={selected.description} />
+              <BuildingFacts address={selected.address} borough={selected.borough} description={selected.description} onFacts={(f) => setBldg(f && f.floors > 0 ? { omo: selected.omo, floors: f.floors, kind: f.kind } : null)} />
               {sameBuilding.length ? (
                 <div className="fc-bid-again is-building" data-hpd-smoke="fc-bid-same-building">
                   <b>🏢 Same building: you bid here recently</b>
