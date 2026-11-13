@@ -5026,3 +5026,15 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-board-sheet .fc-board-sum span { display: grid; justify-items: center; align-content: center; border-radius: 12px; padding: 5px 4px; text-align: center; font-size: 12px; min-height: 48px; }
 .fc-board-sheet .fc-board-sum b { font-size: 18px; }
 .fc-board-sheet .fc-board-sum .fc-board-fix-all { grid-column: 1 / -1; }
+/* 13 Nov, 2nd pass (owner: "the layout is no good"): the first notice has to show without scrolling. The counts become one slim
+   line of chips, the wrong-date banner and the email check shrink, the picks keep a steady height. */
+.fc-board-sheet .fc-scan button { min-height: 40px; font-size: 14.5px; }
+.fc-board-sheet .fc-board-sides button { min-height: 50px; }
+.fc-board-sheet .fc-board-sum { display: flex; flex-wrap: wrap; gap: 4px; }
+.fc-board-sheet .fc-board-sum span { display: inline-flex; flex-direction: row; align-items: baseline; gap: 4px; min-height: 0; padding: 4px 9px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+.fc-board-sheet .fc-board-sum b { font-size: 14px; }
+.fc-board-sheet .fc-board-sum small { display: none; }
+.fc-board-sheet .fc-board-sum .fc-board-fix-all { flex: 1 1 100%; justify-content: center; }
+.fc-board-sheet .fc-line2 { margin: 4px 0; padding: 6px 10px; border-width: 1px; }
+.fc-board-sheet .fc-line2 > summary { font-size: 13px; line-height: 1.25; }
+.fc-board-sheet .fc-board-how { margin: 2px 0; font-size: 12px; }

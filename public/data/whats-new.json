@@ -5,6 +5,7 @@
       "date": "Nov 13, 2026",
       "title": "A smarter helper about prices",
       "items": [
+        "🧹 Vendor tracking board, second pass: the counts are now one slim line of small chips, and the wrong-date banner and email check are smaller, so the first notice shows without scrolling.",
         "🧹 The vendor tracking board is tidier: a slim email check, the four lists (To send, Sent, Replied, Done) in one row, and the counts in a neat grid, so the first job shows sooner.",
         "📶 With no signal or a weak one, a banner at the top says \"Waiting for signal\": what you do is saved on the phone and sends itself when the signal is back.",
         "🚗 The morning card has a Hands-free day button: one tap and the helper leads you through the day by voice (say \"go\" for each next step).",
