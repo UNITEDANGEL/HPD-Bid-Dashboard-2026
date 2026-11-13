@@ -6,6 +6,7 @@ import "./dashboard-table-upgrade.css";
 import DriveSessionKeeper from "../components/DriveSessionKeeper";
 import DriveAutoBackup from "../components/DriveAutoBackup";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
+import SignalBanner from "../components/SignalBanner";
 import ErrorReporter from "../components/ErrorReporter";
 
 export const metadata: Metadata = {
@@ -56,7 +57,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: NO_PAGE_ZOOM }} />
         <script dangerouslySetInnerHTML={{ __html: BIG_WORDS }} />
       </head>
-      <body><DriveSessionKeeper /><DriveAutoBackup /><ServiceWorkerRegister /><ErrorReporter />{children}</body>
+      <body><DriveSessionKeeper /><DriveAutoBackup /><ServiceWorkerRegister /><SignalBanner /><ErrorReporter />{children}</body>
     </html>
   );
 }

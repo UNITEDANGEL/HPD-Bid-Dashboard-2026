@@ -349,6 +349,7 @@ jobs:
             scripts/test-browser-landscape.mjs \
             scripts/test-browser-checklist.mjs \
             scripts/test-browser-notice-view.mjs \
+            scripts/test-browser-signal-banner.mjs \
             scripts/test-browser-bid-pages.mjs \
             scripts/test-browser-price-check.mjs \
             scripts/test-browser-flow.mjs \
