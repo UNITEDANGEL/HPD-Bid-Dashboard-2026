@@ -122,6 +122,7 @@ jobs:
           node scripts/test-day-summary.mjs
           node scripts/test-job-time.mjs
           node scripts/test-leave-reminder.mjs
+          node scripts/test-month-glance.cjs
 
       - name: Test paperwork, packages, sync and stats
         run: |
@@ -342,6 +343,7 @@ jobs:
             scripts/test-browser-auto-next.mjs \
             scripts/test-browser-route-progress.mjs \
             scripts/test-browser-bids.mjs \
+            scripts/test-browser-month-glance.mjs \
             scripts/test-browser-bid-voice.mjs \
             scripts/test-browser-bid-sync.mjs \
             scripts/test-browser-building-facts.mjs \

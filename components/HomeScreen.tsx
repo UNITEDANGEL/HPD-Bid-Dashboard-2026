@@ -3,6 +3,7 @@
 // The home screen: only what's used every day, with real numbers. Invitations to bid (open, due today,
 // arrived today), the map with the jobs, paperwork, and bid stats. The old full dashboard is at /overview/.
 import { useEffect, useState } from "react";
+import { monthGlance, type MonthGlance } from "../lib/month-glance";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
@@ -30,6 +31,7 @@ export default function HomeScreen() {
   const [awards, setAwards] = useState<Award[] | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [soon, setSoon] = useState<{ name: string; days: number }[]>([]);
+  const [glance, setGlance] = useState<MonthGlance | null>(null);
   const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
@@ -40,6 +42,10 @@ export default function HomeScreen() {
     }).catch(() => setBids([]));
     fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).then((d) => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([]));
     fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPay(d?.totals || null)).catch(() => {});
+    const get = (u: string) => fetch(u, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    Promise.all([get("/data/sent_paperwork.json"), get("/data/pip_paid.json"), get("/data/pip_payments.json")]).then(([sent, pipPaid, payments]) => {
+      setGlance(monthGlance({ sent: sent?.jobs, pipPaid, payments, month: nyDay(new Date()).slice(0, 7) }));
+    });
     setSoon(expiringSoon(loadPapers(), Date.now()).map((p) => ({ name: p.name, days: daysLeft(p.expires, Date.now()) })));
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
@@ -78,6 +84,18 @@ export default function HomeScreen() {
           )}
         </span>
       </a>
+
+      {glance ? (
+        <a className="home-card" href="/payments/" data-hpd-smoke="home-month">
+          <span className="home-icon">📅</span>
+          <span className="home-text">
+            <strong>This month at a glance</strong>
+            <b className="home-big">{glance.jobsDone} job{glance.jobsDone === 1 ? "" : "s"} sent to HPD</b>
+            <em>${Math.round(glance.paid).toLocaleString()} paid · ${Math.round(glance.waiting).toLocaleString()} still waiting (${Math.round(glance.onTheWay).toLocaleString()} on the way)</em>
+            {glance.paidAsOf ? <small>Payments checked {glance.paidAsOf}</small> : null}
+          </span>
+        </a>
+      ) : null}
 
       <a className="home-card" href="/map/" data-hpd-smoke="home-map">
         <span className="home-icon">🗺️</span>

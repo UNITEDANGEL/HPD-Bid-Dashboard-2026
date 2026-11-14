@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📅 14 Nov: month at a glance (idea from the app)
+- ✅ Home card with jobs sent this month, paid this month and still waiting (lib/month-glance.ts, test-month-glance.cjs, test-browser-month-glance.mjs).
+
 ## 🔎 14 Nov: What's new easier to read (owner: "a better what's new bigger text easy to read")
 
 - ✅ 99. Bigger text (18 px), more space, each day in its own box in What's new.
