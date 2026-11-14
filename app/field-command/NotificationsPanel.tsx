@@ -66,6 +66,8 @@ export default function NotificationsPanel({ onGo, onClose }: { onGo: (n: Logged
                 <span><small className="fc-notif-kind" style={{ color: ALERT_KINDS[kindOf(n.kind)]?.color }}>{ALERT_KINDS[kindOf(n.kind)]?.name}</small><b>{n.title.replace(/^\p{Extended_Pictographic}️?\s*/u, "")}</b>{n.text ? <small>{n.text}</small> : null}<em>{ago(n.at)}</em></span>
               </button>
               <button type="button" className="fc-notif-done" aria-label={n.done ? "Not handled" : "Handled"} data-hpd-smoke="fc-notif-done" onClick={() => setAll(markLog(n.id, { done: !n.done, read: true }))}>{n.done ? "↩" : "✓"}</button>
+              {/* Owner, 14 Nov: "a better pop up for messages ... a better AI when I click": one tap hands the alert to the helper, which says what it means and where to go (no talking unless the voice is on). */}
+              <button type="button" className="fc-notif-ask" aria-label="Ask the helper about this" data-hpd-smoke="fc-notif-ask" onClick={() => { const t = n.title.replace(/^\p{Extended_Pictographic}️?\s*/u, ""); window.dispatchEvent(new CustomEvent("hpd-helper-say", { detail: { text: `${t}${n.text ? `. ${n.text}` : ""}`.slice(0, 160), full: `${t}${n.text ? `. ${n.text}` : ""}. Tap it to open this one.` } })); setAll(markLog(n.id, { read: true })); onClose(); }}>🤖</button>
             </li>
             </Fragment>
           ))}

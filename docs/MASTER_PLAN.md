@@ -68,6 +68,8 @@ triple check before pushing. What is the mailbox with 3 on the right?" · "Bette
 the computer; a percentage next to the Working icon." · "My signature should appear real on the copy." · "Keep
 auto-following this plan."
 
+0. ✅ **What's new flow + alert helper button** (14 Nov): Ask for a change and the live request progress are on top of What's new; each alert in the bell list has a 🤖 button that hands it to the helper.
+
 1. ✅ **Notices stay on the map** (10 Nov): the vendor tracking board opens below the map (the notice jobs on the map
    above it; ⬆ Full screen / 🗺 Map switches) and Close leaves the notice jobs on the map with the small Notices bar.
    Test: test-browser-notice-map.

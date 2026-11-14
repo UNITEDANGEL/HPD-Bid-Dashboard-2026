@@ -102,6 +102,8 @@ try {
   const rows = panel.locator('[data-hpd-smoke="fc-notif-row"]');
   const kinds = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")));
   for (const k of ["urgent", "notice", "bid", "request"]) assert.ok(kinds.includes(k), `${k} kept: ${kinds}`);
+  // 14 Nov: every alert has a 🤖 button that hands it to the helper.
+  assert.equal(await panel.locator('[data-hpd-smoke="fc-notif-ask"]').count(), await rows.count(), "a helper button on every alert");
   // Better alerts (23 Oct): grouped by day, and the new ones read out loud on one tap.
   assert.match(await panel.locator('[data-hpd-smoke="fc-notif-day"]').first().textContent(), /^Today$/, "a day heading");
   await page.evaluate(() => { window.__spoken = []; if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__spoken.push(u.text); }; });

@@ -9507,47 +9507,7 @@ export default function FieldCommandClient() {
             <strong>✨ What&apos;s new</strong>
           </header>
           <div className="fc-summary-body">
-            {/* 🔁 Keep upgrading, ON or OFF, first thing on the screen (owner, 3 Nov: "I need to know that it is on"). */}
-            <button type="button" className={`fc-auto-status${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-status" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>
-              <b>🔁 Keep upgrading: {autoUpgrade ? "ON ✓" : "OFF"}</b>
-              <small>{autoUpgrade ? "Claude builds the next idea by itself when you have no requests open (up to 3 a day). Tap to turn off." : "Tap to turn on: Claude builds the next idea by itself when nothing else is open."}</small>
-            </button>
-            <p className="fc-follow-note" data-hpd-smoke="fc-whatsnew-version">This version: {versionLabel() || `v${appVersion}`}{BUILT_COMMIT ? ` (${BUILT_COMMIT})` : ""}. Every version is kept.</p>
-            {plan ? (
-              <section className="fc-ideas fc-plan-box" data-hpd-smoke="fc-plan-box">
-                <h4>📋 Next on the plan</h4>
-                <p className="fc-follow-note">{plan.title}. One tap and Claude does them all, in order, then asks you about the next ones.</p>
-                <ol className="fc-idea-list">{plan.items.map((x) => <li key={x.id} className="fc-idea"><b>{x.icon} {x.title}</b><span>{x.why}</span></li>)}</ol>
-                {planSent === plan.id ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-sent" role="status">✅ Sent. Claude is doing them in order.</p> : <button type="button" className="fc-plan-doall" data-hpd-smoke="fc-plan-doall" onClick={() => void sendPlanAll()}>✅ Do all ({plan.items.length})</button>}
-              </section>
-            ) : null}
-            {planNote ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-note" role="status">{planNote}</p> : null}
-            <section className="fc-ideas" data-hpd-smoke="fc-ideas">
-              <h4>💡 Ideas from Claude</h4>
-              <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
-              {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
-                <ol className="fc-idea-list">
-                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x) => (
-                    <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
-                      <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}</b>
-                      <span>{x.why}</span>
-                      <span className="fc-idea-btns">
-                        <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
-                        <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              {openIdeas().length > 6 ? <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-showmore" onClick={() => setIdeasAll((v) => !v)}>{ideasAll ? "Show fewer" : `Show more (${openIdeas().length - 6} more)`}</button> : null}
-              <div className="fc-idea-row">
-                <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
-                <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
-              </div>
-              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
-              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
-              {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
-            </section>
+            {/* Owner, 14 Nov: "Ask for a change should be on top, I need better flow": ask box + live progress first, then ideas/plan, then the list of changes. */}
             <section className="fc-ask-change" data-hpd-smoke="fc-ask-change">
               <h4>💡 Ask for a change</h4>
               <textarea rows={3} data-hpd-smoke="fc-ask-change-text" placeholder="What should be better? e.g. make the notice text bigger, add 15 days to the filter…" value={changeText} onChange={(e) => setChangeText(e.target.value)} />
@@ -9605,6 +9565,47 @@ export default function FieldCommandClient() {
                     ) : null}
                   </article>
                 ))}
+            </section>
+            {/* 🔁 Keep upgrading, ON or OFF, first thing on the screen (owner, 3 Nov: "I need to know that it is on"). */}
+            <button type="button" className={`fc-auto-status${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-status" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>
+              <b>🔁 Keep upgrading: {autoUpgrade ? "ON ✓" : "OFF"}</b>
+              <small>{autoUpgrade ? "Claude builds the next idea by itself when you have no requests open (up to 3 a day). Tap to turn off." : "Tap to turn on: Claude builds the next idea by itself when nothing else is open."}</small>
+            </button>
+            <p className="fc-follow-note" data-hpd-smoke="fc-whatsnew-version">This version: {versionLabel() || `v${appVersion}`}{BUILT_COMMIT ? ` (${BUILT_COMMIT})` : ""}. Every version is kept.</p>
+            {plan ? (
+              <section className="fc-ideas fc-plan-box" data-hpd-smoke="fc-plan-box">
+                <h4>📋 Next on the plan</h4>
+                <p className="fc-follow-note">{plan.title}. One tap and Claude does them all, in order, then asks you about the next ones.</p>
+                <ol className="fc-idea-list">{plan.items.map((x) => <li key={x.id} className="fc-idea"><b>{x.icon} {x.title}</b><span>{x.why}</span></li>)}</ol>
+                {planSent === plan.id ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-sent" role="status">✅ Sent. Claude is doing them in order.</p> : <button type="button" className="fc-plan-doall" data-hpd-smoke="fc-plan-doall" onClick={() => void sendPlanAll()}>✅ Do all ({plan.items.length})</button>}
+              </section>
+            ) : null}
+            {planNote ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-note" role="status">{planNote}</p> : null}
+            <section className="fc-ideas" data-hpd-smoke="fc-ideas">
+              <h4>💡 Ideas from Claude</h4>
+              <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
+              {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
+                <ol className="fc-idea-list">
+                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x) => (
+                    <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
+                      <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}</b>
+                      <span>{x.why}</span>
+                      <span className="fc-idea-btns">
+                        <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
+                        <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {openIdeas().length > 6 ? <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-showmore" onClick={() => setIdeasAll((v) => !v)}>{ideasAll ? "Show fewer" : `Show more (${openIdeas().length - 6} more)`}</button> : null}
+              <div className="fc-idea-row">
+                <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
+                <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
+              </div>
+              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
+              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
+              {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
             </section>
             {whatsNew === null ? <p className="fc-follow-note">Couldn&apos;t load the list of changes.</p> : !whatsNew ? <p className="fc-follow-note">Loading…</p> : whatsNew.map((v) => (
               <section key={v.date + v.title} className="fc-whatsnew-day" data-hpd-smoke="fc-whatsnew-day">
