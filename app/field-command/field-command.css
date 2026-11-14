@@ -2718,9 +2718,10 @@ button.fc-version-tag { border: 0; cursor: pointer; font: 700 11.5px system-ui; 
 .fc-updated-banner { position: absolute; z-index: 1700; left: 50%; bottom: calc(max(24px, env(safe-area-inset-bottom)) + 66px); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 110px); padding: 8px 10px 8px 14px; border-radius: 22px; background: #1e1b4b; color: #f5f3ff; border: 1px solid #a78bfa; box-shadow: 0 8px 22px rgba(0,0,0,.35); font: 700 13.5px system-ui; }
 .fc-updated-banner span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fc-updated-banner button { flex: 0 0 auto; min-height: 34px; padding: 0 10px; border-radius: 17px; border: 1px solid #a78bfa; background: #4c1d95; color: #fff; font: 800 12.5px system-ui; }
-.fc-whatsnew-day { margin-bottom: 12px; }
-.fc-whatsnew-day h4 { margin: 0 0 4px; }
-.fc-whatsnew-day ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font: 500 14.5px/1.45 system-ui; color: #e2e8f0; }
+.fc-whatsnew-day { margin-bottom: 16px; padding: 12px 12px 14px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); }
+.fc-whatsnew-day h4 { margin: 0 0 10px; font: 800 19px/1.3 system-ui; color: #fff; }
+.fc-whatsnew-day ul { margin: 0; padding-left: 22px; display: grid; gap: 14px; font: 500 18px/1.55 system-ui; color: #f1f5f9; }
+.fc-whatsnew-day li::marker { color: #a78bfa; font-size: 1.1em; }
 
 .fc-ask-change { display: grid; gap: 6px; margin: 0 0 14px; padding: 10px; border-radius: 12px; background: #111827; border: 1px solid #a78bfa; }
 .fc-ask-change h4 { margin: 0; }

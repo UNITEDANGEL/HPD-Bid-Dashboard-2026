@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 🔎 14 Nov: What's new easier to read (owner: "a better what's new bigger text easy to read")
+
+- ✅ 99. Bigger text (18 px), more space, each day in its own box in What's new.
+
 ## 📋 14 Nov: next on the plan (the 12 Nov plan was all live already)
 
 - ✅ Morning notices, tenant language and receipt photo were built on 11-12 Nov (items 40, 36, 38, 96-98). The app card now offers the next 3: ☐ photo count on every job card, ☐ 7 AM bids brief (due today and tomorrow, closest first), ☐ why this price (last 3 similar jobs and what won).
