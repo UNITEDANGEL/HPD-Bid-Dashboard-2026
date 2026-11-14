@@ -9763,11 +9763,11 @@ export default function FieldCommandClient() {
             </button>
             {trayOpen ? (
               <ol>
-                {items.map((x) => (
+                {items.map((x, i) => (
                   <li key={x.omo} data-hpd-smoke="fc-notice-tray-row" data-omo={x.omo}>
-                    <div className="fc-notice-tray-text">
+                    <div className="fc-notice-tray-text" role="button" tabIndex={0} data-hpd-smoke="fc-notice-tray-text" style={{ cursor: "pointer" }} onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTrayOpen(false); setSelectedJob(x.job!); } }}>
                       <b>{x.omo}</b> <span>{jobAddress(x.job!)}</span>
-                      <small>{x.at ? `${day(x.at)} · ` : ""}{x.what}</small>
+                      <small>{x.at ? `${day(x.at)} · ` : ""}{i > 0 && items[i - 1].what === x.what ? "same ask as the one above" : x.what}</small>
                     </div>
                     <div className="fc-notice-tray-btns">
                       <button type="button" data-hpd-smoke="fc-notice-tray-show" onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }}>📍 Show</button>

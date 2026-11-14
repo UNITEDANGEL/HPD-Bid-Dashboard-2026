@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📋 14 Nov: to-do list rows open the job (owner: "I should be able to click it and it takes me to job on map, lots of things repeating")
+
+- ✅ Tap the text of a row in the map's 📋 to-do list to open that job; repeated asks show "same ask as the one above". Test: test-browser-priority-map.mjs.
+
 ## 💵 14 Nov: bids sent today and money in sight (idea from the app)
 
 ✅ One line above the bids tabs: "Today: N bids sent · $total in sight". Test: test-browser-bids-todayline.mjs.

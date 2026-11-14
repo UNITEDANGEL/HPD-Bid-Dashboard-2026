@@ -71,6 +71,12 @@ try {
   assert.ok(ys.length && ys.every((y) => y > 60 && y < 844 - 90), `priority jobs in view above the bar: ${ys.map(Math.round)}`);
   if (shots) await page.screenshot({ path: `${shots}/2-priority-map.png` });
 
+  // Tapping the to-do row text itself opens that job (14 Nov), same as the 📍 Show button.
+  await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
+  await tray.locator('[data-hpd-smoke="fc-notice-tray-text"]').first().click();
+  await page.locator('.fc-job-sheet-close').waitFor({ timeout: 8000 });
+  await page.locator('.fc-job-sheet-close').click();
+
   // A glowing job: PRIORITY box with the countdown and the affidavit outcomes.
   await page.locator(".leaflet-marker-icon.is-glow").first().dispatchEvent("click");
   const card = page.locator('[data-hpd-smoke="fc-prio-card"]');
