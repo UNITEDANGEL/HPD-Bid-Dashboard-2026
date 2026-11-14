@@ -1,611 +1,641 @@
 {
- "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
- "updated": "2026-11-14",
- "ideas": [
-  {
-   "id": "helper-call-tenant",
-   "icon": "📞",
-   "kind": "new",
-   "title": "The helper calls the tenant for you",
-   "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
-  },
-  {
-   "id": "weekly-score",
-   "icon": "🏆",
-   "kind": "new",
-   "title": "Friday score from the robot",
-   "why": "Friday afternoon the robot gives you the week: bids sent, jobs finished, jobs won, money in, with a trophy for a good week."
-  },
-  {
-   "id": "store-stop",
-   "icon": "🏪",
-   "kind": "new",
-   "title": "Store stop on the way",
-   "why": "When today's list needs materials, the robot adds the closest Home Depot or supply store on your route."
-  },
-  {
-   "id": "photo-sees",
-   "icon": "🔎",
-   "kind": "new",
-   "title": "The robot says what it sees",
-   "why": "Take a before photo and the robot names the problem (leak stain, mold, broken plaster) and adds it to the job notes."
-  },
-  {
-   "id": "hpd-email-brief",
-   "icon": "📩",
-   "kind": "new",
-   "title": "HPD emails in 20 seconds",
-   "why": "When you open the app, the robot sums up new HPD emails out loud: who wrote, which job, what they want."
-  },
-  {
-   "id": "route-traffic",
-   "icon": "🚦",
-   "kind": "upgrade",
-   "title": "Traffic colors on the route",
-   "why": "The route line on the map turns red where traffic is slow, so you know before you leave."
-  },
-  {
-   "id": "quick-price-voice",
-   "icon": "💲",
-   "kind": "new",
-   "title": "Say the price, the bid fills itself",
-   "why": "On a bid say \"2,400\" and the price goes on page 1, page 2 and the work form at once."
-  },
-  {
-   "id": "tenant-confirm-auto",
-   "icon": "📲",
-   "kind": "new",
-   "title": "Tenants confirm with one tap",
-   "why": "The tenant gets a link: tap Yes / Change time. The map shows confirmed in green by itself."
-  },
-  {
-   "id": "lost-bids",
-   "icon": "📉",
-   "kind": "new",
-   "title": "Why you lost a bid",
-   "why": "For each bid you lost, the winning price next to yours, so the next price is right."
-  },
-  {
-   "id": "day-money",
-   "icon": "💵",
-   "kind": "new",
-   "title": "Today's money",
-   "why": "At the top: money earned today and this week from finished jobs, counting up as you finish."
-  },
-  {
-   "id": "open-in-1s",
-   "icon": "⚡",
-   "kind": "upgrade",
-   "title": "Open in one second",
-   "why": "The app shows the last screen right away and fills in new numbers after, instead of \"Loading jobs\"."
-  },
-  {
-   "id": "simpler-dock",
-   "icon": "🧹",
-   "kind": "upgrade",
-   "title": "A cleaner screen",
-   "why": "Hide the buttons you never use; the map gets more room and the robot stands out."
-  },
-  {
-   "id": "notice-autodraft",
-   "icon": "✍️",
-   "kind": "upgrade",
-   "title": "Notice answers written for you",
-   "why": "When a 24/72-hour notice comes in, the answer is already written with the dates; you check it and tap twice to send."
-  },
-  {
-   "id": "crew-share",
-   "icon": "👷",
-   "kind": "new",
-   "title": "Send a job to your worker",
-   "why": "One tap texts a worker the address, the work and the photos needed."
-  },
-  {
-   "id": "spanish",
-   "icon": "🌎",
-   "kind": "new",
-   "title": "Tenant texts in Spanish",
-   "why": "When the tenant writes in Spanish, the app shows it in English and writes your answer in Spanish."
-  },
-  {
-   "id": "morning-plan",
-   "icon": "☀️",
-   "kind": "upgrade",
-   "title": "Morning plan in 20 seconds",
-   "why": "At 7 AM the chat says today's jobs in the best order, bids due, notices and the weather, out loud, with one tap to start the route."
-  },
-  {
-   "id": "chat-next-question",
-   "icon": "➡️",
-   "kind": "upgrade",
-   "title": "The chat asks the next step",
-   "why": "After every answer it offers the next useful thing, like \"Text the tenant?\" or \"Open the affidavit?\", so you finish each job in a few taps."
-  },
-  {
-   "id": "claude-screenshot",
-   "icon": "🖼",
-   "kind": "upgrade",
-   "title": "See Claude's change before you try it",
-   "why": "When Claude finishes a request it puts a picture of the new screen in Your requests, so you see what changed at a glance."
-  },
-  {
-   "id": "price-coach",
-   "icon": "🎯",
-   "kind": "upgrade",
-   "title": "Price coach on every bid",
-   "why": "Next to the price box: the prices that won this kind of job in the last 6 months, and how likely your price is to win."
-  },
-  {
-   "id": "win-rate",
-   "icon": "📊",
-   "kind": "upgrade",
-   "title": "Which bids you win",
-   "why": "Your win rate by borough and type of work, and the prices that won, so you know where to bid lower or higher."
-  },
-  {
-   "id": "one-hand",
-   "icon": "🖐️",
-   "kind": "upgrade",
-   "title": "One-hand mode",
-   "why": "A switch that moves the main buttons to the bottom corner so you can reach everything with your thumb while holding tools."
-  },
-  {
-   "id": "job-notes",
-   "icon": "📝",
-   "kind": "upgrade",
-   "title": "Notes on every job",
-   "why": "Type or say a note on a job card (like gate code or who to ask for). It shows up next time you open that job."
-  },
-  {
-   "id": "cash-view",
-   "icon": "💵",
-   "kind": "upgrade",
-   "title": "Money coming in",
-   "why": "One screen with invoices sent, paid and still waiting, with the oldest unpaid first."
-  },
-  {
-   "id": "offline-photos",
-   "icon": "📶",
-   "kind": "upgrade",
-   "title": "Photos work with no signal",
-   "why": "Take before and after photos in a basement with no signal; they send by themselves when you are back online."
-  },
-  {
-   "id": "notes-on-card",
-   "icon": "📌",
-   "kind": "upgrade",
-   "title": "Chat notes show on the job card",
-   "why": "What you told the chat to remember about an address also shows on that job's card, so you see it before you knock."
-  },
-  {
-   "id": "tap-to-call",
-   "icon": "📞",
-   "kind": "upgrade",
-   "title": "Tap to call the super",
-   "why": "On a job card, one tap calls or texts the contact you saved for that address."
-  },
-  {
-   "id": "route-share",
-   "icon": "🗺️",
-   "kind": "upgrade",
-   "title": "Send tomorrow's route",
-   "why": "One tap sends tomorrow's route (addresses only) to your own phone or a helper's."
-  },
-  {
-   "id": "photo-checklist",
-   "icon": "✅",
-   "kind": "upgrade",
-   "title": "Photo checklist per job",
-   "why": "Each job shows the photos HPD needs (before, after, close-up) with ticks as you take them."
-  },
-  {
-   "id": "expiry-watch",
-   "icon": "📅",
-   "kind": "upgrade",
-   "title": "Insurance and license dates",
-   "why": "The app warns you 30 days before an insurance or license paper runs out."
-  },
-  {
-   "id": "slow-bid-nudge",
-   "icon": "💲",
-   "kind": "upgrade",
-   "title": "Bids with no price yet",
-   "why": "A small count on the Bids button of invitations still waiting for your price."
-  },
-  {
-   "id": "weather-route",
-   "icon": "🌦️",
-   "kind": "upgrade",
-   "title": "Rain check on the route",
-   "why": "If rain or snow is coming, the route plan puts indoor jobs first and warns you about outdoor ones."
-  },
-  {
-   "id": "voice-job-note",
-   "icon": "🎙️",
-   "kind": "upgrade",
-   "title": "Say a note after each job",
-   "why": "Tap the mic on a finished job and say what you did; the app writes it down on that job."
-  },
-  {
-   "id": "rejected-fix",
-   "icon": "🛠️",
-   "kind": "upgrade",
-   "title": "Rejected job fixer",
-   "why": "When HPD rejects a job, the app lists exactly what to redo and puts it first on tomorrow's route."
-  },
-  {
-   "id": "month-totals",
-   "icon": "🗓️",
-   "kind": "upgrade",
-   "title": "Month at a glance",
-   "why": "One card with jobs done, invoices paid and money still waiting this month."
-  },
-  {
-   "id": "dark-mode",
-   "icon": "🌙",
-   "kind": "upgrade",
-   "title": "Dark screen at night",
-   "why": "A switch for a dark screen that is easier on the eyes in a dark truck."
-  },
-  {
-   "id": "big-buttons",
-   "icon": "🔘",
-   "kind": "upgrade",
-   "title": "Bigger buttons with gloves on",
-   "why": "A switch that makes every button bigger so you can tap it with work gloves."
-  },
-  {
-   "id": "invoice-auto-fill",
-   "icon": "🧾",
-   "kind": "upgrade",
-   "title": "Invoice already filled in",
-   "why": "When the affidavit is approved, the invoice opens with the job, the amount and the OMO already filled, so you only check it and send."
-  },
-  {
-   "id": "left-list-home",
-   "icon": "📋",
-   "kind": "upgrade",
-   "title": "All jobs with paperwork left",
-   "why": "One list on the home screen of every finished job that still has photos, an affidavit or an invoice missing, oldest first."
-  },
-  {
-   "id": "building-history",
-   "icon": "🏢",
-   "kind": "new",
-   "title": "Building history",
-   "why": "Every past job at this address with its photos and notes, one tap from the job card."
-  },
-  {
-   "id": "week-view",
-   "icon": "📅",
-   "kind": "new",
-   "title": "Week view",
-   "why": "Jobs, appointments, bids due and notices for the next 7 days on one screen."
-  },
-  {
-   "id": "invoice-check",
-   "icon": "🧾",
-   "kind": "upgrade",
-   "title": "Invoice check before sending",
-   "why": "Before the invoice goes out, the app checks the amount matches the award and the COA, and says what doesn't."
-  },
-  {
-   "id": "time-by-kind",
-   "icon": "📊",
-   "kind": "new",
-   "title": "How long each kind of work takes",
-   "why": "The robot tells you, from your timed jobs, how long doors, plaster or locks usually take, so you can plan the day and price bids."
-  },
-  {
-   "id": "late-job-nudge",
-   "icon": "⏰",
-   "kind": "new",
-   "title": "Job is taking long",
-   "why": "If you are on a job much longer than your usual time, the robot asks if you want to text the next tenant that you are running late."
-  },
-  {
-   "id": "photo-reason",
-   "icon": "📝",
-   "kind": "upgrade",
-   "title": "Say why there is no photo",
-   "why": "When the robot warns about a missing after photo, one tap saves a reason (no access, tenant refused) on the job."
-  },
-  {
-   "id": "forgot-tools",
-   "icon": "🧰",
-   "kind": "new",
-   "title": "Did you bring everything?",
-   "why": "Before you leave the office, the robot reads the shopping list for today's jobs and asks if the truck has it all."
-  },
-  {
-   "id": "no-access-second-try",
-   "icon": "🔁",
-   "kind": "new",
-   "title": "Second try after no access",
-   "why": "When a tenant is not home, the helper offers a second visit on the next route and texts them the new time, so the job is not closed too early."
-  },
-  {
-   "id": "award-countdown",
-   "icon": "⏳",
-   "kind": "new",
-   "title": "Days left to finish after award",
-   "why": "Each awarded job shows how many days are left before HPD expects it done, with the closest first."
-  },
-  {
-   "id": "rent-reminder-none",
-   "icon": "📆",
-   "kind": "new",
-   "title": "Jobs waiting on access",
-   "why": "A short list of jobs where the tenant never gave access, with the date of each try, so the no-access paperwork is ready."
-  },
-  {
-   "id": "photo-auto-name",
-   "icon": "🏷",
-   "kind": "upgrade",
-   "title": "Photos named by themselves",
-   "why": "Each photo is saved with the job number and before/after in its name, so nothing gets mixed up."
-  },
-  {
-   "id": "bid-compare-last",
-   "icon": "📊",
-   "kind": "new",
-   "title": "Same building, last price",
-   "why": "When you open a bid for a building you bid on before, the helper shows what you charged last time."
-  },
-  {
-   "id": "one-tap-call-hpd",
-   "icon": "☎️",
-   "kind": "new",
-   "title": "Call the HPD person in one tap",
-   "why": "Each job shows who at HPD wrote last, with a button to call or text them."
-  },
-  {
-   "id": "bad-signal-mode",
-   "icon": "📶",
-   "kind": "upgrade",
-   "title": "Works better with weak signal",
-   "why": "The map and job list stay usable with weak signal and say \"waiting for signal\" instead of freezing."
-  },
-  {
-   "id": "job-cost-total",
-   "icon": "💵",
-   "kind": "new",
-   "title": "What each job really made",
-   "why": "After a job closes, the app adds your receipts and your time and shows what you made on it, so you know which kind of work pays."
-  },
-  {
-   "id": "tenant-no-show",
-   "icon": "🚪",
-   "kind": "new",
-   "title": "Tenant no-show, one tap",
-   "why": "When you arrive and nobody answers, one tap texts and calls them, starts the no-access timer and keeps the proof for the affidavit."
-  },
-  {
-   "id": "photo-order",
-   "icon": "🖼",
-   "kind": "upgrade",
-   "title": "Photos in the order HPD likes",
-   "why": "Before / after photos are lined up in pairs on the paperwork, so HPD reads them at a glance and rejects fewer packages."
-  },
-  {
-   "id": "bid-recheck",
-   "icon": "🔁",
-   "kind": "new",
-   "title": "Second look before a bid is sent",
-   "why": "The helper reads the finished bid once more (price, name, job number, date) and says \"all good\" or what looks off."
-  },
-  {
-   "id": "slow-payers",
-   "icon": "⏳",
-   "kind": "new",
-   "title": "Who pays slowly",
-   "why": "A short list of the jobs HPD has not paid yet, oldest first, with one tap to write the follow-up for you to check."
-  },
-  {
-   "id": "pip-paid-alert",
-   "icon": "💰",
-   "kind": "new",
-   "title": "Alert when HPD pays",
-   "why": "The robot rings when a payment you were waiting on shows as paid, with the job number and amount."
-  },
-  {
-   "id": "pay-chase-list",
-   "icon": "📋",
-   "kind": "new",
-   "title": "Who to chase for money",
-   "why": "One list of finished jobs not paid yet, oldest first, with how many days each has waited."
-  },
-  {
-   "id": "duplicate-guard",
-   "icon": "🛡",
-   "kind": "upgrade",
-   "title": "Stop double sends",
-   "why": "Before anything goes to HPD the app checks if that job number was already sent and says so in plain words."
-  },
-  {
-   "id": "tenant-text-time",
-   "icon": "🕒",
-   "kind": "upgrade",
-   "title": "Best time to text",
-   "why": "The robot picks the hour tenants answer most and holds the first text until then."
-  },
-  {
-   "id": "day-end-recap",
-   "icon": "🌙",
-   "kind": "new",
-   "title": "End of day recap",
-   "why": "At 6 PM one short note: what got done, what is left for tomorrow, and which notice is due first."
-  },
-  {
-   "id": "photo-missing-check",
-   "icon": "📸",
-   "kind": "upgrade",
-   "title": "Missing photo warning",
-   "why": "Before you finish a job the app says which required photo (before, after, close-up) is still missing."
-  },
-  {
-   "id": "late-pay-chase",
-   "icon": "💰",
-   "kind": "new",
-   "title": "Unpaid jobs reminder",
-   "why": "Jobs finished and sent but not paid after 30 days show on the morning brief, with the day count."
-  },
-  {
-   "id": "same-block",
-   "icon": "📍",
-   "kind": "upgrade",
-   "title": "Same-block jobs together",
-   "why": "When two jobs are on the same block, the route puts them back to back so you park once."
-  },
-  {
-   "id": "tenant-no-show-log",
-   "icon": "🚪",
-   "kind": "upgrade",
-   "title": "No-access proof in one tap",
-   "why": "When a tenant is not home, one tap saves the time, the door photo and the call tries for the no-access paperwork."
-  },
-  {
-   "id": "price-memory",
-   "icon": "📊",
-   "kind": "upgrade",
-   "title": "Price hint from your past wins",
-   "why": "On a bid, the app shows the prices you won at for the same kind of work, so you can choose faster."
-  },
-  {
-   "id": "overdue-first",
-   "icon": "🚨",
-   "kind": "upgrade",
-   "title": "Overdue notices on top, always",
-   "why": "Anything overdue from HPD sits at the very top of the home screen in red, before the map and everything else."
-  },
-  {
-   "id": "offline-mode",
-   "icon": "📶",
-   "kind": "upgrade",
-   "title": "Works in a basement with no signal",
-   "why": "Jobs, photos and forms save on the phone and send themselves when the signal comes back."
-  },
-  {
-   "id": "pay-tracker",
-   "icon": "💰",
-   "kind": "new",
-   "title": "Where is my money?",
-   "why": "One list: finished jobs, invoice sent, paid or waiting, with the days waiting counted so you know who to chase."
-  },
-  {
-   "id": "bid-win-rate",
-   "icon": "🎯",
-   "kind": "new",
-   "title": "Bid price that wins",
-   "why": "Shows what prices won on similar jobs before and suggests a price in the winning range."
-  },
-  {
-   "id": "one-tap-call",
-   "icon": "☎️",
-   "kind": "upgrade",
-   "title": "Tap a job, tap to call",
-   "why": "Every job card gets big Call / Text / Navigate buttons so you never copy a number again."
-  },
-  {
-   "id": "bid-skip-last",
-   "icon": "⏭",
-   "kind": "upgrade",
-   "title": "Skipped bids wait at the end",
-   "why": "Anything you skip with Next goes to the back of the line, so you decide on it last."
-  },
-  {
-   "id": "unsent-bid-alert",
-   "icon": "🔔",
-   "kind": "upgrade",
-   "title": "Alert when a bid is saved but not sent",
-   "why": "If a bid has a price but no fax by 2 hours before it is due, the phone alerts you with a one-tap Send."
-  },
-  {
-   "id": "price-win-note",
-   "icon": "🏆",
-   "kind": "new",
-   "title": "Why this price",
-   "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
-  },
-  {
-   "id": "day-start-bids",
-   "icon": "🌅",
-   "kind": "upgrade",
-   "title": "Bids first thing in the morning",
-   "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
-  },
-  {
-   "id": "photo-count-live",
-   "icon": "📷",
-   "kind": "upgrade",
-   "title": "Photo count on every job card",
-   "why": "See how many photos are still needed on a job before you leave the building."
-  },
-  {
-   "id": "sent-today-total",
-   "icon": "💵",
-   "kind": "new",
-   "title": "Today: bids sent and money in sight",
-   "why": "A single line: how many bids went out today and what they add up to."
-  },
-  {
-   "id": "hpd-asks-box",
-   "icon": "📝",
-   "kind": "new",
-   "title": "One Notes box per HPD email",
-   "why": "Every HPD email shows as three lines on the job card: what they want, what you already sent, what is missing."
-  },
-  {
-   "id": "sent-proof",
-   "icon": "📎",
-   "kind": "new",
-   "title": "Proof it was sent",
-   "why": "Each job shows the sent affidavit and invoice with the date, so you can answer HPD in one tap with the proof."
-  },
-  {
-   "id": "repeat-ask",
-   "icon": "🔁",
-   "kind": "new",
-   "title": "HPD asked twice",
-   "why": "The app flags when HPD asks for something you already sent, with the date and file name to reply with."
-  },
-  {
-   "id": "photo-count",
-   "icon": "📷",
-   "kind": "new",
-   "title": "Photo count on every card",
-   "why": "See at a glance how many before and after photos a job has, and what is missing."
-  },
-  {
-   "id": "late-week",
-   "icon": "📆",
-   "kind": "new",
-   "title": "Friday late list",
-   "why": "Friday afternoon: the jobs that will be late next week so you can plan the route."
+  "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
+  "updated": "2026-11-14",
+  "ideas": [
+    {
+      "id": "helper-call-tenant",
+      "icon": "📞",
+      "kind": "new",
+      "title": "The helper calls the tenant for you",
+      "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
+    },
+    {
+      "id": "weekly-score",
+      "icon": "🏆",
+      "kind": "new",
+      "title": "Friday score from the robot",
+      "why": "Friday afternoon the robot gives you the week: bids sent, jobs finished, jobs won, money in, with a trophy for a good week."
+    },
+    {
+      "id": "store-stop",
+      "icon": "🏪",
+      "kind": "new",
+      "title": "Store stop on the way",
+      "why": "When today's list needs materials, the robot adds the closest Home Depot or supply store on your route."
+    },
+    {
+      "id": "photo-sees",
+      "icon": "🔎",
+      "kind": "new",
+      "title": "The robot says what it sees",
+      "why": "Take a before photo and the robot names the problem (leak stain, mold, broken plaster) and adds it to the job notes."
+    },
+    {
+      "id": "hpd-email-brief",
+      "icon": "📩",
+      "kind": "new",
+      "title": "HPD emails in 20 seconds",
+      "why": "When you open the app, the robot sums up new HPD emails out loud: who wrote, which job, what they want."
+    },
+    {
+      "id": "route-traffic",
+      "icon": "🚦",
+      "kind": "upgrade",
+      "title": "Traffic colors on the route",
+      "why": "The route line on the map turns red where traffic is slow, so you know before you leave."
+    },
+    {
+      "id": "quick-price-voice",
+      "icon": "💲",
+      "kind": "new",
+      "title": "Say the price, the bid fills itself",
+      "why": "On a bid say \"2,400\" and the price goes on page 1, page 2 and the work form at once."
+    },
+    {
+      "id": "tenant-confirm-auto",
+      "icon": "📲",
+      "kind": "new",
+      "title": "Tenants confirm with one tap",
+      "why": "The tenant gets a link: tap Yes / Change time. The map shows confirmed in green by itself."
+    },
+    {
+      "id": "lost-bids",
+      "icon": "📉",
+      "kind": "new",
+      "title": "Why you lost a bid",
+      "why": "For each bid you lost, the winning price next to yours, so the next price is right."
+    },
+    {
+      "id": "day-money",
+      "icon": "💵",
+      "kind": "new",
+      "title": "Today's money",
+      "why": "At the top: money earned today and this week from finished jobs, counting up as you finish."
+    },
+    {
+      "id": "open-in-1s",
+      "icon": "⚡",
+      "kind": "upgrade",
+      "title": "Open in one second",
+      "why": "The app shows the last screen right away and fills in new numbers after, instead of \"Loading jobs\"."
+    },
+    {
+      "id": "simpler-dock",
+      "icon": "🧹",
+      "kind": "upgrade",
+      "title": "A cleaner screen",
+      "why": "Hide the buttons you never use; the map gets more room and the robot stands out."
+    },
+    {
+      "id": "notice-autodraft",
+      "icon": "✍️",
+      "kind": "upgrade",
+      "title": "Notice answers written for you",
+      "why": "When a 24/72-hour notice comes in, the answer is already written with the dates; you check it and tap twice to send."
+    },
+    {
+      "id": "crew-share",
+      "icon": "👷",
+      "kind": "new",
+      "title": "Send a job to your worker",
+      "why": "One tap texts a worker the address, the work and the photos needed."
+    },
+    {
+      "id": "spanish",
+      "icon": "🌎",
+      "kind": "new",
+      "title": "Tenant texts in Spanish",
+      "why": "When the tenant writes in Spanish, the app shows it in English and writes your answer in Spanish."
+    },
+    {
+      "id": "morning-plan",
+      "icon": "☀️",
+      "kind": "upgrade",
+      "title": "Morning plan in 20 seconds",
+      "why": "At 7 AM the chat says today's jobs in the best order, bids due, notices and the weather, out loud, with one tap to start the route."
+    },
+    {
+      "id": "chat-next-question",
+      "icon": "➡️",
+      "kind": "upgrade",
+      "title": "The chat asks the next step",
+      "why": "After every answer it offers the next useful thing, like \"Text the tenant?\" or \"Open the affidavit?\", so you finish each job in a few taps."
+    },
+    {
+      "id": "claude-screenshot",
+      "icon": "🖼",
+      "kind": "upgrade",
+      "title": "See Claude's change before you try it",
+      "why": "When Claude finishes a request it puts a picture of the new screen in Your requests, so you see what changed at a glance."
+    },
+    {
+      "id": "price-coach",
+      "icon": "🎯",
+      "kind": "upgrade",
+      "title": "Price coach on every bid",
+      "why": "Next to the price box: the prices that won this kind of job in the last 6 months, and how likely your price is to win."
+    },
+    {
+      "id": "win-rate",
+      "icon": "📊",
+      "kind": "upgrade",
+      "title": "Which bids you win",
+      "why": "Your win rate by borough and type of work, and the prices that won, so you know where to bid lower or higher."
+    },
+    {
+      "id": "one-hand",
+      "icon": "🖐️",
+      "kind": "upgrade",
+      "title": "One-hand mode",
+      "why": "A switch that moves the main buttons to the bottom corner so you can reach everything with your thumb while holding tools."
+    },
+    {
+      "id": "job-notes",
+      "icon": "📝",
+      "kind": "upgrade",
+      "title": "Notes on every job",
+      "why": "Type or say a note on a job card (like gate code or who to ask for). It shows up next time you open that job."
+    },
+    {
+      "id": "cash-view",
+      "icon": "💵",
+      "kind": "upgrade",
+      "title": "Money coming in",
+      "why": "One screen with invoices sent, paid and still waiting, with the oldest unpaid first."
+    },
+    {
+      "id": "offline-photos",
+      "icon": "📶",
+      "kind": "upgrade",
+      "title": "Photos work with no signal",
+      "why": "Take before and after photos in a basement with no signal; they send by themselves when you are back online."
+    },
+    {
+      "id": "notes-on-card",
+      "icon": "📌",
+      "kind": "upgrade",
+      "title": "Chat notes show on the job card",
+      "why": "What you told the chat to remember about an address also shows on that job's card, so you see it before you knock."
+    },
+    {
+      "id": "tap-to-call",
+      "icon": "📞",
+      "kind": "upgrade",
+      "title": "Tap to call the super",
+      "why": "On a job card, one tap calls or texts the contact you saved for that address."
+    },
+    {
+      "id": "route-share",
+      "icon": "🗺️",
+      "kind": "upgrade",
+      "title": "Send tomorrow's route",
+      "why": "One tap sends tomorrow's route (addresses only) to your own phone or a helper's."
+    },
+    {
+      "id": "photo-checklist",
+      "icon": "✅",
+      "kind": "upgrade",
+      "title": "Photo checklist per job",
+      "why": "Each job shows the photos HPD needs (before, after, close-up) with ticks as you take them."
+    },
+    {
+      "id": "expiry-watch",
+      "icon": "📅",
+      "kind": "upgrade",
+      "title": "Insurance and license dates",
+      "why": "The app warns you 30 days before an insurance or license paper runs out."
+    },
+    {
+      "id": "slow-bid-nudge",
+      "icon": "💲",
+      "kind": "upgrade",
+      "title": "Bids with no price yet",
+      "why": "A small count on the Bids button of invitations still waiting for your price."
+    },
+    {
+      "id": "weather-route",
+      "icon": "🌦️",
+      "kind": "upgrade",
+      "title": "Rain check on the route",
+      "why": "If rain or snow is coming, the route plan puts indoor jobs first and warns you about outdoor ones."
+    },
+    {
+      "id": "voice-job-note",
+      "icon": "🎙️",
+      "kind": "upgrade",
+      "title": "Say a note after each job",
+      "why": "Tap the mic on a finished job and say what you did; the app writes it down on that job."
+    },
+    {
+      "id": "rejected-fix",
+      "icon": "🛠️",
+      "kind": "upgrade",
+      "title": "Rejected job fixer",
+      "why": "When HPD rejects a job, the app lists exactly what to redo and puts it first on tomorrow's route."
+    },
+    {
+      "id": "month-totals",
+      "icon": "🗓️",
+      "kind": "upgrade",
+      "title": "Month at a glance",
+      "why": "One card with jobs done, invoices paid and money still waiting this month."
+    },
+    {
+      "id": "dark-mode",
+      "icon": "🌙",
+      "kind": "upgrade",
+      "title": "Dark screen at night",
+      "why": "A switch for a dark screen that is easier on the eyes in a dark truck."
+    },
+    {
+      "id": "big-buttons",
+      "icon": "🔘",
+      "kind": "upgrade",
+      "title": "Bigger buttons with gloves on",
+      "why": "A switch that makes every button bigger so you can tap it with work gloves."
+    },
+    {
+      "id": "invoice-auto-fill",
+      "icon": "🧾",
+      "kind": "upgrade",
+      "title": "Invoice already filled in",
+      "why": "When the affidavit is approved, the invoice opens with the job, the amount and the OMO already filled, so you only check it and send."
+    },
+    {
+      "id": "left-list-home",
+      "icon": "📋",
+      "kind": "upgrade",
+      "title": "All jobs with paperwork left",
+      "why": "One list on the home screen of every finished job that still has photos, an affidavit or an invoice missing, oldest first."
+    },
+    {
+      "id": "building-history",
+      "icon": "🏢",
+      "kind": "new",
+      "title": "Building history",
+      "why": "Every past job at this address with its photos and notes, one tap from the job card."
+    },
+    {
+      "id": "week-view",
+      "icon": "📅",
+      "kind": "new",
+      "title": "Week view",
+      "why": "Jobs, appointments, bids due and notices for the next 7 days on one screen."
+    },
+    {
+      "id": "invoice-check",
+      "icon": "🧾",
+      "kind": "upgrade",
+      "title": "Invoice check before sending",
+      "why": "Before the invoice goes out, the app checks the amount matches the award and the COA, and says what doesn't."
+    },
+    {
+      "id": "time-by-kind",
+      "icon": "📊",
+      "kind": "new",
+      "title": "How long each kind of work takes",
+      "why": "The robot tells you, from your timed jobs, how long doors, plaster or locks usually take, so you can plan the day and price bids."
+    },
+    {
+      "id": "late-job-nudge",
+      "icon": "⏰",
+      "kind": "new",
+      "title": "Job is taking long",
+      "why": "If you are on a job much longer than your usual time, the robot asks if you want to text the next tenant that you are running late."
+    },
+    {
+      "id": "photo-reason",
+      "icon": "📝",
+      "kind": "upgrade",
+      "title": "Say why there is no photo",
+      "why": "When the robot warns about a missing after photo, one tap saves a reason (no access, tenant refused) on the job."
+    },
+    {
+      "id": "forgot-tools",
+      "icon": "🧰",
+      "kind": "new",
+      "title": "Did you bring everything?",
+      "why": "Before you leave the office, the robot reads the shopping list for today's jobs and asks if the truck has it all."
+    },
+    {
+      "id": "no-access-second-try",
+      "icon": "🔁",
+      "kind": "new",
+      "title": "Second try after no access",
+      "why": "When a tenant is not home, the helper offers a second visit on the next route and texts them the new time, so the job is not closed too early."
+    },
+    {
+      "id": "award-countdown",
+      "icon": "⏳",
+      "kind": "new",
+      "title": "Days left to finish after award",
+      "why": "Each awarded job shows how many days are left before HPD expects it done, with the closest first."
+    },
+    {
+      "id": "rent-reminder-none",
+      "icon": "📆",
+      "kind": "new",
+      "title": "Jobs waiting on access",
+      "why": "A short list of jobs where the tenant never gave access, with the date of each try, so the no-access paperwork is ready."
+    },
+    {
+      "id": "photo-auto-name",
+      "icon": "🏷",
+      "kind": "upgrade",
+      "title": "Photos named by themselves",
+      "why": "Each photo is saved with the job number and before/after in its name, so nothing gets mixed up."
+    },
+    {
+      "id": "bid-compare-last",
+      "icon": "📊",
+      "kind": "new",
+      "title": "Same building, last price",
+      "why": "When you open a bid for a building you bid on before, the helper shows what you charged last time."
+    },
+    {
+      "id": "one-tap-call-hpd",
+      "icon": "☎️",
+      "kind": "new",
+      "title": "Call the HPD person in one tap",
+      "why": "Each job shows who at HPD wrote last, with a button to call or text them."
+    },
+    {
+      "id": "bad-signal-mode",
+      "icon": "📶",
+      "kind": "upgrade",
+      "title": "Works better with weak signal",
+      "why": "The map and job list stay usable with weak signal and say \"waiting for signal\" instead of freezing."
+    },
+    {
+      "id": "job-cost-total",
+      "icon": "💵",
+      "kind": "new",
+      "title": "What each job really made",
+      "why": "After a job closes, the app adds your receipts and your time and shows what you made on it, so you know which kind of work pays."
+    },
+    {
+      "id": "tenant-no-show",
+      "icon": "🚪",
+      "kind": "new",
+      "title": "Tenant no-show, one tap",
+      "why": "When you arrive and nobody answers, one tap texts and calls them, starts the no-access timer and keeps the proof for the affidavit."
+    },
+    {
+      "id": "photo-order",
+      "icon": "🖼",
+      "kind": "upgrade",
+      "title": "Photos in the order HPD likes",
+      "why": "Before / after photos are lined up in pairs on the paperwork, so HPD reads them at a glance and rejects fewer packages."
+    },
+    {
+      "id": "bid-recheck",
+      "icon": "🔁",
+      "kind": "new",
+      "title": "Second look before a bid is sent",
+      "why": "The helper reads the finished bid once more (price, name, job number, date) and says \"all good\" or what looks off."
+    },
+    {
+      "id": "slow-payers",
+      "icon": "⏳",
+      "kind": "new",
+      "title": "Who pays slowly",
+      "why": "A short list of the jobs HPD has not paid yet, oldest first, with one tap to write the follow-up for you to check."
+    },
+    {
+      "id": "pip-paid-alert",
+      "icon": "💰",
+      "kind": "new",
+      "title": "Alert when HPD pays",
+      "why": "The robot rings when a payment you were waiting on shows as paid, with the job number and amount."
+    },
+    {
+      "id": "pay-chase-list",
+      "icon": "📋",
+      "kind": "new",
+      "title": "Who to chase for money",
+      "why": "One list of finished jobs not paid yet, oldest first, with how many days each has waited."
+    },
+    {
+      "id": "duplicate-guard",
+      "icon": "🛡",
+      "kind": "upgrade",
+      "title": "Stop double sends",
+      "why": "Before anything goes to HPD the app checks if that job number was already sent and says so in plain words."
+    },
+    {
+      "id": "tenant-text-time",
+      "icon": "🕒",
+      "kind": "upgrade",
+      "title": "Best time to text",
+      "why": "The robot picks the hour tenants answer most and holds the first text until then."
+    },
+    {
+      "id": "day-end-recap",
+      "icon": "🌙",
+      "kind": "new",
+      "title": "End of day recap",
+      "why": "At 6 PM one short note: what got done, what is left for tomorrow, and which notice is due first."
+    },
+    {
+      "id": "photo-missing-check",
+      "icon": "📸",
+      "kind": "upgrade",
+      "title": "Missing photo warning",
+      "why": "Before you finish a job the app says which required photo (before, after, close-up) is still missing."
+    },
+    {
+      "id": "late-pay-chase",
+      "icon": "💰",
+      "kind": "new",
+      "title": "Unpaid jobs reminder",
+      "why": "Jobs finished and sent but not paid after 30 days show on the morning brief, with the day count."
+    },
+    {
+      "id": "same-block",
+      "icon": "📍",
+      "kind": "upgrade",
+      "title": "Same-block jobs together",
+      "why": "When two jobs are on the same block, the route puts them back to back so you park once."
+    },
+    {
+      "id": "tenant-no-show-log",
+      "icon": "🚪",
+      "kind": "upgrade",
+      "title": "No-access proof in one tap",
+      "why": "When a tenant is not home, one tap saves the time, the door photo and the call tries for the no-access paperwork."
+    },
+    {
+      "id": "price-memory",
+      "icon": "📊",
+      "kind": "upgrade",
+      "title": "Price hint from your past wins",
+      "why": "On a bid, the app shows the prices you won at for the same kind of work, so you can choose faster."
+    },
+    {
+      "id": "overdue-first",
+      "icon": "🚨",
+      "kind": "upgrade",
+      "title": "Overdue notices on top, always",
+      "why": "Anything overdue from HPD sits at the very top of the home screen in red, before the map and everything else."
+    },
+    {
+      "id": "offline-mode",
+      "icon": "📶",
+      "kind": "upgrade",
+      "title": "Works in a basement with no signal",
+      "why": "Jobs, photos and forms save on the phone and send themselves when the signal comes back."
+    },
+    {
+      "id": "pay-tracker",
+      "icon": "💰",
+      "kind": "new",
+      "title": "Where is my money?",
+      "why": "One list: finished jobs, invoice sent, paid or waiting, with the days waiting counted so you know who to chase."
+    },
+    {
+      "id": "bid-win-rate",
+      "icon": "🎯",
+      "kind": "new",
+      "title": "Bid price that wins",
+      "why": "Shows what prices won on similar jobs before and suggests a price in the winning range."
+    },
+    {
+      "id": "one-tap-call",
+      "icon": "☎️",
+      "kind": "upgrade",
+      "title": "Tap a job, tap to call",
+      "why": "Every job card gets big Call / Text / Navigate buttons so you never copy a number again."
+    },
+    {
+      "id": "bid-skip-last",
+      "icon": "⏭",
+      "kind": "upgrade",
+      "title": "Skipped bids wait at the end",
+      "why": "Anything you skip with Next goes to the back of the line, so you decide on it last."
+    },
+    {
+      "id": "unsent-bid-alert",
+      "icon": "🔔",
+      "kind": "upgrade",
+      "title": "Alert when a bid is saved but not sent",
+      "why": "If a bid has a price but no fax by 2 hours before it is due, the phone alerts you with a one-tap Send."
+    },
+    {
+      "id": "price-win-note",
+      "icon": "🏆",
+      "kind": "new",
+      "title": "Why this price",
+      "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
+    },
+    {
+      "id": "day-start-bids",
+      "icon": "🌅",
+      "kind": "upgrade",
+      "title": "Bids first thing in the morning",
+      "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
+    },
+    {
+      "id": "photo-count-live",
+      "icon": "📷",
+      "kind": "upgrade",
+      "title": "Photo count on every job card",
+      "why": "See how many photos are still needed on a job before you leave the building."
+    },
+    {
+      "id": "sent-today-total",
+      "icon": "💵",
+      "kind": "new",
+      "title": "Today: bids sent and money in sight",
+      "why": "A single line: how many bids went out today and what they add up to."
+    },
+    {
+      "id": "hpd-asks-box",
+      "icon": "📝",
+      "kind": "new",
+      "title": "One Notes box per HPD email",
+      "why": "Every HPD email shows as three lines on the job card: what they want, what you already sent, what is missing."
+    },
+    {
+      "id": "sent-proof",
+      "icon": "📎",
+      "kind": "new",
+      "title": "Proof it was sent",
+      "why": "Each job shows the sent affidavit and invoice with the date, so you can answer HPD in one tap with the proof."
+    },
+    {
+      "id": "repeat-ask",
+      "icon": "🔁",
+      "kind": "new",
+      "title": "HPD asked twice",
+      "why": "The app flags when HPD asks for something you already sent, with the date and file name to reply with."
+    },
+    {
+      "id": "photo-count",
+      "icon": "📷",
+      "kind": "new",
+      "title": "Photo count on every card",
+      "why": "See at a glance how many before and after photos a job has, and what is missing."
+    },
+    {
+      "id": "late-week",
+      "icon": "📆",
+      "kind": "new",
+      "title": "Friday late list",
+      "why": "Friday afternoon: the jobs that will be late next week so you can plan the route."
+    },
+    {
+      "id": "idea-edit-list",
+      "icon": "✏️",
+      "title": "Edit any idea before you build it",
+      "why": "Open an idea, change its words or drop it, then say Build. Nothing is built until you approve."
+    },
+    {
+      "id": "idea-all-list",
+      "icon": "📚",
+      "title": "One list of everything the app does",
+      "why": "A plain list of every feature in the app, so you can see what it already has and pick what to change."
+    },
+    {
+      "id": "try-guided",
+      "icon": "🧭",
+      "title": "Guided Try it",
+      "why": "Try it walks you step by step on a test job, saying what to tap and what should happen, so you never forget a step."
+    },
+    {
+      "id": "map-zoom-auto",
+      "icon": "🔍",
+      "title": "Zoom and scroll on the map",
+      "why": "Pinch to zoom the map in and out, and it scrolls to the job you tap, like the bids screen does."
+    },
+    {
+      "id": "ai-voice-calm",
+      "icon": "🎧",
+      "title": "Helper stays quiet until you ask",
+      "why": "The helper never talks by itself; it speaks only after you tap it, in a clear voice you can pick."
+    }
+  ],
+  "plan": {
+    "id": "2026-11-14-a",
+    "title": "Next on the plan: photo count, 7 AM bids, and why this price",
+    "items": [
+      {
+        "id": "photo-count-live",
+        "icon": "📷",
+        "title": "Photo count on every job card",
+        "why": "See how many photos are still needed on a job before you leave the building."
+      },
+      {
+        "id": "day-start-bids",
+        "icon": "🌅",
+        "title": "Bids first thing in the morning",
+        "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
+      },
+      {
+        "id": "price-win-note",
+        "icon": "🏆",
+        "title": "Why this price",
+        "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
+      }
+    ]
   }
- ],
- "plan": {
-  "id": "2026-11-14-a",
-  "title": "Next on the plan: photo count, 7 AM bids, and why this price",
-  "items": [
-   {
-    "id": "photo-count-live",
-    "icon": "📷",
-    "title": "Photo count on every job card",
-    "why": "See how many photos are still needed on a job before you leave the building."
-   },
-   {
-    "id": "day-start-bids",
-    "icon": "🌅",
-    "title": "Bids first thing in the morning",
-    "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
-   },
-   {
-    "id": "price-win-note",
-    "icon": "🏆",
-    "title": "Why this price",
-    "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
-   }
-  ]
- }
 }
