@@ -612,6 +612,30 @@
       "icon": "🎧",
       "title": "Helper stays quiet until you ask",
       "why": "The helper never talks by itself; it speaks only after you tap it, in a clear voice you can pick."
+    },
+    {
+      "id": "hpd-reply-draft",
+      "icon": "✉️",
+      "title": "Answer for HPD, ready to read",
+      "why": "When HPD writes, the app drafts a short plain answer from the job's facts; you read it and tap send."
+    },
+    {
+      "id": "job-day-timer",
+      "icon": "⏱",
+      "title": "Job stopwatch",
+      "why": "Tap Start when you arrive and Done when you leave; the time is kept on the job for your pay and for HPD questions."
+    },
+    {
+      "id": "bid-due-badge",
+      "icon": "🔴",
+      "title": "Red badge on bids due soon",
+      "why": "Bids due in under 24 hours get a red badge on the list, so none is missed."
+    },
+    {
+      "id": "supplies-list",
+      "icon": "🧾",
+      "title": "Supplies for tomorrow",
+      "why": "One list of what to bring for tomorrow's jobs, built from each job's work description."
     }
   ],
   "plan": {
