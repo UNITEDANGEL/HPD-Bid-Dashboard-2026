@@ -636,6 +636,48 @@
       "icon": "🧾",
       "title": "Supplies for tomorrow",
       "why": "One list of what to bring for tomorrow's jobs, built from each job's work description."
+    },
+    {
+      "id": "tenant-reply-inbox",
+      "icon": "💬",
+      "kind": "new",
+      "title": "Tenant replies in one place",
+      "why": "Every tenant text answer shows in one list with the job, so you never hunt for who answered."
+    },
+    {
+      "id": "receipt-photo",
+      "icon": "🧾",
+      "kind": "new",
+      "title": "Snap the receipt, cost goes on the job",
+      "why": "Photo of a store receipt adds the amount to that job's cost."
+    },
+    {
+      "id": "next-job-nav",
+      "icon": "🧭",
+      "kind": "new",
+      "title": "Next job in one tap",
+      "why": "When you finish a job, one button opens directions to the next one."
+    },
+    {
+      "id": "notice-clock-widget",
+      "icon": "⏱",
+      "kind": "new",
+      "title": "Notice countdown on the home screen",
+      "why": "The most urgent notice and its hours left sit at the top of the app."
+    },
+    {
+      "id": "hpd-yesterday",
+      "icon": "📅",
+      "kind": "change",
+      "title": "What HPD changed since yesterday",
+      "why": "One line per job: new notice, new rejection, new payment since you last looked."
+    },
+    {
+      "id": "big-text-toggle",
+      "icon": "🔠",
+      "kind": "change",
+      "title": "Text size button",
+      "why": "A button to make all text bigger or smaller, remembered next time."
     }
   ],
   "plan": {
