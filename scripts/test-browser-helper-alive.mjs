@@ -54,7 +54,7 @@ try {
   await page.waitForFunction(() => /translate\(-/.test(document.querySelector('[data-hpd-smoke="fc-claude-orb"] .fc-face-look')?.getAttribute("style") || ""), null, { timeout: 3000 });
   // 4) A quick tap: the magic. Sparkles burst out, the big face rises and greets you by name and time of day.
   // ("what do I have today" above was the day's brief; a fresh morning for the greeting.)
-  await page.evaluate(() => { localStorage.removeItem("hpd-said-v1"); window.__hear = ""; window.__said = []; if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 30); }; });
+  await page.evaluate(() => { localStorage.removeItem("hpd-said-v1"); localStorage.setItem("hpd-helper-talk", "1"); window.__hear = ""; window.__said = []; if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); setTimeout(() => u.onend?.(), 30); }; });
   await page.waitForTimeout(900); // a tap right after letting go of a hold doesn't count (the app waits 0.8 s)
   await orb.click();
   await page.locator('[data-hpd-smoke="fc-magic"]').waitFor({ state: "attached", timeout: 3000 });

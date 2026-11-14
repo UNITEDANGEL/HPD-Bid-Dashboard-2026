@@ -2383,6 +2383,8 @@ export default function FieldCommandClient() {
       : n.part === "jobs" && step ? { run: () => { setAgent(null); step.go(); }, at: Date.now() } : null;
     return n.text;
   };
+  // Owner, 14 Nov: "stop speaking auto when I click the AI": the helper only talks by itself if you turned it on (localStorage hpd-helper-talk = 1).
+  const helperTalks = () => { try { return localStorage.getItem("hpd-helper-talk") === "1"; } catch { return false; } };
   const startAgentChat = (magic = false) => {
     unlockChime();
     // Notice deadlines aren't said in the greeting (owner, 5 Nov): only when you open the notices.
@@ -2407,7 +2409,7 @@ export default function FieldCommandClient() {
         const acts0 = [...(ask0 ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
         setAgent({ heard: "👋", reply: again, recap: r, actions: acts0.length ? acts0 : undefined });
         offerRef.current = step ? { run: () => { setAgent(null); step.go(); }, at: Date.now() } : null;
-        speak(again.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
+        if (helperTalks()) speak(again.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); }); else setAgentTypeOpen(true);
         return;
       }
       const backFromSnooze = takeSnoozedBack(day);
@@ -2443,7 +2445,7 @@ export default function FieldCommandClient() {
       const habitName: Record<string, string> = { bids: "Bids", notices: "Notices", board: "the notice board" };
       const acts = [...(ask ? [{ label: "❓ Answer Claude", href: "#requests" }] : []), ...(habit ? [{ label: `▶ ${habitName[habit]} (your usual start)`, href: `#go:${habit}` }] : []), ...(step ? [{ label: "▶ Do it", href: "#next" }] : [])];
       setAgent({ heard: "👋", reply: hello, actions: acts.length ? acts : undefined });
-      speak(hello.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); });
+      if (helperTalks()) speak(hello.replace(/\bHPD\b/g, "H P D"), 650, () => { if (canListen) { convoRef.current = true; convoMissRef.current = 0; setConvo(true); startListening(); } else setAgentTypeOpen(true); }); else setAgentTypeOpen(true);
       return;
     }
     setAgent({ heard: "👋", reply: `${step ? `Hi! First thing: ${step.text.replace(/\.$/, "")}. ` : "Hi! "}What do you need? Talk to me, or tap ⌨️ to type.`, actions: step ? [{ label: "▶ Do it", href: "#next" }] : undefined });
