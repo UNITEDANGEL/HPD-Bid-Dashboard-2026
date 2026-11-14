@@ -7,6 +7,7 @@ import { answerFieldQuestion } from "../../lib/field-assistant";
 import { startDictation, type RecognitionConstructor } from "../../lib/planner-dictation";
 import { jobQueue, visitState } from "../../lib/job-queue";
 import { secondTryState } from "../../lib/field-next-action";
+import { rejectedFixes, type RejectedFix } from "../../lib/rejected-fixer";
 import { nyToday, type Appointment } from "../../lib/appointments";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import {
@@ -298,8 +299,12 @@ async function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Po
   });
 }
 
+// Rejected job fixer: jobs HPD sent back whose fix needs a visit go first; set by the drawer after it reads /data/hpd_requests.json.
+let rejectedFixMap: Record<string, RejectedFix> = {};
+const needsRedoVisit = (job: JobRecord) => !!rejectedFixMap[jobId(job)]?.needsVisit;
+
 function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
-  const records = source.filter((job) => !isClosed(job));
+  const records = source.filter((job) => needsRedoVisit(job) || !isClosed(job));
   const includeSet = new Set(plan.includeOmo);
   const excludeSet = new Set(plan.excludeOmo);
   const required = records.filter((job) => includeSet.has(jobId(job)) && !excludeSet.has(jobId(job)));
@@ -311,6 +316,7 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
     if (plan.boroughs.length && !plan.boroughs.includes(borough)) return false;
     if (plan.avoidBoroughs.includes(borough)) return false;
     // Due today (2nd try or appointment) is planned whatever its job date; areas still apply.
+    if (needsRedoVisit(job)) return true;
     if (dueToday(job)) return !plan.priorities.includes("appointments") || hasAppointmentToday(job);
     if (plan.daysBack !== null) {
       const age = jobDateAgeDays(job);
@@ -333,6 +339,7 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
     // Due today comes first: earlier appointments before later ones; a due 2nd try right after.
     if (due?.kind === "appointment") score += 1000 - due.order / 2;
     if (due?.kind === "second-try") score += 900;
+    if (needsRedoVisit(job)) score += 1500;
     if (urgent) score += plan.routePreference === "highest_priority" ? 1000 : 450;
     if (distance !== null) score += plan.routePreference === "shortest_drive" ? Math.max(0, 900 - distance * 35) : Math.max(0, 250 - distance * 10);
     return { job, lat, lng, distance, score, urgent, appointment, due };
@@ -348,7 +355,7 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
       lat,
       lng,
       distance,
-      reason: due ? due.label : appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
+      reason: needsRedoVisit(job) ? `Redo: ${rejectedFixMap[jobId(job)].todo[0]}` : due ? due.label : appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
       description: textValue(job, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
       contactName: cleanTenantContactName(textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"])),
       contactPhone: cleanTenantPhone(textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"])),
@@ -431,6 +438,13 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   }, [activeJobs, jobSearch]);
   const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id) && activeJobs.some((record) => jobId(record) === job.id)), [results, selectedIds, activeJobs]);
   const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
+
+  useEffect(() => {
+    fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (d?.jobs) rejectedFixMap = rejectedFixes(d.jobs, Object.fromEntries(records.map((j) => [jobId(j), String(j.RejectionCorrectedAt || "")]).filter(([, v]) => v)));
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const chat = chatRef.current;
