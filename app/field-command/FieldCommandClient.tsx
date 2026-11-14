@@ -124,6 +124,7 @@ function paperLine(p: Paper, nowMs: number): string {
   return d < 0 ? `ran out ${-d} day${d === -1 ? "" : "s"} ago` : d === 0 ? "runs out today" : `${d} day${d === 1 ? "" : "s"} left`;
 }
 import { crewText } from "../../lib/crew-share";
+import { workerLink } from "../../lib/worker-link";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
 import { emailBrief } from "../../lib/email-brief";
@@ -9101,7 +9102,8 @@ export default function FieldCommandClient() {
                       try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
-                      const text = crewText({ id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) });
+                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) };
+                      const text = crewText(crewJob) + `\n\nWorker view (job card, call, navigate, photos): ${workerLink(window.location.origin, crewJob)}`;
                       const nav = navigator as Navigator & { share?: (d: { title: string; text: string }) => Promise<void> };
                       if (nav.share) { try { await nav.share({ title: `HPD job ${id}`, text }); setCrewMsg("Sent to your worker's app."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
