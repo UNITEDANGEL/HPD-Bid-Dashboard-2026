@@ -1,6 +1,6 @@
 {
  "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
- "updated": "2026-11-13",
+ "updated": "2026-11-14",
  "ideas": [
   {
    "id": "helper-call-tenant",
@@ -547,6 +547,41 @@
    "kind": "new",
    "title": "Today: bids sent and money in sight",
    "why": "A single line: how many bids went out today and what they add up to."
+  },
+  {
+   "id": "hpd-asks-box",
+   "icon": "📝",
+   "kind": "new",
+   "title": "One Notes box per HPD email",
+   "why": "Every HPD email shows as three lines on the job card: what they want, what you already sent, what is missing."
+  },
+  {
+   "id": "sent-proof",
+   "icon": "📎",
+   "kind": "new",
+   "title": "Proof it was sent",
+   "why": "Each job shows the sent affidavit and invoice with the date, so you can answer HPD in one tap with the proof."
+  },
+  {
+   "id": "repeat-ask",
+   "icon": "🔁",
+   "kind": "new",
+   "title": "HPD asked twice",
+   "why": "The app flags when HPD asks for something you already sent, with the date and file name to reply with."
+  },
+  {
+   "id": "photo-count",
+   "icon": "📷",
+   "kind": "new",
+   "title": "Photo count on every card",
+   "why": "See at a glance how many before and after photos a job has, and what is missing."
+  },
+  {
+   "id": "late-week",
+   "icon": "📆",
+   "kind": "new",
+   "title": "Friday late list",
+   "why": "Friday afternoon: the jobs that will be late next week so you can plan the route."
   }
  ],
  "plan": {

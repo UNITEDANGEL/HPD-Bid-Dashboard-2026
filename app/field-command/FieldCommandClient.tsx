@@ -9307,10 +9307,15 @@ export default function FieldCommandClient() {
                       ) : null;
                     })()}
                     {fu.askedAt && !rejections.some((r) => r.omo === fu.omo) ? (
-                      <p className={`jc-hpd-notice${fu.hpdAsked ? " is-open" : ""}${/rejected/.test(fu.askedFor) ? " is-rejected" : ""}`} data-hpd-smoke="jc-hpd-notice">
-                        📩 {senderName(fu.askedBy || "HPD")} · {fu.askedFor || "email"} · {md(fu.askedAt)}{fu.hpdAsked ? " · waiting on you" : " · answered"}
+                      <div className={`jc-hpd-notice${fu.hpdAsked ? " is-open" : ""}${/rejected/.test(fu.askedFor) ? " is-rejected" : ""}`} data-hpd-smoke="jc-hpd-notice">
+                        <div>📩 {senderName(fu.askedBy || "HPD")} · {fu.askedFor || "email"} · {md(fu.askedAt)}{fu.hpdAsked ? " · waiting on you" : " · answered"}</div>
+                        <ul className="jc-notes" data-hpd-smoke="jc-hpd-notes">
+                          <li><b>HPD asked:</b> {fu.askedFor || "see the email"} ({md(fu.askedAt)})</li>
+                          <li><b>Already sent:</b> {fu.sentAt ? `affidavit + invoice paperwork, ${md(fu.sentAt)}` : "nothing yet"}</li>
+                          <li><b>Next:</b> {!fu.hpdAsked ? "nothing, you answered" : fu.sentAt && fu.askedAt > fu.sentAt ? "HPD wrote after your paperwork: open the emails and answer what is missing" : fu.sentAt ? "answer HPD" : "send the paperwork"}</li>
+                        </ul>
                         {fu.hpdAsked ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}`}> Open paperwork →</a> : null}
-                      </p>
+                      </div>
                     ) : null}
                   </div>
                 );

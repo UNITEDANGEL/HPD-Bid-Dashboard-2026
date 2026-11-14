@@ -15,6 +15,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 ## 🔎 14 Nov: What's new easier to read (owner: "a better what's new bigger text easy to read")
 
 - ✅ 99. Bigger text (18 px), more space, each day in its own box in What's new.
+- ✅ 100. Notes box on the job card for every HPD email: HPD asked / already sent (with date) / next (14 Nov, owner: "every notice very clear like Notes"). Test: the notice browser tests.
 
 ## 📋 14 Nov: next on the plan (the 12 Nov plan was all live already)
 
