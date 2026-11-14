@@ -5,8 +5,12 @@
       "date": "Nov 14, 2026",
       "title": "Bids sent today",
       "items": [
+        "📷 Job card: a yellow line at the top says how many photos and videos are still needed before you leave (green when all are done).",
+        "🧾 The helper's morning hello now says how many bids are due today, which one closes first, and how many are due tomorrow.",
+        "💲 On a bid: under the price buttons, one line shows what the 3 closest past jobs went for.",
+        "🔧 The orange “questions” bubble on the helper now sits above its head, so it no longer covers the head or the purple box.",
         "🤫 The helper no longer talks by itself when you tap the 🤖. It shows the words and a typing box; the voice is for when you ask for it.",
-    "📝 Job card: every HPD email now has a short Notes box with three lines: what HPD asked, what you already sent (the affidavit and invoice paperwork, with the date) and what to do next.",
+        "📝 Job card: every HPD email now has a short Notes box with three lines: what HPD asked, what you already sent (the affidavit and invoice paperwork, with the date) and what to do next.",
         "🔎 What's new is easier to read: bigger text, more space between lines, and each day in its own box.",
         "📋 On the map, the to-do list at the bottom is easier: tap the words of any job in it and the job opens right away (the 📍 Show button still works). When two jobs in a row have the same ask from HPD, the second one just says \"same ask as the one above\", so the list no longer repeats itself.",
         "💵 On the bids screen, one line shows how many bids went out today and what they add up to."

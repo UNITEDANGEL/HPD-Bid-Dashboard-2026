@@ -40,6 +40,16 @@ try {
   const badge = page.locator('[data-hpd-smoke="fc-claude-orb-ask"]');
   await badge.waitFor({ timeout: 30000 });
   assert.equal(await badge.innerText(), "2 questions", "the real count");
+  // The badge never covers the helper's head or the buttons beside it (owner, 14 Nov: "questions overlap ai head and the purple box").
+  const over = await page.evaluate(() => {
+    const r = (el) => el.getBoundingClientRect();
+    const b = r(document.querySelector('[data-hpd-smoke="fc-claude-orb-ask"]'));
+    const hit = (o) => !(o.bottom <= b.top || o.top >= b.bottom || o.right <= b.left || o.left >= b.right);
+    const head = document.querySelector(".fc-claude-orb .fc-ai-orb-core");
+    const others = [...document.querySelectorAll(".fc-dock button, .fc-dock a")].filter((e) => !e.closest(".fc-claude-orb"));
+    return { head: head ? hit(r(head)) : false, others: others.filter((e) => hit(r(e))).length, inView: b.left >= 0 && b.right <= innerWidth && b.top >= 0 };
+  });
+  assert.deepEqual(over, { head: false, others: 0, inView: true }, JSON.stringify(over));
   const card = page.locator('[data-hpd-smoke="fc-claude-live"]');
   await card.waitFor({ timeout: 30000 });
   assert.match(await card.innerText(), /Claude · has one question for you[\s\S]*When do your insurance and license papers run out\?/);

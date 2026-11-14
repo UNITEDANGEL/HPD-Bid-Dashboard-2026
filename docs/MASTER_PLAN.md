@@ -16,6 +16,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 - ✅ 99. Bigger text (18 px), more space, each day in its own box in What's new.
 - ✅ 100. Notes box on the job card for every HPD email: HPD asked / already sent (with date) / next (14 Nov, owner: "every notice very clear like Notes"). Test: the notice browser tests.
+- ✅ 101. Photo count on every job card: yellow line "N photos/videos still needed" (14 Nov plan). Test: test-browser-photo-checklist.mjs.
+- ✅ 102. Helper morning hello: bids due today (closest deadline) and tomorrow (14 Nov plan). Test: test-browser-photo-checklist.mjs (bidsBriefLine).
+- ✅ 103. Why this price: the 3 closest past jobs and what each went for, under the price buttons (14 Nov plan). Tests: test-bid-price.cjs, test-browser-bids.mjs.
+- ✅ 104. Questions bubble above the helper head, not over it (owner 14 Nov). Test: test-browser-claude-ask-quick.mjs.
 
 ## 📋 14 Nov: next on the plan (the 12 Nov plan was all live already)
 

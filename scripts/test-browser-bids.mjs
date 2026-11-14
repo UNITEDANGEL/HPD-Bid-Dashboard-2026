@@ -163,6 +163,7 @@ try {
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-confidence"]').innerText(), /Good match|Fair match|Rough guide/);
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-why"]').innerText(), /awarded/);
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-targets"]').innerText(), /Win most[\s\S]*wins ~\d+%/);
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-whyprice"]').innerText(), /^Why \$[\d,]+: the (closest past job|\d closest past jobs) went for \$/);
     await sheet.locator('[data-hpd-smoke="fc-bid-similar-toggle"]').click();
     const similar = sheet.locator('[data-hpd-smoke="fc-bid-similar"] li');
     assert.ok(await similar.count() >= 2, "past jobs like this are listed");

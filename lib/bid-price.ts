@@ -411,3 +411,11 @@ export function bestPrice(help: Pick<PriceHelp, "prices" | "toWin">) {
   }
   return { ...best, expected: Math.round(value) };
 }
+
+// Why this price (plan, 14 Nov): the 3 closest past jobs and what each went for, in one line under the price buttons.
+export function whyPriceLine(similar: { amount: number; date?: string; won?: boolean }[], price?: number): string {
+  const top = similar.filter((e) => e.amount > 0).slice(0, 3);
+  if (!top.length) return "";
+  const fmt = (e: { amount: number; date?: string }) => `$${Math.round(e.amount).toLocaleString("en-US")}${e.date ? ` (${e.date.slice(5, 7)}/${e.date.slice(8, 10)})` : ""}`;
+  return `Why ${price ? `$${Math.round(price).toLocaleString("en-US")}` : "this price"}: the ${top.length === 1 ? "closest past job" : `${top.length} closest past jobs`} went for ${top.map(fmt).join(", ")}.`;
+}

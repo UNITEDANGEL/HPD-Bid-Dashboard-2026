@@ -7,7 +7,7 @@
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import SentBidStats from "./SentBidStats";
-import { priceHelp, readScope, winChance, type PricedJob, bestPrice } from "../../lib/bid-price";
+import { priceHelp, readScope, winChance, whyPriceLine, type PricedJob, bestPrice } from "../../lib/bid-price";
 import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, workLabel, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
@@ -1843,6 +1843,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                       </button>
                     ))}
                   </div>
+                  {whyPriceLine(help.similar, draftValue > 0 ? draftValue : help.middle) ? <p className="fc-bid-whyprice" data-hpd-smoke="fc-bid-whyprice">{whyPriceLine(help.similar, draftValue > 0 ? draftValue : help.middle)}</p> : null}
                   {draftValue > 0 ? <p className="fc-bid-chance" data-hpd-smoke="fc-bid-chance">At {money(draftValue)} you would have won about <b>{Math.round(winChance(help, draftValue) * 100)}%</b> of these jobs.</p> : null}
                   <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-similar-toggle" onClick={() => setShowSimilar((v) => !v)}>{showSimilar ? "Hide past jobs" : `Past jobs like this (${help.similar.length})`}</button>
                   {showSimilar ? (

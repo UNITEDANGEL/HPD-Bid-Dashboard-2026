@@ -22,3 +22,22 @@ export function checklistLine(items: CheckItem[]) {
   const left = items.filter((i) => !i.done);
   return left.length ? `Still to take: ${left.map((i) => i.label.toLowerCase()).join(", ")}` : "All photos and videos HPD needs are saved ✓";
 }
+
+// Photo count on every job card (plan, 14 Nov): how many photos/videos are still needed before you leave the building.
+// 3 before photos + 3 after photos + a before and an after video; counts come from the same saved counts as the checklist.
+export function photosStillNeeded(c: MediaCounts | null | undefined): { left: number; line: string } {
+  const m = c || { before: 0, after: 0 };
+  const bv = m.beforeVideos || 0, av = m.afterVideos || 0;
+  const bp = Math.max(0, (m.before || 0) - bv), ap = Math.max(0, (m.after || 0) - av);
+  const left = Math.max(0, 3 - bp) + Math.max(0, 3 - ap) + (bv ? 0 : 1) + (av ? 0 : 1);
+  return { left, line: left ? `📷 ${left} photo${left === 1 ? "" : "s"}/video${left === 1 ? "" : "s"} still needed` : "📷 All photos and videos done ✓" };
+}
+
+// 7 AM bids brief (plan, 14 Nov): "3 bids due today, the closest at 11:00 AM, and 2 due tomorrow."
+export function bidsBriefLine(b: { unsentToday?: number; tomorrow?: number; firstTime?: string }): string {
+  const n = b.unsentToday || 0, t = b.tomorrow || 0;
+  if (!n && !t) return "";
+  const today = n ? `${n} bid${n === 1 ? "" : "s"} due today${b.firstTime ? `, ${n === 1 ? "closing" : "the closest closes"} at ${b.firstTime}` : ""}` : "";
+  const tom = t ? `${t} due tomorrow` : "";
+  return [today, tom].filter(Boolean).join(" and ");
+}

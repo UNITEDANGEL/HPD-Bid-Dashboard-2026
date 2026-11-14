@@ -127,7 +127,7 @@ import { crewText } from "../../lib/crew-share";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
 import { emailBrief } from "../../lib/email-brief";
-import { checklistLine, photoChecklist } from "../../lib/photo-checklist";
+import { checklistLine, photoChecklist, photosStillNeeded, bidsBriefLine } from "../../lib/photo-checklist";
 import { recentSearches, rememberSearch, spokenSearch } from "../../lib/job-search";
 import { findJobRef, parseCommand, splitCommands, thinkingQuestion } from "../../lib/voice-agent";
 import { loadNotes, notesFor, saveNote } from "../../lib/voice-notes";
@@ -2397,7 +2397,7 @@ export default function FieldCommandClient() {
       // 🗣 Said once a day (owner, 5 Nov): the morning brief the first time; after that "Hi again" with what got done,
       // what's still open of what it told you, and the next thing. No job counts at all.
       const day = nyToday();
-      const parts = [bidsDue.unsentToday ? `${bidsDue.unsentToday} bid${bidsDue.unsentToday === 1 ? "" : "s"} due today` : ""].filter(Boolean);
+      const parts = [bidsBriefLine(bidsDue)].filter(Boolean);
       if (briefDone(day)) {
         const r = recapNow();
         const ask0 = (changeThreads || []).find((x) => x.status === "Waiting for you");
@@ -8393,6 +8393,7 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
               </button>
+              {(() => { const need = photosStillNeeded(counts); return <p className={`jc-photo-count ${need.left ? "is-left" : "is-ok"}`} data-hpd-smoke="jc-photo-count">{need.line}</p>; })()}
               {(() => {
                 const omo = jobId(selectedJob);
                 const it = prioByOmo.get(omo);

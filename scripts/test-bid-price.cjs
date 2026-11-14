@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (file) => { const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, require); return m.exports; };
-const { priceHelp, readScope, winChance, bestPrice } = load('lib/bid-price.ts');
+const { priceHelp, readScope, winChance, bestPrice, whyPriceLine } = load('lib/bid-price.ts');
 const fill = load('lib/bid-fill.ts');
 
 const history = [
@@ -189,4 +189,6 @@ assert.equal(readScope('REPLACE 12 X 12 CERAMIC TILES AT KITCHEN FLOOR').glassSq
 assert.equal(readScope('REPLACE 12 X 12 CERAMIC TILES AT KITCHEN FLOOR').repairSqft, 0, 'a tile size is not an area');
 assert.equal(readScope('AT KITCHEN FLOOR 13 X 17 INSTALL NEW VINYL TILES').repairSqft, 221);
 assert.equal(readScope('REMOVE 36 SQ FT OF DEFECTIVE PLASTER AT KITCHEN WALL 6 X 6').repairSqft, 36, 'given sq ft wins over a room size');
+assert.equal(whyPriceLine([], 400), '');
+assert.equal(whyPriceLine([{ amount: 380, date: '2026-10-01' }, { amount: 400 }, { amount: 420, date: '2026-09-02' }, { amount: 999 }], 400), 'Why $400: the 3 closest past jobs went for $380 (10/01), $400, $420 (09/02).');
 console.log('PASS bid price help: reads the whole description (glass pane sizes, room sizes, work items, doors, windows, repair and paint sq ft, tasks), matches the same mix of work, adjusts for size, flags work with no history; bid package text');

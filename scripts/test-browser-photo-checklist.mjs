@@ -1,3 +1,4 @@
+// 📷 Photo count chip on the job card (plan, 14 Nov): "N photos/videos still needed" counts down as photos are saved.
 // 📋 Photo checklist per job (idea list): TEST-0001 on an iPhone starts with all four ⬜ (before photos, before video,
 // after photos, after video); a before photo ticks "Before photos" (1 of 3) and the line says what's still to take.
 import assert from "node:assert/strict";
@@ -6,6 +7,15 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const { photoChecklist, checklistLine } = await loadLib("photo-checklist");
+const { photosStillNeeded } = await loadLib("photo-checklist");
+assert.equal(photosStillNeeded(null).left, 8);
+assert.equal(photosStillNeeded({ before: 4, beforeVideos: 1, after: 2, afterVideos: 0 }).left, 2);
+assert.equal(photosStillNeeded({ before: 4, beforeVideos: 1, after: 4, afterVideos: 1 }).line, "📷 All photos and videos done ✓");
+const { bidsBriefLine } = await loadLib("photo-checklist");
+assert.equal(bidsBriefLine({}), "");
+assert.equal(bidsBriefLine({ unsentToday: 3, tomorrow: 2, firstTime: "11:00 AM" }), "3 bids due today, the closest closes at 11:00 AM and 2 due tomorrow");
+assert.equal(bidsBriefLine({ unsentToday: 1, firstTime: "9:00 AM" }), "1 bid due today, closing at 9:00 AM");
+assert.equal(bidsBriefLine({ tomorrow: 1 }), "1 due tomorrow");
 const none = photoChecklist(null);
 assert.deepEqual(none.map((i) => i.done), [false, false, false, false]);
 const some = photoChecklist({ before: 4, beforeVideos: 1, after: 2, afterVideos: 0 });
@@ -28,6 +38,8 @@ try {
   await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
   const list = page.locator('[data-hpd-smoke="jc-photo-list"]');
   await list.waitFor({ timeout: 20000 });
+  const chip = page.locator('[data-hpd-smoke="jc-photo-count"]');
+  assert.match(await chip.textContent(), /8 photos\/videos still needed/);
   assert.equal(await list.locator("li.is-done").count(), 0);
   assert.match(await list.locator("b").first().textContent(), /^Still to take: before photos, before video, after photos, after video$/);
   await page.locator('input.fc-hidden-file[accept="image/*"][capture]').first().setInputFiles({ name: "p.png", mimeType: "image/png", buffer: png });
@@ -35,6 +47,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="jc-photo-list-before-photos"]')?.classList.contains("is-done"), null, { timeout: 20000 });
   assert.match(await page.locator('[data-hpd-smoke="jc-photo-list-before-photos"]').textContent(), /✅Before photos1 of 3/);
   assert.match(await list.locator("b").first().textContent(), /^Still to take: before video, after photos, after video$/);
+  assert.match(await chip.textContent(), /7 photos\/videos still needed/);
   assert.deepEqual(errors, []);
   console.log("PASS photo checklist: four items ⬜; a before photo ticks Before photos (1 of 3); the line lists what's left");
 } finally {
