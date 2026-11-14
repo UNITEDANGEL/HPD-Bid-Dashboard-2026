@@ -550,26 +550,26 @@
   }
  ],
  "plan": {
-  "id": "2026-11-12-a",
-  "title": "Next on the plan: morning notices, tenant language, and receipt photos",
+  "id": "2026-11-14-a",
+  "title": "Next on the plan: photo count, 7 AM bids, and why this price",
   "items": [
    {
-    "id": "notice-walk-auto",
-    "icon": "🗂",
-    "title": "Notices every morning",
-    "why": "At 8 AM the helper starts \"go through my notices\" by itself when something is still to send."
+    "id": "photo-count-live",
+    "icon": "📷",
+    "title": "Photo count on every job card",
+    "why": "See how many photos are still needed on a job before you leave the building."
    },
    {
-    "id": "tenant-lang-remember",
-    "icon": "🌐",
-    "title": "Remember the tenant's language",
-    "why": "Once a tenant texts in Spanish, Chinese or Russian, every text to them (reminders, on my way) goes in their language."
+    "id": "day-start-bids",
+    "icon": "🌅",
+    "title": "Bids first thing in the morning",
+    "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
    },
    {
-    "id": "shop-receipt-photo",
-    "icon": "🧾",
-    "title": "Receipt photo on the job",
-    "why": "Take a photo of the store receipt and the helper adds the amount to that job's costs."
+    "id": "price-win-note",
+    "icon": "🏆",
+    "title": "Why this price",
+    "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
    }
   ]
  }
