@@ -1575,6 +1575,9 @@ export default function FieldCommandClient() {
   const [voiceMuted, setVoiceMuted] = useState(false);
   const [chatTip, setChatTip] = useState("");
   const chatInputRef = useRef<HTMLInputElement | null>(null);
+  // Keyboard only when asked (owner, 14 Nov: "when I click the AI it opens the keyboard, it shouldn't"): the helper's type box
+  // takes the cursor only after the keyboard button; opening the helper any other way leaves the keyboard down.
+  const typeFocusRef = useRef(false);
   useEffect(() => { setCanSpeak(voiceSupported()); setVoiceMuted(voiceOff()); }, []);
   // What this phone can do with voice, on the status server (no names or phones) so Claude can see why the voice isn't
   // working there: at most once every 10 minutes, and on every mic error. Not from the automatic tests.
@@ -10662,7 +10665,7 @@ export default function FieldCommandClient() {
             </div>
           ) : null}
           {agentTypeOpen ? <form className="fc-agent-type" data-hpd-smoke="fc-agent-type" onSubmit={(e) => { e.preventDefault(); const t = agentTyped.trim(); if (!t) return; setAgentTyped(""); agentRef.current(t); }}>
-            <input autoFocus value={agentTyped} onChange={(e) => setAgentTyped(e.target.value)} placeholder="Type anything, or tell Claude what to change" aria-label="Type to the helper" data-hpd-smoke="fc-agent-type-input" enterKeyHint="send" />
+            <input autoFocus={typeFocusRef.current} value={agentTyped} onChange={(e) => setAgentTyped(e.target.value)} placeholder="Type anything, or tell Claude what to change" aria-label="Type to the helper" data-hpd-smoke="fc-agent-type-input" enterKeyHint="send" />
             <button type="button" className={`fc-agent-type-mic${listening ? " is-on" : ""}`} aria-label={listening ? "Stop listening" : "Talk instead of typing"} aria-pressed={listening} data-hpd-smoke="fc-agent-type-mic" onClick={(e) => { if (listening) { listenRef.current?.stop(); } else if (canListen) { unlockChime(); startListening(); } else { reportVoice("keyboard mic"); (e.currentTarget.form?.querySelector("input") as HTMLInputElement | null)?.focus(); } }}>🎙️</button>
             <button type="submit" disabled={!agentTyped.trim()} data-hpd-smoke="fc-agent-type-send">Send</button>
           </form> : null}
@@ -10718,7 +10721,7 @@ export default function FieldCommandClient() {
             </> : null}
             {speakingNow ? <button type="button" className="fc-agent-hush" data-hpd-smoke="fc-agent-hush" aria-label="Stop talking" onClick={() => stopSpeaking()}>🔇 Stop</button> : null}
             <button type="button" className={convo ? "is-on" : ""} data-hpd-smoke="fc-agent-talk" aria-pressed={convo} onClick={() => { const on = !convo; convoRef.current = on; convoMissRef.current = 0; setConvo(on); if (on) { unlockChime(); if (!listening) startListening(); } else listenRef.current?.stop(); }}>{convo ? (listening ? "💬 Listening… (tap to stop)" : "💬 Talking (tap to stop)") : "💬 Keep talking"}</button>
-            <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => setAgentTypeOpen((o) => !o)}>⌨️</button>
+            <button type="button" className={agentTypeOpen ? "is-on" : ""} aria-label="Type instead" aria-pressed={agentTypeOpen} data-hpd-smoke="fc-agent-type-btn" onClick={() => { typeFocusRef.current = !agentTypeOpen; setAgentTypeOpen((o) => !o); }}>⌨️</button>
             <button type="button" className={helpOpen ? "is-on" : ""} aria-label="What can I say?" data-hpd-smoke="fc-agent-help-btn" onClick={() => setHelpOpen((o) => !o)}>❓</button>
             <button type="button" aria-label="Read a photo" data-hpd-smoke="fc-agent-photo" onClick={() => photoInputRef.current?.click()}>📷</button>
             <button type="button" aria-label="Dress the helper" aria-pressed={dressOpen} data-hpd-smoke="fc-agent-dress" onClick={() => setDressOpen((o) => !o)}>🎨</button>
