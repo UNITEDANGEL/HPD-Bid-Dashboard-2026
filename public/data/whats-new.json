@@ -1,11 +1,11 @@
 {
-  "note        "🤫 The helper no longer talks by itself when you tap the 🤖. It shows the words and a typing box; the voice is for when you ask for it.",
-": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
+  "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
       "date": "Nov 14, 2026",
       "title": "Bids sent today",
       "items": [
+        "🤫 The helper no longer talks by itself when you tap the 🤖. It shows the words and a typing box; the voice is for when you ask for it.",
     "📝 Job card: every HPD email now has a short Notes box with three lines: what HPD asked, what you already sent (the affidavit and invoice paperwork, with the date) and what to do next.",
         "🔎 What's new is easier to read: bigger text, more space between lines, and each day in its own box.",
         "📋 On the map, the to-do list at the bottom is easier: tap the words of any job in it and the job opens right away (the 📍 Show button still works). When two jobs in a row have the same ask from HPD, the second one just says \"same ask as the one above\", so the list no longer repeats itself.",
