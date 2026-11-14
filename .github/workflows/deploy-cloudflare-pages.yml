@@ -442,6 +442,7 @@ jobs:
             scripts/test-browser-photo.mjs \
             scripts/test-browser-claude-now.mjs \
             scripts/test-browser-ideas.mjs \
+            scripts/test-browser-ideas-edit.mjs \
             scripts/test-browser-photo-check.mjs \
             scripts/test-browser-photo-look.mjs \
             scripts/test-browser-job-notes.mjs \

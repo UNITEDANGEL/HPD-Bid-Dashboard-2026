@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✏️ 14 Nov: edit any idea + list of everything (owner: "I have to approve everything ... I need a clear list of all the things in this app")
+- ✅ 105. ✏️ Change on each idea (👍 sends the owner's words), ↩ bring back skipped ideas, 📜 Everything the app does with ✏️ Change this on each line. Test: test-browser-ideas-edit.mjs.
+
 ## 📠 14 Nov: revise any past bid + bigger quick-question buttons (owner requests)
 - ✅ Past bids kept 45 days in past_bids.json (scripts/fetch_upcoming_bids.py, no tenant notes); the Bids screen loads them so "Open · revise" works. Seeded with 229 bids from the last 45 days.
 - ✅ Chat quick questions open above the chat bar in two big rows (test-browser-quick-questions.mjs).

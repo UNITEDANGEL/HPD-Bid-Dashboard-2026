@@ -1871,6 +1871,24 @@ export default function FieldCommandClient() {
   // the file, so the screen shows the list from the end; "Show more" opens the rest.
   const openIdeas = (list: Idea[] | null = ideas) => [...(list || [])].reverse().filter((x) => !ideasPicked[x.id]);
   const [ideasAll, setIdeasAll] = useState(false);
+  // ✏️ Change any idea before it is built (owner, 14 Nov: "I have to approve everything ... I should be able to go back and change it"):
+  // the new words are kept on this phone and are what 👍 Do it sends. ↩ Skipped ideas can be brought back.
+  const [ideaEdits, setIdeaEdits] = useState<Record<string, { title: string; why: string }>>({});
+  const [ideaEditing, setIdeaEditing] = useState("");
+  const [ideaDraft, setIdeaDraft] = useState({ title: "", why: "" });
+  const [skippedOpen, setSkippedOpen] = useState(false);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  useEffect(() => { try { setIdeaEdits(JSON.parse(localStorage.getItem("hpd-idea-edits") || "{}")); } catch { /* private mode */ } }, []);
+  const withEdit = (x: Idea): Idea => (ideaEdits[x.id] ? { ...x, ...ideaEdits[x.id] } : x);
+  const saveIdeaEdit = (id: string) => {
+    const title = ideaDraft.title.trim().slice(0, 80);
+    const why = ideaDraft.why.trim().slice(0, 240);
+    if (title) setIdeaEdits((m) => { const next = { ...m, [id]: { title, why } }; try { localStorage.setItem("hpd-idea-edits", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+    setIdeaEditing("");
+  };
+  const unmarkIdea = (id: string) => setIdeasPicked((m) => { const next = { ...m }; delete next[id]; try { localStorage.setItem("hpd-ideas-picked", JSON.stringify(next)); } catch { /* private mode */ } return next; });
+  const skippedIdeas = () => [...(ideas || [])].reverse().filter((x) => (ideasPicked[x.id] || "").startsWith("skip"));
+  const featureList = () => (Array.isArray(whatsNew) ? whatsNew.flatMap((v) => v.items.map((i) => ({ date: v.date, text: i }))) : []);
   const markIdea = (id: string, how: string) => {
     setIdeasPicked((m) => { const next = { ...m, [id]: `${how}|${new Date().toISOString()}` }; try { localStorage.setItem("hpd-ideas-picked", JSON.stringify(next)); } catch { /* private mode */ } return next; });
   };
@@ -9586,16 +9604,28 @@ export default function FieldCommandClient() {
               <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
               {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
                 <ol className="fc-idea-list">
-                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x) => (
+                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x0) => { const x = withEdit(x0); return (
                     <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
-                      <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}</b>
-                      <span>{x.why}</span>
-                      <span className="fc-idea-btns">
-                        <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
-                        <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
-                      </span>
+                      {ideaEditing === x.id ? (
+                        <span className="fc-idea-edit" data-hpd-smoke="fc-idea-edit">
+                          <input data-hpd-smoke="fc-idea-edit-title" aria-label="Idea title" value={ideaDraft.title} maxLength={80} onChange={(e) => setIdeaDraft((d) => ({ ...d, title: e.target.value }))} />
+                          <textarea rows={3} data-hpd-smoke="fc-idea-edit-why" aria-label="What it should do" value={ideaDraft.why} maxLength={240} onChange={(e) => setIdeaDraft((d) => ({ ...d, why: e.target.value }))} />
+                          <span className="fc-idea-btns">
+                            <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-edit-save" onClick={() => saveIdeaEdit(x.id)}>💾 Save my words</button>
+                            <button type="button" className="fc-idea-skip" onClick={() => setIdeaEditing("")}>Cancel</button>
+                          </span>
+                        </span>
+                      ) : (<>
+                        <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}{ideaEdits[x.id] ? <small> · your words</small> : null}</b>
+                        <span>{x.why}</span>
+                        <span className="fc-idea-btns">
+                          <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
+                          <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-change" onClick={() => { setIdeaDraft({ title: x.title, why: x.why }); setIdeaEditing(x.id); }}>✏️ Change</button>
+                          <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
+                        </span>
+                      </>)}
                     </li>
-                  ))}
+                  ); })}
                 </ol>
               )}
               {openIdeas().length > 6 ? <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-showmore" onClick={() => setIdeasAll((v) => !v)}>{ideasAll ? "Show fewer" : `Show more (${openIdeas().length - 6} more)`}</button> : null}
@@ -9603,6 +9633,23 @@ export default function FieldCommandClient() {
                 <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
                 <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
               </div>
+              {skippedIdeas().length ? (
+                <div className="fc-idea-skipped" data-hpd-smoke="fc-ideas-skipped">
+                  <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-skipped-toggle" onClick={() => setSkippedOpen((v) => !v)}>↩ Skipped ideas ({skippedIdeas().length}): {skippedOpen ? "hide" : "bring one back"}</button>
+                  {skippedOpen ? <ul>{skippedIdeas().map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span> <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-restore" data-id={x.id} onClick={() => unmarkIdea(x.id)}>↩ Bring back</button></li>; })}</ul> : null}
+                </div>
+              ) : null}
+              <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-features-toggle" onClick={() => { setFeaturesOpen((v) => !v); void loadWhatsNew(); }}>📜 Everything the app does ({featureList().length || "…"}): {featuresOpen ? "hide" : "show the list"}</button>
+              {featuresOpen ? (
+                <ol className="fc-idea-list" data-hpd-smoke="fc-features">
+                  {featureList().map((f, i) => (
+                    <li key={i} className="fc-idea" data-hpd-smoke="fc-feature">
+                      <span>{f.text}</span>
+                      <span className="fc-idea-btns"><button type="button" className="fc-idea-skip" data-hpd-smoke="fc-feature-change" onClick={() => { setChangeText(`Change this: ${f.text.slice(0, 160)} → I want: `); setFeaturesOpen(false); setTimeout(() => (document.querySelector('[data-hpd-smoke="fc-ask-change-text"]') as HTMLElement | null)?.focus(), 50); }}>✏️ Change this</button></span>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
               {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
               {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
               {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
