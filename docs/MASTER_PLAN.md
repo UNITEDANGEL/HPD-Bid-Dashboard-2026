@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 💵 14 Nov: bids sent today and money in sight (idea from the app)
+
+✅ One line above the bids tabs: "Today: N bids sent · $total in sight". Test: test-browser-bids-todayline.mjs.
+
 ## 🧹 13 Nov: vendor tracking board layout (owner: "the layout is no good")
 
 ✅ Slimmer email check, four lists in one row, counts in a 3-column grid; the first job shows sooner. Test: the notice board tests.

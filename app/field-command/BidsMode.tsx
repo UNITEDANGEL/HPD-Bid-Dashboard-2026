@@ -2027,6 +2027,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
             {listCollapsed ? `▲ ${list.length} invitation${list.length === 1 ? "" : "s"}${todayInfo.total ? ` · ${todayInfo.sent} of ${todayInfo.total} due today sent` : checklist.todo.length ? ` · ${checklist.todo.length} to bid` : ""}` : listSize === "half" ? "▲ Pull up for the whole list" : "▼ Smaller (see the map)"}
           </button>
           {!listCollapsed ? <button type="button" className="fc-bids-tomap" data-hpd-smoke="fc-bids-peek" onClick={() => setListSize("peek")}>🗺 Map</button> : null}
+          {(() => { const sentToday = Object.values(records).filter((r) => r.status !== "saved" && r.sentAt && NY_DAY.format(new Date(r.sentAt)) === today); const total = sentToday.reduce((a, r) => a + (r.sentPrice || r.price || 0), 0);
+            return <p className="fc-bids-todayline" data-hpd-smoke="fc-bids-todayline">💵 Today: {sentToday.length} bid{sentToday.length === 1 ? "" : "s"} sent · {money2(total)} in sight</p>; })()}
           <div className="fc-bid-tabs" role="tablist">
             <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({shownBids.length})</button>
             <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => { setTab("mine"); setListSize((v) => (v === "peek" ? "half" : v)); }}>Mine ({sentCount})</button>

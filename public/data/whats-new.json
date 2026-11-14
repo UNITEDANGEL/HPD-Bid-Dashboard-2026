@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 14, 2026",
+      "title": "Bids sent today",
+      "items": [
+        "💵 On the bids screen, one line shows how many bids went out today and what they add up to."
+      ]
+    },
+    {
       "date": "Nov 13, 2026",
       "title": "A smarter helper about prices",
       "items": [
