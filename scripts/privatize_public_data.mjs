@@ -151,7 +151,7 @@ function main() {
     fs.writeFileSync(csvPath, [cols.map(csvCell).join(","), ...rows.map((r) => cols.map((h) => csvCell(cell(r, h))).join(","))].join("\n"));
   }
   // Invitations: notes / description.
-  for (const file of ["data/upcoming_bids.json", "public/data/upcoming_bids.json"]) {
+  for (const file of ["data/upcoming_bids.json", "public/data/upcoming_bids.json", "data/past_bids.json", "public/data/past_bids.json"]) {
     const p = path.join(ROOT, file);
     if (!fs.existsSync(p)) continue;
     const d = readJson(p);
