@@ -32,6 +32,10 @@ NY = ZoneInfo("America/New_York")
 DOWNLOAD_DIR = os.path.join(ROOT, "ITB_Downloads_V5")
 OUT_FILES = [os.path.join(ROOT, "data", "upcoming_bids.json"), os.path.join(ROOT, "public", "data", "upcoming_bids.json")]
 PUBLIC_ITB_DIR = os.path.join(ROOT, "public", "documents", "itb")
+# Past invitations (owner, 14 Nov: "I need a revise for all past bids"): when a bid's due date passes it moves into
+# this file (kept 45 days, HPD's notes with the tenant's contact left out) so it can still be opened, revised and resent.
+PAST_OUT_FILES = [os.path.join(ROOT, "data", "past_bids.json"), os.path.join(ROOT, "public", "data", "past_bids.json")]
+KEEP_PAST_FILE_DAYS = 45
 KEEP_PAST_DAYS = 0  # only bids due today or later: a bid whose due date has passed can't be submitted
 BOROS = {"MANHATTAN": "MN", "BROOKLYN": "BK", "QUEENS": "QN", "BRONX": "BX", "STATEN ISLAND": "SI"}
 
@@ -250,6 +254,25 @@ def awarded_omos():
         return {str(j.get("OMO", "")).upper() for j in json.load(f)}
 
 
+def write_past_bids(known, open_omos, today):
+    """Yesterday's open bids whose due date has now passed roll into past_bids.json (no notes: they hold tenant contacts)."""
+    try:
+        with open(PAST_OUT_FILES[0], encoding="utf-8") as f:
+            past = {b["omo"]: b for b in json.load(f).get("bids", [])}
+    except (OSError, ValueError):
+        past = {}
+    for omo, bid in known.items():
+        if bid.get("bidDue") and bid["bidDue"] < today.isoformat():
+            past[omo] = {k: v for k, v in bid.items() if k != "notes"}
+    oldest = (today - datetime.timedelta(days=KEEP_PAST_FILE_DAYS)).isoformat()
+    kept = sorted((b for o, b in past.items() if o not in open_omos and b.get("bidDue", "") >= oldest), key=lambda b: (b["bidDue"], b["omo"]))
+    for out in PAST_OUT_FILES:
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out, "w", encoding="utf-8") as f:
+            json.dump({"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "bids": kept}, f, indent=2)
+    print(f"Past bids kept for revising: {len(kept)}")
+
+
 def previous_bids():
     try:
         with open(OUT_FILES[0], encoding="utf-8") as f:
@@ -452,6 +475,7 @@ def fetch(days):
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with open(out, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2)
+    write_past_bids(known, {b["omo"] for b in bids}, today)
     received_today = sum(1 for b in bids if datetime.datetime.fromtimestamp(b["receivedAt"] / 1000, NY).date() == today)
     print(f"Upcoming bids: {len(bids)} not awarded yet ({sum(1 for b in bids if b.get('lat'))} on the map), {received_today} received today, from {len(messages)} emails" + (f"; {len(unread)} NOT READ: " + ", ".join(u["file"] for u in unread) if unread else ""))
 

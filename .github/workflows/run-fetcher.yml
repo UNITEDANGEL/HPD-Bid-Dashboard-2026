@@ -161,6 +161,7 @@ jobs:
           if [ -f data/upcoming_bids.json ]; then
             git add data/upcoming_bids.json public/data/upcoming_bids.json
           fi
+          if [ -f data/past_bids.json ]; then git add data/past_bids.json public/data/past_bids.json; fi
 
           # What HPD paid for each invitation (open data) and the kept descriptions.
           if [ -f data/market_awards.json ]; then

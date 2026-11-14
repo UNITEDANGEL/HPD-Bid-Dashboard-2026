@@ -23,6 +23,9 @@ try {
   const box = await row.boundingBox();
   const bar = await page.locator('[data-hpd-smoke="fc-chatbar"]').boundingBox();
   assert.ok(box.y + box.height <= bar.y + 4, "row sits above the chat bar");
+  const first = await buttons.first().boundingBox();
+  assert.ok(first.height >= 44, "quick buttons are big enough to tap");
+  assert.ok(box.y >= 0, "row stays on the screen");
   assert.ok(box.x >= 0 && box.x + box.width <= 391, "row fits the phone width");
   await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill("hello");
   assert.equal(await row.count(), 0, "row hides while typing");

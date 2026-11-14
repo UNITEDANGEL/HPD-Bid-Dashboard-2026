@@ -378,7 +378,12 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       // HPD's notes with the tenant's contact come from the signed-in private route.
       .then(([raw, priv]) => { setPrivOk(!!priv); return [raw, priv] as const; })
       .then(([raw, priv]) => ({ ...raw, bids: Array.isArray(raw?.bids) ? withPrivate(raw.bids, priv?.bids) : raw?.bids }))
-      .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); setPastBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => !stillOpen(b)) : []); })
+      .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); setPastBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => !stillOpen(b)) : []);
+        // Older invitations (owner, 14 Nov: "I need a revise for all past bids"): kept 45 days in past_bids.json so they still open.
+        fetch("/data/past_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((past) => {
+          if (Array.isArray(past?.bids)) setPastBids((now) => [...now, ...past.bids.filter((b: UpcomingBid) => !now.some((x) => x.omo === b.omo))]);
+        }).catch(() => { /* no past file yet */ });
+      })
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
