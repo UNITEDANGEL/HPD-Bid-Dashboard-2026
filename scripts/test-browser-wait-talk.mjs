@@ -11,6 +11,8 @@ try {
   await routePrivate(c);
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: { "CLAUDE-HEARTBEAT": { at: new Date().toISOString(), every: 9 } }, accepted: [] } }));
   await c.addInitScript(() => {
+    // Talking back from the 🤖 is a setting since 14 Nov (it opens quietly by default); this test is the voice talk.
+    localStorage.setItem("hpd-helper-talk", "1");
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { setTimeout(() => u.onend?.(), 30); };
     // A stand-in microphone: each time it listens it hears the next words in window.__queue (nothing when empty).
     window.__queue = [];

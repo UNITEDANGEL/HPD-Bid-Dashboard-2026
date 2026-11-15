@@ -168,6 +168,11 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+54. ✅ **After-deploy tests green again (14-15 Nov)**: 3 of the 164 failed after the day's changes. open-fast: the
+    Rejected job fixer read hpd_requests.json on the first paint, before the jobs (and with no jobs yet, so a correction
+    already saved still counted as a redo); it now reads it once the jobs are in. wait-talk and truck-noise tapped the 🤖
+    and expected it to listen; since 14 Nov it opens quietly unless talking back is on (hpd-helper-talk), so these voice
+    tests turn it on. The app's behaviour is as the owner asked.
 53. ✅ **🔁 HPD asked twice** (owner's idea sent from the app, 14 Nov: "the app flags when HPD asks for something you
     already sent, with the date and file name to reply with"): a 24 / 72-hour notice for a job whose affidavit / invoice
     was already emailed before the notice (any thread) shows, on the board card, "🔁 HPD asked again 10/16, but you

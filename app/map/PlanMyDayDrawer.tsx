@@ -439,12 +439,16 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id) && activeJobs.some((record) => jobId(record) === job.id)), [results, selectedIds, activeJobs]);
   const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
 
+  // Read once the jobs are in (15 Nov): asked on the first paint it went before the jobs (test-browser-open-fast) and
+  // saw no job yet, so a correction already saved (RejectionCorrectedAt) still counted as a redo.
+  const fixesLoaded = useRef(false);
   useEffect(() => {
+    if (fixesLoaded.current || !records.length) return;
+    fixesLoaded.current = true;
     fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
       if (d?.jobs) rejectedFixMap = rejectedFixes(d.jobs, Object.fromEntries(records.map((j) => [jobId(j), String(j.RejectionCorrectedAt || "")]).filter(([, v]) => v)));
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [records]);
 
   useEffect(() => {
     const chat = chatRef.current;
