@@ -9,6 +9,20 @@ const VOICE_KEY = "hpd-voice-name";
 const RATE_KEY = "hpd-voice-rate";
 let primed = false;
 
+// 🤫 The helper stays quiet until you ask (idea, 14 Nov): it only talks within 2 minutes of your last tap, so a
+// chat answer or a button you pressed is said, but an alert or a reminder never makes the phone talk by itself.
+// "Let the helper talk by itself" (localStorage hpd-helper-chatty = 1) brings the old behavior back.
+const QUIET_WINDOW_MS = 120000;
+let lastTap = 0;
+if (typeof window !== "undefined") {
+  const mark = () => { lastTap = Date.now(); };
+  window.addEventListener("pointerdown", mark, { capture: true, passive: true });
+  window.addEventListener("keydown", mark, { capture: true, passive: true });
+}
+export function helperChatty() { try { return localStorage.getItem("hpd-helper-chatty") === "1"; } catch { return false; } }
+export function setHelperChatty(on: boolean) { try { if (on) localStorage.setItem("hpd-helper-chatty", "1"); else localStorage.removeItem("hpd-helper-chatty"); } catch { /* private mode */ } }
+export function askedRecently(now = Date.now()) { return helperChatty() || now - lastTap < QUIET_WINDOW_MS; }
+
 export function voiceSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
 }
@@ -169,7 +183,7 @@ export function speak(text: string, delay = 900, onEnd?: () => void, queue = fal
     window.setTimeout(wait, 250);
     return true;
   }
-  if (!text || !voiceSupported() || voiceOff()) { if (onEnd) window.setTimeout(onEnd, 300); return false; }
+  if (!text || !voiceSupported() || voiceOff() || !askedRecently()) { if (onEnd) window.setTimeout(onEnd, 300); return false; }
   playThroughSilent();
   try {
     window.setTimeout(() => {
