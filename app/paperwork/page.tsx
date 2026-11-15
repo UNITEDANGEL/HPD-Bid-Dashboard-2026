@@ -1295,6 +1295,9 @@ export default function PaperworkPage() {
   type SentDates = { awardDate?: string; outcome?: string; workStart?: string; workComplete?: string; attempt1?: string; attempt2?: string; call1?: string; call2?: string; refused?: string; doneByOthers?: string; sentAt?: string };
   const [sentDates, setSentDates] = useState<SentDates | null>(null);
   const [sentDatesUsed, setSentDatesUsed] = useState(false);
+  // Stop double sends (owner idea, 14 Nov): jobs already emailed to HPD (public/data/sent_paperwork.json: OMO numbers and dates only).
+  const [alreadySentMap, setAlreadySentMap] = useState<Record<string, { sentAt?: string; count?: number }>>({});
+  useEffect(() => { fetch("/data/sent_paperwork.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.jobs) setAlreadySentMap(d.jobs); }).catch(() => {}); }, []);
   // Auto-fix from HPD's reason (lib/auto-fix): what was changed (and the old values, so Reject puts them back).
   const [autoFixed, setAutoFixed] = useState<FixResult | null>(null);
   const autoFixBefore = useRef<Partial<PackageForm> | null>(null);
@@ -6321,6 +6324,7 @@ export default function PaperworkPage() {
           ) : null}
           {packagePreview ? (
             <div className="paperwork-package-review pkg-review" data-hpd-smoke="paperwork-package-review">
+              {!correction && !packageApproved && alreadySentMap[String(packagePreview.jobId || "").toUpperCase()]?.sentAt ? <p className="pkg-already-sent" data-hpd-smoke="paperwork-already-sent" role="alert" style={{ background: "#fff4cc", border: "2px solid #e0a800", borderRadius: 10, padding: "10px 12px", margin: "8px 0", fontSize: 17, fontWeight: 700 }}>⚠ {String(packagePreview.jobId).toUpperCase()} was already sent to HPD on {displayDate(alreadySentMap[String(packagePreview.jobId).toUpperCase()].sentAt as string)}{(alreadySentMap[String(packagePreview.jobId).toUpperCase()].count || 0) > 1 ? ` (${alreadySentMap[String(packagePreview.jobId).toUpperCase()].count} times)` : ""}. Only send it again if HPD asked for a fix.</p> : null}
               <div className="pkg-review-head">
                 <div>
                   <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? (delivery?.emailed ? "Emailed & saved to Drive" : "Approved & saved") : delivery?.working ? "Sending..." : "Review before approving"}</span>

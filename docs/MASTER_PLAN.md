@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ⚠ 14 Nov: Stop double sends (idea from the app)
+- ✅ 111. Paperwork preview warns "already sent to HPD on <date>" when the job is in sent_paperwork.json. Test: test-browser-already-sent.mjs.
+
 ## 🤫 14 Nov: Helper stays quiet until you ask (idea from the app)
 - ✅ 110. speak() only talks within 2 minutes of the owner's last tap (lib/speak.ts askedRecently; hpd-helper-chatty=1 restores old behavior). Test: test-lang.cjs.
 

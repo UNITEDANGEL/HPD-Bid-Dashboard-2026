@@ -353,6 +353,7 @@ jobs:
             scripts/test-browser-who-owes.mjs \
             scripts/test-browser-week-score.mjs \
             scripts/test-browser-photo-checklist.mjs \
+            scripts/test-browser-already-sent.mjs \
             scripts/test-browser-bid-voice.mjs \
             scripts/test-browser-bid-sync.mjs \
             scripts/test-browser-building-facts.mjs \
