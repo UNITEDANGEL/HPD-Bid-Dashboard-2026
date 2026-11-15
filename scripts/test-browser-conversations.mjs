@@ -69,6 +69,10 @@ try {
     const btn = page.locator('[data-hpd-smoke="jc-threads"]');
     await btn.waitFor({ timeout: 60000 });
     assert.ok((await btn.innerText()).includes(`Emails with HPD (${count})`), "count on the card");
+    // Call the HPD person: who wrote last is on the card; the buttons show when a phone number is in their emails.
+    assert.ok(await page.locator('[data-hpd-smoke="jc-hpd-contact"]').count() >= 1, "last HPD writer on the card");
+    const call = page.locator('[data-hpd-smoke="jc-hpd-call"]');
+    if (await call.count()) assert.match(await call.first().getAttribute("href"), /^tel:\d{10}$/);
     await btn.click();
     await viewer.waitFor({ timeout: 5000 });
     assert.equal(await viewer.locator('[data-hpd-smoke="fc-thread"]').count(), count, "every thread about the job");

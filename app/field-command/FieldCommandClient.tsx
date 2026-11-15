@@ -34,6 +34,7 @@ import { buildingHistory, buildingKey, historyLine } from "../../lib/building-hi
 import { costLine, parseCost, readCosts, receiptFromText, RECEIPT_QUESTION, usd } from "../../lib/job-costs";
 import { clockAt, duration, onSite, onSiteRecord } from "../../lib/on-site";
 import { overnightLine } from "../../lib/overnight";
+import { lastHpdContact, prettyPhone } from "../../lib/hpd-contact";
 import { nextStop, nextStopLine, workInWords } from "../../lib/next-stop";
 import { followUpText, isRouteTime, photoGapLine, quietTenants, tomorrowRouteLine } from "../../lib/quiet-follow";
 import { isMondaySweepTime, mondaySweepLine, paperworkLeft as sweepLeft } from "../../lib/monday-sweep";
@@ -9315,6 +9316,12 @@ export default function FieldCommandClient() {
                             ))}
                           </ol>
                           <p className="jc-journey-next" data-hpd-smoke="jc-journey-next">Next: {nextStep(stages)}</p>
+                          {(() => { const c = lastHpdContact(threads || [], fu.omo); if (!c) return null; return (
+                            <p className="jc-hpd-contact" data-hpd-smoke="jc-hpd-contact">
+                              <span>Last from HPD: <b>{senderName(c.name)}</b> · {md(c.at.slice(0, 10))}</span>
+                              {c.phone ? <><a className="fc-follow-paper" data-hpd-smoke="jc-hpd-call" href={`tel:${c.phone}`}>☎ Call {prettyPhone(c.phone)}</a> <a className="fc-follow-paper" data-hpd-smoke="jc-hpd-text" href={`sms:${c.phone}`}>💬 Text</a></> : <small> · no phone number in their emails</small>}
+                            </p>
+                          ); })()}
                           {(() => { const ts = threadsFor(fu.omo); if (!ts.length) return null; const waiting = ts.filter((t) => t.waiting).length; return (
                             <button type="button" className={`jc-threads${waiting ? " is-waiting" : ""}`} data-hpd-smoke="jc-threads" onClick={() => setThreadView({ ids: ts.map((t) => t.id), title: `${fu.omo}: emails with HPD` })}>
                               💬 Emails with HPD ({ts.length}){waiting ? ` · ${waiting} waiting on you` : ""}

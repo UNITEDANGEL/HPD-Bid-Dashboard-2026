@@ -346,13 +346,6 @@
       "why": "When you open a bid for a building you bid on before, the helper shows what you charged last time."
     },
     {
-      "id": "one-tap-call-hpd",
-      "icon": "☎️",
-      "kind": "new",
-      "title": "Call the HPD person in one tap",
-      "why": "Each job shows who at HPD wrote last, with a button to call or text them."
-    },
-    {
       "id": "bad-signal-mode",
       "icon": "📶",
       "kind": "upgrade",

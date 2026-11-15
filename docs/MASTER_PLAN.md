@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📞 15 Nov: Call the HPD person in one tap (idea from the app)
+- ✅ 113. Job card shows who at HPD wrote last with ☎ Call / 💬 Text (phone read from their email signature; name only when none). lib/hpd-contact.ts. Test: scripts/test-hpd-contact.mjs, test-browser-conversations.mjs.
+
 ## 🧭 15 Nov: Guided Try it (idea from the app)
 ✅ ▶ Try it on a finished request opens a 3-step guide (open screen, what changed, Works / Not right). Still ☐: run it on a test job (new ideas added). Test: scripts/test-browser-claude-answer.mjs.
 

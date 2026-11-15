@@ -98,6 +98,7 @@ jobs:
           node scripts/test-drive-videos.mjs
           node scripts/test-phone-storage.mjs
           node scripts/test-overnight.mjs
+          node scripts/test-hpd-contact.mjs
           node scripts/test-next-stop.mjs
           node scripts/test-rejected-fixer.mjs
           node scripts/test-monday-sweep.mjs
