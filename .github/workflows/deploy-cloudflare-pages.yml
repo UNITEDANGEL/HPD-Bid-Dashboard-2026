@@ -124,6 +124,7 @@ jobs:
           node scripts/test-job-time.mjs
           node scripts/test-leave-reminder.mjs
           node scripts/test-month-glance.cjs
+          node scripts/test-who-owes.cjs
           node scripts/test-week-score.cjs
           node scripts/test-supplies.cjs
 
@@ -348,6 +349,7 @@ jobs:
             scripts/test-browser-route-progress.mjs \
             scripts/test-browser-bids.mjs \
             scripts/test-browser-month-glance.mjs \
+            scripts/test-browser-who-owes.mjs \
             scripts/test-browser-week-score.mjs \
             scripts/test-browser-photo-checklist.mjs \
             scripts/test-browser-bid-voice.mjs \

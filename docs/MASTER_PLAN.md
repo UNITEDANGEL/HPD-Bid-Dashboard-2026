@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 💵 14 Nov: Where is my money? (idea from the app)
+- ✅ 107. Home card lists sent jobs HPD has not paid, oldest first, with amount and days waiting (lib/who-owes.ts). Tests: test-who-owes.cjs, test-browser-who-owes.mjs.
+
 ## ☎️ 14 Nov: Call / Text / Navigate on job cards (idea from the app)
 - [x] Job card and jobs board: Call, Text (sms:) and Navigate buttons. ✅
 
