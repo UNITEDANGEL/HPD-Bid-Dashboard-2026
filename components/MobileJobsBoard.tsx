@@ -288,8 +288,18 @@ export function MobileJobsBoard({ jobs: sourceJobs }: { jobs: JobRecord[]; title
                     <small>{[selectedJob.tenantName, selectedJob.tenantPhone].filter(Boolean).join(" · ") || "Request contact from HPD"}</small>
                   </span>
                   {selectedJob.tenantPhone ? (
-                    <a className="fc-call-btn" href={`tel:${selectedJob.tenantPhone}`}>
+                    <a className="fc-call-btn" href={`tel:${selectedJob.tenantPhone}`} data-hpd-smoke="jb-call">
                       Call
+                    </a>
+                  ) : null}
+                  {selectedJob.tenantPhone ? (
+                    <a className="fc-call-btn" href={`sms:${selectedJob.tenantPhone}`} data-hpd-smoke="jb-text">
+                      Text
+                    </a>
+                  ) : null}
+                  {selectedJob.address || selectedJob.location ? (
+                    <a className="fc-call-btn" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedJob.latitude && selectedJob.longitude ? `${selectedJob.latitude},${selectedJob.longitude}` : selectedJob.address || selectedJob.location || "")}`} target="_blank" rel="noreferrer" data-hpd-smoke="jb-nav">
+                      Navigate
                     </a>
                   ) : null}
                 </div>

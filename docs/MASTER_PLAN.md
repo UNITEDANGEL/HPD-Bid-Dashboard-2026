@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ☎️ 14 Nov: Call / Text / Navigate on job cards (idea from the app)
+- [x] Job card and jobs board: Call, Text (sms:) and Navigate buttons. ✅
+
 ## ✏️ 14 Nov: edit any idea + list of everything (owner: "I have to approve everything ... I need a clear list of all the things in this app")
 - ✅ 105. ✏️ Change on each idea (👍 sends the owner's words), ↩ bring back skipped ideas, 📜 Everything the app does with ✏️ Change this on each line. Test: test-browser-ideas-edit.mjs.
 - ✅ 106. Helper no longer opens the keyboard when tapped; only ⌨️ does (owner 14 Nov). Test: test-browser-no-keyboard.mjs.

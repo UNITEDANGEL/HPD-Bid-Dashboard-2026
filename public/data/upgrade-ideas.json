@@ -493,13 +493,6 @@
       "why": "Shows what prices won on similar jobs before and suggests a price in the winning range."
     },
     {
-      "id": "one-tap-call",
-      "icon": "☎️",
-      "kind": "upgrade",
-      "title": "Tap a job, tap to call",
-      "why": "Every job card gets big Call / Text / Navigate buttons so you never copy a number again."
-    },
-    {
       "id": "bid-skip-last",
       "icon": "⏭",
       "kind": "upgrade",

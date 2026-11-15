@@ -141,7 +141,9 @@ export function MobileJobDetail({ job }: { job: JobRecord }) {
                 <b>Tenant contact</b>
                 <small>{[job.tenantName, job.tenantPhone].filter(Boolean).join(" · ") || "Request contact from HPD"}</small>
               </span>
-              {job.tenantPhone ? <a className="fc-call-btn" href={`tel:${job.tenantPhone}`}>Call</a> : null}
+              {job.tenantPhone ? <a className="fc-call-btn" href={`tel:${job.tenantPhone}`} data-hpd-smoke="jd-call">Call</a> : null}
+              {job.tenantPhone ? <a className="fc-call-btn" href={`sms:${job.tenantPhone}`} data-hpd-smoke="jd-text">Text</a> : null}
+              {directionsHref(job) ? <a className="fc-call-btn" href={directionsHref(job)} target="_blank" rel="noreferrer" data-hpd-smoke="jd-nav">Navigate</a> : null}
             </div>
           </section>
         ) : null}
