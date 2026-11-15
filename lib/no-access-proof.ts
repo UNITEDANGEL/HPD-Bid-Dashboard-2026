@@ -9,3 +9,16 @@ export function noAccessProofNote(opts: { at?: Date; photos: number; callTries?:
   const callText = tries === 1 ? "1 call try" : `${tries} call tries`;
   return `No access proof: ${time}, ${photoText}, ${callText}.`;
 }
+
+// Tenant no-show, one tap (idea, 14 Nov): the text to send, and the wait shown while the no-access timer runs.
+export function noShowText(address: string): string {
+  return `Hello, this is United Angel Construction at ${address || "your building"} for the HPD repair. We are at your door now and no one answered. Please call or text us back; we will wait a few minutes.`;
+}
+export function noShowSmsHref(phone: string, address: string): string {
+  const digits = (phone || "").replace(/[^+\d]/g, "");
+  return digits ? `sms:${digits}?&body=${encodeURIComponent(noShowText(address))}` : "";
+}
+export function noShowWait(startedAt: number, now: number): string {
+  const secs = Math.max(0, Math.floor((now - startedAt) / 1000));
+  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+}

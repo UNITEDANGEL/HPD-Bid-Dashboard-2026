@@ -1,6 +1,6 @@
 {
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
-  "updated": "2026-11-14",
+  "updated": "2026-11-15",
   "ideas": [
     {
       "id": "helper-call-tenant",
@@ -367,13 +367,6 @@
       "why": "After a job closes, the app adds your receipts and your time and shows what you made on it, so you know which kind of work pays."
     },
     {
-      "id": "tenant-no-show",
-      "icon": "🚪",
-      "kind": "new",
-      "title": "Tenant no-show, one tap",
-      "why": "When you arrive and nobody answers, one tap texts and calls them, starts the no-access timer and keeps the proof for the affidavit."
-    },
-    {
       "id": "photo-order",
       "icon": "🖼",
       "kind": "upgrade",
@@ -672,6 +665,20 @@
       "kind": "new",
       "title": "Friday 4 PM week alert",
       "why": "A phone alert on Friday afternoon with the week's numbers, so you do not have to open the app."
+    },
+    {
+      "id": "no-show-auto-second",
+      "icon": "⏰",
+      "kind": "new",
+      "title": "Second no-access try reminder",
+      "why": "After a no-show, the app reminds you of the second try 72 hours later with the tenant text already written."
+    },
+    {
+      "id": "wait-timer-alert",
+      "icon": "🔔",
+      "kind": "new",
+      "title": "Alert when the wait is over",
+      "why": "At the end of the no-show wait, your phone rings so you know it is time to take the door photos and leave."
     }
   ],
   "plan": {

@@ -21,6 +21,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 ## 🤫 14 Nov: Helper stays quiet until you ask (idea from the app)
 - ✅ 110. speak() only talks within 2 minutes of the owner's last tap (lib/speak.ts askedRecently; hpd-helper-chatty=1 restores old behavior). Test: test-lang.cjs.
 
+## 📵 15 Nov: Tenant no-show, one tap (idea from the app)
+- ✅ 111. No Access step has "Nobody answered: text the tenant" (ready sms: text) and "Call the tenant"; a waiting timer runs and the tries are counted into the proof note (lib/no-access-proof.ts, PlanMyDayDrawer). Test: test-no-access-proof.mjs.
+
 ## 🚪 14 Nov: No-access proof in one tap (idea from the app)
 - ✅ 109. Confirming No Access on a routed job saves a note on the job: time, number of door photos, call tries (lib/no-access-proof.ts, PlanMyDayDrawer). Test: test-no-access-proof.mjs.
 

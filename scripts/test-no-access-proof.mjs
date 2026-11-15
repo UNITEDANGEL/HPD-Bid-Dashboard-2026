@@ -14,3 +14,8 @@ assert.equal(noAccessProofNote({ at: t, photos: 2, callTries: 3 }), "No access p
 assert.equal(noAccessProofNote({ at: t, photos: 1, callTries: 1 }), "No access proof: Nov 14, 10:30 AM, 1 door photo, 1 call try.");
 assert.equal(noAccessProofNote({ at: t, photos: 0 }), "No access proof: Nov 14, 10:30 AM, no door photo, 0 call tries.");
 console.log("no-access-proof ok");
+const m2 = await import(pathToFileURL(file).href);
+assert.ok(m2.noShowSmsHref("(917) 555-0100", "12 Main St").startsWith("sms:9175550100?&body=Hello"));
+assert.equal(m2.noShowSmsHref("", "x"), "");
+assert.equal(m2.noShowWait(0, 125000), "2:05");
+console.log("no-show ok");

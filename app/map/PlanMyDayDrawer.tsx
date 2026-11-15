@@ -11,7 +11,7 @@ import { rejectedFixes, type RejectedFix } from "../../lib/rejected-fixer";
 import { nyToday, type Appointment } from "../../lib/appointments";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import { addJobNote } from "../../lib/job-notes";
-import { noAccessProofNote } from "../../lib/no-access-proof";
+import { noAccessProofNote, noShowSmsHref, noShowWait } from "../../lib/no-access-proof";
 import {
   shadowUpsert,
   syncUnifiedMutations,
@@ -416,6 +416,13 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   const [originPoint, setOriginPoint] = useState<Point | null>(null);
   const [viewingJobId, setViewingJobId] = useState<string | null>(null);
   const [fieldSteps, setFieldSteps] = useState<Record<string, FieldStep>>({});
+  const [noShow, setNoShow] = useState<Record<string, { at: number; tries: number }>>({});
+  const [noShowNow, setNoShowNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!Object.keys(noShow).length) return;
+    const t = window.setInterval(() => setNoShowNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [noShow]);
   const [mediaPaused, setMediaPaused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
@@ -685,7 +692,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     }
     if (next === "no_access") {
       // One tap saves the proof on the job: time, door photos and call tries (idea, 14 Nov).
-      try { addJobNote(job.id, noAccessProofNote({ photos: (await countFieldPhotos(job.id))[kind] || 0, callTries: 0 })); } catch { /* note is a bonus */ }
+      try { addJobNote(job.id, noAccessProofNote({ photos: (await countFieldPhotos(job.id))[kind] || 0, callTries: noShow[job.id]?.tries || 0 })); } catch { /* note is a bonus */ }
     }
     if (["work_started", "no_access", "refused_access", "completed_by_others"].includes(next)) updateFieldStep(job, next);
     else setFieldSteps((current) => ({ ...current, [job.id]: next }));
@@ -792,7 +799,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
               {fieldSteps[viewingJob.id] === "before_media" ? <><p>Capture BEFORE evidence before work begins.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "before")}>Open Before Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "before", "work_started")}>Before Media Saved · Begin Work</button></> : null}
               {fieldSteps[viewingJob.id] === "work_started" ? <><p>Work is in progress. When finished, capture AFTER evidence before choosing completion status.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "after")}>Open After Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "after", "after_media")}>After Media Saved · Continue</button></> : null}
               {fieldSteps[viewingJob.id] === "after_media" ? <><p>After evidence confirmed. Choose the final work result.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "work_completed")}>Work Completed</button><button type="button" onClick={() => updateFieldStep(viewingJob, "partial_work")}>Partial Work</button></div></> : null}
-              {fieldSteps[viewingJob.id] === "no_access_media" ? <><p>Capture evidence showing the No Access attempt before saving.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "no_access")}>Open No Access Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "no_access", "no_access")}>Evidence Saved · Confirm No Access</button></> : null}
+              {fieldSteps[viewingJob.id] === "no_access_media" ? <><p>Capture evidence showing the No Access attempt before saving.</p>{viewingJob.contactPhone ? <><button type="button" onClick={() => { const j = viewingJob; setNoShow((c) => ({ ...c, [j.id]: { at: c[j.id]?.at || Date.now(), tries: (c[j.id]?.tries || 0) + 1 } })); window.location.href = noShowSmsHref(j.contactPhone, j.address || ""); }}>📵 Nobody answered: text the tenant</button><a className="button" href={`tel:${viewingJob.contactPhone.replace(/[^+\d]/g, "")}`} onClick={() => setNoShow((c) => ({ ...c, [viewingJob.id]: { at: c[viewingJob.id]?.at || Date.now(), tries: (c[viewingJob.id]?.tries || 0) + 1 } }))}>📞 Call the tenant</a>{noShow[viewingJob.id] ? <p>⏱ Waiting {noShowWait(noShow[viewingJob.id].at, noShowNow)} · {noShow[viewingJob.id].tries} call/text {noShow[viewingJob.id].tries === 1 ? "try" : "tries"} saved as proof</p> : null}</> : null}<button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "no_access")}>Open No Access Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "no_access", "no_access")}>Evidence Saved · Confirm No Access</button></> : null}
               {fieldSteps[viewingJob.id] === "refused_access_media" ? <><p>Capture evidence supporting Refused Access before saving.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "refused_access")}>Open Refused Access Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "refused_access", "refused_access")}>Evidence Saved · Confirm Refused Access</button></> : null}
               {fieldSteps[viewingJob.id] === "completed_by_others_media" ? <><p>Capture evidence showing work completed by others before saving.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "completed_by_others")}>Open Completed-by-Others Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "completed_by_others", "completed_by_others")}>Evidence Saved · Confirm Outcome</button></> : null}
               {["no_access", "refused_access", "work_completed", "partial_work", "completed_by_others"].includes(fieldSteps[viewingJob.id] || "") ? <div className="plan-my-day__outcome-saved"><strong>Status saved: {(fieldSteps[viewingJob.id] || "").replaceAll("_", " ")}</strong>{nextSelectedStop(viewingJob.id) ? <button type="button" onClick={() => setViewingJobId(nextSelectedStop(viewingJob.id)!.id)}>Next Stop · {nextSelectedStop(viewingJob.id)!.id}</button> : <button type="button" onClick={backToMap}>Route Finished · Back to Map</button>}</div> : null}
