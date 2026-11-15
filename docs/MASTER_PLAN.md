@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ⚠ 14 Nov: unpaid over 30 days (idea from the app)
+- ✅ 108. The money card warns about sent jobs unpaid 30+ days with OMO and day count (lib/who-owes.ts lateLine). Tests: test-who-owes.cjs, test-browser-who-owes.mjs.
+
 ## 💵 14 Nov: Where is my money? (idea from the app)
 - ✅ 107. Home card lists sent jobs HPD has not paid, oldest first, with amount and days waiting (lib/who-owes.ts). Tests: test-who-owes.cjs, test-browser-who-owes.mjs.
 

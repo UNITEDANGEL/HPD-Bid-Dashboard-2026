@@ -3,6 +3,14 @@
 
 export type OwedJob = { omo: string; days: number; amount: number; partly: boolean };
 
+// Owner idea 14 Nov: "Unpaid jobs reminder": sent but not paid after this many days is flagged.
+export const LATE_DAYS = 30;
+export function lateLine(jobs: OwedJob[]): string {
+  const late = jobs.filter((j) => j.days >= LATE_DAYS);
+  if (!late.length) return "";
+  return `${late.length} job${late.length === 1 ? "" : "s"} unpaid over ${LATE_DAYS} days: ${late.map((j) => `${j.omo} (${j.days} days)`).join(", ")}`;
+}
+
 function daysBetween(from: string, to: string) {
   const a = Date.parse(from.slice(0, 10) + "T00:00:00Z");
   const b = Date.parse(to.slice(0, 10) + "T00:00:00Z");

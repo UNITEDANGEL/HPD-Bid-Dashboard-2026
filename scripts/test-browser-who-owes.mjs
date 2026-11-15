@@ -17,6 +17,7 @@ try {
   assert.match(text, /\$500 waiting on 2 jobs/);
   assert.match(text, /A: \$400 · 40 days/);
   assert.match(text, /B: \$100 · 5 days/);
+  assert.ok(text.includes("A (40 days)"));
   console.log("who-owes browser test passed");
 } finally {
   await browser.close();

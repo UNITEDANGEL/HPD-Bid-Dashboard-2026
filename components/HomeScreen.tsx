@@ -4,7 +4,7 @@
 // arrived today), the map with the jobs, paperwork, and bid stats. The old full dashboard is at /overview/.
 import { useEffect, useState } from "react";
 import { monthGlance, type MonthGlance } from "../lib/month-glance";
-import { whoOwes } from "../lib/who-owes";
+import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, type WeekScore } from "../lib/week-score";
 
@@ -111,6 +111,7 @@ export default function HomeScreen() {
           <span className="home-text">
             <strong>Where is my money?</strong>
             <b className="home-big">${Math.round(owed.total).toLocaleString()} waiting on {owed.count} job{owed.count === 1 ? "" : "s"}</b>
+            {lateLine(owed.jobs) ? <b data-hpd-smoke="home-owed-late" style={{ color: "#b45309" }}>⚠ {lateLine(owed.jobs)}</b> : null}
             {owed.jobs.map((j) => (
               <em key={j.omo}>{j.omo}: ${Math.round(j.amount).toLocaleString()} · {j.days} day{j.days === 1 ? "" : "s"}{j.partly ? " (partly paid)" : ""}</em>
             ))}
