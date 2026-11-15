@@ -20,6 +20,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - ✅ Past bids kept 45 days in past_bids.json (scripts/fetch_upcoming_bids.py, no tenant notes); the Bids screen loads them so "Open · revise" works. Seeded with 229 bids from the last 45 days.
 - ✅ Chat quick questions open above the chat bar in two big rows (test-browser-quick-questions.mjs).
 
+## 🏆 14 Nov: your week on the home screen (idea from the app)
+- ✅ Home card "Your week so far": jobs sent, jobs won, money in (Monday to today), trophy on a good week (2 of: 5+ sent, 3+ won, money in). Tests: test-week-score.cjs, test-browser-week-score.mjs.
+
 ## 📅 14 Nov: month at a glance (idea from the app)
 - ✅ Home card with jobs sent this month, paid this month and still waiting (lib/month-glance.ts, test-month-glance.cjs, test-browser-month-glance.mjs).
 

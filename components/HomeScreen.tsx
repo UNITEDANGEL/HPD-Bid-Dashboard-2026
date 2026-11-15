@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { monthGlance, type MonthGlance } from "../lib/month-glance";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
+import { weekScore, type WeekScore } from "../lib/week-score";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string };
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const [now, setNow] = useState(() => new Date());
   const [soon, setSoon] = useState<{ name: string; days: number }[]>([]);
   const [glance, setGlance] = useState<MonthGlance | null>(null);
+  const [week, setWeek] = useState<WeekScore | null>(null);
   const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
@@ -45,6 +47,9 @@ export default function HomeScreen() {
     const get = (u: string) => fetch(u, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     Promise.all([get("/data/sent_paperwork.json"), get("/data/pip_paid.json"), get("/data/pip_payments.json")]).then(([sent, pipPaid, payments]) => {
       setGlance(monthGlance({ sent: sent?.jobs, pipPaid, payments, month: nyDay(new Date()).slice(0, 7) }));
+      fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []).then((awardList) => {
+        setWeek(weekScore({ sent: sent?.jobs, awards: Array.isArray(awardList) ? awardList : [], payments, today: nyDay(new Date()) }));
+      });
     });
     setSoon(expiringSoon(loadPapers(), Date.now()).map((p) => ({ name: p.name, days: daysLeft(p.expires, Date.now()) })));
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -93,6 +98,17 @@ export default function HomeScreen() {
             <b className="home-big">{glance.jobsDone} job{glance.jobsDone === 1 ? "" : "s"} sent to HPD</b>
             <em>${Math.round(glance.paid).toLocaleString()} paid · ${Math.round(glance.waiting).toLocaleString()} still waiting (${Math.round(glance.onTheWay).toLocaleString()} on the way)</em>
             {glance.paidAsOf ? <small>Payments checked {glance.paidAsOf}</small> : null}
+          </span>
+        </a>
+      ) : null}
+
+      {week ? (
+        <a className="home-card" href="/payments/" data-hpd-smoke="home-week">
+          <span className="home-icon">{week.trophy ? "🏆" : "📈"}</span>
+          <span className="home-text">
+            <strong>{week.trophy ? "Great week so far" : "Your week so far"}</strong>
+            <b className="home-big">{week.sent} sent · {week.won} won</b>
+            <em>${Math.round(week.moneyIn).toLocaleString()} in this week (Monday to today)</em>
           </span>
         </a>
       ) : null}

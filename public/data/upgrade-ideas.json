@@ -10,13 +10,6 @@
       "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
     },
     {
-      "id": "weekly-score",
-      "icon": "🏆",
-      "kind": "new",
-      "title": "Friday score from the robot",
-      "why": "Friday afternoon the robot gives you the week: bids sent, jobs finished, jobs won, money in, with a trophy for a good week."
-    },
-    {
       "id": "store-stop",
       "icon": "🏪",
       "kind": "new",
@@ -678,6 +671,20 @@
       "kind": "change",
       "title": "Text size button",
       "why": "A button to make all text bigger or smaller, remembered next time."
+    },
+    {
+      "id": "week-vs-last",
+      "icon": "📊",
+      "kind": "upgrade",
+      "title": "This week vs last week",
+      "why": "The week card shows an arrow next to each number: up or down compared with last week."
+    },
+    {
+      "id": "week-friday-alert",
+      "icon": "🔔",
+      "kind": "new",
+      "title": "Friday 4 PM week alert",
+      "why": "A phone alert on Friday afternoon with the week's numbers, so you do not have to open the app."
     }
   ],
   "plan": {
