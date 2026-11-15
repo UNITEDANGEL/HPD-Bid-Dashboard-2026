@@ -213,13 +213,6 @@
       "why": "If rain or snow is coming, the route plan puts indoor jobs first and warns you about outdoor ones."
     },
     {
-      "id": "voice-job-note",
-      "icon": "🎙️",
-      "kind": "upgrade",
-      "title": "Say a note after each job",
-      "why": "Tap the mic on a finished job and say what you did; the app writes it down on that job."
-    },
-    {
       "id": "rejected-fix",
       "icon": "🛠️",
       "kind": "upgrade",
@@ -297,13 +290,6 @@
       "why": "If you are on a job much longer than your usual time, the robot asks if you want to text the next tenant that you are running late."
     },
     {
-      "id": "photo-reason",
-      "icon": "📝",
-      "kind": "upgrade",
-      "title": "Say why there is no photo",
-      "why": "When the robot warns about a missing after photo, one tap saves a reason (no access, tenant refused) on the job."
-    },
-    {
       "id": "forgot-tools",
       "icon": "🧰",
       "kind": "new",
@@ -311,25 +297,11 @@
       "why": "Before you leave the office, the robot reads the shopping list for today's jobs and asks if the truck has it all."
     },
     {
-      "id": "no-access-second-try",
-      "icon": "🔁",
-      "kind": "new",
-      "title": "Second try after no access",
-      "why": "When a tenant is not home, the helper offers a second visit on the next route and texts them the new time, so the job is not closed too early."
-    },
-    {
       "id": "award-countdown",
       "icon": "⏳",
       "kind": "new",
       "title": "Days left to finish after award",
       "why": "Each awarded job shows how many days are left before HPD expects it done, with the closest first."
-    },
-    {
-      "id": "rent-reminder-none",
-      "icon": "📆",
-      "kind": "new",
-      "title": "Jobs waiting on access",
-      "why": "A short list of jobs where the tenant never gave access, with the date of each try, so the no-access paperwork is ready."
     },
     {
       "id": "photo-auto-name",
@@ -351,13 +323,6 @@
       "kind": "upgrade",
       "title": "Works better with weak signal",
       "why": "The map and job list stay usable with weak signal and say \"waiting for signal\" instead of freezing."
-    },
-    {
-      "id": "job-cost-total",
-      "icon": "💵",
-      "kind": "new",
-      "title": "What each job really made",
-      "why": "After a job closes, the app adds your receipts and your time and shows what you made on it, so you know which kind of work pays."
     },
     {
       "id": "photo-order",
@@ -678,6 +643,20 @@
       "icon": "✅",
       "title": "Check off each Try it step",
       "why": "Each Try it step gets a tick when you finish it, and Works only turns on after all steps are ticked."
+    },
+    {
+      "id": "second-try-calendar",
+      "icon": "🗓️",
+      "kind": "upgrade",
+      "title": "Second try on the calendar",
+      "why": "The planned second try after no access shows on the day in your week view, so the 72-hour wait is never missed."
+    },
+    {
+      "id": "cost-per-kind",
+      "icon": "📊",
+      "kind": "new",
+      "title": "Which work pays best",
+      "why": "Using what each job made, the app ranks kinds of work (painting, doors, plaster) by money per hour on site."
     }
   ],
   "plan": {

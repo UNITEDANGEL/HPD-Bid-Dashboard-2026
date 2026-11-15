@@ -9,7 +9,12 @@
         "🧭 Guided Try it: On a finished request, ▶ Try it now opens a 3-step guide (open the screen, see what changed, then tap Works or Not right).",
         "✅ Upgrades done: All → ✅ Upgrades done lists everything built into the app, by day, with a find box. Edit any one in your own words, remove it (and bring it back), add your own, or copy the whole list.",
         "💵 Profit after HPD paid: Bids → Stats → Costs & rates now shows what HPD paid for your jobs minus your costs, the total profit and %, and the jobs with the lowest profit first. Jobs with work you haven't put a cost for are not counted, and it tells you which cost to add.",
-        "📞 Call HPD in one tap: a job card now shows who at HPD wrote last, with ☎ Call and 💬 Text buttons when their email has a phone number."
+        "📞 Call HPD in one tap: a job card now shows who at HPD wrote last, with ☎ Call and 💬 Text buttons when their email has a phone number.",
+        "🚪 Jobs waiting on access: the Home screen lists jobs where nobody let you in, with the date of each try, and says when two tries are ready for the no-access paperwork.",
+        "🎤 Say a note after each job: on a job card tap 🎤 Say it, tell the app what you did, and it writes it on the job with the date.",
+        "📷 Why no after photo: the Photo check on a job card now asks Why no after photo? Tap No access or Tenant refused and it is saved on the job.",
+        "💰 What each job made: a finished job with receipts shows Made $X (award minus your costs) and about how much an hour on site.",
+        "📅 Second try after no access: once No Access is saved, tap Plan a second try (3 days later, a weekday); it is saved on the job and you can text the tenant the new day."
       ]
     },
     {

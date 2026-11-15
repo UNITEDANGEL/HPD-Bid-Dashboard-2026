@@ -1,0 +1,13 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const code = ts.transpileModule(fs.readFileSync('lib/photo-reason.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, require);
+const { photoReasonNote, savedPhotoReason, PHOTO_REASONS } = m.exports;
+assert.equal(PHOTO_REASONS.length, 2);
+assert.equal(photoReasonNote('no-access', new Date('2026-11-12T17:00:00Z')), 'No after photo (Nov 12): no access.');
+assert.equal(photoReasonNote('tenant-refused', new Date('2026-11-12T17:00:00Z')), 'No after photo (Nov 12): tenant refused.');
+assert.equal(photoReasonNote('nope'), '');
+assert.equal(savedPhotoReason([{ text: 'gate code' }, { text: 'No after photo (Nov 1): no access.' }, { text: 'No after photo (Nov 2): tenant refused.' }]), 'No after photo (Nov 2): tenant refused.');
+assert.equal(savedPhotoReason(null), '');
+console.log('photo-reason tests passed');

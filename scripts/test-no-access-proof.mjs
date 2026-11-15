@@ -19,3 +19,13 @@ assert.ok(m2.noShowSmsHref("(917) 555-0100", "12 Main St").startsWith("sms:91755
 assert.equal(m2.noShowSmsHref("", "x"), "");
 assert.equal(m2.noShowWait(0, 125000), "2:05");
 console.log("no-show ok");
+// Second try after no access: 3 calendar days later, never a weekend.
+assert.equal(m2.secondTryDay(new Date("2026-11-09T15:00:00Z")), "2026-11-12"); // Mon -> Thu
+assert.equal(m2.secondTryDay(new Date("2026-11-12T15:00:00Z")), "2026-11-16"); // Thu -> Sun -> Mon
+assert.equal(m2.secondTryDay(new Date("2026-11-13T15:00:00Z")), "2026-11-16"); // Fri -> Mon
+assert.equal(m2.secondTryDay(new Date("2026-11-14T15:00:00Z")), "2026-11-17"); // Sat -> Tue
+assert.equal(m2.secondTryNote("2026-11-16"), "Second try planned for Monday, November 16.");
+assert.match(m2.secondTryText("12 Main St", "2026-11-16"), /12 Main St\. We could not get in today\. We will come again on Monday, November 16\./);
+assert.ok(m2.secondTrySmsHref("(917) 555-0100", "12 Main St", "2026-11-16").startsWith("sms:9175550100?&body=Hello"));
+assert.equal(m2.secondTrySmsHref("", "x", "2026-11-16"), "");
+console.log("second-try ok");

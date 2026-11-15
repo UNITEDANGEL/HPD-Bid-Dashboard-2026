@@ -1,0 +1,12 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const code = ts.transpileModule(fs.readFileSync('lib/job-say-note.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, require);
+const { saidJobNote } = m.exports;
+const d = new Date('2026-11-12T17:00:00Z');
+assert.equal(saidJobNote('  patched the  ceiling and painted ', d), 'Done (Nov 12): Patched the ceiling and painted.');
+assert.equal(saidJobNote('fixed the leak!', d), 'Done (Nov 12): Fixed the leak!');
+assert.equal(saidJobNote('   ', d), '');
+assert.ok(saidJobNote('x '.repeat(400), d).length <= 300);
+console.log('job-say-note tests passed');

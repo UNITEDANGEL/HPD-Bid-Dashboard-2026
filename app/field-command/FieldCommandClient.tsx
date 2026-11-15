@@ -79,6 +79,7 @@ import PhotoCheck from "./PhotoCheck";
 import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
 import { onSiteNote } from "../../lib/job-time";
+import { jobMade } from "../../lib/job-made";
 import { leftWithoutAfterPhoto } from "../../lib/leave-reminder";
 import { materialsFor, shoppingList } from "../../lib/materials";
 import { applyBatterySaver, batterySaverOn, cleanHelperName, getHelperLook, HELPER_COLORS, HELPER_HAIRS, HELPER_HATS, HELPER_SKINS, HELPER_STYLES, robotOutfit, setBatterySaver, setHelperLook, useHelperLook, type HelperColor, type HelperHair, type HelperHat, type HelperSkin, type HelperStyle } from "../../lib/helper-look";
@@ -9120,6 +9121,7 @@ export default function FieldCommandClient() {
                     </details>
                   );
                 })()}
+                {(() => { const mm = jobMade({ award: jobAwardAmount(selectedJob), costs: readCosts((selectedJob as Record<string, unknown>).JobCosts), closed: value(selectedJob, ["FieldOutcome", "fieldOutcome"]) === "WORK_COMPLETED", minutesOnSite: onSiteMinutes(selectedJob) }); return mm ? <p className="jc-on-site" data-hpd-smoke="jc-made" data-made={String(mm.made)}>{mm.text}</p> : null; })()}
                 {!isTestJob(id) ? (
                   <button type="button" className="jc-email" data-hpd-smoke="jc-email" onClick={() => setEmailFor({ job: emailJobOf(selectedJob) })}>✉️ Email {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]} about this job</button>
                 ) : null}

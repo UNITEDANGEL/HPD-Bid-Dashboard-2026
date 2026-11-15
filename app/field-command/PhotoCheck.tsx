@@ -6,13 +6,17 @@ import { checkPhoto, summarizePhotoCheck, type PhotoCheckItem, type PhotoCheckSu
 import { speak } from "../../lib/speak";
 import HelperFace from "./HelperFace";
 import { lookAtPhoto, lookMessage, lookNote } from "../../lib/photo-look";
-import { addJobNote } from "../../lib/job-notes";
+import { addJobNote, loadJobNotes } from "../../lib/job-notes";
+import { PHOTO_REASONS, photoReasonNote, savedPhotoReason } from "../../lib/photo-reason";
 
 // 📸 Photo check on the job card: looks at the before/after photos on this phone (blurry, dark, washed out, missing)
 // so a bad one is taken again at the building, not after HPD rejects the paperwork.
 export default function PhotoCheck({ jobId, before, after, total, work }: { jobId: string; before: number; after: number; total: number; work: boolean }) {
   const [summary, setSummary] = useState<PhotoCheckSummary | null>(null);
   const [busy, setBusy] = useState(0);
+  // "Say why there is no photo": one tap saves a reason on the job notes.
+  const [reason, setReason] = useState("");
+  useEffect(() => { try { setReason(savedPhotoReason(loadJobNotes(jobId))); } catch { setReason(""); } }, [jobId]);
   // A new photo while the card is open: the helper looks at it and says so (a talking face on the card, out loud).
   const seen = useRef<Set<string> | null>(null);
   // "What do you see?": the free picture AI names the problem in the newest before photo; it goes in the job notes only after a tap.
@@ -56,6 +60,12 @@ export default function PhotoCheck({ jobId, before, after, total, work }: { jobI
       : good ? <span data-hpd-smoke="jc-photo-check-good">✓ {summary.checked === 1 ? "The photo looks" : `All ${summary.checked} photos look`} good for HPD{before && after ? " (before and after)" : ""}.</span>
       : summary.problems.length ? <ul>{summary.problems.map((p) => <li key={p} data-hpd-smoke="jc-photo-check-problem">⚠ {p}</li>)}</ul>
       : <span>Videos only: watch them once before you send.</span>}
+    {!after && (work || before) && !busy && summary ? <div className="jc-photo-reason" data-hpd-smoke="jc-photo-reason">
+      {reason ? <span data-hpd-smoke="jc-photo-reason-saved">✓ Saved on the job: {reason}</span> : <>
+        <span>Why no after photo?</span>
+        {PHOTO_REASONS.map((r) => <button key={r.id} type="button" data-hpd-smoke={`jc-photo-reason-${r.id}`} style={{ minHeight: 44, margin: "4px 6px 4px 0", fontSize: 16 }} onClick={() => { const note = photoReasonNote(r.id); if (!note) return; addJobNote(jobId, note); setReason(note); window.dispatchEvent(new Event("hpd-job-notes-changed")); }}>{r.label}</button>)}
+      </>}
+    </div> : null}
     {beforeUrl && !busy ? <div className="jc-photo-look" data-hpd-smoke="jc-photo-look">
       {look.state === "idle" ? <button type="button" data-hpd-smoke="jc-photo-look-go" onClick={async () => {
         setLook({ state: "busy" });

@@ -7,6 +7,8 @@ import { monthGlance, type MonthGlance } from "../lib/month-glance";
 import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, type WeekScore } from "../lib/week-score";
+import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
+import { allJobNotes } from "../lib/job-notes";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string };
@@ -36,6 +38,7 @@ export default function HomeScreen() {
   const [glance, setGlance] = useState<MonthGlance | null>(null);
   const [owed, setOwed] = useState<ReturnType<typeof whoOwes> | null>(null);
   const [week, setWeek] = useState<WeekScore | null>(null);
+  const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export default function HomeScreen() {
     fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPay(d?.totals || null)).catch(() => {});
     const get = (u: string) => fetch(u, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     Promise.all([get("/data/sent_paperwork.json"), get("/data/pip_paid.json"), get("/data/pip_payments.json")]).then(([sent, pipPaid, payments]) => {
+      setNoAccess(accessWaiting({ notes: allJobNotes(), sent: sent?.jobs }));
       setOwed(whoOwes({ sent: sent?.jobs, pipPaid, today: nyDay(new Date()) }));
       setGlance(monthGlance({ sent: sent?.jobs, pipPaid, payments, month: nyDay(new Date()).slice(0, 7) }));
       fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []).then((awardList) => {
@@ -114,6 +118,19 @@ export default function HomeScreen() {
             {lateLine(owed.jobs) ? <b data-hpd-smoke="home-owed-late" style={{ color: "#b45309" }}>⚠ {lateLine(owed.jobs)}</b> : null}
             {owed.jobs.map((j) => (
               <em key={j.omo}>{j.omo}: ${Math.round(j.amount).toLocaleString()} · {j.days} day{j.days === 1 ? "" : "s"}{j.partly ? " (partly paid)" : ""}</em>
+            ))}
+          </span>
+        </a>
+      ) : null}
+
+      {noAccess.length ? (
+        <a className="home-card" href="/map/" data-hpd-smoke="home-no-access">
+          <span className="home-icon">🚪</span>
+          <span className="home-text">
+            <strong>Jobs waiting on access</strong>
+            <b className="home-big">{noAccess.length} job{noAccess.length === 1 ? "" : "s"} where nobody let you in</b>
+            {noAccess.map((j) => (
+              <em key={j.omo}>{j.omo}: {j.tries.length} {j.tries.length === 1 ? "try" : "tries"} · {triesText(j.tries)}{j.tries.length >= 2 ? " · ready for the no-access paperwork" : ""}</em>
             ))}
           </span>
         </a>
