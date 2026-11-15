@@ -125,6 +125,7 @@ jobs:
           node scripts/test-leave-reminder.mjs
           node scripts/test-month-glance.cjs
           node scripts/test-week-score.cjs
+          node scripts/test-supplies.cjs
 
       - name: Test paperwork, packages, sync and stats
         run: |

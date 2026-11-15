@@ -625,12 +625,6 @@
       "why": "Bids due in under 24 hours get a red badge on the list, so none is missed."
     },
     {
-      "id": "supplies-list",
-      "icon": "🧾",
-      "title": "Supplies for tomorrow",
-      "why": "One list of what to bring for tomorrow's jobs, built from each job's work description."
-    },
-    {
       "id": "tenant-reply-inbox",
       "icon": "💬",
       "kind": "new",

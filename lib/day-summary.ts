@@ -4,7 +4,7 @@ import { FIELD_OUTCOMES, secondTryState } from "./field-next-action";
 import { activeAppointment, appointmentLabel } from "./appointments";
 
 type Job = Record<string, unknown>;
-export type SummaryRow = { id: string; address: string; text: string };
+export type SummaryRow = { id: string; address: string; text: string; work?: string };
 export type DaySummary = {
   day: string;
   dayLabel: string;
@@ -87,9 +87,9 @@ export function daySummary(jobs: Job[], get: { id: (job: Job) => string; address
 
     // Tomorrow: appointments, and 2nd tries that are due by then.
     const appointment = activeAppointment(job);
-    if (appointment && appointment.date === tomorrow) due.push({ id, address, text: `📅 appointment ${appointmentLabel(appointment)}` });
+    if (appointment && appointment.date === tomorrow) due.push({ id, address, text: `📅 appointment ${appointmentLabel(appointment)}`, work: str(job, "ItbPage3Description", "JobDescription", "description") });
     const second = secondTryState(job, now);
-    if (second && second.dueDay <= tomorrow) due.push({ id, address, text: `🔒 2nd try (no access) ${second.due ? "due now" : `from ${second.dueLabel}`}` });
+    if (second && second.dueDay <= tomorrow) due.push({ id, address, text: `🔒 2nd try (no access) ${second.due ? "due now" : `from ${second.dueLabel}`}`, work: str(job, "ItbPage3Description", "JobDescription", "description") });
   }
 
   visited = visited.map((row, index) => ({ row, at: visitedAt.get(index) ?? Infinity })).sort((a, b) => a.at - b.at).map(({ row }) => row);

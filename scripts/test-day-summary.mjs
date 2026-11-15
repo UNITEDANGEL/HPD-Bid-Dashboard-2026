@@ -21,7 +21,7 @@ const jobs = [
     FieldVisitHistory: [{ recordedAt: at("09:14"), outcome: null, note: "Arrived", feetFromJob: 36 }, { recordedAt: at("11:02"), outcome: "WORK_COMPLETED", note: "" }] },
   { OMO: "ER2", Address: "2 OAK AVE", FieldArrivedAt: at("12:30"), FieldOutcome: "NO_ACCESS_1_WAITING_72H", NoAccessFirstAttemptAt: at("12:40"),
     FieldVisitHistory: [{ recordedAt: at("12:40"), outcome: "NO_ACCESS_1_WAITING_72H", note: "" }] },
-  { OMO: "ER3", Address: "3 ELM PL", Appointment: { date: "2026-10-07", start: "10:00", end: "11:00", state: "confirmed", contact: "T", phone: "", note: "", reminder: 60 },
+  { OMO: "ER3", Address: "3 ELM PL", JobDescription: "LEAK AT KITCHEN SINK", Appointment: { date: "2026-10-07", start: "10:00", end: "11:00", state: "confirmed", contact: "T", phone: "", note: "", reminder: 60 },
     AppointmentHistory: [{ date: "2026-10-07", start: "10:00", end: "11:00", state: "confirmed", updatedAt: at("14:00") }], FieldOutcome: "APPOINTMENT_CONFIRMED" },
   { OMO: "ER4", Address: "4 PINE RD", FieldOutcome: "NO_ACCESS_1_WAITING_72H", NoAccessFirstAttemptAt: "2026-10-03T14:00:00Z",
     FieldVisitHistory: [{ recordedAt: "2026-10-03T14:00:00Z", outcome: "NO_ACCESS_1_WAITING_72H" }] },
@@ -39,6 +39,7 @@ assert.equal(s.visited[2].text, "appointment booked for Wed 10/07 · 10–11 AM"
 assert.equal(s.visited[3].text, "package emailed");
 assert.deepEqual(s.closeOut.map((r) => r.id), ["ER1", "ER6"], "finished, not approved; waiting 2nd tries and appointments aren't close-outs");
 assert.deepEqual(s.tomorrow.map((r) => `${r.id} ${r.text}`), ["ER3 📅 appointment Wed 10/07 · 10–11 AM", "ER4 🔒 2nd try (no access) due now"]);
+assert.equal(s.tomorrow[0].work, "LEAK AT KITCHEN SINK", "tomorrow rows carry the work words (supplies list)");
 assert.match(s.text, /^HPD field summary · Tue 10\/06\n\nVisited 2 · finished 1 · no access 1/);
 assert.match(s.text, /TOMORROW · Wed 10\/07 \(2\)/);
 assert.match(s.text, /READY TO CLOSE OUT \(2\)/);

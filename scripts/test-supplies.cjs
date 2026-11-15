@@ -1,0 +1,13 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const code = ts.transpileModule(fs.readFileSync('lib/supplies.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, require);
+const { suppliesFor } = m.exports;
+const s = suppliesFor([{ id: 'A1', address: 'x', work: 'DEFECTIVE HINGES AT COMPACTOR CLOSET DOOR' }, { id: 'B2', address: 'y', work: 'Leak under kitchen sink; paint ceiling' }, { id: 'C3', address: 'z', work: '' }]);
+assert.equal(s.jobs, 3);
+assert.ok(s.items.includes('Hinges and screws') && s.items.includes('Pipe wrench') && s.items.includes('Primer and paint') && s.items.includes('Gloves'));
+assert.equal(new Set(s.items).size, s.items.length);
+assert.deepEqual(s.unknown, ['C3']);
+assert.deepEqual(suppliesFor([]), { jobs: 0, items: [], unknown: [] });
+console.log('supplies tests passed');

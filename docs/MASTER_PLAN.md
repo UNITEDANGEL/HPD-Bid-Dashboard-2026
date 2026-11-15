@@ -75,6 +75,7 @@ triple check before pushing. What is the mailbox with 3 on the right?" · "Bette
 the computer; a percentage next to the Working icon." · "My signature should appear real on the copy." · "Keep
 auto-following this plan."
 
+0. ✅ **Supplies for tomorrow** (14 Nov, idea): Today's summary has a "🧰 Bring tomorrow" list built from the work words of tomorrow's jobs (lib/supplies.ts, keyword rules); jobs with no clear words are named. Tests: test-supplies.cjs, test-day-summary.mjs.
 0. ✅ **What's new flow + alert helper button** (14 Nov): Ask for a change and the live request progress are on top of What's new; each alert in the bell list has a 🤖 button that hands it to the helper.
 
 1. ✅ **Notices stay on the map** (10 Nov): the vendor tracking board opens below the map (the notice jobs on the map

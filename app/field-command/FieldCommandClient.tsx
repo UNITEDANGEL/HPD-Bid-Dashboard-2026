@@ -63,6 +63,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
+import { suppliesFor } from "../../lib/supplies";
 import { briefDone, dayRecap, forServer, helloAgain, helloSince, type HiSnap, isYes, markBrief, mergeDayLog, nextPart, noteSaid, onSaidChange, readDayLog, refersBack, shortSpeech, snooze, soundsUnfinished, unclearHearing, takeSnoozedBack, wasSaid, withoutSnoozed, type Part, type Recap } from "../../lib/said-today";
 import { planWeek, weekSpeech, type PlanDay, type WeekItem } from "../../lib/week-plan";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
@@ -11030,6 +11031,13 @@ export default function FieldCommandClient() {
                 )) : <p>{none}</p>}
               </section>
             ))}
+            {summary.tomorrow.length ? (() => { const sup = suppliesFor(summary.tomorrow); return (
+              <section data-hpd-smoke="fc-supplies">
+                <h3>🧰 Bring tomorrow <small>({sup.jobs} job{sup.jobs === 1 ? "" : "s"})</small></h3>
+                <ul>{sup.items.map((item) => <li key={item}>{item}</li>)}</ul>
+                {sup.unknown.length ? <p>No clear work description for {sup.unknown.join(", ")}: check those jobs.</p> : null}
+              </section>
+            ); })() : null}
           </div>
           <footer>
             <button type="button" className="is-primary" data-hpd-smoke="fc-summary-email" onClick={() => void emailSummary()}>✉️ Email it to me</button>
