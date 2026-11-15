@@ -50,7 +50,7 @@ try {
   await page.locator(`[data-hpd-smoke="fc-idea-restore"][data-id="${id2}"]`).click();
   assert.equal(await page.locator(`[data-hpd-smoke="fc-idea"][data-id="${id2}"]`).count(), 1, "brought back");
 
-  // Everything the app does.
+  // Everything the app does (now ✅ Upgrades done, its own sheet: test-browser-upgrades-done).
   await page.locator('[data-hpd-smoke="fc-features-toggle"]').click();
   await page.locator('[data-hpd-smoke="fc-feature"]').first().waitFor({ timeout: 15000 });
   assert.ok((await page.locator('[data-hpd-smoke="fc-feature"]').count()) > 20, "a long list");

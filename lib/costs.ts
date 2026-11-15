@@ -82,3 +82,34 @@ export function jobCost(lines: { key: string; qty: number; unit: string }[], cos
 
 // Profit and % (of the price) at a price.
 export const profitAt = (price: number, cost: number) => ({ profit: Math.round(price - cost), pct: price > 0 ? Math.round(((price - cost) / price) * 100) : 0 });
+
+// 💵 Profit after HPD paid (plan, Next level item C, 15 Nov): what HPD actually paid for each of your jobs (PIP) minus
+// your costs for that job. Only jobs where every kind of work has a cost set count, so a missing cost never shows
+// as profit; the rest are counted as "not costed" with the kinds of work to add.
+export type PaidJob = { omo: string; paid: number; date: string };
+export type PaidRow = PaidJob & { cost: number; profit: number; pct: number };
+// costOf: undefined = not one of your jobs we know the work of (left out); null = work not read from the description.
+export function paidProfit(paid: PaidJob[], costOf: (omo: string) => { total: number; missing: string[] } | null | undefined) {
+  const rows: PaidRow[] = [];
+  const missing = new Map<string, number>();
+  let notCosted = 0;
+  for (const p of paid) {
+    if (!(p.paid > 0)) continue;
+    const c = costOf(p.omo);
+    if (c === undefined) continue;
+    if (!c || !c.total || c.missing.length) {
+      notCosted++;
+      for (const m of c?.missing || []) missing.set(m, (missing.get(m) || 0) + 1);
+      continue;
+    }
+    rows.push({ ...p, cost: c.total, ...profitAt(p.paid, c.total) });
+  }
+  const totalPaid = rows.reduce((s, r) => s + r.paid, 0), totalCost = rows.reduce((s, r) => s + r.cost, 0);
+  return {
+    rows: [...rows].sort((a, b) => b.date.localeCompare(a.date)),
+    lowest: [...rows].sort((a, b) => a.profit - b.profit).slice(0, 5),
+    totalPaid: Math.round(totalPaid), totalCost: Math.round(totalCost), ...profitAt(totalPaid, totalCost),
+    notCosted,
+    missing: [...missing.entries()].sort((a, b) => b[1] - a[1]).map(([key, n]) => ({ key, n })),
+  };
+}

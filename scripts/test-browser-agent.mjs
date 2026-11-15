@@ -69,9 +69,15 @@ try {
   assert.equal(saved.filter((s) => JSON.stringify(s).includes("WORK_COMPLETED")).length, 0, "No: nothing saved");
   // Said with the 🎤 this time, then Yes.
   await page.evaluate((o) => { window.__hear = `job ${o.split("").join(" ")} is done`; }, omo);
-  await panel.locator('[data-hpd-smoke="fc-agent-talk"]').click();
-  await page.waitForFunction(() => /Say yes/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 10000 });
+  const talk = panel.locator('[data-hpd-smoke="fc-agent-talk"]');
+  if ((await talk.getAttribute("aria-pressed")) !== "true") await talk.click();
+  await page.waitForFunction(() => /Say yes/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 15000 });
   if (shots) await page.screenshot({ path: `${shots}/agent-ask.png` });
+  // Stop "Keep talking" before tapping Yes: while it is on, the mic restarts every moment and the 💬 label (Listening… /
+  // Talking) changes, so the buttons shift and Yes is never "stable" (15 Nov flaky fail on GitHub).
+  if ((await talk.getAttribute("aria-pressed")) === "true") await talk.dispatchEvent("click"); // its own label keeps changing: a plain click waits forever
+  await page.waitForFunction(() => document.querySelector('[data-hpd-smoke="fc-agent-talk"]')?.getAttribute("aria-pressed") !== "true", null, { timeout: 5000 });
+  await page.waitForTimeout(400);
   await panel.locator('[data-hpd-smoke="fc-agent-yes"]').click();
   // The reply as it says Saved (the stand-in mic may hear the sentence again right after and ask again).
   const savedText = await (await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""; return /^Saved\./.test(t) ? t : ""; }, null, { timeout: 10000 })).jsonValue();

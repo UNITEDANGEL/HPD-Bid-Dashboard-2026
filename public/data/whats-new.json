@@ -2,6 +2,14 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 15, 2026",
+      "title": "Upgrades done list · Profit after HPD paid",
+      "items": [
+        "✅ Upgrades done: All → ✅ Upgrades done lists everything built into the app, by day, with a find box. Edit any one in your own words, remove it (and bring it back), add your own, or copy the whole list.",
+        "💵 Profit after HPD paid: Bids → Stats → Costs & rates now shows what HPD paid for your jobs minus your costs, the total profit and %, and the jobs with the lowest profit first. Jobs with work you haven't put a cost for are not counted, and it tells you which cost to add."
+      ]
+    },
+    {
       "date": "Nov 14, 2026",
       "title": "Bids sent today · HPD asked twice",
       "items": [

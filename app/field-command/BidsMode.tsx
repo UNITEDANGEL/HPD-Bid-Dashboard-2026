@@ -25,7 +25,7 @@ import { jobGlyphSvg, jobIcon } from "../../lib/job-icon";
 import { readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
 import { syncPricing } from "../../lib/pricing-sync";
 import { calcContext, calcPrice } from "../../lib/bid-calc";
-import { COST_ITEMS, jobCost, profitAt, readCosts, saveCost, type Costs } from "../../lib/costs";
+import { COST_ITEMS, jobCost, paidProfit, profitAt, readCosts, saveCost, type Costs, type PaidJob } from "../../lib/costs";
 import { isNoBid, mergeServerNoBids, NO_BID_REASONS, noBidsToCheck, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { batchCandidates, bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
@@ -2202,6 +2202,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                     );
                   })}
                 </div>
+                <PaidProfit jobs={marketJobs} costs={costs} rates={rates} />
                 <h4>Your rates</h4>
                 {Object.keys(rates).length ? (
                   <ul data-hpd-smoke="fc-rates-list">{Object.entries(rates).sort((x, y) => x[0].localeCompare(y[0])).map(([key, amount]) => (
@@ -2577,6 +2578,54 @@ function JobHistory({ jobs, loading }: { jobs: MarketJob[]; loading: boolean }) 
         </li>
       ))}</ol>
       {result.rows.length > limit ? <button type="button" className="fc-bid-fill is-secondary" onClick={() => setLimit((n) => n + 60)}>Show more ({(result.rows.length - limit).toLocaleString()} left)</button> : null}
+    </div>
+  );
+}
+
+// 💵 Profit after HPD paid (plan, Next level item C, 15 Nov): HPD's payments (PIP, pip_paid.json) minus your costs
+// for each paid job, counted like the calculator does; only jobs with every kind of work costed.
+function PaidProfit({ jobs, costs, rates }: { jobs: MarketJob[]; costs: Costs; rates: Rates }) {
+  const [pip, setPip] = useState<{ asOf: string; paid: PaidJob[] } | null>(null);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    let live = true;
+    fetch("/data/pip_paid.json").then((r) => (r.ok ? r.json() : null)).then((d: { generatedAt?: string; jobs?: Record<string, { paid: number; closedDate?: string; lastDate?: string }> } | null) => {
+      if (!live || !d?.jobs) return;
+      setPip({ asOf: d.generatedAt || "", paid: Object.entries(d.jobs).map(([omo, j]) => ({ omo, paid: Number(j.paid) || 0, date: j.closedDate || j.lastDate || "" })) });
+    }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+  const res = useMemo(() => {
+    if (!pip || !jobs.length) return null;
+    const desc = new Map(jobs.filter((j) => j.won).map((j) => [j.omo, j.description] as [string, string]));
+    return paidProfit(pip.paid, (omo) => {
+      const d = desc.get(omo);
+      if (!d) return undefined;
+      const sm = jobSummary(d);
+      if (!sm.lines.length) return null;
+      return jobCost(calcPrice(sm, rates, calcContext(sm, readScope(d).tasks, "")).lines, costs);
+    });
+  }, [pip, jobs, costs, rates]);
+  if (!res) return null;
+  const label = (key: string) => COST_ITEMS.find((c) => c.key === key)?.label || key.replace(/-/g, " ");
+  const workOf = (omo: string) => { const j = jobs.find((x) => x.omo === omo); return j ? workLabel(j.description) : ""; };
+  const asOf = pip?.asOf ? new Date(pip.asOf).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+  const row = (r: (typeof res.rows)[number]) => (
+    <li key={r.omo} data-hpd-smoke="fc-paid-profit-row"><span><b>{r.omo}</b><small>{workOf(r.omo)}{r.date ? ` · ${r.date}` : ""}</small></span><span>paid {money(r.paid)} − cost {money(r.cost)} = <b className={r.profit < 0 ? "is-loss" : ""}>{r.profit < 0 ? `−${money(-r.profit)}` : money(r.profit)} ({r.pct}%)</b></span></li>
+  );
+  return (
+    <div className="fc-paid-profit" data-hpd-smoke="fc-paid-profit">
+      <h4>💵 Profit after HPD paid</h4>
+      {res.rows.length ? (
+        <>
+          <p className="fc-paid-profit-sum" data-hpd-smoke="fc-paid-profit-sum">{res.rows.length} paid job{res.rows.length === 1 ? "" : "s"}: HPD paid <b>{money(res.totalPaid)}</b>, your costs {money(res.totalCost)} → profit <b className={res.profit < 0 ? "is-loss" : ""}>{res.profit < 0 ? `−${money(-res.profit)}` : money(res.profit)} ({res.pct}%)</b>.</p>
+          <p className="fc-stats-note">Lowest profit first:</p>
+          <ul className="fc-paid-profit-list">{(all ? [...res.rows].sort((a, b) => a.profit - b.profit) : res.lowest).map(row)}</ul>
+          {res.rows.length > res.lowest.length ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-paid-profit-all" onClick={() => setAll((v) => !v)}>{all ? "Show the lowest 5" : `Show all ${res.rows.length}`}</button> : null}
+        </>
+      ) : <p className="fc-stats-note" data-hpd-smoke="fc-paid-profit-sum">No paid job has all its work costed yet.</p>}
+      {res.notCosted ? <p className="fc-stats-note" data-hpd-smoke="fc-paid-profit-missing">{res.notCosted} other paid job{res.notCosted === 1 ? "" : "s"} not counted{res.missing.length ? <>: add a cost above for {res.missing.slice(0, 4).map((m) => `${label(m.key)} (${m.n})`).join(", ")}</> : " (work not read from the description)"}.</p> : null}
+      {asOf ? <p className="fc-stats-note">HPD payments as of {asOf}.</p> : null}
     </div>
   );
 }

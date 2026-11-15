@@ -101,6 +101,7 @@ import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSumm
 import { chimeMuted, notify, playChime, quietHours, ring, setAlertsAwake, setChimeMuted, unlockChime, type AppNotice } from "../../lib/chime";
 import { spokenAlert, summarizeHpd } from "../../lib/alert-summary";
 import { chosenVoiceName, englishVoices, isNaturalVoice, langOf, sampleVoice, speakIn, topVoices, setBriefSpeech, setChosenVoice, setVoiceOff, setVoiceRate, speak, stopSpeaking, voiceOff, voiceRate, voiceSupported } from "../../lib/speak";
+import UpgradesDone from "./UpgradesDone";
 import NoticeBoard from "./NoticeBoard";
 import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
@@ -8057,6 +8058,7 @@ export default function FieldCommandClient() {
               { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
               { key: "ai", icon: "✨", label: "Talk to the AI", info: "Ask anything", go: () => { setMoreOpen(false); startAgentChat(); } },
               { key: "ideas", icon: "💡", label: "Upgrade ideas", info: "Claude's next ideas · tap 👍 to build", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); } },
+              { key: "upgrades", icon: "✅", label: "Upgrades done", info: `${featureList().length || "Every"} upgrade${featureList().length === 1 ? "" : "s"} so far · edit or add your own`, go: () => { setMoreOpen(false); setFeaturesOpen(true); void loadWhatsNew(); } },
               { key: "ideas-more", icon: "💬", label: "More ideas", info: "Ask Claude for new ideas right now", go: () => { setMoreOpen(false); setWhatsNewOpen(true); void loadWhatsNew(); void askMoreIdeas(); } },
               { key: "dock", icon: "🔀", label: "Bottom buttons", info: `${dockSlots.map((key) => DOCK_LABEL[key]).join(" · ")} · hold one to swap`, go: () => { setMoreOpen(false); setDockEdit(3); } },
               { key: "map", icon: mapStyle === "night" ? "🌙" : "🗺", label: "Map style", info: `${MAP_STYLE_LABEL[mapStyle]}${mapStyle === "night" ? (darkTiles ? " (dark now)" : " (light now)") : ""} · tap to change`, go: () => { chooseMapStyle(mapStyle === "light" ? "satellite" : mapStyle === "satellite" ? "dark" : mapStyle === "dark" ? "night" : "light"); } },
@@ -9524,6 +9526,7 @@ export default function FieldCommandClient() {
         </div>
       ) : null}
       {brokenNote ? <div className="fc-broken-note" role="status" data-hpd-smoke="fc-broken-note">{brokenNote}<button type="button" aria-label="Close" onClick={() => setBrokenNote("")}>✕</button></div> : null}
+      {featuresOpen ? <UpgradesDone versions={whatsNew} onClose={() => setFeaturesOpen(false)} onAskChange={(t) => { setChangeText(t); setFeaturesOpen(false); setWhatsNewOpen(true); setTimeout(() => (document.querySelector('[data-hpd-smoke="fc-ask-change-text"]') as HTMLElement | null)?.focus(), 50); }} /> : null}
       {whatsNewOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-whatsnew-sheet" role="dialog" aria-label="What's new" data-hpd-smoke="fc-whatsnew">
           <header>
@@ -9645,17 +9648,7 @@ export default function FieldCommandClient() {
                   {skippedOpen ? <ul>{skippedIdeas().map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span> <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-restore" data-id={x.id} onClick={() => unmarkIdea(x.id)}>↩ Bring back</button></li>; })}</ul> : null}
                 </div>
               ) : null}
-              <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-features-toggle" onClick={() => { setFeaturesOpen((v) => !v); void loadWhatsNew(); }}>📜 Everything the app does ({featureList().length || "…"}): {featuresOpen ? "hide" : "show the list"}</button>
-              {featuresOpen ? (
-                <ol className="fc-idea-list" data-hpd-smoke="fc-features">
-                  {featureList().map((f, i) => (
-                    <li key={i} className="fc-idea" data-hpd-smoke="fc-feature">
-                      <span>{f.text}</span>
-                      <span className="fc-idea-btns"><button type="button" className="fc-idea-skip" data-hpd-smoke="fc-feature-change" onClick={() => { setChangeText(`Change this: ${f.text.slice(0, 160)} → I want: `); setFeaturesOpen(false); setTimeout(() => (document.querySelector('[data-hpd-smoke="fc-ask-change-text"]') as HTMLElement | null)?.focus(), 50); }}>✏️ Change this</button></span>
-                    </li>
-                  ))}
-                </ol>
-              ) : null}
+              <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-features-toggle" onClick={() => { setFeaturesOpen(true); void loadWhatsNew(); }}>✅ Upgrades done ({featureList().length || "…"}): see, edit, add</button>
               {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
               {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
               {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}

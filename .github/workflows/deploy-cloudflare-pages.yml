@@ -445,6 +445,7 @@ jobs:
             scripts/test-browser-bids-todayline.mjs \
             scripts/test-browser-bid-price-alert.mjs \
             scripts/test-browser-work-profit.mjs \
+            scripts/test-browser-paid-profit.mjs \
             scripts/test-browser-supplies-tomorrow.mjs \
             scripts/test-browser-bid-floors.mjs \
             scripts/test-browser-driving.mjs \
@@ -453,6 +454,7 @@ jobs:
             scripts/test-browser-claude-now.mjs \
             scripts/test-browser-ideas.mjs \
             scripts/test-browser-ideas-edit.mjs \
+            scripts/test-browser-upgrades-done.mjs \
             scripts/test-browser-no-keyboard.mjs \
             scripts/test-browser-photo-check.mjs \
             scripts/test-browser-photo-look.mjs \

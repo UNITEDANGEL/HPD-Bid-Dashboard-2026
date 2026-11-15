@@ -5057,3 +5057,21 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 /* 🔁 HPD asked twice (owner's idea, 14 Nov): amber, dark ink, so it reads as "answer with what you sent". */
 .fc-board-sheet .fc-board-filed.is-twice, .fc-board-filed.is-twice { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; }
 .fc-board-filed.is-twice b { color: inherit; }
+
+/* ✅ Upgrades done (owner, 15 Nov): every upgrade, editable */
+.fc-package-sheet.fc-upgrades-sheet { z-index: 200001; }
+.fc-upgrades-tools { display: flex; gap: 8px; margin: 8px 0; }
+.fc-upgrades-tools input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(148,163,184,.4); background: #0f172a; color: #f8fafc; font-size: 16px; }
+.fc-upgrades-tools button, .fc-upgrades-edit button { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(148,163,184,.35); background: #1f2937; color: #f8fafc; font-weight: 700; white-space: nowrap; }
+.fc-upgrades-edit button.is-save { background: #16a34a; border-color: #16a34a; }
+.fc-upgrades-edit { display: flex; flex-direction: column; gap: 8px; width: 100%; margin: 6px 0; }
+.fc-upgrades-edit textarea { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 12px; border: 1px solid rgba(148,163,184,.4); background: #0f172a; color: #f8fafc; font: 500 16px/1.4 system-ui, sans-serif; }
+.fc-upgrades-edit > span { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-upgrades-day h4 { margin: 16px 0 6px; color: #fde68a; font-size: 15px; }
+.fc-upgrades-day h4 small { color: #cbd5e1; font-weight: 600; }
+.fc-upgrades-day ul { list-style: none; margin: 0; padding: 0; }
+.fc-upgrade { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,.1); color: #e2e8f0; font: 500 15px/1.4 system-ui, sans-serif; }
+.fc-upgrade .fc-idea-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-upgrade-tag { color: #86efac; font-weight: 700; }
+.fc-upgrade .fc-idea-btns button { min-height: 36px; padding: 0 10px; font-size: 13px; }
+.fc-upgrade .fc-idea-btns { flex-wrap: nowrap; }

@@ -177,6 +177,19 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+56. ✅ **✅ Upgrades done, editable (owner, 15 Nov: "i need a list in the app of all ideas upgrades we have done to
+    this app i should be able to edit them")**: All → ✅ Upgrades done (and the Ideas screen) opens every What's new item
+    by day, newest first, with a find box. Each one: ✏️ Edit (your words replace Claude's, "· your words", ↩ Original
+    words), 🗑 Remove (Removed (n) → ↩ Bring back), 💬 Ask Claude (fills the request box). ＋ Add puts your own on today;
+    📋 Copy all. Kept on this phone (hpd-upgrades-done-v1). Replaces the old "📜 Everything the app does" list.
+    app/field-command/UpgradesDone.tsx; test-browser-upgrades-done.
+55. ✅ **💵 Profit after HPD paid (15 Nov, Next level item C)**: Bids → Stats → Costs & rates shows, for your jobs
+    HPD paid (pip_paid.json), what HPD paid minus your costs for each job (same count as the calculator: your costs list
+    per line + trip), the total and % and the lowest-profit jobs first (Show all). Only jobs with every kind of work
+    costed count, so a missing cost never shows as profit; the rest are named ("add a cost for Painting (3)"). Paid
+    jobs not in the awards list (work unknown) are left out. lib/costs paidProfit; test-browser-paid-profit.
+    Also: test-browser-agent stopped failing after deploys (it turns "Keep talking" off before tapping Yes; its
+    changing label kept the buttons moving).
 54. ✅ **After-deploy tests green again (14-15 Nov)**: 3 of the 164 failed after the day's changes. open-fast: the
     Rejected job fixer read hpd_requests.json on the first paint, before the jobs (and with no jobs yet, so a correction
     already saved still counted as a redo); it now reads it once the jobs are in. wait-talk and truck-noise tapped the 🤖
@@ -447,7 +460,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 - ✅ Weekly and Friday summaries count the bids sent and won (plan: 5 Nov evening, item 23; 23 Oct, item 92)
 - ⏳ Why the lowest bid still lost (131 jobs): check against HPD's notices and fax receipts, and the owner asks HPD's bid desk about the clear ones (plan: Now, item 0; lost review 16 Oct)
 - ✅ A history for each kind of work: your cost, your price, the winning price, and the profit (12 Nov, item 48)
-- ⏳ Profit for each job after HPD pays (the PIP amount minus your costs), in Stats (plan: Next level, item C next; recommendations)
+- ✅ Profit for each job after HPD pays (the PIP amount minus your costs), in Stats (plan: Next level, item C next; recommendations) (done 15 Nov: Stats → Costs & rates → 💵 Profit after HPD paid)
 - ✅ Price alerts when a kind of work keeps losing, or keeps winning by a lot (12 Nov, item 47)
 
 ### 13. Voice
@@ -469,7 +482,7 @@ A bid goes through these stages in order: invitations come in, they show on the 
 7. ✅ A history for each kind of work: your cost, your price, the winning price, and the profit (12 Nov, item 48)
 8. ⏳ Remove the old invitation PDFs with tenant details from the repo's history (needs the owner's OK, can't be undone)
 9. ⏳ Reconnect Google with "read email" so the phone confirms faxes by itself (open item)
-10. ⏳ Profit for each job after HPD pays, in Stats (recommendation)
+10. ✅ Profit for each job after HPD pays, in Stats (recommendation) (done 15 Nov: Stats → Costs & rates → 💵 Profit after HPD paid)
 11. ✅ Price alerts when a kind of work keeps losing or keeps winning by a lot (12 Nov, item 47)
 12. ⏳ Use the building's age and walk-up in the price advice, once a test on past jobs shows it pays (idea, 15 Oct)
 
