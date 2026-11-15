@@ -363,7 +363,7 @@ export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextD
     const btn = fx.action === "correct" || fx.action === "resend" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={fixHref(row)} onClick={() => rememberSend(row)}>{fx.button}</a>
       : fx.action === "photos" || fx.action === "send" ? <a className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" href={paperHref(row, "")} onClick={() => rememberSend(row)}>{fx.button}</a>
       : fx.action === "visit" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => { const v = visitUpdate(row, address, vtDay(vd)); openReply(row, address, "", v.text); }}>{fx.button}</button>
-      : fx.action === "reply" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => openReply(row, address, row.filed ? `Our affidavit and invoice for ${row.omo} were emailed on ${day(row.filed.at)} (${row.filed.name}). Tell them that date; don't attach it again.` : "")}>{fx.button}</button>
+      : fx.action === "reply" ? <button type="button" className="fc-board-do-go" data-hpd-smoke="fc-board-do-go" onClick={() => openReply(row, address, row.askedTwice ? `HPD asked again, but our affidavit and invoice for ${row.omo} were already emailed on ${day(row.askedTwice.at)} (${row.askedTwice.name}). Tell them that date and file; attach it again only if they ask.` : row.filed ? `Our affidavit and invoice for ${row.omo} were emailed on ${day(row.filed.at)} (${row.filed.name}). Tell them that date; don't attach it again.` : "")}>{fx.button}</button>
       : null;
     return (
       <div className={`fc-board-do is-${fx.tone}`} data-hpd-smoke="fc-board-do" data-action={fx.action}>
@@ -420,7 +420,9 @@ export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextD
         {row.answered && !row.problem ? <p className="fc-board-heard" data-hpd-smoke="fc-board-heard">✅ {(row.who || "HPD").split(/\s+/)[0]} answered {day(row.answered.at)}: “{noJunk(row.answered.text).slice(0, 120)}”</p> : null}
         <details className="fc-board-emails" data-hpd-smoke="fc-board-emails"><summary>💬 The emails</summary>{convo(row)}</details>
         <p className="fc-board-from">From {row.who} · {day(row.noticeAt)}{row.followUpAt ? ` · followed up ${day(row.followUpAt)}` : ""}{row.sentAt ? ` · paperwork on record ${day(row.sentAt)}` : ""}</p>
-        {row.filed ? <p className="fc-board-filed" data-hpd-smoke="fc-board-filed">📎 Already emailed <b>{day(row.filed.at)}</b>: {row.filed.name}{row.filed.here ? "" : " (in another email)"}. Don&apos;t send it again; tell them the date.</p> : null}
+        {/* 🔁 HPD asked twice (owner's idea, 14 Nov): already emailed before this ask: the date and file to reply with. */}
+        {row.askedTwice && row.next ? <p className="fc-board-filed is-twice" data-hpd-smoke="fc-board-asked-twice">🔁 HPD asked again {day(row.noticeAt)}, but you already emailed it <b>{day(row.askedTwice.at)}</b>: {row.askedTwice.name}. Reply with that date and file; no new paperwork needed.</p>
+          : row.filed ? <p className="fc-board-filed" data-hpd-smoke="fc-board-filed">📎 Already emailed <b>{day(row.filed.at)}</b>: {row.filed.name}{row.filed.here ? "" : " (in another email)"}. Don&apos;t send it again; tell them the date.</p> : null}
         {row.next && findingsOf ? (() => {
           const f = findingsOf(row);
           return (

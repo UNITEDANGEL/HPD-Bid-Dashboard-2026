@@ -5054,3 +5054,6 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-idea-edit input, .fc-idea-edit textarea { font: 600 16px system-ui, sans-serif; padding: 10px; border-radius: 10px; border: 2px solid #94a3b8; width: 100%; box-sizing: border-box; }
 .fc-idea-skipped ul { margin: 6px 0; padding-left: 18px; font-size: 15px; }
 .fc-idea-skipped li { margin: 6px 0; }
+/* 🔁 HPD asked twice (owner's idea, 14 Nov): amber, dark ink, so it reads as "answer with what you sent". */
+.fc-board-sheet .fc-board-filed.is-twice, .fc-board-filed.is-twice { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; }
+.fc-board-filed.is-twice b { color: inherit; }

@@ -157,3 +157,21 @@ console.log("PASS no answer: flagged after 5 days with no answer, waits again af
   assert.equal(boardSide(row("EO18305")), "tosend", "she wants photos: an old affidavit PDF isn't that");
   console.log("PASS Gafur's list vs emails: PDFs named for the job count as sent (any thread, no text needed), 'Received.' confirms only that job, a note to the whole list leaves the rest to send, photos asks need photos");
 }
+
+// 🔁 HPD asked twice (owner's idea, 14 Nov): a notice for a job whose affidavit / invoice was already emailed before
+// it shows that date and file; a file sent after the notice is the normal "sent"; nothing sent = no flag.
+{
+  const tw = [
+    t("p1", "24 HR POOR PERFORMANCE NOTICE- OMO#ER11111", "ER11111", [hpd("2026-10-16T15:00:00Z")]),
+    { id: "old", subject: "Paperwork OMO#ER11111", omos: ["ER11111"], people: ["Darlene Lewis"], messages: [mine("2026-10-09T14:00:00Z", ["ER11111 AFF INVOICE.pdf"])] },
+    t("p2", "24 HR POOR PERFORMANCE NOTICE- OMO#ER22222", "ER22222", [hpd("2026-10-16T15:00:00Z"), mine("2026-10-16T18:00:00Z", ["ER22222 AFF INVOICE.pdf"])]),
+    { id: "old2", subject: "Paperwork OMO#ER22222", omos: ["ER22222"], people: [], messages: [mine("2026-10-02T14:00:00Z", ["ER22222 AFF INVOICE.pdf"])] },
+    t("p3", "24 HR POOR PERFORMANCE NOTICE- OMO#ER33333", "ER33333", [hpd("2026-10-16T15:00:00Z")]),
+  ];
+  const r = Object.fromEntries(buildBoard({ threads: tw, sent: {}, marks: {}, closed: new Set(), now }).map((x) => [x.omo, x]));
+  assert.deepEqual(r.ER11111.askedTwice, { at: "2026-10-09T14:00:00Z", name: "ER11111 AFF INVOICE.pdf" }, "already emailed before the notice");
+  assert.equal(r.ER11111.next, "replied", "still needs a reply (with that date)");
+  assert.equal(r.ER22222.askedTwice, null, "sent again after the notice: no flag");
+  assert.equal(r.ER33333.askedTwice, null, "never sent: no flag");
+  console.log("PASS HPD asked twice: a notice after the job's paperwork was already emailed shows that date and file; sent after the notice or never sent = no flag");
+}

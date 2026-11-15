@@ -3,8 +3,10 @@
   "versions": [
     {
       "date": "Nov 14, 2026",
-      "title": "Bids sent today",
+      "title": "Bids sent today · HPD asked twice",
       "items": [
+        "🔁 HPD asked twice: when HPD sends a notice for paperwork you already emailed, the board card says so in amber, with the date and file name to reply with, so you don't make it again.",
+        "🧰 Bring tomorrow by voice and at 6 PM: ask \"what do I bring tomorrow\" (or \"supplies for tomorrow\") for the list in store order with check boxes; the 6 PM \"Tomorrow\" note says what to bring too, with a 🧰 What to bring button.",
         "🧰 Bring tomorrow: in Today's summary, one list of what to bring for tomorrow's jobs (hinges, plaster, pipe parts, paint...), built from each job's work words. Jobs with no clear words are named so you check them.",
         "🏆 Your week on the home screen: jobs sent, jobs won and money in from Monday to today, with a trophy on a good week.",
         "🔧 Rejected job fixer: when HPD sends a job back and the fix needs a visit (new photos, work not done), that job goes first on your route with what to redo.",

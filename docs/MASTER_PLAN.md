@@ -159,6 +159,19 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+53. ✅ **🔁 HPD asked twice** (owner's idea sent from the app, 14 Nov: "the app flags when HPD asks for something you
+    already sent, with the date and file name to reply with"): a 24 / 72-hour notice for a job whose affidavit / invoice
+    was already emailed before the notice (any thread) shows, on the board card, "🔁 HPD asked again 10/16, but you
+    already emailed it 10/9: ER… AFF INVOICE.pdf. Reply with that date and file" (amber); the reply draft says the same;
+    the helper's AI knows it. A missing-documents list already counted an earlier PDF as sent; it now says it's a
+    second ask too. Sent again after the notice, or never sent = no flag (none on today's real notices). Test:
+    test-notice-board.
+52. ✅ **🧰 Supplies for tomorrow** (owner's idea sent from the app, 14 Nov: "one list of what to bring for tomorrow's
+    jobs, built from each job's work description"): "what do I bring tomorrow" / "supplies for tomorrow" gives one list
+    for tomorrow's appointments and 2nd tries (how many jobs need each, store-aisle order with ticks, the store on the
+    way); nothing booked = it says so. The 6 PM "🗺 Tomorrow" note now ends "🧰 Bring: door hardware / locks, plumbing
+    parts" and its button opens the list. (Today's summary got its own "🧰 Bring tomorrow" list the same day, lib/supplies.)
+    Test: test-browser-supplies-tomorrow.
 51. ✅ **Better AI, part 1: smarter about prices** (owner request 12 Nov "I want better ai" → answered "Everything";
     done 13 Nov): a question about prices, bids, winning or losing now sends the helper's AI your whole bid record
     (win rate per kind of work, how far above the winner you lost, the price alerts, HPD awards you didn't bid on, the

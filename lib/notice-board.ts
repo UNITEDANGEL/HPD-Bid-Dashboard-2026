@@ -32,6 +32,9 @@ export type BoardRow = {
   lastMineAt: string;                         // our latest email on it (after their notice / list)
   lastTheirsAt: string;                       // their latest email after ours ("" if they haven't answered)
   filed: { at: string; name: string; here: boolean } | null; // our latest email with a PDF named for the job (any thread)
+  // 🔁 HPD asked twice (owner's idea, 14 Nov): the job's affidavit / invoice was already emailed BEFORE this ask (the
+  // newest one, any thread): reply with that date and file instead of making a new one. null: nothing sent before.
+  askedTwice?: { at: string; name: string } | null;
   generalOnly?: boolean;                      // the only answer was a note to the whole list ("I'll send them today")
   // HPD's answer after our paperwork, in any email about this job (owner, 5 Nov: "it should know from the email I
   // already sent"): a problem with it ("the copy is blank") puts it back to send; otherwise it counts as confirmed.
@@ -115,6 +118,10 @@ export function buildBoard(input: {
     const list = (filedAll.get(omo) || []).filter((x) => !since || Date.parse(x.at) > Date.parse(since)).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
     return list[0] ? { at: list[0].at, name: list[0].name, here: list[0].threadId === threadId } : null;
   };
+  const filedBefore = (omo: string, at: string) => {
+    const list = (filedAll.get(omo) || []).filter((x) => Date.parse(x.at) < Date.parse(at)).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+    return list[0] ? { at: list[0].at, name: list[0].name } : null;
+  };
   const namesJob = (m: BoardMessage, omo: string) => (m.files || []).some((f) => f.toUpperCase().includes(omo));
   // Every email about one job (threads naming only that job), for HPD's answer after our paperwork.
   const jobMsgs = new Map<string, BoardMessage[]>();
@@ -185,6 +192,7 @@ export function buildBoard(input: {
       finish({
         problem: heard.problem, answered: heard.ok, handledAt,
         lastMineAt: [lastMine?.at || "", filed?.at || ""].sort().at(-1) || "", lastTheirsAt: lastTheirs?.at || "", filed,
+        askedTwice: withFiles ? null : filedBefore(omo, notice.at),
         key, omo, threadId: t.id, subject: t.subject, kind: "ppn", hours, who, to,
         noticeAt: notice.at, dueAt: dueAfterWeekdays(notice.at, hours), followUpAt: "", // weekdays only: Friday's 24-hour notice is due Monday
         want: "the affidavit and invoice, or an update on the job",
@@ -231,6 +239,7 @@ export function buildBoard(input: {
       finish({
         problem: heard.problem, answered: heard.ok, handledAt,
         lastMineAt: lastMine?.at || "", lastTheirsAt: lastTheirs?.at || "", filed, generalOnly,
+        askedTwice: filed && !filed.here && Date.parse(filed.at) < Date.parse(listed.at) ? { at: filed.at, name: filed.name } : null,
         key, omo, threadId: t.id, subject: t.subject, kind: "docs", hours: 0, who, to,
         noticeAt: listed.at, dueAt: "", followUpAt: follow?.at || "",
         want: line ? line[1].trim().replace(/\s+/g, " ") : "documents / an update",

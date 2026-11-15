@@ -6403,14 +6403,16 @@ export default function FieldCommandClient() {
       return;
     }
     if (cmd.intent === "materials") {
-      // 📦 Today's route (else the open card): what the work descriptions need.
-      const ids = todayRouteIds();
-      const list = (ids.length ? ids.map((id) => jobs.find((x) => jobId(x) === id)).filter(Boolean) as JobRecord[] : selectedJob ? [selectedJob] : []).filter((x) => !value(x, ["FieldOutcome", "fieldOutcome"]));
-      if (!list.length) { answer("Plan today's route first (say \"plan my day\"), or open a job, and I'll tell you what to bring."); return; }
+      // 📦 Today's route (else the open card): what the work descriptions need. 🧰 "Tomorrow" (owner's idea, 14 Nov:
+      // "one list of what to bring for tomorrow's jobs"): tomorrow's appointments and 2nd tries, one list.
+      const tmw = cmd.when === "tomorrow";
+      const ids = tmw ? [...new Set(daySummary(jobs, { id: jobId, address: jobAddress }).tomorrow.map((r) => r.id))] : todayRouteIds();
+      const list = (ids.length ? ids.map((id) => jobs.find((x) => jobId(x) === id)).filter(Boolean) as JobRecord[] : selectedJob && !tmw ? [selectedJob] : []).filter((x) => !value(x, ["FieldOutcome", "fieldOutcome"]));
+      if (!list.length) { answer(tmw ? "Nothing is booked for tomorrow yet (no appointments or 2nd tries), so there's nothing to pack. Make an appointment and ask me again." : "Plan today's route first (say \"plan my day\"), or open a job, and I'll tell you what to bring."); return; }
       const need = materialsFor(list.map((x) => ({ id: jobId(x), text: jobScope(x) })));
-      if (!need.length) { answer(`I couldn't tell the materials from the work descriptions of ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops`}. Read them on the cards.`); return; }
+      if (!need.length) { answer(`I couldn't tell the materials from the work descriptions of ${list.length === 1 ? jobId(list[0]) : `your ${list.length} ${tmw ? "jobs tomorrow" : "stops"}`}. Read them on the cards.`); return; }
       cardsRef.current = list.slice(0, 5).map((x) => chatCard(jobId(x))).filter((c): c is ChatCard => Boolean(c));
-      const said = `📦 To bring for ${list.length === 1 ? jobId(list[0]) : `your ${list.length} stops today`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`;
+      const said = `📦 To bring for ${list.length === 1 ? `${jobId(list[0])}${tmw ? " tomorrow" : ""}` : `your ${list.length} ${tmw ? "jobs tomorrow" : "stops today"}`}:\n${need.map((m) => `• ${m.item}${list.length > 1 ? ` (${m.jobs.length} job${m.jobs.length === 1 ? "" : "s"})` : ""}`).join("\n")}`;
       answer(said);
       // 🧾 The same list in store-aisle order with check boxes (ticks kept for the day on this phone).
       if (!multiRef.current) setAgent((a) => (a && a.heard === heard ? { ...a, shop: shoppingList(need).map((m) => ({ item: m.item, aisle: m.aisle, n: m.jobs.length })) } : a));
@@ -6725,7 +6727,7 @@ export default function FieldCommandClient() {
           traffic: trafficNote(clockNow.iso, clockNow.weekday),
           parking: aspAnswer(clockNow.iso.slice(0, 10), "Today"),
           now: new Date().toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }),
-          notices: boardOpenRows.slice(0, 40).map((r) => ({ job: r.omo, address: addressOf(r.omo), kind: r.kind === "docs" ? "missing documents" : `${r.hours}-hour notice`, from: r.who, hoursLeft: r.dueAt ? Math.round(hoursLeft(r, Date.now())) : null, want: r.want, status: boardSide(r), pdfAlreadyEmailed: r.filed ? r.filed.at.slice(0, 10) : null })),
+          notices: boardOpenRows.slice(0, 40).map((r) => ({ job: r.omo, address: addressOf(r.omo), kind: r.kind === "docs" ? "missing documents" : `${r.hours}-hour notice`, from: r.who, hoursLeft: r.dueAt ? Math.round(hoursLeft(r, Date.now())) : null, want: r.want, status: boardSide(r), pdfAlreadyEmailed: r.filed ? r.filed.at.slice(0, 10) : null, hpdAskedAgainButAlreadySent: r.askedTwice ? { sent: r.askedTwice.at.slice(0, 10), file: r.askedTwice.name } : null })),
           openBids: (Array.isArray(bidsData?.bids) ? bidsData.bids : []).filter((b: { bidDue?: string }) => (b.bidDue || "") >= nyDay).slice(0, 40).map((b: { omo: string; borough?: string; description?: string; bidDue: string; bidDueTime?: string }) => ({ job: b.omo, borough: b.borough, work: jobSummary(b.description || "").lines.map(lineText).join("; ").slice(0, 160), due: `${b.bidDue} ${b.bidDueTime || ""}`.trim() })),
           money: { heldByRejections: payTrack.summary.held, rejectionsToFix: payTrack.summary.toFix },
           jobs: { toDo: jobRows.filter((r) => r.group === "todo").length, closeOut: jobRows.filter((r) => r.group === "closeout").length, secondTry: jobRows.filter((r) => r.group === "secondtry").length, waitingOnHpd: jobRows.filter((r) => r.group === "waiting").length, oldestToDo: jobRows.filter((r) => r.group === "todo").sort((a, b) => String(a.due).localeCompare(String(b.due))).slice(0, 8).map((r) => ({ job: r.id, address: r.address, due: r.due })) },
@@ -10415,7 +10417,11 @@ export default function FieldCommandClient() {
         if (jobs.length && isRouteTime(Math.floor(nowMin / 60)) && !nudgeSeen.includes(`route|${today}`)) {
           const sum2 = daySummary(jobs, { id: jobId, address: jobAddress });
           const line = tomorrowRouteLine(sum2.tomorrow.map((r) => ({ address: noZip(r.address), text: r.text })));
-          if (line) all.push({ key: `route|${today}`, kind: "route", text: line, label: "Open", go: () => agentRef.current("my appointments tomorrow") });
+          // 🧰 Supplies for tomorrow (owner's idea, 14 Nov): what tomorrow's jobs need, from their work descriptions.
+          const tmwJobs = [...new Set(sum2.tomorrow.map((r) => r.id))].map((id) => jobs.find((x) => jobId(x) === id)).filter((x): x is JobRecord => Boolean(x) && !value(x as JobRecord, ["FieldOutcome", "fieldOutcome"]));
+          const tmwNeed = materialsFor(tmwJobs.map((x) => ({ id: jobId(x), text: jobScope(x) })));
+          const bring = tmwNeed.length ? ` 🧰 Bring: ${tmwNeed.slice(0, 4).map((m) => m.item.replace(/^\S+\s+/u, "").toLowerCase()).join(", ")}${tmwNeed.length > 4 ? ` and ${tmwNeed.length - 4} more` : ""}.` : "";
+          if (line) all.push({ key: `route|${today}`, kind: "route", text: `${line}${bring}`, label: tmwNeed.length ? "🧰 What to bring" : "Open", go: () => agentRef.current(tmwNeed.length ? "what do I bring tomorrow" : "my appointments tomorrow") });
         }
         // 📱 A tenant who went quiet (plan item 38): 2 days with no answer: a follow-up text to check, then send.
         {

@@ -441,6 +441,7 @@ jobs:
             scripts/test-browser-bids-todayline.mjs \
             scripts/test-browser-bid-price-alert.mjs \
             scripts/test-browser-work-profit.mjs \
+            scripts/test-browser-supplies-tomorrow.mjs \
             scripts/test-browser-bid-floors.mjs \
             scripts/test-browser-driving.mjs \
             scripts/test-browser-fluid-talk.mjs \
