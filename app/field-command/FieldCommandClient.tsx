@@ -1816,6 +1816,7 @@ export default function FieldCommandClient() {
   // Answer Claude on a request (2 Nov: "Waiting for you" had no way to answer; a new request left the old one stuck):
   // saved as CHANGE-ANSWER-<same id> {answers}; the request opens again and the next run reads it with the question.
   const [answerFor, setAnswerFor] = useState("");
+  const [guideFor, setGuideFor] = useState("");
   const [answerText, setAnswerText] = useState("");
   const sendChangeAnswer = async (t: ChangeThread, raw: string) => {
     const text = raw.trim();
@@ -9587,7 +9588,14 @@ export default function FieldCommandClient() {
                       </form>
                     ) : t.status === "Done" ? (
                       <div className="fc-change-check" data-hpd-smoke="fc-change-check">
-                        {t.tryAt ? <a className="fc-change-try" data-hpd-smoke="fc-change-try" href={t.tryAt}>▶ Try it</a> : null}
+                        {t.tryAt ? <button type="button" className="fc-change-try" data-hpd-smoke="fc-change-try" aria-expanded={guideFor === t.id} onClick={() => setGuideFor(guideFor === t.id ? "" : t.id)}>▶ Try it</button> : null}
+                        {t.tryAt && guideFor === t.id ? (
+                          <ol className="fc-try-guide" data-hpd-smoke="fc-try-guide">
+                            <li><b>Step 1.</b> Tap <a className="fc-change-try" data-hpd-smoke="fc-try-open" href={t.tryAt}>Open the screen</a></li>
+                            <li><b>Step 2.</b> {(t.updates[t.updates.length - 1]?.text || "Look for what changed").split(String.fromCharCode(10))[0]}</li>
+                            <li><b>Step 3.</b> Come back here. Tap 👍 Works if it did what you asked, or ↩ Not right? and say what is wrong.</li>
+                          </ol>
+                        ) : null}
                         {t.ok ? <span className="fc-change-ok" data-hpd-smoke="fc-change-ok">👍 You checked it</span>
                           : <button type="button" className="fc-change-works" data-hpd-smoke="fc-change-works" onClick={() => void confirmWorks(t)}>👍 Works</button>}
                         <button type="button" className="fc-change-again" data-hpd-smoke="fc-change-again" onClick={() => { setAnswerFor(t.id); setAnswerText(""); }}>↩ Not right?</button>

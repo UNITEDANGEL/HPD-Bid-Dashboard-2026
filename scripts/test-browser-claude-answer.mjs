@@ -61,7 +61,10 @@ try {
   const fin = page.locator('[data-hpd-smoke="fc-change-thread"]', { hasText: "Bigger text on notices" });
   assert.equal(await fin.locator('[data-hpd-smoke="fc-change-answer"]').count(), 0);
   // ▶ Try it opens the screen that changed; 👍 Works is saved and shown.
-  assert.equal(await fin.locator('[data-hpd-smoke="fc-change-try"]').getAttribute("href"), "/map/?view=all&map=1&bids=1");
+  // ▶ Try it opens a step-by-step guide whose first step opens the screen that changed.
+  await fin.locator('[data-hpd-smoke="fc-change-try"]').click();
+  await fin.locator('[data-hpd-smoke="fc-try-guide"]').waitFor({ timeout: 5000 });
+  assert.equal(await fin.locator('[data-hpd-smoke="fc-try-open"]').getAttribute("href"), "/map/?view=all&map=1&bids=1");
   await fin.locator('[data-hpd-smoke="fc-change-works"]').click();
   await fin.locator('[data-hpd-smoke="fc-change-ok"]').waitFor({ timeout: 5000 });
   assert.ok(posts.find((p) => p.key === `CHANGE-ANSWER-${done}`)?.patch.ok, "👍 saved as ok on CHANGE-ANSWER");

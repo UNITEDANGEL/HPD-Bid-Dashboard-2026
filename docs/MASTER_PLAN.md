@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 🧭 15 Nov: Guided Try it (idea from the app)
+✅ ▶ Try it on a finished request opens a 3-step guide (open screen, what changed, Works / Not right). Still ☐: run it on a test job (new ideas added). Test: scripts/test-browser-claude-answer.mjs.
+
 ## 🔍 15 Nov: Map zoom buttons (idea from the app)
 ✅ Big + / − buttons on the map (right side, under the map buttons); pinch zoom unchanged. Test: scripts/test-browser-map-zoom.mjs.
 

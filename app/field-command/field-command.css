@@ -5078,3 +5078,5 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .leaflet-right .fc-map-zoom.leaflet-control, .fc-map-zoom { display: grid; gap: 8px; margin: 222px 10px 0 0; }
 .fc-map-zoom button { width: 52px; height: 52px; border-radius: 16px; border: 1px solid rgba(0,0,0,.25); background: #fff; color: #111; font-size: 30px; font-weight: 700; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,.3); touch-action: manipulation; }
 .fc-map-zoom button:active { transform: scale(.94); }
+.fc-try-guide { flex-basis: 100%; margin: 8px 0 0; padding: 10px 12px 10px 28px; background: #eff6ff; border-radius: 12px; font: 600 16px/1.4 system-ui; }
+.fc-try-guide li { margin: 6px 0; }

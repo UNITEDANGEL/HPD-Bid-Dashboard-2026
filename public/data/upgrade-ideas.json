@@ -575,12 +575,6 @@
       "why": "A plain list of every feature in the app, so you can see what it already has and pick what to change."
     },
     {
-      "id": "try-guided",
-      "icon": "🧭",
-      "title": "Guided Try it",
-      "why": "Try it walks you step by step on a test job, saying what to tap and what should happen, so you never forget a step."
-    },
-    {
       "id": "map-zoom-auto",
       "icon": "🔍",
       "title": "Zoom and scroll on the map",
@@ -679,6 +673,18 @@
       "kind": "new",
       "title": "Alert when the wait is over",
       "why": "At the end of the no-show wait, your phone rings so you know it is time to take the door photos and leave."
+    },
+    {
+      "id": "try-test-job",
+      "icon": "🧪",
+      "title": "Try it on a test job",
+      "why": "Try it makes a pretend job for you, so you can tap through the new screen without touching a real job."
+    },
+    {
+      "id": "try-checklist",
+      "icon": "✅",
+      "title": "Check off each Try it step",
+      "why": "Each Try it step gets a tick when you finish it, and Works only turns on after all steps are ticked."
     }
   ],
   "plan": {
