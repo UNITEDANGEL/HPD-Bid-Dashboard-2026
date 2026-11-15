@@ -73,6 +73,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - ✅ 102. Helper morning hello: bids due today (closest deadline) and tomorrow (14 Nov plan). Test: test-browser-photo-checklist.mjs (bidsBriefLine).
 - ✅ 103. Why this price: the 3 closest past jobs and what each went for, under the price buttons (14 Nov plan). Tests: test-bid-price.cjs, test-browser-bids.mjs.
 - ✅ 104. Questions bubble above the helper head, not over it (owner 14 Nov). Test: test-browser-claude-ask-quick.mjs.
+- ✅ 105. (15 Nov auto upgrade) The 14 Nov plan (photo count, morning bids, why this price) was already live (items 101-103); the plan card now offers the next 3: ☐ who to chase for money, ☐ why you lost a bid, ☐ today's money.
 
 ## 📋 14 Nov: next on the plan (the 12 Nov plan was all live already)
 

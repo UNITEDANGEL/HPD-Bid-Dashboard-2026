@@ -458,27 +458,6 @@
       "why": "If a bid has a price but no fax by 2 hours before it is due, the phone alerts you with a one-tap Send."
     },
     {
-      "id": "price-win-note",
-      "icon": "🏆",
-      "kind": "new",
-      "title": "Why this price",
-      "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
-    },
-    {
-      "id": "day-start-bids",
-      "icon": "🌅",
-      "kind": "upgrade",
-      "title": "Bids first thing in the morning",
-      "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
-    },
-    {
-      "id": "photo-count-live",
-      "icon": "📷",
-      "kind": "upgrade",
-      "title": "Photo count on every job card",
-      "why": "See how many photos are still needed on a job before you leave the building."
-    },
-    {
       "id": "sent-today-total",
       "icon": "💵",
       "kind": "new",
@@ -660,26 +639,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-14-a",
-    "title": "Next on the plan: photo count, 7 AM bids, and why this price",
+    "id": "2026-11-15-a",
+    "title": "Next on the plan: who to chase for money, why you lost a bid, and today's money",
     "items": [
       {
-        "id": "photo-count-live",
-        "icon": "📷",
-        "title": "Photo count on every job card",
-        "why": "See how many photos are still needed on a job before you leave the building."
+        "id": "pay-chase-list",
+        "icon": "📋",
+        "title": "Who to chase for money",
+        "why": "One list of finished jobs not paid yet, oldest first, with how many days each has waited."
       },
       {
-        "id": "day-start-bids",
-        "icon": "🌅",
-        "title": "Bids first thing in the morning",
-        "why": "At 7 AM the helper lists the bids due today and tomorrow and says which one is closest to its deadline."
+        "id": "lost-bids",
+        "icon": "📉",
+        "title": "Why you lost a bid",
+        "why": "For each bid you lost, the winning price next to yours, so the next price is right."
       },
       {
-        "id": "price-win-note",
-        "icon": "🏆",
-        "title": "Why this price",
-        "why": "Each recommended bid price shows the last 3 similar jobs and what won, in one line."
+        "id": "day-money",
+        "icon": "💵",
+        "title": "Today's money",
+        "why": "At the top: money earned today and this week from finished jobs, counting up as you finish."
       }
     ]
   }
