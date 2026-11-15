@@ -4050,6 +4050,7 @@ export default function FieldCommandClient() {
         const lastView = savedMapView();
         const map = L.map(mapNode.current, {
           zoomControl: false,
+          wheelPxPerZoomLevel: 90,
           attributionControl: true,
         }).setView(lastView ? [lastView.lat, lastView.lng] : [40.72, -73.95], lastView ? lastView.zoom : 10);
         // Reopening starts where the map was left, not zoomed out to the whole city.
@@ -4063,6 +4064,8 @@ export default function FieldCommandClient() {
           const center = map.getCenter();
           try { localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); } catch {}
         });
+        // Big + / - buttons on the map (owner 14 Nov: "I want to zoom in and out").
+        { const Zoom = L.Control.extend({ onAdd: () => { const box = L.DomUtil.create("div", "fc-map-zoom"); box.innerHTML = '<button type="button" aria-label="Zoom in" data-hpd-smoke="fc-zoom-in">+</button><button type="button" aria-label="Zoom out" data-hpd-smoke="fc-zoom-out">−</button>'; L.DomEvent.disableClickPropagation(box); const [zi, zo] = Array.from(box.querySelectorAll("button")) as HTMLButtonElement[]; zi.addEventListener("click", () => map.zoomIn(1)); zo.addEventListener("click", () => map.zoomOut(1)); return box; } }); new Zoom({ position: "topright" }).addTo(map); }
         mapRef.current = map;
         setRouteMapReady(true);
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
