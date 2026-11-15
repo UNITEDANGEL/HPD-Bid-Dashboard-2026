@@ -12,6 +12,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 🚪 14 Nov: No-access proof in one tap (idea from the app)
+- ✅ 109. Confirming No Access on a routed job saves a note on the job: time, number of door photos, call tries (lib/no-access-proof.ts, PlanMyDayDrawer). Test: test-no-access-proof.mjs.
+
 ## ⚠ 14 Nov: unpaid over 30 days (idea from the app)
 - ✅ 108. The money card warns about sent jobs unpaid 30+ days with OMO and day count (lib/who-owes.ts lateLine). Tests: test-who-owes.cjs, test-browser-who-owes.mjs.
 

@@ -10,6 +10,8 @@ import { secondTryState } from "../../lib/field-next-action";
 import { rejectedFixes, type RejectedFix } from "../../lib/rejected-fixer";
 import { nyToday, type Appointment } from "../../lib/appointments";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { addJobNote } from "../../lib/job-notes";
+import { noAccessProofNote } from "../../lib/no-access-proof";
 import {
   shadowUpsert,
   syncUnifiedMutations,
@@ -680,6 +682,10 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
         window.alert(`${kind.replaceAll("_", " ")} evidence is required before continuing.`);
         return;
       }
+    }
+    if (next === "no_access") {
+      // One tap saves the proof on the job: time, door photos and call tries (idea, 14 Nov).
+      try { addJobNote(job.id, noAccessProofNote({ photos: (await countFieldPhotos(job.id))[kind] || 0, callTries: 0 })); } catch { /* note is a bonus */ }
     }
     if (["work_started", "no_access", "refused_access", "completed_by_others"].includes(next)) updateFieldStep(job, next);
     else setFieldSteps((current) => ({ ...current, [job.id]: next }));

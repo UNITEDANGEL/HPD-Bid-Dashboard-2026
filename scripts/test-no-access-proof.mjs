@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import ts from "typescript";
+const src = readFileSync("lib/no-access-proof.ts", "utf8");
+const dir = mkdtempSync(join(tmpdir(), "nap-"));
+const file = join(dir, "m.mjs");
+writeFileSync(file, ts.transpileModule(src, { compilerOptions: { module: "ES2020", target: "ES2020" } }).outputText);
+const { noAccessProofNote } = await import(pathToFileURL(file).href);
+const t = new Date("2026-11-14T15:30:00Z");
+assert.equal(noAccessProofNote({ at: t, photos: 2, callTries: 3 }), "No access proof: Nov 14, 10:30 AM, 2 door photos, 3 call tries.");
+assert.equal(noAccessProofNote({ at: t, photos: 1, callTries: 1 }), "No access proof: Nov 14, 10:30 AM, 1 door photo, 1 call try.");
+assert.equal(noAccessProofNote({ at: t, photos: 0 }), "No access proof: Nov 14, 10:30 AM, no door photo, 0 call tries.");
+console.log("no-access-proof ok");
