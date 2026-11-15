@@ -7,13 +7,14 @@
 
 import { useEffect, useState } from "react";
 import { listFieldEvidenceLite, readFieldMedia, type FieldMediaLite } from "../../lib/field-photo-store";
+import { pairPhotos } from "../../lib/photo-pairs";
 import { getVideoEntry, STATUS_EVENT } from "../../lib/video-backup";
 
 type Item = FieldMediaLite & { url: string; inDrive: boolean; driveError: string; driveId: string };
 
 export default function MediaViewer({ jobId, kind, onClose }: { jobId: string; kind: "before" | "after"; onClose: () => void }) {
   const [items, setItems] = useState<Item[] | null>(null);
-  const [tab, setTab] = useState<"before" | "after">(kind);
+  const [tab, setTab] = useState<"before" | "after" | "pairs">(kind);
   useEffect(() => {
     let live = true;
     const urls: string[] = [];
@@ -39,6 +40,7 @@ export default function MediaViewer({ jobId, kind, onClose }: { jobId: string; k
     if (m?.dataUrl) setItems((list) => (list || []).map((x) => (x.id === id ? { ...x, url: m.dataUrl } : x)));
   };
   const shown = (items || []).filter((x) => x.kind === tab);
+  const pairs = pairPhotos(items || []);
   const count = (k: "before" | "after") => (items || []).filter((x) => x.kind === k).length;
   return (
     <div className="fc-media-viewer" role="dialog" aria-label="Saved photos and videos" data-hpd-smoke="fc-media-viewer">
@@ -50,9 +52,22 @@ export default function MediaViewer({ jobId, kind, onClose }: { jobId: string; k
         {(["before", "after"] as const).map((k) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "is-on" : ""} data-hpd-smoke={`fc-media-tab-${k}`} onClick={() => setTab(k)}>{k === "before" ? "Before" : "After"} <b>{count(k)}</b></button>
         ))}
+        <button type="button" role="tab" aria-selected={tab === "pairs"} className={tab === "pairs" ? "is-on" : ""} data-hpd-smoke="fc-media-tab-pairs" onClick={() => setTab("pairs")}>Pairs <b>{pairs.length}</b></button>
       </div>
       <div className="fc-media-viewer-body">
-        {items === null ? <p>Loading…</p> : !shown.length ? <p>No {tab} photos or videos on this phone yet.</p> : (
+        {items === null ? <p>Loading…</p> : tab === "pairs" ? (!pairs.length ? <p>No before/after photos on this phone yet.</p> : (
+          <ol className="fc-media-pairs" data-hpd-smoke="fc-media-pairs">
+            {pairs.map((pr, i) => (
+              <li key={i} data-hpd-smoke="fc-media-pair">
+                <b>Pair {i + 1}</b>
+                <div>
+                  {pr.before ? <figure><img src={pr.before.url} alt={`Before photo ${i + 1}`} /><figcaption>Before</figcaption></figure> : <figure className="is-missing"><figcaption>Before: none yet</figcaption></figure>}
+                  {pr.after ? <figure><img src={pr.after.url} alt={`After photo ${i + 1}`} /><figcaption>After</figcaption></figure> : <figure className="is-missing"><figcaption>After: none yet</figcaption></figure>}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )) : !shown.length ? <p>No {tab} photos or videos on this phone yet.</p> : (
           <ol className="fc-media-grid">
             {shown.map((x, i) => (
               <li key={x.id} data-hpd-smoke="fc-media-item" data-type={x.mediaType}>
