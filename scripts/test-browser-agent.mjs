@@ -21,12 +21,13 @@ try {
     if (r.request().method() === "POST") { try { saved.push(JSON.parse(r.request().postData() || "{}")); } catch { /* not json */ } return r.fulfill({ json: { ok: true } }); }
     return r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });
   });
-  // What the helper says, and a stand-in microphone that hears whatever window.__hear holds.
+  // What the helper says, and a stand-in microphone that hears whatever window.__hear holds, once (15 Nov: hearing it
+  // again after Yes asked the same question again and wiped the Saved reply's buttons, a flaky fail on GitHub).
   await c.addInitScript(() => {
     window.__said = [];
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => { window.__said.push(u.text); };
     window.SpeechRecognition = window.webkitSpeechRecognition = class {
-      start() { setTimeout(() => { this.onresult?.({ results: [Object.assign([{ transcript: window.__hear || "" }], { isFinal: true })] }); this.onend?.(); }, 150); }
+      start() { setTimeout(() => { const t = window.__hear || ""; window.__hear = ""; this.onresult?.({ results: [Object.assign([{ transcript: t }], { isFinal: true })] }); this.onend?.(); }, 150); }
       stop() { this.onend?.(); }
     };
   });
