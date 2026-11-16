@@ -47,7 +47,7 @@ try {
   assert.match(text, /→ [^→\n]*Something's not working \([^)]*\)\n/, "the report button itself is the last tap");
   assert.match(text, /Errors in the last 30 min: /);
   assert.match(text, /Version: /);
-  assert.ok(!/secret|718|555/.test(text), "nothing typed is sent");
+  assert.ok(!/secret|718 555|555 0199|0199/.test(text), `nothing typed is sent: ${text}`); // the typed number itself (16 Nov: version 4718 matched "718")
   assert.ok(!posts.some((p) => /hpd\.nyc\.gov|fax/i.test(JSON.stringify(p))), "nothing to HPD");
   assert.deepEqual(errors, []);
   console.log(`PASS broken report: All → 🐞 Something's not working sent Claude the last taps with their screens, errors and version (no typed words), and said so`);

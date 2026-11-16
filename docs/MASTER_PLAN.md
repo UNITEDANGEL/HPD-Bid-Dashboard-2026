@@ -17,7 +17,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - ✅ 115. 🎤 Say it on the job card: spoken note saved as "Done (date): ..." (lib/job-say-note.ts, JobNotes.tsx). Tests: test-job-say-note.cjs, test-browser-job-say-note.mjs.
 - ✅ 116. Photo check asks "Why no after photo?" with No access / Tenant refused, saved as a job note (lib/photo-reason.ts, PhotoCheck.tsx). Tests: test-photo-reason-card.cjs, test-browser-photo-reason-card.mjs.
 - ✅ 117. Job card "Made $X" for finished jobs with receipts: award minus costs, per hour on site (lib/job-made.ts). Tests: test-job-made.cjs, test-browser-job-made.mjs.
-- ✅ 118. "Plan a second try" after No Access: 3 days later, weekday only, saved on the job, text to the tenant (lib/no-access-proof.ts, PlanMyDayDrawer.tsx). Test: test-no-access-proof.mjs (unit only; the drawer button is not browser-tested).
+- ✅ 118. "Plan a second try" after No Access: 3 days later, weekday only, saved on the job, text to the tenant (lib/no-access-proof.ts, PlanMyDayDrawer.tsx). Tests: test-no-access-proof.mjs, test-browser-plan-second-try.mjs (16 Nov: Plan my day -> 5 near me -> Arrived -> No Access -> Confirm -> Plan a second try, the day and the job note checked).
 - ☐ "See Claude's change before you try it" (screenshots in Your requests): held, a screenshot of a job screen would put tenant data on the public site. Asked the owner for a safe version (Home cards only).
 
 ## 📞 15 Nov: Call the HPD person in one tap (idea from the app)
