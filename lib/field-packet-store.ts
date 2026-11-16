@@ -20,6 +20,7 @@ export type FieldPacket = {
   generatedAt: string;
 };
 
+import { idbRetry } from "./idb-retry";
 import { shadowUpsert } from "./unified-field-store";
 
 const DB_NAME = "hpd-field-packets-v1";
@@ -114,7 +115,12 @@ export async function saveFieldPacket(packet: Omit<FieldPacket, "id" | "generate
   return row;
 }
 
-export async function listFieldPackets(jobId: string) {
+// Tried once more if iPhone Safari lost the database in the background (lib/idb-retry).
+export function listFieldPackets(jobId: string) {
+  return idbRetry(() => listFieldPacketsOnce(jobId));
+}
+
+async function listFieldPacketsOnce(jobId: string) {
   const cleanJobId = String(jobId || "").trim();
   if (!cleanJobId || !hasIndexedDb()) return [] as FieldPacket[];
 

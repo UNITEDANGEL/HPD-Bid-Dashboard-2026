@@ -172,6 +172,7 @@ jobs:
           node scripts/test-costs.mjs
           node scripts/test-priorities.mjs
           node scripts/test-notice-board.mjs
+          node scripts/test-idb-retry.mjs
           node scripts/test-notice-flow.mjs
           node scripts/test-said-today.mjs
           node scripts/test-notice-check.mjs

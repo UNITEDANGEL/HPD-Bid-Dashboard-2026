@@ -18,6 +18,7 @@ export type FieldVisitRecord = {
   note: string;
 };
 
+import { idbRetry } from "./idb-retry";
 import { shadowUpsert } from "./unified-field-store";
 
 const DB_NAME = "hpd-field-visits-v1";
@@ -72,7 +73,12 @@ export function canStoreFieldVisits() {
   return hasIndexedDb();
 }
 
-export async function listFieldVisits(jobId?: string) {
+// Tried once more if iPhone Safari lost the database in the background (lib/idb-retry).
+export function listFieldVisits(jobId?: string) {
+  return idbRetry(() => listFieldVisitsOnce(jobId));
+}
+
+async function listFieldVisitsOnce(jobId?: string) {
   if (!hasIndexedDb()) return [] as FieldVisitRecord[];
 
   const db = await openDb();

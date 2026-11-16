@@ -199,6 +199,10 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+57. ✅ **Phone database hiccup after the background (15 Nov, app errors)**: the owner's iPhone logged "UnknownError:
+    Attempt to get records from database without an in-progress transaction" (Safari loses its database service while
+    the app sits in the background). Reading a job's photos, videos, visits and packages is now tried once more on a
+    fresh connection after that error (lib/idb-retry; real bugs are not retried). Test: test-idb-retry.
 56. ✅ **✅ Upgrades done, editable (owner, 15 Nov: "i need a list in the app of all ideas upgrades we have done to
     this app i should be able to edit them")**: All → ✅ Upgrades done (and the Ideas screen) opens every What's new item
     by day, newest first, with a find box. Each one: ✏️ Edit (your words replace Claude's, "· your words", ↩ Original

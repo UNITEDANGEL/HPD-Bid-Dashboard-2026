@@ -6,6 +6,7 @@ const mod = { exports: {} };
 const shadow = [];
 const source = ts.transpileModule(fs.readFileSync('lib/field-packet-store.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 new Function('exports', 'require', 'window', source)(mod.exports, name => {
+  if (name === './idb-retry') return { idbRetry: (read) => read() };
   assert.equal(name, './unified-field-store');
   return { shadowUpsert: async (...args) => shadow.push(args) };
 }, { indexedDB, btoa: value => Buffer.from(value, 'binary').toString('base64') });

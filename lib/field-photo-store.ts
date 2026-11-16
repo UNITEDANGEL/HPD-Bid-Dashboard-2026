@@ -46,6 +46,7 @@ export type FieldMedia = {
 
 export type FieldPhoto = FieldMedia;
 
+import { idbRetry } from "./idb-retry";
 import { shadowUpsert } from "./unified-field-store";
 import { forgetJobVideos, keepVideoForBackup } from "./video-backup";
 
@@ -942,11 +943,11 @@ export async function saveFieldPhotos(
 // For the Drive video backup: video ids (one job or all) from the storage index, without reading
 // any video, and one record at a time when an older video has no kept file.
 export async function listFieldVideoIds(jobId?: string): Promise<string[]> {
-  return listFieldMediaIds("video", jobId);
+  return idbRetry(() => listFieldMediaIds("video", jobId));
 }
 
 export async function listFieldPhotoIds(jobId?: string): Promise<string[]> {
-  return listFieldMediaIds("image", jobId);
+  return idbRetry(() => listFieldMediaIds("image", jobId));
 }
 
 async function listFieldMediaIds(mediaType: FieldMediaType, jobId?: string): Promise<string[]> {
@@ -994,7 +995,12 @@ export async function fieldMediaExists(id: string) {
   }
 }
 
-export async function listFieldPhotos(jobId: string) {
+// Tried once more if iPhone Safari lost the database in the background (lib/idb-retry).
+export function listFieldPhotos(jobId: string) {
+  return idbRetry(() => listFieldPhotosOnce(jobId));
+}
+
+async function listFieldPhotosOnce(jobId: string) {
   const cleanJobId = String(jobId || "").trim();
   if (!cleanJobId || !hasIndexedDb()) return [] as FieldMedia[];
 
@@ -1027,7 +1033,12 @@ export async function listFieldPhotos(jobId: string) {
 // Videos are counted from the storage indexes alone (kind + type), so only photos are read.
 export type FieldMediaLite = { id: string; kind: FieldMediaKind; mediaType: FieldMediaType; capturedAt: string; evidenceLabel: string; dataUrl: string };
 
-export async function listFieldEvidenceLite(jobId: string): Promise<FieldMediaLite[]> {
+// Tried once more if iPhone Safari lost the database in the background (lib/idb-retry).
+export function listFieldEvidenceLite(jobId: string): Promise<FieldMediaLite[]> {
+  return idbRetry(() => listFieldEvidenceLiteOnce(jobId));
+}
+
+async function listFieldEvidenceLiteOnce(jobId: string): Promise<FieldMediaLite[]> {
   const cleanJobId = String(jobId || "").trim();
   if (!cleanJobId || !hasIndexedDb()) return [];
   const db = await openDb();
