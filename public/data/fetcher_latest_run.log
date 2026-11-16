@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-16T16:05:54.083Z
+Fetcher run started: 2026-11-16T16:19:10.442Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/16 [00:00<?, ?it/s]Downloading COA messages:   6%|▋         | 1/16 [00:00<00:02,  7.05it/s]Downloading COA messages:  12%|█▎        | 2/16 [00:00<00:01,  8.25it/s]Downloading COA messages:  19%|█▉        | 3/16 [00:00<00:01,  8.83it/s]Downloading COA messages:  25%|██▌       | 4/16 [00:00<00:01,  9.12it/s]Downloading COA messages:  31%|███▏      | 5/16 [00:00<00:01,  7.66it/s]Downloading COA messages:  38%|███▊      | 6/16 [00:00<00:01,  7.50it/s]Downloading COA messages:  44%|████▍     | 7/16 [00:00<00:01,  8.10it/s]Downloading COA messages:  50%|█████     | 8/16 [00:01<00:01,  7.66it/s]Downloading COA messages:  56%|█████▋    | 9/16 [00:01<00:00,  7.42it/s]Downloading COA messages:  62%|██████▎   | 10/16 [00:01<00:00,  7.98it/s]Downloading COA messages:  69%|██████▉   | 11/16 [00:01<00:00,  8.15it/s]Downloading COA messages:  75%|███████▌  | 12/16 [00:01<00:00,  8.16it/s]Downloading COA messages:  81%|████████▏ | 13/16 [00:01<00:00,  8.04it/s]Downloading COA messages:  88%|████████▊ | 14/16 [00:01<00:00,  8.40it/s]Downloading COA messages:  94%|█████████▍| 15/16 [00:01<00:00,  7.83it/s]Downloading COA messages: 100%|██████████| 16/16 [00:02<00:00,  7.57it/s]Downloading COA messages: 100%|██████████| 16/16 [00:02<00:00,  7.90it/s]
-Geocoding COA addresses:   0%|          | 0/16 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 16/16 [00:00<00:00, 310689.19it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/16 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   6%|▋         | 1/16 [00:00<00:06,  2.25it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 2/16 [00:00<00:05,  2.43it/s]Fetching ITBs for COA OMOs:  19%|█▉        | 3/16 [00:01<00:05,  2.22it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 4/16 [00:01<00:05,  2.08it/s]Fetching ITBs for COA OMOs:  31%|███▏      | 5/16 [00:02<00:05,  1.84it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 6/16 [00:03<00:05,  1.89it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 7/16 [00:04<00:06,  1.43it/s]Fetching ITBs for COA OMOs:  50%|█████     | 8/16 [00:04<00:05,  1.59it/s]Fetching ITBs for COA OMOs:  56%|█████▋    | 9/16 [00:04<00:03,  1.76it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 10/16 [00:05<00:03,  1.87it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 11/16 [00:05<00:02,  1.99it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 12/16 [00:06<00:01,  2.06it/s]Fetching ITBs for COA OMOs:  81%|████████▏ | 13/16 [00:07<00:01,  1.82it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 14/16 [00:07<00:01,  1.92it/s]Fetching ITBs for COA OMOs:  94%|█████████▍| 15/16 [00:08<00:00,  1.87it/s]Fetching ITBs for COA OMOs: 100%|██████████| 16/16 [00:08<00:00,  1.92it/s]Fetching ITBs for COA OMOs: 100%|██████████| 16/16 [00:08<00:00,  1.88it/s]
+Downloading COA messages:   0%|          | 0/16 [00:00<?, ?it/s]Downloading COA messages:   6%|▋         | 1/16 [00:00<00:01,  8.59it/s]Downloading COA messages:  12%|█▎        | 2/16 [00:00<00:02,  6.94it/s]Downloading COA messages:  25%|██▌       | 4/16 [00:00<00:01,  8.50it/s]Downloading COA messages:  38%|███▊      | 6/16 [00:00<00:01,  9.18it/s]Downloading COA messages:  44%|████▍     | 7/16 [00:00<00:00,  9.24it/s]Downloading COA messages:  50%|█████     | 8/16 [00:00<00:00,  9.21it/s]Downloading COA messages:  56%|█████▋    | 9/16 [00:01<00:00,  9.06it/s]Downloading COA messages:  69%|██████▉   | 11/16 [00:01<00:00,  8.50it/s]Downloading COA messages:  75%|███████▌  | 12/16 [00:01<00:00,  8.33it/s]Downloading COA messages:  81%|████████▏ | 13/16 [00:01<00:00,  8.46it/s]Downloading COA messages:  88%|████████▊ | 14/16 [00:01<00:00,  8.75it/s]Downloading COA messages: 100%|██████████| 16/16 [00:01<00:00,  9.21it/s]Downloading COA messages: 100%|██████████| 16/16 [00:01<00:00,  8.83it/s]
+Geocoding COA addresses:   0%|          | 0/16 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 16/16 [00:00<00:00, 432960.41it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/16 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   6%|▋         | 1/16 [00:00<00:06,  2.41it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 2/16 [00:00<00:05,  2.66it/s]Fetching ITBs for COA OMOs:  19%|█▉        | 3/16 [00:01<00:05,  2.54it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 4/16 [00:01<00:04,  2.61it/s]Fetching ITBs for COA OMOs:  31%|███▏      | 5/16 [00:02<00:05,  2.11it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 6/16 [00:02<00:04,  2.20it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 7/16 [00:03<00:04,  2.04it/s]Fetching ITBs for COA OMOs:  50%|█████     | 8/16 [00:03<00:03,  2.23it/s]Fetching ITBs for COA OMOs:  56%|█████▋    | 9/16 [00:03<00:02,  2.36it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 10/16 [00:04<00:02,  2.35it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 11/16 [00:04<00:02,  2.45it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 12/16 [00:05<00:01,  2.48it/s]Fetching ITBs for COA OMOs:  81%|████████▏ | 13/16 [00:05<00:01,  2.10it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 14/16 [00:06<00:00,  2.19it/s]Fetching ITBs for COA OMOs:  94%|█████████▍| 15/16 [00:06<00:00,  2.15it/s]Fetching ITBs for COA OMOs: 100%|██████████| 16/16 [00:06<00:00,  2.30it/s]Fetching ITBs for COA OMOs: 100%|██████████| 16/16 [00:06<00:00,  2.29it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -189,7 +189,7 @@ HPD job status: 942 of 1023 jobs found, 187 still open at HPD, 755 closed
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
 Full descriptions not re-sealed (Invalid key length); award prices still updated.
-Market awards: 3835 awarded jobs with full descriptions (988 yours, 2847 other contractors) from 4229 invitations; 1 new descriptions kept tonight; 41670 awards in Open Data since 2025-01-01
+Market awards: 3835 awarded jobs with full descriptions (988 yours, 2847 other contractors) from 4229 invitations; 0 new descriptions kept tonight; 41670 awards in Open Data since 2025-01-01
 
 
 ========== Verify mapping ==========
@@ -277,7 +277,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-16T16:14:26.234Z
+Fetcher run finished: 2026-11-16T16:25:24.094Z
 {
   "fetchedCoaItems": 16,
   "fetchedItbItems": 16,
