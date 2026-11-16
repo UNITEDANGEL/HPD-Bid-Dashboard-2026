@@ -38,8 +38,9 @@ try {
     const row = page.locator(`[data-hpd-smoke="fc-board-row"][data-omo="${target}"]`).first();
     await row.waitFor({ timeout: 60000 });
     await page.waitForFunction((o) => document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${o}"]`)?.classList.contains("is-focus"), target, { timeout: 10000 });
-    // The smooth scroll can take longer on the build machine (11 Nov: still at y 1486 after 0.9 s): up to 8 s.
-    for (let i = 0; i < 32; i++) { const b = await row.boundingBox(); if (b && b.y < 844 && b.y + 40 > 0) break; await page.waitForTimeout(250); }
+    // The smooth scroll can take longer on the build machine (11 Nov: still at y 1486 after 0.9 s), and on the live site
+    // the cards above keep growing (15 Nov: y -278); the board puts it back for 9 s: wait up to 12 s.
+    for (let i = 0, ok = 0; i < 56 && ok < 3; i++) { const b = await row.boundingBox(); ok = b && b.y < 844 && b.y + 40 > 0 ? ok + 1 : 0; if (ok < 3) await page.waitForTimeout(250); } // in view 3 times running (a list re-render can jump it for a moment)
     const box = await row.boundingBox();
     assert.ok(box && box.y < 844 && box.y + 40 > 0, `${target} scrolled into view (y ${box?.y})`);
     if (shots) await page.screenshot({ path: `${shots}/deeplink-board.png` });

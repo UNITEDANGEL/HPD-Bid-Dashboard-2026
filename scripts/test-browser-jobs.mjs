@@ -23,7 +23,14 @@ try {
     await btn.waitFor();
     const box = await btn.boundingBox();
     assert.ok(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= w && box.y + box.height <= h, `${w}x${h}: Jobs button on screen`);
-    const todo = Number(await btn.locator('[data-hpd-smoke="fc-jobs-count"]').innerText());
+    // The badge counts every job until the statuses load (a second or two), then settles: read it once it holds still.
+    let todo = -1;
+    for (let same = 0, i = 0; same < 3 && i < 40; i++) {
+      const n = Number(await btn.locator('[data-hpd-smoke="fc-jobs-count"]').innerText());
+      same = n === todo ? same + 1 : 0;
+      todo = n;
+      await page.waitForTimeout(700);
+    }
     await btn.click();
     const sheet = page.locator('[data-hpd-smoke="fc-jobs"]');
     await sheet.waitFor();
