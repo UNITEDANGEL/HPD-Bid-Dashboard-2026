@@ -199,6 +199,7 @@ auto-following this plan."
     today). Two real fixes found on the way: ☀️ Today's summary could not be reopened (now All → ☀️ Today's summary),
     and after answering a notice the board moved on to the same job's second notice (now another job first).
     The deploy also installs Chromium without --with-deps when Ubuntu's mirror is down.
+58. ✅ **No-access dates kept while the package builds (15 Nov, found by the after-deploy test)**: on the paperwork page, a date changed right after tapping Generate (the 72-hour warning shows at once, while the first build is still making the signatures) snapped back to the old date when the build finished. The build now uses the form as it is on screen when it gets there (formRef in app/paperwork/page.tsx). test-browser-paperwork caught it on the live site (ER05395, now an old job, so the page is slower); it passes again.
 57. ✅ **Phone database hiccup after the background (15 Nov, app errors)**: the owner's iPhone logged "UnknownError:
     Attempt to get records from database without an in-progress transaction" (Safari loses its database service while
     the app sits in the background). Reading a job's photos, videos, visits and packages is now tried once more on a

@@ -5,6 +5,7 @@
       "date": "Nov 15, 2026",
       "title": "Upgrades done list · Profit after HPD paid",
       "items": [
+        "📅 Dates stay put: On the paperwork page, a date you fix right after tapping Generate no longer jumps back to the old date when the package finishes building.",
         "🖼 Photos in pairs: See what's saved has a new Pairs tab. Each before photo sits next to its after photo, so you see at a glance what is missing.",
         "🧭 Guided Try it: On a finished request, ▶ Try it now opens a 3-step guide (open the screen, see what changed, then tap Works or Not right).",
         "📷 Steadier photos: after the phone sat in the background, a job's photos and visits could fail to load once (an iPhone hiccup); the app now quietly tries again.",

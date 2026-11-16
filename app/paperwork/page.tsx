@@ -1268,6 +1268,10 @@ export default function PaperworkPage() {
   // Today's dates are filled in on the phone after the page loads: the page is pre-built (on a UTC clock, on
   // an earlier day), and a date baked in there didn't match the phone's ("React error 418" on load).
   const [form, setForm] = useState<PackageForm>(() => ({ ...initialForm(), invoiceNo: "", invoiceDate: "", fieldDate: "" }));
+  // The form as it is on screen now: a build that waited (the signatures take a moment the first time) uses this, so a
+  // date you changed while it was building is kept, not put back to what it was at the tap (15 Nov).
+  const formRef = useRef(form);
+  formRef.current = form;
   useEffect(() => {
     setForm((current) => ({ ...current, invoiceNo: current.invoiceNo || defaultPaperworkInvoiceNo(), invoiceDate: current.invoiceDate || todayIsoDate(), fieldDate: current.fieldDate || todayIsoDate() }));
   }, []);
@@ -2695,7 +2699,7 @@ export default function PaperworkPage() {
 
     const includeSignature = includeSignatureOverride !== false;
     const activeFormBase = activeJob ? formWithLoadedJobData(form, activeJob, activeOutcome) : form;
-    const activeForm = includeSignature ? activeFormBase : { ...activeFormBase, signer: "" };
+    let activeForm = includeSignature ? activeFormBase : { ...activeFormBase, signer: "" };
     if (activeJob && activeForm !== form) setForm(activeForm);
     const jobId = activeForm.jobId || selectedId;
     if (!jobId) {
@@ -2767,6 +2771,11 @@ export default function PaperworkPage() {
         return;
       }
 
+      if (formRef.current !== activeForm) {
+        // Changed while it was building: use what's on screen now.
+        const latest = activeJob ? formWithLoadedJobData(formRef.current, activeJob, activeOutcome) : formRef.current;
+        activeForm = includeSignature ? latest : { ...latest, signer: "" };
+      }
       const packageEventDate = fieldEventDateForPackage(activeJob, activeOutcome, includedMedia);
       const packageForm = formWithFieldEventDate(activeForm, activeOutcome, packageEventDate, activeJob);
       setForm(packageForm);

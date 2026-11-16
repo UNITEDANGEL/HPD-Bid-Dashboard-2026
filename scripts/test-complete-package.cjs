@@ -54,6 +54,7 @@ async function run(outcome, awardDate, broken = false) {
     notaryRef: { current: null }, setNotaryKey() {}, rememberNotary() {}, packageNotaryRef: { current: null }, lastIncludeMediaRef: { current: true },
     pendingCompletePackageRef: { current: null }, lastChargeRef: { current: null }, markPackageGenerated: async () => 'TEST ONLY - no job mutation',
   };
+  context.formRef = { current: context.form }; // the form on screen (a build that waited re-reads it, 15 Nov)
   new Function(`with (this) { ${source} }`).call(context);
   await context.generate(true, false);
   const pendingPackage = context.pendingCompletePackageRef.current;
