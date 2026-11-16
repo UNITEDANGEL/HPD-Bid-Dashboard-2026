@@ -65,10 +65,12 @@ async function page({ notices, noBids = false, texted = "", midday = false, appt
   while (await p.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await p.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   // Texted 2 days ago with no answer: the "follow-up text is ready" card comes first (12 Nov) and the Next pill
   // waits under it; close the card.
-  if (texted) {
+  // Any other card does the same: 6-10 PM the route-for-tomorrow card (15 Nov, the after-deploy run at 9:30 PM).
+  {
     const nudge = p.locator('[data-hpd-smoke="fc-chat-nudge-close"]');
-    await Promise.race([nudge.waitFor({ timeout: 30000 }), p.locator('[data-hpd-smoke="fc-next-chip"]').waitFor({ timeout: 30000 })]).catch(() => {});
-    if (await nudge.count()) await nudge.click();
+    const wait = texted ? 30000 : 8000;
+    await Promise.race([nudge.waitFor({ timeout: wait }), p.locator('[data-hpd-smoke="fc-next-chip"]').waitFor({ timeout: wait })]).catch(() => {});
+    for (let i = 0; i < 3 && (await nudge.count()); i++) { await nudge.first().click().catch(() => {}); await p.waitForTimeout(300); }
   }
   return { c, p, errors };
 }
