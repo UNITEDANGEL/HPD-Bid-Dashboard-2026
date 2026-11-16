@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 16, 2026",
+      "title": "One email check at a time",
+      "items": [
+        "📧 One email check at a time: opening Notices right as the app starts no longer checks your Gmail twice. Tapping Check my emails now during a check runs one more right after it."
+      ]
+    },
+    {
       "date": "Nov 15, 2026",
       "title": "Upgrades done list · Profit after HPD paid",
       "items": [

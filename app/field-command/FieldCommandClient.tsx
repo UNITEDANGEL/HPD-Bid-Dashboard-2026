@@ -3309,7 +3309,13 @@ export default function FieldCommandClient() {
     } catch { /* private mode */ }
   }, [threadsAt]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setChimeOff(chimeMuted()); }, []);
-  const runScan = async () => {
+  // One check at a time: the board opening and the first load at the same moment asked Gmail twice (16 Nov).
+  // A tap on "Check my emails now" while one is running checks again right after it.
+  const scanBusyRef = useRef(false);
+  const scanAgainRef = useRef(false);
+  const runScan = async (tapped = false) => {
+    if (scanBusyRef.current) { if (tapped) scanAgainRef.current = true; return; }
+    scanBusyRef.current = true;
     setScanStatus("Checking your email…");
     try {
       const r = await fetch("/api/drive/hpd-scan", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ days: 7 }) });
@@ -3338,6 +3344,9 @@ export default function FieldCommandClient() {
       setScanStatus(`✓ Checked your email ${new Date(d.checkedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}: ${(d.sent || []).length} sent to HPD (${withFiles} with PDFs), ${(d.received || []).length} from HPD in the last ${d.days} days.`);
     } catch (e) {
       setScanStatus(`Couldn't check your email: ${e instanceof Error ? e.message : "error"}.`);
+    } finally {
+      scanBusyRef.current = false;
+      if (scanAgainRef.current) { scanAgainRef.current = false; void runScan(); }
     }
   };
   const priorities: PriorityItem[] = buildPriorities({
@@ -10913,7 +10922,7 @@ export default function FieldCommandClient() {
           autoReplyOmo={boardAutoReply}
           rows={boardRows}
           initialShow={boardShow}
-          onScan={() => void runScan()}
+          onScan={() => void runScan(true)}
           scanStatus={scanStatus}
           scanChanged={scan && threads ? (() => { const before = new Map(buildBoard({ threads, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, marks: boardMarks, closed: closedJobs, handled: handledMap, fixed: Object.fromEntries(toPrint.map((c) => [c.omo, c.savedAt])) }).map((r) => [r.key, r.next])); return boardRows.filter((r) => before.has(r.key) && before.get(r.key) !== r.next).map((r) => ({ omo: r.omo, now: r.next === "confirmed" ? "📤 Sent, waiting on them" : r.next === null ? "✅ Confirmed" : `next: ${r.next}` })); })() : []}
           findingsOf={findingsFor}

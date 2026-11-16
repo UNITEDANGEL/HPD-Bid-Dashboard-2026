@@ -35,7 +35,8 @@ try {
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.locator('[data-hpd-smoke="fc-board-row"]').first().waitFor({ timeout: 20000 });
   await board.locator('[data-hpd-smoke="fc-scan-status"]').waitFor();
-  assert.equal(scans, 1, "opening the board checks by itself");
+  await page.waitForFunction(() => /✓ Checked your email/.test(document.querySelector('[data-hpd-smoke="fc-scan-status"]')?.textContent || ""), null, { timeout: 15000 });
+  assert.equal(scans, 1, "opening the board checks by itself, once (16 Nov: the first load and the board opening asked Gmail twice)");
 
   // A notice not answered yet, and its thread.
   const row = board.locator('[data-hpd-smoke="fc-board-row"][data-next="replied"]').filter({ hasNotText: "MISSING DOCS" }).first();
@@ -48,7 +49,7 @@ try {
   reply = { id: "m1", threadId, at: new Date().toISOString(), subject: `RE: 24 HR POOR PERFORMANCE NOTICE - OMO#${omo}`, omos: [omo], files: true };
 
   await board.locator('[data-hpd-smoke="fc-scan-btn"]').click();
-  await page.waitForFunction(() => /✓ Checked your email/.test(document.querySelector('[data-hpd-smoke="fc-scan-status"]')?.textContent || ""), null, { timeout: 15000 });
+  await page.waitForFunction(() => /✓ Checked your email.*1 sent to HPD/.test(document.querySelector('[data-hpd-smoke="fc-scan-status"]')?.textContent || ""), null, { timeout: 15000 });
   assert.match(await board.locator('[data-hpd-smoke="fc-scan-status"]').innerText(), /1 sent to HPD \(1 with PDFs\)/);
   assert.match(await board.locator('[data-hpd-smoke="fc-scan-changed"]').innerText(), new RegExp(`${omo} 📤 Sent, waiting on them`));
   // It moved to 📤 Sent · waiting (22 Oct board tabs).
