@@ -43,7 +43,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-search"]').fill("which bid is the easiest to win today?");
   await page.locator('[data-hpd-smoke="fc-search"]').press("Enter");
   const agent = page.locator('[data-hpd-smoke="fc-agent"]');
-  await agent.locator('[data-hpd-smoke="fc-agent-signin"]').waitFor({ timeout: 30000 }); // slower on the build machine (16 Nov)
+  await agent.locator('[data-hpd-smoke="fc-agent-signin"]').waitFor({ timeout: 30000 }).catch(async (e) => { const seen = await page.evaluate(() => ({ agent: !!document.querySelector('[data-hpd-smoke="fc-agent"]'), heard: document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent, reply: (document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || '').slice(0, 160) })); throw new Error(`no Sign in in the helper: ${JSON.stringify(seen)} (${e.message.split(String.fromCharCode(10))[0]})`); }); // slower on the build machine (16 Nov); says what it shows if not (17 Nov)
   assert.match(await agent.locator('[data-hpd-smoke="fc-agent-reply"]').innerText(), /The AI is on\. It answers only when this phone is signed in/);
   assert.deepEqual(errors, []);
   console.log("PASS signed out: the board shows 'Your HPD emails didn't open' + Sign in with Google (back to the board), Check my emails says it couldn't open them; no zeros pretending all is done");

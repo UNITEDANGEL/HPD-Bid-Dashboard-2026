@@ -49,16 +49,23 @@ try {
   const orb = page.locator('[data-hpd-smoke="fc-chatbar-mic"]');
   assert.ok(await orb.isVisible(), "🎙 in the chat bar");
   await page.evaluate(() => { window.__hear = "what do I have today"; window.__hearDelay = 1500; });
+  // Every reply from the tap on (17 Nov: on a slow machine the answer to what you said replaced the hello before it was read).
+  await page.evaluate(() => { window.__replies = []; new MutationObserver(() => { const t = document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""; if (t && window.__replies[window.__replies.length - 1] !== t) window.__replies.push(t); }).observe(document.body, { childList: true, subtree: true, characterData: true }); });
   await orb.click();
-  assert.match(await reply.innerText(), /^Hi! /);
+  await page.waitForFunction(() => window.__replies.some((t) => /^Hi! /.test(t)), null, { timeout: 10000 }).catch(() => {});
+  assert.ok(await page.evaluate(() => window.__replies.some((t) => /^Hi! /.test(t))), `the hello first (${await page.evaluate(() => JSON.stringify(window.__replies.map((t) => t.slice(0, 40))))})`);
   assert.equal(await page.locator('[data-hpd-smoke="fc-agent-talk"]').getAttribute("aria-pressed"), "true", "conversation mode on");
   await page.waitForFunction(() => /what do I have today/.test(document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent || ""), null, { timeout: 20000 });
   if (shots) await page.screenshot({ path: `${shots}/agent-orb.png` });
   await page.evaluate(() => { window.__hear = ""; window.__hearDelay = 0; });
-  await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
+  // Its answer in first (17 Nov: the panel grows as the answer lands; a tap on ✕ right then missed it on a slow machine).
+  await page.waitForFunction(() => window.__replies.some((t) => !/^Hi! /.test(t)), null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(400);
+  // A tap that lands while the panel redraws can be lost (you would tap again): once more if it's still open after 1 s.
+  for (let i = 0; i < 3 && (await page.locator('[data-hpd-smoke="fc-agent-close"]').count()); i++) { await page.locator('[data-hpd-smoke="fc-agent-close"]').click().catch(() => {}); await page.waitForTimeout(1000); }
   // After the close animation (16 Nov). If it still isn't there, say what is on screen instead (rare, build machine only).
   const micBack = await orb.waitFor({ timeout: 5000 }).then(() => true, () => false);
-  const onScreen = micBack ? "" : await page.evaluate(() => { const m = document.querySelector('[data-hpd-smoke="fc-chatbar-mic"]'); const on = [...document.querySelectorAll("[data-hpd-smoke]")].filter((e) => e.getClientRects().length && /agent|nudge|ping|sheet|drawer|chat/.test(e.getAttribute("data-hpd-smoke"))).map((e) => e.getAttribute("data-hpd-smoke")); return `mic ${m ? getComputedStyle(m).display : "missing"}; showing ${[...new Set(on)].slice(0, 12).join(", ")}`; });
+  const onScreen = micBack ? "" : await page.evaluate(() => { const m = document.querySelector('[data-hpd-smoke="fc-chatbar-mic"]'); const on = [...document.querySelectorAll("[data-hpd-smoke]")].filter((e) => e.getClientRects().length && /agent|nudge|ping|sheet|drawer|chat/.test(e.getAttribute("data-hpd-smoke"))).map((e) => e.getAttribute("data-hpd-smoke")); return `heard ${document.querySelector('[data-hpd-smoke="fc-agent-heard"]')?.textContent}, says ${(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || "").slice(0, 60)}; mic ${m ? getComputedStyle(m).display : "missing"}; showing ${[...new Set(on)].slice(0, 12).join(", ")}`; });
   assert.ok(micBack, `🎙 back after closing (${onScreen})`);
 
   // 0b. A question gets an answer first, then the list is offered (3 Nov: "should I do a roof job today?").

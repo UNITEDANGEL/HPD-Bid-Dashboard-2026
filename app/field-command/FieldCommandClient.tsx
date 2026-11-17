@@ -3327,6 +3327,7 @@ export default function FieldCommandClient() {
   // A tap on "Check my emails now" while one is running checks again right after it.
   const scanBusyRef = useRef(false);
   const scanAgainRef = useRef(false);
+  const scanDoneAtRef = useRef(0); // when the last check came back (read at once, before the screen catches up)
   const runScan = async (tapped = false) => {
     if (scanBusyRef.current) { if (tapped) scanAgainRef.current = true; return; }
     scanBusyRef.current = true;
@@ -3344,6 +3345,7 @@ export default function FieldCommandClient() {
         setScanStatus(fresh ? `✓ Up to date with your email${at ? ` as of ${new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""} (the app reads it every 10 minutes).` : "🔒 Couldn't open your HPD emails: sign in with Google again (below).");
         return;
       }
+      scanDoneAtRef.current = Date.now();
       setScan(d);
       // Emails from HPD not seen before on this phone: chime + banner (the first check only remembers what's there).
       try {
@@ -3376,13 +3378,13 @@ export default function FieldCommandClient() {
     const timer = window.setInterval(tick, 300000);
     const onShow = () => { if (document.visibilityState === "visible" && threads && (!scan || Date.now() - Date.parse(scan.checkedAt) > 120000)) void runScan(); };
     document.addEventListener("visibilitychange", onShow);
-    if (threads && !scan) void runScan();
+    if (threads && !scan && Date.now() - scanDoneAtRef.current > 120000) void runScan();
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onShow); };
   }, [threads === null || threads === undefined ? 0 : 1, scan?.checkedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   // Opening the board checks your email by itself (at most every 10 minutes).
   useEffect(() => {
-    if (!boardOpen || scanStatus === "Checking your email…") return;
-    if (scan && Date.now() - Date.parse(scan.checkedAt) < 600000) return;
+    if (!boardOpen || scanBusyRef.current || scanStatus === "Checking your email…") return;
+    if (Date.now() - scanDoneAtRef.current < 600000 || (scan && Date.now() - Date.parse(scan.checkedAt) < 600000)) return;
     void runScan();
   }, [boardOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   // The latest email with PDFs you sent about each job, in any thread (e.g. you sent EP22713's paperwork in its own thread).

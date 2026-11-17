@@ -35,7 +35,8 @@ try {
     while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
     await page.waitForTimeout(1000);
   }
-  await ping.waitFor({ timeout: 20000 });
+  // If it never comes, say what is on screen instead (17 Nov: a rare miss on the build machine).
+  await ping.waitFor({ timeout: 20000 }).catch(async (e) => { const seen = await page.evaluate(() => ({ pings: [...document.querySelectorAll('[data-hpd-smoke="fc-hpd-ping"]')].map((p) => `${p.getAttribute("data-kind")}: ${(p.textContent || "").slice(0, 80)}`), crit: document.querySelectorAll('[data-hpd-smoke="fc-critical-snooze"]').length, heard: localStorage.getItem("hpd-claude-heard") })); throw new Error(`no Claude alert: ${JSON.stringify(seen)} (${e.message.split(String.fromCharCode(10))[0]})`); });
   const text = await ping.innerText();
   assert.match(text, /Claude: Working on it/);
   assert.match(text, /Bigger buttons are built/);
