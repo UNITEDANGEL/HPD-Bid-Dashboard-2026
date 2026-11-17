@@ -87,6 +87,10 @@ try {
     // One tap (owner, 9 Nov: "I don't need to do all the things ... notarize should be automatic, my signature is just
     // a copy"): no signing or approving taps; your signature and the notary's are made from the printed names the first
     // time, saved, and put on by themselves, the notary dated the job's last day.
+    // On the live site the job's details can take a while to load (the button says "Loading Job Data..." and stays
+    // off); wait for it to turn on before tapping instead of giving up after Playwright's 30s.
+    const generateReady = () => page.waitForFunction(() => { const b = document.querySelector('[data-hpd-smoke="paperwork-generate-pdf-only"]'); return !!b && !b.disabled && !!b.offsetParent; }, null, { timeout: 120000 });
+    await generateReady();
     if (outcome === "no_access") {
       // Attempts closer than 72 hours, or a missing call date, must still block generation.
       await page.fill('[data-hpd-smoke="paperwork-attempt-1"]', "2026-10-01");
@@ -95,6 +99,7 @@ try {
       await page.getByText("at least 72 hours apart").first().waitFor({ timeout: 10000 });
       await page.fill('[data-hpd-smoke="paperwork-attempt-2"]', "2026-10-04");
       if (await page.locator('[data-hpd-smoke="paperwork-call-1"]').count()) await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
+      await generateReady();
     }
     await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
     // On a slow machine (or the live site) the build can take a while; if Generate comes back without the review,
