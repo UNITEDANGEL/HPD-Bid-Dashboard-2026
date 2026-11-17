@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T22:39:31.750603+00:00",
+  "generatedAt": "2026-11-17T22:51:08.100673+00:00",
   "days": 14,
   "bids": [
     {
@@ -3018,6 +3018,400 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.767403,
       "lng": -73.916908
+    },
+    {
+      "omo": "ER10750",
+      "bidDue": "2026-11-18",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-19",
+      "workCompletion": "2026-11-29",
+      "address": "69 WEST 130 STREET",
+      "borough": "MN",
+      "itbFile": "ER10750_111726054051.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ REPLACE THE BROKEN GLASS AT LOWER WINDOW SASH AT SECOND WINDOW FROM EAST AT SOUTH IN THE EAST 5 ROOM FROM EAST LOCATED AT APT 5B, 5th STORY PROPERLY REPLACE THE BROKEN LOWER SASH GLASS AND RESTORE ALL AFFECTED AREAS AFTER INSTALLATION . ENSURE WINDOW IS PROPERLY SEALED. RESTORE TO PROPER WORKING ORDER REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 212 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863-6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATION",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1794955252000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.81085,
+      "lng": -73.942445
+    },
+    {
+      "omo": "ER10239",
+      "bidDue": "2026-11-18",
+      "bidDueTime": "12:00 PM",
+      "workStart": "2026-11-18",
+      "workCompletion": "2026-11-28",
+      "address": "1495 EAST 46 STREET",
+      "borough": "BK",
+      "itbFile": "ER10239_111726054257.pdf",
+      "description": "AEP APT 2G REPAIR LEAK AND REPLACE BATHROOM SINK VANITY AT BATHROOM OF APT 2G 1.1. TRACE LOCATE AND REPAIR WATER LEAK AT CEILING COMING FROM ROOF. DO ALL THE NECESSARY REPAIR TO THE PITCHED ROOF. PROVIDE AND INSTALL APPROX 32 SQ FT OG 5/8\" WGB AT CEILING OF BATHROOM. TAPE, PLASTER, PRIME AND APPLY 2 COATS OF PAINT TO ENTIRE BATHROOM APROXIMATELY 150 SQ FT 2.2. REMOVE SINK AND SAVE IT FOR REINSTALLATION. 3.PROVIDE AND INSTALL 2 LF WIDE HARDWOOD VANITY. REINSTALL SINK AND INCLUDE INSTALLATION OF NEW FAUCET AND ALL PIPE CONNECTIONS *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: •FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. •CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. •ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. •VENDOR MUST FOLLOW OSHA AND DOB REGULATION. •VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. •REMOVE ALL WORK-RELATED DEBRIS. •VENDOR MUST CALL CPM PASQUALE DELLITURRI AT 212 863 5111, (phone: sign in to see) EMAILS DELLITUP@HPD.NYC.GOV, SUPERVISORS FONTAIN, FRANK 2128638745 CELL (phone: sign in to see)OR ASAAD EMAD 212 863 8346 CELL (phone: sign in to see) TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE EMAILED TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV. SITE OFFICE @ (212) 863-6959 TENANT CONTACT: (tenant contact: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1794955382000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.624399,
+      "lng": -73.931088
+    },
+    {
+      "omo": "ER10714",
+      "bidDue": "2026-11-18",
+      "bidDueTime": "12:00 PM",
+      "workStart": "2026-11-18",
+      "workCompletion": "2026-11-28",
+      "address": "2487 GRAND AVENUE",
+      "borough": "BX",
+      "itbFile": "ER10714_111726054458.pdf",
+      "description": "AEP PUBLIC AREA REPAIR CEILING WATER LEAK AT 5TH FLOOR PUBLIC HALL, SECTION AT NORTH DEMO WATER LEAK DAMAGED CEILING (APPROX. 20 SF) AT 5TH FLOOR PUBLIC HALL, SECTION NORTH; TRACE, LOCATE AND REPAIR SOURCE OF LEAK FROM ROOF, INSTALL NEW 5/8” MOLD RESISTANT SHEETROCK, TAPE AND COMPOUND ALL JOINTS, PRIME AND TWO COAT PAINT THE ENTIRE 5TH FLOOR PUBLIC HALL (SECTION NORTH) CEILING APPROXIMATE 100 SQ FT. • CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB IS COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO TINGMOYM@HPD.NYC.GOV ALONG WITH THE AFFIDAVIT AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: •FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. •CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. •CONTRACTOR IS RESPONSIABLE TO APPLY FOR ALL PERMITS IF NESSARY FOR JOB. •ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. •VENDOR MUST FOLLOW OSHA AND DOB REGULATION. •VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. •REMOVE ALL WORK-RELATED DEBRIS. •COMPLETED WORK MUST BE LEFT IN PROPER WORKING AND OR STANDING ORDER. •VENDOR MUST CONTACT CPM TING MOY 212-863-8217, (phone: sign in to see) OR SUPERVISOR Asaad Emad 212-863-8346 TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "notes": "IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212) 863-6959 TENANT CONTACT: (tenant contact: sign in to see)",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1794955501000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.864038,
+      "lng": -73.902644
     },
     {
       "omo": "ER06255",
