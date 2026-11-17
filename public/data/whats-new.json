@@ -5,7 +5,8 @@
       "date": "Nov 16, 2026",
       "title": "One email check at a time",
       "items": [
-        "📧 One email check at a time: opening Notices right as the app starts no longer checks your Gmail twice. Tapping Check my emails now during a check runs one more right after it."
+        "📧 One email check at a time: opening Notices right as the app starts no longer checks your Gmail twice at the same moment.",
+        "🔁 Your tap counts: tapping Check my emails now while a check is already running starts one more right after it, so nothing new is missed."
       ]
     },
     {
