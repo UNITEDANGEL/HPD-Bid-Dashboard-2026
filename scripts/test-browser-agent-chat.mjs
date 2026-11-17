@@ -56,7 +56,10 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/agent-orb.png` });
   await page.evaluate(() => { window.__hear = ""; window.__hearDelay = 0; });
   await page.locator('[data-hpd-smoke="fc-agent-close"]').click();
-  assert.ok(await orb.isVisible(), "🎙 back after closing");
+  // After the close animation (16 Nov). If it still isn't there, say what is on screen instead (rare, build machine only).
+  const micBack = await orb.waitFor({ timeout: 5000 }).then(() => true, () => false);
+  const onScreen = micBack ? "" : await page.evaluate(() => { const m = document.querySelector('[data-hpd-smoke="fc-chatbar-mic"]'); const on = [...document.querySelectorAll("[data-hpd-smoke]")].filter((e) => e.getClientRects().length && /agent|nudge|ping|sheet|drawer|chat/.test(e.getAttribute("data-hpd-smoke"))).map((e) => e.getAttribute("data-hpd-smoke")); return `mic ${m ? getComputedStyle(m).display : "missing"}; showing ${[...new Set(on)].slice(0, 12).join(", ")}`; });
+  assert.ok(micBack, `🎙 back after closing (${onScreen})`);
 
   // 0b. A question gets an answer first, then the list is offered (3 Nov: "should I do a roof job today?").
   await page.evaluate(() => { window.__hear = "should I do a roof job today?"; });

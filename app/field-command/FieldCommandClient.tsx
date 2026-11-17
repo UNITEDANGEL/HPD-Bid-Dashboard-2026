@@ -1619,10 +1619,14 @@ export default function FieldCommandClient() {
     if (!Ctor) { reportVoice("no listening on this phone"); convoRef.current = false; setConvo(false); setAgent({ heard: "🎤", reply: "This phone doesn't let the app listen by itself. Tap the search box, tap the 🎙 on the keyboard, say it, then tap Go: I answer the same way." }); return; }
     let heardSomething = false;
     let lastSaid = ""; let handled = false;
+    // Words that come in after you closed the helper (the mic hands over its last words as it stops) are dropped (16 Nov).
+    const listenStartedAt = Date.now();
+    const closedSince = () => Boolean(agentClosedRef.current && agentClosedRef.current.at >= listenStartedAt);
     try {
       const rec = new Ctor();
       rec.lang = lastLangRef.current === "es" ? "es-US" : "en-US"; rec.interimResults = true; rec.maxAlternatives = 1;
       rec.onresult = (e) => {
+        if (closedSince()) return;
         const said = Array.from(e.results).map((r) => r[0].transcript).join(" ");
         const sure = Math.min(...Array.from(e.results).map((r) => { const c = (r[0] as { confidence?: number }).confidence; return typeof c === "number" && c > 0 ? c : 1; }));
         const final = Array.from(e.results).every((r) => r.isFinal);
@@ -1652,6 +1656,7 @@ export default function FieldCommandClient() {
       };
       rec.onend = () => {
         setListening(false); listenRef.current = null;
+        if (closedSince()) { heldSpeechRef.current = null; return; }
         // Waiting for the rest of a sentence: listen again; if nothing more comes, answer what was said.
         if (heldSpeechRef.current && convoRef.current) {
           const h = heldSpeechRef.current;
@@ -2010,7 +2015,16 @@ export default function FieldCommandClient() {
   // The voice helper (owner, 22 Oct: "be my personal agent for this app: 'I finished this job' and you note it; give me
   // the description, talk it out with me"). Says the answer and shows it; a change to a job waits for a yes.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [agent, setAgent] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; plan?: PlanDay[]; noticeCheck?: NoticeCheckItem[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  const [agent, setAgentState] = useState<{ heard: string; reply: string; file?: { name: string; url: string }; photos?: { id: string; before: string; after: string }; week?: { day: string; date: string; n: { appt: number; bids: number; notices: number } }[]; chart?: { title: string; aName: string; bName: string; rows: { label: string; a: number; b: number }[] }; choices?: string[]; offers?: string[]; offersLabel?: string; live?: "claude"; cards?: ChatCard[]; confirm?: { id: string; outcome: string }; signIn?: boolean; shop?: { item: string; aisle: string; n: number }[]; recap?: Recap; plan?: PlanDay[]; noticeCheck?: NoticeCheckItem[]; actions?: { label: string; href: string; id?: string; via?: "Waze" | "Google"; queue?: { omo: string; at: string }[]; remind?: string }[] } | null>(null);
+  // You closed the helper while it was still answering: that answer stays closed (16 Nov: it came in a moment later and
+  // opened the helper again). Asking something new clears this.
+  const agentClosedRef = useRef<{ heard: string; at: number } | null>(null);
+  const setAgent: typeof setAgentState = (v) => {
+    const c = agentClosedRef.current;
+    // (Opening it again, the 👋 hello, always shows.)
+    if (c && c.heard && c.heard !== "👋" && v && typeof v === "object" && v.heard === c.heard && Date.now() - c.at < 120000) return;
+    setAgentState(v);
+  };
   // 🧠 Every exchange (what you said, what it answered) goes into today's talk on this phone (plan item 15).
   useEffect(() => {
     if (!agent?.heard || !agent.reply || agent.reply === "I'm listening…") return;
@@ -5822,6 +5836,7 @@ export default function FieldCommandClient() {
     return h ? jobs.find((j) => jobId(j) === h.id) || null : null;
   };
   agentRef.current = (heard: string, inner = false) => {
+    if (!inner) agentClosedRef.current = null; // a new question: its answer shows
     // 👂 Your own words (plan item 18): teach it ("when I say close it, I mean send the affidavit"), and what it learned
     // is done straight away.
     if (!inner) {
@@ -10759,7 +10774,7 @@ export default function FieldCommandClient() {
             <input ref={photoInputRef} type="file" accept="image/*" capture="environment" hidden data-hpd-smoke="fc-agent-photo-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void readPhoto(f); }} />
             <button type="button" className={driving ? "is-on" : ""} aria-label="Driving mode" aria-pressed={driving} data-hpd-smoke="fc-agent-drive" onClick={() => setDrivingMode(!driving)}>🚗</button>
             <button type="button" aria-label="Move the chat to the side" data-hpd-smoke="fc-agent-tuck" onClick={(e) => { e.stopPropagation(); bubbleModeRef.current = true; setAgentTypeOpen(false); setAgentTucked(true); }}>⇥</button>
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); setAgent(null); setAgentFromDock(false); setOrbBack(Date.now()); }}>✕</button>
+            <button type="button" aria-label="Close" data-hpd-smoke="fc-agent-close" onClick={() => { if (driving) setDrivingMode(false, false); stopSpeaking(); setHelpOpen(false); convoRef.current = false; setConvo(false); listenRef.current?.stop(); agentClosedRef.current = { heard: agent?.heard || "", at: Date.now() }; heldSpeechRef.current = null; setAgent(null); setAgentFromDock(false); setOrbBack(Date.now()); }}>✕</button>
           </div>
         </div>
       ) : null}

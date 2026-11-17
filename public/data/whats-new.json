@@ -3,8 +3,9 @@
   "versions": [
     {
       "date": "Nov 16, 2026",
-      "title": "One email check at a time · Alerts land on the notice",
+      "title": "Closed means closed · One email check at a time · Alerts land on the notice",
       "items": [
+        "✕ Closed means closed: when you close the helper while you are still talking, it no longer pops back open a moment later with an answer.",
         "🎯 Alerts land on the notice: a notice you open from an alert now stays on screen while the cards above it finish loading, until you scroll yourself.",
         "📧 One email check at a time: opening Notices right as the app starts no longer checks your Gmail twice at the same moment.",
         "🔁 Your tap counts: tapping Check my emails now while a check is already running starts one more right after it, so nothing new is missed."

@@ -101,7 +101,12 @@ try {
   await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();
   await page.locator('[data-hpd-smoke="fc-jobs-row"] button').nth(1).click();
   await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
-  await page.locator(".fc-job-sheet-close").click();
+  // The finished job's package screen opens by itself a few seconds after "yes" (16 Nov: it landed over the card, on
+  // the build machine): step back from it, then close the card.
+  for (let i = 0; ; i++) {
+    await page.evaluate(() => document.querySelector('[data-hpd-smoke="fc-package-sheet-back"]')?.click());
+    try { await page.locator(".fc-job-sheet-close").click({ timeout: 5000 }); break; } catch (e) { if (i >= 4) throw e; }
+  }
   // Doing things by voice (in-app request 22 Oct: "I should be able to talk and get everything done").
   // A job from the To do list (the list may still be open from the step above).
   if (!(await page.locator('[data-hpd-smoke="fc-jobs"]').count())) await page.locator('[data-hpd-smoke="fc-jobs-open"]').click();

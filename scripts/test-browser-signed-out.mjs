@@ -43,7 +43,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-search"]').fill("which bid is the easiest to win today?");
   await page.locator('[data-hpd-smoke="fc-search"]').press("Enter");
   const agent = page.locator('[data-hpd-smoke="fc-agent"]');
-  await agent.locator('[data-hpd-smoke="fc-agent-signin"]').waitFor({ timeout: 15000 });
+  await agent.locator('[data-hpd-smoke="fc-agent-signin"]').waitFor({ timeout: 30000 }); // slower on the build machine (16 Nov)
   assert.match(await agent.locator('[data-hpd-smoke="fc-agent-reply"]').innerText(), /The AI is on\. It answers only when this phone is signed in/);
   assert.deepEqual(errors, []);
   console.log("PASS signed out: the board shows 'Your HPD emails didn't open' + Sign in with Google (back to the board), Check my emails says it couldn't open them; no zeros pretending all is done");

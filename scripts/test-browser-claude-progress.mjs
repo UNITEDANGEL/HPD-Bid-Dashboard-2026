@@ -29,7 +29,7 @@ try {
   const { c, page, errors } = await open("2026-10-27T18:00:30.000Z");
   const ping = page.locator('[data-hpd-smoke="fc-hpd-ping"][data-kind="claude"]');
   // Other alerts (overdue notices in the real data) come first: Claude's waits its turn, then shows.
-  for (let i = 0; i < 12 && !(await ping.count()); i++) {
+  for (let i = 0; i < 25 && !(await ping.count()); i++) { // more alerts ahead of it some days (16 Nov)
     const ok = page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]');
     if (await ok.count()) await ok.click().catch(() => {});
     while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
