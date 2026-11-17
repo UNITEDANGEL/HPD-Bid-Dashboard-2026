@@ -93,7 +93,7 @@ console.log("PASS said once: the morning brief once a day, a reminder once, 'Hi 
   assert.deepEqual(seen, [0, 1, 2, 3], "each change is sent");
   const out = forServer(readDayLog(D, a));
   assert.deepEqual(out.said.map((x) => [x.key, x.text]), [["bids:2026-11-05", "16 bids due today"], ["first:ER00272", "next: ER00272"]], "no tenant names to the server");
-  assert.doesNotMatch(JSON.stringify(out), /Maria|555/);
+  assert.doesNotMatch(JSON.stringify(out), /Maria|Lopez|718 555|555 0100/); // the name and the phone as written, not bare digits (17 Nov: a time stamp had 555 in it)
   // The other phone: nothing said yet. After the merge it doesn't greet again.
   const b = mem();
   assert.equal(briefDone(D, b), false);
