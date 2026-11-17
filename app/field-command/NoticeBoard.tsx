@@ -72,7 +72,20 @@ export default function NoticeBoard({ withMap = false, onMapToggle, onRouteNextD
     }, 350);
     // Again once the cards above have filled in (they grow as the emails and records load), so it stays on screen.
     const t2 = window.setTimeout(() => document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${focusOmo}"]`)?.scrollIntoView({ block: "start" }), 1600);
-    return () => { window.clearTimeout(t); window.clearTimeout(t2); };
+    // For 10 s after that, if the cards above still grow or shrink and push it off screen, put it back; your own scroll
+    // or tap stops this (16 Nov: on a slow phone the alert's notice slid off the top while the list kept loading).
+    let yours = false;
+    const mine = () => { yours = true; };
+    const evs = ["touchstart", "wheel", "keydown", "mousedown"] as const;
+    for (const e of evs) window.addEventListener(e, mine, { passive: true });
+    const keep = window.setInterval(() => {
+      if (yours) return;
+      const el = document.querySelector(`[data-hpd-smoke="fc-board-row"][data-omo="${focusOmo}"]`);
+      const b = el?.getBoundingClientRect();
+      if (el && b && (b.top > window.innerHeight - 40 || b.top + 40 < 0)) el.scrollIntoView({ block: "start" });
+    }, 500);
+    const stop = window.setTimeout(() => window.clearInterval(keep), 11600);
+    return () => { window.clearTimeout(t); window.clearTimeout(t2); window.clearInterval(keep); window.clearTimeout(stop); for (const e of evs) window.removeEventListener(e, mine); };
   }, [focusOmo, rows.length]);
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(id); }, []);
   const [handledArmed, setHandledArmed] = useState("");

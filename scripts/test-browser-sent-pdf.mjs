@@ -42,11 +42,15 @@ try {
   const btn = board.locator('[data-hpd-smoke="fc-sent-open"]:visible').first();
   await btn.waitFor({ timeout: 20000 });
   // The row the button is in (a job can have two rows: a notice and a list), pinned before the tap changes the page.
-  const omo = (await btn.evaluate((b) => { const r = b.closest('[data-hpd-smoke="fc-board-row"]'); r.setAttribute("data-test-picked", "1"); return r.querySelector(".fc-board-job b").textContent; })).trim();
+  const mark = async () => (await btn.evaluate((b) => { document.querySelectorAll("[data-test-picked]").forEach((x) => x.removeAttribute("data-test-picked")); const r = b.closest('[data-hpd-smoke="fc-board-row"]'); r.setAttribute("data-test-picked", "1"); return r.querySelector(".fc-board-job b").textContent; })).trim();
+  let omo = await mark();
   const row = board.locator('[data-test-picked="1"]');
   const pick = row.locator('[data-hpd-smoke="fc-sent-open"]');
-  await pick.scrollIntoViewIfNeeded();
-  await pick.click();
+  // The list can redraw as the emails load (16 Nov on the build machine: the marked row was replaced mid-scroll): mark again.
+  for (let i = 0; ; i++) {
+    try { await pick.scrollIntoViewIfNeeded({ timeout: 8000 }); await pick.click({ timeout: 8000 }); break; }
+    catch (e) { if (i >= 3) throw e; await page.waitForTimeout(1000); omo = await mark(); }
+  }
   const box = row.locator('[data-hpd-smoke="fc-sent"]');
   await box.locator('[data-hpd-smoke="fc-sent-email"]').waitFor();
   assert.deepEqual(asked, [omo]);
