@@ -2,6 +2,15 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 18, 2026",
+      "title": "Skip while reading · Map stays put · No questions back",
+      "items": [
+        "⏭ Skip on HPD's description page: the next bid opens, and the one you skipped comes back at the end.",
+        "🗺 The map stays on the building while a bid is open: saving a price no longer zooms it out.",
+        "🙅 No questions back: the helper does what you said (the closest thing it knows) instead of asking Did you mean."
+      ]
+    },
+    {
       "date": "Nov 16, 2026",
       "title": "Closed means closed · One email check at a time · Alerts land on the notice",
       "items": [

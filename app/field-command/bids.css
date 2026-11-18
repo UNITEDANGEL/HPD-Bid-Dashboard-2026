@@ -1027,3 +1027,9 @@ i.is-won { background: #16a34a; }
 .fc-paid-profit-list li small { font-weight: 500; opacity: .75; }
 .fc-paid-profit-list li > span:last-child { text-align: right; }
 .fc-paid-profit-list li b { color: #86efac; }
+
+/* ⏭ Skip next to 💰 Price it on HPD's description page (18 Nov). */
+.fc-itb-actions { display: flex; gap: 8px; margin: 0 10px calc(env(safe-area-inset-bottom, 0px) + 10px); }
+.fc-itb-actions .fc-itb-price { flex: 1 1 60%; margin: 0; }
+.fc-itb-skip { flex: 1 1 40%; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #f8fafc; border-radius: 14px; background: #334155; color: #fff; font: 800 17px system-ui; padding: 4px 6px; }
+.fc-itb-skip small { font: 700 11px system-ui; color: #f1f5f9; line-height: 1.2; text-align: center; }

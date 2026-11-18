@@ -5951,15 +5951,11 @@ export default function FieldCommandClient() {
     if (!followUp && (cmd.intent === "ask" || (cmd.intent === "search" && !/\d/.test(heard))) && askAnywayRef.current !== heard && !pendingWhoRef.current && !(realQuestion && cmd.intent === "ask" && closest(heard, knownPhrases())[0]?.score < 0.92)) {
       const best = closest(heard, knownPhrases());
       if (best[0] && best[0].score >= SURE) { agentRef.current(best[0].phrase, inner); return; }
+      // No "Did you mean…?" (owner, 18 Nov: "I don't want it to ask me questions when I gave it instructions, it should
+      // know what I am asking"): the closest thing the helper knows is done at once.
       if (cmd.intent === "ask" && best[0] && best[0].score >= MAYBE) {
-        const choices = best.filter((b) => b.score >= MAYBE - 0.1).map((b) => b.phrase);
-        const reply = `I'm not sure what you meant by "${heard.trim()}". Did you mean one of these?`;
-        if (inner && multiRef.current) { cmd = parseCommand(choices[0]); }
-        else {
-          setAgent({ heard, reply, choices });
-          speak(`Did you mean: ${choices[0]}?`, 200, () => { if (convoRef.current) startListening(); });
-          return;
-        }
+        if (inner && multiRef.current) { cmd = parseCommand(best[0].phrase); }
+        else { agentRef.current(best[0].phrase, inner); return; }
       }
     }
     // "Who refused?" was just asked: what's said next is the description (unless it's no / cancel).

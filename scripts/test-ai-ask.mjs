@@ -26,7 +26,7 @@ const system = sent.body.messages[0].content;
 assert.ok(system.includes(APP_GUIDE), "the app guide goes with every question");
 assert.match(system, /how to use the app/);
 assert.match(system, /general knowledge/);
-assert.match(system, /don't\s+guess/, "asks back when unsure");
+assert.match(system, /NEVER ask him questions back/, "no questions back (18 Nov): it picks the likeliest and names it");
 assert.match(system, /facts\.myNotes/);
 assert.match(system, /Talk like a real person/);
 assert.match(system, /never say .based on the facts/);

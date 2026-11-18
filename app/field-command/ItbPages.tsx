@@ -131,7 +131,7 @@ function readAlongPage(el: HTMLElement, startAt: number, endAt: number, onDone: 
   return off;
 }
 
-export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice, descChars, readAll, readSummary }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void; descChars?: number; readAll?: string; readSummary?: string[] }) {
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title, showDescription = 0, readAlong = false, onPrice, onSkip, skipLabel, descChars, readAll, readSummary }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string; showDescription?: number; readAlong?: boolean; onPrice?: () => void; onSkip?: () => void; skipLabel?: string; descChars?: number; readAll?: string; readSummary?: string[] }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -285,7 +285,14 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
               {readSummary?.length ? <button type="button" className={speaking === "summary" ? "is-on" : voice === "summary" ? "is-picked" : ""} data-hpd-smoke="fc-itb-voice-summary" aria-pressed={speaking === "summary"} onClick={() => pick("summary")}>{speaking === "summary" ? "🔇 Stop" : "📝 Summary"}</button> : null}
             </div>
           ) : null}
-          {onPrice ? <button type="button" className={`fc-itb-price${reading === "read" ? " is-ready" : ""}`} data-hpd-smoke="fc-itb-price" onClick={() => { hush(); setShowSummary(false); stopRead.current(); setReading(""); setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
+          {/* ⏭ Skip while reading (owner, 18 Nov: "a skip button when I'm reading the description so I don't waste time;
+              the job I skip goes to the end of the list so I can come back to it"). */}
+          {onPrice || onSkip ? (
+            <div className="fc-itb-actions">
+              {onSkip ? <button type="button" className="fc-itb-skip" data-hpd-smoke="fc-itb-skip" onClick={() => { hush(); setShowSummary(false); stopRead.current(); setReading(""); setBig(null); zoomTo(1); onSkip(); }}>⏭ Skip<small>{skipLabel || "back at the end"}</small></button> : null}
+              {onPrice ? <button type="button" className={`fc-itb-price${reading === "read" ? " is-ready" : ""}`} data-hpd-smoke="fc-itb-price" onClick={() => { hush(); setShowSummary(false); stopRead.current(); setReading(""); setBig(null); zoomTo(1); onPrice(); }}>💰 Price it</button> : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

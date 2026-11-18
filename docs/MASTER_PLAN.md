@@ -12,6 +12,18 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ⏭ 18 Nov: smoother bids, no questions back (owner's words)
+1. ✅ **⏭ Skip while reading the description** ("a skip button when I'm reading the description so I don't waste time;
+   the job I skip goes to the end of the list so I can come back to it"): next to 💰 Price it on HPD's page. It says the
+   next bid and how many are left; the skipped one comes back at the end. In 🎯 All in a row it is the row's Skip.
+   Test: test-browser-bid-skip-desc.
+2. ✅ **The map stays on the building** ("sometimes it does not zoom in and out correctly"): while a bid is open or the
+   map is flying to one, a refresh of the pins (a price saved, a fax checked) no longer pulls the map out to every pin.
+3. ✅ **No questions back** ("I don't want it to ask me questions when I gave it instructions"): the helper does the
+   closest thing it knows instead of "Did you mean…?"; the AI picks the likeliest job and names it instead of asking
+   which; it never ends with "Want me to…?". The auto request runs on the computer build and say what they took it to
+   mean instead of asking.
+
 ## 🚪 15 Nov: five ideas from the app (owner tapped Build)
 - ✅ 114. Home card "Jobs waiting on access": jobs with No access proof notes and nothing sent yet, each try date (lib/access-waiting.ts). Tests: test-access-waiting.cjs, test-browser-access-waiting.mjs.
 - ✅ 115. 🎤 Say it on the job card: spoken note saved as "Done (date): ..." (lib/job-say-note.ts, JobNotes.tsx). Tests: test-job-say-note.cjs, test-browser-job-say-note.mjs.

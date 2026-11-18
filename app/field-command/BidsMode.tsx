@@ -233,6 +233,8 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   // 🏢 The few seconds the building's photo is shown before HPD's page opens.
   const [looking, setLooking] = useState("");
   useEffect(() => () => window.clearTimeout(arriveTimer.current), []);
+  const busyRef = useRef(false);
+  busyRef.current = Boolean(selected || arriving);
   const walkRef = useRef(walk);
   walkRef.current = walk;
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
@@ -505,6 +507,9 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
       // Again a moment later: the screen settles (header, list bar) after the bids open.
       const fit = () => {
         if (cancelled || !layerRef.current) return;
+        // A bid open or the map gliding to one (18 Nov: "sometimes it does not zoom in and out correctly"): a refresh
+        // of the pins (a fax checked, a price saved) must not pull the map back out to every pin.
+        if (busyRef.current) return;
         map.invalidateSize();
         const area = map.getContainer().getBoundingClientRect();
         const banner = bannerRef.current?.getBoundingClientRect();
@@ -789,6 +794,22 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
     const ordered = [...left.filter((b) => rank(b) < 0), ...left.filter((b) => rank(b) >= 0).sort((a, b) => rank(a) - rank(b))];
     return { next: ordered[0], left: left.length };
   }
+  // ⏭ Skip while reading HPD's description (18 Nov): this bid goes to the end of the line and the next one opens.
+  // Bidding them in a row: the row's own Skip (skipped bids come back at the end).
+  function skipFromDesc() {
+    if (!selected) return;
+    if (sitting && !sitting.done && sitting.omos[sitting.at] === selected.omo) { nextInSitting(true); return; }
+    const { next } = nextInLine(selected.omo);
+    park(selected.omo);
+    if (next) goToBid(next, undefined, true);
+    else { setSelected(null); setListSize("peek"); setRefit((n) => n + 1); }
+  }
+  const skipDescLabel = (() => {
+    if (!selected) return "";
+    if (sitting && !sitting.done && sitting.omos[sitting.at] === selected.omo) return "back at the end";
+    const { next, left } = nextInLine(selected.omo);
+    return next ? `next: ${next.omo} · back at the end (${left} left)` : "none left that day";
+  })();
   // "Come back" (button or the helper): the bid just sent, opened again with the map on it.
   function comeBack() {
     const b = sentNote && (bids || []).find((x) => x.omo === sentNote.omo);
@@ -1567,7 +1588,7 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
               </div>
             ) : null}
             <section>
-              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} readAlong={walk} onPrice={sentLocked ? undefined : goToPrice} descChars={(selected.description || "").length} readAll={selected.description ? `${selected.omo}. ${selected.description.replace(/\s+/g, " ").trim()}` : undefined} readSummary={jobSummary(selected.description || "").lines.map(lineText)} /> : null}
+              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} showDescription={showDesc} readAlong={walk} onPrice={sentLocked ? undefined : goToPrice} onSkip={skipFromDesc} skipLabel={skipDescLabel} descChars={(selected.description || "").length} readAll={selected.description ? `${selected.omo}. ${selected.description.replace(/\s+/g, " ").trim()}` : undefined} readSummary={jobSummary(selected.description || "").lines.map(lineText)} /> : null}
               <button type="button" className="fc-bid-walk" data-hpd-smoke="fc-bid-walk" aria-pressed={walk} onClick={toggleWalk}>{walk ? "🗺 Opening a bid: map first, then HPD's page ✓" : "🗺 Opening a bid: map first, then HPD's page (off)"}</button>
               <div className="fc-bid-desc-head">
                 <button type="button" className="fc-bid-text-toggle" data-hpd-smoke="fc-bid-text-toggle" aria-expanded={showText} onClick={() => setShowText((v) => !v)}>{showText ? "▾ HPD's text" : "▸ Show HPD's text"}</button>
