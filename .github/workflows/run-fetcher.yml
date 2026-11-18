@@ -202,6 +202,11 @@ jobs:
           fi
 
       - name: Build Cloudflare Pages output
+        # The same public keys as the main deploy (18 Nov: "I do not see images of building any more"): this build replaces
+        # the live app every ~10 minutes, and without the Google key Bids and job cards got no Street View picture.
+        env:
+          NEXT_PUBLIC_MAPTILER_KEY: ${{ secrets.NEXT_PUBLIC_MAPTILER_KEY }}
+          NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_KEY }}
         run: npm run build:cloudflare
 
       - name: Resolve Cloudflare production branch

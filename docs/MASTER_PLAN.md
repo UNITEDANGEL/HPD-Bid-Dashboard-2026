@@ -23,6 +23,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
    closest thing it knows instead of "Did you mean…?"; the AI picks the likeliest job and names it instead of asking
    which; it never ends with "Want me to…?". The auto request runs on the computer build and say what they took it to
    mean instead of asking.
+4. ✅ **Building pictures are back** ("I do not see images of building any more"): the data update that runs every
+   ~10 minutes also rebuilt the live app, without the Google key, so Bids (and job cards, after the next update)
+   got no Street View picture, only "No building picture yet". That build now gets the Google and map keys like
+   the main deploy. Test: test-build-keys (every live build must have both keys).
 
 ## 🚪 15 Nov: five ideas from the app (owner tapped Build)
 - ✅ 114. Home card "Jobs waiting on access": jobs with No access proof notes and nothing sent yet, each try date (lib/access-waiting.ts). Tests: test-access-waiting.cjs, test-browser-access-waiting.mjs.

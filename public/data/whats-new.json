@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Nov 18, 2026",
+      "title": "Building pictures are back",
+      "items": [
+        "🏢 Building pictures are back: Bids and job cards show Google's picture of the building again (the 10-minute data update was building the app without the picture key).",
+        "🛡 Kept that way: a check now stops any update that would build the app without the picture key."
+      ]
+    },
+    {
+      "date": "Nov 18, 2026",
       "title": "Skip while reading · Map stays put · No questions back",
       "items": [
         "⏭ Skip on HPD's description page: the next bid opens, and the one you skipped comes back at the end.",
