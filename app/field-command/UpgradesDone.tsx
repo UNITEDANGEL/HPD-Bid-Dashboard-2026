@@ -104,8 +104,9 @@ export default function UpgradesDone({ versions, onClose, onAskChange }: { versi
         {note ? <p className="fc-follow-note" role="status" data-hpd-smoke="fc-upgrades-note">{note}</p> : null}
         {versions === undefined ? <p className="fc-follow-note">Loading…</p> : null}
         {q ? <p className="fc-follow-note" data-hpd-smoke="fc-upgrades-found">{found ? `${found} found for “${find.trim()}”.` : `Nothing found for “${find.trim()}”.`}</p> : null}
-        {shown.map((d) => (
-          <section key={d.date} className="fc-upgrades-day" data-hpd-smoke="fc-upgrades-day">
+        {/* Two What's new entries can share a day: key by day + title so React never mixes their items up. */}
+        {shown.map((d, n) => (
+          <section key={`${d.date}|${d.title}|${n}`} className="fc-upgrades-day" data-hpd-smoke="fc-upgrades-day">
             <h4>{d.date}{d.title ? <small> · {d.title}</small> : null}</h4>
             <ul>
               {d.items.map((i) => (

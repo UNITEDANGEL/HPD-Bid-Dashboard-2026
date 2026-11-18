@@ -4328,11 +4328,14 @@ export default function FieldCommandClient() {
 
   useEffect(() => {
     if (selectedJob) {
-      const match = jobs.find((job) => jobId(job) === jobId(selectedJob));
-      if (!match) setSelectedJob(null);
+      const id = jobId(selectedJob);
+      const match = jobs.find((job) => jobId(job) === id);
+      // A 2024-2025 job (opened from the notice to-do list or the older layer) is not in this year's list: keep it
+      // open while it is still in the older lists (18 Nov: tapping an old job's to-do row opened nothing).
+      if (!match) { if (!olderJobs.some((job) => jobId(job) === id) && !(olderLayer || []).some((job) => jobId(job) === id)) setSelectedJob(null); }
       else if (match !== selectedJob) setSelectedJob(match);
     }
-  }, [jobs, selectedJob]);
+  }, [jobs, olderJobs, olderLayer, selectedJob]);
 
   useEffect(() => {
     setScopeOpen(false);

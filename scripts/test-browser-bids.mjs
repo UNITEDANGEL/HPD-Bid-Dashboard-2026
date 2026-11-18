@@ -143,8 +143,8 @@ try {
   // HPD's text is folded away (the page pictures show it): "Show HPD's text" opens it.
   await sheet.locator('[data-hpd-smoke="fc-bid-text-toggle"]').click();
   const shownDesc = (await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim();
-  // A phone in HPD's text is hidden in the public copy and shown when signed in: compare without phone numbers.
-  const noPhone = (t) => t.replace(/\(phone: sign in to see\)|\(?\b\d{3}\)?[ .-]?\d{3}[ .-]\d{4}\b/g, "#").replace(/\s+/g, " ").trim();
+  // A phone in HPD's text is hidden in the public copy and shown when signed in: compare without phone numbers (HPD sometimes runs a word into the number: "CELL 917 559 2436OR").
+  const noPhone = (t) => t.replace(/\(phone: sign in to see\)|\(?\b\d{3}\)?[ .-]?\d{3}[ .-]\d{4}(?!\d)/g, "#").replace(/\s+/g, " ").trim();
   assert.equal(noPhone(shownDesc), noPhone(bid.description), "nothing missing or changed");
   // The invitation link opens HPD's PDF through the signed-in private route (fetched like the phone does).
   const viewHref = await sheet.locator('[data-hpd-smoke="fc-bid-view"]').getAttribute("href");
