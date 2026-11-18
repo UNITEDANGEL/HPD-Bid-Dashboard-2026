@@ -9,7 +9,7 @@ const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const ago = (h) => new Date(Date.now() - h * 3600000).toISOString();
 const A = "ER04312";
-const B = "ER05228";
+const B = "ER00272"; // ER05228 was closed by HPD (18 Nov)
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   const L = "Joy-Ann Lewis <lewis.test@hpd.nyc.gov>";
@@ -20,8 +20,8 @@ try {
     msg(ago(h), words, false, [`OMO#${omo}-ERRORS.pdf`]),
   ] });
   await routePrivate(c, { conversations: (d) => ({ ...d, threads: [
-    thread("t-fixall-a", A, "Kindly see attached affidavit & invoice with highlighted errors. AFFIDAVIT- date directed by HPD is confirmation date of award.", 20),
-    thread("t-fixall-b", B, "Kindly see attached affidavit & invoice with highlighted errors. Please make corrections & resubmit. Notary stamp missing.", 30),
+    thread("t-fixall-a", A, "Kindly see attached affidavit & invoice with highlighted errors. AFFIDAVIT- date directed by HPD is confirmation date of award.", 0.2),
+    thread("t-fixall-b", B, "Kindly see attached affidavit & invoice with highlighted errors. Please make corrections & resubmit. Notary stamp missing.", 0.4),
   ] }) });
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const sends = [];
