@@ -21,7 +21,13 @@ try {
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
   await page.waitForTimeout(1500);
   const say = async (text, re) => {
-    await page.locator('[data-hpd-smoke="fc-agent-close"]').click({ timeout: 1500 }).catch(() => {});
+    // The helper's hello or an alert can open just after a close (the chat box hides under them): close until it shows.
+    for (let t = 0; !(await page.locator('[data-hpd-smoke="fc-chatbar-input"]').isVisible()); t++) {
+      if (t > 40) throw new Error(`chat box never showed: ${await page.evaluate(() => [...document.querySelectorAll("[data-hpd-smoke]")].filter((e) => e.offsetParent).map((e) => e.getAttribute("data-hpd-smoke")).slice(0, 25).join(" "))}`);
+      await page.locator('[data-hpd-smoke="fc-agent-close"]').click({ timeout: 1000 }).catch(() => {});
+      if (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').first().click({ timeout: 1000 }).catch(() => {});
+      await page.waitForTimeout(500);
+    }
     await page.locator('[data-hpd-smoke="fc-chatbar-input"]').fill(text);
     await page.locator('[data-hpd-smoke="fc-chatbar-input"]').press("Enter");
     await page.waitForFunction((src) => new RegExp(src).test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), re.source, { timeout: 15000 }).catch(async (e) => { console.log("REPLY:", await page.locator('[data-hpd-smoke="fc-agent-reply"]').innerText().catch(() => "none")); throw e; });
