@@ -1,3 +1,4 @@
+import { idbRetry } from "./idb-retry";
 export type UnifiedEntityType = "media" | "document" | "visit" | "job_event" | "route" | "route_stop" | "note" | "invoice";
 
 export type UnifiedMutation = {
@@ -268,7 +269,12 @@ export async function copyLegacyFieldStorage() {
   return counts;
 }
 
-export async function unifiedStorageStatus(): Promise<UnifiedStorageStatus> {
+// Tried once more if iPhone Safari lost the database in the background (lib/idb-retry).
+export function unifiedStorageStatus(): Promise<UnifiedStorageStatus> {
+  return idbRetry(unifiedStorageStatusOnce);
+}
+
+async function unifiedStorageStatusOnce(): Promise<UnifiedStorageStatus> {
   const enabled = unifiedFieldStoreEnabled();
   if (!enabled) return { enabled: false, available: browserReady(), queued: 0, errors: 0, migrated: {} };
   await copyLegacyFieldStorage();
@@ -288,8 +294,17 @@ export async function unifiedStorageStatus(): Promise<UnifiedStorageStatus> {
 
 export async function syncUnifiedMutations(workerUrl: string, limit = 50): Promise<UnifiedSyncResult> {
   if (!unifiedFieldStoreEnabled() || !workerUrl) return { synced: 0, remaining: 0 };
+  // The queue is read on a fresh connection, once more if iPhone Safari lost the database in the background (the
+  // Map's "Attempt to get records ... without an in-progress transaction", owner's phone 15 Nov).
+  const all = await idbRetry(async () => {
+    const reader = await openDb();
+    try {
+      return await requestResult(reader.transaction("mutations", "readonly").objectStore("mutations").getAll()) as UnifiedMutation[];
+    } finally {
+      reader.close();
+    }
+  });
   const db = await openDb();
-  const all = await requestResult(db.transaction("mutations", "readonly").objectStore("mutations").getAll()) as UnifiedMutation[];
   const batch = all
     .filter((mutation) => CLOUD_SYNC_ENTITY_TYPES.has(mutation.entityType) && mutation.status !== "error" && mutation.attempts < 5)
     .slice(0, Math.max(1, Math.min(50, limit)));

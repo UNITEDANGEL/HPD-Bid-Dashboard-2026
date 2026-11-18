@@ -481,7 +481,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     const sync = () => {
       if (syncInFlight) return;
       syncInFlight = true;
-      void syncUnifiedMutations(STATUS_WORKER_URL).then(refresh).finally(() => { syncInFlight = false; });
+      void syncUnifiedMutations(STATUS_WORKER_URL).catch(() => undefined).then(refresh).finally(() => { syncInFlight = false; });
     };
     const handleStorageChange = () => {
       refresh();
