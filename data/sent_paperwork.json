@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-19T14:55:40.346768+00:00",
+"generatedAt": "2026-11-19T15:07:07.883823+00:00",
 "since": "2026/11/05",
 "jobs": {
 "EN04541": [
@@ -17278,6 +17278,16 @@
 "file": "VIDEO-2026-05-14-14-09-08.mp4",
 "outcome": "",
 "subject": "OMO No: EQ24986 Issuer: GEORGE FAHMY Boro: Staten Island Bldg Address: 1077, CASTLETON AVENUE",
+"via": "hpd-staff"
+}
+],
+"EQ25181": [
+{
+"date": "2026-11-19",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EQ25181 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: Status Update",
 "via": "hpd-staff"
 }
 ],
