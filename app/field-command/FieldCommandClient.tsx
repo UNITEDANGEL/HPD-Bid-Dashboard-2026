@@ -10473,7 +10473,7 @@ export default function FieldCommandClient() {
         if (!sideOpen) return null;
         const done = () => setNudgeSeen(markNudgeSeen(nudge.key));
         return (
-          <div className="fc-chat-nudge" role="status" data-hpd-smoke="fc-chat-nudge" data-kind={nudge.kind} key={nudge.key} ref={(el) => { if (!el) return; const app = el.closest(".fc-app") as HTMLElement | null; if (!app) return; const set = () => app.style.setProperty("--fc-nudge-h", `${el.offsetHeight}px`); set(); if (typeof ResizeObserver !== "undefined") new ResizeObserver(set).observe(el); }}>
+          <div className="fc-chat-nudge" role="status" data-hpd-smoke="fc-chat-nudge" data-kind={nudge.kind} key={nudge.key}>
             <HelperFace mode="talking" size={34} className="fc-nudge-face" />
             <span data-hpd-smoke="fc-chat-nudge-text">{nudge.text}</span>
             {nudge.href ? <a href={nudge.href} data-hpd-smoke="fc-chat-nudge-go" onClick={() => { done(); nudge.go?.(); }}>{nudge.label}</a>
