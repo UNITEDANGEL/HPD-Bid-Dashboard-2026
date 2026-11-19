@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📬 19 Nov: Joy-Ann's 24 / 72-hour notices missing from the board (owner: "any email I receive should get on the board")
+
+1. ✅ **Quoted lists no longer count as answers**: a thank-you reply to Joy-Ann's list of 18 OMOs quoted the list under it (the "On … wrote:" line wraps onto two lines), so the app took it as answering all 18 and they left the board. Only the new words of a reply count now, and an old wrong reply time is replaced. Test: scripts/test-own-part.py.
+
 ## ⏭ 18 Nov: smoother bids, no questions back (owner's words)
 1. ✅ **⏭ Skip while reading the description** ("a skip button when I'm reading the description so I don't waste time;
    the job I skip goes to the end of the list so I can come back to it"): next to 💰 Price it on HPD's page. It says the

@@ -98,8 +98,11 @@ def notice_notes(service, msg):
 
 
 def own_part(text):
-    """Only HPD's own message, not the quoted thread below it (it repeats older requests)."""
-    cut = re.split(r"\n\s*(?:On .{5,80}wrote:|From:\s|-----Original Message-----|________________)", text, maxsplit=1)
+    """Only HPD's own message, not the quoted thread below it (it repeats older requests).
+    The "On <date>, <name> <email>
+wrote:" line often wraps onto two lines (19 Nov: a thank-you reply to Joy-Ann quoted her list of 18 OMOs
+    and so counted as answering all 18 notices)."""
+    cut = re.split(r"\n\s*(?:On [\s\S]{5,300}?wrote:|From:\s|-----Original Message-----|________________)", text, maxsplit=1)
     return cut[0]
 
 
@@ -185,6 +188,10 @@ def main(since):
     for o, ts in replied.items():
         if o in public:
             public[o]["repliedTs"] = max(public[o].get("repliedTs", 0), ts)
+    # An OMO read again this run: its reply time is exactly what this run found (an older wrong value, e.g. from a quoted list, must not stay).
+    for o in asked:
+        if o in public:
+            public[o]["repliedTs"] = replied.get(o, 0)
     with open(PUBLIC, "w", encoding="utf-8") as f:
         json.dump({"generatedAt": now, "jobs": dict(sorted(public.items()))}, f)
     print(f"HPD requests: {len(asked)} OMOs HPD asked about (paperwork / status) from {len(ids)} staff emails since {since}")
