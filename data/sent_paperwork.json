@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-19T11:51:09.783148+00:00",
+"generatedAt": "2026-11-19T11:59:34.329422+00:00",
 "since": "2026/11/05",
 "jobs": {
 "EN04541": [
@@ -20824,6 +20824,16 @@
 "file": "VIDEO-2026-06-30-13-12-39.mp4",
 "outcome": "",
 "subject": "OMO No: EQ31423 Issuer: ANTHONY DANTUONO Boro: Queens Bldg Address: 115-01, 107 AVENUE",
+"via": "hpd-staff"
+}
+],
+"EQ31457": [
+{
+"date": "2026-11-19",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ31457 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: STOP WORK NOTICE- OMO#EQ31457",
 "via": "hpd-staff"
 }
 ],
