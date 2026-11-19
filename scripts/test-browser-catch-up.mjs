@@ -47,6 +47,8 @@ try {
   const text = await page.locator('[data-hpd-smoke="fc-chat-nudge-text"]').innerText();
   assert.match(text, /^👋 While you were away: .*✅ Claude finished “Make the bid pins bigger”.*❓ Claude needs your answer on “Add a dark map at night”/);
   if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/catch-up.png` }).catch(() => {});
+  // One pop-up at a time (18 Nov): Claude's question card waits (hidden) while the line shows.
+  assert.ok(await page.locator('.fc-map-hints [data-hpd-smoke="fc-claude-live"]').evaluateAll((els) => els.every((e) => getComputedStyle(e).visibility === "hidden")), "Claude's card waits while the line shows");
   // Claude's question card can sit over the line (it says the same thing): put it away first, like the owner would.
   await page.locator('[data-hpd-smoke="fc-claude-live-hide"]').click({ timeout: 2000 }).catch(() => {});
   await page.locator('[data-hpd-smoke="fc-chat-nudge-go"]').click();

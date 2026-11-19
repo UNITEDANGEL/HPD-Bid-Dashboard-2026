@@ -4383,6 +4383,14 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
    goes above the bar, and waits while the list is open. */
 .fc-app:has(.fc-notice-tray) .fc-chat-nudge { bottom: calc(var(--fc-dock-h) + 150px); }
 .fc-app:has(.fc-notice-tray.is-open) .fc-chat-nudge { visibility: hidden; }
+/* One pop-up at a time (owner, 18 Nov "do all", idea 1): the most important one shows, the others wait (hidden, not
+   lost) and come back when it closes. 1) An urgent alert. 2) The helper, open (not tucked; not while driving, where its
+   lines are the point). 3) A chat line (new notice, bid due, away). 4) Claude's question card. */
+.fc-app:has(.fc-critical) .fc-chat-nudge,
+.fc-app:has(.fc-critical) .fc-map-hints .fc-claude-live,
+.fc-app:has(.fc-agent:not(.is-tucked):not(.is-driving)) .fc-chat-nudge,
+.fc-app:has(.fc-agent:not(.is-tucked):not(.is-driving)) .fc-map-hints .fc-claude-live,
+.fc-app:has(.fc-chat-nudge) .fc-map-hints .fc-claude-live { visibility: hidden; }
 .fc-app .fc-map-wrap .fc-map-hints:has(.fc-claude-live) { z-index: 1590; }
 /* 🔁 Talk with the tenant both ways (5 Nov). */
 .fc-translate { position: fixed; z-index: 1750; left: 10px; right: 10px; bottom: calc(var(--fc-dock-total, 64px) + 6px); max-width: 560px; margin: 0 auto; max-height: calc(100dvh - var(--fc-dock-total, 64px) - 30px); overflow-y: auto; box-sizing: border-box; display: grid; gap: 10px; padding: 14px; border-radius: 22px; background: #0f172a; border: 2px solid #38bdf8; color: #f8fafc; box-shadow: 0 -10px 30px #000a; animation: fc-more-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1); }

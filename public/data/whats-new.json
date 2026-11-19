@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Nov 18, 2026",
+      "title": "One pop-up at a time · Errors in plain words",
+      "items": [
+        "🪟 One pop-up at a time: an urgent alert comes first, then the open helper, then a reminder line, then Claude's question card; the others wait and come back when you close the one on top.",
+        "⚠️ Errors in plain words: if something goes wrong on your phone, a short note says what happened (like no signal or a saved-data hiccup) and that it was sent to Claude to fix."
+      ]
+    },
+    {
+      "date": "Nov 18, 2026",
       "title": "Faster paperwork · Upgrades by area · Not sent yet",
       "items": [
         "⚡ Faster paperwork: the paperwork page loads its job files all at once (and only downloads them again when they change), so Generate is ready sooner.",

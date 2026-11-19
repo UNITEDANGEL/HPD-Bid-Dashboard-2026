@@ -78,6 +78,8 @@ export function recordError(kind: AppError["kind"], message: unknown, where: unk
   if (same) { same.n += 1; same.at = new Date().toISOString(); } else list.push({ at: new Date().toISOString(), kind, msg, where: cleanError(where).slice(0, 160), page, n: 1 });
   list.sort((a, b) => a.at.localeCompare(b.at));
   try { localStorage.setItem(LIST_KEY, JSON.stringify(list.slice(-15))); } catch { /* private mode */ }
+  // Tell the person too, in plain words (components/ErrorReporter shows it).
+  try { window.dispatchEvent(new CustomEvent("hpd-app-error", { detail: { kind, msg } })); } catch { /* old browser */ }
   if (timer) return;
   let last = 0;
   try { last = Number(localStorage.getItem(SENT_KEY) || 0); } catch { /* private mode */ }
@@ -98,4 +100,14 @@ export function installErrorReporting(version = "") {
     const r = e.reason as { name?: string; message?: string; stack?: string } | undefined;
     recordError("promise", r && (r.message || r.name) ? `${r.name || "Error"}: ${r.message || ""}` : String(r), r?.stack?.split("\n").slice(0, 3).join(" ") || "", version);
   });
+}
+
+// What a phone error means, in plain words (owner, 18 Nov "do all", idea 5): shown for a few seconds, so a problem is never
+// silent, without the technical message.
+export function plainError(kind: AppError["kind"], msg: string) {
+  if (/database|IndexedDB|transaction|QuotaExceeded|storage/i.test(msg)) return "Your phone's saved data had a hiccup. The app tries again by itself; nothing you saved is lost.";
+  if (/fetch|network|offline|timed? ?out|Failed to load/i.test(msg)) return "No signal for a moment. The app tries again when you're back online.";
+  if (/speech|microphone|audio|voice/i.test(msg)) return "The voice stopped for a moment. Tap 🎙 to start it again.";
+  if (kind === "crash") return "This screen had a problem and reloaded part of itself.";
+  return "Something went wrong on this screen. The app keeps going.";
 }

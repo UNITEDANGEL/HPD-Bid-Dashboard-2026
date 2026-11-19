@@ -25,6 +25,13 @@ try {
     setTimeout(() => { Promise.reject(new TypeError("Cannot read properties of undefined (reading 'omo')")); }, 50);
     setTimeout(() => { throw new Error("ResizeObserver loop completed with undelivered notifications."); }, 60);
   });
+  // The person sees it too, in plain words, once (18 Nov, idea 5): no technical message, no number or email.
+  const note = page.locator('[data-hpd-smoke="app-error-note"]');
+  await note.waitFor({ timeout: 5000 });
+  const said = await note.innerText();
+  assert.match(said, /^⚠️ Something went wrong on this screen\. The app keeps going\. Sent to Claude to fix\.$/, said);
+  assert.equal(await note.count(), 1, "one note for the burst");
+  await note.waitFor({ state: "detached", timeout: 9000 });
   const sent = () => posted.filter((b) => String(b?.key || "").startsWith("APP-ERRORS-"));
   for (let i = 0; i < 40 && !sent().length; i++) await page.waitForTimeout(250);
   assert.equal(sent().length, 1, "sent once");
