@@ -36,12 +36,15 @@ try {
       await page.waitForTimeout(500);
       assert.equal(await nudge.count(), 0, "quiet before 6 PM");
     } else {
-      // On a Friday evening the 📊 week card comes first: close it, as the owner would.
-      for (let i = 0; i < 5 && !(await nudge.count()); i++) {
-        if (await page.locator('[data-hpd-smoke="fc-chat-nudge"][data-kind="week"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').click();
+      // On a Friday evening the 📊 week card comes first, and a bid due soon or other line can too: close each one,
+      // as the owner would, until the day line shows.
+      const seen = [];
+      for (let i = 0; i < 8 && !(await nudge.count()); i++) {
+        const other = page.locator('[data-hpd-smoke="fc-chat-nudge"]:not([data-kind="day"])');
+        if (await other.count()) { seen.push(await other.first().getAttribute("data-kind")); await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click(); }
         await page.clock.runFor(61000);
       }
-      await nudge.waitFor();
+      await nudge.waitFor({ timeout: 15000 }).catch((e) => { throw new Error(`no day line (closed first: ${seen.join(", ") || "none"}): ${e.message}`); });
       assert.match(await page.locator('[data-hpd-smoke="fc-chat-nudge-text"]').innerText(), /^🌆 Today: 1 visited, 1 finished[^.]*\. Tomorrow: /);
       await page.locator('[data-hpd-smoke="fc-chat-nudge-go"]').click();
       await page.getByText("← Map").first().waitFor();

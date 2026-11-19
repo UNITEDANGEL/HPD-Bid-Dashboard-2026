@@ -4375,6 +4375,8 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 /* Claude's card (and the other map hints) sit above the ask bar and the Next bar, never under them (owner's screenshot, 5 Nov). */
 .fc-app:has(.fc-chatbar) .fc-map-wrap .fc-map-hints { top: auto; align-content: end; bottom: calc(var(--fc-dock-total) + 66px); max-height: calc(100% - var(--fc-dock-total) - 66px - 190px); overflow-y: auto; }
 .fc-app:has(.fc-chatbar):has(.fc-focus-chip) .fc-map-wrap .fc-map-hints { bottom: calc(var(--fc-dock-total) + 128px); max-height: calc(100% - var(--fc-dock-total) - 128px - 190px); }
+/* A chat line (new notice, bid due…) sits where the map's notes end: lift the notes (Your Jobs list · ✕ All, weather…) above it so neither covers the other (18 Nov: ✕ All was under a 72-hour notice line and could not be tapped). */
+.fc-app:has(.fc-chatbar):has(.fc-chat-nudge) .fc-map-wrap .fc-map-hints { bottom: max(calc(var(--fc-dock-total) + 66px), calc(var(--fc-dock-h) + 70px + var(--fc-nudge-h, 130px))); max-height: calc(100% - var(--fc-dock-h) - 70px - var(--fc-nudge-h, 130px) - 190px); }
 .fc-app .fc-map-wrap .fc-map-hints:has(.fc-claude-live) { z-index: 1590; }
 /* 🔁 Talk with the tenant both ways (5 Nov). */
 .fc-translate { position: fixed; z-index: 1750; left: 10px; right: 10px; bottom: calc(var(--fc-dock-total, 64px) + 6px); max-width: 560px; margin: 0 auto; max-height: calc(100dvh - var(--fc-dock-total, 64px) - 30px); overflow-y: auto; box-sizing: border-box; display: grid; gap: 10px; padding: 14px; border-radius: 22px; background: #0f172a; border: 2px solid #38bdf8; color: #f8fafc; box-shadow: 0 -10px 30px #000a; animation: fc-more-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1); }

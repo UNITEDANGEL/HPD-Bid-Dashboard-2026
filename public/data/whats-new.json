@@ -9,7 +9,8 @@
         "🛡 Kept that way: a check now stops any update that would build the app without the picture key.",
         "📋 Old jobs open from the to-do list: tapping a 2024-2025 job in the Priority to-do list now opens its card instead of doing nothing.",
         "🗺 Map keeps syncing: if your iPhone drops the app's saved data in the background, the Map tries again instead of showing an error.",
-        "📚 Upgrades list kept tidy: when two updates land on the same day, each item now shows once in the Upgrades done list."
+        "📚 Upgrades list kept tidy: when two updates land on the same day, each item now shows once in the Upgrades done list.",
+        "👆 Nothing hidden under a reminder: when a reminder line shows above the chat, the Your Jobs list bar, weather and job checks move up above it so you can still tap ✕ All."
       ]
     },
     {
