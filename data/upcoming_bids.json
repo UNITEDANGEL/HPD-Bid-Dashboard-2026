@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T21:28:31.354435+00:00",
+  "generatedAt": "2026-11-19T21:39:37.753963+00:00",
   "days": 14,
   "bids": [
     {
@@ -3804,6 +3804,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.745326,
       "lng": -73.924228
+    },
+    {
+      "omo": "KR00834",
+      "bidDue": "2026-11-20",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-21",
+      "workCompletion": "2026-12-01",
+      "address": "32 ST NICHOLAS PLACE",
+      "borough": "MN",
+      "itbFile": "KR00834_111926042839.pdf",
+      "description": "30-32 St. Nicholas Place Apt 3C: Repair the kitchen & the private hallway floors. Building contact is TA Doreen Godare (phone: sign in to see). The inspector monitoring this job is Nzeribe Azukwu 212-863-7374 or (phone: sign in to see) 1KITCHEN 2Remove & discard properly the defective kitchen base cabinet, sink basin & faucet. Including water lines up to the speedy valves & waste line connections up to the house drain trap. Upper wall cabinets included.Each2 3Remove & discard plywood subfloor down to joist, ceramic floor tiles, baseboards, door saddles; throughout entire kitchen.SF99 4Provide & install new 3/4\" plywood subfloor in entire kitchen; including proper even floor leveling with respect to adjoining floors.SF99 5Provide & install new cement board on top of plywood subfloor.SF99 6Provide & install new wood door saddles between the kitchen & bedroom & private hallway.Each2 7Provide & install new ceramic floor tiles at entire kitchenSF99 8Provide & install new 3-3/4\" wide wood baseboard throughout entire kitchenLS22 9Provide & install prefinished hardwood base cabinet with 2 doors below 42\" wide 24\" deep & 35\" high, plastic laminate countertop, stainless steel sink basin & low flow faucet. (including 1/2\" flexible water speedy lines connected to existing speedy valves & 1/2\" waste bends connected to existing drain trap)Each1 10Provide & install new wood wall cabinet 60\" W x12\"D x 30\"H & another 36\"W x 12\"D x 30\"H (on both sides of wall as the ones removed)Each2 11PRIVATE HALLWAYLS1 $ - 12Remove & discard plywood subfloor down to joist, VCT floor tiles, baseboards, door saddles; throughout entire private hallwaySF70 13Provide & install new 3/4\" plywood subfloor in entire private hall way; including proper even floor leveling with respect to adjoining floors.SF70 14Provide & install new 1/2\" plywood subfloor in entire private hall way, on top of the 3/4\" plywoodSF70 15Provide & install new VCT floor tiles at entire private hallwaySF70 16Provide & install new wood door saddle between the private hall way & bedroom, bathroom & Livingroom.Each3 17Provide & install new 3\" wide wood baseboard throughout entire private hallwayLF42 18Provide & install new 3/4\" wood round molding between baseboard & floor.LF42 19LIVING ROOM 20Replace with new defective VCT floor tiles in kind to existing.SF156 21Repair various defective walls stucco. SF7 22BATHROOM 23R l ith th d f ti d ith lid d & d f I l d t d d h d 23Replace with new the defective door with solid door & door frame; Includes standard hardware, hinges, trim & lockset.Each1 24The entire 3 bedroom Apt; Compound, Prime & Paint 2 finish coats, walls, ceiling (ceiling get flat & walls get semi-gloss) windows, doors & door frames.Room7 GRAND TOTAL",
+      "notes": "",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1795123726000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.828117,
+      "lng": -73.941401
     },
     {
       "omo": "ER10674",
