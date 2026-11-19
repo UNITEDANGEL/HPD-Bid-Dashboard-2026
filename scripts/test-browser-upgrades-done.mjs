@@ -31,6 +31,18 @@ try {
   assert.match(await sheet.locator("header strong").innerText(), new RegExp(`Upgrades done \\(${total}\\)`));
   assert.ok((await sheet.locator('[data-hpd-smoke="fc-upgrades-day"]').count()) > 5, "grouped by day");
 
+  // One area at a time (18 Nov): each button shows only that part's upgrades, with its count; All brings back every one.
+  for (const area of ["bids", "jobs", "notices", "paperwork", "helper"]) {
+    const btn = sheet.locator(`[data-hpd-smoke="fc-upgrades-area-${area}"]`);
+    const n = Number(await btn.locator("em").innerText());
+    assert.ok(n > 5 && n < total, `${area}: ${n} of ${total}`);
+    await btn.click();
+    assert.equal(await btn.getAttribute("aria-pressed"), "true");
+    assert.equal(await items.count(), n, `${area} shows only its ${n}`);
+  }
+  await sheet.locator('[data-hpd-smoke="fc-upgrades-area-all"]').click();
+  assert.equal(await items.count(), total, "All: every upgrade again");
+
   // Find.
   await sheet.locator('[data-hpd-smoke="fc-upgrades-find"]').fill("profit after HPD paid");
   assert.match(await sheet.locator('[data-hpd-smoke="fc-upgrades-found"]').innerText(), /^\d+ found/);

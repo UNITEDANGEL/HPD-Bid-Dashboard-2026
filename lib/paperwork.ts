@@ -415,9 +415,10 @@ export function applyWorkflowOverridesToRows<T extends PaperworkJob>(rows: T[], 
   });
 }
 
-export async function applySavedWorkflowStatuses<T extends PaperworkJob>(rows: T[]): Promise<T[]> {
+// serverOverrides: a fetch already started (the paperwork page starts it with its other files, so they load together).
+export async function applySavedWorkflowStatuses<T extends PaperworkJob>(rows: T[], serverOverrides?: Promise<WorkflowOverrides>): Promise<T[]> {
   const local = readLocalWorkflowOverrides();
-  const server = await fetchServerWorkflowOverrides();
+  const server = await (serverOverrides || fetchServerWorkflowOverrides());
   // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
   const overrides = mergeOverrideMaps(local, server) as WorkflowOverrides;
 

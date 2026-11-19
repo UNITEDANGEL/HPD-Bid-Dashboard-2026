@@ -23,9 +23,20 @@ function readEdits(): Edits {
 }
 const todayLabel = () => new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
+// The list by part of the app (owner, 18 Nov "do all": quick buttons to see one area at a time). An item can be in
+// more than one area; one that matches none shows under All only.
+const AREAS: { key: string; label: string; re: RegExp }[] = [
+  { key: "bids", label: "💰 Bids", re: /\b(bids?|bidding|invitations?|ITB|price|easy win|award(ed|s)?)\b/i },
+  { key: "jobs", label: "🔨 Jobs", re: /\b(jobs?|job card|route|visit|photos?|before|after|tenant|access|map|pins?|waze)\b/i },
+  { key: "notices", label: "🔔 Notices", re: /\b(notices?|72-hour|24-hour|board|HPD (asked|wants)|gmail|emails?|reply|replies|priority|rejected|corrections?)\b/i },
+  { key: "paperwork", label: "📄 Paperwork", re: /\b(paperwork|affidavits?|invoices?|package|notary|signature|PDF|fax|print)\b/i },
+  { key: "helper", label: "🤖 Helper", re: /\b(helper|Claude|AI|voice|mic|says?|said|speak|talk|chat|driving|hands-free)\b/i },
+];
+
 export default function UpgradesDone({ versions, onClose, onAskChange }: { versions: Version[] | null | undefined; onClose: () => void; onAskChange: (text: string) => void }) {
   const [edits, setEdits] = useState<Edits>(EMPTY);
   const [find, setFind] = useState("");
+  const [area, setArea] = useState("");
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [showRemoved, setShowRemoved] = useState(false);
@@ -45,7 +56,10 @@ export default function UpgradesDone({ versions, onClose, onAskChange }: { versi
     return out.sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
   }, [versions, edits]);
   const q = find.trim().toLowerCase();
-  const shown = days.map((d) => ({ ...d, items: d.items.filter((i) => !edits.removed[i.id] && (!q || i.text.toLowerCase().includes(q) || d.date.toLowerCase().includes(q))) })).filter((d) => d.items.length);
+  const areaRe = AREAS.find((a) => a.key === area)?.re;
+  const shown = days.map((d) => ({ ...d, items: d.items.filter((i) => !edits.removed[i.id] && (!areaRe || areaRe.test(i.text)) && (!q || i.text.toLowerCase().includes(q) || d.date.toLowerCase().includes(q))) })).filter((d) => d.items.length);
+  const live = days.flatMap((d) => d.items.filter((i) => !edits.removed[i.id]));
+  const areaCount = (re: RegExp) => live.filter((i) => re.test(i.text)).length;
   const removed = days.flatMap((d) => d.items.filter((i) => edits.removed[i.id]).map((i) => ({ ...i, date: d.date })));
   const count = days.reduce((n, d) => n + d.items.filter((i) => !edits.removed[i.id]).length, 0);
   const found = shown.reduce((n, d) => n + d.items.length, 0);
@@ -94,6 +108,12 @@ export default function UpgradesDone({ versions, onClose, onAskChange }: { versi
           <input type="search" placeholder="Find an upgrade (door, fax, voice…)" aria-label="Find an upgrade" data-hpd-smoke="fc-upgrades-find" value={find} onChange={(e) => setFind(e.target.value)} />
           <button type="button" data-hpd-smoke="fc-upgrades-add" onClick={() => setAdding((a) => (a === null ? "" : null))}>＋ Add</button>
           <button type="button" data-hpd-smoke="fc-upgrades-copy" onClick={() => void copyAll()}>📋 Copy all</button>
+        </div>
+        <div className="fc-upgrades-areas" role="group" aria-label="Show one part of the app" data-hpd-smoke="fc-upgrades-areas">
+          <button type="button" className={area ? "" : "is-on"} aria-pressed={!area} data-hpd-smoke="fc-upgrades-area-all" onClick={() => setArea("")}>All</button>
+          {AREAS.map((a) => (
+            <button key={a.key} type="button" className={area === a.key ? "is-on" : ""} aria-pressed={area === a.key} data-hpd-smoke={`fc-upgrades-area-${a.key}`} onClick={() => setArea(area === a.key ? "" : a.key)}>{a.label} <em>{areaCount(a.re)}</em></button>
+          ))}
         </div>
         {adding !== null ? (
           <div className="fc-upgrades-edit" data-hpd-smoke="fc-upgrades-add-box">

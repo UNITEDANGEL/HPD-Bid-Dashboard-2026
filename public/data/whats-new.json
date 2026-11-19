@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 18, 2026",
+      "title": "Faster paperwork · Upgrades by area · Not sent yet",
+      "items": [
+        "⚡ Faster paperwork: the paperwork page loads its job files all at once (and only downloads them again when they change), so Generate is ready sooner.",
+        "🗂 Upgrades by area: Upgrades done has quick buttons (Bids, Jobs, Notices, Paperwork, Helper) to see one part of the app at a time, each with its count.",
+        "☁️ Not sent yet: if a job change on your phone hasn't reached the server for over a minute (no signal), the map says how many and Send now sends them."
+      ]
+    },
+    {
+      "date": "Nov 18, 2026",
       "title": "Building pictures are back · Old jobs open from the to-do list · Map keeps syncing",
       "items": [
         "🏢 Building pictures are back: Bids and job cards show Google's picture of the building again (the 10-minute data update was building the app without the picture key).",

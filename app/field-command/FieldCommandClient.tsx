@@ -56,7 +56,7 @@ import { monthReportPdf, monthSummary } from "../../lib/month-report";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
-import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
+import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync, readOutbox } from "../../lib/override-sync";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
 import { checkImageFile } from "../../lib/photo-quality";
@@ -2685,6 +2685,21 @@ export default function FieldCommandClient() {
   // Photos and videos live on this phone until the package is sent: show whether the Drive
   // backup (Storage settings) is copying them, and turn it on with one tap.
   const [backup, setBackup] = useState<{ auto: boolean; total: number; verifiedAt: string; error: string; queued: number } | null>(null);
+  // ☁️ Not sent yet (owner, 18 Nov "do all"): job changes saved on this phone that the status server hasn't got yet
+  // (no signal, server down). Shown once one has waited over a minute, so a normal send never flashes it.
+  const [unsent, setUnsent] = useState(0);
+  const [unsentNote, setUnsentNote] = useState("");
+  const checkUnsentRef = useRef<() => void>(() => {});
+  checkUnsentRef.current = () => {
+    try { const now = Date.now(); setUnsent(Object.values(readOutbox()).filter((at) => now - (Date.parse(String(at)) || now) > 60000).length); } catch { setUnsent(0); }
+  };
+  useEffect(() => {
+    const check = () => checkUnsentRef.current();
+    check();
+    const timer = window.setInterval(check, 15000);
+    for (const event of ["online", "focus", "storage"]) window.addEventListener(event, check);
+    return () => { window.clearInterval(timer); for (const event of ["online", "focus", "storage"]) window.removeEventListener(event, check); };
+  }, []);
   const refreshBackupRef = useRef<() => void>(() => {});
   refreshBackupRef.current = () => {
     void (async () => {
@@ -8176,6 +8191,15 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-jobs-kept-open" onClick={() => { closeScreens("jobs"); setJobsMini(false); setJobsOpen(true); }}>🔨 Your Jobs list · <b>{jobsShown.ids.length}</b> job{jobsShown.ids.length === 1 ? "" : "s"}</button>
               <button type="button" className="fc-jobs-kept-x" aria-label="Show all jobs" data-hpd-smoke="fc-jobs-kept-x" onClick={() => { setJobsKept(false); setJobsShown(null); }}>✕ All</button>
             </div>
+          ) : null}
+          {(unsent > 0 || unsentNote) && !selectedJob ? (
+            <button type="button" className="fc-map-hint fc-unsent" data-hpd-smoke="fc-unsent" disabled={unsentNote === "Sending…"} onClick={async () => {
+              setUnsentNote("Sending…");
+              const r = await flushOverrideOutbox(HPD_STATUS_WORKER_URL).catch(() => ({ sent: 0, waiting: unsent }));
+              checkUnsentRef.current();
+              setUnsentNote(r.waiting ? `☁️ ${r.waiting} still not sent: no signal? It tries again by itself.` : "✓ All sent");
+              window.setTimeout(() => setUnsentNote(""), 6000);
+            }}>{unsentNote || `☁️ ${unsent} job change${unsent === 1 ? "" : "s"} not sent yet · Send now`}</button>
           ) : null}
           {(wxChip || aspOffToday || moneyNow.week > 0 || papersDue.length) && !selectedJob && !agent ? (
             <div className="fc-wx-row">

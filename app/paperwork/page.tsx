@@ -39,6 +39,7 @@ import {
   affidavitReasonForOutcome,
   affidavitTemplateLabel,
   applySavedWorkflowStatuses,
+  fetchServerWorkflowOverrides,
   defaultPaperworkInvoiceNo,
   formatCurrency,
   getJobAddress,
@@ -1550,18 +1551,27 @@ export default function PaperworkPage() {
 
     async function loadJobs() {
       try {
-        const res = await fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" });
-        if (!res.ok) return;
-
-        const data = await res.json();
-        // Older jobs (2024-2025, scripts/fetch_older_jobs.py): to correct their rejected paperwork.
-        const older = await fetch("/data/COA_older.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+        // Every file at once (18 Nov: one after another, Generate sat on "Loading Job Data..." for over 30 s on the
+        // live site). "no-cache" asks the server if a file changed instead of downloading it again each time.
+        const json = (url: string) => fetch(url, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const serverOverrides = fetchServerWorkflowOverrides();
+        const [data, olderRaw, pipRaw, hpdRaw, priv] = await Promise.all([
+          json("/data/COA_Fetcher_2026.json"),
+          // Older jobs (2024-2025, scripts/fetch_older_jobs.py): to correct their rejected paperwork.
+          json("/data/COA_older.json"),
+          // No award amount read from the COA (common on 2024-2025 jobs): HPD's agreed amount from PIP
+          // (paid + still open), so the invoice isn't missing its charge.
+          json("/data/pip_paid.json"),
+          // ...or HPD's own award amount (NYC Open Data, hpd_job_status.json).
+          json("/data/hpd_job_status.json"),
+          // Tenant name / phone (the no-access affidavit's call dates need it) from the signed-in private route.
+          loadPrivate(),
+        ]);
+        if (!data) return;
+        const older = olderRaw || [];
+        const pip = ((pipRaw as { jobs?: unknown } | null)?.jobs || {}) as Record<string, { paid?: number; outstanding?: number }>;
+        const hpdStatus = ((hpdRaw as { jobs?: unknown } | null)?.jobs || {}) as Record<string, { amount?: number }>;
         const have = new Set(asArray(data).map((j) => String((j as Record<string, unknown>).OMO || "").toUpperCase()));
-        // No award amount read from the COA (common on 2024-2025 jobs): HPD's agreed amount from PIP
-        // (paid + still open), so the invoice isn't missing its charge.
-        const pip = await fetch("/data/pip_paid.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => (d?.jobs || {}) as Record<string, { paid?: number; outstanding?: number }>).catch(() => ({} as Record<string, { paid?: number; outstanding?: number }>));
-        // ...or HPD's own award amount (NYC Open Data, hpd_job_status.json).
-        const hpdStatus = await fetch("/data/hpd_job_status.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => (d?.jobs || {}) as Record<string, { amount?: number }>).catch(() => ({} as Record<string, { amount?: number }>));
         const withAmount = (j: unknown) => {
           const row = j as Record<string, unknown>;
           const omo = String(row.OMO || "").toUpperCase();
@@ -1572,9 +1582,7 @@ export default function PaperworkPage() {
           if (total > 0) return { ...row, AwardAmount: total.toFixed(2), AwardAmountSource: "PIP" };
           return hpd > 0 ? { ...row, AwardAmount: hpd.toFixed(2), AwardAmountSource: "HPD" } : row;
         };
-        // Tenant name / phone (the no-access affidavit's call dates need it) from the signed-in private route.
-        const priv = await loadPrivate();
-        const rows = await applySavedWorkflowStatuses(withTestJob(withPrivate([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))].map(withAmount) as Record<string, unknown>[], priv?.jobs)));
+        const rows = await applySavedWorkflowStatuses(withTestJob(withPrivate([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))].map(withAmount) as Record<string, unknown>[], priv?.jobs)), serverOverrides);
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);

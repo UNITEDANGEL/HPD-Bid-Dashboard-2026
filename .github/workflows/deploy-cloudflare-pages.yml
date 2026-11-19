@@ -468,6 +468,7 @@ jobs:
             scripts/test-browser-ideas.mjs \
             scripts/test-browser-ideas-edit.mjs \
             scripts/test-browser-upgrades-done.mjs \
+            scripts/test-browser-unsent.mjs \
             scripts/test-browser-plan-second-try.mjs \
             scripts/test-browser-no-keyboard.mjs \
             scripts/test-browser-photo-check.mjs \
