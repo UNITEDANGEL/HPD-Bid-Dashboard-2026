@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T15:05:05.418236+00:00",
+"generatedAt": "2026-11-20T15:15:02.784922+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -20336,6 +20336,37 @@
 "outcome": "",
 "subject": "Re: [EXTERNAL] OMO No: EQ30047 Issuer: VLADIMIR GORODNICHENKO Boro: Brooklyn Bldg Address: 593, LEXINGTON AVENUE",
 "via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ30047-work-completed-PRINT-COPY-unsigned-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "Fwd: [CHECK BEFORE SENDING] OMO# EQ30047 - corrected affidavit and invoice",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "EQ30047-work-completed-PRINT-COPY-unsigned-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "[CHECK BEFORE SENDING] OMO# EQ30047 - corrected affidavit and invoice"
+},
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ30047 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Fwd: [EXTERNAL] OMO No: EQ30047 Issuer: VLADIMIR GORODNICHENKO Boro: Brooklyn Bldg Address: 593, LEXINGTON AVENUE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-07-09-17-10-15.mp4",
+"outcome": "",
+"subject": "Fwd: OMO No: EQ30047 Issuer: VLADIMIR GORODNICHENKO Boro: Brooklyn Bldg Address: 593, LEXINGTON AVENUE",
+"via": "hpd-staff"
 }
 ],
 "EQ30057": [
@@ -20903,6 +20934,14 @@
 "file": "VIDEO-2026-07-08-17-02-36.mp4",
 "outcome": "",
 "subject": "OMO No: EQ31754 Issuer: DHANYA RAJAN Boro: Queens Bldg Address: 19-24, LINDEN STREET",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - EQ31754 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "Fwd: SIGNED - EQ31754 - Work Completed - 19-24 LINDEN STREET, 11385",
 "via": "hpd-staff"
 }
 ],
@@ -21609,6 +21648,23 @@
 "outcome": "",
 "subject": "RE: 24 HR POOR PERFORMANCE NOTICE - OMO#ER04312",
 "via": "hpd-staff"
+}
+],
+"ER04332": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER04332 - Refused Access.pdf",
+"outcome": "refused_access",
+"subject": "Fwd: SIGNED - ER04332 - Refused Access - 1550 EAST 102 STREET, 11236",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER04332 - Refused Access.pdf",
+"outcome": "refused_access",
+"subject": "SIGNED - ER04332 - Refused Access - 1550 EAST 102 STREET, 11236"
 }
 ],
 "ER04403": [
