@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T14:45:13.407912+00:00",
+"generatedAt": "2026-11-20T14:55:19.901867+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -21276,6 +21276,23 @@
 "via": "hpd-staff"
 }
 ],
+"ER00929": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER00929 - Refused Access.pdf",
+"outcome": "refused_access",
+"subject": "Fwd: SIGNED - ER00929 - Refused Access - 147-40 ARCHER AVENUE, 11435",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER00929 - Refused Access.pdf",
+"outcome": "refused_access",
+"subject": "SIGNED - ER00929 - Refused Access - 147-40 ARCHER AVENUE, 11435"
+}
+],
 "ER01032": [
 {
 "date": "2026-08-05",
@@ -21399,6 +21416,23 @@
 "outcome": "",
 "subject": "Re: 72 HOUR PERFORMANCE NOTICE- OMO#ER01987",
 "via": "hpd-staff"
+}
+],
+"ER02022": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER02022 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - ER02022 - No Access - 162-18 108 AVENUE, 11433",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER02022 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - ER02022 - No Access - 162-18 108 AVENUE, 11433"
 }
 ],
 "ER02048": [
