@@ -397,6 +397,7 @@ jobs:
             scripts/test-browser-conversations.mjs \
             scripts/test-browser-autofix.mjs \
             scripts/test-browser-calculator.mjs \
+            scripts/test-browser-ask-picture.mjs \
             scripts/test-browser-costs.mjs \
             scripts/test-browser-bids-badge.mjs \
             scripts/test-browser-prefill.mjs \
