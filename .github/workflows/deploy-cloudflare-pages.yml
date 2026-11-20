@@ -128,6 +128,7 @@ jobs:
           node scripts/test-day-summary.mjs
           node scripts/test-job-time.mjs
           node scripts/test-leave-reminder.mjs
+          node scripts/test-no-photos-no-access.mjs
           node scripts/test-month-glance.cjs
           node scripts/test-access-waiting.cjs
           node scripts/test-job-say-note.cjs

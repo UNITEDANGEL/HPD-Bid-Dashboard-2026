@@ -2013,3 +2013,4 @@ them. The owner enters any payment details and API keys themselves (keys go into
 
 929. ✅ **🔧 Rejected job fixer** (idea, 14 Nov): unanswered HPD rejections from the last 30 days list what to redo; ones that need a visit (photos, access, unfinished work) go first on the route. lib/rejected-fixer.ts, test-rejected-fixer. (Browser tests deeplink, open-fast, truck-noise, wait-talk already failed before this change.)
 - ✅ 20 Nov: closed / already-sent notices drop off the map clock (owner request 20261120145428).
+930. ✅ **No photos for No access / Refused access** (owner, 20 Nov): the job card photo counter and checklist say no photos are needed for those outcomes. lib/photo-checklist.ts, test-no-photos-no-access.

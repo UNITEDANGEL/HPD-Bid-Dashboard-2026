@@ -8502,7 +8502,7 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
               </button>
-              {(() => { const need = photosStillNeeded(counts); return <p className={`jc-photo-count ${need.left ? "is-left" : "is-ok"}`} data-hpd-smoke="jc-photo-count">{need.line}</p>; })()}
+              {(() => { const need = photosStillNeeded(counts, value(selectedJob, ["FieldOutcome", "fieldOutcome"])); return <p className={`jc-photo-count ${need.left ? "is-left" : "is-ok"}`} data-hpd-smoke="jc-photo-count">{need.line}</p>; })()}
               {(() => {
                 const omo = jobId(selectedJob);
                 const it = prioByOmo.get(omo);
@@ -9126,10 +9126,11 @@ export default function FieldCommandClient() {
                 </div>
                 {/* 📋 What HPD needs, ticked as you take it (idea list); tap one still missing to add it. */}
                 {(() => {
-                  const items = photoChecklist(counts);
+                  const outcomeNow = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+                  const items = photoChecklist(counts, outcomeNow);
                   return (
                     <div className="jc-photo-list" data-hpd-smoke="jc-photo-list" aria-label="Photos HPD needs">
-                      <b>{checklistLine(items)}</b>
+                      <b>{checklistLine(items, outcomeNow)}</b>
                       <ul>
                         {items.map((it) => (
                           <li key={it.key} className={it.done ? "is-done" : ""} data-hpd-smoke={`jc-photo-list-${it.key}`}>

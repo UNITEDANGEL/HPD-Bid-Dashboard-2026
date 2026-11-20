@@ -5,7 +5,11 @@
 export type MediaCounts = { before: number; after: number; beforeVideos?: number; afterVideos?: number };
 export type CheckItem = { key: string; kind: "before" | "after"; label: string; done: boolean; note: string };
 
-export function photoChecklist(c: MediaCounts | null | undefined): CheckItem[] {
+// Owner, 20 Nov: a No access or Refused access visit does not need any photo or video.
+export const noPhotosNeeded = (outcome?: string | null) => /NO_ACCESS|REFUSED/i.test(String(outcome || ""));
+
+export function photoChecklist(c: MediaCounts | null | undefined, outcome?: string | null): CheckItem[] {
+  if (noPhotosNeeded(outcome)) return [];
   const m = c || { before: 0, after: 0 };
   const bv = m.beforeVideos || 0, av = m.afterVideos || 0;
   const bp = Math.max(0, (m.before || 0) - bv), ap = Math.max(0, (m.after || 0) - av);
@@ -18,14 +22,16 @@ export function photoChecklist(c: MediaCounts | null | undefined): CheckItem[] {
   ];
 }
 
-export function checklistLine(items: CheckItem[]) {
+export function checklistLine(items: CheckItem[], outcome?: string | null) {
+  if (noPhotosNeeded(outcome)) return "No photos needed for no access / refused access ✓";
   const left = items.filter((i) => !i.done);
   return left.length ? `Still to take: ${left.map((i) => i.label.toLowerCase()).join(", ")}` : "All photos and videos HPD needs are saved ✓";
 }
 
 // Photo count on every job card (plan, 14 Nov): how many photos/videos are still needed before you leave the building.
 // 3 before photos + 3 after photos + a before and an after video; counts come from the same saved counts as the checklist.
-export function photosStillNeeded(c: MediaCounts | null | undefined): { left: number; line: string } {
+export function photosStillNeeded(c: MediaCounts | null | undefined, outcome?: string | null): { left: number; line: string } {
+  if (noPhotosNeeded(outcome)) return { left: 0, line: "📷 No photos needed (no access / refused access) ✓" };
   const m = c || { before: 0, after: 0 };
   const bv = m.beforeVideos || 0, av = m.afterVideos || 0;
   const bp = Math.max(0, (m.before || 0) - bv), ap = Math.max(0, (m.after || 0) - av);
