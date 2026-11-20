@@ -10,13 +10,6 @@
       "why": "It dials, says who you are and asks for a time; you hear it and take over any time (needs the phone service)."
     },
     {
-      "id": "store-stop",
-      "icon": "🏪",
-      "kind": "new",
-      "title": "Store stop on the way",
-      "why": "When today's list needs materials, the robot adds the closest Home Depot or supply store on your route."
-    },
-    {
       "id": "photo-sees",
       "icon": "🔎",
       "kind": "new",
@@ -31,13 +24,6 @@
       "why": "When you open the app, the robot sums up new HPD emails out loud: who wrote, which job, what they want."
     },
     {
-      "id": "route-traffic",
-      "icon": "🚦",
-      "kind": "upgrade",
-      "title": "Traffic colors on the route",
-      "why": "The route line on the map turns red where traffic is slow, so you know before you leave."
-    },
-    {
       "id": "quick-price-voice",
       "icon": "💲",
       "kind": "new",
@@ -50,20 +36,6 @@
       "kind": "new",
       "title": "Tenants confirm with one tap",
       "why": "The tenant gets a link: tap Yes / Change time. The map shows confirmed in green by itself."
-    },
-    {
-      "id": "lost-bids",
-      "icon": "📉",
-      "kind": "new",
-      "title": "Why you lost a bid",
-      "why": "For each bid you lost, the winning price next to yours, so the next price is right."
-    },
-    {
-      "id": "day-money",
-      "icon": "💵",
-      "kind": "new",
-      "title": "Today's money",
-      "why": "At the top: money earned today and this week from finished jobs, counting up as you finish."
     },
     {
       "id": "open-in-1s",
@@ -311,13 +283,6 @@
       "why": "Each photo is saved with the job number and before/after in its name, so nothing gets mixed up."
     },
     {
-      "id": "bid-compare-last",
-      "icon": "📊",
-      "kind": "new",
-      "title": "Same building, last price",
-      "why": "When you open a bid for a building you bid on before, the helper shows what you charged last time."
-    },
-    {
       "id": "bad-signal-mode",
       "icon": "📶",
       "kind": "upgrade",
@@ -353,13 +318,6 @@
       "why": "The robot rings when a payment you were waiting on shows as paid, with the job number and amount."
     },
     {
-      "id": "pay-chase-list",
-      "icon": "📋",
-      "kind": "new",
-      "title": "Who to chase for money",
-      "why": "One list of finished jobs not paid yet, oldest first, with how many days each has waited."
-    },
-    {
       "id": "duplicate-guard",
       "icon": "🛡",
       "kind": "upgrade",
@@ -386,13 +344,6 @@
       "kind": "upgrade",
       "title": "Missing photo warning",
       "why": "Before you finish a job the app says which required photo (before, after, close-up) is still missing."
-    },
-    {
-      "id": "late-pay-chase",
-      "icon": "💰",
-      "kind": "new",
-      "title": "Unpaid jobs reminder",
-      "why": "Jobs finished and sent but not paid after 30 days show on the morning brief, with the day count."
     },
     {
       "id": "same-block",
@@ -430,39 +381,11 @@
       "why": "Jobs, photos and forms save on the phone and send themselves when the signal comes back."
     },
     {
-      "id": "pay-tracker",
-      "icon": "💰",
-      "kind": "new",
-      "title": "Where is my money?",
-      "why": "One list: finished jobs, invoice sent, paid or waiting, with the days waiting counted so you know who to chase."
-    },
-    {
       "id": "bid-win-rate",
       "icon": "🎯",
       "kind": "new",
       "title": "Bid price that wins",
       "why": "Shows what prices won on similar jobs before and suggests a price in the winning range."
-    },
-    {
-      "id": "bid-skip-last",
-      "icon": "⏭",
-      "kind": "upgrade",
-      "title": "Skipped bids wait at the end",
-      "why": "Anything you skip with Next goes to the back of the line, so you decide on it last."
-    },
-    {
-      "id": "unsent-bid-alert",
-      "icon": "🔔",
-      "kind": "upgrade",
-      "title": "Alert when a bid is saved but not sent",
-      "why": "If a bid has a price but no fax by 2 hours before it is due, the phone alerts you with a one-tap Send."
-    },
-    {
-      "id": "sent-today-total",
-      "icon": "💵",
-      "kind": "new",
-      "title": "Today: bids sent and money in sight",
-      "why": "A single line: how many bids went out today and what they add up to."
     },
     {
       "id": "hpd-asks-box",
@@ -484,13 +407,6 @@
       "kind": "new",
       "title": "HPD asked twice",
       "why": "The app flags when HPD asks for something you already sent, with the date and file name to reply with."
-    },
-    {
-      "id": "photo-count",
-      "icon": "📷",
-      "kind": "new",
-      "title": "Photo count on every card",
-      "why": "See at a glance how many before and after photos a job has, and what is missing."
     },
     {
       "id": "late-week",
@@ -639,26 +555,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-15-a",
-    "title": "Next on the plan: who to chase for money, why you lost a bid, and today's money",
+    "id": "2026-11-19-a",
+    "title": "Next on the plan: same-block jobs together, a week view, and a second look before a bid goes out",
     "items": [
       {
-        "id": "pay-chase-list",
-        "icon": "📋",
-        "title": "Who to chase for money",
-        "why": "One list of finished jobs not paid yet, oldest first, with how many days each has waited."
+        "id": "same-block",
+        "icon": "🏘",
+        "title": "Same-block jobs together",
+        "why": "When two jobs are on the same block, the route puts them back to back so you park once."
       },
       {
-        "id": "lost-bids",
-        "icon": "📉",
-        "title": "Why you lost a bid",
-        "why": "For each bid you lost, the winning price next to yours, so the next price is right."
+        "id": "week-view",
+        "icon": "📅",
+        "title": "Week view",
+        "why": "Jobs, appointments, bids due and notices for the next 7 days on one screen."
       },
       {
-        "id": "day-money",
-        "icon": "💵",
-        "title": "Today's money",
-        "why": "At the top: money earned today and this week from finished jobs, counting up as you finish."
+        "id": "bid-recheck",
+        "icon": "🔎",
+        "title": "Second look before a bid is sent",
+        "why": "The helper reads the finished bid once more (price, name, job number, date) and says \"all good\" or what looks off."
       }
     ]
   }

@@ -16,6 +16,16 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 1. ✅ **Quoted lists no longer count as answers**: a thank-you reply to Joy-Ann's list of 18 OMOs quoted the list under it (the "On … wrote:" line wraps onto two lines), so the app took it as answering all 18 and they left the board. Only the new words of a reply count now, and an old wrong reply time is replaced. Test: scripts/test-own-part.py.
 
+## 🔢 19 Nov: keep upgrading (tested live)
+1. ✅ **The Jobs number is right from the start** (found live): right after opening, the Jobs button read 533, then 442,
+   then the real 105, because every job counted as "to do" until HPD's closed jobs, the paperwork sent and PIP's
+   payments had loaded. The number now waits for those. Test: test-browser-jobs-count-load.
+2. ✅ **Plan card up to date**: who to chase for money, why you lost a bid and today's money were already built, and
+   12 ideas in 💡 Ideas were too (alert for a priced bid not faxed, skipped bids at the end, store stop, traffic on
+   the route...): taken off. Next on the plan: ☐ same-block jobs back to back on the route, ☐ a week view (jobs,
+   appointments, bids due, notices for 7 days), ☐ a second look before a bid is sent.
+
+
 ## ⏭ 18 Nov: smoother bids, no questions back (owner's words)
 1. ✅ **⏭ Skip while reading the description** ("a skip button when I'm reading the description so I don't waste time;
    the job I skip goes to the end of the list so I can come back to it"): next to 💰 Price it on HPD's page. It says the

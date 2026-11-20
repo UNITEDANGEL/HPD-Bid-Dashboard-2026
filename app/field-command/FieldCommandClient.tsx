@@ -3841,7 +3841,7 @@ export default function FieldCommandClient() {
         packageHref: group === "closeout" ? paperworkGenerateHref(id, value(job, ["FieldOutcome", "fieldOutcome"])) : undefined, due2nd: !!second?.due,
         contact: (() => { const t = tenantInfo(job); const cs = tenantContactState(job as Record<string, unknown>, t.commonArea); return { tone: cs.tone, tries: cs.tries, phone: !!t.phone, lastAt: cs.lastAt, triesToday: cs.triesToday, reachedToday: cs.reachedToday }; })() };
     });
-  }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobs, closeOutJobs, secondTryJobs, [...closedJobs].join(), followLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
   // 🏆 The helper cheers when the day's work is done (owner's pick, 3 Nov): every bid due today sent, or no job left to do.
   const cheerRef = useRef<{ bids: number; todo: number; day: string }>({ bids: -1, todo: -1, day: "" });
   const todoNow = jobRows.filter((r) => r.group === "todo").length;
@@ -3859,6 +3859,9 @@ export default function FieldCommandClient() {
     window.dispatchEvent(new CustomEvent("hpd-notify", { detail: { kind: "claude", title: `🎉 ${lines.join(" ")}`, text: "Great work today." } }));
   }, [bidsDue.unsentToday, todoNow]); // eslint-disable-line react-hooks/exhaustive-deps
   const jobsTodo = jobRows.filter((r) => r.group === "todo").length;
+  // The Jobs number waits for HPD's closed jobs, the paperwork sent and PIP's payments (19 Nov: it showed 533, then 442,
+  // then the real 105 in the first 2 seconds, because every job counted as "to do" until those had loaded).
+  const jobCountReady = followLoaded && pipLoaded;
   // The bottom buttons glow when something there needs you now (owner, 2 Nov: "bids, notices, jobs: glowing a little so I
   // know to pay attention"): a 2nd try due or a job ready to close out (same as the red Jobs badge); a bid due today not
   // sent; a notice overdue or under 6 hours. Nothing waiting: no glow.
@@ -7987,7 +7990,7 @@ export default function FieldCommandClient() {
           // 29 Oct, owner: "too many buttons on the bottom" → picked layout A: one row (Jobs, Bids, ✨ AI, Notices, All), no strip.
           const make: Record<DockKey, (cls: string) => ReactElement> = {
             jobs: (cls) => <button key="jobs" type="button" className={`${cls} is-jobs${jobsNeedYou ? " is-glow" : ""}`} data-hpd-smoke="fc-jobs-open" data-glow={jobsNeedYou ? "1" : undefined} aria-label="Jobs" aria-pressed={jobsOpen} onClick={() => { if (jobsOpen) { setJobsOpen(false); setJobsMini(false); setJobsKept(Boolean(jobsShown && jobsShown.ids.length)); return; } closeScreens("jobs"); setJobsMini(jobsMapFirst()); setJobsOpen(true); }}>
-              <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count"><CountUp value={jobsTodo} /></span> : null}
+              <JobsIcon /><span className="fc-fab-label">Jobs</span>{jobRows.length && jobCountReady ? <span key={jobsTodo} className={`fc-follow-badge hpd-pop${secondTryJobs.some((r) => r.second.due) || closeOutJobs.length ? " is-rejected" : ""}`} data-hpd-smoke="fc-jobs-count"><CountUp value={jobsTodo} /></span> : null}
             </button>,
             bids: (cls) => <button key="bids" type="button" className={`${cls} ${bidsOpen ? "is-active" : ""}${bidsDue.unsentToday ? " is-glow" : ""}`} data-hpd-smoke="fc-bids-open" data-glow={bidsDue.unsentToday ? "1" : undefined} aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span key={bidsDue.open} className={`fc-follow-badge hpd-pop ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}><CountUp value={bidsDue.open} /></span> : null}</button>,
             notices: (cls) => <button key="notices" type="button" className={`${cls} fc-notices-fab${followFilter === "notices" ? " is-active" : ""}${boardUrgent.length ? " is-urgent is-glow" : ""}`} data-hpd-smoke="fc-notices-open" data-glow={boardUrgent.length ? "1" : undefined} data-urgent={boardUrgent.length || undefined} aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen || noticeChooser} title="HPD notices: rejected paperwork and requests" onClick={() => {

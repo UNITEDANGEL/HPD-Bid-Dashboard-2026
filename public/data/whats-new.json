@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Nov 19, 2026",
+      "title": "Jobs number right away · Plan card up to date",
+      "items": [
+        "🔢 Jobs number right away: when you open the app, the Jobs button no longer flashes a big wrong number (like 533) before the real one; it shows only the real count.",
+        "📋 Plan card up to date: ideas that were already built are off the list; next on the plan are same-block jobs together, a week view and a second look before a bid goes out."
+      ]
+    },
+    {
+      "date": "Nov 19, 2026",
       "title": "Joy-Ann's 24 / 72-hour notices are back on the board",
       "items": [
         "📬 Notices stay until really answered: your thank-you reply to Joy-Ann's list had her list quoted underneath, and the app thought you had answered all 18 notices. It now reads only your own words, so those 18 are back on the board."
