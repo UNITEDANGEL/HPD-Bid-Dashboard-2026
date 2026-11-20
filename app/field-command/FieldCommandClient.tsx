@@ -3451,6 +3451,9 @@ export default function FieldCommandClient() {
   const clockRow = new Map<string, BoardRow>();
   for (const r of boardRows) {
     if (r.kind !== "ppn" || !r.next || r.steps.sent.done || !r.dueAt) continue;
+    // Closed / sent by any other signal (20 Nov, owner: "I closed our two notices, the map still counts the time"): the owner's
+    // close, HPD closing the job, paperwork on record after the notice, or a newer-or-same notice of the job already sent.
+    if ((handledMap[r.omo] && handledMap[r.omo] > r.noticeAt) || closedJobs.has(r.omo) || (r.sentAt && r.sentAt >= r.noticeAt.slice(0, 10)) || boardRows.some((x) => x.omo === r.omo && x.kind === "ppn" && (!x.next || x.steps.sent.done) && Date.parse(x.noticeAt) >= Date.parse(r.noticeAt))) continue;
     const had = clockRow.get(r.omo);
     if (!had || Date.parse(r.dueAt) < Date.parse(had.dueAt)) clockRow.set(r.omo, r);
   }
