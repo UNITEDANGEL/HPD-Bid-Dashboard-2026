@@ -15,6 +15,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 ## ✓ 20 Nov: one Claude, and a full worker package (owner: "duplicate Claudes ... we only have one Claude", "the package I send the worker is very important")
 1. ✅ One Claude on the phone: the middle mascot only. No side icon / strip on the map, no bottom text bar, no bubble that pops up at app open. Tap = Ask for a change with the cursor in the box; hold = talk to the AI. Test: test-browser-claude-side-icon.mjs.
 2. ✅ Worker package: 🚪 where the work is (apartment or public part, read from HPD's description), HPD's full description (no prices), tenant name + phone by default, Before / After photo spots always. Tests: test-work-where.mjs, test-browser-crew-share.mjs, test-browser-worker.mjs.
+3. ☐ Worker photos saved to Drive on the job card (owner: "save it in my Drive permanently in the Job card so we don't lose them"): photos the worker sends back are added to that job's Before / After and backed up to Drive.
+4. ☐ Claude's button shows the % of all open tasks and opens / closes as one small button (owner, 20 Nov).
 
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
 - 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.
