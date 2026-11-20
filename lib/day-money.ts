@@ -13,10 +13,14 @@ export function mondayOf(day: string) {
   return d.toISOString().slice(0, 10);
 }
 
+export const CLOSED = new Set(["WORK_COMPLETED", "PARTIAL_WORK", "REFUSED_ACCESS", "WORK_COMPLETED_BY_OTHERS"]);
+
 export function dayMoney(jobs: MoneyJob[], now = new Date()) {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(now);
   const monday = mondayOf(today);
-  const done = jobs.filter((j) => (j.outcome === "WORK_COMPLETED" || j.outcome === "PARTIAL_WORK") && Number(j.amount) > 0 && nyDay(j.doneAt));
+  // 20 Nov (owner: "today's payment count is not showing all closed jobs"): refused access and completed by others are
+  // closed jobs too (closed with an affidavit); doneAt = when the job was closed in the app.
+  const done = jobs.filter((j) => CLOSED.has(j.outcome) && Number(j.amount) > 0 && nyDay(j.doneAt));
   const todayJobs = done.filter((j) => nyDay(j.doneAt) === today);
   const weekJobs = done.filter((j) => { const d = nyDay(j.doneAt); return d >= monday && d <= today; });
   const sum = (xs: MoneyJob[]) => Math.round(xs.reduce((a, j) => a + Number(j.amount), 0));
@@ -26,7 +30,7 @@ export function dayMoney(jobs: MoneyJob[], now = new Date()) {
 export const dollars = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
 export function dayMoneyAnswer(m: ReturnType<typeof dayMoney>) {
-  if (!m.weekJobs.length) return "💵 No jobs finished this week yet. When you save Work completed on a job, its award amount counts here.";
+  if (!m.weekJobs.length) return "💵 No jobs closed this week yet. When you close a job (work completed, partial, refused access or done by others), its award amount counts here.";
   const lines = m.todayJobs.slice(0, 6).map((j) => `• ${j.id}${j.address ? ` · ${j.address.replace(/,\s*\d{5}$/, "")}` : ""}: ${dollars(j.amount)}`);
-  return `💵 ${m.today ? `${dollars(m.today)} earned today (${m.todayJobs.length} job${m.todayJobs.length === 1 ? "" : "s"} finished)` : "Nothing finished today yet"}; ${dollars(m.week)} this week (${m.weekJobs.length} job${m.weekJobs.length === 1 ? "" : "s"}).${lines.length ? `\n${lines.join("\n")}` : ""}\nHPD pays after the paperwork is approved.`;
+  return `💵 ${m.today ? `${dollars(m.today)} earned today (${m.todayJobs.length} job${m.todayJobs.length === 1 ? "" : "s"} closed)` : "No job closed today yet"}; ${dollars(m.week)} this week (${m.weekJobs.length} job${m.weekJobs.length === 1 ? "" : "s"}).${lines.length ? `\n${lines.join("\n")}` : ""}\nHPD pays after the paperwork is approved.`;
 }

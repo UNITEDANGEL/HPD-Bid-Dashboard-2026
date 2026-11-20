@@ -30,16 +30,19 @@ try {
     const m = /\$\s?([\d,]+)(?:\.\d+)?/.exec(await page.locator("#fc-job-card").textContent());
     if (m) amounts[id] = Number(m[1].replace(/,/g, ""));
     await page.locator(".fc-job-sheet-close").click();
-    if (Object.keys(amounts).length >= 2) break;
+    if (Object.keys(amounts).length >= 3) break;
   }
-  const [a, b] = Object.keys(amounts);
-  assert.ok(a && b, "two jobs with an award");
-  await page.evaluate(({ a, b }) => {
+  const [a, b, c] = Object.keys(amounts);
+  assert.ok(a && b && c, "three jobs with an award");
+  await page.evaluate(({ a, b, c }) => {
     localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({
       [a]: { FieldOutcome: "WORK_COMPLETED", ActualWorkCompletionDate: "2026-11-11T17:00:00.000Z" },
       [b]: { FieldOutcome: "WORK_COMPLETED", ActualWorkCompletionDate: "2026-11-09T15:00:00.000Z" },
+      // 20 Nov (owner: "today's payment count is not showing all closed jobs"): refused access closed today counts too,
+      // dated by when it was closed in the app.
+      [c]: { FieldOutcome: "REFUSED_ACCESS", FieldVisitHistory: [{ recordedAt: "2026-11-11T18:30:00.000Z", outcome: "REFUSED_ACCESS", note: "" }] },
     }));
-  }, { a, b });
+  }, { a, b, c });
   await page.reload({ waitUntil: "load" });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
@@ -47,16 +50,17 @@ try {
   await chip.waitFor({ timeout: 20000 });
   await page.clock.runFor(3000);
   const money = (n) => `$${n.toLocaleString("en-US")}`;
+  const today = amounts[a] + amounts[c];
   const label = await chip.getAttribute("aria-label");
-  assert.equal(label, `Earned ${money(amounts[a])} today, ${money(amounts[a] + amounts[b])} this week. Tap for the jobs`);
-  assert.match(await chip.textContent(), new RegExp(`^💵\\${money(amounts[a])}today · \\${money(amounts[a] + amounts[b])} week$`));
+  assert.equal(label, `Earned ${money(today)} today, ${money(today + amounts[b])} this week. Tap for the jobs`);
+  assert.match(await chip.textContent(), new RegExp(`^💵\\${money(today)}today \\(2 closed\\) · \\${money(today + amounts[b])} week$`));
   await chip.click();
   await page.waitForFunction(() => /earned today/.test(document.querySelector('[data-hpd-smoke="fc-agent-reply"]')?.textContent || ""), null, { timeout: 10000 });
   const reply = await page.locator('[data-hpd-smoke="fc-agent-reply"]').textContent();
-  assert.ok(reply.includes(`💵 ${money(amounts[a])} earned today (1 job finished); ${money(amounts[a] + amounts[b])} this week (2 jobs).`), reply);
-  assert.ok(reply.includes(a));
+  assert.ok(reply.includes(`💵 ${money(today)} earned today (2 jobs closed); ${money(today + amounts[b])} this week (3 jobs).`), reply);
+  assert.ok(reply.includes(a) && reply.includes(c));
   assert.deepEqual(errors, []);
-  console.log("PASS day money: the chip shows today's and this week's money from finished jobs; tap lists today's job");
+  console.log("PASS day money: refused access closed today counts (2 closed on the chip); the chip shows today's and this week's money from finished jobs; tap lists today's job");
 } finally {
   await browser.close();
 }

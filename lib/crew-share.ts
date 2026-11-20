@@ -36,8 +36,10 @@ export function workFull(desc: string): string {
 const phone = (p: string) => { const d = String(p || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, ""); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : p; };
 const mapsLink = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, NY`)}`;
 
-export function crewText(j: CrewJob) {
-  const out = [`HPD job ${j.id}`, `📍 ${j.address.replace(/,\s*\d{5}$/, "")}${j.apt ? `, apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : ""}`];
+// 20 Nov (owner: "I opened the job card, it takes me to navigation; it should take me to the real job card"): the job card
+// link comes right under the job number (the phone opens the first link of a message), and no map link (the card has Navigate).
+export function crewText(j: CrewJob, cardLink = "") {
+  const out = [`HPD job ${j.id}`, ...(cardLink ? [`👷 Open your job card (photos, call, navigate): ${cardLink}`] : []), `📍 ${j.address.replace(/,\s*\d{5}$/, "")}${j.apt ? `, apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : ""}`];
   if (j.where) out.push(`🚪 Where: ${j.where}`);
   if (j.completeBy) out.push(`Finish by ${j.completeBy}`);
   if (j.work.length) out.push("", "The work:", ...j.work.slice(0, 10).map((w) => `• ${w}`));
@@ -46,6 +48,6 @@ export function crewText(j: CrewJob) {
   out.push("", `📸 Photos HPD needs: ${missing.length ? missing.join(", ") : "all taken already"}. Same spot before and after, lights on.`);
   if (j.contact) out.push("", `🏢 Building: ${j.contact.name} ${phone(j.contact.phone)}${j.contact.note ? ` (${j.contact.note})` : ""}`);
   if (j.tenant && (j.tenant.name || j.tenant.phone)) out.push(`🔔 Tenant: ${[j.tenant.name, j.tenant.phone ? phone(j.tenant.phone) : ""].filter(Boolean).join(" ")}`);
-  out.push("", `Map: ${mapsLink(j.address)}`);
+  if (!cardLink) out.push("", `Map: ${mapsLink(j.address)}`);
   return out.join("\n");
 }

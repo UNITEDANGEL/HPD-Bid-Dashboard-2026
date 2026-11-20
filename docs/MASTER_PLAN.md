@@ -15,8 +15,12 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 ## ✓ 20 Nov: one Claude, and a full worker package (owner: "duplicate Claudes ... we only have one Claude", "the package I send the worker is very important")
 1. ✅ One Claude on the phone: the middle mascot only. No side icon / strip on the map, no bottom text bar, no bubble that pops up at app open. Tap = Ask for a change with the cursor in the box; hold = talk to the AI. Test: test-browser-claude-side-icon.mjs.
 2. ✅ Worker package: 🚪 where the work is (apartment or public part, read from HPD's description), HPD's full description (no prices), tenant name + phone by default, Before / After photo spots always. Tests: test-work-where.mjs, test-browser-crew-share.mjs, test-browser-worker.mjs.
-3. ☐ Worker photos saved to Drive on the job card (owner: "save it in my Drive permanently in the Job card so we don't lose them"): photos the worker sends back are added to that job's Before / After and backed up to Drive.
-4. ☐ Claude's button shows the % of all open tasks and opens / closes as one small button (owner, 20 Nov).
+3. ✅ Worker photos saved to Drive on the job card (owner: "save it in my Drive permanently in the Job card so we don't lose them"): photos the worker sends back are added to that job's Before / After and backed up to Drive. Done: job card 📥 Photos from your worker (Add Before / Add After; the worker page's names sort them), saved with saveFieldPhotos and backed up by DriveAutoBackup to HPD Photo Backup / <job>. Test: test-browser-crew-share.mjs.
+4. ✅ Claude's button shows the % of all open tasks and opens / closes as one small button (owner, 20 Nov). Done: % chip on the middle Claude (requests of the last 24 h + open ones; Done = 100, else steps done); tap = small list with each %, ✏️ Ask for a change; tap again or any tap inside closes it. Test: test-browser-claude-side-icon.mjs.
+5. ✅ Worker message opens the job card (owner: "it takes me to navigation, it should take me to the real job card"): the worker card link is line 2 of the message, the map link is gone (the card has Navigate). Test: test-browser-crew-share.mjs.
+6. ✅ Today's money counts every job closed today (owner: "today payment count is not showing all closed jobs"): refused access and completed by others count; the day = when the outcome was saved in the app; the chip shows "(N closed)". Tests: test-day-money.mjs, test-browser-day-money.mjs.
+7. ☐ Better Claude mascot (owner, 20 Nov): hard hat by default and a gold United Angel halo.
+8. ☐ Jobs pulse on the map as you get close, with the heads up Start this job / I'm just passing (owner, 20 Nov).
 
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
 - 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.

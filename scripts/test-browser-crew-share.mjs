@@ -28,11 +28,12 @@ try {
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
   const t1 = await page.evaluate(() => window.__shared.text);
-  assert.match(t1, new RegExp(`^HPD job ${JOB}\\n📍 1207 1 AVENUE`));
+  // 20 Nov: the job card link comes first (the phone opens the first link), no map link (the card has Navigate).
+  assert.match(t1, new RegExp(`^HPD job ${JOB}\\n👷 Open your job card \\(photos, call, navigate\\): https?://\\S+/worker/#j=[A-Za-z0-9_-]+\\n📍 1207 1 AVENUE`));
   assert.match(t1, /\nThe work:\n• /);
   assert.match(t1, /📸 Photos HPD needs: before photos, before video, after photos, after video\./);
   assert.match(t1, /🏢 Building: Super Jose \(212\) 555-0147 \(basement door\)/);
-  assert.match(t1, /Map: https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/);
+  assert.ok(!/Map: https:/.test(t1), "no map link to tap by mistake");
   // 20 Nov: the tenant's name and phone go in by default; HPD's full description and where the work is too.
   if (tenantPhone) assert.ok(t1.replace(/\D/g, "").includes(tenantPhone), "tenant phone by default");
   assert.match(t1, /🔔 Tenant: /);
@@ -50,8 +51,17 @@ try {
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
   const t2 = await page.evaluate(() => window.__shared.text);
   assert.ok(!/Tenant:/.test(t2) && (!tenantPhone || !t2.replace(/\D/g, "").includes(tenantPhone)), "no tenant when unticked");
+  // 📥 The worker's photos back into the job card: named Before / After by the worker's page, sorted by their name
+  // (even from the After button), saved on the job (backed up to Drive by itself).
+  const jpg = await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 320; c.height = 240; const g = c.getContext("2d"); for (let i = 0; i < 40; i++) { g.fillStyle = `hsl(${i * 9},70%,${40 + (i % 5) * 8}%)`; g.fillRect((i * 37) % 320, (i * 23) % 240, 60, 40); } return c.toDataURL("image/jpeg", 0.9).split(",")[1]; });
+  const buf = Buffer.from(jpg, "base64");
+  const chooser = page.waitForEvent("filechooser");
+  await page.locator('[data-hpd-smoke="jc-crew-in-after"]').click();
+  await (await chooser).setFiles([{ name: `${JOB}-Before-photos-1.jpg`, mimeType: "image/jpeg", buffer: buf }, { name: `${JOB}-After-photos-1.jpg`, mimeType: "image/jpeg", buffer: buf }, { name: "IMG_0001.jpg", mimeType: "image/jpeg", buffer: buf }]);
+  await page.waitForFunction(() => /Saved on job/.test(document.querySelector('[data-hpd-smoke="jc-crew-msg"]')?.textContent || ""), null, { timeout: 20000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /1 before \+ 2 after\. They go to your Drive \(HPD Photo Backup \/ EQ15239\)/);
   assert.deepEqual(errors, []);
-  console.log("PASS crew share: job, address, the work, photos still needed, the super, map link; the tenant by default (untick leaves it out), where the work is, HPD's full description, before/after spots");
+  console.log("PASS crew share: worker photos come back into the job card (Before / After by name), job, address, the work, photos still needed, the super, map link; the tenant by default (untick leaves it out), where the work is, HPD's full description, before/after spots");
 } finally {
   await browser.close();
 }

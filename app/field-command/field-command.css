@@ -3971,6 +3971,20 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-claude-orb.is-working .fc-ai-orb-core::before { animation-duration: 1.2s; background: conic-gradient(from 0deg, transparent 0 50%, rgba(134,239,172,.95) 75%, rgba(253,224,71,.95) 90%, transparent 100%); }
 .fc-claude-orb.is-ask .fc-ai-orb-core { background: radial-gradient(circle at 30% 25%, #fde68a 0%, #f59e0b 55%, #b45309 100%); }
 .fc-claude-orb-badge { position: absolute; top: -6px; right: -8px; font-size: 15px; line-height: 1; filter: drop-shadow(0 1px 2px #000a); }
+/* 20 Nov: % of Claude's tasks on the middle button; tap = a small list above it, tap again = closed. */
+.fc-dock .fc-claude-pct { position: absolute; left: calc(50% + 20px); bottom: calc(100% + 18px); z-index: 4; pointer-events: auto; min-width: 44px; min-height: 28px; padding: 2px 8px; border: 2px solid #0b1220; border-radius: 14px; background: #7c3aed; color: #fff; font: 900 14px/20px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+.fc-dock .fc-claude-pct.is-working { background: #16a34a; }
+.fc-dock .fc-claude-pct.is-ask { background: #f59e0b; color: #1c1917; }
+.fc-dock .fc-claude-pct i { font-style: normal; margin-left: 3px; font-size: 11px; }
+.fc-dock .fc-claude-tasks { position: absolute; left: 50%; bottom: calc(100% + 54px); transform: translateX(-50%); width: min(360px, calc(100vw - 24px)); box-sizing: border-box; z-index: 5; pointer-events: auto; padding: 12px; border-radius: 16px; background: #fff; color: #0f172a; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.45); font-family: system-ui, sans-serif; }
+.fc-claude-tasks-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 16px; }
+.fc-claude-tasks-head button { min-width: 44px; min-height: 36px; border: 0; border-radius: 10px; background: #ede9fe; color: #5b21b6; font-size: 18px; }
+.fc-claude-tasks-bar { display: block; height: 8px; margin: 8px 0; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
+.fc-claude-tasks-bar i { display: block; height: 100%; background: #16a34a; }
+.fc-claude-tasks ul { list-style: none; margin: 0; padding: 0; max-height: 40vh; overflow-y: auto; }
+.fc-claude-tasks li button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 6px 4px; border: 0; border-bottom: 1px solid #e2e8f0; background: none; color: inherit; font: 700 14px/1.3 system-ui, sans-serif; text-align: left; }
+.fc-claude-tasks li em { flex: none; font-style: normal; font-weight: 900; color: #15803d; }
+.fc-claude-tasks-ask { width: 100%; min-height: 46px; margin-top: 10px; border: 0; border-radius: 12px; background: #7c3aed; color: #fff; font: 800 16px system-ui, sans-serif; }
 
 /* 💡 Ideas from Claude (3 Nov) */
 .fc-ideas { display: grid; gap: 8px; margin-bottom: 14px; padding: 12px; border-radius: 14px; border: 2px solid #f59e0b; background: #1c1405; color: #fff; }
@@ -5151,3 +5165,9 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-onsite-x { flex: 0 0 auto; display: grid; place-items: center; min-width: 54px; padding: 4px 8px; border-radius: 16px; border: 2px solid #f59e0b; background: #1c1917f2; color: #fff; font: 900 16px system-ui; }
 .fc-onsite-x small { font: 800 11px system-ui; color: #fde68a; }
 .fc-map-hints .fc-claude-side-icon { position: relative; top: auto; left: auto; pointer-events: auto; align-self: flex-start; }
+/* 20 Nov: 📥 photos from your worker on the job card */
+.jc-crew-in { display: grid; gap: 6px; margin-top: 10px; padding: 10px; border-radius: 12px; background: rgba(37, 211, 102, 0.1); border: 1px solid rgba(37, 211, 102, 0.35); }
+.jc-crew-in b { font-size: 16px; }
+.jc-crew-in small { font-size: 14px; opacity: 0.8; }
+.jc-crew-in span { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.jc-crew-in span .jc-email { margin: 0; min-height: 44px; }

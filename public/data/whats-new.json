@@ -5,6 +5,10 @@
       "date": "Nov 20, 2026",
       "title": "Notices on the map with time left · every job on a notice email",
       "items": [
+        "✓ Send to a worker: the job card link is now the first thing in the message, so tapping it opens his job card (not the map). The card has a Navigate button.",
+        "✓ Today's money chip counts every job you closed today, refused access too, and shows how many: \"$X today (3 closed)\".",
+        "✓ Claude's % on the middle button: a small chip shows how much of your requests is done. Tap it for the list (each one with its %), tap again to close it.",
+        "✓ Photos from your worker: on the job card under Send to a worker, tap 📥 Add Before or 📥 Add After and pick the photos he sent. They are saved on the job and backed up to your Drive by themselves.",
         "✓ Only one Claude now: the face in the middle of the bottom bar. No Claude icon or strip on the map, no text bar at the bottom, and no bubble popping up when you open the app.",
         "✓ Tap Claude: Ask for a change opens with the cursor in the box. Hold Claude to talk to the AI (or All → Talk to the AI).",
         "✓ Send to a worker: the package now has where the work is (inside the apartment or a public hallway), HPD's full description, the tenant's name and phone (untick to leave out), and Before / After photo spots he fills from his camera and sends back to you.",

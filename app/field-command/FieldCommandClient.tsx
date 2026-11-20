@@ -1773,6 +1773,9 @@ export default function FieldCommandClient() {
   // 💬 Talk to Claude from the live card (3 Nov): a few taps ("Stop", "Do this first", "Looks good") or your own words.
   // With a request open it goes to that request; Claude reads it within about a minute (scripts/claude-now.mjs --inbox).
   const [claudeTalk, setClaudeTalk] = useState(false);
+  // 20 Nov (owner: "only one Claude, it should give me a percentage of all the tasks, and expand and contract into a small
+  // little button, the same button in the middle next to Bids"): a % chip on the middle Claude; tap it = today's tasks, tap again = closed.
+  const [claudeTasksOpen, setClaudeTasksOpen] = useState(false);
   const [claudeTalkText, setClaudeTalkText] = useState("");
   const [claudeTalkSent, setClaudeTalkSent] = useState("");
   const claudeNowRef = useRef(false);
@@ -2775,6 +2778,10 @@ export default function FieldCommandClient() {
   const [clearJobId, setClearJobId] = useState("");
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  // 📥 The worker's photos back into the job card (owner, 20 Nov: "save it in my Drive permanently in the Job card so we
+  // don't lose them"): saved on the job like your own (Before / After) and backed up to Drive "HPD Photo Backup / <job>" by itself.
+  const workerInputRef = useRef<HTMLInputElement | null>(null);
+  const workerKindRef = useRef<"before" | "after">("before");
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const videoCameraInputRef = useRef<HTMLInputElement | null>(null);
   const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
@@ -5308,7 +5315,15 @@ export default function FieldCommandClient() {
     return minutes === null ? [] : [{ building: buildingKey(jobAddress(j)), kind: kindOfWork(jobScope(j)), minutes }];
   }), [jobs]);
   // 💵 Today's money (idea list): finished jobs' award amounts today and this week, in the chip at the top.
-  const moneyNow = useMemo(() => dayMoney(jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ id: jobId(j), address: jobAddress(j), amount: Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, outcome: String(value(j, ["FieldOutcome", "fieldOutcome"]) || ""), doneAt: String(value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || "") }))), [jobs, calendarDate]);
+  // 20 Nov (owner: "today's payment count is not showing all closed jobs"): the day a job was closed = when its outcome was
+  // saved in the app (the last visit entry with that outcome); else the work completion date / last visit.
+  const closedAt = (j: (typeof jobs)[number]) => {
+    const outcome = String(value(j, ["FieldOutcome", "fieldOutcome"]) || "");
+    const history = (Array.isArray(j.FieldVisitHistory) ? j.FieldVisitHistory : []) as { recordedAt?: string; outcome?: string | null }[];
+    const saved = [...history].reverse().find((h) => outcome && h?.outcome === outcome && h.recordedAt);
+    return String(saved?.recordedAt || value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || "");
+  };
+  const moneyNow = useMemo(() => dayMoney(jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ id: jobId(j), address: jobAddress(j), amount: Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, outcome: String(value(j, ["FieldOutcome", "fieldOutcome"]) || ""), doneAt: closedAt(j) }))), [jobs, calendarDate]); // eslint-disable-line react-hooks/exhaustive-deps
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
     const point = jobLatLng(job); if (!point || isTestJob(jobId(job))) return [];
     const learned = learnedMinutes({ building: buildingKey(jobAddress(job)), kind: kindOfWork(jobScope(job)) }, timedVisits);
@@ -5722,6 +5737,28 @@ export default function FieldCommandClient() {
     else if (source === "camera") cameraInputRef.current?.click();
     else mediaInputRef.current?.click();
     setMediaChoice(null);
+  }
+
+  // A photo the worker's page named "<job>-After-photos-1.jpg" goes to After even from the Before button, and the other way.
+  async function handleWorkerFiles(files: FileList | null) {
+    if (!selectedJob || !files?.length) return;
+    const id = jobId(selectedJob);
+    const all = Array.from(files);
+    const kindOf = (f: File): "before" | "after" => /after/i.test(f.name) ? "after" : /before/i.test(f.name) ? "before" : workerKindRef.current;
+    const got = { before: 0, after: 0 };
+    setCrewMsg("Saving your worker's photos…");
+    try {
+      for (const kind of ["before", "after"] as const) {
+        const group = all.filter((f) => kindOf(f) === kind);
+        if (!group.length) continue;
+        const saved = await saveFieldPhotos(id, kind, group, { jobId: id, address: jobAddress(selectedJob), location: jobAddress(selectedJob), borough: String(jobBorough(selectedJob)), outcome: workflowStamps[id]?.status || jobStatus(selectedJob), label: kind === "before" ? "Before Work Evidence" : "After Work Evidence" });
+        got[kind] = saved.length;
+      }
+      await refreshMediaCounts(selectedJob);
+      setCrewMsg(`✓ Saved on job ${id}: ${[got.before ? `${got.before} before` : "", got.after ? `${got.after} after` : ""].filter(Boolean).join(" + ")}. They go to your Drive (HPD Photo Backup / ${id}) by themselves.`);
+    } catch {
+      setCrewMsg("Couldn't save the photos on this phone. Try again.");
+    }
   }
 
   async function handleMediaFiles(files: FileList | null) {
@@ -8140,6 +8177,33 @@ export default function FieldCommandClient() {
                       onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to ask Claude, hold to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); if (orbOpensAsk()) { goTo("requests", ""); return; } setAgentFromDock(true); startAgentChat(true); }}>
                       <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : wonToday ? "proud" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">{asks} question{asks === 1 ? "" : "s"}</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label" data-hpd-smoke="fc-claude-label">{mode === "working" || claudePct !== null ? `Working${claudePct !== null ? ` ${claudePct}%` : ""}` : "Claude"}</span>{sideCount && !asks ? <b className="fc-claude-orb-count" data-hpd-smoke="fc-claude-orb-count" aria-label={`${sideCount} new`}>{sideCount}</b> : null}
                     </button>
+                    {(() => {
+                      // % of Claude's tasks: requests from the last 24 h plus any still open (7 days); Done = 100, else steps done.
+                      const recent = (changeThreads || []).filter((x) => (x.status !== "Done" && Date.now() - Date.parse(x.at) < 7 * 86400000) || Date.now() - Date.parse(x.at) < 86400000);
+                      if (!oneClaude || !recent.length || bidsOpen || selectedJob || routeOpen || moreOpen) return null;
+                      const part = (x: ChangeThread) => x.status === "Done" ? 100 : x.steps.length ? Math.round((x.steps.filter((y) => y.done).length / x.steps.length) * 100) : 0;
+                      const pctAll = Math.round(recent.reduce((n, x) => n + part(x), 0) / recent.length);
+                      const doneN = recent.filter((x) => x.status === "Done").length;
+                      const go = (id: string) => { setClaudeTasksOpen(false); goTo("requests", id); };
+                      return (<>
+                        <button type="button" className={`fc-claude-pct is-${mode}`} data-hpd-smoke="fc-claude-pct" aria-expanded={claudeTasksOpen} aria-label={`Claude: ${pctAll}% of ${recent.length} tasks done. Tap to ${claudeTasksOpen ? "close" : "see them"}`} onClick={() => setClaudeTasksOpen((o) => !o)}>{pctAll}%<i aria-hidden="true">{claudeTasksOpen ? "▾" : "▴"}</i></button>
+                        {claudeTasksOpen ? (
+                          <div className="fc-claude-tasks" data-hpd-smoke="fc-claude-tasks" role="dialog" aria-label="Claude's tasks">
+                            <b className="fc-claude-tasks-head">🤖 Claude · {doneN} of {recent.length} done · {pctAll}%<button type="button" aria-label="Close" data-hpd-smoke="fc-claude-tasks-close" onClick={() => setClaudeTasksOpen(false)}>▾</button></b>
+                            <span className="fc-claude-tasks-bar" aria-hidden="true"><i style={{ width: `${pctAll}%` }} /></span>
+                            <ul>
+                              {recent.slice().sort((p, q) => (p.status === "Done" ? 1 : 0) - (q.status === "Done" ? 1 : 0) || q.at.localeCompare(p.at)).slice(0, 6).map((x) => (
+                                <li key={x.id}><button type="button" data-hpd-smoke="fc-claude-task" onClick={() => go(x.id)}>
+                                  <span>{x.status === "Done" ? "✅" : x.status === "Waiting for you" ? "❓" : x.workingAt && Date.now() - Date.parse(x.workingAt) < 30 * 60000 ? "🔨" : "⏳"} {x.text.replace(/^\((said to the helper|from the chat|idea|auto upgrade|plan)\)\s*/i, "").slice(0, 54)}</span>
+                                  <em>{part(x)}%</em>
+                                </button></li>
+                              ))}
+                            </ul>
+                            <button type="button" className="fc-claude-tasks-ask" data-hpd-smoke="fc-claude-tasks-ask" onClick={() => go("")}>✏️ Ask for a change</button>
+                          </div>
+                        ) : null}
+                      </>);
+                    })()}
                     {orbSay && !oneClaude && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
                     ) : null}
@@ -8268,7 +8332,7 @@ export default function FieldCommandClient() {
               ) : null}
               {moneyNow.week > 0 ? (
                 <button type="button" className="fc-money-chip" data-hpd-smoke="fc-money-chip" aria-label={`Earned ${dollars(moneyNow.today)} today, ${dollars(moneyNow.week)} this week. Tap for the jobs`} onClick={() => { unlockChime(); agentRef.current("how much did I make today"); }}>
-                  <span aria-hidden="true">💵</span><b>{moneyNow.today ? <>$<CountUp value={moneyNow.today} format={(n) => Math.round(n).toLocaleString("en-US")} /></> : "$0"}</b><small>today · {dollars(moneyNow.week)} week</small>
+                  <span aria-hidden="true">💵</span><b>{moneyNow.today ? <>$<CountUp value={moneyNow.today} format={(n) => Math.round(n).toLocaleString("en-US")} /></> : "$0"}</b><small>today{moneyNow.todayJobs.length ? ` (${moneyNow.todayJobs.length} closed)` : ""} · {dollars(moneyNow.week)} week</small>
                 </button>
               ) : null}
               {papersDue.length ? (
@@ -9251,7 +9315,7 @@ export default function FieldCommandClient() {
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
                       const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
-                      const text = crewText(crewJob) + `\n\nWorker view (job card, call, navigate, photos): ${workerLink(window.location.origin, crewJob)}`;
+                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob));
                       const nav = navigator as Navigator & { share?: (d: { title: string; text: string }) => Promise<void> };
                       if (nav.share) { try { await nav.share({ title: `HPD job ${id}`, text }); setCrewMsg("Sent to your worker's app."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
@@ -9263,12 +9327,19 @@ export default function FieldCommandClient() {
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
                       const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
-                      const text = crewText(crewJob) + `
-
-Worker view (job card, call, navigate, add photos): ${workerLink(window.location.origin, crewJob)}`;
+                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob));
                       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
                       setCrewMsg("WhatsApp opened: pick your worker and tap send.");
                     }}>💬 Send on WhatsApp</button>
+                    <div className="jc-crew-in" data-hpd-smoke="jc-crew-in">
+                      <b>📥 Photos from your worker</b>
+                      <small>Saved on this job and backed up to your Drive by themselves.</small>
+                      <span>
+                        <button type="button" className="jc-email" data-hpd-smoke="jc-crew-in-before" onClick={() => { workerKindRef.current = "before"; workerInputRef.current?.click(); }}>📥 Add Before</button>
+                        <button type="button" className="jc-email" data-hpd-smoke="jc-crew-in-after" onClick={() => { workerKindRef.current = "after"; workerInputRef.current?.click(); }}>📥 Add After</button>
+                      </span>
+                      <input ref={workerInputRef} type="file" accept="image/*" multiple hidden data-hpd-smoke="jc-crew-in-file" onChange={(e) => { const f = e.target.files; void handleWorkerFiles(f).finally(() => { e.target.value = ""; }); }} />
+                    </div>
                     <label className="jc-crew-tenant"><input type="checkbox" checked={crewTenant} onChange={(e) => setCrewTenant(e.target.checked)} data-hpd-smoke="jc-crew-tenant" /> add the tenant&apos;s name and phone</label>
                     {crewMsg ? <small role="status" data-hpd-smoke="jc-crew-msg">{crewMsg}</small> : null}
                   </div>
