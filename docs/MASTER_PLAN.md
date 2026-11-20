@@ -22,12 +22,17 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
    payments had loaded. The number now waits for those. Test: test-browser-jobs-count-load.
 2. ✅ **Plan card up to date**: who to chase for money, why you lost a bid and today's money were already built, and
    12 ideas in 💡 Ideas were too (alert for a priced bid not faxed, skipped bids at the end, store stop, traffic on
-   the route...): taken off. Next on the plan: ✅ same-block jobs back to back on the route (item 3), ☐ a week view (jobs,
+   the route...): taken off. Next on the plan: ✅ same-block jobs back to back on the route (item 3), ✅ a week view (item 4) (jobs,
    appointments, bids due, notices for 7 days), ☐ a second look before a bid is sent.
 3. ✅ **Same-block jobs back to back** (plan): when Plan my day picks a stop, the other jobs in the same building or on
    the same block (within about 120 m) come right after it, most overdue first, so you park once. Before, a newer job
    on the same block could be left off a full day (8 stops) for a more overdue one across the neighborhood. Untangling
    the route keeps them together (lib/day-route.ts sameBlock / keepBlocksTogether). Test: test-day-route.
+4. ✅ **📅 Next 7 days** (plan): All → Next 7 days, one screen with each day from today: tenant appointments, bids due
+   (✓ when faxed), 24/72-hour notice deadlines and no-access 2nd tries, in time order; overdue notices and late 2nd
+   tries on today, first. A line at the top counts them. Tap a bid → Bids opens on it; a notice → the board; anything
+   else → the job card. (The helper's "plan my week" stays as it was.) lib/week-ahead.ts, WeekAhead.tsx. Tests:
+   test-week-ahead, test-browser-week-ahead.
 
 
 ## ⏭ 18 Nov: smoother bids, no questions back (owner's words)

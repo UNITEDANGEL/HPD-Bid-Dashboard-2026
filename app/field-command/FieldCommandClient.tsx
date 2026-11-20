@@ -109,6 +109,8 @@ import SentPaperworkLink from "./SentPaperwork";
 import AutopilotPanel from "./AutopilotPanel";
 import JobTracker, { type TrackerRow } from "./JobTracker";
 import PaymentWaits from "./PaymentWaits";
+import WeekAhead from "./WeekAhead";
+import { weekAhead, type WeekItem as WeekAheadItem } from "../../lib/week-ahead";
 import { paymentWaits, type PipJob } from "../../lib/pay-waiting";
 import { trackerStage } from "../../lib/job-tracker";
 import NotificationsPanel from "./NotificationsPanel";
@@ -1891,6 +1893,8 @@ export default function FieldCommandClient() {
   const [ideaDraft, setIdeaDraft] = useState({ title: "", why: "" });
   const [skippedOpen, setSkippedOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  // 📅 Next 7 days (plan, 19 Nov): All → Next 7 days.
+  const [weekOpen, setWeekOpen] = useState(false);
   useEffect(() => { try { setIdeaEdits(JSON.parse(localStorage.getItem("hpd-idea-edits") || "{}")); } catch { /* private mode */ } }, []);
   const withEdit = (x: Idea): Idea => (ideaEdits[x.id] ? { ...x, ...ideaEdits[x.id] } : x);
   const saveIdeaEdit = (id: string) => {
@@ -8102,6 +8106,7 @@ export default function FieldCommandClient() {
             const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
               // ☀️ The day's summary again (11 Nov): its only way back was the notices header, hidden since Notices opens the board.
               { key: "today", icon: "☀️", label: "Today's summary", info: "Notices, bids and money for today", go: () => { setMoreOpen(false); closeScreens("today"); setBoardWithMap(false); setSummaryToday(true); } },
+              { key: "week", icon: "📅", label: "Next 7 days", info: "Appointments, bids due, notices and 2nd tries, day by day", go: () => { setMoreOpen(false); closeScreens(); setWeekOpen(true); } },
               { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
               { key: "parking", icon: "🅿️", label: "Parking (street cleaning)", info: aspOffToday ? `No street cleaning today · ${aspOffToday}` : "Street cleaning rules today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
               { key: "year", icon: "📆", label: "Year and dates", info: "Which jobs show on the map", go: () => tap("fc-days-menu-btn") },
@@ -11080,6 +11085,21 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {weekOpen ? (() => {
+        // Built when it opens, from what the map already has: appointments on the jobs, today's invitations (Sent from
+        // the bid records on this phone), the notice board's deadlines and the no-access 2nd tries.
+        let recs: Record<string, { status?: string; bidDue?: string }> = {};
+        try { recs = JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}"); } catch { /* private mode */ }
+        const week = weekAhead({
+          today: calendarDate,
+          appointments: jobs.flatMap((job) => { const a = job.Appointment as Appointment | undefined; return a && a.date ? [{ omo: jobId(job), address: jobAddress(job), date: a.date, start: a.start, end: a.end, state: a.state }] : []; }),
+          bids: bidsListRef.current.filter((b) => b.omo).map((b) => ({ omo: String(b.omo), address: b.address || "", bidDue: b.bidDue, bidDueTime: b.bidDueTime, sent: ["sent", "confirmed"].includes(String(recs[String(b.omo)]?.status)) && recs[String(b.omo)]?.bidDue === b.bidDue })),
+          notices: boardRows.filter((r) => r.kind === "ppn" && r.hours).map((r) => ({ omo: r.omo, dueAt: r.dueAt, hours: r.hours, open: Boolean(r.next) && !r.steps.sent.done })),
+          secondTries: secondTryJobs.map((r) => ({ omo: jobId(r.job), address: jobAddress(r.job), dueDay: r.second.dueDay })),
+        });
+        const open = (item: WeekAheadItem) => { setWeekOpen(false); goTo(item.kind === "bid" ? "bids" : item.kind === "notice" ? "board" : "job", item.omo); };
+        return <WeekAhead week={week} onClose={() => setWeekOpen(false)} onOpen={open} />;
+      })() : null}
       {summary ? (
         <div className="fc-package-sheet fc-summary-sheet" role="dialog" aria-label="Today's summary" data-hpd-smoke="fc-summary-sheet">
           <header>

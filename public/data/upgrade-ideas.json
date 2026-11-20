@@ -234,13 +234,6 @@
       "why": "Every past job at this address with its photos and notes, one tap from the job card."
     },
     {
-      "id": "week-view",
-      "icon": "📅",
-      "kind": "new",
-      "title": "Week view",
-      "why": "Jobs, appointments, bids due and notices for the next 7 days on one screen."
-    },
-    {
       "id": "invoice-check",
       "icon": "🧾",
       "kind": "upgrade",
@@ -549,14 +542,8 @@
   ],
   "plan": {
     "id": "2026-11-19-a",
-    "title": "Next on the plan: a week view and a second look before a bid goes out",
+    "title": "Next on the plan: a second look before a bid goes out",
     "items": [
-      {
-        "id": "week-view",
-        "icon": "📅",
-        "title": "Week view",
-        "why": "Jobs, appointments, bids due and notices for the next 7 days on one screen."
-      },
       {
         "id": "bid-recheck",
         "icon": "🔎",

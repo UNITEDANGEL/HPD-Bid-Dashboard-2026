@@ -79,6 +79,7 @@ jobs:
           node scripts/test-field-ticket.cjs
           node scripts/test-appointments.cjs
           node scripts/test-day-route.cjs
+          node scripts/test-week-ahead.cjs
           node scripts/test-current-job.cjs
           node scripts/test-planner-location.cjs
           node scripts/test-building-photo.cjs
@@ -351,6 +352,7 @@ jobs:
             scripts/test-browser-paperwork.mjs \
             scripts/test-browser-map-zoom.mjs \
             scripts/test-browser-jobs-count-load.mjs \
+            scripts/test-browser-week-ahead.mjs \
             scripts/test-browser-affidavit-flow.mjs \
             scripts/test-browser-worker.mjs \
             scripts/test-browser-stats.mjs \
