@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T20:02:01.001019+00:00",
+"generatedAt": "2026-11-20T20:14:16.181355+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -21441,6 +21441,14 @@
 "file": "SIGNED - ER01150 - Work Completed.pdf",
 "outcome": "work_completed",
 "subject": "SIGNED - ER01150 - Work Completed - 209 EAST 34 STREET, 11203"
+},
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-08-05-15-57-41.mp4",
+"outcome": "",
+"subject": "OMO No: ER01150 Boro: Brooklyn Bldg Address: 209, EAST 34 STREET",
+"via": "hpd-staff"
 }
 ],
 "ER01531": [
