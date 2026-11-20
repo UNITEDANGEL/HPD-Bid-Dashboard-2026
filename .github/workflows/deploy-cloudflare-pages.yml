@@ -193,6 +193,7 @@ jobs:
           node scripts/test-ai-draft.mjs
           node scripts/test-photo-ai.mjs
           node scripts/test-claude-now.mjs
+          node scripts/test-claude-seen.mjs
           node scripts/test-photo-check.cjs
           node scripts/test-photo-look.cjs
           node scripts/test-helper-look.cjs

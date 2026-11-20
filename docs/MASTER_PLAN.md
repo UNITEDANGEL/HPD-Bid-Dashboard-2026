@@ -12,6 +12,19 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✓ 20 Nov: faster answers from phone to Claude (owner: "what else make a better faster response from my phone to Claude")
+
+Measured the last 30 requests: first answer took 5 min at best, 50 min to 17 h when several were sent together or Claude was busy
+(Thu 19 Nov notice request: 68 min). Causes: one request at a time, "busy" = wait, and no sign the request was seen.
+1. ✅ **Seen ✓ in about 20 s**: the request watcher (every 20 s) and the working chat session (every 30 s) answer a new request
+   right away with what Claude is on and its place in line. scripts/claude-seen.mjs. Test: test-claude-seen.mjs.
+2. ✅ **No waiting behind another request**: the auto run takes any request no one is working on, even while the chat session
+   works on another (before, any green light made it wait up to 30 min).
+3. ✅ **Quick ones first, small ones together**: questions and "look at the email" get answered before a build; several small
+   app changes ship in one build / test / push instead of a 15-minute cycle each (auto task instructions).
+4. ☐ Claude while the computer is off: a cloud routine so requests are answered with the office PC off (needs the owner to turn
+   it on in Claude; offered 2 Nov).
+
 ## 🚨 20 Nov: every job on a notice email gets its own notice (owner: "are the notices included, especially the 24 hr and 72 hr I received a few days ago" / "it says 0 from Lewis, that is not true")
 
 1. ✅ **One notice email, many jobs**: Lewis's 18 Nov "24 HR & 72 HR POOR PERFORMANCE NOTICES" names 18 jobs (4 × 24 h, 14 × 72 h);

@@ -70,7 +70,7 @@ try {
   await page.locator('[data-hpd-smoke="paperwork-correction-save"]').click();
   await page.locator('[data-hpd-smoke="paperwork-correction-saved"]').waitFor({ timeout: 10000 });
   assert.match(await page.locator('[data-hpd-smoke="paperwork-correction-saved"]').innerText(), /fixed folder/);
-  await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
+  await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" }); await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 }); await page.waitForTimeout(1500); /* let the map settle (and any restored Notices view open) before tapping Notices, or the tap closes it again */
   if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */ await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-tab-print"]').click();
   await page.locator('[data-hpd-smoke="fc-to-print-row"]', { hasText: OMO }).waitFor({ timeout: 15000 });

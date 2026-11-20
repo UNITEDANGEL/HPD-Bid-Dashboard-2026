@@ -2,7 +2,7 @@
 // progress counter (steps, done / total), "Claude is working on this now", and dated progress notes, stored next
 // to the request on the status server (CHANGE-REPLY-<same id>). No tenant names / phones: the server isn't private.
 //     node scripts/reply-change-request.mjs --list
-//     node scripts/reply-change-request.mjs --check     (BUSY / OPEN <n> / NONE)
+//     node scripts/reply-change-request.mjs --check     (OPEN <n> free to take / BUSY / NONE; new ones get "Seen ✓" right away)
 //     node scripts/reply-change-request.mjs --wait 9    (waits up to 9 minutes for a new request, looking every 20 s)
 //     node scripts/reply-change-request.mjs --id <id> --status "Working on it" --working --steps "Read the emails|Check each OMO|Build it|Test|Push" --update "..."
 //     node scripts/reply-change-request.mjs --id <id> --done 2 --update "..."      (step 2 done; --done all = every step)
@@ -14,6 +14,7 @@
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { claudeAlert } from "./claude-alert.mjs";
+import { postSeen, workingOn } from "./claude-seen.mjs";
 
 const URL_ = /HPD_STATUS_WORKER_URL = "([^"]+)"/.exec(fs.readFileSync(new URL("../lib/paperwork.ts", import.meta.url), "utf8"))[1];
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : ""; };
@@ -27,6 +28,9 @@ const requests = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUES
 const lastAt = (list) => (Array.isArray(list) ? list.map((x) => x?.at || "").sort().slice(-1)[0] : "") || "";
 const answeredSince = (o, id) => lastAt(o[`CHANGE-ANSWER-${id}`]?.answers) > lastAt(o[`CHANGE-REPLY-${id}`]?.updates);
 const openOnes = (o) => Object.keys(o).filter((k) => k.startsWith("CHANGE-REQUEST-")).filter((k) => answeredSince(o, k.slice(15)) || !["Done", "Waiting for you"].includes(o[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received"));
+// Free = open and no one is working on it right now (20 Nov: a request no longer waits while Claude works on another one;
+// the chat session and the auto run each take a different one).
+const freeOnes = (o) => openOnes(o).filter((k) => !workingOn(o, k.slice(15)));
 const busyNow = (o) => Object.entries(o).some(([k, v]) => k.startsWith("CHANGE-REPLY-") && v?.workingAt && Date.now() - Date.parse(v.workingAt) < 30 * 60000);
 
 // "Claude is on" for the app (owner, 2 Nov: "do I have to leave Claude open?"): every check and every wait writes the
@@ -45,8 +49,9 @@ const heartbeat = async () => {
 
 if (flag("check")) {
   await heartbeat();
-  const open = openOnes(all);
-  console.log(busyNow(all) ? "BUSY" : open.length ? `OPEN ${open.length}` : "NONE");
+  await postSeen(URL_, all);
+  const free = freeOnes(all);
+  console.log(free.length ? `OPEN ${free.length}` : busyNow(all) ? "BUSY" : "NONE");
   process.exit(0);
 }
 // Wait up to <minutes> (max 9, so one command fits the tool time limit), looking every 20 seconds; returns as soon
@@ -56,8 +61,9 @@ if (flag("wait")) {
   const until = Date.now() + Math.min(9, Number(arg("wait")) || 9) * 60000;
   let o = all;
   for (;;) {
-    const open = openOnes(o);
-    if (open.length && !busyNow(o)) { console.log(`OPEN ${open.length}`); process.exit(0); }
+    await postSeen(URL_, o);
+    const free = freeOnes(o);
+    if (free.length) { console.log(`OPEN ${free.length}`); process.exit(0); }
     if (Date.now() + 20000 > until) { console.log("NONE"); process.exit(0); }
     await new Promise((r) => setTimeout(r, 20000));
     try { o = await load(); } catch { /* try again next time */ }
@@ -69,7 +75,7 @@ if (flag("list")) {
     const r = all[`CHANGE-REPLY-${id}`];
     const steps = r?.steps || [];
     const answers = (all[`CHANGE-ANSWER-${id}`]?.answers || []).slice(-3).map((a) => `\n   <- owner's answer (${a.at.slice(0, 16)}): ${a.text}`).join("");
-    console.log(`${id} | ${v.text}${answers}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}${all[`CHANGE-ANSWER-${id}`]?.ok ? "\n   👍 owner checked it: works" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
+    console.log(`${id} | ${v.text}${answers}${workingOn(all, id) && r?.status !== "Done" ? "\n   🔧 someone is working on it right now: leave it" : ""}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}${all[`CHANGE-ANSWER-${id}`]?.ok ? "\n   👍 owner checked it: works" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
   }
   process.exit(0);
 }

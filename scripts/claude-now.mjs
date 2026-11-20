@@ -127,6 +127,8 @@ async function inbox() {
     clearTimeout(t);
   } catch { return; }
   const notes = ownerNotes(all, since);
+  // ✓ Seen right away, even while this session is busy with something else (20 Nov).
+  try { await (await import("./claude-seen.mjs")).postSeen(URL_, all); } catch { /* next time */ }
   if (!notes.length) return;
   store({ ...load(), inboxSince: notes[notes.length - 1].at });
   const text = `📱 The owner just wrote in the HPD app:\n${notes.map((n) => `- ${n.text}`).join("\n")}\nRead it and act on it now (answer with scripts/reply-change-request.mjs). If you take a new request, mark it --working so the auto task leaves it to you.`;
