@@ -42,11 +42,14 @@ export const HELPER_HATS: Record<HelperHat, string> = { none: "No hat", hardhat:
 
 const KEY = "hpd-helper-look";
 const EVENT = "hpd-helper-look";
-const DEFAULT: HelperLook = { color: "purple", hat: "none", skin: "medium", hair: "black", name: "", style: "cartoon" };
+// 20 Nov (owner: "I want a better icon mascot for the Claude"): the construction mascot wears the hard hat by default.
+const DEFAULT: HelperLook = { color: "purple", hat: "hardhat", skin: "medium", hair: "black", name: "", style: "cartoon" };
 
 export function getHelperLook(): HelperLook {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
+    // Once (20 Nov): a look saved before the mascot had a hard hat gets it; a pick made after that stays.
+    if (v && !v.m2) { if (v.hat === "none") v.hat = "hardhat"; v.m2 = 1; try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode */ } }
     return { color: v?.color in HELPER_COLORS ? v.color : DEFAULT.color, hat: v?.hat in HELPER_HATS ? v.hat : DEFAULT.hat,
       skin: v?.skin in HELPER_SKINS ? v.skin : DEFAULT.skin, hair: v?.hair in HELPER_HAIRS ? v.hair : DEFAULT.hair, name: String(v?.name || "").replace(/[^\p{L}\p{N} '-]/gu, "").slice(0, 20), style: v?.style in HELPER_STYLES ? v.style : DEFAULT.style };
   } catch { return DEFAULT; }
@@ -54,7 +57,7 @@ export function getHelperLook(): HelperLook {
 
 export function setHelperLook(patch: Partial<HelperLook>) {
   const next = { ...getHelperLook(), ...patch };
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode */ }
+  try { localStorage.setItem(KEY, JSON.stringify({ ...next, m2: 1 })); } catch { /* private mode */ }
   window.dispatchEvent(new Event(EVENT));
   return next;
 }

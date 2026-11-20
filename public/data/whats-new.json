@@ -5,6 +5,7 @@
       "date": "Nov 20, 2026",
       "title": "Notices on the map with time left · every job on a notice email",
       "items": [
+        "✓ New Claude mascot: a shiny hard hat and a gold United Angel halo over it. Change his look any time with 🎨.",
         "✓ Send to a worker: the job card link is now the first thing in the message, so tapping it opens his job card (not the map). The card has a Navigate button.",
         "✓ Today's money chip counts every job you closed today, refused access too, and shows how many: \"$X today (3 closed)\".",
         "✓ Claude's % on the middle button: a small chip shows how much of your requests is done. Tap it for the list (each one with its %), tap again to close it.",

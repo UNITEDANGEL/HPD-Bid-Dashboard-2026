@@ -19,7 +19,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 4. ✅ Claude's button shows the % of all open tasks and opens / closes as one small button (owner, 20 Nov). Done: % chip on the middle Claude (requests of the last 24 h + open ones; Done = 100, else steps done); tap = small list with each %, ✏️ Ask for a change; tap again or any tap inside closes it. Test: test-browser-claude-side-icon.mjs.
 5. ✅ Worker message opens the job card (owner: "it takes me to navigation, it should take me to the real job card"): the worker card link is line 2 of the message, the map link is gone (the card has Navigate). Test: test-browser-crew-share.mjs.
 6. ✅ Today's money counts every job closed today (owner: "today payment count is not showing all closed jobs"): refused access and completed by others count; the day = when the outcome was saved in the app; the chip shows "(N closed)". Tests: test-day-money.mjs, test-browser-day-money.mjs.
-7. ☐ Better Claude mascot (owner, 20 Nov): hard hat by default and a gold United Angel halo.
+7. ✅ Better Claude mascot (owner, 20 Nov): hard hat by default (a look saved before gets it once; a pick after stays) with a shine and a blue badge, and a gold United Angel halo floating over it. Test: test-browser-claude-side-icon.mjs.
 8. ☐ Jobs pulse on the map as you get close, with the heads up Start this job / I'm just passing (owner, 20 Nov).
 
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")

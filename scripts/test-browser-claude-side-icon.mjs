@@ -36,6 +36,9 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-orb-say"]').count(), 0, "no bubble pops up by itself");
   assert.equal(await orb.count(), 1, "one Claude button");
   assert.equal(await orb.getAttribute("data-mode"), "working", "the middle Claude shows it is working");
+  // The United Angel mascot (owner, 20 Nov: "a better icon mascot"): hard hat by default, gold halo over it.
+  assert.equal(await orb.locator('[data-hpd-smoke="fc-face"]').getAttribute("data-hat"), "hardhat", "mascot wears the hard hat");
+  assert.equal(await orb.locator('[data-hpd-smoke="fc-face-halo"]').count(), 1, "gold halo over the hard hat");
   // The % of Claude's tasks sits on the middle button; tap = the small list, tap again = closed.
   const pct = page.locator('[data-hpd-smoke="fc-claude-pct"]');
   await pct.waitFor({ state: "visible", timeout: 30000 });

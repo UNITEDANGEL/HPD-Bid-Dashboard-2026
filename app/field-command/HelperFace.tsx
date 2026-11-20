@@ -150,15 +150,21 @@ export default function HelperFace({ mode = "idle", size = 34, className = "", l
           <line x1="16.8" y1="16.2" x2="21.4" y2="17.6" />
           <line x1="31.2" y1="16.2" x2="26.6" y2="17.6" />
         </g>
-        {dress.hat === "hardhat" ? <g className="fc-face-hat">
-          <path d="M11.8 15.6 Q24 0.5 36.2 15.6 Z" fill="#facc15" stroke="#ca8a04" strokeWidth="1.2" />
-          <rect x="22.5" y="5" width="3" height="10" rx="1.5" fill="#eab308" />
-          <rect x="8.5" y="14.2" width="31" height="3.2" rx="1.6" fill="#eab308" stroke="#ca8a04" strokeWidth="0.8" />
+        {/* ⛑ The United Angel mascot (owner, 20 Nov: "a better icon mascot"): a shiny hard hat with the company's
+            gold angel halo floating over it. */}
+        {dress.hat === "hardhat" ? <g className="fc-face-hat" data-hpd-smoke="fc-face-hardhat">
+          <path d="M11.4 15.8 Q11.6 2.2 24 1.8 Q36.4 2.2 36.6 15.8 Z" fill="#fbbf24" stroke="#b45309" strokeWidth="1" />
+          <path d="M21.6 2.4 Q24 1.6 26.4 2.4 L26 15.4 L22 15.4 Z" fill="#f59e0b" />
+          <path d="M14.6 12.6 Q15.4 5.4 21 3.6" stroke="#fff7d6" strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.85" />
+          <path d="M7.6 15.2 Q24 12.4 40.4 15.2 L40 17.8 Q24 15.6 8 17.8 Z" fill="#f59e0b" stroke="#b45309" strokeWidth="0.8" />
+          <circle cx="24" cy="9.4" r="2.6" fill="#1e3a8a" stroke="#fff" strokeWidth="0.6" />
+          <path d="M22.7 9.6 L24 8 L25.3 9.6 M23.2 10.4 H24.8" stroke="#fde68a" strokeWidth="0.6" fill="none" strokeLinecap="round" />
         </g> : dress.hat === "cap" ? <g className="fc-face-hat">
           <path d="M12.2 15.6 Q24 3 35.8 15.6 Z" fill="#1d4ed8" stroke="#1e3a8a" strokeWidth="1.2" />
           <path d="M28 14.4 L42 15.6 L41 18 L28 16.8 Z" fill="#1e40af" />
           <circle cx="24" cy="6.6" r="1.4" fill="#93c5fd" />
         </g> : null}
+        {dress.hat === "hardhat" && outfit !== "party" && outfit !== "pajamas" && mode !== "off" ? <ellipse className="fc-face-halo" data-hpd-smoke="fc-face-halo" cx="24" cy="-1.6" rx="8.2" ry="2" fill="none" stroke="#fde047" strokeWidth="1.4" /> : null}
         {outfit === "winter" && dress.hat === "none" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M12.4 15.5 Q12.5 3.5 24 3.4 Q35.5 3.5 35.6 15.5 Z" fill="#dc2626" /><rect x="11.6" y="13.4" width="24.8" height="3.6" rx="1.8" fill="#b91c1c" /><circle cx="24" cy="3" r="2.2" fill="#fff" /></g> : null}
         {outfit === "sunglasses" || outfit === "summer" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><rect x="15.6" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><rect x="25" y="18.3" width="7.4" height="4.6" rx="2" fill="#0f172a" /><line x1="23" y1="19.6" x2="25" y2="19.6" stroke="#0f172a" strokeWidth="1.2" /></g> : null}
         {outfit === "party" ? <g className="fc-face-outfit" data-hpd-smoke="fc-face-outfit"><path d="M18 9.5 L24 -7 L30 9.5 Z" fill="#f472b6" stroke="#be185d" strokeWidth="1" /><circle cx="24" cy="-7" r="2.4" fill="#facc15" /><circle cx="22" cy="3.5" r="1.1" fill="#fff" /><circle cx="26" cy="0" r="1.1" fill="#fff" /></g> : null}
