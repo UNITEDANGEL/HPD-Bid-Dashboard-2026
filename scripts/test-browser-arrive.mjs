@@ -38,6 +38,9 @@ try {
   const ask = page.locator('[data-hpd-smoke="fc-arrive"]');
   await ask.waitFor({ timeout: 60000 });
   assert.match(await ask.innerText(), new RegExp(`${stop.OMO} · \\d+ ft away\\. Have you arrived\\?`));
+  // The job near you pulses on the map with how far it is (owner, 20 Nov: "as I'm getting closer to the job, they should pulse").
+  await page.waitForFunction((id) => [...document.querySelectorAll(".fc-label-marker.is-glow-near")].some((m) => (m.getAttribute("title") || "").startsWith(id) && /📍 \d+ ft/.test(m.textContent || "")), stop.OMO, { timeout: 20000 });
+  assert.match(await ask.locator('[data-hpd-smoke="fc-arrive-no"]').innerText(), /just passing/);
   if (shots) await page.screenshot({ path: `${shots}/arrive-ask.png` });
   await ask.locator('[data-hpd-smoke="fc-arrive-yes"]').click();
   // Yes opens the work order to read first (owner, 5 Nov: "mark that I arrived, then open the work order"); with a tenant

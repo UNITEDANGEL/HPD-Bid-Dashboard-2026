@@ -3288,6 +3288,12 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-label-marker.is-glow .fc-pin { animation: none !important; transform: scale(1.06); filter: drop-shadow(0 0 2px var(--glow, #f97316)) drop-shadow(0 0 5px var(--glow, #f97316)); }
 .fc-label-marker.is-glow-top { z-index: 2600 !important; }
 .fc-label-marker.is-glow-top .fc-pin { animation: fc-breathe 3.2s ease-in-out infinite !important; }
+/* 📍 A to-do job near you pulses (owner, 20 Nov: "as I'm getting closer to the job, they should pulse"). */
+.fc-label-marker.is-glow-near { z-index: 2700 !important; }
+.fc-label-marker.is-glow-near .fc-pin { --glow: #10b981; animation: fc-near-pulse 1.2s ease-in-out infinite !important; }
+.is-glow-near .fc-glow-tag { border-color: #10b981; background: #064e3b; }
+@keyframes fc-near-pulse { 0%, 100% { filter: drop-shadow(0 0 3px #10b981) drop-shadow(0 0 6px #10b981); transform: scale(1.1); } 50% { filter: drop-shadow(0 0 10px #10b981) drop-shadow(0 0 22px #10b981); transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .fc-label-marker.is-glow-near .fc-pin { animation: none !important; transform: scale(1.2); } }
 @keyframes fc-breathe { 0%, 100% { filter: drop-shadow(0 0 3px var(--glow, #ef4444)) drop-shadow(0 0 6px var(--glow, #ef4444)); transform: scale(1.12); } 50% { filter: drop-shadow(0 0 6px var(--glow, #ef4444)) drop-shadow(0 0 12px var(--glow, #ef4444)); transform: scale(1.2); } }
 .fc-pin.is-soon .fc-pin-head { animation: none !important; box-shadow: 0 0 0 3px #f59e0b; }
 .fc-appointment-pill.is-soon > button { animation: none !important; }

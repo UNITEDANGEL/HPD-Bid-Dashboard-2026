@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import "../ios-app.css";
-import { readWorkerHash, type WorkerJob } from "../../lib/worker-link";
+import { readWorkerHash, workerHashCut, type WorkerJob } from "../../lib/worker-link";
+import { workFull, workWhere } from "../../lib/crew-share";
+import { jobSummary, lineText } from "../../lib/job-summary";
 import { judgePhoto } from "../../lib/worker-photo-quality";
 
 const tel = (p: string) => `tel:${String(p).replace(/[^\d+]/g, "")}`;
@@ -15,12 +17,33 @@ export default function WorkerPage() {
   const [finished, setFinished] = useState(false);
   const [msg, setMsg] = useState("");
   const [files, setFiles] = useState<Record<string, File[]>>({});
+  const [cut, setCut] = useState(false);
+  const [lookup, setLookup] = useState<"" | "ok" | "missing">("");
 
   useEffect(() => {
     const j = readWorkerHash(window.location.hash);
     setJob(j);
+    setCut(workerHashCut(window.location.hash));
     setReady(true);
     if (j) { try { const s = JSON.parse(localStorage.getItem(key(j.id)) || "{}"); setDone(s.done || {}); setFinished(!!s.finished); } catch { /* private mode */ } }
+    // The short link has only the job number (+ apartment / tenant / super): the address, the work, where it is and HPD's
+    // full description come from the site's public job list (no tenant data there).
+    if (j && (!j.full || !j.address)) {
+      void fetch("/data/COA_Fetcher_2026.json").then((r) => r.json()).then((d) => {
+        const rows: Record<string, unknown>[] = Array.isArray(d) ? d : d?.jobs || [];
+        const row = rows.find((x) => String(x.OMO || "") === j.id);
+        if (!row) { if (!j.address) setLookup("missing"); return; }
+        const s = (k: string) => String(row[k] || "").trim();
+        const text = ["ItbPage3Description", "JobDescription", "Job_Description"].map(s).sort((a, b) => b.length - a.length)[0];
+        const full = workFull(text);
+        const apt = j.apt || s("ApartmentUnit") || s("ItbTenantApartment") || undefined;
+        const sum = jobSummary(text);
+        setJob((cur) => (cur && cur.id === j.id ? { ...cur, full: cur.full || full || undefined, address: cur.address || s("BuildingAddress") || s("Location"), apt: cur.apt || apt,
+          by: cur.by || s("WorkCompletionDate") || undefined, work: cur.work.length ? cur.work : sum.lines.map(lineText).slice(0, 8),
+          where: cur.where || workWhere(text, apt) || undefined } : cur));
+        setLookup("ok");
+      }).catch(() => { if (!j.address) setLookup("missing"); });
+    }
   }, []);
   function save(d: Record<string, boolean>, f: boolean) { setDone(d); setFinished(f); if (job) { try { localStorage.setItem(key(job.id), JSON.stringify({ done: d, finished: f })); } catch { /* private mode */ } } }
 
@@ -29,7 +52,9 @@ export default function WorkerPage() {
     <main className="ios-app" data-hpd-smoke="worker-empty">
       <div className="ios-statusbar-spacer" />
       <header className="ios-navbar"><h1 className="ios-large-title">Worker</h1></header>
-      <div className="ios-content"><p style={{ fontSize: 20, lineHeight: 1.4 }}>Open the link your boss sent you. It shows the job: the address, the work and the photos to take.</p></div>
+      <div className="ios-content">{cut
+        ? <p style={{ fontSize: 20, lineHeight: 1.4 }} data-hpd-smoke="worker-cut">⚠️ This link got cut off on the way, so the job can&apos;t show. Ask your boss to send it again.</p>
+        : <p style={{ fontSize: 20, lineHeight: 1.4 }}>Open the link your boss sent you. It shows the job: the address, the work and the photos to take.</p>}</div>
     </main>
   );
   const addr = `${job.address.replace(/,\s*\d{5}$/, "")}${job.apt ? `, apt ${job.apt.replace(/^apt\.?\s*/i, "")}` : ""}`;
@@ -41,7 +66,7 @@ export default function WorkerPage() {
       <div className="ios-statusbar-spacer" />
       <header className="ios-navbar"><span className="ios-navbar-eyebrow">Your job</span><h1 className="ios-large-title" data-hpd-smoke="worker-id">{job.id}</h1></header>
       <div className="ios-content" style={{ fontSize: 20, lineHeight: 1.45 }}>
-        <p data-hpd-smoke="worker-address"><strong>📍 {addr}</strong>{job.by ? <><br />Finish by {job.by}</> : null}</p>
+        <p data-hpd-smoke="worker-address"><strong>📍 {job.address ? addr : lookup === "missing" ? "Address not found: call your boss" : "Loading the job…"}</strong>{job.by ? <><br />Finish by {job.by}</> : null}</p>
         {job.where ? <p data-hpd-smoke="worker-where" style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(10,132,255,.12)", fontWeight: 700 }}>🚪 Where: {job.where}</p> : null}
         <a style={big} href={maps} data-hpd-smoke="worker-nav">🧭 Navigate</a>
         {job.contact ? <a style={{ ...big, background: "#30a14e" }} href={tel(job.contact.phone)} data-hpd-smoke="worker-call-super">📞 Call {job.contact.name}{job.contact.note ? ` (${job.contact.note})` : ""}</a> : null}

@@ -5,6 +5,10 @@
       "date": "Nov 20, 2026",
       "title": "Notices on the map with time left · every job on a notice email",
       "items": [
+        "✓ Jobs near you pulse: as you drive close to a job on your list (about a quarter mile), its pin pulses green on the map with how far it is (\"📍 300 ft\").",
+        "✓ Heads up at the job: the card now says ✅ Yes, start the job or 🚗 I'm just passing. Just passing stops that pin pulsing.",
+        "✓ Worker link fixed and short: the link you send on WhatsApp is now tiny (like …/worker/#o=ER08795&p=…), so it opens his job card whole. His page fills in the address, the work, where it is and HPD's full description by itself.",
+        "✓ Today's money counts every job you closed and sent for payment today: no access 2nd try, done by others and partial work too.",
         "✓ New Claude mascot: a shiny hard hat and a gold United Angel halo over it. Change his look any time with 🎨.",
         "✓ Send to a worker: the job card link is now the first thing in the message, so tapping it opens his job card (not the map). The card has a Navigate button.",
         "✓ Today's money chip counts every job you closed today, refused access too, and shows how many: \"$X today (3 closed)\".",

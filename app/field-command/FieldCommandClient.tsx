@@ -3529,6 +3529,9 @@ export default function FieldCommandClient() {
   // Earliest Priority item per job (24-hour before 72-hour before missing documents).
   const prioByOmo = new Map<string, PriorityItem>();
   for (const it of vendorTodo) if (!prioByOmo.has(it.omo)) prioByOmo.set(it.omo, it);
+  // 📍 Jobs near you pulse (owner, 20 Nov: "as I'm getting closer to the job, they should pulse"): to-do jobs within
+  // about a quarter mile of your phone pulse on the map with how far they are (nearest first, up to 3).
+  const [nearPins, setNearPins] = useState<{ omo: string; feet: number }[]>([]);
   const glow = new Map<string, { tag: string; cls: string }>();
   if (followFilter === "notices" && noticeKind) {
     for (const omo of noticeSets[noticeKind]) {
@@ -3553,6 +3556,11 @@ export default function FieldCommandClient() {
   // 👉 The job that needs you now glows on the map (27 Oct, "pulse on the pin that needs you"): the one the Next pill
   // (or the urgent notice) points at, when no notice filter is on.
   if (!glow.size && nextOmoRef.current && !selectedJob) glow.set(nextOmoRef.current, { tag: "👉 Next", cls: "is-glow is-glow-next is-glow-top" });
+  for (const n of nearPins) {
+    const g = glow.get(n.omo);
+    const far = n.feet < 1000 ? `${n.feet} ft` : `${(n.feet / 5280).toFixed(1)} mi`;
+    glow.set(n.omo, { tag: `📍 ${far}`, cls: `${g ? g.cls.replace(/ ?is-glow-top/, "") : "is-glow"} is-glow-near` });
+  }
   glowRef.current = glow;
   const glowKey = [...glow].map(([o, g]) => `${o}:${g.tag}:${g.cls}`).join("|");
   // Narrow the map to one kind; the picker stays so you can switch like the other filters.
@@ -4297,7 +4305,7 @@ export default function FieldCommandClient() {
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
                 // The notice tag only where there's room (10 Nov: "overlapping pins information"): close pins stay lit
                 // without piling their words on each other; zoom in and each gets its tag.
-                + (lit && (showLabel || /is-glow-24h/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : ""); // 24-hour notices always show their time (20 Nov)
+                + (lit && (showLabel || /is-glow-(24h|near)/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : ""); // 24-hour notices always show their time (20 Nov); a job near you its distance
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
@@ -4649,8 +4657,24 @@ export default function FieldCommandClient() {
   const doneEvening = () => { setEvening(false); try { localStorage.setItem("hpd-evening-shown", new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date())); } catch { /* private mode */ } };
   const doneMorning = () => { setMorning(false); try { localStorage.setItem("hpd-morning-shown", new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date())); } catch { /* private mode */ } };
   const askedArriveRef = useRef<Set<string>>(new Set());
+  // "I'm just passing" on the heads up: that job stops pulsing (until the app is opened again).
+  const passingRef = useRef<Set<string>>(new Set());
   const nearJobRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
   nearJobRef.current = (lat, lng, accuracy) => {
+    if (accuracy <= 150) {
+      const near: { omo: string; feet: number }[] = [];
+      for (const job of jobs) {
+        const id = jobId(job);
+        if (passingRef.current.has(id) || workflowStamps[id]?.arrived || value(job, ["FieldArrivedAt"]) || !["pending", "followup"].includes(jobQueue(job))) continue;
+        const at = jobLatLng(job);
+        if (!at) continue;
+        const feet = distanceMiles({ lat, lng }, at) * 5280;
+        if (feet <= 1320) near.push({ omo: id, feet: Math.max(10, Math.round(feet / 10) * 10) });
+      }
+      near.sort((a, b) => a.feet - b.feet);
+      const top = near.slice(0, 3);
+      setNearPins((cur) => (cur.map((x) => `${x.omo}:${x.feet}`).join() === top.map((x) => `${x.omo}:${x.feet}`).join() ? cur : top));
+    }
     if (selectedJob || arrivePrompt || accuracy > 150) return;
     const today = new Date().toDateString();
     const route = new Set(todayRouteIds());
@@ -5323,7 +5347,7 @@ export default function FieldCommandClient() {
     const saved = [...history].reverse().find((h) => outcome && h?.outcome === outcome && h.recordedAt);
     return String(saved?.recordedAt || value(j, ["ActualWorkCompletionDate", "LastFieldVisitAt", "lastFieldVisitAt"]) || "");
   };
-  const moneyNow = useMemo(() => dayMoney(jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ id: jobId(j), address: jobAddress(j), amount: Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, outcome: String(value(j, ["FieldOutcome", "fieldOutcome"]) || ""), doneAt: closedAt(j) }))), [jobs, calendarDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  const moneyNow = useMemo(() => dayMoney(jobs.filter((j) => !isTestJob(jobId(j))).map((j) => ({ id: jobId(j), address: jobAddress(j), amount: Number(String(value(j, ["AwardAmount"]) || "").replace(/[^0-9.]/g, "")) || 0, outcome: String(value(j, ["FieldOutcome", "fieldOutcome"]) || ""), doneAt: closedAt(j), sentAt: String(value(j, ["PackageEmailedAt", "packageEmailedAt"]) || ""), secondTryAt: String(value(j, ["NoAccessSecondAttemptAt", "noAccessSecondAttemptAt"]) || "") }))), [jobs, calendarDate]); // eslint-disable-line react-hooks/exhaustive-deps
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
     const point = jobLatLng(job); if (!point || isTestJob(jobId(job))) return [];
     const learned = learnedMinutes({ building: buildingKey(jobAddress(job)), kind: kindOfWork(jobScope(job)) }, timedVisits);
@@ -11071,7 +11095,7 @@ export default function FieldCommandClient() {
           <span>{arrivePrompt.id} · {arrivePrompt.feet} ft away. Have you arrived?</span>
           <div>
             <button type="button" className="is-yes" data-hpd-smoke="fc-arrive-yes" onClick={() => { const job = jobs.find((j) => jobId(j) === arrivePrompt.id); setArrivePrompt(null); if (job) { openIssueJob(job); markArrived(job); openWorkOrder(job, true); } }}>✅ Yes, start the job</button>
-            <button type="button" data-hpd-smoke="fc-arrive-no" onClick={() => setArrivePrompt(null)}>Not yet</button>
+            <button type="button" data-hpd-smoke="fc-arrive-no" onClick={() => { passingRef.current.add(arrivePrompt.id); setNearPins((cur) => cur.filter((x) => x.omo !== arrivePrompt.id)); setArrivePrompt(null); }}>🚗 I&apos;m just passing</button>
           </div>
         </div>
       ) : null}

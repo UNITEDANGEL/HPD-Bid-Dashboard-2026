@@ -42,6 +42,21 @@ try {
   const body = await page.locator("body").innerText();
   assert.ok(!/\b(bid|price|invoice|\$\d)/i.test(body), "no money words");
   assert.ok(!requests.some((u) => u.includes("EQ15239") || u.includes("Jose")), "job never sent to a server");
+  // 20 Nov (owner's screenshot from WhatsApp: an empty Worker page): a short link without HPD's description still shows
+  // it (read from the public job list by the job number), and a link cut on the way says so.
+  await page.goto(`${baseUrl}/worker/#o=EQ15239&t=Ana&p=7185550100`, { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await page.locator('[data-hpd-smoke="worker-job"]').waitFor({ timeout: 30000 });
+  await page.waitForFunction(() => /DRAINAGE/i.test(document.querySelector('[data-hpd-smoke="worker-full"]')?.textContent || ""), null, { timeout: 30000 });
+  assert.match(await page.locator('[data-hpd-smoke="worker-address"]').innerText(), /📍 \S.*\d/);
+  assert.ok((await page.locator('[data-hpd-smoke="worker-work"] li').count()) >= 1, "the work lines from HPD's description");
+  assert.equal(await page.locator('[data-hpd-smoke="worker-call-tenant"]').getAttribute("href"), "tel:7185550100");
+  assert.match(await page.locator('[data-hpd-smoke="worker-call-tenant"]').innerText(), /Ana/);
+  assert.equal(await page.locator('[data-hpd-smoke="worker-photo"]').count(), 2, "Before and After spots");
+  await page.goto(`${baseUrl}/worker/#j=${b64(JSON.stringify(job)).slice(0, 60)}`, { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await page.locator('[data-hpd-smoke="worker-cut"]').waitFor({ timeout: 30000 });
+  assert.ok(!requests.some((u) => u.includes("EQ15239") || u.includes("Jose")), "job never sent to a server");
   assert.deepEqual(errors, []);
   console.log("PASS worker view: job, navigate, call, photo ticks, done; nothing about bids or money; job stays in the link");
 } finally { await browser.close(); }

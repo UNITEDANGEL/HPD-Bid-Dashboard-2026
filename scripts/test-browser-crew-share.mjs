@@ -29,7 +29,7 @@ try {
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
   const t1 = await page.evaluate(() => window.__shared.text);
   // 20 Nov: the job card link comes first (the phone opens the first link), no map link (the card has Navigate).
-  assert.match(t1, new RegExp(`^HPD job ${JOB}\\n👷 Open your job card \\(photos, call, navigate\\): https?://\\S+/worker/#j=[A-Za-z0-9_-]+\\n📍 1207 1 AVENUE`));
+  assert.match(t1, new RegExp(`^HPD job ${JOB}\\n👷 Open your job card \\(photos, call, navigate\\): https?://\\S+/worker/#o=\\S+\\n📍 1207 1 AVENUE`));
   assert.match(t1, /\nThe work:\n• /);
   assert.match(t1, /📸 Photos HPD needs: before photos, before video, after photos, after video\./);
   assert.match(t1, /🏢 Building: Super Jose \(212\) 555-0147 \(basement door\)/);
@@ -39,10 +39,18 @@ try {
   assert.match(t1, /🔔 Tenant: /);
   assert.match(t1, /\nHPD's full description:\n\S/);
   if (/PUBLIC HAL|APT|APARTMENT|KITCHEN|BATHROOM|STAIR|ENTRANCE/i.test(job.JobDescription || "")) assert.match(t1, /\n🚪 Where: (Inside the apartment|Public part of the building)/);
-  const link = /\/worker\/#j=([A-Za-z0-9_-]+)/.exec(t1)[1];
-  const wj = JSON.parse(Buffer.from(link, "base64url").toString("utf8"));
-  assert.ok(wj.photos.some((p) => /before/i.test(p)) && wj.photos.some((p) => /after/i.test(p)), "before and after spots for the worker");
-  assert.ok(wj.full && wj.full.length > 10, "full description in the worker link");
+  // 20 Nov (owner: "the link is too long ... make it a smaller nicer link"): only the job number (+ apartment, tenant,
+  // super) is in the link; opening it shows the job with the address and HPD's full description.
+  const href = /https?:\/\/\S+\/worker\/#o=\S+/.exec(t1)[0];
+  assert.ok(href.length < 200, `worker link is short (${href.length}): ${href}`);
+  assert.ok(href.includes(`#o=${JOB}`), "job number in the link");
+  const wp = await page.context().newPage();
+  await wp.goto(href.replace(/^https?:\/\/[^/]+/, baseUrl), { waitUntil: "load" });
+  await wp.locator('[data-hpd-smoke="worker-job"]').waitFor({ timeout: 30000 });
+  await wp.waitForFunction(() => (document.querySelector('[data-hpd-smoke="worker-full"]')?.textContent || "").length > 30, null, { timeout: 30000 });
+  { const body = await wp.locator("body").innerText(); assert.ok(/Before photos/.test(body) && /After photos/.test(body), "before and after spots for the worker"); }
+  assert.doesNotMatch(await wp.locator('[data-hpd-smoke="worker-address"]').innerText(), /Loading|not found/);
+  await wp.close();
   assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /Sent to your worker/);
   // Untick the tenant: left out.
   await page.evaluate(() => { window.__shared = null; });
