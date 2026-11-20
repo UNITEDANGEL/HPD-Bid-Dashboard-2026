@@ -11,6 +11,7 @@ export type WeekItem = {
   text: string;   // one plain line
   done?: boolean; // a bid already faxed
   late?: boolean; // an overdue notice / 2nd try
+  since?: string; // a late 2nd try: the day it came due
 };
 export type WeekDay = { date: string; label: string; items: WeekItem[] };
 
@@ -75,9 +76,12 @@ export function weekAhead(input: WeekInput, days = 7): WeekDay[] {
   for (const s of input.secondTries) {
     if (!s.dueDay || s.dueDay > last) continue;
     const late = s.dueDay < today;
-    put(late ? today : s.dueDay, { kind: "secondtry", omo: s.omo, address: s.address, time: "", sort: late ? -0.5 : 23 * 60, late, text: late ? "2nd no-access try: due since " + dayLabel(s.dueDay, today) : "2nd no-access try can be done" });
+    // Late 2nd tries go at the end of today, oldest first (19 Nov, live: 12 from May-July sat above today's bids); the
+    // screen folds them into one line when there are more than 3.
+    const short = `${Number(s.dueDay.slice(5, 7))}/${Number(s.dueDay.slice(8, 10))}`;
+    put(late ? today : s.dueDay, { kind: "secondtry", omo: s.omo, address: s.address, time: "", sort: late ? 24 * 60 + 1 : 23 * 60, late, text: late ? `2nd no-access try: waiting since ${short}` : "2nd no-access try can be done", ...(late ? { since: s.dueDay } : {}) });
   }
-  for (const d of out) d.items.sort((a, b) => a.sort - b.sort || a.omo.localeCompare(b.omo));
+  for (const d of out) d.items.sort((a, b) => a.sort - b.sort || String(a.since || "").localeCompare(String(b.since || "")) || a.omo.localeCompare(b.omo));
   return out;
 }
 

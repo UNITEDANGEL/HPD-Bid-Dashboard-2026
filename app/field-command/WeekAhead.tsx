@@ -18,11 +18,25 @@ export default function WeekAhead({ week, onClose, onOpen }: { week: WeekDay[]; 
         {week.map((day) => (
           <section key={day.date} data-hpd-smoke="fc-week-day" data-date={day.date}>
             <h3>{day.label} <small>({day.items.length})</small></h3>
-            {day.items.length ? day.items.map((item, i) => (
-              <button type="button" key={`${item.kind}-${item.omo}-${i}`} className={`fc-week-item is-${item.kind}${item.done ? " is-done" : ""}${item.late ? " is-late" : ""}`} data-hpd-smoke="fc-week-item" data-kind={item.kind} data-omo={item.omo} onClick={() => onOpen(item)}>
-                <b>{ICON[item.kind]} {item.omo}</b> <span>{item.address}</span><small>{item.done ? "✓ " : ""}{item.text}</small>
-              </button>
-            )) : <p className="fc-week-none">Nothing booked or due.</p>}
+            {(() => {
+              const row = (item: WeekItem, i: number) => (
+                <button type="button" key={`${item.kind}-${item.omo}-${i}`} className={`fc-week-item is-${item.kind}${item.done ? " is-done" : ""}${item.late ? " is-late" : ""}`} data-hpd-smoke="fc-week-item" data-kind={item.kind} data-omo={item.omo} onClick={() => onOpen(item)}>
+                  <b>{ICON[item.kind]} {item.omo}</b> <span>{item.address}</span><small>{item.done ? "✓ " : ""}{item.text}</small>
+                </button>
+              );
+              if (!day.items.length) return <p className="fc-week-none">Nothing booked or due.</p>;
+              // More than 3 late 2nd tries: one folded line at the end, so today's bids and notices stay on top.
+              const waiting = day.items.filter((i) => i.kind === "secondtry" && i.late);
+              if (waiting.length <= 3) return day.items.map(row);
+              const first = waiting[0].since || "";
+              return <>
+                {day.items.filter((i) => !waiting.includes(i)).map(row)}
+                <details className="fc-week-fold" data-hpd-smoke="fc-week-fold">
+                  <summary>🔁 {waiting.length} second tries waiting{first ? ` (oldest since ${Number(first.slice(5, 7))}/${Number(first.slice(8, 10))})` : ""}</summary>
+                  {waiting.map(row)}
+                </details>
+              </>;
+            })()}
           </section>
         ))}
       </div>

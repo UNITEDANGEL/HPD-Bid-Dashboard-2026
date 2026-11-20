@@ -42,6 +42,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 6. ✅ **The AI knows the newest changes again** (found by the after-deploy test, af1d54a): asked about the app, the
    helper sent the AI only the newest 3 What's new entries; today's were 2 lines each, too few. It now sends up to 30
    lines from the newest entries. Test: test-browser-smart-ask.
+7. ✅ **Next 7 days, checked live**: with the real jobs, today opened with 12 second tries waiting since May-July above
+   today's bids. Late 2nd tries now go at the end of today, oldest first, folded into one line when there are more than
+   3 ("🔁 12 second tries waiting (oldest since 5/30)"). Test: test-week-ahead.
 
 
 ## ⏭ 18 Nov: smoother bids, no questions back (owner's words)

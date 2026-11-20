@@ -31,10 +31,11 @@ const week = weekAhead({
 assert.equal(week.length, 7);
 assert.deepEqual(week.map((d) => d.label).slice(0, 2), ['Today', 'Tomorrow']);
 assert.equal(week[2].label, 'Saturday, Nov 21');
-assert.deepEqual(week[0].items.map((i) => i.omo), ['EP1', 'EQ9', 'ER2', 'ER1'], 'today: overdue notice, late 2nd try, then bids by time');
+assert.deepEqual(week[0].items.map((i) => i.omo), ['EP1', 'ER2', 'ER1', 'EQ9'], 'today: overdue notice, bids by time, late 2nd tries at the end');
 assert.ok(week[0].items[0].late && /overdue/.test(week[0].items[0].text));
-assert.ok(week[0].items[2].done && /Bid sent/.test(week[0].items[2].text));
-assert.equal(week[0].items[3].text, 'Bid due 11:59 PM');
+assert.ok(week[0].items[1].done && /Bid sent/.test(week[0].items[1].text));
+assert.equal(week[0].items[3].text, '2nd no-access try: waiting since 11/16');
+assert.equal(week[0].items[2].text, 'Bid due 11:59 PM');
 assert.deepEqual(week[1].items.map((i) => [i.omo, i.text]), [['EQ2', 'Asked for 9:00 AM–11:00 AM'], ['EQ1', 'Appointment 2:00 PM–4:00 PM']]);
 assert.deepEqual(week[3].items.map((i) => i.omo), ['EP2']);
 assert.match(week[3].items[0].text, /^72-hour notice due 10:00 AM$/);
