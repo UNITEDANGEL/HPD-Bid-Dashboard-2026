@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
+import ScreenshotMarker from "./ScreenshotMarker";
 import TodayRoute from "./TodayRoute";
 import BidsMode, { type BidsChat } from "./BidsMode";
 import { fetchRoadRoute, rushLevel, trafficLevels, trafficRuns, type RoadRoute } from "../../lib/road-route";
@@ -1714,6 +1715,8 @@ export default function FieldCommandClient() {
   // phone; the next upgrade session reads them all (scripts/list-change-requests.mjs).
   const [changeText, setChangeText] = useState("");
   const [changeStatus, setChangeStatus] = useState("");
+  const [changeShot, setChangeShot] = useState("");
+  const [changeShotKey, setChangeShotKey] = useState(0);
   const [myRequests, setMyRequests] = useState<{ at: string; text: string }[]>([]);
   useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
   // Your requests with their answers (status + dated progress notes), from the status server: CHANGE-REQUEST-<id>
@@ -1961,9 +1964,10 @@ export default function FieldCommandClient() {
     const list = [{ at, text }, ...myRequests].slice(0, 50);
     setMyRequests(list);
     try { localStorage.setItem("hpd-change-requests", JSON.stringify(list)); } catch { /* private mode */ }
-    setChangeText("");
+    const shot = changeShot.startsWith("data:image/jpeg") && changeShot.length < 400000 ? changeShot : "";
+    setChangeText(""); setChangeShot(""); setChangeShotKey((k) => k + 1);
     try {
-      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: APP_VERSION } }) });
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: requestKey(at), patch: { at, text: text.slice(0, 2000), version: APP_VERSION, ...(shot ? { image: shot } : {}) } }) });
       setChangeStatus(r.ok ? `📥 Received. ${pickupLabel(claudeSeenAt)}; progress shows below, live.` : "Saved on this phone; it will be sent when the server answers.");
       if (r.ok) void loadChangeThreads();
     } catch { setChangeStatus("Saved on this phone (offline)."); }
@@ -9628,6 +9632,7 @@ export default function FieldCommandClient() {
             <section className="fc-ask-change" data-hpd-smoke="fc-ask-change">
               <h4>💡 Ask for a change</h4>
               <textarea rows={3} data-hpd-smoke="fc-ask-change-text" placeholder="What should be better? e.g. make the notice text bigger, add 15 days to the filter…" value={changeText} onChange={(e) => setChangeText(e.target.value)} />
+              <ScreenshotMarker key={changeShotKey} onChange={setChangeShot} />
               <button type="button" data-hpd-smoke="fc-ask-change-save" disabled={!changeText.trim()} onClick={() => void askForChange()}>Save my request</button>
               <button type="button" className="fc-broken-btn" data-hpd-smoke="fc-broken-send" onClick={() => { const n = changeText; void reportBroken(n).then((ok) => { if (ok) setChangeText(""); }); }}>🐞 Something&apos;s not working: send my last taps</button>
               {changeStatus ? <p className="fc-follow-note" data-hpd-smoke="fc-ask-change-status">{changeStatus}</p> : null}

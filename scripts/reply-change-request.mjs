@@ -74,8 +74,12 @@ if (flag("list")) {
     const id = k.slice("CHANGE-REQUEST-".length);
     const r = all[`CHANGE-REPLY-${id}`];
     const steps = r?.steps || [];
+    // 📷 A picture the owner attached (circled in red): saved to a file you can open with Read.
+    let shotNote = "";
+    if (typeof v.image === "string" && v.image.startsWith("data:image/jpeg;base64,")) { const p = `${process.env.TEMP || "/tmp"}/hpd-request-${id}.jpg`; (await import("node:fs")).writeFileSync(p, Buffer.from(v.image.split(",")[1], "base64")); shotNote = `
+   📷 picture attached: ${p} (open it with Read)`; }
     const answers = (all[`CHANGE-ANSWER-${id}`]?.answers || []).slice(-3).map((a) => `\n   <- owner's answer (${a.at.slice(0, 16)}): ${a.text}`).join("");
-    console.log(`${id} | ${v.text}${answers}${workingOn(all, id) && r?.status !== "Done" ? "\n   🔧 someone is working on it right now: leave it" : ""}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}${all[`CHANGE-ANSWER-${id}`]?.ok ? "\n   👍 owner checked it: works" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
+    console.log(`${id} | ${v.text}${shotNote}${answers}${workingOn(all, id) && r?.status !== "Done" ? "\n   🔧 someone is working on it right now: leave it" : ""}${answeredSince(all, id) ? "\n   !! answered after your last note: open again" : ""}${all[`CHANGE-ANSWER-${id}`]?.ok ? "\n   👍 owner checked it: works" : ""}\n   -> ${r ? `${r.status}${steps.length ? ` · ${steps.filter((s) => s.done).length}/${steps.length} steps` : ""} · ${r.updates?.length || 0} update(s)` : "NO REPLY YET"}`);
   }
   process.exit(0);
 }

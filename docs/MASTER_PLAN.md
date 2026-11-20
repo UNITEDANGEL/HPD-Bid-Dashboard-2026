@@ -12,6 +12,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✓ 20 Nov: Ask for a change takes a picture you can circle in red (owner: "upload an image ... highlight what I don't like")
+
 ## ✓ 20 Nov: Skip sends the job to the END of the fix line (owner: "if I skip a job it needs to go last... you keep bringing that job up")
 
 ## ✓ 20 Nov: faster answers from phone to Claude (owner: "what else make a better faster response from my phone to Claude")
