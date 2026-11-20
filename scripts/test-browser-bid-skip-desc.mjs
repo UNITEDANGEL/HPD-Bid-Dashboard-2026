@@ -31,8 +31,12 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-bid-pin").length > 0, null, { timeout: 60000 });
+  // The bids welcome can come in a moment after the list on a busy machine and cover it: wait for it, close it, then
+  // open the list again (the first-try failures in the flow check).
+  const later = page.locator('[data-hpd-smoke="fc-bids-welcome-later"]');
+  await later.waitFor({ timeout: 4000 }).then(() => later.click()).catch(() => {});
   await openBidList(page);
-  if (await page.locator('[data-hpd-smoke="fc-bids-welcome-later"]').count()) await page.locator('[data-hpd-smoke="fc-bids-welcome-later"]').click();
+  await page.locator('[data-hpd-smoke="fc-bid-row"]', { hasText: A.omo }).waitFor({ state: "visible", timeout: 15000 });
   const full = page.locator('[data-hpd-smoke="fc-itb-full"]');
   const sheetOmo = async () => (await page.locator('[data-hpd-smoke="fc-bid-sheet"] header strong').innerText()).trim();
   const skip = page.locator('[data-hpd-smoke="fc-itb-skip"]');

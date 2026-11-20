@@ -3,8 +3,9 @@
   "versions": [
     {
       "date": "Nov 19, 2026",
-      "title": "Next 7 days · Same-block jobs together · Jobs number right away",
+      "title": "Second look before sending · Next 7 days · Same-block jobs together",
       "items": [
+        "🔎 Second look: after your first tap on Send, the bid is read once more (job number, price on every page, a missing or extra zero, time left, price against recent winners) with ✓ or ⚠ on each line before your second tap sends it.",
         "📅 Next 7 days: All → Next 7 days shows each day's appointments, bids due, notice deadlines and second tries; tap one to open it.",
         "🏘 Same-block jobs together: Plan my day puts jobs in the same building or on the same block right after each other, so you park once.",
         "🔢 Jobs number right away: when you open the app, the Jobs button no longer flashes a big wrong number (like 533) before the real one; it shows only the real count.",

@@ -192,6 +192,13 @@ try {
   // 3. Send by fax (asks first), then HumbleFax confirms.
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Tap again to send the bid at \$1,250\.00 to HPD/, "first tap asks for a second");
+  // 🔎 Second look between the two taps (19 Nov): job number and price on the package, time left; ✓ per line.
+  const look = sheet.locator('[data-hpd-smoke="fc-bid-look"]');
+  await look.waitFor({ timeout: 5000 });
+  const lookText = (await look.innerText()).replace(/\s+/g, " ");
+  assert.match(lookText, new RegExp(`✓ Job number ${omo} on the package`), lookText);
+  assert.match(lookText, /✓ \$1,250 on page 1, page 2 and the work form/, lookText);
+  assert.match(lookText, /Due in .*: on time|before it's due/, lookText);
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await sheet.locator('[data-hpd-smoke="fc-bid-status"]').waitFor({ timeout: 20000 });
   assert.equal(dialogs.length, 0, "no confirm boxes");

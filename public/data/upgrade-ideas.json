@@ -290,13 +290,6 @@
       "why": "Before / after photos are lined up in pairs on the paperwork, so HPD reads them at a glance and rejects fewer packages."
     },
     {
-      "id": "bid-recheck",
-      "icon": "🔁",
-      "kind": "new",
-      "title": "Second look before a bid is sent",
-      "why": "The helper reads the finished bid once more (price, name, job number, date) and says \"all good\" or what looks off."
-    },
-    {
       "id": "slow-payers",
       "icon": "⏳",
       "kind": "new",
@@ -541,14 +534,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-19-a",
-    "title": "Next on the plan: a second look before a bid goes out",
+    "id": "2026-11-19-b",
+    "title": "Next on the plan: one-tap no-access proof, a Friday late list, and invoice check before sending",
     "items": [
       {
-        "id": "bid-recheck",
-        "icon": "🔎",
-        "title": "Second look before a bid is sent",
-        "why": "The helper reads the finished bid once more (price, name, job number, date) and says \"all good\" or what looks off."
+        "id": "tenant-no-show-log",
+        "icon": "🚪",
+        "title": "No-access proof in one tap",
+        "why": "When a tenant is not home, one tap saves the time, the door photo and the call tries for the no-access paperwork."
+      },
+      {
+        "id": "late-week",
+        "icon": "📋",
+        "title": "Friday late list",
+        "why": "Friday afternoon: the jobs that will be late next week so you can plan the route."
+      },
+      {
+        "id": "invoice-check",
+        "icon": "🧾",
+        "title": "Invoice check before sending",
+        "why": "Before the invoice goes out, the app checks the amount matches the award and the COA, and says what doesn't."
       }
     ]
   }

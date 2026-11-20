@@ -8,6 +8,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import SentBidStats from "./SentBidStats";
 import { priceHelp, readScope, winChance, whyPriceLine, type PricedJob, bestPrice } from "../../lib/bid-price";
+import { secondLook } from "../../lib/bid-second-look";
 import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, workLabel, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
@@ -1270,6 +1271,17 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
   const sentCount = mine.filter((r) => r.status !== "saved").length;
   const state = record ? faxState(record) : "saved";
   const reviewedSaved = filled && record && filled.omo === record.omo && filled.price === record.price && filled.previous === revisedFrom(record) ? filled : null;
+  // 🔎 Second look (plan, 19 Nov): between the two taps of Send, the finished bid read once more: job number, price on
+  // the package, a missing / extra zero, time left, and the price against recent winners. ✓ or ⚠ per line.
+  const look = (() => {
+    if (!armed.startsWith("send") || !selected || !record || !filled) return null;
+    const today = NY_DAY.format(new Date());
+    const [h, m] = NY_CLOCK.format(new Date()).split(":").map(Number);
+    const dayGap = Math.round((Date.parse(`${selected.bidDue}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86400000);
+    const minutesLeft = dayGap * 1440 + dueMinutes(selected.bidDueTime || "") - (h * 60 + m);
+    const enough = help && help.prices.length >= 5;
+    return secondLook({ omo: selected.omo, packageOmo: filled.omo, price: record.price, packagePrice: filled.price, previous: revisedFrom(record), minutesLeft, chance: enough ? winChance(help!, record.price) : null, best: enough ? bestWithFloor(help!, selFloor).price : null });
+  })();
   const nyNow = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(clock)).split(":").map(Number);
   const todayInfo = todaySummary(list, records, today, nyNow[0] * 60 + nyNow[1], new Date(clock), (b) => !!noBidOf(b));
   // Morning checklist: every invitation due today or tomorrow, its state and the best price (lib/bid-checklist.ts).
@@ -1959,6 +1971,12 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
                 <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}${busy === "Sending the fax…" ? " hpd-sending" : ""}${armed === "send" ? " is-armed" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send("main")}>
                   {busy === "Sending the fax…" ? <><span className="hpd-spin" aria-hidden="true" /> Sending the fax to HPD<span className="hpd-dots" /></> : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : <><span className="hpd-spin" aria-hidden="true" /> Fax going through · send again</>}
                 </button>
+                {look ? (
+                  <div className={`fc-bid-look${look.allGood ? " is-good" : " is-off"}`} data-hpd-smoke="fc-bid-look" role="status">
+                    <b>{look.allGood ? "🔎 Second look: all good" : "🔎 Second look: check before sending"}</b>
+                    <ul>{look.lines.map((l, i) => <li key={i} className={l.ok ? "is-ok" : "is-warn"} data-hpd-smoke="fc-bid-look-line">{l.ok ? "✓" : "⚠️"} {l.text}</li>)}</ul>
+                  </div>
+                ) : null}
                 {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
                 {reviewedSaved || (record && record.status !== "saved") ? <FaxTracker packageReady={!!reviewedSaved} sending={busy === "Sending the fax…"} state={step3Done || record?.status !== "saved" ? state : "saved"} sentAt={record?.sentAt} confirmedAt={record?.confirmedAt} faxTo={record?.faxTo} error={/^Not sent/.test(busy) ? busy : ""} /> : null}
                 {state === "failed" || state === "unconfirmed" ? (

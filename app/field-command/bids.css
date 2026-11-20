@@ -1033,3 +1033,11 @@ i.is-won { background: #16a34a; }
 .fc-itb-actions .fc-itb-price { flex: 1 1 60%; margin: 0; }
 .fc-itb-skip { flex: 1 1 40%; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #f8fafc; border-radius: 14px; background: #334155; color: #fff; font: 800 17px system-ui; padding: 4px 6px; }
 .fc-itb-skip small { font: 700 11px system-ui; color: #f1f5f9; line-height: 1.2; text-align: center; }
+
+/* 🔎 Second look before a bid goes out (19 Nov) */
+.fc-bid-look { margin: 8px 0; padding: 10px 12px; border-radius: 12px; border: 2px solid #16a34a; background: #f0fdf4; color: #14532d; }
+.fc-bid-look.is-off { border-color: #d97706; background: #fffbeb; color: #78350f; }
+.fc-bid-look b { display: block; font-size: 17px; margin-bottom: 4px; }
+.fc-bid-look ul { margin: 0; padding: 0; list-style: none; }
+.fc-bid-look li { font-size: 16px; line-height: 1.35; padding: 2px 0; }
+.fc-bid-look li.is-warn { font-weight: 800; }

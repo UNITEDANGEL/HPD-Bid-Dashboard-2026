@@ -6843,7 +6843,7 @@ export default function FieldCommandClient() {
               byMonth: st.byMonth.slice(0, 6).map((m) => ({ month: m.month, invitations: m.invitations, won: m.won, winRatePct: pct(m.winRate) })),
             };
           }).catch(() => null) : null,
-          appChanges: /\b(app|button|screen|where is|how do i|how can i|can i|does it|feature|setting|robot|claude|update|new)\b/i.test(cmd.question) ? await loadWhatsNew().then((v) => (Array.isArray(v) ? v.slice(0, 3).flatMap((x: { items?: string[] }) => x.items || []).slice(0, 30).map((t: string) => t.split(/(?<=[.!?])\s/)[0].slice(0, 160)) : [])).catch(() => []) : [],
+          appChanges: /\b(app|button|screen|where is|how do i|how can i|can i|does it|feature|setting|robot|claude|update|new)\b/i.test(cmd.question) ? await loadWhatsNew().then((v) => (Array.isArray(v) ? v.slice(0, 10).flatMap((x: { items?: string[] }) => x.items || []).slice(0, 30).map((t: string) => t.split(/(?<=[.!?])\s/)[0].slice(0, 160)) : [])).catch(() => []) : [],
           // 🧠 What you told it to remember (last 30), so answers use your own rules.
           myNotes: loadNotes().slice(-30).map((n) => ({ note: n.text, saved: String(n.at || "").slice(0, 10) })),
           // 📈 The last 3 months: bids sent (this phone), jobs won and money awarded (HPD's award dates), the win rate and

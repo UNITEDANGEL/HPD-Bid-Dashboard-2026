@@ -80,6 +80,7 @@ jobs:
           node scripts/test-appointments.cjs
           node scripts/test-day-route.cjs
           node scripts/test-week-ahead.cjs
+          node scripts/test-bid-second-look.cjs
           node scripts/test-current-job.cjs
           node scripts/test-planner-location.cjs
           node scripts/test-building-photo.cjs

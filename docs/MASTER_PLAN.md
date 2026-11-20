@@ -23,7 +23,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 2. ✅ **Plan card up to date**: who to chase for money, why you lost a bid and today's money were already built, and
    12 ideas in 💡 Ideas were too (alert for a priced bid not faxed, skipped bids at the end, store stop, traffic on
    the route...): taken off. Next on the plan: ✅ same-block jobs back to back on the route (item 3), ✅ a week view (item 4) (jobs,
-   appointments, bids due, notices for 7 days), ☐ a second look before a bid is sent.
+   appointments, bids due, notices for 7 days), ✅ a second look before a bid is sent (item 5).
 3. ✅ **Same-block jobs back to back** (plan): when Plan my day picks a stop, the other jobs in the same building or on
    the same block (within about 120 m) come right after it, most overdue first, so you park once. Before, a newer job
    on the same block could be left off a full day (8 stops) for a more overdue one across the neighborhood. Untangling
@@ -33,6 +33,15 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
    tries on today, first. A line at the top counts them. Tap a bid → Bids opens on it; a notice → the board; anything
    else → the job card. (The helper's "plan my week" stays as it was.) lib/week-ahead.ts, WeekAhead.tsx. Tests:
    test-week-ahead, test-browser-week-ahead.
+5. ✅ **🔎 Second look before a bid goes out** (plan): after the first tap of Send ("Tap again to send"), a box reads the
+   finished bid once more, ✓ or ⚠ per line: job number on the package, the price on page 1, page 2 and the work form,
+   a missing or extra zero (under $100 or over $50,000), time left (⚠ under 30 min or past due), the price against
+   recent winners (⚠ under 25% chance), and for a revised bid the old → new price. "All good" only when nothing is
+   off; the second tap still sends. lib/bid-second-look.ts. Tests: test-bid-second-look, test-browser-bids. Same day:
+   test-browser-bid-skip-desc waits for the bids welcome before tapping a row (it failed its first try under load).
+6. ✅ **The AI knows the newest changes again** (found by the after-deploy test, af1d54a): asked about the app, the
+   helper sent the AI only the newest 3 What's new entries; today's were 2 lines each, too few. It now sends up to 30
+   lines from the newest entries. Test: test-browser-smart-ask.
 
 
 ## ⏭ 18 Nov: smoother bids, no questions back (owner's words)

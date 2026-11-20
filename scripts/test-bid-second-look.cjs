@@ -1,0 +1,31 @@
+// 🔎 Second look before a bid goes out (plan, 19 Nov): ✓ or ⚠ per line, "all good" only when nothing is off.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const code = ts.transpileModule(fs.readFileSync('lib/bid-second-look.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+const mod = { exports: {} }; new Function('exports', 'module', code)(mod.exports, mod);
+const { secondLook } = mod.exports;
+const base = { omo: 'ER06255', packageOmo: 'ER06255', price: 1250, packagePrice: 1250, minutesLeft: 300, chance: 0.6, best: 1200 };
+const good = secondLook(base);
+assert.equal(good.allGood, true);
+assert.deepEqual(good.lines.map((l) => l.text), ['Job number ER06255 on the package', '$1,250 on page 1, page 2 and the work form', 'Due in 5 h: on time', 'Price is in the winning range (60% of jobs like this)']);
+assert.equal(good.say, 'All good: ER06255 at $1,250.');
+// Each thing that can be off.
+const zero = secondLook({ ...base, price: 12500, packagePrice: 12500 });
+assert.equal(zero.allGood, true, 'a big but real price is fine');
+const typo = secondLook({ ...base, price: 125000, packagePrice: 125000 });
+assert.ok(!typo.allGood && typo.lines.some((l) => /missing or extra zero/.test(l.text)));
+const tooLow = secondLook({ ...base, price: 45, packagePrice: 45 });
+assert.ok(tooLow.lines.some((l) => !l.ok && /\$45 looks like/.test(l.text)));
+const wrongPkg = secondLook({ ...base, packageOmo: 'ER05134', packagePrice: 1100 });
+assert.equal(wrongPkg.lines.filter((l) => !l.ok).length, 2);
+assert.match(wrongPkg.say, /^Check before sending: The package says ER05134/);
+assert.ok(secondLook({ ...base, minutesLeft: 12 }).lines.some((l) => !l.ok && l.text === "Only 12 min before it's due: send it now"));
+assert.ok(secondLook({ ...base, minutesLeft: -5 }).lines.some((l) => !l.ok && /Past the due time/.test(l.text)));
+assert.ok(secondLook({ ...base, minutesLeft: 45 }).lines.some((l) => l.ok && l.text === 'Due in 45 min: on time'));
+const high = secondLook({ ...base, price: 2600, packagePrice: 2600, chance: 0.1 });
+assert.ok(high.lines.some((l) => !l.ok && l.text === 'At $2,600 it would have won 10% of jobs like this; $1,200 wins more often'));
+assert.ok(!secondLook({ ...base, chance: null, best: null }).lines.some((l) => /winning range|would have won/.test(l.text)), 'no price line without data');
+const rev = secondLook({ ...base, previous: 1400 });
+assert.ok(rev.allGood && rev.lines.some((l) => l.text === 'Revised bid: $1,400 → $1,250, the cover says to disregard the first'));
+console.log('PASS second look: job number and price on the package, missing / extra zero, time left, price vs winners, revised bid; all good only when nothing is off');
