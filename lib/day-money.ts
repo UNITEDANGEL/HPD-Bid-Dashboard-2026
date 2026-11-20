@@ -3,7 +3,8 @@
 // Earned = the work is done; HPD pays later (the money answers say what's paid).
 
 // sentAt = when the closing paperwork was emailed (sent for payment); secondTryAt = the 2nd no-access visit.
-export type MoneyJob = { id: string; amount: number; outcome: string; doneAt: string; address?: string; sentAt?: string; secondTryAt?: string };
+// charge = the invoice amount (PackageChargeAmount) when the paperwork was made.
+export type MoneyJob = { id: string; amount: number; outcome: string; doneAt: string; address?: string; sentAt?: string; secondTryAt?: string; charge?: number };
 
 const nyDay = (iso: string) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(t)) : ""; };
 // Monday of the week (New York) as YYYY-MM-DD.
@@ -24,12 +25,24 @@ export const CLOSED = { has: (o: string) => CLOSED_OUTCOME.test(String(o || ""))
 const isClosed = (j: MoneyJob) => CLOSED.has(j.outcome) || Boolean(j.secondTryAt && /NO_ACCESS/.test(j.outcome)) || Boolean(j.sentAt); // sent for payment counts even with no outcome saved on this phone
 const closedDay = (j: MoneyJob) => nyDay(j.sentAt || "") || (CLOSED.has(j.outcome) ? nyDay(j.doneAt) : nyDay(j.secondTryAt || "") || nyDay(j.doneAt));
 
+// 20 Nov (owner: "Those are no access. Refused access ... is usually $100. Look in the invoices and add them up again"):
+// a job counts at its invoice amount; a no-access / refused-access job with no invoice amount saved counts $100, not the
+// full award.
+export const ACCESS_FEE = 100;
+const NO_WORK = /NO_ACCESS|REFUSED/;
+export function invoiceAmount(j: MoneyJob) {
+  const charge = Number(j.charge);
+  if (Number.isFinite(charge) && charge > 0) return charge;
+  if (NO_WORK.test(String(j.outcome || ""))) return ACCESS_FEE;
+  return Number(j.amount) || 0;
+}
+
 export function dayMoney(jobs: MoneyJob[], now = new Date()) {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(now);
   const monday = mondayOf(today);
   // 20 Nov (owner: "today's payment count is not showing all closed jobs"): refused access and completed by others are
   // closed jobs too (closed with an affidavit); doneAt = when the job was closed in the app.
-  const done = jobs.filter((j) => isClosed(j) && Number(j.amount) > 0 && closedDay(j));
+  const done = jobs.map((j) => ({ ...j, amount: invoiceAmount(j) })).filter((j) => isClosed(j) && j.amount > 0 && closedDay(j));
   const todayJobs = done.filter((j) => closedDay(j) === today);
   const weekJobs = done.filter((j) => { const d = closedDay(j); return d >= monday && d <= today; });
   const sum = (xs: MoneyJob[]) => Math.round(xs.reduce((a, j) => a + Number(j.amount), 0));

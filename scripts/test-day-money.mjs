@@ -18,9 +18,9 @@ const jobs = [
   { id: "ER7", amount: 250, outcome: "REFUSED_ACCESS", doneAt: "2026-11-11T19:00:00Z" }, // closed today: counts (20 Nov)
 ];
 const m = dayMoney(jobs, now);
-assert.equal(m.today, 2190);
-assert.equal(m.week, 3090);
-assert.equal(dayMoneyAnswer(m), "💵 $2,190 earned today (4 jobs closed); $3,090 this week (5 jobs).\n• ER1 · 1 MAIN ST: $1,200\n• ER2: $440\n• ER6: $300\n• ER7: $250\nHPD pays after the paperwork is approved.");
+assert.equal(m.today, 2040); // refused access counts its $100 fee, not the $250 award (20 Nov)
+assert.equal(m.week, 2940);
+assert.equal(dayMoneyAnswer(m), "💵 $2,040 earned today (4 jobs closed); $2,940 this week (5 jobs).\n• ER1 · 1 MAIN ST: $1,200\n• ER2: $440\n• ER6: $300\n• ER7: $100\nHPD pays after the paperwork is approved.");
 assert.match(dayMoneyAnswer(dayMoney([], now)), /^💵 No jobs closed this week yet\./);
 assert.equal(parseCommand("how much did I make today").intent, "day-money");
 assert.equal(parseCommand("what did I earn this week").intent, "day-money");
@@ -44,3 +44,20 @@ console.log("PASS day money: done by others, partial, 2nd no-access try and pape
 // The year / month questions keep their own answer (the money report), not the chip's today / week.
 for (const q of ["how much did I make this year", "how much did I make this month", "how much have I earned so far"]) assert.notEqual(parseCommand(q).intent, "day-money", q);
 console.log("PASS day money: year / month questions not taken");
+// 20 Nov (owner: "those are no access, refused access is usually $100, look in the invoices and add them up again"):
+// the 8 jobs really closed and sent on 20 Nov count at their invoice amount: $1,769, not the $3,900 of full awards.
+const nov20 = dayMoney([
+  { id: "EQ27441", amount: 1070, outcome: "", doneAt: "", sentAt: "2026-11-20T15:50:58Z", charge: 100 },
+  { id: "EQ31754", amount: 414, outcome: "WORK_COMPLETED", doneAt: "2026-07-10T12:30:00Z", sentAt: "2026-11-20T15:06:28Z", charge: 414 },
+  { id: "ER00768", amount: 311, outcome: "NO_ACCESS_1_WAITING_72H", doneAt: "", secondTryAt: "2026-11-20T18:15:24Z", sentAt: "2026-11-20T18:16:26Z", charge: 100 },
+  { id: "ER00929", amount: 430, outcome: "", doneAt: "", sentAt: "2026-11-20T14:52:55Z", charge: 100 },
+  { id: "ER01150", amount: 390, outcome: "WORK_COMPLETED", doneAt: "", sentAt: "2026-11-20T20:01:09Z", charge: 390 },
+  { id: "ER02022", amount: 411, outcome: "", doneAt: "", sentAt: "2026-11-20T14:49:14Z", charge: 100 },
+  { id: "ER04332", amount: 409, outcome: "REFUSED_ACCESS", doneAt: "", sentAt: "2026-11-20T15:08:50Z", charge: 100 },
+  { id: "ER08795", amount: 465, outcome: "WORK_COMPLETED", doneAt: "2026-11-20T20:35:19Z", sentAt: "2026-11-20T21:24:45Z", charge: 465 },
+  { id: "ER09999", amount: 600, outcome: "NO_ACCESS_2_COMPLETE", doneAt: "2026-11-19T15:00:00Z" }, // yesterday, no invoice amount: $100
+], new Date("2026-11-20T23:30:00Z"));
+assert.equal(nov20.todayJobs.length, 8);
+assert.equal(nov20.today, 1769);
+assert.equal(nov20.week, 1869);
+console.log("PASS day money: no access / refused access count their $100 invoice, not the full award (20 Nov: 8 jobs, $1,769)");

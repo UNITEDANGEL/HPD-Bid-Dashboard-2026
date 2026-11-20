@@ -50,7 +50,7 @@ try {
   await chip.waitFor({ timeout: 20000 });
   await page.clock.runFor(3000);
   const money = (n) => `$${n.toLocaleString("en-US")}`;
-  const today = amounts[a] + amounts[c];
+  const today = amounts[a] + 100; // refused access counts its $100 invoice, not the full award (owner, 20 Nov)
   const label = await chip.getAttribute("aria-label");
   assert.equal(label, `Earned ${money(today)} today, ${money(today + amounts[b])} this week. Tap for the jobs`);
   assert.match(await chip.textContent(), new RegExp(`^💵\\${money(today)}today \\(2 closed\\) · \\${money(today + amounts[b])} week$`));
