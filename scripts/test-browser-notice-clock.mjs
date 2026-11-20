@@ -58,6 +58,18 @@ try {
   const picks = page.locator('[data-hpd-smoke="fc-notice-chooser"] .fc-notice-pick');
   assert.equal(await picks.first().getAttribute("data-hpd-smoke"), "fc-notice-pick-clock");
   assert.match(await picks.first().innerText(), /24 \/ 72 h/);
+  // 24 hour and 72 hour are picks of their own (owner, 20 Nov), each with only its own jobs, and nothing overlaps in the menu.
+  await page.locator('[data-hpd-smoke="fc-notice-pick-h24"]').click();
+  assert.match(await page.locator('[data-hpd-smoke="fc-notice-chooser-title"]').innerText(), /24 hour · 1/);
+  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
+  await page.locator('[data-hpd-smoke="fc-notice-pick-h72"]').click();
+  assert.match(await page.locator('[data-hpd-smoke="fc-notice-chooser-title"]').innerText(), /72 hour · 1/);
+  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
+  const boxes = await page.locator('[data-hpd-smoke="fc-notice-chooser"] .fc-notice-pick').evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i], b = boxes[j];
+    assert.ok(a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1, `menu picks ${i} and ${j} overlap`);
+  }
   assert.ok(await page.locator('[data-hpd-smoke="fc-notice-board-open"]').isVisible(), "the board is still there");
   assert.deepEqual(errors, []);
   console.log(`PASS notices open on the map: ${LATE} "⏱ 24h · … late", ${LEFT} 72h with its time, the list starts with the most urgent (red when late), ⏱ 24 / 72 h is the first pick, no board`);

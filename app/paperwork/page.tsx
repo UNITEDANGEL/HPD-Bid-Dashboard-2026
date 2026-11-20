@@ -128,6 +128,8 @@ const NOTARY_STAMP_LINES = [
 // reproduction, not the wet-ink original the notary stamps and the signer keeps.
 const COPY_WATERMARK_TEXT = "COPY";
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
+// One tap fills who refused (owner, 20 Nov: "I need to be able to change anything I want"); the box still takes any words.
+const RELATIONSHIP_CHIPS = ["SUPER", "ATTENDANT", "TENANT", "OWNER", "MANAGER", "DOORMAN", "NEIGHBOR"];
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 
 type ZipEntry = {
@@ -5770,7 +5772,7 @@ export default function PaperworkPage() {
                   </label>
                   <label className="paperwork-field">
                     Relationship (7a)
-                    <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
+                    <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" /><span className="paperwork-rel-chips" data-hpd-smoke="paperwork-rel-chips">{RELATIONSHIP_CHIPS.map((r) => <button key={r} type="button" className={form.deniedRelationship.toUpperCase() === r ? "is-on" : undefined} onClick={() => update("deniedRelationship", r)}>{r}</button>)}</span>
                   </label>
                 </div>
                 <label className="paperwork-field">
@@ -6105,7 +6107,7 @@ export default function PaperworkPage() {
             </label>
             <label className="paperwork-field">
               Relationship
-              <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
+              <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" /><span className="paperwork-rel-chips" data-hpd-smoke="paperwork-rel-chips">{RELATIONSHIP_CHIPS.map((r) => <button key={r} type="button" className={form.deniedRelationship.toUpperCase() === r ? "is-on" : undefined} onClick={() => update("deniedRelationship", r)}>{r}</button>)}</span>
             </label>
           </div>
 
@@ -6274,7 +6276,7 @@ export default function PaperworkPage() {
                   {outcome === "refused_access" ? (
                     <div className="paperwork-correction-text">
                       <label>Name given<input value={form.deniedName} placeholder="or DID NOT PROVIDE" onChange={(e) => update("deniedName", e.target.value)} /></label>
-                      <label>Relationship<input value={form.deniedRelationship} placeholder="SUPER, TENANT, OWNER…" onChange={(e) => update("deniedRelationship", e.target.value)} /></label>
+                      <label>Relationship<input value={form.deniedRelationship} placeholder="SUPER, TENANT, OWNER…" onChange={(e) => update("deniedRelationship", e.target.value)} /><span className="paperwork-rel-chips" data-hpd-smoke="paperwork-rel-chips">{RELATIONSHIP_CHIPS.map((r) => <button key={r} type="button" className={form.deniedRelationship.toUpperCase() === r ? "is-on" : undefined} onClick={() => update("deniedRelationship", r)}>{r}</button>)}</span></label>
                       <label>Description<input data-hpd-smoke="paperwork-correction-described" value={form.deniedDescription} placeholder={REFUSED_ACCESS_DESCRIPTION_EXAMPLE} onChange={(e) => update("deniedDescription", e.target.value)} /></label>
                       <label>Their phone<input value={form.deniedPhone} placeholder="or DID NOT PROVIDE" onChange={(e) => update("deniedPhone", e.target.value)} /></label>
                     </div>

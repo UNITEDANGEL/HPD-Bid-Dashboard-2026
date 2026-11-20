@@ -532,4 +532,7 @@ jobs:
             scripts/test-browser-paperwork-lock.mjs \
             scripts/test-browser-paperwork-left.mjs \
             scripts/test-browser-paperwork-refused-date.mjs \
+            scripts/test-browser-paperwork-relationship.mjs \
+            scripts/test-browser-claude-side-icon.mjs \
+            scripts/test-browser-onsite-left.mjs \
             scripts/test-browser-two-tap.mjs

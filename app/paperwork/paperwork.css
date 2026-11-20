@@ -125,3 +125,7 @@ input:disabled[type="date"] { background: #f1f5f9; color: #166534; font-weight: 
 .paperwork-real-sig button, .paperwork-real-sig .paperwork-secondary { color: #0f172a !important; background: #fff !important; border: 1px solid #64748b !important; font-weight: 800; }
 .paperwork-real-sig.is-typed button { background: #ea580c !important; color: #fff !important; border-color: #ea580c !important; }
 .paperwork-affidavit-version { color: #0f172a !important; opacity: 1 !important; font-weight: 700; }
+
+.paperwork-rel-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.paperwork-rel-chips button { padding: 8px 12px; border-radius: 16px; border: 1px solid #94a3b8; background: #f8fafc; color: #0f172a; font: 800 14px system-ui; }
+.paperwork-rel-chips button.is-on { background: #0f172a; color: #fff; border-color: #0f172a; }

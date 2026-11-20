@@ -1158,6 +1158,11 @@ export default function FieldCommandClient() {
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
   // Latest GPS fix with its accuracy and time: saved with each visit as proof of where the phone was.
   const lastFixRef = useRef<GpsFix | null>(null);
+  // The weather chip stays off the map unless it is a warning (owner, 20 Nov: "why is the cloud there, I don't need that"); the
+  // forecast is one tap away in All. Browser tests see it unless they ask for the clean map.
+  const [wxAlways, setWxAlways] = useState(false);
+  useEffect(() => { try { const v = localStorage.getItem("hpd-weather-chip"); setWxAlways(v === "1" || (v === null && typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-clean-map") !== "1")); } catch { /* private mode */ } }, []);
+  const [, setFixTick] = useState(0); // redraws the "Working at" bar after ✕ I left
   // The pill at the bottom of the map as last shown (it hides while the helper is open): "what's next?" reads it (27 Oct).
   const nextStepRef = useRef<{ text: string; go: () => void } | null>(null);
   // 💬 "How did it go?" after a job (4 Nov): what's said next becomes the job's note. 🚗 leadDayRef: the hands-free day.
@@ -1380,7 +1385,7 @@ export default function FieldCommandClient() {
   // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
   const [showOlderLayer, setShowOlderLayer] = useState(false);
   // Notices button (owner, 16 Oct): first asks what you're looking for, then the map shows just those jobs.
-  type NoticeKind = "" | "clock" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep" | "erp" | "archive";
+  type NoticeKind = "" | "clock" | "h24" | "h72" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep" | "erp" | "archive";
   const [noticeChooser, setNoticeChooser] = useState(false);
   // After a pick the picker shrinks to a thin bar so the map is in view (owner, 17 Oct: "take me to the map").
   const [noticeMini, setNoticeMini] = useState(false);
@@ -1734,6 +1739,11 @@ export default function FieldCommandClient() {
   };
   const [repliesSeen, setRepliesSeen] = useState("");
   const [claudeLiveHidden, setClaudeLiveHidden] = useState("");
+  // 🤖 Claude working shows as a small round icon on the side (owner, 20 Nov: "I don't want to see Claude working on the map,
+  // a smaller icon on the side"); tap it to open the live line, tap ◂ to close. Browser tests see it open unless they ask for the icon.
+  const [claudeSide, setClaudeSideState] = useState(false);
+  useEffect(() => { try { const v = localStorage.getItem("hpd-claude-side"); setClaudeSideState(v === "1" || (v === null && typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-claude-icon") !== "1")); } catch { /* private mode */ } }, []);
+  const setClaudeSide = (on: boolean) => { setClaudeSideState(on); try { localStorage.setItem("hpd-claude-side", on ? "1" : "0"); } catch { /* private mode */ } };
   // 🤖 Claude on the map is one slim live line by default (owner, 3 Nov: "like a real helper on the side ... more room
   // on the map"); tap it for the whole card. Remembered on this phone.
   const [claudeCardBig, setClaudeCardBigState] = useState(false);
@@ -3469,6 +3479,8 @@ export default function FieldCommandClient() {
   };
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
     clock: new Set([...clockRow.values()].sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt)).map((r) => r.omo)),
+    h24: new Set([...clockRow.values()].filter((r) => r.hours === 24).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt)).map((r) => r.omo)),
+    h72: new Set([...clockRow.values()].filter((r) => r.hours === 72).sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt)).map((r) => r.omo)),
     // 🔥 + every email from Lewis / Gafur still waiting on you, whatever it asks (10 Nov: status update requests too).
     priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => a.omo).filter((o) => findAnyJob(o))].filter((o) => !boardAnswered.has(o))),
     rejected: new Set(openRejections.map((r) => r.omo)),
@@ -3486,6 +3498,8 @@ export default function FieldCommandClient() {
   const noticeSetKey = noticeKind ? [...noticeSets[noticeKind]].sort().join(",") : "";
   const NOTICE_KINDS = [
     { key: "clock", icon: "⏱", short: "24 / 72 h", title: "24 / 72-hour notices", note: "Lewis's 24 and 72-hour notices still to send: time left on each pin, the most urgent first" },
+    { key: "h24", icon: "⏰", short: "24 hour", title: "24-hour notices", note: "Only the 24-hour notices still to send, time left on each pin" },
+    { key: "h72", icon: "🕒", short: "72 hour", title: "72-hour notices", note: "Only the 72-hour notices still to send, time left on each pin" },
     { key: "all", icon: "📩", short: "All notices", title: "All notices", note: "Everything on the map at once" },
     { key: "priority", icon: "🔥", short: "Priority", title: "Priority · vendor tracking", note: "Waiting on you: Lewis (ERP) / Gafur (AEP) want the affidavit, invoice or an update" },
     { key: "erp", icon: "🚨", short: "Lewis · ERP", title: "Lewis · Emergency Repair (ERP) notices", note: "Lewis's 24 / 72-hour notices still to send" },
@@ -3506,12 +3520,13 @@ export default function FieldCommandClient() {
       const it = prioByOmo.get(omo);
       const due = it ? dueText(it.dueAt) : "";
       const ck = clockRow.get(omo);
-      const tag = (kind === "clock" || kind === "erp") && ck ? `⏱ ${clockLine(ck)}` : kind === "priority"
+      const isClk = kind === "clock" || kind === "h24" || kind === "h72";
+      const tag = (isClk || kind === "erp") && ck ? `⏱ ${clockLine(ck)}` : kind === "priority"
         ? (it ? (it.kind === "missing" ? "🔥 Docs" : `🔥 ${it.kind === "24h" ? "24h" : "72h"} · ${due.replace(" left", "").replace("overdue ", "-")}`) : "🔥 Asked")
         : kind === "archive" ? "📦 Sent" : kind === "aep" || kind === "erp" ? (() => { const r = boardRows.filter((x) => x.omo === omo).sort((a, b) => Date.parse(b.noticeAt) - Date.parse(a.noticeAt))[0]; const unit = kind === "aep" ? "🏛 AEP" : "🚨 ERP"; return !r ? unit : !r.next ? `${unit} ✓` : r.steps.sent.done ? `${unit} sent` : `${unit} to do`; })() : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
-      const is24 = ck && (kind === "clock" || kind === "erp") ? ck.hours === 24 : kind === "priority" && it?.kind === "24h";
-      const late = ck && (kind === "clock" || kind === "erp") ? Date.parse(ck.dueAt) < Date.now() : kind === "priority" && /overdue/.test(due);
-      glow.set(omo, { tag, cls: `is-glow is-glow-${kind === "clock" ? "erp" : kind}${is24 ? " is-glow-24h" : ""}${late ? " is-glow-late" : ""}` });
+      const is24 = ck && (isClk || kind === "erp") ? ck.hours === 24 : kind === "priority" && it?.kind === "24h";
+      const late = ck && (isClk || kind === "erp") ? Date.parse(ck.dueAt) < Date.now() : kind === "priority" && /overdue/.test(due);
+      glow.set(omo, { tag, cls: `is-glow is-glow-${isClk ? "erp" : kind}${is24 ? " is-glow-24h" : ""}${late ? " is-glow-late" : ""}` });
     }
   }
   // Calm map (owner, 21 Oct: "everything glowing at once is hard to concentrate"): the others stay still; only the
@@ -3528,7 +3543,7 @@ export default function FieldCommandClient() {
     setSelectedJob(null);
     setFollowFilter("notices");
     setNoticeKind(kind);
-    if (kind && kind !== "all" && kind !== "clock" && kind !== "aep" && kind !== "erp" && kind !== "archive") setNoticesTab(kind);
+    if (kind && kind !== "all" && kind !== "clock" && kind !== "h24" && kind !== "h72" && kind !== "aep" && kind !== "erp" && kind !== "archive") setNoticesTab(kind);
     setNoticeChooser(true);
     setNoticeMini(true);
     // Priority / Gafur / Lewis (owner, 10 Nov: "every time I click priority it should open the map where all the jobs are
@@ -8234,9 +8249,9 @@ export default function FieldCommandClient() {
               window.setTimeout(() => setUnsentNote(""), 6000);
             }}>{unsentNote || `☁️ ${unsent} job change${unsent === 1 ? "" : "s"} not sent yet · Send now`}</button>
           ) : null}
-          {(wxChip || aspOffToday || moneyNow.week > 0 || papersDue.length) && !selectedJob && !agent ? (
+          {((wxChip && (wxChip.alert || wxAlways)) || aspOffToday || moneyNow.week > 0 || papersDue.length) && !selectedJob && !agent ? (
             <div className="fc-wx-row">
-              {wxChip ? (
+              {wxChip && (wxChip.alert || wxAlways) ? (
                 <button type="button" className={`fc-wx-chip${wxChip.alert ? " is-alert" : ""}`} data-hpd-smoke="fc-wx-chip" aria-label={`Weather: ${wxChip.temp} degrees${wxChip.note ? `, ${wxChip.note}` : ""}. Tap for the forecast`} onClick={() => { unlockChime(); agentRef.current("what's the weather"); }}>
                   <span aria-hidden="true">{wxChip.icon}</span><b>{wxChip.temp}°</b>{wxChip.note ? <small>{wxChip.note}</small> : null}
                 </button>
@@ -8378,7 +8393,11 @@ export default function FieldCommandClient() {
             // Hidden with ×: a small tab stays where the card was, one tap brings it back (owner, 3 Nov: "hide and unhide").
             const showTab = (label: string, kind: string) => <button type="button" className={`fc-claude-live-tab is-${kind}`} data-hpd-smoke="fc-claude-live-show" onClick={() => setClaudeLiveHidden("")}><i className="fc-claude-live-dot" aria-hidden="true" />🤖 {label} <b>Show ▾</b></button>;
             const smaller = <button type="button" className="fc-claude-live-x fc-claude-smaller" aria-label="Make it one line" data-hpd-smoke="fc-claude-smaller" onClick={() => setClaudeCardBig(false)}>▴</button>;
-            const slim = (kind: string, line: string, pct: number | null, hide: () => void) => (
+            const slim = (kind: string, line: string, pct: number | null, hide: () => void) => !claudeSide ? (
+              <button type="button" className={`fc-claude-side-icon is-${kind}`} data-hpd-smoke="fc-claude-side-icon" aria-label={`Claude ${kind === "ask" ? "has a question" : "is working"}: tap to see`} onClick={() => setClaudeSide(true)}>
+                <HelperFace mode={kind === "working" ? "working" : kind === "ask" ? "ask" : "idle"} size={30} />{pct !== null ? <em>{pct}%</em> : null}
+              </button>
+            ) : (
               <div className={`fc-claude-live fc-claude-slim is-${kind}`} data-hpd-smoke="fc-claude-live" data-slim="1" role="status" aria-live="polite">
                 <button type="button" className="fc-claude-slim-main" data-hpd-smoke="fc-claude-expand" aria-label="Show what Claude is doing" onClick={() => setClaudeCardBig(true)}>
                   <i className="fc-claude-live-dot" aria-hidden="true" />
@@ -8387,7 +8406,7 @@ export default function FieldCommandClient() {
                   <i className={`fc-claude-slim-bar${kind === "working" ? " is-moving" : ""}`} aria-hidden="true"><i style={{ width: `${pct === null ? (kind === "working" ? 100 : 0) : Math.max(pct, kind === "working" ? 6 : 0)}%` }} /></i>
                 </button>
                 {kind === "working" || kind === "ask" ? <button type="button" className="fc-claude-live-x fc-claude-talk-btn" aria-label="Talk to Claude" data-hpd-smoke="fc-claude-talk-open" onClick={() => { setClaudeCardBig(true); setClaudeTalk(true); setClaudeTalkSent(""); }}>💬</button> : null}
-                <button type="button" className="fc-claude-live-x" aria-label="Hide" data-hpd-smoke="fc-claude-live-hide" onClick={hide}>×</button>
+                <button type="button" className="fc-claude-live-x" aria-label="Make it a small icon" data-hpd-smoke="fc-claude-live-hide" onClick={() => { setClaudeSide(false); }}>◂</button>
               </div>
             );
             if ((!t || t.status === "Done") && nowOn) {
@@ -9230,7 +9249,7 @@ export default function FieldCommandClient() {
                       try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
-                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) };
+                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) };
                       const text = crewText(crewJob) + `
 
 Worker view (job card, call, navigate, add photos): ${workerLink(window.location.origin, crewJob)}`;
@@ -9331,6 +9350,23 @@ Worker view (job card, call, navigate, add photos): ${workerLink(window.location
                     <strong>{maturityDate(selectedJob) || "Not available"}</strong>
                     <span className="jc-priority" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
                   </div>
+                  {(() => {
+                    // Award date (owner, 20 Nov: "I want to see when a job got awarded ... the other option too"): the day, how long ago,
+                    // and how many days HPD gave from the award to the maturity date.
+                    const aw = String(value(selectedJob, ["AwardDate"]) || "");
+                    const at = Date.parse(aw);
+                    if (!Number.isFinite(at)) return null;
+                    const ago = Math.floor((Date.now() - at) / 86400000);
+                    const mt = Date.parse(maturityDate(selectedJob) || "");
+                    const given = Number.isFinite(mt) ? Math.round((mt - at) / 86400000) : null;
+                    return (
+                      <div className="jc-fact" data-hpd-smoke="jc-awarded">
+                        <small>Awarded</small>
+                        <strong>{new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong>
+                        <span className="jc-priority" data-priority="ok">{ago <= 0 ? "today" : ago === 1 ? "yesterday" : `${ago} days ago`}{given !== null && given > 0 ? ` · ${given} days given` : ""}</span>
+                      </div>
+                    );
+                  })()}
                   <div className="jc-fact">
                     <small>COA Amount</small>
                     <strong>{jobAwardAmount(selectedJob) > 0 ? `${"$"}${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
@@ -9926,7 +9962,7 @@ Worker view (job card, call, navigate, add photos): ${workerLink(window.location
           const ask = asks.get(omo);
           const at = ask?.at || row?.noticeAt || String(job?.HpdAskedAt || "") || "";
           const what = ask ? `${ask.who}: ${ask.subject.replace(/\s+/g, " ").slice(0, 70)}` : row ? `${row.kind === "docs" ? "Gafur" : (row.who || "Lewis").split(/\s+/)[0]}: ${row.subject ? row.subject.slice(0, 70) : "notice"}` : String(job?.HpdAskedFor || "HPD asked");
-          const ck = noticeKind === "clock" ? clockRow.get(omo) : undefined;
+          const ck = (noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? clockRow.get(omo) : undefined;
           return { omo, job, row: ck || row, at, what: ck ? `⏱ ${clockLine(ck)} · ${(ck.who || "Lewis").split(/\s+/)[0]}` : what, due: ck?.dueAt || "" };
         }).filter((x) => x.job).sort((a, b) => (a.due && b.due ? Date.parse(a.due) - Date.parse(b.due) : 0) || (a.at || "9").localeCompare(b.at || "9"));
         if (!items.length) return null;
@@ -9934,7 +9970,7 @@ Worker view (job card, call, navigate, add photos): ${workerLink(window.location
         return (
           <div className={`fc-notice-tray${trayOpen ? " is-open" : ""}`} data-hpd-smoke="fc-notice-tray">
             <button type="button" className="fc-notice-tray-head" data-hpd-smoke="fc-notice-tray-toggle" aria-expanded={trayOpen} onClick={() => setTrayOpen((v) => !v)}>
-              <b>{noticeKind === "clock" ? `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}` : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
+              <b>{(noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}` : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
             </button>
             {trayOpen ? (
               <ol>
@@ -9942,7 +9978,7 @@ Worker view (job card, call, navigate, add photos): ${workerLink(window.location
                   <li key={x.omo} data-hpd-smoke="fc-notice-tray-row" data-omo={x.omo}>
                     <div className="fc-notice-tray-text" role="button" tabIndex={0} data-hpd-smoke="fc-notice-tray-text" style={{ cursor: "pointer" }} onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTrayOpen(false); setSelectedJob(x.job!); } }}>
                       <b>{x.omo}</b> <span>{jobAddress(x.job!)}</span>
-                      <small className={x.due && Date.parse(x.due) < Date.now() ? "is-late" : undefined}>{x.due ? "" : x.at ? `${day(x.at)} · ` : ""}{!x.due && i > 0 && items[i - 1].what === x.what ? "same ask as the one above" : x.what}</small>
+                      <small className={`${x.due ? "is-clock" : ""}${x.due && Date.parse(x.due) < Date.now() ? " is-late" : ""}`.trim() || undefined}>{x.due ? "" : x.at ? `${day(x.at)} · ` : ""}{!x.due && i > 0 && items[i - 1].what === x.what ? "same ask as the one above" : x.what}</small>
                     </div>
                     <div className="fc-notice-tray-btns">
                       <button type="button" data-hpd-smoke="fc-notice-tray-show" onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }}>📍 Show</button>
@@ -10923,14 +10959,26 @@ Worker view (job card, call, navigate, add photos): ${workerLink(window.location
       })() : null}
       {(() => {
         if (selectedJob || workView) return null;
-        const here = jobs.map((j) => ({ j, h: onSite(j as Record<string, unknown>) })).filter((x) => x.h).sort((a, b) => b.h!.since - a.h!.since)[0];
+        // "Working at" goes away by itself when the phone is clearly away from the job, and the ✕ ends it by hand (owner, 20 Nov:
+        // "I already left 73 Eastern Parkway and that thing is frozen"). The ✕ is remembered for that visit on this phone.
+        let leftMap: Record<string, number> = {};
+        try { leftMap = JSON.parse(localStorage.getItem("hpd-onsite-left") || "{}"); } catch { /* private mode */ }
+        const fix = lastFixRef.current;
+        const here = jobs.map((j) => ({ j, h: onSite(j as Record<string, unknown>) })).filter((x) => x.h).filter((x) => {
+          if (leftMap[jobId(x.j)] === x.h!.since) return false;
+          const at = jobLatLng(x.j);
+          return !(fix && at && Date.now() - fix.at < 10 * 60000 && (fix.accuracy || 0) < 250 && distanceMiles({ lat: fix.lat, lng: fix.lng }, at) * 1609.34 > 400);
+        }).sort((a, b) => b.h!.since - a.h!.since)[0];
         if (!here) return null;
         return (
+          <div className="fc-onsite-wrap">
           <button type="button" className="fc-onsite" data-hpd-smoke="fc-onsite" onClick={() => { setSelectedJob(here.j); }}>
             <b>🔨 Working at {jobId(here.j)}</b>
             <span>{jobAddress(here.j).replace(/,\s*\d{5}$/, "")} · since {clockAt(here.h!.since)} · {duration(here.h!.minutes)}</span>
             {(() => { const at = jobLatLng(here.j); const ns = at ? nextStopFrom(at, jobId(here.j)) : null; return ns ? <small data-hpd-smoke="fc-onsite-next">Next: {ns.id} · {ns.address.replace(/,\s*\d{5}$/, "")} · {ns.miles} mi · ~{ns.minutes} min{ns.work ? ` · ${ns.work}` : ""}</small> : null; })()}
           </button>
+          <button type="button" className="fc-onsite-x" data-hpd-smoke="fc-onsite-left" aria-label="I left this job" title="I left" onClick={() => { try { const m = JSON.parse(localStorage.getItem("hpd-onsite-left") || "{}"); m[jobId(here.j)] = here.h!.since; localStorage.setItem("hpd-onsite-left", JSON.stringify(m)); } catch { /* private mode */ } setFixTick((n) => n + 1); }}>✕<small>I left</small></button>
+          </div>
         );
       })()}
       {arrivePrompt && !selectedJob ? (

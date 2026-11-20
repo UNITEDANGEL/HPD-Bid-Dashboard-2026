@@ -12,6 +12,11 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
+- 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.
+- Claude working = small icon on the side; right column (Locate, + / −, side tab, old-jobs broom) spaced; weather chip only for warnings.
+- Job card: Awarded date + days ago + days given; "Working at" ends when you leave (✕ I left); affidavit relationship choices (SUPER, ATTENDANT, TENANT…).
+
 ## ✓ 20 Nov: Ask for a change takes a picture you can circle in red (owner: "upload an image ... highlight what I don't like")
 
 ## ✓ 20 Nov: Skip sends the job to the END of the fix line (owner: "if I skip a job it needs to go last... you keep bringing that job up")
