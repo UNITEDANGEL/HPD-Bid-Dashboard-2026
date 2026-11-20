@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T16:48:50.208683+00:00",
+"generatedAt": "2026-11-20T16:59:07.050186+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -21592,6 +21592,16 @@
 "file": "PHOTO-2026-08-31-11-54-50.jpg",
 "outcome": "",
 "subject": "Fwd: OMO No: ER03009 Issuer: JUAN ISIDRO CARVAJAL DIMAS Boro: Brooklyn Bldg Address: 351, TOMPKINS AVENUE",
+"via": "hpd-staff"
+}
+],
+"ER03623": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-11-20-11-48-10.mp4",
+"outcome": "",
+"subject": "OMO No: ER03623 Issuer: KELLY ANN PERROTTE-DAVID Boro: Brooklyn Bldg Address: 2110, WESTBURY COURT Job Description: NYC HPD EMERGENCY OPERAT",
 "via": "hpd-staff"
 }
 ],
