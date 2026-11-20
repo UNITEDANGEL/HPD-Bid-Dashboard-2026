@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T17:44:33.778646+00:00",
+  "generatedAt": "2026-11-20T17:55:13.280064+00:00",
   "days": 14,
   "bids": [
     {
@@ -1181,6 +1181,137 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.858141,
       "lng": -73.906513
+    },
+    {
+      "omo": "KR00830",
+      "bidDue": "2026-11-22",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-23",
+      "workCompletion": "2026-12-04",
+      "address": "34 MORNINGSIDE AVENUE",
+      "borough": "MN",
+      "itbFile": "KR00830_112026124430.pdf",
+      "description": "34 Morningside Ave, Apt 2B: Replace defective Kitchen base cabinet & radiator metal cover. Building contact is TA Collins Ekhator (phone: sign in to see). The inspector monitoring this job is Nzeribe Azukwu 212-863-7374 or (phone: sign in to see). KITCHEN: 1Replace with new, the defective base cabinet (its top and sink should not be replaced) 36\" long, in kind & color to the removed. Proper care should be taken to avoid creating big hole at the bottom floor of the cabinet since there exists plumbing pipe higher than the bottom floor of the cabinet.Each1 2Properly patch up holes on the wall and floor around base cabinet and between gas piping & its floorSF2 3Provide & Install new escutcheon plate at the base of the gas pipingEach1 4Replace defective receptacle behind the gas cooker. Leave in good working order.LS1 5Touch up paints in kind and color to around the repaired holes; includes the replaced radiator cover & all surfaces around itSF10 LIVING ROOM: 1Replace with new, the defective VTC floor tiles around the radiatorSF6 2Provide & install new radiator metal cover 32\" x 24\"Each1 NOTE TO CONTRACTORS• All work and materials must comply with NYC Building Codes and/or other jurisdictional regulatory rules including a tenant protection plan as required by Chapter 1 of Title 28 of the Administrative Code.• The Contractor will take all reasonable and responsible precautions to protect people and property from damage, loss or injury resulting from the contractor’s operations. As necessary precautions for safety and health, the Contractor shall implement the installation and maintenance of protective measures against hazards and nuisances such as barricades, signs, and drop cloths. • The Contractor is responsible for the safe handling of lead-based materials, mold and mildew and asbestos. Only persons trained and authorized to perform such work will be in compliance with all regulations related to containing materials. Throughout the duration of the repairs in the building, the contractors will ensure that safe work practices are used including necessary dust and debris management procedures to protect occupants and their possessions. GRAND TOTAL",
+      "notes": "",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1795196673000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.806465,
+      "lng": -73.957221
     },
     {
       "omo": "ER10674",
