@@ -76,6 +76,25 @@ function untangle(start: RoutePoint, run: RouteJob[], end: RoutePoint | null) {
   return best;
 }
 
+// 🏘 Same building or same block (plan, 19 Nov: "when two jobs are on the same block, the route puts them back to back so
+// you park once"): within about 120 m, less than a short NYC block.
+export const SAME_BLOCK_METERS = 120;
+export function sameBlock(a: RoutePoint, b: RoutePoint) {
+  const rad = Math.PI / 180;
+  const h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lng - a.lng) * rad / 2) ** 2;
+  return 6371000 * 2 * Math.asin(Math.sqrt(Math.min(1, h))) <= SAME_BLOCK_METERS;
+}
+// After untangling: each stop's same-block neighbours follow it at once (the order of the rest is kept).
+export function keepBlocksTogether<T extends RoutePoint>(run: T[]) {
+  const left = run.slice(), out: T[] = [];
+  while (left.length) {
+    const first = left.shift()!;
+    out.push(first);
+    for (let i = 0; i < left.length;) { if (sameBlock(first, left[i])) out.push(...left.splice(i, 1)); else i++; }
+  }
+  return out;
+}
+
 // Confirmed appointments keep their times; the gaps fill with the most overdue work, taken in an order
 // that keeps the drive short (next stop = best mix of nearby and overdue), then untangled.
 export function planDay(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint) {
@@ -94,8 +113,16 @@ export function planDay(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint) 
       const job = fits.reduce((best,j)=>{const d=stopCost(previous,j)-stopCost(previous,best); return d<0||(d===0&&j.id<best.id)?j:best;});
       pending.splice(pending.indexOf(job),1); run.push(job);
       cursor += travelEstimate(previous,job)+stayMinutes(job,s.minutes); previous=job;
+      // 🏘 The other jobs on this block come right after it (most overdue first), while the day has room: park once.
+      const block = pending.filter(j=>sameBlock(job,j)).sort((a,b)=>(b.days||0)-(a.days||0)||a.id.localeCompare(b.id));
+      for (const j of block) {
+        if (selected.length + run.length >= 8) break;
+        if (cursor+travelEstimate(previous,j)+stayMinutes(j,s.minutes)+(next?travelEstimate(j,next):0) > limit) continue;
+        pending.splice(pending.indexOf(j),1); run.push(j);
+        cursor += travelEstimate(previous,j)+stayMinutes(j,s.minutes); previous=j;
+      }
     }
-    const ordered = untangle(runStart, run, next);
+    const ordered = keepBlocksTogether(untangle(runStart, run, next));
     selected.push(...ordered);
     if (ordered.length) previous = ordered[ordered.length-1];
     if (next) {

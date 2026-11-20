@@ -346,13 +346,6 @@
       "why": "Before you finish a job the app says which required photo (before, after, close-up) is still missing."
     },
     {
-      "id": "same-block",
-      "icon": "📍",
-      "kind": "upgrade",
-      "title": "Same-block jobs together",
-      "why": "When two jobs are on the same block, the route puts them back to back so you park once."
-    },
-    {
       "id": "tenant-no-show-log",
       "icon": "🚪",
       "kind": "upgrade",
@@ -556,14 +549,8 @@
   ],
   "plan": {
     "id": "2026-11-19-a",
-    "title": "Next on the plan: same-block jobs together, a week view, and a second look before a bid goes out",
+    "title": "Next on the plan: a week view and a second look before a bid goes out",
     "items": [
-      {
-        "id": "same-block",
-        "icon": "🏘",
-        "title": "Same-block jobs together",
-        "why": "When two jobs are on the same block, the route puts them back to back so you park once."
-      },
       {
         "id": "week-view",
         "icon": "📅",

@@ -22,8 +22,12 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
    payments had loaded. The number now waits for those. Test: test-browser-jobs-count-load.
 2. ✅ **Plan card up to date**: who to chase for money, why you lost a bid and today's money were already built, and
    12 ideas in 💡 Ideas were too (alert for a priced bid not faxed, skipped bids at the end, store stop, traffic on
-   the route...): taken off. Next on the plan: ☐ same-block jobs back to back on the route, ☐ a week view (jobs,
+   the route...): taken off. Next on the plan: ✅ same-block jobs back to back on the route (item 3), ☐ a week view (jobs,
    appointments, bids due, notices for 7 days), ☐ a second look before a bid is sent.
+3. ✅ **Same-block jobs back to back** (plan): when Plan my day picks a stop, the other jobs in the same building or on
+   the same block (within about 120 m) come right after it, most overdue first, so you park once. Before, a newer job
+   on the same block could be left off a full day (8 stops) for a more overdue one across the neighborhood. Untangling
+   the route keeps them together (lib/day-route.ts sameBlock / keepBlocksTogether). Test: test-day-route.
 
 
 ## ⏭ 18 Nov: smoother bids, no questions back (owner's words)

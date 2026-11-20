@@ -34,4 +34,14 @@ assert.deepEqual(nextRouteStop(route,'TEST-0001',allOpen),{id:'A',stop:1,of:4,le
 assert.deepEqual(nextRouteStop(route,'B',id=>id!=='C'),{id:'D',stop:4,of:4,left:2},'done stops are skipped');
 assert.deepEqual(nextRouteStop(route,'D',id=>id==='B'),{id:'B',stop:2,of:4,left:1},'a skipped earlier stop is picked up');
 assert.equal(nextRouteStop(route,'B',()=>false),null);assert.equal(nextRouteStop([],'A',allOpen),null);
-console.log('PASS: overdue ordering, appointment reservation, workday conflicts, eligibility, invalid inputs, stop limit and saved IDs');
+// 🏘 Same block back to back: A (very overdue) in Brooklyn, B on A's block (new), C a mile away and more overdue than B.
+// Overdue-first alone would go A, C, B; now B follows A at once. Also when the 8-stop day is full: B still gets in.
+{const {sameBlock,keepBlocksTogether}=mod.exports;
+const at=(id,days,lat,lng)=>job(id,days,{lat,lng});
+const A=at('A',300,40.6900,-73.9400),B=at('B',1,40.6905,-73.9402),C=at('C',200,40.7040,-73.9400);
+assert.ok(sameBlock(A,B));assert.ok(!sameBlock(A,C));
+const p=planDay([A,B,C],s,{lat:40.6890,lng:-73.9400}).map(j=>j.id);assert.deepEqual(p.slice(0,2),['A','B'],'same block back to back: '+p);
+const many=[A,B,...Array.from({length:12},(_,i)=>at('F'+i,250-i,40.70+i*0.004,-73.95))];
+const pm=planDay(many,s,{lat:40.6890,lng:-73.9400}).map(j=>j.id);assert.equal(pm.length,8);assert.equal(pm.indexOf('B'),pm.indexOf('A')+1,'B right after A on a full day: '+pm);
+assert.deepEqual(keepBlocksTogether([A,C,B]).map(j=>j.id),['A','B','C']);}
+console.log('PASS: overdue ordering, appointment reservation, workday conflicts, eligibility, invalid inputs, stop limit, saved IDs and same-block jobs back to back');
