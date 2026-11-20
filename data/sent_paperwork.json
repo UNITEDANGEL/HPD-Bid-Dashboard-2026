@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T14:55:19.901867+00:00",
+"generatedAt": "2026-11-20T15:05:05.418236+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -20886,6 +20886,23 @@
 "file": "EQ31651 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: OMO#EQ31651- AFFIDAVIT & INVOICE REQUEST",
+"via": "hpd-staff"
+}
+],
+"EQ31754": [
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - EQ31754 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "SIGNED - EQ31754 - Work Completed - 19-24 LINDEN STREET, 11385"
+},
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-07-08-17-02-36.mp4",
+"outcome": "",
+"subject": "OMO No: EQ31754 Issuer: DHANYA RAJAN Boro: Queens Bldg Address: 19-24, LINDEN STREET",
 "via": "hpd-staff"
 }
 ],
