@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const b64 = (s) => Buffer.from(s, "utf8").toString("base64url");
-const job = { id: "EQ15239", address: "1207 1 AVENUE, NEW YORK, 10065", apt: "4B", by: "11/20/2026", work: ["Replace kitchen faucet", "Patch ceiling 2 x 2 ft"], photos: ["Before photos", "After photos"], contact: { name: "Super Jose", phone: "(212) 555-0147", note: "basement door" }, tenant: null };
+const job = { id: "EQ15239", address: "1207 1 AVENUE, NEW YORK, 10065", apt: "4B", by: "11/20/2026", work: ["Replace kitchen faucet", "Patch ceiling 2 x 2 ft"], photos: ["Before photos", "After photos"], contact: { name: "Super Jose", phone: "(212) 555-0147", note: "basement door" }, tenant: { name: "Tenant A", phone: "(718) 555-0100" }, where: "Inside the apartment (apt 4B): kitchen", full: "REPLACE THE KITCHEN FAUCET.\nPATCH THE CEILING." };
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
@@ -23,6 +23,9 @@ try {
   assert.match(await page.locator('[data-hpd-smoke="worker-nav"]').getAttribute("href"), /google\.com\/maps/);
   assert.equal(await page.locator('[data-hpd-smoke="worker-call-super"]').getAttribute("href"), "tel:2125550147");
   assert.equal(await page.locator('[data-hpd-smoke="worker-work"] li').count(), 2);
+  assert.match(await page.locator('[data-hpd-smoke="worker-where"]').innerText(), /Where: Inside the apartment \(apt 4B\): kitchen/);
+  assert.match(await page.locator('[data-hpd-smoke="worker-full"]').innerText(), /REPLACE THE KITCHEN FAUCET\.\nPATCH THE CEILING\./);
+  assert.equal(await page.locator('[data-hpd-smoke="worker-call-tenant"]').getAttribute("href"), "tel:7185550100");
   await page.locator('[data-hpd-smoke="worker-photo"]').first().check();
   await page.locator('[data-hpd-smoke="worker-photo-file"]').nth(1).setInputFiles({ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") });
   await page.locator('[data-hpd-smoke="worker-send-photos"]').click();

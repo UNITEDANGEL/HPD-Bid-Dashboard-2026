@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✓ 20 Nov: one Claude, and a full worker package (owner: "duplicate Claudes ... we only have one Claude", "the package I send the worker is very important")
+1. ✅ One Claude on the phone: the middle mascot only. No side icon / strip on the map, no bottom text bar, no bubble that pops up at app open. Tap = Ask for a change with the cursor in the box; hold = talk to the AI. Test: test-browser-claude-side-icon.mjs.
+2. ✅ Worker package: 🚪 where the work is (apartment or public part, read from HPD's description), HPD's full description (no prices), tenant name + phone by default, Before / After photo spots always. Tests: test-work-where.mjs, test-browser-crew-share.mjs, test-browser-worker.mjs.
+
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
 - 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.
 - Claude working = small icon on the side; right column (Locate, + / −, side tab, old-jobs broom) spaced; weather chip only for warnings.

@@ -40,6 +40,8 @@ try {
   await settle();
   const bar = page.locator('[data-hpd-smoke="fc-onsite"]');
   await bar.waitFor({ timeout: 20000 });
+  // The "New update" card can sit over the bottom of the map on a new version: close it first.
+  await page.locator('[data-hpd-smoke="fc-newupdate-ok"]').click({ timeout: 4000 }).catch(() => {});
   await page.locator('[data-hpd-smoke="fc-onsite-left"]').click();
   await bar.waitFor({ state: "detached", timeout: 10000 });
   await page.reload({ waitUntil: "load" });

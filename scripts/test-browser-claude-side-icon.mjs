@@ -1,4 +1,4 @@
-// Claude working is a small icon on the side (owner, 20 Nov), not a strip on the map; tap it to open the live line.
+// One Claude only (owner, 20 Nov): no Claude on the map; tapping the middle Claude opens Ask for a change, cursor in the box.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
@@ -8,7 +8,7 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(c);
-  await c.addInitScript(() => { try { localStorage.setItem("hpd-test-claude-icon", "1"); localStorage.setItem("hpd-side-open", "1"); } catch { /* */ } });
+  await c.addInitScript(() => { try { localStorage.setItem("hpd-test-claude-icon", "1"); localStorage.setItem("hpd-side-open", "1"); localStorage.setItem("hpd-test-one-claude", "1"); } catch { /* */ } });
   const ago = (sec) => new Date(Date.now() - sec * 1000).toISOString();
   const overrides = {
     "CLAUDE-HEARTBEAT": { at: ago(120), every: 9 },
@@ -22,17 +22,23 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
-  const icon = page.locator('[data-hpd-smoke="fc-claude-side-icon"]');
-  await icon.waitFor({ timeout: 60000 });
-  assert.equal(await page.locator('[data-hpd-smoke="fc-claude-live"]').count(), 0, "no strip on the map");
-  const box = await icon.boundingBox();
-  assert.ok(box.width <= 60 && box.x < 60, "a small icon at the side");
-  await icon.click();
-  await page.locator('[data-hpd-smoke="fc-claude-live"]').waitFor();
-  await page.locator('[data-hpd-smoke="fc-claude-live-hide"]').click();
-  await icon.waitFor();
+  // One Claude only (owner, 20 Nov): nothing of Claude on the map, just the middle button.
+  await page.waitForTimeout(1500);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-claude-side-icon"]').count(), 0, "no second Claude at the side");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-claude-live"]').count(), 0, "no Claude strip on the map");
+  const orb = page.locator('[data-hpd-smoke="fc-claude-orb"]');
+  assert.equal(await page.locator('[data-hpd-smoke="fc-chatbar"]').count(), 0, "no second Claude text bar at the bottom");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-orb-say"]').count(), 0, "no bubble pops up by itself");
+  assert.equal(await orb.count(), 1, "one Claude button");
+  assert.equal(await orb.getAttribute("data-mode"), "working", "the middle Claude shows it is working");
+  // Tap Claude: Ask for a change opens with the cursor in the box.
+  await orb.click();
+  const box = page.locator('[data-hpd-smoke="fc-ask-change-text"]');
+  await box.waitFor({ state: "visible" });
+  await page.waitForFunction(() => document.activeElement?.getAttribute("data-hpd-smoke") === "fc-ask-change-text", null, { timeout: 5000 });
+  assert.equal(await page.locator('[data-hpd-smoke="fc-agent-type-input"]').count(), 0, "not the AI chat");
   assert.deepEqual(errors, []);
-  console.log("PASS Claude working: small icon at the side, tap opens the live line, ◂ puts it back");
+  console.log("PASS one Claude: no side icon, strip, bottom text bar or pop-up bubble, tapping Claude opens Ask for a change with the cursor in the box");
 } finally {
   await browser.close();
 }

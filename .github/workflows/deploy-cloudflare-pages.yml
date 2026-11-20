@@ -94,6 +94,7 @@ jobs:
           node scripts/test-driving-link.cjs
           node scripts/test-no-access-proof.mjs
           node scripts/test-photo-pairs.mjs
+          node scripts/test-work-where.mjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs
           node scripts/test-drive-full-backup.mjs
@@ -360,6 +361,7 @@ jobs:
             scripts/test-browser-week-ahead.mjs \
             scripts/test-browser-affidavit-flow.mjs \
             scripts/test-browser-worker.mjs \
+            scripts/test-browser-crew-share.mjs \
             scripts/test-browser-stats.mjs \
             scripts/test-browser-route.mjs \
             scripts/test-browser-next-stop.mjs \

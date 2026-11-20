@@ -33,18 +33,25 @@ try {
   assert.match(t1, /📸 Photos HPD needs: before photos, before video, after photos, after video\./);
   assert.match(t1, /🏢 Building: Super Jose \(212\) 555-0147 \(basement door\)/);
   assert.match(t1, /Map: https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/);
-  assert.ok(!/Tenant:/.test(t1) && (!tenantPhone || !t1.replace(/\D/g, "").includes(tenantPhone)), "no tenant unless ticked");
+  // 20 Nov: the tenant's name and phone go in by default; HPD's full description and where the work is too.
+  if (tenantPhone) assert.ok(t1.replace(/\D/g, "").includes(tenantPhone), "tenant phone by default");
+  assert.match(t1, /🔔 Tenant: /);
+  assert.match(t1, /\nHPD's full description:\n\S/);
+  if (/PUBLIC HAL|APT|APARTMENT|KITCHEN|BATHROOM|STAIR|ENTRANCE/i.test(job.JobDescription || "")) assert.match(t1, /\n🚪 Where: (Inside the apartment|Public part of the building)/);
+  const link = /\/worker\/#j=([A-Za-z0-9_-]+)/.exec(t1)[1];
+  const wj = JSON.parse(Buffer.from(link, "base64url").toString("utf8"));
+  assert.ok(wj.photos.some((p) => /before/i.test(p)) && wj.photos.some((p) => /after/i.test(p)), "before and after spots for the worker");
+  assert.ok(wj.full && wj.full.length > 10, "full description in the worker link");
   assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /Sent to your worker/);
-  // With the tenant ticked.
+  // Untick the tenant: left out.
   await page.evaluate(() => { window.__shared = null; });
-  await page.locator('[data-hpd-smoke="jc-crew-tenant"]').check();
+  await page.locator('[data-hpd-smoke="jc-crew-tenant"]').uncheck();
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
   const t2 = await page.evaluate(() => window.__shared.text);
-  if (tenantPhone) assert.ok(t2.replace(/\D/g, "").includes(tenantPhone), "tenant phone when ticked");
-  assert.match(t2, /🔔 Tenant: /);
+  assert.ok(!/Tenant:/.test(t2) && (!tenantPhone || !t2.replace(/\D/g, "").includes(tenantPhone)), "no tenant when unticked");
   assert.deepEqual(errors, []);
-  console.log("PASS crew share: job, address, the work, photos still needed, the super, map link; the tenant only when ticked");
+  console.log("PASS crew share: job, address, the work, photos still needed, the super, map link; the tenant by default (untick leaves it out), where the work is, HPD's full description, before/after spots");
 } finally {
   await browser.close();
 }

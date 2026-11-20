@@ -130,7 +130,7 @@ function paperLine(p: Paper, nowMs: number): string {
   const d = daysLeft(p.expires, nowMs);
   return d < 0 ? `ran out ${-d} day${d === -1 ? "" : "s"} ago` : d === 0 ? "runs out today" : `${d} day${d === 1 ? "" : "s"} left`;
 }
-import { crewText } from "../../lib/crew-share";
+import { crewText, workWhere, workFull } from "../../lib/crew-share";
 import { workerLink } from "../../lib/worker-link";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
@@ -1402,7 +1402,8 @@ export default function FieldCommandClient() {
   // until you pick days, a borough, a search or tap ✕ on the note.
   const [jobsKept, setJobsKept] = useState(false);
   // 👷 Send a job to a worker: include the tenant (off unless ticked), the last message.
-  const [crewTenant, setCrewTenant] = useState(false);
+  // 20 Nov (owner: "I need to give the tenant's phone number" to the worker): ticked by default; untick to leave it out.
+  const [crewTenant, setCrewTenant] = useState(true);
   const [crewMsg, setCrewMsg] = useState("");
   // 🗺 Jobs opens on the map (owner, 8 Nov: "when I click Jobs it should show me the jobs, not the list first; I can
   // choose to see the list"): the list folded to its bar, ☰ List opens it. ("hpd-jobs-open" = "list" opens the list.)
@@ -1742,7 +1743,16 @@ export default function FieldCommandClient() {
   // 🤖 Claude working shows as a small round icon on the side (owner, 20 Nov: "I don't want to see Claude working on the map,
   // a smaller icon on the side"); tap it to open the live line, tap ◂ to close. Browser tests see it open unless they ask for the icon.
   const [claudeSide, setClaudeSideState] = useState(false);
-  useEffect(() => { try { const v = localStorage.getItem("hpd-claude-side"); setClaudeSideState(v === "1" || (v === null && typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-claude-icon") !== "1")); } catch { /* private mode */ } }, []);
+  useEffect(() => { try { const v = localStorage.getItem("hpd-claude-side"); void v; setClaudeSideState(typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-claude-icon") !== "1"); } catch { /* private mode */ } }, []);
+  // 20 Nov (owner: "when I click Claude it should take me to the text bar, I wanna ask you a question"): a tap on the middle
+  // Claude opens Ask for a change with the cursor in the box; the AI chat is ✨ Talk to the AI in All (or hold Claude to talk).
+  // Browser tests keep the old tap (AI chat) unless they ask for this.
+  // Same day (owner: "when I open the app Claude is opening up ... multiple Claudes, this one with a text bar on the bottom,
+  // why do I need that? I have the guy, the icon"): on the phone no bubble pops up by itself and no text bar sits at the
+  // bottom; the mascot is the one Claude. Browser tests keep the old screen unless they ask (hpd-test-one-claude).
+  const [oneClaude, setOneClaude] = useState(false);
+  useEffect(() => { try { setOneClaude(!navigator.webdriver || localStorage.getItem("hpd-test-one-claude") === "1"); } catch { setOneClaude(true); } }, []);
+  const orbOpensAsk = () => oneClaude;
   const setClaudeSide = (on: boolean) => { setClaudeSideState(on); try { localStorage.setItem("hpd-claude-side", on ? "1" : "0"); } catch { /* private mode */ } };
   // 🤖 Claude on the map is one slim live line by default (owner, 3 Nov: "like a real helper on the side ... more room
   // on the map"); tap it for the whole card. Remembered on this phone.
@@ -8127,10 +8137,10 @@ export default function FieldCommandClient() {
                         }, 450);
                       }}
                       onPointerUp={() => window.clearTimeout(holdTimerRef.current)}
-                      onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); setAgentFromDock(true); startAgentChat(true); }}>
+                      onPointerLeave={() => window.clearTimeout(holdTimerRef.current)} aria-label={`Claude: ${mode === "ask" ? "needs your answer" : mode === "working" ? `working now${claudeNow?.text ? `: ${claudeNow.text}` : ""}` : mode === "on" ? "on, ready for a request" : "off right now"}. ${asks ? "Claude has a question. " : ""}Tap to ask Claude, hold to talk`} onClick={() => { if (holdingRef.current || Date.now() - holdEndedRef.current < 800) return; unlockChime(); if (orbOpensAsk()) { goTo("requests", ""); return; } setAgentFromDock(true); startAgentChat(true); }}>
                       <span className="fc-ai-orb-core" aria-hidden="true"><HelperFace key={orbBack} mode={orbHappy ? "happy" : mode === "working" ? "working" : mode === "ask" ? "ask" : boardUrgent.some((r) => r.dueAt && hoursLeft(r, Date.now()) < 0) ? "worried" : orbNight ? "sleep" : mode === "off" ? "off" : wonToday ? "proud" : "idle"} size={56} className={orbBack && Date.now() - orbBack < 1500 ? "is-back" : ""} outfit={robotOutfit({ happy: orbHappy, sleep: !orbHappy && mode !== "working" && mode !== "ask" && orbNight, wx: wxChip })} arms={orbHappy ? "thumbs" : orbSay || orbTap ? "wave" : ""} />{goal.total > 0 ? <svg className={`fc-goal-ring${goal.sent >= goal.total ? " is-full" : ""}`} viewBox="0 0 100 100" data-hpd-smoke="fc-goal-ring" data-sent={goal.sent} data-total={goal.total}><circle className="is-track" cx="50" cy="50" r="46" /><circle className="is-done" cx="50" cy="50" r="46" strokeDasharray={`${(289 * Math.min(1, goal.sent / goal.total)).toFixed(1)} 289`} /></svg> : null}{asks ? <b className="fc-claude-orb-badge is-ask" data-hpd-smoke="fc-claude-orb-ask">{asks} question{asks === 1 ? "" : "s"}</b> : autoUpgrade ? <b className="fc-claude-orb-badge is-auto" data-hpd-smoke="fc-claude-orb-auto">🔁</b> : null}</span><span className="fc-fab-label" data-hpd-smoke="fc-claude-label">{mode === "working" || claudePct !== null ? `Working${claudePct !== null ? ` ${claudePct}%` : ""}` : "Claude"}</span>{sideCount && !asks ? <b className="fc-claude-orb-count" data-hpd-smoke="fc-claude-orb-count" aria-label={`${sideCount} new`}>{sideCount}</b> : null}
                     </button>
-                    {orbSay && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
+                    {orbSay && !oneClaude && !bidsOpen && !selectedJob && !routeOpen && !moreOpen ? (
                       <button type="button" key={orbSay.at} className="fc-orb-say" data-hpd-smoke="fc-orb-say" onClick={() => { const say = orbSay; setOrbSay(null); unlockChime(); setAgentFromDock(true); if (say.run) { agentRef.current(say.run); return; } setAgent({ heard: "🗨", reply: say.full }); speak(say.full, 100); }}>{orbSay.text}</button>
                     ) : null}
                     </>
@@ -8369,6 +8379,9 @@ export default function FieldCommandClient() {
             const t = live.find((x) => x.status === "Waiting for you") || live.find((x) => x.status !== "Done" && Boolean(x.workingAt) && Date.now() - Date.parse(x.workingAt) < 30 * 60000) || live[0];
             const nowOn = claudeNowFresh(claudeNow) && claudeNow ? claudeNow : null;
             if (selectedJob || jobsOpen || bidsOpen || noticesOpen || whatsNewOpen || boardOpen || trackerOpen || !sideOpen) return null;
+            // One Claude only (owner, 20 Nov: "duplicate Claudes, one in the middle and one on the map; take that other Claude out"):
+            // the middle button shows working / question; nothing of Claude sits on the map on the phone.
+            if (!claudeSide) return null;
             const talkTo = t && t.status !== "Done" ? t : null;
             const tell = async (raw: string) => {
               const text = raw.trim();
@@ -9237,7 +9250,7 @@ export default function FieldCommandClient() {
                       try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
-                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) };
+                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
                       const text = crewText(crewJob) + `\n\nWorker view (job card, call, navigate, photos): ${workerLink(window.location.origin, crewJob)}`;
                       const nav = navigator as Navigator & { share?: (d: { title: string; text: string }) => Promise<void> };
                       if (nav.share) { try { await nav.share({ title: `HPD job ${id}`, text }); setCrewMsg("Sent to your worker's app."); } catch { /* closed the share sheet */ } }
@@ -9249,7 +9262,7 @@ export default function FieldCommandClient() {
                       try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
-                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) };
+                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
                       const text = crewText(crewJob) + `
 
 Worker view (job card, call, navigate, add photos): ${workerLink(window.location.origin, crewJob)}`;
@@ -10614,7 +10627,7 @@ Worker view (job card, call, navigate, add photos): ${workerLink(window.location
             onNext={() => go(noticeWalk.i + 1)} onPrev={() => go(Math.max(0, noticeWalk.i - 1))} onStop={() => setNoticeWalk(null)} onSpeak={say} />
         );
       })() : null}
-      {(!agent || agentTucked) && !selectedJob && !moreOpen && !routeOpen && dockEdit < 0 ? (
+      {(!agent || agentTucked) && !oneClaude && !selectedJob && !moreOpen && !routeOpen && dockEdit < 0 ? (
         <form className="fc-chatbar" data-hpd-smoke="fc-chatbar" role="search" onSubmit={(e) => {
           e.preventDefault();
           const t = chatBarText.trim();

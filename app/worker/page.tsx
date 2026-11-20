@@ -42,10 +42,12 @@ export default function WorkerPage() {
       <header className="ios-navbar"><span className="ios-navbar-eyebrow">Your job</span><h1 className="ios-large-title" data-hpd-smoke="worker-id">{job.id}</h1></header>
       <div className="ios-content" style={{ fontSize: 20, lineHeight: 1.45 }}>
         <p data-hpd-smoke="worker-address"><strong>📍 {addr}</strong>{job.by ? <><br />Finish by {job.by}</> : null}</p>
+        {job.where ? <p data-hpd-smoke="worker-where" style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(10,132,255,.12)", fontWeight: 700 }}>🚪 Where: {job.where}</p> : null}
         <a style={big} href={maps} data-hpd-smoke="worker-nav">🧭 Navigate</a>
         {job.contact ? <a style={{ ...big, background: "#30a14e" }} href={tel(job.contact.phone)} data-hpd-smoke="worker-call-super">📞 Call {job.contact.name}{job.contact.note ? ` (${job.contact.note})` : ""}</a> : null}
         {job.tenant?.phone ? <a style={{ ...big, background: "#30a14e" }} href={tel(job.tenant.phone)} data-hpd-smoke="worker-call-tenant">📞 Call tenant{job.tenant.name ? ` ${job.tenant.name}` : ""}</a> : null}
         {job.work.length ? <><h2>The work</h2><ul data-hpd-smoke="worker-work">{job.work.map((w, i) => <li key={i}>{w}</li>)}</ul></> : null}
+        {job.full ? <details open data-hpd-smoke="worker-full"><summary style={{ fontWeight: 700 }}>📄 HPD&apos;s full description</summary><p style={{ whiteSpace: "pre-wrap", fontSize: 17 }}>{job.full}</p></details> : null}
         {job.photos.length ? <>
           <h2>📸 Photos to take ({left} left)</h2>
           <p style={{ opacity: 0.7, marginTop: 0 }}>Same spot before and after, lights on.</p>
