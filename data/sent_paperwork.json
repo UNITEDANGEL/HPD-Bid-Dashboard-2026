@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T18:07:30.652116+00:00",
+"generatedAt": "2026-11-20T18:19:01.513193+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -21312,6 +21312,23 @@
 "outcome": "",
 "subject": "ER00598 51-03 108 STREET",
 "via": "hpd-staff"
+}
+],
+"ER00768": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER00768 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - ER00768 - No Access - 126 EAST 103 STREET, 10029",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER00768 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - ER00768 - No Access - 126 EAST 103 STREET, 10029"
 }
 ],
 "ER00857": [
