@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T15:47:48.738627+00:00",
+"generatedAt": "2026-11-20T15:57:18.363740+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -18832,6 +18832,23 @@
 "outcome": "",
 "subject": "Re: Re: Repeated Request for Affidavits, Invoices and Photos",
 "via": "hpd-staff"
+}
+],
+"EQ27441": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - EQ27441 - No Access.pdf",
+"outcome": "no_access",
+"subject": "Fwd: SIGNED - EQ27441 - No Access - 89-04 148 STREET, 11435",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - EQ27441 - No Access.pdf",
+"outcome": "no_access",
+"subject": "SIGNED - EQ27441 - No Access - 89-04 148 STREET, 11435"
 }
 ],
 "EQ27459": [
