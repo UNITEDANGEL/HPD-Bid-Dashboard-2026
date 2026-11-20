@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-20T21:22:39.132857+00:00",
+"generatedAt": "2026-11-20T21:33:07.603002+00:00",
 "since": "2026/11/06",
 "jobs": {
 "EN04541": [
@@ -22251,6 +22251,23 @@
 "outcome": "",
 "subject": "Re: STATUS UPDATE REQUEST- OMO#ER07749, OMO#ER08552, OMO#ER07663",
 "via": "hpd-staff"
+}
+],
+"ER08795": [
+{
+"date": "2026-11-20",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "SIGNED - ER08795 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "Fwd: SIGNED - ER08795 - Work Completed - 1515 WEST 1 STREET, 11204",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-20",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER08795 - Work Completed.pdf",
+"outcome": "work_completed",
+"subject": "SIGNED - ER08795 - Work Completed - 1515 WEST 1 STREET, 11204"
 }
 ],
 "ER09460": [
