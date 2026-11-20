@@ -1706,6 +1706,8 @@ export default function FieldCommandClient() {
   const [appVersion, setAppVersion] = useState(BUILT_COMMIT);
   // What's new (public/data/whats-new.json, written with every change) and "App updated" once per new version.
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  // 20 Nov (owner: "when I click the Claude button it should take me straight to Ask for a change; I have to scroll down"): opening the sheet jumps to the top and puts the cursor in the ask box.
+  useEffect(() => { if (!whatsNewOpen) return; const t = window.setTimeout(() => { const body = document.querySelector('[data-hpd-smoke="fc-whatsnew"] .fc-summary-body'); if (body) body.scrollTop = 0; const box = document.querySelector<HTMLTextAreaElement>('[data-hpd-smoke="fc-ask-change-text"]'); if (box && !box.value) box.focus({ preventScroll: true }); }, 120); return () => window.clearTimeout(t); }, [whatsNewOpen]);
   const [whatsNew, setWhatsNew] = useState<WhatsNew | null | undefined>(undefined);
   const [justUpdated, setJustUpdated] = useState(false);
   // "🆕 New update includes…" (owner, 27 Oct: "prompt me on every upgrade"): the What's new lines this phone hasn't seen
@@ -9222,6 +9224,19 @@ export default function FieldCommandClient() {
                       if (nav.share) { try { await nav.share({ title: `HPD job ${id}`, text }); setCrewMsg("Sent to your worker's app."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
                     }}>👷 Send to a worker</button>
+                    <button type="button" className="jc-email" data-hpd-smoke="jc-crew-whatsapp" onClick={() => {
+                      const t = tenantInfo(selectedJob);
+                      let contact = null;
+                      try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
+                      const sum = jobSummary(jobScope(selectedJob));
+                      const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
+                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })) };
+                      const text = crewText(crewJob) + `
+
+Worker view (job card, call, navigate, add photos): ${workerLink(window.location.origin, crewJob)}`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+                      setCrewMsg("WhatsApp opened: pick your worker and tap send.");
+                    }}>💬 Send on WhatsApp</button>
                     <label className="jc-crew-tenant"><input type="checkbox" checked={crewTenant} onChange={(e) => setCrewTenant(e.target.checked)} data-hpd-smoke="jc-crew-tenant" /> add the tenant&apos;s name and phone</label>
                     {crewMsg ? <small role="status" data-hpd-smoke="jc-crew-msg">{crewMsg}</small> : null}
                   </div>

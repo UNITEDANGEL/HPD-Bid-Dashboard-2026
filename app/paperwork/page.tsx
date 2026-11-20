@@ -1749,7 +1749,7 @@ export default function PaperworkPage() {
   // completion or refused access dates have to stay the same; you might have made a mistake on something else"): the
   // dates on the paperwork you sent HPD always win over the phone's, and they lock (🔒) until you say HPD asked to
   // change a date. Calls are filled only where the phone has none.
-  const [datesUnlocked, setDatesUnlocked] = useState(false);
+  const [datesUnlocked, setDatesUnlocked] = useState(true); // 20 Nov (owner: "not letting me update the start and completion date"): open by default; "Put the original dates back" locks them
   useEffect(() => {
     if (!correction || !sentDates || sentDatesUsed || !selectedJob || outcome === "pending") return;
     const us = (iso?: string) => (iso ? displayDate(iso) : "");

@@ -24,9 +24,14 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="worker-call-super"]').getAttribute("href"), "tel:2125550147");
   assert.equal(await page.locator('[data-hpd-smoke="worker-work"] li').count(), 2);
   await page.locator('[data-hpd-smoke="worker-photo"]').first().check();
+  await page.locator('[data-hpd-smoke="worker-photo-file"]').nth(1).setInputFiles({ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") });
+  await page.locator('[data-hpd-smoke="worker-send-photos"]').click();
+  await page.waitForFunction(() => window.__shared && window.__shared.files, null, { timeout: 5000 });
+  assert.equal(await page.evaluate(() => window.__shared.files.length), 1);
+  await page.evaluate(() => { window.__shared = null; });
   await page.locator('[data-hpd-smoke="worker-done"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
-  assert.match(await page.evaluate(() => window.__shared.text), /EQ15239 is done\. Photos taken: 1 of 2/);
+  assert.match(await page.evaluate(() => window.__shared.text), /EQ15239 is done\. Photos taken: 2 of 2/);
   await page.reload({ waitUntil: "load" });
   await page.locator('[data-hpd-smoke="worker-done"]').waitFor();
   assert.match(await page.locator('[data-hpd-smoke="worker-done"]').innerText(), /Done/);
