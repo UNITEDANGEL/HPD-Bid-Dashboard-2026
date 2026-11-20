@@ -12,6 +12,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✓ 20 Nov: Skip sends the job to the END of the fix line (owner: "if I skip a job it needs to go last... you keep bringing that job up")
+
 ## ✓ 20 Nov: faster answers from phone to Claude (owner: "what else make a better faster response from my phone to Claude")
 
 Measured the last 30 requests: first answer took 5 min at best, 50 min to 17 h when several were sent together or Claude was busy

@@ -5,6 +5,7 @@
       "date": "Nov 20, 2026",
       "title": "Notices on the map with time left · every job on a notice email",
       "items": [
+        "✓ Skip goes to the end: when you tap Skip this one while fixing notices one by one, that job moves to the end of the line and does not come back first.",
       "✓ No access / Refused access need no photos: when a visit is saved as No access or Refused access, the job card no longer says photos or videos are still needed.",
       "✓ Closed notices stop counting: once you close a notice or it is already sent, the map clock no longer shows its time left.",
         "✓ Faster answers from Claude: a request you send from your phone gets \"Seen ✓\" within about 20 seconds, with what Claude is doing and your place in line. A new request no longer waits while Claude works on another one, quick questions get answered before big changes, and small changes go live together.",

@@ -1292,6 +1292,8 @@ export default function PaperworkPage() {
   const [fixQueue, setFixQueue] = useState<{ omo: string; at: string; href?: string }[]>([]);
   useEffect(() => { try { setFixQueue(JSON.parse(sessionStorage.getItem("hpd-fix-queue") || "[]")); } catch { /* private mode */ } }, []);
   const queueAfter = (omo: string) => { const i = fixQueue.findIndex((q) => q.omo === omo.toUpperCase()); return i >= 0 ? fixQueue.slice(i + 1) : []; };
+  // Skip (owner, 20 Nov): the skipped job goes to the END of the line (it's skipped for a reason), saved before the next one opens.
+  const skipToEnd = (omo: string) => { try { const o = omo.toUpperCase(); const cur = fixQueue.find((q) => q.omo === o); if (!cur) return; sessionStorage.setItem("hpd-fix-queue", JSON.stringify([...fixQueue.filter((q) => q.omo !== o), cur])); } catch { /* private mode */ } };
   // From the notices board the link carries HPD's words and marked copy too (10 Nov "fix all").
   const nextFixHref = (q: { omo: string; at: string; href?: string }) => (q.href && q.href.startsWith("/paperwork/") ? q.href : `/paperwork/?job=${encodeURIComponent(q.omo)}&fix=${encodeURIComponent(q.at)}&auto=1`);
   // The outcome HPD's closing status shows, picked for you once the job has loaded (same as tapping it).
@@ -6214,7 +6216,7 @@ export default function PaperworkPage() {
               {selectedId && fixQueue.some((q) => q.omo === selectedId.toUpperCase()) ? (
                 <div className="pkg-fix-next" data-hpd-smoke="paperwork-fix-progress">
                   <small>Fixing one by one · {fixQueue.findIndex((q) => q.omo === selectedId.toUpperCase()) + 1} of {fixQueue.length}</small>
-                  {queueAfter(selectedId).length ? <a className="paperwork-secondary" data-hpd-smoke="paperwork-fix-skip-early" href={nextFixHref(queueAfter(selectedId)[0])}>Skip this one → {queueAfter(selectedId)[0].omo}</a> : null}
+                  {queueAfter(selectedId).length ? <a className="paperwork-secondary" data-hpd-smoke="paperwork-fix-skip-early" href={nextFixHref(queueAfter(selectedId)[0])} onClick={() => skipToEnd(selectedId)}>Skip this one → {queueAfter(selectedId)[0].omo}</a> : null}
                 </div>
               ) : null}
               {correction.reason ? <span>HPD: {correction.reason}</span> : null}
@@ -6449,7 +6451,7 @@ export default function PaperworkPage() {
                       <small>Fixing one by one · {fixQueue.length - queueAfter(selectedId).length} of {fixQueue.length}</small>
                       {correctionSaved && !correctionSaved.startsWith("error:")
                         ? <a className="paperwork-print" data-hpd-smoke="paperwork-fix-next-go" href={nextFixHref(queueAfter(selectedId)[0])}>Next: {queueAfter(selectedId)[0].omo} →</a>
-                        : <a className="paperwork-secondary" data-hpd-smoke="paperwork-fix-skip" href={nextFixHref(queueAfter(selectedId)[0])}>Skip this one → {queueAfter(selectedId)[0].omo}</a>}
+                        : <a className="paperwork-secondary" data-hpd-smoke="paperwork-fix-skip" href={nextFixHref(queueAfter(selectedId)[0])} onClick={() => skipToEnd(selectedId)}>Skip this one → {queueAfter(selectedId)[0].omo}</a>}
                     </div>
                   ) : selectedId && fixQueue.some((q) => q.omo === selectedId.toUpperCase()) && correctionSaved && !correctionSaved.startsWith("error:") ? (
                     <p className="pkg-correction-done" data-hpd-smoke="paperwork-fix-done">🎉 That was the last one. <a href="/map/?view=all&map=1">Back to the map</a> to print and mail them (HPD notices → 🖨 Print folder).</p>

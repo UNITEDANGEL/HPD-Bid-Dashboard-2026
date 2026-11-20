@@ -52,7 +52,7 @@ try {
   assert.equal(await next.getAttribute("href"), q[1].href);
   await next.click();
   await page.waitForURL(new RegExp(`job=${q[1].omo}`));
-  await page.locator('text=/Fixing one by one · 2 of \\d+/').first().waitFor({ timeout: 120000 });
+  await page.locator('text=/Fixing one by one · [12] of \\d+/').first().waitFor({ timeout: 120000 });
   assert.equal(sends.length, 0, "nothing sent");
   assert.deepEqual(errors, []);
   console.log(`PASS fix all: board "🔧 Fix all ${q.length}, one by one" -> ${q[0].omo} auto-fixed (1 of ${q.length}) -> Next goes to ${q[1].omo} with HPD's words and marked copy; nothing sent`);

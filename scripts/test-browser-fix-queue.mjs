@@ -33,7 +33,7 @@ try {
     const ok = await review.waitFor({ timeout: 45000 }).then(() => true).catch(() => false);
     if (ok) break;
     const prog = page.locator('[data-hpd-smoke="paperwork-fix-progress"]');
-    assert.match(await prog.innerText(), new RegExp(`Fixing one by one · ${i + 1} of ${n}`));
+    assert.match(await prog.innerText(), new RegExp(`Fixing one by one · 1 of ${n}`)); // a skipped job goes to the END of the line (20 Nov), so the next one is 1 of N
     const before = page.url();
     await prog.locator('[data-hpd-smoke="paperwork-fix-skip-early"]').click();
     await page.waitForURL((u) => u.toString() !== before, { timeout: 30000 });
