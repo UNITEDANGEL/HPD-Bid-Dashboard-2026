@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T20:13:56.805565+00:00",
+  "generatedAt": "2026-11-20T20:25:33.123748+00:00",
   "days": 14,
   "bids": [
     {
@@ -1444,6 +1444,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.637325,
       "lng": -73.967736
+    },
+    {
+      "omo": "ER08705",
+      "bidDue": "2026-11-23",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-24",
+      "workCompletion": "2026-12-04",
+      "address": "22 ST NICHOLAS PLACE",
+      "borough": "MN",
+      "itbFile": "ER08705_112026031626.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BATHROOM WINDOW: AT BATHROOM BATHTUB: AT APT 21 2ND STORY HALLWAY: NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BATHROOM: AT BATHROOM WINDOW: INSTALL NEW COUNTERBALANCES ON UPPER AND LOWER WINDOW SASH AND RETURN WINDOW TO SAFE WORKING ORDER. AT CLAWFOOT BATHTUB: PROPERLY REMOVE THE CRACKED/DEFECTIVE CLAWFOOT BATHTUB. SUPPLY AND INSTALL WITH NEW CLAWFOOT BATHTUB. RESTORE ALL AFFECTED AREAS INCLUDING BUT NOT LIMITED TO FLOOR AND WALL TILES. SEAL/GROUT AROUND TUB. ENSURE NO LEAKS FROM PLUMBING AND SEALING INVOLVE WITH TUB. RESTORE TO PROPER WORKING ORDER. AT APT 21 2ND STORY HALLWAY: PROPERLY DEMOLISH/REMOVE THE CERAMIC FLOOR TILES AT LEAST 167 SQ. FT. FASTEN, REINFORCE OR REPLACE ALL LOOSE AREAS OF SUB-FLOOR WHERE NECESSARY AND REPLACE WITH NEW CERAMIC FLOOR TILES SIMILAR TO EXISTING, GROUT AND MAKE ALL NECESSARY CLEAN UP TO RESTORE FLOOR TO A SAFE/APPROPRIATE ORDER. REMOVE ALL WORK-RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; ANGELA MARTINEZ @ 212 863-6135; DANILO DE LA CRUZ @ 212 863-6010; IDRA LOPEZ @ 212 863-6231; SADIAYA MOORE @ 212 863-6191; SHARECE BLACKSON @ 212 863-6160; MILLICENT WRIGHT @ 212 863-6132; MADINA BELLO @ 863-5496; WILLIAM FRENCH @ 212 863-5976 WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED THE WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863-6008. COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863 6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1795205797000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.827751,
+      "lng": -73.941719
     },
     {
       "omo": "ER10214",
