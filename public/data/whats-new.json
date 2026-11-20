@@ -2,6 +2,15 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 20, 2026",
+      "title": "Notices on the map with time left · every job on a notice email",
+      "items": [
+        "⏱ Notices open on the map: tap Notices and the 24 and 72-hour jobs show on the map, each pin with its time left (\"⏱ 24h · 3h left\") or how late it is (\"⏱ 24h · 22h late\"). The list at the bottom starts with the most urgent. The board and other picks are under Change ▴.",
+        "🚨 Lewis notices: when one email lists many jobs (like the 18 Nov 24 HR & 72 HR notice with 18 jobs), each job now gets its own notice with its own 24- or 72-hour deadline. Before, only the first job showed and the Lewis tab said 0.",
+        "📅 Next 7 days now shows those notice deadlines too (overdue ones at the top of today)."
+      ]
+    },
+    {
       "date": "Nov 19, 2026",
       "title": "Second look before sending · Next 7 days · Same-block jobs together",
       "items": [

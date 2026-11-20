@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { loadLib } from "./daily-report.mjs";
 
-const { buildBoard, daysWaiting, draftReply, hoursLeft, urgentRows } = await loadLib("notice-board");
+const { boardSide, buildBoard, daysWaiting, draftReply, hoursLeft, urgentRows } = await loadLib("notice-board");
 
 const now = Date.parse("2026-10-19T10:00:00Z"); // Monday: the Friday 10/16 notices are due today (weekdays only)
 const hpd = (at, text = "Notice. Darlene Lewis lewisd@hpd.nyc.gov") => ({ at, text, hpd: true, mine: false });
@@ -174,4 +174,32 @@ console.log("PASS no answer: flagged after 5 days with no answer, waits again af
   assert.equal(r.ER22222.askedTwice, null, "sent again after the notice: no flag");
   assert.equal(r.ER33333.askedTwice, null, "never sent: no flag");
   console.log("PASS HPD asked twice: a notice after the job's paperwork was already emailed shows that date and file; sent after the notice or never sent = no flag");
+}
+{
+  // One notice email listing many jobs, each with its own deadline (20 Nov, live: Lewis's "24 HR & 72 HR POOR PERFORMANCE
+  // NOTICES" named 18 jobs; the board showed only the first, "Lewis 0"). Our "received the list" reply = replied for all.
+  const at = "2026-11-18T20:49:36Z"; // Wednesday 3:49 PM New York
+  const text = "Kindly see attached.\nOMO#ER70001- 24 HR POOR PERFORMANCE NOTICE\nOMO#ER70002-24 HR POOR PERFORMANCE NOTICE\nOMO#ER70003-72 HR POOR PERFORMANCE NOTICE\nOMO#ER70004- 72 HR POOR PERFORMANCE NOTICE\nJoy-Ann Lewis LewisJ@hpd.nyc.gov";
+  const list = { id: "L", subject: "24 HR & 72 HR POOR PERFORMANCE NOTICES", omos: ["ER70001", "ER70002", "ER70003", "ER70004"], people: ["Joy-Ann Lewis"], messages: [
+    { at, text, hpd: true, mine: false, files: ["NOTICES.pdf"] },
+    { at: "2026-11-19T13:39:00Z", text: "Thank you, we received the list.", hpd: false, mine: true, files: ["Outlook-abc.png"] },
+    { at: "2026-11-19T15:38:00Z", text: "Noted and thank you.", hpd: true, mine: false },
+    { at: "2026-11-19T14:00:00Z", text: "Here is the paperwork for ER70004", hpd: false, mine: true, files: ["ER70004 AFF INVOICE.pdf"] },
+  ] };
+  const plain = { id: "P", subject: "72 HR POOR PERFORMANCE NOTICE- OUTSTANDING OMOS", omos: ["ER80001", "ER80002"], people: ["Joy-Ann Lewis"], messages: [{ at, text: "72 HR notices\nER80001\nER80002", hpd: true, mine: false }] };
+  const r = buildBoard({ threads: [list, plain], sent: {}, marks: {}, closed: new Set(), now: Date.parse("2026-11-20T15:00:00Z") });
+  const b = Object.fromEntries(r.map((x) => [x.omo, x]));
+  assert.deepEqual(Object.keys(b).sort(), ["ER70001", "ER70002", "ER70003", "ER70004", "ER80001", "ER80002"], "every job on the list has its own row");
+  assert.equal(b.ER70001.hours, 24); assert.equal(b.ER70002.hours, 24);
+  assert.equal(b.ER70003.hours, 72); assert.equal(b.ER80001.hours, 72, "no per-job line: the subject's hours");
+  assert.equal(b.ER70001.dueAt, "2026-11-19T20:49:36.000Z", "24 hours from Wednesday 3:49 PM");
+  assert.equal(b.ER70003.dueAt, "2026-11-23T20:49:36.000Z", "72 weekday hours: Monday 3:49 PM");
+  assert.equal(b.ER70001.next, "made", "the 'received the list' reply counts as replied; the signature picture is not paperwork");
+  assert.ok(b.ER70004.steps.sent.done, "paperwork named for the job = sent");
+  assert.equal(boardSide(b.ER70001), "tosend", "a note to the whole list (and HPD's 'noted') leaves the job to send, not 'HPD answered'");
+  assert.equal(b.ER70003.steps.sent.done, false, "another job's paperwork doesn't count");
+  assert.equal(b.ER80002.next, "replied");
+  assert.equal(b.ER70004.next, null, "HPD's \"noted\" after its paperwork: done");
+  assert.equal(r.filter((x) => x.next && x.kind === "ppn").length, 5, "the Lewis tab counts every open one");
+  console.log("PASS one notice email for many jobs: a row per job with its own 24 / 72 hours, the list reply counts for all, paperwork only for the job it names");
 }

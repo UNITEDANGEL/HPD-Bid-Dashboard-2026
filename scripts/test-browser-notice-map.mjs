@@ -20,7 +20,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
   const allPins = await page.locator(".leaflet-marker-icon, .fc-pin").count();
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */
   await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 5000 }).catch(() => {}); if (!(await page.locator('[data-hpd-smoke="fc-board"]').count())) await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click(); // Notices opens the board itself (10 Nov)
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor();
@@ -41,7 +41,7 @@ try {
   await page.waitForTimeout(800);
   const pins = await page.locator(".leaflet-marker-icon, .fc-pin").count();
   assert.ok(pins > 0 && pins < allPins, `only the notice jobs on the map: ${pins} of ${allPins}`);
-  assert.match(await bar.innerText(), /Priority/);
+  assert.match(await bar.innerText(), /24 \/ 72 h|Priority/); // the pick it opened on (⏱ 24 / 72 h since 20 Nov)
   assert.deepEqual(errors, []);
   console.log(`PASS notices on the map: the board opens below the map, ⬆/🗺 switches, ✅ Done tab; Close leaves ${pins} notice jobs on the map (of ${allPins})`);
 } finally {

@@ -168,18 +168,26 @@ export function buildBoard(input: {
     const to = (theirs.map((m) => (HPD_EMAIL.exec(m.text) || [])[1]).find(Boolean) || "").toLowerCase();
     const who = t.people[0] || "Vendor tracking";
     if (PPN.test(t.subject)) {
-      const omo = t.omos[0];
-      const notice = theirs[0];
+      // One notice email can list many jobs, each with its own deadline (20 Nov, live: Lewis's "24 HR & 72 HR POOR
+      // PERFORMANCE NOTICES" named 18 jobs, the board showed only the first and "Lewis 0"). One row per job then.
+      const single = t.omos.length <= 1;
+      for (const omo of single ? [t.omos[0]] : t.omos) {
+      const notice = single ? theirs[0] : theirs.find((m) => m.text.includes(omo)) || theirs[0];
       if (!omo || now - Date.parse(notice.at) > days * 86400000) continue;
       const key = `${omo}:${t.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const hours: 24 | 72 = /\b24\s*-?\s*(HR|HOUR)/i.test(t.subject) && !/\b72\s*-?\s*(HR|HOUR)/i.test(t.subject) ? 24 : /\b72/.test(t.subject) ? 72 : 24;
-      const after = msgs.filter((m) => Date.parse(m.at) > Date.parse(notice.at));
+      const own = single ? null : new RegExp(`${omo}[^\\n]{0,12}?\\b(24|72)\\s*-?\\s*(HR|HOUR)`, "i").exec(notice.text);
+      const hours: 24 | 72 = own ? (Number(own[1]) as 24 | 72) : /\b24\s*-?\s*(HR|HOUR)/i.test(t.subject) && !/\b72\s*-?\s*(HR|HOUR)/i.test(t.subject) ? 24 : /\b72/.test(t.subject) ? 72 : 24;
+      // On a list: only emails about this job (naming it or its PDF), or about no job at all ("received the list").
+      const aboutJob = (m: BoardMessage) => single || m.text.includes(omo) || namesJob(m, omo) || (!/\b[A-Z]{2}\d{5}\b/.test(m.text) && !(m.files || []).some((f) => /[A-Z]{2}\d{5}/i.test(f)));
+      // Paperwork on a list must name the job (signature pictures like "Outlook-x.png" are not paperwork).
+      const hasPapers = (m: BoardMessage) => (m.files?.length || 0) > 0 && (single || m.text.includes(omo) || namesJob(m, omo)) && (single || (m.files || []).some((f) => !/^Outlook-.*\.(png|jpe?g|gif)$/i.test(f)));
+      const after = msgs.filter((m) => Date.parse(m.at) > Date.parse(notice.at) && aboutJob(m));
       const reply = after.find((m) => m.mine);
       const filed = latestFiled(omo, t.id, notice.at);
-      const withFiles = after.find((m) => m.mine && (m.files?.length || 0) > 0) || (filed ? { at: filed.at, text: "", hpd: false, mine: true, files: [filed.name] } : undefined);
-      const lastFiles = [...after].reverse().find((m) => m.mine && (m.files?.length || 0) > 0);
+      const withFiles = after.find((m) => m.mine && hasPapers(m)) || (filed ? { at: filed.at, text: "", hpd: false, mine: true, files: [filed.name] } : undefined);
+      const lastFiles = [...after].reverse().find((m) => m.mine && hasPapers(m));
       const answer = lastFiles ? after.find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastFiles.at)) : undefined;
       const handledAt = handledOf(omo, notice.at);
       const mark = { ...(input.marks[key] || {}), ...(handledAt ? { confirmed: handledAt } : {}) };
@@ -188,10 +196,10 @@ export function buildBoard(input: {
       const lastTheirs = lastMine ? [...after].reverse().find((m) => m.hpd && !m.mine && Date.parse(m.at) > Date.parse(lastMine.at)) : undefined;
       // HPD's word after our latest paperwork, in any email about the job.
       const papersAt = [lastFiles?.at || "", filed?.at || ""].sort().at(-1) || "";
-      const heard = settle(omo, papersAt ? hpdAnswerAfter(jobMsgs.get(omo) || msgs, papersAt) : { ok: null, problem: null });
+      const heard = settle(omo, papersAt ? hpdAnswerAfter(jobMsgs.get(omo) || (single ? msgs : after), papersAt) : { ok: null, problem: null });
       finish({
         problem: heard.problem, answered: heard.ok, handledAt,
-        lastMineAt: [lastMine?.at || "", filed?.at || ""].sort().at(-1) || "", lastTheirsAt: lastTheirs?.at || "", filed,
+        lastMineAt: [lastMine?.at || "", filed?.at || ""].sort().at(-1) || "", lastTheirsAt: lastTheirs?.at || "", filed, generalOnly: !single && !!reply && !withFiles && !after.some((m) => m.mine && (m.text.includes(omo) || namesJob(m, omo))) && !mark.replied && !mark.sent, // a note to the whole list ("received it") leaves this job to send, like Gafur's lists
         askedTwice: withFiles ? null : filedBefore(omo, notice.at),
         key, omo, threadId: t.id, subject: t.subject, kind: "ppn", hours, who, to,
         noticeAt: notice.at, dueAt: dueAfterWeekdays(notice.at, hours), followUpAt: "", // weekdays only: Friday's 24-hour notice is due Monday
@@ -199,6 +207,7 @@ export function buildBoard(input: {
         steps: { replied: step(reply?.at || "", "", mark.replied), made: step(withFiles?.at || "", sentAt, mark.made), sent: heard.problem ? step("", "", mark.sent) : sentStep(withFiles?.at || "", sentAt, notice.at, mark.sent), confirmed: step(heard.problem ? "" : confirmedAt(answer?.at || heard.ok?.at || "", withFiles?.at || "", sentAt, notice.at), closed.has(omo) ? "closed" : "", mark.confirmed) },
         sentAt, noticeText: notice.text.slice(0, 2500),
       });
+      }
       continue;
     }
     // A missing-documents list: one row per job on it.

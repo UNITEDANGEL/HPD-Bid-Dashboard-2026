@@ -12,6 +12,22 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 🚨 20 Nov: every job on a notice email gets its own notice (owner: "are the notices included, especially the 24 hr and 72 hr I received a few days ago" / "it says 0 from Lewis, that is not true")
+
+1. ✅ **One notice email, many jobs**: Lewis's 18 Nov "24 HR & 72 HR POOR PERFORMANCE NOTICES" names 18 jobs (4 × 24 h, 14 × 72 h);
+   the board made a row only for the first job, so the Lewis tab said 0 and Next 7 days showed no notice deadlines. Now every job
+   on the email has its own row with its own hours from its line (24 h due Thu 19 Nov 3:49 PM, 72 h due Mon 23 Nov 3:49 PM),
+   the same for the 6 Nov (11 jobs) and 29 Oct (7 jobs) lists. Our "received the list" reply counts as replied for all; only
+   paperwork named for the job counts as sent (signature pictures do not). Gafur's Missing Documents lists already had a row per
+   job. lib/notice-board.ts. Test: test-notice-board.mjs.
+   A note to the whole list ("received it") and HPD's "Noted" leave each job 📝 to send (not "HPD answered"), like Gafur's.
+2. ✅ **Notices open on the map** (owner: "24 hr and 72 hr on top; when I click I want a map view; on the map time remaining,
+   especially 24 hr, even if they are past due; I do not like the vendor board; make the notice board better"): tapping
+   Notices shows the map with ⏱ 24 / 72 h picked (the first pick): each job's pin says "⏱ 24h · 3h left" or "⏱ 24h · 22h
+   late" (24-hour tags always show, even where pins are close), the list at the bottom says the most urgent one and opens
+   most urgent first, late in red. The board, Check every notice and the other picks are one tap away (Change ▴).
+   Test: test-browser-notice-clock.mjs.
+
 ## 📬 19 Nov: Joy-Ann's 24 / 72-hour notices missing from the board (owner: "any email I receive should get on the board")
 
 1. ✅ **Quoted lists no longer count as answers**: a thank-you reply to Joy-Ann's list of 18 OMOs quoted the list under it (the "On … wrote:" line wraps onto two lines), so the app took it as answering all 18 and they left the board. Only the new words of a reply count now, and an old wrong reply time is replaced. Test: scripts/test-own-part.py.

@@ -31,7 +31,7 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */ await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor({ timeout: 60000 });
   await board.locator('[data-hpd-smoke="fc-board-side-waiting"]').click();

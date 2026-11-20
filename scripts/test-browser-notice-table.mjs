@@ -43,7 +43,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-stale-close"]').click();
 
   // 2) 📋 Every notice: number + address, to-do first, sent folded, emails folded.
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */
   await page.locator('[data-hpd-smoke="fc-notice-pick-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-dept-vendor"] .fc-notice-dept-head').click();
   await page.locator('[data-hpd-smoke="fc-notice-tab-requests"]').click();

@@ -28,7 +28,7 @@ test.tracker@hpd.nyc.gov`)] },
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
   while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').click();
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map on ⏱ 24 / 72 h (20 Nov): pick 🔥 Priority, then the board */ await page.locator('[data-hpd-smoke="fc-notice-pick-priority"]').click(); await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); await page.locator('[data-hpd-smoke="fc-notice-board-open"]').click();
   const board = page.locator('[data-hpd-smoke="fc-board"]');
   await board.waitFor({ timeout: 60000 });
   const litNow = () => page.evaluate((o) => [...document.querySelectorAll(".is-glow-priority[title]")].some((e) => (e.getAttribute("title") || "").startsWith(`${o} `)), OPEN);

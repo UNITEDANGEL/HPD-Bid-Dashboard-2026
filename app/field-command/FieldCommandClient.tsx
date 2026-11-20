@@ -1379,7 +1379,7 @@ export default function FieldCommandClient() {
   // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
   const [showOlderLayer, setShowOlderLayer] = useState(false);
   // Notices button (owner, 16 Oct): first asks what you're looking for, then the map shows just those jobs.
-  type NoticeKind = "" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep" | "erp" | "archive";
+  type NoticeKind = "" | "clock" | "all" | "priority" | "rejected" | "corrections" | "print" | "aep" | "erp" | "archive";
   const [noticeChooser, setNoticeChooser] = useState(false);
   // After a pick the picker shrinks to a thin bar so the map is in view (owner, 17 Oct: "take me to the map").
   const [noticeMini, setNoticeMini] = useState(false);
@@ -3446,7 +3446,20 @@ export default function FieldCommandClient() {
   // Rejections tracked to the money (17 Oct): rejected -> fixed -> printed -> emailed -> mailed -> paid in PIP.
   const payTrack = trackPayments({ rejections, corrections: toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }> });
   const heldBy = new Map(payTrack.rows.filter((r) => r.status === "held").map((r) => [r.omo, r.held]));
+  // ⏱ 24 / 72-hour notices still to send (owner, 20 Nov: "24 hr and 72 hr on top; when I click I want a map view; on the
+  // map the time remaining, especially 24 hr, even if they are past due"): each job's most urgent open notice.
+  const clockRow = new Map<string, BoardRow>();
+  for (const r of boardRows) {
+    if (r.kind !== "ppn" || !r.next || r.steps.sent.done || !r.dueAt) continue;
+    const had = clockRow.get(r.omo);
+    if (!had || Date.parse(r.dueAt) < Date.parse(had.dueAt)) clockRow.set(r.omo, r);
+  }
+  const clockLine = (r: BoardRow) => {
+    const d = dueText(r.dueAt);
+    return `${r.hours}h · ${/^overdue /.test(d) ? `${d.replace("overdue ", "")} late` : d}`;
+  };
   const noticeSets: Record<Exclude<NoticeKind, "">, Set<string>> = {
+    clock: new Set([...clockRow.values()].sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt)).map((r) => r.omo)),
     // 🔥 + every email from Lewis / Gafur still waiting on you, whatever it asks (10 Nov: status update requests too).
     priority: new Set([...vendorTodo.map((p) => p.omo), ...followReport.hpdAsked.map((r) => r.omo), ...vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => a.omo).filter((o) => findAnyJob(o))].filter((o) => !boardAnswered.has(o))),
     rejected: new Set(openRejections.map((r) => r.omo)),
@@ -3463,6 +3476,7 @@ export default function FieldCommandClient() {
   noticeSets.all = new Set([...noticeSets.priority, ...noticeSets.erp, ...noticeSets.aep, ...noticeSets.rejected, ...noticeSets.corrections, ...noticeSets.print].filter((o) => !noticeSets.archive.has(o) || noticeSets.rejected.has(o) || noticeSets.corrections.has(o) || noticeSets.print.has(o)));
   const noticeSetKey = noticeKind ? [...noticeSets[noticeKind]].sort().join(",") : "";
   const NOTICE_KINDS = [
+    { key: "clock", icon: "⏱", short: "24 / 72 h", title: "24 / 72-hour notices", note: "Lewis's 24 and 72-hour notices still to send: time left on each pin, the most urgent first" },
     { key: "all", icon: "📩", short: "All notices", title: "All notices", note: "Everything on the map at once" },
     { key: "priority", icon: "🔥", short: "Priority", title: "Priority · vendor tracking", note: "Waiting on you: Lewis (ERP) / Gafur (AEP) want the affidavit, invoice or an update" },
     { key: "erp", icon: "🚨", short: "Lewis · ERP", title: "Lewis · Emergency Repair (ERP) notices", note: "Lewis's 24 / 72-hour notices still to send" },
@@ -3479,18 +3493,21 @@ export default function FieldCommandClient() {
   if (followFilter === "notices" && noticeKind) {
     for (const omo of noticeSets[noticeKind]) {
       const kind = noticeKind !== "all" ? noticeKind
-        : noticeSets.priority.has(omo) ? "priority" : noticeSets.aep.has(omo) ? "aep" : noticeSets.erp.has(omo) ? "erp" : noticeSets.archive.has(omo) ? "archive" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
+        : noticeSets.clock.has(omo) ? "clock" : noticeSets.priority.has(omo) ? "priority" : noticeSets.aep.has(omo) ? "aep" : noticeSets.erp.has(omo) ? "erp" : noticeSets.archive.has(omo) ? "archive" : noticeSets.rejected.has(omo) ? "rejected" : noticeSets.corrections.has(omo) ? "corrections" : "print";
       const it = prioByOmo.get(omo);
       const due = it ? dueText(it.dueAt) : "";
-      const tag = kind === "priority"
+      const ck = clockRow.get(omo);
+      const tag = (kind === "clock" || kind === "erp") && ck ? `⏱ ${clockLine(ck)}` : kind === "priority"
         ? (it ? (it.kind === "missing" ? "🔥 Docs" : `🔥 ${it.kind === "24h" ? "24h" : "72h"} · ${due.replace(" left", "").replace("overdue ", "-")}`) : "🔥 Asked")
         : kind === "archive" ? "📦 Sent" : kind === "aep" || kind === "erp" ? (() => { const r = boardRows.filter((x) => x.omo === omo).sort((a, b) => Date.parse(b.noticeAt) - Date.parse(a.noticeAt))[0]; const unit = kind === "aep" ? "🏛 AEP" : "🚨 ERP"; return !r ? unit : !r.next ? `${unit} ✓` : r.steps.sent.done ? `${unit} sent` : `${unit} to do`; })() : kind === "rejected" ? (heldBy.get(omo) ? `💵 ${money(heldBy.get(omo) || 0)}` : "💵 Fix") : kind === "corrections" ? "✏️ Fix" : "🖨 Mail";
-      glow.set(omo, { tag, cls: `is-glow is-glow-${kind}${kind === "priority" && it?.kind === "24h" ? " is-glow-24h" : ""}${kind === "priority" && /overdue/.test(due) ? " is-glow-late" : ""}` });
+      const is24 = ck && (kind === "clock" || kind === "erp") ? ck.hours === 24 : kind === "priority" && it?.kind === "24h";
+      const late = ck && (kind === "clock" || kind === "erp") ? Date.parse(ck.dueAt) < Date.now() : kind === "priority" && /overdue/.test(due);
+      glow.set(omo, { tag, cls: `is-glow is-glow-${kind === "clock" ? "erp" : kind}${is24 ? " is-glow-24h" : ""}${late ? " is-glow-late" : ""}` });
     }
   }
   // Calm map (owner, 21 Oct: "everything glowing at once is hard to concentrate"): the others stay still; only the
   // most urgent one -- overdue first, then the earliest deadline -- breathes slowly.
-  const topGlow = [...glow.keys()].map((omo) => ({ omo, it: prioByOmo.get(omo) })).filter((x) => x.it?.dueAt).sort((a, b) => Date.parse(a.it!.dueAt) - Date.parse(b.it!.dueAt))[0]?.omo;
+  const topGlow = [...glow.keys()].map((omo) => ({ omo, due: clockRow.get(omo)?.dueAt || prioByOmo.get(omo)?.dueAt || "" })).filter((x) => x.due).sort((a, b) => Date.parse(a.due) - Date.parse(b.due))[0]?.omo;
   if (topGlow) { const g = glow.get(topGlow)!; glow.set(topGlow, { ...g, cls: `${g.cls} is-glow-top` }); }
   // 👉 The job that needs you now glows on the map (27 Oct, "pulse on the pin that needs you"): the one the Next pill
   // (or the urgent notice) points at, when no notice filter is on.
@@ -3502,7 +3519,7 @@ export default function FieldCommandClient() {
     setSelectedJob(null);
     setFollowFilter("notices");
     setNoticeKind(kind);
-    if (kind && kind !== "all" && kind !== "aep" && kind !== "erp" && kind !== "archive") setNoticesTab(kind);
+    if (kind && kind !== "all" && kind !== "clock" && kind !== "aep" && kind !== "erp" && kind !== "archive") setNoticesTab(kind);
     setNoticeChooser(true);
     setNoticeMini(true);
     // Priority / Gafur / Lewis (owner, 10 Nov: "every time I click priority it should open the map where all the jobs are
@@ -4239,7 +4256,7 @@ export default function FieldCommandClient() {
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
                 // The notice tag only where there's room (10 Nov: "overlapping pins information"): close pins stay lit
                 // without piling their words on each other; zoom in and each gets its tag.
-                + (lit && showLabel ? `<span class="fc-glow-tag">${lit.tag}</span>` : "");
+                + (lit && (showLabel || /is-glow-24h/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : ""); // 24-hour notices always show their time (20 Nov)
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
@@ -8007,14 +8024,13 @@ export default function FieldCommandClient() {
             // 📩 Notices (owner, 10 Nov: "when I click the notices, first I want to see the board; on the board I click the
             // priority ones and they all come up on the map"): the board opens with the notice jobs on the map above it and
             // the picks (Priority, Lewis, Gafur, rejected…) on top of the board; a pick shows those jobs on the map.
+            // ⏱ The map first (owner, 20 Nov: "when I click I want a map view, I do not like the vendor board"): the 24 / 72-hour
+            // notices on the map with the time left on each pin, the list (most urgent first) one line at the bottom. The
+            // board and the other picks are one tap away (Change ▴ / Vendor tracking board).
+            // Already on the notice map: a second tap goes back to every job.
+            if (followFilter === "notices" && noticeChooser && noticeMini) { setNoticeChooser(false); setFollowFilter(""); setNoticeKind(""); setTrayOpen(false); return; }
             closeScreens("notices");
-            setFollowFilter("notices");
-            setNoticeKind("priority");
-            setNoticeChooser(true);
-            setNoticeMini(false);
-            setBoardShow("all");
-            setBoardWithMap(false);
-            setBoardOpen(true);
+            pickNotices(noticeSets.clock.size ? "clock" : "priority");
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{boardUrgent.length ? <span className="fc-urgent-tag" data-hpd-smoke="fc-urgent-tag">⏱ {boardUrgent.length} &lt;6h</span> : null}{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>,
@@ -9855,7 +9871,7 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Fold" title="Fold (the notices stay on the map)" onClick={() => { setNoticeMini(true); setBoardOpen(false); setBoardWithMap(false); }}>✕</button>
           </header>
           <div className="fc-board-row2">
-          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setFollowFilter("notices"); setNoticeKind((k) => k || "priority"); setNoticeChooser(true); setNoticeMini(false); setBoardShow("all"); setBoardWithMap(true); setBoardOpen(true); }}>
+          <button type="button" className={`fc-board-open${boardUrgent.length ? " is-hot" : ""}`} data-hpd-smoke="fc-notice-board-open" onClick={() => { closeScreens("board"); setFollowFilter("notices"); setNoticeKind((k) => k || "priority"); setNoticeChooser(true); setNoticeMini(false); setBoardShow("all"); setBoardWithMap(false); /* full screen (owner, 12 Nov) */ setBoardOpen(true); }}>
             <span aria-hidden="true">⏱</span><b>Vendor tracking board</b><small>{boardOpenRows.filter((r) => r.kind === "ppn").length} notices · {boardOpenRows.filter((r) => r.kind === "docs").length} missing docs{boardUrgent.length ? ` · ${boardUrgent.length} under 6 h` : ""}</small>
           </button>
           <button type="button" className="fc-notice-check-btn" data-hpd-smoke="fc-notice-check" aria-label="Check every notice from my email" onClick={() => { unlockChime(); agentRef.current("check every notice"); }}>🔎<small>Check every notice</small></button>
@@ -9886,14 +9902,15 @@ export default function FieldCommandClient() {
           const ask = asks.get(omo);
           const at = ask?.at || row?.noticeAt || String(job?.HpdAskedAt || "") || "";
           const what = ask ? `${ask.who}: ${ask.subject.replace(/\s+/g, " ").slice(0, 70)}` : row ? `${row.kind === "docs" ? "Gafur" : (row.who || "Lewis").split(/\s+/)[0]}: ${row.subject ? row.subject.slice(0, 70) : "notice"}` : String(job?.HpdAskedFor || "HPD asked");
-          return { omo, job, row, at, what };
-        }).filter((x) => x.job).sort((a, b) => (a.at || "9").localeCompare(b.at || "9"));
+          const ck = noticeKind === "clock" ? clockRow.get(omo) : undefined;
+          return { omo, job, row: ck || row, at, what: ck ? `⏱ ${clockLine(ck)} · ${(ck.who || "Lewis").split(/\s+/)[0]}` : what, due: ck?.dueAt || "" };
+        }).filter((x) => x.job).sort((a, b) => (a.due && b.due ? Date.parse(a.due) - Date.parse(b.due) : 0) || (a.at || "9").localeCompare(b.at || "9"));
         if (!items.length) return null;
         const day = (iso: string) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
         return (
           <div className={`fc-notice-tray${trayOpen ? " is-open" : ""}`} data-hpd-smoke="fc-notice-tray">
             <button type="button" className="fc-notice-tray-head" data-hpd-smoke="fc-notice-tray-toggle" aria-expanded={trayOpen} onClick={() => setTrayOpen((v) => !v)}>
-              <b>📋 {items.length} to do · oldest first</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
+              <b>{noticeKind === "clock" ? `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}` : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
             </button>
             {trayOpen ? (
               <ol>
@@ -9901,7 +9918,7 @@ export default function FieldCommandClient() {
                   <li key={x.omo} data-hpd-smoke="fc-notice-tray-row" data-omo={x.omo}>
                     <div className="fc-notice-tray-text" role="button" tabIndex={0} data-hpd-smoke="fc-notice-tray-text" style={{ cursor: "pointer" }} onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setTrayOpen(false); setSelectedJob(x.job!); } }}>
                       <b>{x.omo}</b> <span>{jobAddress(x.job!)}</span>
-                      <small>{x.at ? `${day(x.at)} · ` : ""}{i > 0 && items[i - 1].what === x.what ? "same ask as the one above" : x.what}</small>
+                      <small className={x.due && Date.parse(x.due) < Date.now() ? "is-late" : undefined}>{x.due ? "" : x.at ? `${day(x.at)} · ` : ""}{!x.due && i > 0 && items[i - 1].what === x.what ? "same ask as the one above" : x.what}</small>
                     </div>
                     <div className="fc-notice-tray-btns">
                       <button type="button" data-hpd-smoke="fc-notice-tray-show" onClick={() => { setTrayOpen(false); setSelectedJob(x.job!); }}>📍 Show</button>

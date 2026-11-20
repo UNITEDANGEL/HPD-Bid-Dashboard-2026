@@ -26,7 +26,7 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 20, null, { timeout: 120000 });
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */
   await page.locator('[data-hpd-smoke="fc-notice-pick-rejected"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-mini-list"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-tab-money"]').click();

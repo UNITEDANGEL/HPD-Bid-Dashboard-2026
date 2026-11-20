@@ -24,7 +24,7 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 15, null, { timeout: 120000 });
   // Every notice job on the map at once (the busiest view).
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */
   const all = page.locator('[data-hpd-smoke="fc-notice-pick-all"]');
   if (await all.count()) await all.click();
   await page.waitForFunction(() => document.querySelectorAll(".fc-label-marker.is-glow").length > 3, null, { timeout: 20000 });

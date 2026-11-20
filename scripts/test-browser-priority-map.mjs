@@ -20,11 +20,8 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 20, null, { timeout: 120000 });
 
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  // 10 Nov: Notices opens the board over the map; a second tap folds it to the bar, Change opens the picks.
-  await page.locator('[data-hpd-smoke="fc-board"]').waitFor({ timeout: 20000 });
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
+  // 20 Nov: Notices opens the map (the thin bar); Change ▴ opens the picks.
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */
   const chooser = page.locator('[data-hpd-smoke="fc-notice-chooser"]');
   await chooser.waitFor();
   for (const k of ["all", "priority", "rejected", "corrections", "print", "list"]) assert.equal(await chooser.locator(`[data-hpd-smoke="fc-notice-pick-${k}"]`).count(), 1, `picker has ${k}`);

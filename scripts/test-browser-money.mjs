@@ -20,7 +20,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 20, null, { timeout: 120000 });
 
   // The picker: "$X held" on Payment rejected; picking it tags each pin with its dollars.
-  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  if (!(await page.locator('[data-hpd-smoke="fc-notice-chooser"]').count())) await page.locator('[data-hpd-smoke="fc-notices-open"]').click(); await page.locator('[data-hpd-smoke="fc-notice-chooser"]').waitFor(); if (await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').count()) await page.locator('[data-hpd-smoke="fc-notice-change"]').click(); /* Notices opens the map (20 Nov); Change ▴ shows the picks */
   const held = page.locator('[data-hpd-smoke="fc-notice-held"]');
   // On the board the picks are a compact strip (their small lines are hidden there, 10 Nov): the amount is still in it.
   await held.waitFor({ state: "attached", timeout: 20000 });

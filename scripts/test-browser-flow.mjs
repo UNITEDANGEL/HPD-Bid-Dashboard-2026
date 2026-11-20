@@ -12,7 +12,7 @@ const BUTTONS = {
   today: { tap: '[data-hpd-smoke="fc-appts-open"]', open: ".fc-appointment-agenda" },
   stats: { tap: '[data-hpd-smoke="fc-stats-open"]', open: '[data-hpd-smoke="fc-stats-sheet"]', close: '[data-hpd-smoke="fc-stats-sheet"] header button' },
   // Notices open = the board / the picks; folded to the thin bar = the notice jobs stay on the map (10 Nov).
-  notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]:not(.is-mini)', close: '[data-hpd-smoke="fc-notice-chooser"]:not(.is-mini) [data-hpd-smoke="fc-notice-chooser-close"]' },
+  notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notice-chooser"]', close: '[data-hpd-smoke="fc-notice-chooser"]:not(.is-mini) [data-hpd-smoke="fc-notice-chooser-close"]' }, // 20 Nov: Notices opens the map (the thin bar)
   follow: { tap: '[data-hpd-smoke="fc-follow-open"]', open: '[data-hpd-smoke="fc-follow-sheet"]', close: '[data-hpd-smoke="fc-follow-sheet"] header button' },
   bids: { tap: '[data-hpd-smoke="fc-bids-open"]', open: '[data-hpd-smoke="fc-bids-list"]' },
   jobs: { tap: '[data-hpd-smoke="fc-jobs-open"]', open: '[data-hpd-smoke="fc-jobs"]', close: '[data-hpd-smoke="fc-jobs-close"]' },
@@ -117,9 +117,7 @@ try {
     await backToMap();
     await page.locator(BUTTONS.notices.tap).click();
     await page.locator(BUTTONS.notices.open).waitFor();
-    await page.locator('[data-hpd-smoke="fc-board"]').waitFor();
-    await page.locator(BUTTONS.notices.tap).click();
-    await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').waitFor();
+    await page.locator('[data-hpd-smoke="fc-notice-chooser"].is-mini').waitFor(); // 20 Nov: the map, not the board
     assert.equal(await page.locator('[data-hpd-smoke="fc-board"]').count(), 0, `${where}: folded`);
     await page.locator('[data-hpd-smoke="fc-notice-mini-list"]').click();
     await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });

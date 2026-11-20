@@ -1,0 +1,66 @@
+// ⏱ Notices open on the map (owner, 20 Nov: "24 hr and 72 hr on top; when I click I want a map view; on the map the time
+// remaining, especially 24 hr, even if they are past due; I do not like the vendor board"), at iPhone size. One notice
+// email for two jobs (like Lewis's lists): a 24-hour one already late and a 72-hour one with time left. Tapping Notices
+// shows the map (no board), the pins say "⏱ 24h · … late" / "⏱ 72h · … left", the list at the bottom starts with the
+// most urgent, and ⏱ 24 / 72 h is the first pick.
+import assert from "node:assert/strict";
+import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
+
+const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+const ago = (h) => new Date(Date.now() - h * 3600000).toISOString();
+try {
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  const LATE = "ER02330";
+  const LEFT = "EQ15239";
+  const text = `Kindly see attached.\n\nOMO#${LATE}- 24 HR POOR PERFORMANCE NOTICE\nOMO#${LEFT}-72 HR POOR PERFORMANCE NOTICE\n\nTest Tracker\ntest.tracker@hpd.nyc.gov`;
+  await routePrivate(c, { conversations: (d) => ({ ...d, threads: [
+    { id: "t-list", subject: "24 HR & 72 HR POOR PERFORMANCE NOTICES", omos: [LATE, LEFT], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: ago(80), waiting: true,
+      messages: [{ at: ago(80), from: "Test Tracker <test.tracker@hpd.nyc.gov>", hpd: true, mine: false, subject: "24 HR & 72 HR POOR PERFORMANCE NOTICES", text, files: [] }] },
+  ] }) });
+  await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
+  const page = await c.newPage();
+  page.setDefaultTimeout(60000);
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+  for (const ok of await page.locator('[data-hpd-smoke="fc-hpd-ping-ok"]').all()) await ok.click().catch(() => {});
+  while (await page.locator('[data-hpd-smoke="fc-critical-snooze"]').count()) await page.locator('[data-hpd-smoke="fc-critical-snooze"]').first().click();
+
+  await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  const bar = page.locator('[data-hpd-smoke="fc-notice-chooser"]');
+  await bar.waitFor({ timeout: 15000 });
+  assert.equal(await page.locator('[data-hpd-smoke="fc-board"]').count(), 0, "Notices opens the map, not the vendor board");
+  assert.match(await page.locator('[data-hpd-smoke="fc-notice-chooser-title"]').innerText(), /⏱ 24 \/ 72 h/);
+
+  // The pins: the time on each, the late 24-hour one too (Wednesday-style list 80 h ago: 24 h is past, 72 weekday hours may not be).
+  await page.waitForFunction(() => [...document.querySelectorAll(".fc-glow-tag")].some((t) => /⏱ 24h · .+ late/.test(t.textContent || "")), null, { timeout: 20000 });
+  const tags = await page.locator(".fc-glow-tag").allInnerTexts();
+  assert.ok(tags.some((t) => /⏱ 24h · .+ late/.test(t)), `24-hour pin says how late: ${tags.join(" | ")}`);
+  assert.ok(tags.some((t) => /⏱ 72h · .+ (left|late)/.test(t)), `72-hour pin has its time: ${tags.join(" | ")}`);
+  assert.ok(tags.every((t) => /^⏱ (24|72)h · /.test(t)), `only the 24 / 72-hour notices are lit: ${tags.join(" | ")}`);
+
+  // The list at the bottom: most urgent first.
+  const tray = page.locator('[data-hpd-smoke="fc-notice-tray"]');
+  await tray.waitFor({ timeout: 10000 });
+  assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), new RegExp(`⏱ \\d+ notices? · most urgent: ${LATE} 24h`));
+  await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
+  const first = tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').first();
+  assert.equal(await first.getAttribute("data-omo"), LATE, "the late 24-hour one on top");
+  assert.match(await first.locator("small").innerText(), /⏱ 24h · .+ late · Test/);
+  assert.equal(await first.locator("small.is-late").count(), 1, "late in red");
+  await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
+
+  // The other picks and the board are one tap away; ⏱ 24 / 72 h is the first pick.
+  await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
+  const picks = page.locator('[data-hpd-smoke="fc-notice-chooser"] .fc-notice-pick');
+  assert.equal(await picks.first().getAttribute("data-hpd-smoke"), "fc-notice-pick-clock");
+  assert.match(await picks.first().innerText(), /24 \/ 72 h/);
+  assert.ok(await page.locator('[data-hpd-smoke="fc-notice-board-open"]').isVisible(), "the board is still there");
+  assert.deepEqual(errors, []);
+  console.log(`PASS notices open on the map: ${LATE} "⏱ 24h · … late", ${LEFT} 72h with its time, the list starts with the most urgent (red when late), ⏱ 24 / 72 h is the first pick, no board`);
+} finally {
+  await browser.close();
+}
