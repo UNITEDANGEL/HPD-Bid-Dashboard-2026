@@ -2902,6 +2902,10 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @keyframes fc-glow { 0%, 100% { filter: drop-shadow(0 0 4px var(--glow, #f97316)) drop-shadow(0 0 8px var(--glow, #f97316)); transform: scale(1.1); } 50% { filter: drop-shadow(0 0 10px var(--glow, #f97316)) drop-shadow(0 0 20px var(--glow, #f97316)); transform: scale(1.3); } }
 .fc-glow-tag { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); padding: 1px 7px; border-radius: 9px; background: #0f172a; color: #fff; border: 2px solid var(--glow-tag, #f97316); font: 900 11px/16px system-ui; white-space: nowrap; pointer-events: none; }
 .is-glow-24h .fc-glow-tag, .is-glow-late .fc-glow-tag { border-color: #ef4444; background: #7f1d1d; }
+/* 📍 Days left on the map (21 Nov): small badge on awarded jobs not sent yet, red when late */
+.fc-days-badge { position: absolute; left: 26px; top: -6px; padding: 0 5px; border-radius: 8px; background: #166534; color: #fff; border: 2px solid #fff; font: 900 11px/15px system-ui; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.fc-days-badge.is-soon { background: #b45309; }
+.fc-days-badge.is-late { background: #b91c1c; }
 .is-glow-rejected .fc-glow-tag { border-color: #22c55e; }
 .is-glow-corrections .fc-glow-tag { border-color: #eab308; }
 .is-glow-print .fc-glow-tag { border-color: #a78bfa; }

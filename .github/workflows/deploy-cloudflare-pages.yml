@@ -382,6 +382,7 @@ jobs:
             scripts/test-browser-week-score.mjs \
             scripts/test-browser-pays-best.mjs \
             scripts/test-browser-award-countdown.mjs \
+            scripts/test-browser-map-days-left.mjs 
             scripts/test-browser-photo-checklist.mjs \
             scripts/test-browser-already-sent.mjs \
             scripts/test-browser-bid-voice.mjs \

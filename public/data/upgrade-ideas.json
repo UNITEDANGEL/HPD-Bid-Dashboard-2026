@@ -524,30 +524,23 @@
       "kind": "new",
       "title": "Late jobs: who to call",
       "why": "Next to each late job on the ⏳ card, the tenant or super to call to get in, one tap away."
-    },
-    {
-      "id": "finish-on-calendar",
-      "icon": "📅",
-      "kind": "new",
-      "title": "Finish dates on a calendar",
-      "why": "A month view with each awarded job on its HPD finish date, so you see the busy weeks coming."
     }
   ],
   "plan": {
-    "id": "2026-11-21-a",
+    "id": "2026-11-21-b",
     "title": "Next on the plan: never miss a finish date",
     "items": [
-      {
-        "id": "pin-days-left",
-        "icon": "📍",
-        "title": "Days left on the map",
-        "why": "Awarded jobs on the map show a small badge with the days left (red when late)."
-      },
       {
         "id": "worker-finish-by",
         "icon": "👷",
         "title": "Finish-by date in the worker message",
         "why": "The job you send your worker says the day HPD expects it done."
+      },
+      {
+        "id": "finish-on-calendar",
+        "icon": "📅",
+        "title": "Finish dates on a calendar",
+        "why": "A month view with each awarded job on its HPD finish date, so you see the busy weeks coming."
       }
     ]
   }

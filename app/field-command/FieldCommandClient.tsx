@@ -153,6 +153,7 @@ import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
+import { awardCountdown } from "../../lib/award-countdown";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
@@ -4301,12 +4302,19 @@ export default function FieldCommandClient() {
               const showLabel = !staleIdsRef.current.has(jobId(job)) && reservePinLabel(screen.x, screen.y, occupied);
               const here = onSite(job as Record<string, unknown>);
               const lit = glowRef.current.get(jobId(job)) || (here ? { tag: `🔨 Working · ${duration(here.minutes)}`, cls: "is-glow is-glow-onsite" } : undefined);
+              // 📍 Days left on the map (plan, 21 Nov): an awarded job not sent yet (HPD hasn't closed it) shows the days left to
+              // HPD's finish date, red when late; same numbers as the Home "Days left to finish" card.
+              const left = awardCountdown({ awards: [job as { OMO?: string; AwardDate?: string; WorkCompletionDate?: string }], sent: followRef.current?.sent, closed: followRef.current?.hpd, today: nyToday() })[0];
+              const daysBadge = left && !(lit && showLabel) && (showLabel || left.days <= 0)
+                ? `<span class="fc-days-badge${left.days < 0 ? " is-late" : left.days <= 3 ? " is-soon" : ""}" data-hpd-smoke="fc-days-badge" data-days="${left.days}">${left.days < 0 ? `${-left.days}d late` : left.days === 0 ? "today" : `${left.days}d`}</span>`
+                : "";
               const html = (showLabel || lit
                 ? jobPinHtml(job, meta, priority, visit.count)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
                 // The notice tag only where there's room (10 Nov: "overlapping pins information"): close pins stay lit
                 // without piling their words on each other; zoom in and each gets its tag.
-                + (lit && (showLabel || /is-glow-(24h|near)/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : ""); // 24-hour notices always show their time (20 Nov); a job near you its distance
+                + (lit && (showLabel || /is-glow-(24h|near)/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : "")
+                + daysBadge; // 24-hour notices always show their time (20 Nov); a job near you its distance
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
