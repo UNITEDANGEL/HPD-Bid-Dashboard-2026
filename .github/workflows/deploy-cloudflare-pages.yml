@@ -139,6 +139,7 @@ jobs:
           node scripts/test-who-owes.cjs
           node scripts/test-week-score.cjs
           node scripts/test-pays-best.cjs
+          node scripts/test-award-countdown.cjs
           node scripts/test-supplies.cjs
 
       - name: Test paperwork, packages, sync and stats
@@ -380,6 +381,7 @@ jobs:
             scripts/test-browser-who-owes.mjs \
             scripts/test-browser-week-score.mjs \
             scripts/test-browser-pays-best.mjs \
+            scripts/test-browser-award-countdown.mjs \
             scripts/test-browser-photo-checklist.mjs \
             scripts/test-browser-already-sent.mjs \
             scripts/test-browser-bid-voice.mjs \

@@ -1,6 +1,6 @@
 {
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
-  "updated": "2026-11-15",
+  "updated": "2026-11-21",
   "ideas": [
     {
       "id": "helper-call-tenant",
@@ -262,13 +262,6 @@
       "why": "Before you leave the office, the robot reads the shopping list for today's jobs and asks if the truck has it all."
     },
     {
-      "id": "award-countdown",
-      "icon": "⏳",
-      "kind": "new",
-      "title": "Days left to finish after award",
-      "why": "Each awarded job shows how many days are left before HPD expects it done, with the closest first."
-    },
-    {
       "id": "photo-auto-name",
       "icon": "🏷",
       "kind": "upgrade",
@@ -524,17 +517,43 @@
       "kind": "upgrade",
       "title": "Price hint by kind of work",
       "why": "When you price an invitation to bid, the app shows what that kind of work (doors, plumbing, plaster) has paid you per day before."
+    },
+    {
+      "id": "late-job-call-list",
+      "icon": "📞",
+      "kind": "new",
+      "title": "Late jobs: who to call",
+      "why": "Next to each late job on the ⏳ card, the tenant or super to call to get in, one tap away."
+    },
+    {
+      "id": "finish-on-calendar",
+      "icon": "📅",
+      "kind": "new",
+      "title": "Finish dates on a calendar",
+      "why": "A month view with each awarded job on its HPD finish date, so you see the busy weeks coming."
     }
   ],
   "plan": {
-    "id": "2026-11-20-c",
-    "title": "Next on the plan: which work pays best, and days left after award",
+    "id": "2026-11-21-a",
+    "title": "Next on the plan: never miss a finish date",
     "items": [
       {
-        "id": "award-countdown",
-        "icon": "⏳",
-        "title": "Days left to finish after award",
-        "why": "Each awarded job shows how many days are left before HPD expects it done, with the closest first."
+        "id": "late-morning-alert",
+        "icon": "⏰",
+        "title": "7 AM alert for jobs due soon",
+        "why": "Each morning one phone alert lists the jobs late or due in the next 2 days, so nothing slips."
+      },
+      {
+        "id": "pin-days-left",
+        "icon": "📍",
+        "title": "Days left on the map",
+        "why": "Awarded jobs on the map show a small badge with the days left (red when late)."
+      },
+      {
+        "id": "worker-finish-by",
+        "icon": "👷",
+        "title": "Finish-by date in the worker message",
+        "why": "The job you send your worker says the day HPD expects it done."
       }
     ]
   }

@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 21, 2026",
+      "title": "Days left to finish on the Home screen",
+      "items": [
+        "✓ Days left to finish: a new ⏳ card on the Home screen lists your awarded jobs not sent yet with the days left before HPD's finish date, late ones (red) and the closest first. Tap one to open its job card."
+      ]
+    },
+    {
       "date": "Nov 20, 2026",
       "title": "Notices on the map with time left · every job on a notice email",
       "items": [

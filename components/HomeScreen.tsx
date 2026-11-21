@@ -8,6 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, trend, trendMark, type WeekScore } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
+import { awardCountdown, daysLeftText, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const [owed, setOwed] = useState<ReturnType<typeof whoOwes> | null>(null);
   const [week, setWeek] = useState<WeekScore | null>(null);
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
+  const [countdown, setCountdown] = useState<Countdown[]>([]);
   const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
@@ -61,7 +63,10 @@ export default function HomeScreen() {
       setNoAccess(accessWaiting({ notes: allJobNotes(), sent: sent?.jobs }));
       setOwed(whoOwes({ sent: sent?.jobs, pipPaid, today: nyDay(new Date()) }));
       setGlance(monthGlance({ sent: sent?.jobs, pipPaid, payments, month: nyDay(new Date()).slice(0, 7) }));
-      fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []).then((awardList) => {
+      fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []).then(async (awardList) => {
+        // Days left to finish after award (plan, 21 Nov): open awarded jobs, late and closest first.
+        const hpd = await get("/data/hpd_job_status.json");
+        setCountdown(awardCountdown({ awards: Array.isArray(awardList) ? awardList : [], sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
         setWeek(weekScore({ sent: sent?.jobs, awards: Array.isArray(awardList) ? awardList : [], payments, today: nyDay(new Date()) }));
       });
     });
@@ -155,6 +160,19 @@ export default function HomeScreen() {
             <small data-hpd-smoke="home-week-last">Same days last week: {week.last.sent} sent · {week.last.won} won · ${Math.round(week.last.moneyIn).toLocaleString()} in</small>
           </span>
         </a>
+      ) : null}
+
+      {countdown.length ? (
+        <div className="home-card" data-hpd-smoke="home-countdown">
+          <span className="home-icon">⏳</span>
+          <span className="home-text">
+            <strong>Days left to finish</strong>
+            {countdown.slice(0, 5).map((c, i) => (
+              <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} className={i === 0 ? "home-big" : undefined} data-hpd-smoke="home-countdown-row" data-days={c.days} style={{ display: "block", color: c.days < 0 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontWeight: 800, textDecoration: "none", padding: "4px 0" }}>{c.omo}: {daysLeftText(c.days)} <small style={{ fontWeight: 400 }}>(due {Number(c.due.slice(5, 7))}/{Number(c.due.slice(8, 10))})</small></a>
+            ))}
+            <small>{countdown.length} awarded job{countdown.length === 1 ? "" : "s"} not sent yet{countdown.length > 5 ? ` (${countdown.length - 5} more on the map)` : ""}. Tap one to open it.</small>
+          </span>
+        </div>
       ) : null}
 
       {best.length ? (
