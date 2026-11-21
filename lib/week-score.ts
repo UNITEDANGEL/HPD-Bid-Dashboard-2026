@@ -2,7 +2,21 @@
 // paperwork sent to HPD, jobs won (awards dated this week), invoices finished (sent paperwork that PIP shows paid)
 // and money paid in. A trophy shows on a good week. Numbers only, no tenant data.
 
-export type WeekScore = { from: string; sent: number; won: number; moneyIn: number; trophy: boolean; stars: number };
+// last = the same days of last week (Monday to the same weekday), so the arrows compare like with like.
+export type WeekNumbers = { sent: number; won: number; moneyIn: number };
+export type WeekScore = WeekNumbers & { from: string; trophy: boolean; stars: number; last: WeekNumbers };
+
+// This week vs last week (plan, 20 Nov): ▲ up, ▼ down, = same.
+export function trend(now: number, before: number): "up" | "down" | "same" {
+  return now > before ? "up" : now < before ? "down" : "same";
+}
+export const trendMark = (now: number, before: number) => ({ up: "▲", down: "▼", same: "=" })[trend(now, before)];
+
+const shift = (day: string, days: number) => {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
 
 // Monday (YYYY-MM-DD) of the week that contains the given YYYY-MM-DD day.
 export function weekStart(day: string): string {
@@ -27,11 +41,17 @@ export function weekScore(input: {
   today: string; // YYYY-MM-DD (New York time)
 }): WeekScore {
   const from = weekStart(input.today);
-  const inWeek = (d: string) => d >= from && d <= input.today;
-  const sent = Object.values(input.sent || {}).filter((s) => inWeek(String(s?.sentAt || "").slice(0, 10))).length;
-  const won = (input.awards || []).filter((a) => String(a.OMO || "").toUpperCase() !== "TEST-0001" && inWeek(isoDay(String(a.AwardDate || "")))).length;
-  const moneyIn = (input.payments?.recent || []).filter((p) => p?.status === "Paid" && inWeek(String(p.date || "").slice(0, 10))).reduce((t, p) => t + (Number(p.amount) || 0), 0);
+  const count = (start: string, end: string): WeekNumbers => {
+    const inWeek = (d: string) => d >= start && d <= end;
+    return {
+      sent: Object.values(input.sent || {}).filter((s) => inWeek(String(s?.sentAt || "").slice(0, 10))).length,
+      won: (input.awards || []).filter((a) => String(a.OMO || "").toUpperCase() !== "TEST-0001" && inWeek(isoDay(String(a.AwardDate || "")))).length,
+      moneyIn: (input.payments?.recent || []).filter((p) => p?.status === "Paid" && inWeek(String(p.date || "").slice(0, 10))).reduce((t, p) => t + (Number(p.amount) || 0), 0),
+    };
+  };
+  const { sent, won, moneyIn } = count(from, input.today);
+  const last = count(shift(from, -7), shift(input.today, -7));
   // One star each for: 5+ jobs sent, 3+ jobs won, any money in. A trophy at two stars or more.
   const stars = (sent >= 5 ? 1 : 0) + (won >= 3 ? 1 : 0) + (moneyIn > 0 ? 1 : 0);
-  return { from, sent, won, moneyIn, trophy: stars >= 2, stars };
+  return { from, sent, won, moneyIn, trophy: stars >= 2, stars, last };
 }

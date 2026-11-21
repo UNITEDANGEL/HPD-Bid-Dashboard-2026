@@ -528,14 +528,8 @@
   ],
   "plan": {
     "id": "2026-11-20-c",
-    "title": "Next on the plan: this week vs last week, which work pays best, and days left after award",
+    "title": "Next on the plan: which work pays best, and days left after award",
     "items": [
-      {
-        "id": "week-vs-last",
-        "icon": "📊",
-        "title": "This week vs last week",
-        "why": "The week card shows an arrow next to each number: up or down compared with last week."
-      },
       {
         "id": "cost-per-kind",
         "icon": "📊",

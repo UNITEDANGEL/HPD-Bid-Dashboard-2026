@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { monthGlance, type MonthGlance } from "../lib/month-glance";
 import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
-import { weekScore, type WeekScore } from "../lib/week-score";
+import { weekScore, trend, trendMark, type WeekScore } from "../lib/week-score";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 
@@ -27,6 +27,12 @@ const minutes = (time: string) => {
   if (!m) return 24 * 60;
   return ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]);
 };
+
+// This week vs last week (plan, 20 Nov): green ▲ up, red ▼ down, gray = same.
+function Arrow({ now, before }: { now: number; before: number }) {
+  const t = trend(now, before);
+  return <span data-hpd-smoke="home-week-arrow" data-trend={t} aria-label={t === "same" ? "same as last week" : `${t} from last week`} style={{ color: t === "up" ? "#15803d" : t === "down" ? "#b91c1c" : "#64748b", fontWeight: 800 }}>{trendMark(now, before)}</span>;
+}
 
 export default function HomeScreen() {
   const [bids, setBids] = useState<Bid[] | null>(null);
@@ -141,8 +147,9 @@ export default function HomeScreen() {
           <span className="home-icon">{week.trophy ? "🏆" : "📈"}</span>
           <span className="home-text">
             <strong>{week.trophy ? "Great week so far" : "Your week so far"}</strong>
-            <b className="home-big">{week.sent} sent · {week.won} won</b>
-            <em>${Math.round(week.moneyIn).toLocaleString()} in this week (Monday to today)</em>
+            <b className="home-big">{week.sent} sent <Arrow now={week.sent} before={week.last.sent} /> · {week.won} won <Arrow now={week.won} before={week.last.won} /></b>
+            <em>${Math.round(week.moneyIn).toLocaleString()} in this week (Monday to today) <Arrow now={week.moneyIn} before={week.last.moneyIn} /></em>
+            <small data-hpd-smoke="home-week-last">Same days last week: {week.last.sent} sent · {week.last.won} won · ${Math.round(week.last.moneyIn).toLocaleString()} in</small>
           </span>
         </a>
       ) : null}
