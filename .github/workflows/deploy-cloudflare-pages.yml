@@ -186,6 +186,7 @@ jobs:
           node scripts/test-my-words.mjs
           node scripts/test-job-here.mjs
           node scripts/test-friday-wrap.mjs
+          node scripts/test-late-week.mjs
           node scripts/test-on-my-way.mjs
           node scripts/test-notice-convo.mjs
           node scripts/test-job-tracker.mjs
@@ -499,6 +500,7 @@ jobs:
             scripts/test-browser-job-here.mjs \
             scripts/test-browser-tenant-aloud.mjs \
             scripts/test-browser-friday-wrap.mjs \
+            scripts/test-browser-late-week.mjs \
             scripts/test-browser-yesterday.mjs \
             scripts/test-browser-quiet-hours.mjs \
             scripts/test-browser-on-my-way.mjs \

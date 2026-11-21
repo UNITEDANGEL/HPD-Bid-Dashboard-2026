@@ -388,13 +388,6 @@
       "why": "The app flags when HPD asks for something you already sent, with the date and file name to reply with."
     },
     {
-      "id": "late-week",
-      "icon": "📆",
-      "kind": "new",
-      "title": "Friday late list",
-      "why": "Friday afternoon: the jobs that will be late next week so you can plan the route."
-    },
-    {
       "id": "idea-edit-list",
       "icon": "✏️",
       "title": "Edit any idea before you build it",
@@ -534,26 +527,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-19-b",
-    "title": "Next on the plan: one-tap no-access proof, a Friday late list, and invoice check before sending",
+    "id": "2026-11-20-c",
+    "title": "Next on the plan: this week vs last week, which work pays best, and days left after award",
     "items": [
       {
-        "id": "tenant-no-show-log",
-        "icon": "🚪",
-        "title": "No-access proof in one tap",
-        "why": "When a tenant is not home, one tap saves the time, the door photo and the call tries for the no-access paperwork."
+        "id": "week-vs-last",
+        "icon": "📊",
+        "title": "This week vs last week",
+        "why": "The week card shows an arrow next to each number: up or down compared with last week."
       },
       {
-        "id": "late-week",
-        "icon": "📋",
-        "title": "Friday late list",
-        "why": "Friday afternoon: the jobs that will be late next week so you can plan the route."
+        "id": "cost-per-kind",
+        "icon": "📊",
+        "title": "Which work pays best",
+        "why": "Using what each job made, the app ranks kinds of work (painting, doors, plaster) by money per hour on site."
       },
       {
-        "id": "invoice-check",
-        "icon": "🧾",
-        "title": "Invoice check before sending",
-        "why": "Before the invoice goes out, the app checks the amount matches the award and the COA, and says what doesn't."
+        "id": "award-countdown",
+        "icon": "⏳",
+        "title": "Days left to finish after award",
+        "why": "Each awarded job shows how many days are left before HPD expects it done, with the closest first."
       }
     ]
   }

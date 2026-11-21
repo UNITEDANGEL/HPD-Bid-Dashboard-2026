@@ -98,6 +98,7 @@ import { jobHere, saysHere } from "../../lib/job-here";
 import { etaMinutes, isOnMyWay, withArrival } from "../../lib/on-my-way";
 import { photoGap } from "../../lib/paperwork-photos";
 import { isFridayWrapTime, weekWrap } from "../../lib/friday-wrap";
+import { isLateWeekTime, lateNextWeek, lateWeekLine } from "../../lib/late-week";
 import { forgetWords, learnWords, myMeaning, normWords, parseTeach } from "../../lib/my-words";
 import { notePromise, promisesLine, takeEarlierPromises } from "../../lib/convo-memory";
 import { addTurn, jobBefore, lastAnswer, readConvo, recall, summary as convoSummary, talkedAbout } from "../../lib/convo-memory";
@@ -10644,6 +10645,11 @@ export default function FieldCommandClient() {
         for (const r of fresh.slice(0, 2)) all.push({ key: `notice|${r.key}`, kind: "notice", text: `📨 New ${r.hours}-hour notice for ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}${r.want ? `: HPD wants ${r.want.toLowerCase()}` : ""}. Answer it now?`, label: "✍️ Answer", go: () => agentRef.current(`answer the notice for ${r.omo}`) });
         for (const r of answered.slice(0, 2)) all.push({ key: `hpd|${r.omo}|${r.lastTheirsAt}`, kind: "hpd", text: `📬 HPD answered on ${r.omo}${addressOf(r.omo) ? ` (${noZip(addressOf(r.omo))})` : ""}.`, label: "Open", go: () => goTo("board", r.omo) });
         for (const { j, a } of unconfirmed.slice(0, 2)) all.push({ key: `appt|${jobId(j)}|${a!.date}`, kind: "appt", text: `❔ Your ${appointmentLabel(a!).split(" · ")[1].replace(/–.*$/, "")} at ${noZip(jobAddress(j))} hasn't confirmed. Text them?`, label: "📱 Text", href: smsHref(tenantInfo(j).phone, reminderText(j, a!, "today")), go: () => markReminderSent(j, a!.date) });
+        // 📋 Friday late list (plan, 19 Nov): Friday 1 PM to 5 PM, once, the open jobs due by next Friday, soonest first.
+        if (jobs.length && isLateWeekTime(nyNow().weekday, nowMin) && !nudgeSeen.includes(`late|${today}`)) {
+          const late = lateWeekLine(lateNextWeek(jobs as unknown as Record<string, unknown>[], today));
+          if (late) all.push({ key: `late|${today}`, kind: "late", text: late, label: "🗺 Plan", go: () => agentRef.current("lead me through my day") });
+        }
         // 📊 Friday wrap (plan item 23): Friday from 5 PM, once a week, the week in a few words; Open = the weekly report.
         if (jobs.length && isFridayWrapTime(nyNow().weekday, nowMin) && !nudgeSeen.includes(`week|${today}`)) {
           const st = fieldStats(jobs, "week", { skip: (job) => isTestJob(jobId(job)) });
