@@ -519,23 +519,17 @@
       "why": "The planned second try after no access shows on the day in your week view, so the 72-hour wait is never missed."
     },
     {
-      "id": "cost-per-kind",
-      "icon": "📊",
-      "kind": "new",
-      "title": "Which work pays best",
-      "why": "Using what each job made, the app ranks kinds of work (painting, doors, plaster) by money per hour on site."
+      "id": "bid-by-kind",
+      "icon": "💲",
+      "kind": "upgrade",
+      "title": "Price hint by kind of work",
+      "why": "When you price an invitation to bid, the app shows what that kind of work (doors, plumbing, plaster) has paid you per day before."
     }
   ],
   "plan": {
     "id": "2026-11-20-c",
     "title": "Next on the plan: which work pays best, and days left after award",
     "items": [
-      {
-        "id": "cost-per-kind",
-        "icon": "📊",
-        "title": "Which work pays best",
-        "why": "Using what each job made, the app ranks kinds of work (painting, doors, plaster) by money per hour on site."
-      },
       {
         "id": "award-countdown",
         "icon": "⏳",

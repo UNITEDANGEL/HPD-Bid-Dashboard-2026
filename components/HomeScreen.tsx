@@ -7,6 +7,7 @@ import { monthGlance, type MonthGlance } from "../lib/month-glance";
 import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, trend, trendMark, type WeekScore } from "../lib/week-score";
+import { paysBest } from "../lib/pays-best";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 
@@ -76,6 +77,8 @@ export default function HomeScreen() {
   const dueToday = open.filter((b) => b.bidDue === today).sort((a, b) => minutes(a.bidDueTime) - minutes(b.bidDueTime));
   const arrivedToday = (bids || []).filter((b) => b.receivedAt && nyDay(new Date(b.receivedAt)) === today).length;
   const monthAgo = nyDay(new Date(now.getTime() - 30 * 86400000));
+  // Which work pays best (plan, 20 Nov): top 3 kinds of work by money per work day.
+  const best = paysBest((awards || []) as Parameters<typeof paysBest>[0]).slice(0, 3);
   const awarded30 = (awards || []).filter((a) => String(a.OMO || "").toUpperCase() !== "TEST-0001" && isoDay(String(a.AwardDate || "")) >= monthAgo && isoDay(String(a.AwardDate || "")) <= today).length;
 
   return (
@@ -152,6 +155,19 @@ export default function HomeScreen() {
             <small data-hpd-smoke="home-week-last">Same days last week: {week.last.sent} sent · {week.last.won} won · ${Math.round(week.last.moneyIn).toLocaleString()} in</small>
           </span>
         </a>
+      ) : null}
+
+      {best.length ? (
+        <div className="home-card" data-hpd-smoke="home-pays-best">
+          <span className="home-icon">📊</span>
+          <span className="home-text">
+            <strong>Which work pays best</strong>
+            {best.map((k, i) => (
+              <b key={k.kind} className={i === 0 ? "home-big" : undefined} data-hpd-smoke="home-pays-best-row" style={{ display: "block" }}>{k.icon} {k.kind}: ${k.perDay.toLocaleString()} a work day</b>
+            ))}
+            <small>Money per work day (start to finish), from {best.reduce((t, k) => t + k.jobs, 0)} past HPD jobs. Per job: {best.map((k) => `${k.kind.split(" ")[0]} ${k.perJob.toLocaleString()}`).join(" · ")}</small>
+          </span>
+        </div>
       ) : null}
 
       <a className="home-card" href="/map/" data-hpd-smoke="home-map">
