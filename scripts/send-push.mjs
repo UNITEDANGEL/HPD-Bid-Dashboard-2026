@@ -66,7 +66,7 @@ export function holdQuiet(list, now = Date.now()) {
 }
 
 // What is new since last time: [{ key, title, body, url, tag }].
-export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {}, descriptions = {}, market = null }) {
+export async function findAlerts({ conversations, bids, sent, requests, now = Date.now(), loadLib, records = {}, pip = null, payments = null, addresses = {}, descriptions = {}, market = null, awards = null, closed = null }) {
   const out = [];
   // The work in plain words, from the job file (for the award alert).
   const jobWords = await (async () => {
@@ -160,6 +160,9 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
       out.push({ key: `d:${h(`${r.omo}|${r.bidDue}`)}`, kind: "urgent", title: `⏳ ${r.omo} bid not sent: ${left} min left`, body: `Priced at $${Number(r.price || 0).toLocaleString("en-US")} but not faxed yet (due ${r.bidDueTime}). Tap to send it now.`, url: `/map/?bids=1&omo=${r.omo}`, tag: `d-${r.omo}` });
     }
   }
+  // ⏰ Jobs due soon (plan, 21 Nov): once each weekday from 7 AM, the awarded jobs late or due in the next 2 days.
+  const due = await dueSoonAlert({ awards, sent, closed, now, loadLib });
+  if (due) out.push(due);
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
   const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib, records });
   if (brief) out.push(brief);
@@ -347,6 +350,28 @@ export async function moneyReport({ pip, payments, requests, sent, now = Date.no
 
 const nyParts = (now) => Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now)).map((x) => [x.type, x.value]));
 const minutesOf = (t) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
+// ⏰ 7 AM alert for jobs due soon (plan, 21 Nov 2026): weekdays from 7 AM New York, one alert listing the open awarded
+// jobs (lib/award-countdown) that are late or due within 2 days, late first. Nothing due -> no alert. OMO numbers only.
+export async function dueSoonAlert({ awards, sent, closed, now = Date.now(), loadLib, force = false }) {
+  if (!loadLib || !Array.isArray(awards) || !awards.length) return null;
+  const p = nyParts(now);
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(new Date(now));
+  if (!force && (["Sat", "Sun"].includes(weekday) || Number(p.hour) < 7 || Number(p.hour) >= 20)) return null;
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const { awardCountdown, daysLeftText } = await loadLib("award-countdown");
+  const list = awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today }).filter((c) => c.days <= 2);
+  if (!list.length) return null;
+  const late = list.filter((c) => c.days < 0).length;
+  const soon = list.length - late;
+  const head = [late ? `${late} late` : "", soon ? `${soon} due in 2 days` : ""].filter(Boolean).join(", ");
+  return {
+    key: `ds:${today}`, kind: late ? "urgent" : "message",
+    title: `⏰ Finish dates: ${head}`,
+    body: list.slice(0, 6).map((c) => `${c.omo} ${daysLeftText(c.days)}`).join(" · ") + (list.length > 6 ? ` · +${list.length - 6} more` : ""),
+    url: "/", tag: "due-soon",
+  };
+}
+
 export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib, force = false, records = {} }) {
   if (!force && !workingHours(now)) return null;
   const p = nyParts(now);
@@ -442,7 +467,8 @@ async function main() {
   const descriptions = Object.fromEntries((Array.isArray(coa) ? coa : coa.jobs || []).map((j) => [String(j.OMO || "").toUpperCase(), j.ItbPage3Description || j.JobDescription || j.description || ""]));
   // What HPD paid on each invitation, whoever won (scripts/update-market-awards.mjs): the Monday lost-bids review.
   const market = JSON.parse(read(path.join(ROOT, "public/data/market_awards.json")) || "null");
-  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions, market });
+  const closedJobs = JSON.parse(read(path.join(ROOT, "public/data/hpd_job_status.json")) || "{}").jobs || {};
+  const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions, market, awards: Array.isArray(coa) ? coa : coa.jobs || [], closed: closedJobs });
   if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
   if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }

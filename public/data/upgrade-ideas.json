@@ -538,12 +538,6 @@
     "title": "Next on the plan: never miss a finish date",
     "items": [
       {
-        "id": "late-morning-alert",
-        "icon": "⏰",
-        "title": "7 AM alert for jobs due soon",
-        "why": "Each morning one phone alert lists the jobs late or due in the next 2 days, so nothing slips."
-      },
-      {
         "id": "pin-days-left",
         "icon": "📍",
         "title": "Days left on the map",
