@@ -519,28 +519,34 @@
       "why": "When you price an invitation to bid, the app shows what that kind of work (doors, plumbing, plaster) has paid you per day before."
     },
     {
-      "id": "late-job-call-list",
-      "icon": "📞",
+      "id": "worker-pages-in-message",
+      "icon": "📄",
       "kind": "new",
-      "title": "Late jobs: who to call",
-      "why": "Next to each late job on the ⏳ card, the tenant or super to call to get in, one tap away."
+      "title": "HPD's pages with the job message",
+      "why": "Send to a worker sends the text and HPD's description pages together in one share, so it's one tap instead of two."
     }
   ],
   "plan": {
-    "id": "2026-11-21-b",
+    "id": "2026-11-21-c",
     "title": "Next on the plan: never miss a finish date",
     "items": [
-      {
-        "id": "worker-finish-by",
-        "icon": "👷",
-        "title": "Finish-by date in the worker message",
-        "why": "The job you send your worker says the day HPD expects it done."
-      },
       {
         "id": "finish-on-calendar",
         "icon": "📅",
         "title": "Finish dates on a calendar",
         "why": "A month view with each awarded job on its HPD finish date, so you see the busy weeks coming."
+      },
+      {
+        "id": "late-job-call-list",
+        "icon": "📞",
+        "title": "Late jobs: who to call",
+        "why": "Next to each late job on the ⏳ card, the tenant or super to call to get in, one tap away."
+      },
+      {
+        "id": "plan-day-finish-first",
+        "icon": "🗺",
+        "title": "Closest finish dates first",
+        "why": "Plan my day picks the jobs nearest their HPD finish date (and late ones) before the others."
       }
     ]
   }

@@ -6,6 +6,7 @@ import { readWorkerHash, workerHashCut, type WorkerJob } from "../../lib/worker-
 import { workFull, workWhere } from "../../lib/crew-share";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { judgePhoto } from "../../lib/worker-photo-quality";
+import { finishByText, nyDay } from "../../lib/award-countdown";
 
 const tel = (p: string) => `tel:${String(p).replace(/[^\d+]/g, "")}`;
 const key = (id: string) => `hpd-worker-${id}`;
@@ -66,7 +67,7 @@ export default function WorkerPage() {
       <div className="ios-statusbar-spacer" />
       <header className="ios-navbar"><span className="ios-navbar-eyebrow">Your job</span><h1 className="ios-large-title" data-hpd-smoke="worker-id">{job.id}</h1></header>
       <div className="ios-content" style={{ fontSize: 20, lineHeight: 1.45 }}>
-        <p data-hpd-smoke="worker-address"><strong>📍 {job.address ? addr : lookup === "missing" ? "Address not found: call your boss" : "Loading the job…"}</strong>{job.by ? <><br />Finish by {job.by}</> : null}</p>
+        <p data-hpd-smoke="worker-address"><strong>📍 {job.address ? addr : lookup === "missing" ? "Address not found: call your boss" : "Loading the job…"}</strong>{job.by ? <><br /><span data-hpd-smoke="worker-finish-by">⏰ HPD expects it done by {/\(\d+ days? (left|late)\)|due today/.test(job.by) ? job.by : finishByText(job.by, nyDay())}</span></> : null}</p>
         {job.where ? <p data-hpd-smoke="worker-where" style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(10,132,255,.12)", fontWeight: 700 }}>🚪 Where: {job.where}</p> : null}
         <a style={big} href={maps} data-hpd-smoke="worker-nav">🧭 Navigate</a>
         {job.contact ? <a style={{ ...big, background: "#30a14e" }} href={tel(job.contact.phone)} data-hpd-smoke="worker-call-super">📞 Call {job.contact.name}{job.contact.note ? ` (${job.contact.note})` : ""}</a> : null}

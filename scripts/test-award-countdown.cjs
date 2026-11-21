@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -31,4 +31,12 @@ assert.equal(daysLeftText(0), 'due today');
 assert.equal(daysLeftText(1), '1 day left');
 assert.equal(daysLeftText(4), '4 days left');
 assert.deepEqual(awardCountdown({ awards: null, today: '2026-11-21' }), []);
+// 👷 Finish-by date for the worker message
+assert.equal(finishByText('11/24/26', '2026-11-21'), 'Tue, Nov 24 (3 days left)');
+assert.equal(finishByText('2/9/26', '2026-11-21'), 'Mon, Feb 9 (285 days late)');
+assert.equal(finishByText('2026-11-21T00:00:00', '2026-11-21'), 'Sat, Nov 21 (due today)');
+assert.equal(finishByText('01/05/27', '2026-11-21'), 'Tue, Jan 5, 2027 (45 days left)');
+assert.equal(finishByText('soon', '2026-11-21'), 'soon');
+assert.equal(finishByText('', '2026-11-21'), '');
+assert.equal(nyDay(new Date('2026-11-22T03:00:00Z')), '2026-11-21');
 console.log('award-countdown tests passed');

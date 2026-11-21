@@ -31,6 +31,8 @@ try {
   // 20 Nov: the job card link comes first (the phone opens the first link), no map link (the card has Navigate).
   assert.match(t1, new RegExp(`^HPD job ${JOB}\\n👷 Open your job card \\(photos, call, navigate\\): https?://\\S+/worker/#o=\\S+\\n📍 1207 1 AVENUE`));
   assert.match(t1, /\nThe work:\n• /);
+  // 👷 Finish-by date (plan, 21 Nov): HPD's completion date in plain words with the days left / late.
+  assert.match(t1, /\n⏰ HPD expects it done by (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}(, \d{4})? \((\d+ days? (left|late)|due today)\)\n/);
   assert.match(t1, /📸 Photos HPD needs: before photos, before video, after photos, after video\./);
   assert.match(t1, /🏢 Building: Super Jose \(212\) 555-0147 \(basement door\)/);
   assert.ok(!/Map: https:/.test(t1), "no map link to tap by mistake");
@@ -50,8 +52,26 @@ try {
   await wp.waitForFunction(() => (document.querySelector('[data-hpd-smoke="worker-full"]')?.textContent || "").length > 30, null, { timeout: 30000 });
   { const body = await wp.locator("body").innerText(); assert.ok(/Before photos/.test(body) && /After photos/.test(body), "before and after spots for the worker"); }
   assert.doesNotMatch(await wp.locator('[data-hpd-smoke="worker-address"]').innerText(), /Loading|not found/);
+  assert.match(await wp.locator('[data-hpd-smoke="worker-finish-by"]').innerText(), /⏰ HPD expects it done by \w{3}, \w{3} \d{1,2}.*\((\d+ days? (left|late)|due today)\)/);
   await wp.close();
   assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /Sent to your worker/);
+  // 📄 HPD's pages for the worker (21 Nov): drawn from the invitation PDF (signed in), then shared as pictures.
+  if (job.ITBFile) {
+    await page.locator('[data-hpd-smoke="jc-crew-pages"]').click();
+    const ready = await page.waitForFunction(() => { const b = document.querySelector('[data-hpd-smoke="jc-crew-pages"]'); return b?.getAttribute("data-ready") || (/Couldn't open/.test(document.querySelector('[data-hpd-smoke="jc-crew-msg"]')?.textContent || "") ? "none" : ""); }, null, { timeout: 60000 }).then((h) => h.jsonValue());
+    if (ready === "none") console.log("HPD pages: PDF not readable here (no key)");
+    if (ready !== "none") {
+      assert.ok(Number(ready) >= 1, "HPD pages drawn");
+      await page.evaluate(() => { window.__shared = null; });
+      await page.locator('[data-hpd-smoke="jc-crew-pages"]').click();
+      await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
+      const shared = await page.evaluate(() => ({ names: (window.__shared.files || []).map((f) => f.name), text: window.__shared.text }));
+      assert.equal(shared.names.length, Number(ready));
+      assert.ok(shared.names.every((n) => /^EQ15239-HPD-page-\d\.jpg$/.test(n)), shared.names.join(","));
+      assert.match(shared.text, /show them to the tenant/);
+      console.log(`HPD pages shared: ${shared.names.join(", ")}`);
+    }
+  }
   // Untick the tenant: left out.
   await page.evaluate(() => { window.__shared = null; });
   await page.locator('[data-hpd-smoke="jc-crew-tenant"]').uncheck();
@@ -69,7 +89,7 @@ try {
   await page.waitForFunction(() => /Saved on job/.test(document.querySelector('[data-hpd-smoke="jc-crew-msg"]')?.textContent || ""), null, { timeout: 20000 });
   assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /1 before \+ 2 after\. They go to your Drive \(HPD Photo Backup \/ EQ15239\)/);
   assert.deepEqual(errors, []);
-  console.log("PASS crew share: worker photos come back into the job card (Before / After by name), job, address, the work, photos still needed, the super, map link; the tenant by default (untick leaves it out), where the work is, HPD's full description, before/after spots");
+  console.log("PASS crew share: worker photos come back into the job card (Before / After by name), job, address, the work, photos still needed, the super, map link; the tenant by default (untick leaves it out), where the work is, HPD's full description, before/after spots, the finish-by date, HPD's pages as pictures");
 } finally {
   await browser.close();
 }

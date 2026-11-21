@@ -3,8 +3,10 @@
   "versions": [
     {
       "date": "Nov 21, 2026",
-      "title": "Days left to finish · 7 AM alert · days left on the map",
+      "title": "Days left to finish · 7 AM alert · days left on the map · finish-by for your worker",
       "items": [
+        "✓ Finish-by date for your worker: the job you send your worker now says \"⏰ HPD expects it done by Tue, Nov 24 (3 days left)\" (or how many days late), and their job page shows the same.",
+        "✓ HPD's pages for your worker: on the job card, under Send to a worker, tap \"📄 HPD's pages for your worker\", then Send: HPD's description page and page 2 (the contact) go to your worker as pictures, so they can show the tenant. Their before / after photos still come back to you labeled.",
         "✓ Days left on the map: awarded jobs not sent yet now have a small badge by the pin with the days left before HPD's finish date: green, orange when 3 days or less, red when late (\"3d late\").",
         "✓ 7 AM alert for jobs due soon: each weekday from 7 AM, one phone alert lists your awarded jobs that are late or due in the next 2 days (job number and days left). Tap it to open the Home screen.",
         "✓ Days left to finish: a new ⏳ card on the Home screen lists your awarded jobs not sent yet with the days left before HPD's finish date, late ones (red) and the closest first. Tap one to open its job card."

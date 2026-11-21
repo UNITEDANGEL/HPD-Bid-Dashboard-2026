@@ -33,3 +33,24 @@ export function daysLeftText(days: number) {
   if (days === 0) return "due today";
   return `${days} day${days === 1 ? "" : "s"} left`;
 }
+
+// 👷 Finish-by date in the worker message (plan, 21 Nov): HPD's completion date in plain words with the days left,
+// e.g. "Tue, Nov 24 (3 days left)" / "Mon, Feb 9, 2026 (285 days late)". The year shows only when it isn't this year.
+// A date it can't read comes back as it was.
+const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export function finishByText(raw: string | null | undefined, today: string): string {
+  const s = String(raw || "").trim().replace(/[T ].*$/, "");
+  const d = calendarDay(s);
+  if (d === null) return String(raw || "").trim();
+  const t = calendarDay(today);
+  const dt = new Date(d * 86400000);
+  const sameYear = t !== null && new Date(t * 86400000).getUTCFullYear() === dt.getUTCFullYear();
+  const day = `${WD[dt.getUTCDay()]}, ${MO[dt.getUTCMonth()]} ${dt.getUTCDate()}${sameYear ? "" : `, ${dt.getUTCFullYear()}`}`;
+  return t === null ? day : `${day} (${daysLeftText(d - t)})`;
+}
+
+// Today in New York as "YYYY-MM-DD".
+export function nyDay(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}

@@ -41,7 +41,7 @@ const mapsLink = (address: string) => `https://www.google.com/maps/search/?api=1
 export function crewText(j: CrewJob, cardLink = "") {
   const out = [`HPD job ${j.id}`, ...(cardLink ? [`👷 Open your job card (photos, call, navigate): ${cardLink}`] : []), `📍 ${j.address.replace(/,\s*\d{5}$/, "")}${j.apt ? `, apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : ""}`];
   if (j.where) out.push(`🚪 Where: ${j.where}`);
-  if (j.completeBy) out.push(`Finish by ${j.completeBy}`);
+  if (j.completeBy) out.push(`⏰ HPD expects it done by ${j.completeBy}`);
   if (j.work.length) out.push("", "The work:", ...j.work.slice(0, 10).map((w) => `• ${w}`));
   if (j.full) out.push("", "HPD's full description:", j.full);
   const missing = (j.photos || []).filter((p) => !p.done).map((p) => p.label.toLowerCase());
