@@ -5,6 +5,8 @@ import { loadLib } from "./daily-report.mjs";
 const { isOnMyWay, etaMinutes, withArrival } = await loadLib("on-my-way");
 for (const t of ["I'm on my way", "we are on the way", "heading over now", "leaving now"]) assert.equal(isOnMyWay(t), true, t);
 assert.equal(isOnMyWay("see you Thursday"), false);
+for (const t of ["we'll call when we're on the way", "I'll text you once I'm on my way", "call me before you're heading over"]) assert.equal(isOnMyWay(t), false, t);
+assert.equal(isOnMyWay("On my way. I'll call when I park"), true);
 const here = { lat: 40.7135, lng: -73.8164 }, there = { lat: 40.7425, lng: -73.8164 }; // ~2 miles north
 const sunday = new Date("2026-11-08T17:00:00Z"); // Sunday noon in New York
 assert.equal(etaMinutes(here, there, sunday), 9, "2 mi x 1.35 at 18 mph");

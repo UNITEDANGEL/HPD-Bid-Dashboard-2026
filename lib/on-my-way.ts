@@ -1,7 +1,10 @@
 // 🚗 "I'm on my way" (plan item 27): "tell the tenant I'm on my way" gets the arrival time added, from where you are
 // and the traffic (straight line x 1.35 for the streets, 18 mph in the city, 12 in rush hour), rounded up to 5 minutes.
 
-export const isOnMyWay = (msg: string) => /\b(?:on (?:my|our|the) way|heading (?:over|there|your way)|coming (?:now|over)|leaving now)\b/i.test(String(msg || ""));
+// "We'll call when we're on the way" is a promise for later, not "I'm on my way now" (21 Nov: those words went to the
+// next job instead of the tenant who just texted).
+export const isOnMyWay = (msg: string) => /\b(?:on (?:my|our|the) way|heading (?:over|there|your way)|coming (?:now|over)|leaving now)\b/i.test(String(msg || ""))
+  && !/\b(?:when|once|before|after|until|if)\b[^.!?]*\b(?:on (?:my|our|the) way|heading (?:over|there|your way)|coming over|leaving)\b/i.test(String(msg || ""));
 
 const miles = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
   const R = 3958.8, toR = Math.PI / 180;
