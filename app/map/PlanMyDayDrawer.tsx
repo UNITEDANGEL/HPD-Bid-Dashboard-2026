@@ -352,9 +352,7 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
     return { job, lat, lng, distance, score, urgent, appointment, due, finishDays };
   };
 
-  const ordered = [...required.map(scoreJob).sort((a, b) => b.score - a.score), ...candidates.map(scoreJob).sort((a, b) => b.score - a.score || (a.distance ?? 999) - (b.distance ?? 999))]
-    .slice(0, plan.stopCount)
-    .map(({ job, lat, lng, distance, urgent, appointment, due, finishDays }): PlannedJob => ({
+  const toPlanned = ({ job, lat, lng, distance, urgent, appointment, due, finishDays }: ReturnType<typeof scoreJob>): PlannedJob => ({
       id: jobId(job),
       address: textValue(job, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]),
       borough: jobBoroughName(job),
@@ -367,9 +365,13 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
       contactName: cleanTenantContactName(textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"])),
       contactPhone: cleanTenantPhone(textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"])),
       unit: cleanJobLocationText(textValue(job, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"])),
-    }));
-
-  return ordered;
+    });
+  const ranked = [...required.map(scoreJob).sort((a, b) => b.score - a.score), ...candidates.map(scoreJob).sort((a, b) => b.score - a.score || (a.distance ?? 999) - (b.distance ?? 999))];
+  const ordered = ranked.slice(0, plan.stopCount).map(toPlanned);
+  // 🗺 Late jobs that didn't fit (plan item 26, 22 Nov): past HPD's finish date but left out by the stop count, most late first.
+  const lateLeft = ranked.slice(plan.stopCount).filter((r) => r.finishDays !== null && r.finishDays < 0)
+    .sort((a, b) => (a.finishDays ?? 0) - (b.finishDays ?? 0)).map(toPlanned);
+  return { ordered, lateLeft };
 }
 
 function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by you"): PlannedJob {
@@ -411,6 +413,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   ]);
   const [plan, setPlan] = useState<LocalPlan>(DEFAULT_PLAN);
   const [results, setResults] = useState<PlannedJob[]>([]);
+  const [lateLeft, setLateLeft] = useState<PlannedJob[]>([]);
   // Due today: no-access 2nd tries that are due and today's appointments, in visiting order.
   const dueTodayJobs = useMemo(() => records
     .map((job) => ({ job, due: dueToday(job) }))
@@ -452,6 +455,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
       .slice(0, 8);
   }, [activeJobs, jobSearch]);
   const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id) && activeJobs.some((record) => jobId(record) === job.id)), [results, selectedIds, activeJobs]);
+  const lateLeftOut = useMemo(() => lateLeft.filter((job) => !results.some((value) => value.id === job.id)), [lateLeft, results]);
   const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
 
   // Read once the jobs are in (15 Nov): asked on the first paint it went before the jobs (test-browser-open-fast) and
@@ -582,9 +586,10 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     const nextPlan = parseMessage(message, plan);
     const { point, label } = await getOrigin(nextPlan.startMode);
     const workingPlan = nextPlan;
-    const nextResults = rankJobs(workingPlan, point, records);
+    const { ordered: nextResults, lateLeft: nextLateLeft } = rankJobs(workingPlan, point, records);
     setPlan(workingPlan);
     setResults(nextResults);
+    setLateLeft(nextLateLeft);
     setSelectedIds(nextResults.map((job) => job.id));
     setOriginLabel(label);
     setOriginPoint(point);
@@ -655,6 +660,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlan(DEFAULT_PLAN);
     setResults([]);
+    setLateLeft([]);
     setSelectedIds([]);
     setJobSearch("");
     setInput("");
@@ -719,6 +725,11 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     setResults((current) => current.some((job) => job.id === id) ? current : [...current, selectableJob(record, originPoint || undefined)]);
     setSelectedIds((current) => current.includes(id) ? current : [...current, id]);
     setJobSearch("");
+  }
+
+  function addLateJob(job: PlannedJob) {
+    setResults((current) => current.some((value) => value.id === job.id) ? current : [...current, job]);
+    setSelectedIds((current) => current.includes(job.id) ? current : [...current, job.id]);
   }
 
   function moveJob(id: string, direction: -1 | 1) {
@@ -907,6 +918,11 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
                   </div>
                 </article>
               ))}
+              {lateLeftOut.length ? <section className="plan-my-day__late-left" data-hpd-smoke="plan-late-left" aria-label="Late jobs that didn't fit">
+                <strong>⏳ {lateLeftOut.length} late {lateLeftOut.length === 1 ? "job" : "jobs"} didn&apos;t fit</strong>
+                <ul>{lateLeftOut.slice(0, 6).map((job) => <li key={job.id}><div><b>{job.id}</b><span>{job.address || "Address unavailable"}</span><small>{job.reason}{job.distance === null ? "" : ` · ${job.distance.toFixed(1)} mi`}</small></div><button type="button" data-hpd-smoke="plan-late-left-add" aria-label={`Add ${job.id} to the plan`} onClick={() => addLateJob(job)}>Add</button></li>)}</ul>
+                {lateLeftOut.length > 6 ? <small>+{lateLeftOut.length - 6} more late. Ask for more stops to see them.</small> : null}
+              </section> : null}
               <button type="button" className="plan-my-day__accept" onClick={acceptPlan} disabled={!selectedResults.length}>Build Route with {selectedResults.length} Selected</button>
             </div>
           ) : null}

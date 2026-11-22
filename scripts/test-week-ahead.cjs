@@ -6,6 +6,8 @@ const code = ts.transpileModule(fs.readFileSync('lib/week-ahead.ts', 'utf8'), { 
 const mod = { exports: {} }; new Function('exports', 'module', code)(mod.exports, mod);
 const { weekAhead, weekLine, clockMinutes, addDays } = mod.exports;
 const today = '2026-11-19';
+// The clock is the sample day (noon NY), so the sample notices stay in the future whatever the real date is.
+Date.now = () => Date.parse('2026-11-19T17:00:00Z');
 assert.equal(addDays(today, 12), '2026-12-01');
 assert.equal(clockMinutes('9:30 AM'), 570); assert.equal(clockMinutes('12:00 PM'), 720); assert.equal(clockMinutes('14:15'), 855); assert.equal(clockMinutes(''), 1440);
 const week = weekAhead({

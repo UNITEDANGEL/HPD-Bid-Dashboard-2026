@@ -21,10 +21,17 @@ try {
   const shown = () => dock.evaluate((el) => { const r = el.getBoundingClientRect(); return Number(getComputedStyle(el).opacity) > 0.9 && r.top < innerHeight; });
   assert.equal(await shown(), true, "dock showing before");
 
-  // Drag an empty bit of the map (middle of the screen) and hold.
-  await page.mouse.move(200, 520);
+  // Drag an empty bit of the map and hold (the chips over the map move with the day: weather, street cleaning).
+  const [x, y] = await page.evaluate(() => {
+    for (const [px, py] of [[200, 520], [90, 260], [300, 300], [80, 480], [200, 250], [120, 600]]) {
+      const el = document.elementFromPoint(px, py);
+      if (el && el.closest(".leaflet-container") && !el.closest(".leaflet-marker-icon, .leaflet-marker-pane, button, a")) return [px, py];
+    }
+    return [200, 520];
+  });
+  await page.mouse.move(x, y);
   await page.mouse.down();
-  for (let i = 1; i <= 8; i++) await page.mouse.move(200 + i * 12, 520 - i * 10);
+  for (let i = 1; i <= 8; i++) await page.mouse.move(x + i * 12, y - i * 10);
   await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => document.querySelector(".fc-app")?.classList.contains("fc-map-dragging")), true, "dragging");
   assert.equal(await shown(), false, "dock slid away while dragging");

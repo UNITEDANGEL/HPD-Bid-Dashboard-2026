@@ -531,12 +531,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-late-left-out",
-        "icon": "🗺",
-        "title": "Late jobs that didn't fit",
-        "why": "When Plan my day has more late jobs than stops, it tells you which ones were left out, with an Add button."
-      },
-      {
         "id": "plan-on-time-rate",
         "icon": "📊",
         "title": "On time vs late",

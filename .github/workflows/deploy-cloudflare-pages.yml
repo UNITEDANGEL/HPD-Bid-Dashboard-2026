@@ -491,6 +491,7 @@ jobs:
             scripts/test-browser-unsent.mjs \
             scripts/test-browser-plan-second-try.mjs \
             scripts/test-browser-plan-finish-first.mjs \
+            scripts/test-browser-plan-late-left.mjs \
             scripts/test-browser-no-keyboard.mjs \
             scripts/test-browser-photo-check.mjs \
             scripts/test-browser-photo-look.mjs \

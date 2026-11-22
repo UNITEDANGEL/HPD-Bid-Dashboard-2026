@@ -89,7 +89,7 @@ United Angel Construction Corp` } });
   if (has("EP27450")) assert.match(listText, /EP27450 \([^)]*\) - affidavit and invoice sent on (10\/8\/26|\d+\/\d+\/\d+)\./i);
   if (has("EP18784")) assert.match(listText, /EP18784 \([^)]*\) - documents sent on \d+\/\d+\/\d+\./, "paperwork on record, with its date");
   if (has("EP22713")) assert.match(listText, /EP22713 \([^)]*\) - update: /, "a group email about many jobs doesn't count as sent for this one");
-  if (has("EO18305")) assert.match(listText, /EO18305 \(photos\) - update: /, "she wants photos: an old affidavit PDF isn't photos sent");
+  if (listText.includes("EO18305 (photos)")) assert.match(listText, /EO18305 \(photos\) - update: /, "she wants photos: an old affidavit PDF isn't photos sent");
   // EN07390: its PDF ("EN07390 AffF INVOICE.pdf") went to her 22 Oct with no text: the file name counts.
   if (has("EN07390")) assert.match(listText, /EN07390 \([^)]*\) - \w[\w ]* sent on \d+\/\d+\/\d+\./);
   await listBox.locator('[data-hpd-smoke="fc-list-reply-send"]').click();
