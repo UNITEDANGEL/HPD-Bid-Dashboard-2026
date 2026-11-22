@@ -531,12 +531,6 @@
     "title": "Next on the plan: never miss a finish date",
     "items": [
       {
-        "id": "late-job-call-list",
-        "icon": "📞",
-        "title": "Late jobs: who to call",
-        "why": "Next to each late job on the ⏳ card, the tenant or super to call to get in, one tap away."
-      },
-      {
         "id": "plan-day-finish-first",
         "icon": "🗺",
         "title": "Closest finish dates first",

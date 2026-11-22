@@ -11,6 +11,8 @@ import { paysBest } from "../lib/pays-best";
 import { awardCountdown, daysLeftText, finishMonth, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
+import { whoToCall, type CallWho } from "../lib/late-call";
+import { loadPrivate } from "../lib/private-data";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string };
@@ -48,6 +50,7 @@ export default function HomeScreen() {
   const [week, setWeek] = useState<WeekScore | null>(null);
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [countdown, setCountdown] = useState<Countdown[]>([]);
+  const [calls, setCalls] = useState<Record<string, CallWho>>({});
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(() => nyDay(new Date()).slice(0, 7));
   const [calDay, setCalDay] = useState("");
@@ -69,7 +72,15 @@ export default function HomeScreen() {
       fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []).then(async (awardList) => {
         // Days left to finish after award (plan, 21 Nov): open awarded jobs, late and closest first.
         const hpd = await get("/data/hpd_job_status.json");
-        setCountdown(awardCountdown({ awards: Array.isArray(awardList) ? awardList : [], sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
+        const cd = awardCountdown({ awards: Array.isArray(awardList) ? awardList : [], sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) });
+        setCountdown(cd);
+        // 📞 Late jobs: who to call (plan item 23): tenant (signed in only) or the super saved for the building.
+        const addresses: Record<string, string> = {};
+        for (const a of Array.isArray(awardList) ? awardList : []) { const o = String(a?.OMO || "").toUpperCase(); if (o && !addresses[o]) addresses[o] = String(a?.BuildingAddress || ""); }
+        let contacts = {};
+        try { contacts = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}"); } catch { /* private mode */ }
+        setCalls(whoToCall({ rows: cd, tenants: null, addresses, contacts }));
+        loadPrivate().then((p) => { if (p) setCalls(whoToCall({ rows: cd, tenants: p.jobs, addresses, contacts })); });
         setWeek(weekScore({ sent: sent?.jobs, awards: Array.isArray(awardList) ? awardList : [], payments, today: nyDay(new Date()) }));
       });
     });
@@ -171,9 +182,12 @@ export default function HomeScreen() {
           <span className="home-text">
             <strong>Days left to finish</strong>
             {countdown.slice(0, 5).map((c, i) => (
-              <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} className={i === 0 ? "home-big" : undefined} data-hpd-smoke="home-countdown-row" data-days={c.days} style={{ display: "block", color: c.days < 0 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontWeight: 800, textDecoration: "none", padding: "4px 0" }}>{c.omo}: {daysLeftText(c.days)} <small style={{ fontWeight: 400 }}>(due {Number(c.due.slice(5, 7))}/{Number(c.due.slice(8, 10))})</small></a>
+              <div key={c.omo} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "4px 0" }}>
+                <a href={`/map/?omo=${encodeURIComponent(c.omo)}`} className={i === 0 ? "home-big" : undefined} data-hpd-smoke="home-countdown-row" data-days={c.days} style={{ flex: "1 1 auto", color: c.days < 0 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontWeight: 800, textDecoration: "none" }}>{c.omo}: {daysLeftText(c.days)} <small style={{ fontWeight: 400 }}>(due {Number(c.due.slice(5, 7))}/{Number(c.due.slice(8, 10))})</small></a>
+                {calls[c.omo] ? <a href={`tel:${calls[c.omo].tel}`} data-hpd-smoke="home-countdown-call" data-kind={calls[c.omo].kind} aria-label={`Call ${calls[c.omo].who} for ${c.omo}`} style={{ flex: "0 0 auto", background: "#15803d", color: "#fff", borderRadius: 999, padding: "8px 14px", fontSize: 16, fontWeight: 800, textDecoration: "none", minHeight: 40, display: "inline-flex", alignItems: "center" }}>📞 Call {calls[c.omo].who}</a> : null}
+              </div>
             ))}
-            <small>{countdown.length} awarded job{countdown.length === 1 ? "" : "s"} not sent yet{countdown.length > 5 ? ` (${countdown.length - 5} more on the map)` : ""}. Tap one to open it.</small>
+            <small>{countdown.length} awarded job{countdown.length === 1 ? "" : "s"} not sent yet{countdown.length > 5 ? ` (${countdown.length - 5} more on the map)` : ""}. Tap one to open it{Object.keys(calls).length ? ", 📞 to call who lets you in" : ""}.</small>
           </span>
         </div>
       ) : null}

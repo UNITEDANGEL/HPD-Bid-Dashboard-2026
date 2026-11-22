@@ -140,6 +140,7 @@ jobs:
           node scripts/test-week-score.cjs
           node scripts/test-pays-best.cjs
           node scripts/test-award-countdown.cjs
+          node scripts/test-late-call.cjs
           node scripts/test-supplies.cjs
 
       - name: Test paperwork, packages, sync and stats

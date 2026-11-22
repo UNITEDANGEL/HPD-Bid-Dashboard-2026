@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 22, 2026",
+      "title": "Late jobs: who to call",
+      "items": [
+        "✓ Late jobs: who to call: on the Home screen, ⏳ Days left to finish, each late job (and any due in 3 days or less) has a green 📞 Call button for the tenant from HPD's invitation. When there is no tenant phone (or it's a public hall), it calls the super you saved for that building (🏢 on the job card). Tenant numbers show only when you are signed in."
+      ]
+    },
+    {
       "date": "Nov 21, 2026",
       "title": "Finish dates calendar · Days left to finish · 7 AM alert · days left on the map · finish-by for your worker",
       "items": [

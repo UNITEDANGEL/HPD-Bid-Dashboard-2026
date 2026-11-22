@@ -8,12 +8,15 @@ try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   const page = await c.newPage();
   const day = (n) => { const d = new Date(Date.now() + n * 86400000); return d.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "2-digit", day: "2-digit", year: "2-digit" }); };
-  const job = (OMO, award, due) => ({ OMO, AwardDate: day(award), WorkCompletionDate: day(due), JobDescription: "PAINT", AwardAmount: "500" });
+  const job = (OMO, award, due) => ({ OMO, AwardDate: day(award), WorkCompletionDate: day(due), JobDescription: "PAINT", AwardAmount: "500", BuildingAddress: `${OMO.slice(-1)} Test Ave., 10472` });
   await page.route("**/data/COA_Fetcher_2026.json*", (r) => r.fulfill({ json: [
     job("ZZ00003", -10, 6), job("ZZ00001", -20, -3), job("ZZ00002", -5, 1), job("ZZ00009", -5, 2), job("TEST-0001", -1, 1),
   ] }));
   await page.route("**/data/sent_paperwork.json*", (r) => r.fulfill({ json: { jobs: { ZZ00009: { sentAt: "2026-11-20", count: 6 } } } }));
   await page.route("**/data/hpd_job_status.json*", (r) => r.fulfill({ json: { jobs: {} } }));
+  // 📞 Late jobs: who to call (plan item 23): the tenant from the signed-in private data, or the super saved for the building.
+  await page.route("**/api/private/tenants*", (r) => r.fulfill({ json: { jobs: { ZZ00001: { ItbTenantName: "ANA SMITH", ItbTenantPhone: "718 555 0142" }, ZZ00003: { ItbTenantName: "FAR AWAY", ItbTenantPhone: "718 555 0100" } }, bids: {} } }));
+  await page.addInitScript(() => localStorage.setItem("hpd-building-contacts", JSON.stringify({ "2 TEST AVENUE": { name: "Super Joe", phone: "6465550177", savedAt: "2026-11-22" } })));
   await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
   const card = page.locator('[data-hpd-smoke="home-countdown"]');
   await card.waitFor({ timeout: 10000 });
@@ -24,6 +27,14 @@ try {
   assert.match(rows[2], /^ZZ00003: 6 days left/);
   assert.match(await card.innerText(), /3 awarded jobs not sent yet/);
   assert.equal(await card.locator('[data-hpd-smoke="home-countdown-row"]').first().getAttribute("href"), "/map/?omo=ZZ00001");
+  const calls = card.locator('[data-hpd-smoke="home-countdown-call"]');
+  await calls.nth(1).waitFor({ timeout: 10000 });
+  assert.deepEqual(await calls.allInnerTexts(), ["📞 Call Ana", "📞 Call Super Joe"], "late + almost-due jobs only (6 days left gets none)");
+  assert.equal(await calls.first().getAttribute("href"), "tel:+17185550142");
+  assert.equal(await calls.nth(1).getAttribute("href"), "tel:+16465550177");
+  assert.equal(await calls.nth(1).getAttribute("data-kind"), "super");
+  const callBox = await calls.first().boundingBox();
+  assert.ok(callBox && callBox.height >= 40 && callBox.x + callBox.width <= 390, "call button is big enough and on screen");
   const box = await card.boundingBox();
   assert.ok(box && box.width <= 390, "card fits the iPhone width");
   // 📅 Finish dates calendar (plan item 20): opens to this month; ZZ00003 (due in 6 days) is on its day; a tap lists it.
