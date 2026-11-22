@@ -5,6 +5,7 @@
       "date": "Nov 22, 2026",
       "title": "Late jobs: who to call",
       "items": [
+        "✓ Overlapping fix: on the map the words on pins (\"2nd try\", \"12d\") no longer sit on top of each other or under the next pin, the ⏱ <6h tag sits above the Notices button instead of covering its number, and the ✨ New update card waits until the Claude card is closed.",
         "✓ Late jobs that didn't fit: when Plan my day has more late jobs than stops, a ⏳ box under the stops lists the ones left out (most late first), each with an Add button to put it on today's plan.",
         "✓ Plan my day: closest finish dates first: late jobs and jobs due in the next 2 weeks (awarded in the last 90 days) now go to the top of your day, the closest HPD finish date first, and each stop says why: \"3 days late\", \"Due today\" or \"Due in 2 days (HPD finish date)\".",
         "✓ Late jobs: who to call: on the Home screen, ⏳ Days left to finish, each late job (and any due in 3 days or less) has a green 📞 Call button for the tenant from HPD's invitation. When there is no tenant phone (or it's a public hall), it calls the super you saved for that building (🏢 on the job card). Tenant numbers show only when you are signed in."

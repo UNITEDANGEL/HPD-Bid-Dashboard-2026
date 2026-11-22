@@ -9,7 +9,8 @@ const reservePinLabel = new Function(code + '\nreturn reservePinLabel;')();
 const occupied = [];
 assert.equal(reservePinLabel(0,0,occupied),true);
 assert.equal(reservePinLabel(20,10,occupied),false);
-assert.equal(reservePinLabel(58,0,occupied),true);
+assert.equal(reservePinLabel(58,0,occupied),false); // 22 Nov: a chip reaches ~66 px right, so 58 px apart still overlaps
+assert.equal(reservePinLabel(86,0,occupied),true);
 assert.equal(reservePinLabel(0,44,occupied),true);
 assert.equal(reservePinLabel(0,0,occupied),false);
 assert.equal(occupied.length,3);

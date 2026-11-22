@@ -3799,6 +3799,8 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @media (prefers-reduced-motion: reduce) { .fc-dock-btn, .fc-dock-chip, .fc-dock-btn svg, .fc-dock-chip svg { transition: none; } }
 /* The "⏱ N <6h" tag sits on the bell's top-left so it doesn't cover the strip's labels; the AI label is a pill too. */
 .fc-dock-btn .fc-urgent-tag { top: -6px !important; left: -10px !important; transform: none !important; padding: 1px 5px !important; font-size: 10px !important; line-height: 14px !important; z-index: 3; }
+/* 22 Nov "Overlapping fix": the ⏱ <6h tag sat on the Notices count; now it sits just above the button, centered. */
+.fc-dock-btn.fc-notices-fab .fc-urgent-tag { top: -21px !important; left: 50% !important; transform: translateX(-50%) !important; }
 .fc-dock-strip { bottom: calc(var(--fc-dock-h) + 12px); }
 .fc-dock .fc-ai-orb.fc-dock-ai .fc-fab-label { padding: 0 6px !important; border-radius: 6px; background: rgba(255, 255, 255, 0.94) !important; color: #6d28d9 !important; font: 800 11px/16px system-ui, sans-serif !important; text-shadow: none !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
 @media (max-height: 500px) { .fc-dock-strip { bottom: calc(var(--fc-dock-h) + 8px); } .fc-dock .fc-ai-orb.fc-dock-ai .fc-fab-label { font-size: 10px !important; line-height: 14px !important; } }

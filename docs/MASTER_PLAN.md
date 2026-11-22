@@ -41,6 +41,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 26. ✅ 🗺 Late jobs that didn't fit (plan, auto upgrade 22 Nov): when Plan my day has more late jobs (past HPD's finish date) than stops, a "⏳ N late jobs didn't fit" box under the stops lists them, most late first (up to 6, then "+N more"), each with a big Add button that puts it on the plan, selected. Test: scripts/test-browser-plan-late-left.mjs.
 27. ☐ 📊 On time vs late (plan, 22 Nov, Claude's recommendation): the Home week card shows how many jobs you finished before HPD's finish date and how many after, this week and last week.
 28. ☐ 🔔 3 PM check for jobs due today (plan, 22 Nov, Claude's recommendation): weekdays at 3 PM, one phone alert if a job due today (HPD finish date) still isn't marked done, with the job numbers.
+29. ✅ 🧹 Overlapping fix (owner, 22 Nov: "Overlapping fix"): on the iPhone map, pin words ("2nd try", "12d") keep 86 px apart so they no longer run under the next pin, and a highlighted pin right next to another shows no words; the ⏱ <6h tag sits above the Notices button instead of on its count; the ✨ New update card waits until the top alert (Claude: your request) is closed. Test: test-browser-map-overlap.mjs, test-map-pins.cjs.
 
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
 - 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.

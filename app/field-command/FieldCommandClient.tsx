@@ -588,7 +588,7 @@ function shortClock(time: string) {
 // Map pin: a teardrop in the status color with a white symbol you can read from far away, and a
 // small chip: how late open work is, the time of an appointment (glowing as it gets close), or
 // "2nd try" when a no-access job is due back.
-function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, priority: { days: number | null; pending: boolean }, visits: number) {
+function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, priority: { days: number | null; pending: boolean }, visits: number, roomForChip = true) {
   const classes = ["fc-pin", `is-${meta.key}`];
   let chip = "";
   let symbol = meta.key === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[meta.key];
@@ -621,6 +621,8 @@ function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, pri
     color = "#7c3aed";
     chip = "TEST";
   }
+  // No room (a lit pin right next to another, 22 Nov "Overlapping fix"): the pin without its words.
+  if (!roomForChip) chip = "";
   return `<div class="${classes.join(" ")}" style="--pin:${color}"><span class="fc-pin-head"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg></span>${chip ? `<span class="fc-pin-chip">${chip}</span>` : ""}${visits ? `<span class="fc-pin-visits">${visits}</span>` : ""}</div>`;
 }
 
@@ -1064,7 +1066,9 @@ function individualPinOffset(index: number, count: number) {
 }
 
 function reservePinLabel(x: number, y: number, occupied: { x: number; y: number }[]) {
-  if (occupied.some(p => Math.abs(p.x - x) < 58 && Math.abs(p.y - y) < 44)) return false;
+  // The chip ("2nd try", "12d") reaches about 66 px right of the pin, so labels keep 86 px apart side to side
+  // (22 Nov "Overlapping fix": 58 px let a chip run under the next pin).
+  if (occupied.some(p => Math.abs(p.x - x) < 86 && Math.abs(p.y - y) < 44)) return false;
   occupied.push({ x, y });
   return true;
 }
@@ -3855,9 +3859,15 @@ export default function FieldCommandClient() {
     void fetch("/data/whats-new.json", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).then((d: { versions?: { items?: string[] }[] } | null) => {
       const items = (d?.versions?.[0]?.items || []).slice(0, 3);
       setUpdatedPop(items.length ? items : ["The app was updated."]);
-      window.setTimeout(() => setUpdatedPop(null), 7000);
     }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // "Overlapping fix" (owner, 22 Nov): the New update card waits until the top alert (e.g. Claude: your request) is
+  // closed instead of covering it, then stays 7 seconds.
+  useEffect(() => {
+    if (!updatedPop || ping) return;
+    const t = window.setTimeout(() => setUpdatedPop(null), 7000);
+    return () => window.clearTimeout(t);
+  }, [updatedPop, ping]);
   // Automatic update: an iPhone app left in the background keeps running the old version, so
   // whenever you come back to it (and every 10 minutes) check /version.json; if a newer version
   // was deployed, reload -- only when no job card is open and nothing is saving.
@@ -4335,7 +4345,7 @@ export default function FieldCommandClient() {
                 ? `<span class="fc-days-badge${left.days < 0 ? " is-late" : left.days <= 3 ? " is-soon" : ""}" data-hpd-smoke="fc-days-badge" data-days="${left.days}">${left.days < 0 ? `${-left.days}d late` : left.days === 0 ? "today" : `${left.days}d`}</span>`
                 : "";
               const html = (showLabel || lit
-                ? jobPinHtml(job, meta, priority, visit.count)
+                ? jobPinHtml(job, meta, priority, visit.count, showLabel)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
                 // The notice tag only where there's room (10 Nov: "overlapping pins information"): close pins stay lit
                 // without piling their words on each other; zoom in and each gets its tag.
@@ -11207,7 +11217,7 @@ export default function FieldCommandClient() {
           <button type="button" aria-label="Close" data-hpd-smoke="fc-hpd-ping-ok" onClick={() => setPing(null)}>OK</button>
         </div>
       ) : null}
-      {updatedPop ? (
+      {updatedPop && !ping ? (
         <div className="fc-updated-pop" role="status" data-hpd-smoke="fc-updated-pop" onClick={() => setUpdatedPop(null)}>
           <b>✨ New update · enjoy!</b>
           <ul>{updatedPop.map((t) => <li key={t}>{t}</li>)}</ul>
