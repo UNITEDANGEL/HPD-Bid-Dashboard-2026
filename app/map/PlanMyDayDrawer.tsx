@@ -11,6 +11,7 @@ import { rejectedFixes, type RejectedFix } from "../../lib/rejected-fixer";
 import { nyToday, type Appointment } from "../../lib/appointments";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import { addJobNote } from "../../lib/job-notes";
+import { finishPlanBoost, finishStopLabel, jobFinishDays } from "../../lib/award-countdown";
 import { noAccessProofNote, noShowSmsHref, noShowWait, secondTryDay, secondTryNote, secondTrySmsHref } from "../../lib/no-access-proof";
 import {
   shadowUpsert,
@@ -329,6 +330,7 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
     return true;
   });
 
+  const today = nyToday();
   const scoreJob = (job: JobRecord) => {
     const lat = numberValue(job.Latitude ?? job.latitude ?? job.lat);
     const lng = numberValue(job.Longitude ?? job.longitude ?? job.lng ?? job.lon);
@@ -344,12 +346,15 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
     if (needsRedoVisit(job)) score += 1500;
     if (urgent) score += plan.routePreference === "highest_priority" ? 1000 : 450;
     if (distance !== null) score += plan.routePreference === "shortest_drive" ? Math.max(0, 900 - distance * 35) : Math.max(0, 250 - distance * 10);
-    return { job, lat, lng, distance, score, urgent, appointment, due };
+    // Closest HPD finish dates first (plan item 24): late jobs, then due today, tomorrow... (none after 14 days).
+    const finishDays = jobFinishDays(job, today);
+    score += plan.routePreference === "shortest_drive" ? finishPlanBoost(finishDays) / 2 : finishPlanBoost(finishDays);
+    return { job, lat, lng, distance, score, urgent, appointment, due, finishDays };
   };
 
   const ordered = [...required.map(scoreJob).sort((a, b) => b.score - a.score), ...candidates.map(scoreJob).sort((a, b) => b.score - a.score || (a.distance ?? 999) - (b.distance ?? 999))]
     .slice(0, plan.stopCount)
-    .map(({ job, lat, lng, distance, urgent, appointment, due }): PlannedJob => ({
+    .map(({ job, lat, lng, distance, urgent, appointment, due, finishDays }): PlannedJob => ({
       id: jobId(job),
       address: textValue(job, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]),
       borough: jobBoroughName(job),
@@ -357,7 +362,7 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
       lat,
       lng,
       distance,
-      reason: needsRedoVisit(job) ? `Redo: ${rejectedFixMap[jobId(job)].todo[0]}` : due ? due.label : appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
+      reason: needsRedoVisit(job) ? `Redo: ${rejectedFixMap[jobId(job)].todo[0]}` : due ? due.label : appointment ? "Appointment today" : finishPlanBoost(finishDays) > 0 && finishDays !== null ? finishStopLabel(finishDays) : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
       description: textValue(job, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
       contactName: cleanTenantContactName(textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"])),
       contactPhone: cleanTenantPhone(textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"])),

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -55,4 +55,19 @@ assert.equal(dec[0].filter((d) => d === null).length, 2); // Dec 1 2026 is a Tue
 assert.deepEqual(finishMonth(r, 'nope', '2026-11-21'), []);
 assert.equal(shiftMonth('2026-12', 1), '2027-01');
 assert.equal(shiftMonth('2026-01', -1), '2025-12');
+// Plan my day: closest HPD finish dates first (plan item 24).
+assert.equal(jobFinishDays({ AwardDate: '11/05/26', WorkCompletionDate: '11/24/26' }, '2026-11-22'), 2);
+assert.equal(jobFinishDays({ AwardDate: '2026-10-10', WorkCompletionDate: '2026-10-20T00:00:00' }, '2026-11-22'), -33);
+assert.equal(jobFinishDays({ AwardDate: '2026-05-10', WorkCompletionDate: '2026-06-20' }, '2026-11-22'), null); // awarded long ago
+assert.equal(jobFinishDays({ WorkCompletionDate: '11/24/26' }, '2026-11-22'), null); // not awarded
+assert.equal(jobFinishDays({ OMO: 'TEST-0001', AwardDate: '11/05/26', WorkCompletionDate: '11/24/26' }, '2026-11-22'), null);
+assert.equal(jobFinishDays({ AwardDate: '11/05/26', WorkCompletionDate: '' }, '2026-11-22'), null);
+assert.equal(finishPlanBoost(null), 0);
+assert.equal(finishPlanBoost(20), 0);
+assert.ok(finishPlanBoost(-1) > finishPlanBoost(0) && finishPlanBoost(0) > finishPlanBoost(2) && finishPlanBoost(2) > finishPlanBoost(14) && finishPlanBoost(14) > 0);
+assert.ok(finishPlanBoost(-33) >= finishPlanBoost(-1));
+assert.equal(finishStopLabel(2), 'Due in 2 days (HPD finish date)');
+assert.equal(finishStopLabel(1), 'Due in 1 day (HPD finish date)');
+assert.equal(finishStopLabel(0), 'Due today (HPD finish date)');
+assert.equal(finishStopLabel(-3), '3 days late (HPD finish date)');
 console.log('award-countdown tests passed');

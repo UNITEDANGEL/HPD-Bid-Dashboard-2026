@@ -1,6 +1,6 @@
 {
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
-  "updated": "2026-11-21",
+  "updated": "2026-11-22",
   "ideas": [
     {
       "id": "helper-call-tenant",
@@ -527,14 +527,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-21-c",
-    "title": "Next on the plan: never miss a finish date",
+    "id": "2026-11-22-a",
+    "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-day-finish-first",
+        "id": "plan-late-left-out",
         "icon": "🗺",
-        "title": "Closest finish dates first",
-        "why": "Plan my day picks the jobs nearest their HPD finish date (and late ones) before the others."
+        "title": "Late jobs that didn't fit",
+        "why": "When Plan my day has more late jobs than stops, it tells you which ones were left out, with an Add button."
+      },
+      {
+        "id": "plan-on-time-rate",
+        "icon": "📊",
+        "title": "On time vs late",
+        "why": "The week card shows how many jobs you finished before HPD's finish date and how many after."
+      },
+      {
+        "id": "plan-3pm-due-check",
+        "icon": "🔔",
+        "title": "3 PM check for jobs due today",
+        "why": "Weekdays at 3 PM, one phone alert if a job due today still isn't marked done."
       }
     ]
   }

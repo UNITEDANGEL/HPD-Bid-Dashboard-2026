@@ -83,3 +83,25 @@ export function shiftMonth(month: string, n: number) {
   const d = new Date(Date.UTC(y, m - 1 + n, 1));
   return d.toISOString().slice(0, 7);
 }
+// 🗺 Closest finish dates first in Plan my day (plan item 24, 22 Nov): days left to HPD's completion date for an awarded
+// job awarded in the last 90 days, like the ⏳ card (null otherwise or with no finish date), the ranking boost (late ones and the closest first, nothing after
+// 14 days) and the stop's line ("Due in 2 days (HPD finish date)").
+export function jobFinishDays(job: Record<string, unknown>, today: string): number | null {
+  const pick = (keys: string[]) => String(keys.map((k) => job[k]).find((v) => v !== undefined && v !== null && String(v).trim()) || "").trim().replace(/[T ].*$/, "");
+  if (/^TEST/i.test(String(job.OMO || job.omo || "").trim())) return null;
+  const t = calendarDay(today);
+  const aw = calendarDay(pick(["AwardDate", "awardDate", "Award Date"]));
+  const due = calendarDay(pick(["WorkCompletionDate", "workCompletionDate", "Work Completion Date"]));
+  if (t === null || aw === null || due === null || aw > t || t - aw > 90) return null;
+  return due - t;
+}
+export function finishPlanBoost(days: number | null): number {
+  if (days === null || days > 14) return 0;
+  if (days < 0) return 1000 + Math.min(-days, 30);
+  return 950 - days * 60;
+}
+export function finishStopLabel(days: number): string {
+  if (days < 0) return `${-days} day${days === -1 ? "" : "s"} late (HPD finish date)`;
+  if (days === 0) return "Due today (HPD finish date)";
+  return `Due in ${days} day${days === 1 ? "" : "s"} (HPD finish date)`;
+}
