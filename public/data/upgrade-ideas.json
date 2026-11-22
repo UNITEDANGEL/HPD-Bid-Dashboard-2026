@@ -531,12 +531,6 @@
     "title": "Next on the plan: never miss a finish date",
     "items": [
       {
-        "id": "finish-on-calendar",
-        "icon": "📅",
-        "title": "Finish dates on a calendar",
-        "why": "A month view with each awarded job on its HPD finish date, so you see the busy weeks coming."
-      },
-      {
         "id": "late-job-call-list",
         "icon": "📞",
         "title": "Late jobs: who to call",

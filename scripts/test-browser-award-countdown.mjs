@@ -26,6 +26,20 @@ try {
   assert.equal(await card.locator('[data-hpd-smoke="home-countdown-row"]').first().getAttribute("href"), "/map/?omo=ZZ00001");
   const box = await card.boundingBox();
   assert.ok(box && box.width <= 390, "card fits the iPhone width");
+  // 📅 Finish dates calendar (plan item 20): opens to this month; ZZ00003 (due in 6 days) is on its day; a tap lists it.
+  const cal = page.locator('[data-hpd-smoke="home-finish-cal"]');
+  await cal.locator('[data-hpd-smoke="home-finish-cal-toggle"]').click();
+  const iso = (n) => new Date(Date.now() + n * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  if (iso(6).slice(0, 7) !== iso(0).slice(0, 7)) await cal.locator('[data-hpd-smoke="home-finish-cal-next"]').click();
+  const cell = cal.locator(`[data-hpd-smoke="home-finish-cal-day"][data-day="${iso(6)}"]`);
+  assert.equal(await cell.getAttribute("data-count"), "1");
+  await cell.click();
+  const jobs = await cal.locator('[data-hpd-smoke="home-finish-cal-job"]').allInnerTexts();
+  assert.deepEqual(jobs.map((t) => t.replace(/\s*›$/, "")), ["ZZ00003: 6 days left"]);
+  assert.equal(await cal.locator('[data-hpd-smoke="home-finish-cal-job"]').getAttribute("href"), "/map/?omo=ZZ00003");
+  const calBox = await cal.boundingBox();
+  assert.ok(calBox && calBox.width <= 390, `calendar fits the iPhone width (${calBox?.width})`);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), "no sideways scroll");
   console.log("award-countdown browser test passed");
 } finally {
   await browser.close();

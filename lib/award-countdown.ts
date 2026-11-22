@@ -54,3 +54,32 @@ export function finishByText(raw: string | null | undefined, today: string): str
 export function nyDay(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
+
+// 📅 Finish dates on a calendar (plan item 20, 21 Nov): one month as weeks (Sunday first), each day with the open
+// awarded jobs due that day, so the busy weeks show coming. month: "YYYY-MM". Days outside the month are null.
+export type CalendarDay = { iso: string; date: number; jobs: Countdown[]; today: boolean };
+export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export function finishMonth(list: Countdown[], month: string, today: string): (CalendarDay | null)[][] {
+  const m = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!m) return [];
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const first = new Date(Date.UTC(y, mo, 1));
+  const days = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+  const cells: (CalendarDay | null)[] = Array(first.getUTCDay()).fill(null);
+  for (let d = 1; d <= days; d++) {
+    const iso = `${month}-${String(d).padStart(2, "0")}`;
+    cells.push({ iso, date: d, jobs: list.filter((c) => c.due === iso), today: iso === today });
+  }
+  while (cells.length % 7) cells.push(null);
+  const weeks: (CalendarDay | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
+}
+
+// "YYYY-MM" moved by n months.
+export function shiftMonth(month: string, n: number) {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return d.toISOString().slice(0, 7);
+}

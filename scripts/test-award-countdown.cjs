@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -39,4 +39,20 @@ assert.equal(finishByText('01/05/27', '2026-11-21'), 'Tue, Jan 5, 2027 (45 days 
 assert.equal(finishByText('soon', '2026-11-21'), 'soon');
 assert.equal(finishByText('', '2026-11-21'), '');
 assert.equal(nyDay(new Date('2026-11-22T03:00:00Z')), '2026-11-21');
+// 📅 Finish dates calendar: Nov 2026 starts on a Sunday, 30 days -> 5 weeks; jobs land on their due day.
+const cal = finishMonth(r, '2026-11', '2026-11-21');
+assert.equal(cal.length, 5);
+assert.ok(cal.every((w) => w.length === 7));
+assert.equal(cal[0][0].date, 1);
+const flat = cal.flat().filter(Boolean);
+assert.equal(flat.length, 30);
+assert.deepEqual(flat.find((d) => d.iso === '2026-11-20').jobs.map((j) => j.omo), ['ER09579']);
+assert.deepEqual(flat.find((d) => d.iso === '2026-11-25').jobs.map((j) => j.omo), ['ER09417']);
+assert.equal(flat.find((d) => d.iso === '2026-11-21').today, true);
+assert.equal(flat.filter((d) => d.jobs.length).length, 2);
+const dec = finishMonth(r, '2026-12', '2026-11-21');
+assert.equal(dec[0].filter((d) => d === null).length, 2); // Dec 1 2026 is a Tuesday
+assert.deepEqual(finishMonth(r, 'nope', '2026-11-21'), []);
+assert.equal(shiftMonth('2026-12', 1), '2027-01');
+assert.equal(shiftMonth('2026-01', -1), '2025-12');
 console.log('award-countdown tests passed');

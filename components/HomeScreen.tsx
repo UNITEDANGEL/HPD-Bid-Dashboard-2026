@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, trend, trendMark, type WeekScore } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishMonth, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 
@@ -48,6 +48,9 @@ export default function HomeScreen() {
   const [week, setWeek] = useState<WeekScore | null>(null);
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [countdown, setCountdown] = useState<Countdown[]>([]);
+  const [calOpen, setCalOpen] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => nyDay(new Date()).slice(0, 7));
+  const [calDay, setCalDay] = useState("");
   const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
@@ -174,6 +177,61 @@ export default function HomeScreen() {
           </span>
         </div>
       ) : null}
+
+      {countdown.length ? (() => {
+        // 📅 Finish dates on a calendar (plan item 20, 21 Nov): each open awarded job on HPD's finish date, late ones red.
+        const today = nyDay(now);
+        const thisMonth = today.slice(0, 7);
+        const inMonth = countdown.filter((c) => c.due.startsWith(calMonth));
+        const lateBefore = countdown.filter((c) => c.days < 0 && c.due < `${calMonth}-01`).length;
+        const picked = calDay ? countdown.filter((c) => c.due === calDay) : [];
+        const navBtn = { minWidth: 48, minHeight: 44, fontSize: 22, fontWeight: 800, border: "1px solid #cbd5e1", borderRadius: 10, background: "#fff", color: "#0f172a" } as const;
+        return (
+          <div className="home-card" data-hpd-smoke="home-finish-cal" style={{ display: "block" }}>
+            <button type="button" data-hpd-smoke="home-finish-cal-toggle" aria-expanded={calOpen} onClick={() => { setCalOpen(!calOpen); setCalMonth(thisMonth); setCalDay(""); }} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: "none", border: 0, padding: 0, textAlign: "left", fontSize: 18, fontWeight: 800, color: "inherit" }}>
+              <span className="home-icon">📅</span>
+              <span style={{ flex: 1 }}>Finish dates calendar<br /><small style={{ fontWeight: 400 }}>{countdown.filter((c) => c.due.startsWith(thisMonth)).length} due this month · tap to {calOpen ? "close" : "open"}</small></span>
+              <span aria-hidden>{calOpen ? "▲" : "▼"}</span>
+            </button>
+            {calOpen ? (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <button type="button" aria-label="Month before" data-hpd-smoke="home-finish-cal-prev" style={navBtn} onClick={() => { setCalMonth(shiftMonth(calMonth, -1)); setCalDay(""); }}>‹</button>
+                  <strong data-hpd-smoke="home-finish-cal-month" style={{ fontSize: 20 }}>{MONTH_NAMES[Number(calMonth.slice(5, 7)) - 1]} {calMonth.slice(0, 4)}</strong>
+                  <button type="button" aria-label="Next month" data-hpd-smoke="home-finish-cal-next" style={navBtn} onClick={() => { setCalMonth(shiftMonth(calMonth, 1)); setCalDay(""); }}>›</button>
+                </div>
+                <div role="grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, marginTop: 8, fontSize: 15, textAlign: "center" }}>
+                  {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <b key={i} style={{ color: "#64748b" }}>{d}</b>)}
+                  {finishMonth(countdown, calMonth, today).flat().map((cell, i) => {
+                    if (!cell) return <span key={i} />;
+                    const late = cell.jobs.some((c) => c.days < 0);
+                    const soon = !late && cell.jobs.some((c) => c.days <= 3);
+                    const bg = !cell.jobs.length ? "transparent" : late ? "#fee2e2" : soon ? "#fef3c7" : "#dbeafe";
+                    const fg = late ? "#b91c1c" : soon ? "#b45309" : "#1e3a8a";
+                    return (
+                      <button key={i} type="button" data-hpd-smoke="home-finish-cal-day" data-day={cell.iso} data-count={cell.jobs.length} disabled={!cell.jobs.length} onClick={() => setCalDay(calDay === cell.iso ? "" : cell.iso)}
+                        aria-label={`${cell.iso}: ${cell.jobs.length} job${cell.jobs.length === 1 ? "" : "s"} due`}
+                        style={{ minHeight: 46, padding: 2, borderRadius: 8, border: cell.today ? "2px solid #0f172a" : calDay === cell.iso ? "2px solid #2563eb" : "1px solid #e2e8f0", background: bg, color: cell.jobs.length ? fg : "#475569", fontSize: 15, fontWeight: cell.jobs.length ? 800 : 400, lineHeight: 1.1 }}>
+                        {cell.date}{cell.jobs.length ? <><br /><span style={{ fontSize: 13 }}>{cell.jobs.length} job{cell.jobs.length === 1 ? "" : "s"}</span></> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                {picked.length ? (
+                  <div data-hpd-smoke="home-finish-cal-list" style={{ marginTop: 8 }}>
+                    {picked.map((c) => (
+                      <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} data-hpd-smoke="home-finish-cal-job" style={{ display: "block", padding: "8px 0", fontSize: 18, fontWeight: 800, color: c.days < 0 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", textDecoration: "none" }}>{c.omo}: {daysLeftText(c.days)} ›</a>
+                    ))}
+                  </div>
+                ) : null}
+                <small data-hpd-smoke="home-finish-cal-note" style={{ display: "block", marginTop: 6 }}>
+                  {inMonth.length} due in {MONTH_NAMES[Number(calMonth.slice(5, 7)) - 1]}{lateBefore ? ` · ${lateBefore} late from before (red on earlier months)` : ""}. Tap a day to see its jobs. Red = late, orange = 3 days or less.
+                </small>
+              </div>
+            ) : null}
+          </div>
+        );
+      })() : null}
 
       {best.length ? (
         <div className="home-card" data-hpd-smoke="home-pays-best">
