@@ -535,6 +535,12 @@
         "icon": "🔔",
         "title": "3 PM check for jobs due today",
         "why": "Weekdays at 3 PM, one phone alert if a job due today still isn't marked done."
+      },
+      {
+        "id": "plan-late-list",
+        "icon": "📋",
+        "title": "See the late jobs",
+        "why": "Tap \"⏰ late\" on the week card to see which jobs went past HPD's finish date and by how many days."
       }
     ]
   }
