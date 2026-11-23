@@ -1,1177 +1,6 @@
 {
-  "generatedAt": "2026-11-23T01:01:30.067766+00:00",
+  "generatedAt": "2026-11-23T07:34:38.768561+00:00",
   "bids": [
-    {
-      "omo": "ER03909",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-02",
-      "workCompletion": "2026-10-12",
-      "address": "85 STARR STREET",
-      "borough": "BK",
-      "itbFile": "ER03909_100726033814.pdf",
-      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK\" MAKE THE BUILDING ENTRANCE DOOR SELF CLOSE AND LATCH. AT BUILDING ENTRANCE DOOR 1 STORY. REMOVE EXISTING HINGES AT THE DOOR. INSTALL NEW SELF CLOSING HINGES TO DOOR FRAME AND DOOR. PROPERLY REMOVE THE DEFFECTIVE SECURE TECH LOCK AND REPLACE WITH NEW SECURE TECH LOCK WITH EXISTING CYLINDER IN ORDER TO ALLOW DOOR TO PROPERLY SELF CLOSE AND LATCH. TOTAL DOORS= (1) REMOVE ALL WORK RELATED DEBRIS ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791401902000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.7021,
-      "lng": -73.926377
-    },
-    {
-      "omo": "ER05985",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-09",
-      "workCompletion": "2026-10-19",
-      "address": "156 WEST 141 STREET",
-      "borough": "MN",
-      "itbFile": "ER05985_100726035755.pdf",
-      "description": "REPAIRE SELF CLOSING HOPPER DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK MAKE ALL NECESSARY REPAIRS TO REPLACE BROKEN/DEFECTIVE HOPPER DOOR WITH NEW PROPERLY FIRE RATED HOPPER DOOR SIMILAR TO EXISTING, COMPLETE WITH SELF-CLOSING HINGES, LATCH AND ALL NECESSARY HARDWARE AND RESTORATION OF AFFECTED FINISHES AT (4TH STORY HOPPER DOOR INSIDE COMPACTOR CLOSET). TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791403078000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.818353,
-      "lng": -73.939802
-    },
-    {
-      "omo": "ER06823",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-08",
-      "workCompletion": "2026-10-31",
-      "address": "94-82 218 STREET",
-      "borough": "QN",
-      "itbFile": "ER06823_100626021746.pdf",
-      "description": "APARTMENT # 3FL ENTRANCE DOOR REPLACE ALL HINGES; REPLACE DEADBOLT SET REMOVE DOOR SWEEPER NYC HPD EMERGENCY OPERATIONS DIVISION – ESSENTIAL SERVICE WORK REPLACE ALL THE HINGES; REPLACE THE DEADBOLT LOCK; AND REMOVE THE DOOR SWEEPER FROM THE ENTRANCE DOOR TO APARTMENT #3FL; MAKE ALL NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. RESTORE TO PROPER WORKING ORDER. TOTAL DOORS= (1) :REMOVE ALL WORK RELATED DEBRIS: ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS:",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791310670000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.718366,
-      "lng": -73.737537
-    },
-    {
-      "omo": "ER06833",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-09",
-      "workCompletion": "2026-10-19",
-      "address": "20 EAST 67 STREET",
-      "borough": "MN",
-      "itbFile": "ER06833_100726040415.pdf",
-      "description": "REPAIRE APT-3R DOOR SELF CLOSING NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK INSTALL NEW SELF CLOSING HINGES, MAKE ALL NECESSARY REPAIRS, INSTALL NEW MORTISE LOCK AND ADJUST AND ALIGN DOOR TO MAKE DOOR SELF-CLOSING AND LATCHING AS PER NYC CODE. AT (DOOR AT APT-3R) TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791403463000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.768622,
-      "lng": -73.96827
-    },
-    {
-      "omo": "ER06834",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:30 AM",
-      "workStart": "2026-10-09",
-      "workCompletion": "2026-10-16",
-      "address": "151-19 34 AVENUE",
-      "borough": "QN",
-      "itbFile": "ER06834_100726035650.pdf",
-      "description": "APARTMENT #1F BATHROOM TRACE AND ABATE THE WATER LEAK NYC HPD EMERGENCY OPERATIONS DIVISION – ESSENTIAL SERVICE WORK TRACE AND ABATE THE SOURCE OF THE WATER LEAK ORIGINATING FROM THE PLUMBING FIXTURES OF APARTMENT #2F. VERIFY THAT WATER INFILTRATION INTO THE CEILING OF APARTMENT #1F HAS CEASED; :REMOVE ALL WORK RELATED DEBRIS: ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS:",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791403013000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.76746,
-      "lng": -73.812212
-    },
-    {
-      "omo": "ER06908",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-08",
-      "workCompletion": "2026-10-18",
-      "address": "65 EAST 175 STREET",
-      "borough": "BX",
-      "itbFile": "ER06908_100726033055.pdf",
-      "description": "*******AEP******** AT APT. 24A REPLACE CERAMIC FLOOR TILES, LOWER SASH COUNTERBALANCE AT BATHROOM, REPAIR LEAK AT CEILING IN THE KITCHEN, VINYL FLOOR TILES AT PRIVATE HALL, SCRAPE, PLASTER & PAINT AT CEILING, WEST WALL IN THE BEDROOM(N3) AND CEILING, NORTH, SOUTH WALL IN THE LIVING ROOM (N2) 1). AT BATHROOM A). DEMO CERAMIC FLOOR TILES APPROX. 35 SQ. FT.. MAKE ALL NECESSARY REPAIR TO WOOD SUBFLOOR. SUPPLY AND INSTALL CERAMIC FLOOR TILES APPROX. 35 SQ. FT.. INCLUDING NEW MARBLE SADDLE. B). REPLACE WITH THE NEW LOWER COUNTERBALANCE AT BATHROOM WINDOW AND RESTORE WINDOW TO PROPER WORKING ORDER. 2). AT KITCHEN A). TRACE, LOCATE AND REPAIR CONCEALED WATER LEAK AT CEILING. THE PROBABLE SOURCE IS COMING FROM ABOVE APT. ENSURE THAT THE LEAK(S) DOES NOT RE-OCCUR. B). DEMO EXISTING DEFECTIVE WATER DAMAGE CEILING (APPROX. 24 SQ. FT.) C). SUPPLY AND INSTALLE NEW (APPROX. 24 SQ. FT.) GWB SHEETROCK AT CEILING. SCRAPE, PLASTER AND PAINT ENTIRE CEILING AND ALL WALLS AT KITCHEN. APPLY 1 COAT PRIMER AND 2 COATS FINISH PAINT MATCHING TO EXISTING COLOR (APPROX. 420 S.F.). 3). PRIVATE HALL REMOVE DEFECTIVE ENTIRE VINYL FLOOR TILES AT PRIVATE HALL APPROX.= 25 SQ.FT.. MAKE ALL NECESSARY REPAIR TO WOOD SUBFLOOR. PROVIDE AND INSTALL NEW 1/8” THICKNESS SIMILAR VINYL FLOOR TILES (APPROX.25 SQ. FT.). 4). AT THE BEDROOM SCRAPE, PLASTER & PAINT ENTIRE BEDROOM CEILING AND WEST WALL. APPLY 1 COAT PRIMER AND 2 COATS FINISH PAINT MATCHING TO EXISTING COLOR (APPROX. 265 SQ. FT.) 5). AT LIVING ROOM SCRAPE, PLASTER & PAINT ENTIRE LIVING CEILING, NORTH AND SOUTH WALL. APPLY 1 COAT PRIMER AND 2 COATS FINISH PAINT MATCHING TO EXISTING COLOR (APPROX. 500 SQ. FT.). *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB IS COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: NOTE: ¿ FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF THEIR BID AWARDED AMOUNT. ¿ CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF THE JOB. ¿ ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. 1.¿ VENDOR MUST FOLLOW OSHA AND DOB REGULATION. 2.¿ VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. 3.¿ REMOVE ALL WORK-RELATED DEBRIS. 4.¿ VENDOR MUST CALL CPM NGO BINH (RANDY) AT (212)863-8928, (phone: sign in to see) EMAIL NGOB@HPD.NYC.GOV, OR SUPERVISOR ASAAD EMAD (212)863-8346 EMAIL ASAADE@HPD.NYC.GOV TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
-      "descPages": [
-        3,
-        4
-      ],
-      "receivedAt": 1791401458000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.847291,
-      "lng": -73.910667
-    },
-    {
-      "omo": "ER06980",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-08",
-      "workCompletion": "2026-10-18",
-      "address": "118 WEST 137 STREET",
-      "borough": "MN",
-      "itbFile": "ER06980_100726042225.pdf",
-      "description": "REPAIR VESTIBULE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK MAKE ALL NECESSARY REPAIRS, ADJUST AND ALIGN DOOR AND MAKE ALL NECESSARY REPAIRS TO DOOR LOCK ***DO NOT CHANGE KEY CYLINDER*** MAKE DOOR SELF-CLOSING AND LATCHING AS PER NYC CODE. (AT VESTIBULE DOOR AT PUBLIC HALL, 1ST STORY) TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791404547000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.815681,
-      "lng": -73.941044
-    },
-    {
-      "omo": "ER07042",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-08",
-      "workCompletion": "2026-10-15",
-      "address": "4316 BROADWAY",
-      "borough": "MN",
-      "itbFile": "ER07042_100726013924.pdf",
-      "description": "REPAIR ENTRANCE DOOR AT APT # 25 NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT 1ST STORY APT#25 ENTRANCE DOOR INSTALL ALL NEW SELF CLOSING HINGES TO MAKE A DOOR SELF CLOSING AND LATCHING PROPERLY. TOTAL DOORS = 1 (ONE) “REMOVE ALL WORK-RELATED DEBRIS.” ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791394768000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.851843,
-      "lng": -73.934551
-    },
-    {
-      "omo": "ER07394",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-12",
-      "workCompletion": "2026-10-29",
-      "address": "316 WEST 97 STREET",
-      "borough": "MN",
-      "itbFile": "ER07394_100726011958.pdf",
-      "description": "AT THE FOLLOWING LOCATIONS AT THE COMMUNITY BATHROOMS NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT THE FOLLWING LOCATIONS. INSTALL NEW PASSAGE LOCK AT COMMUNITY BATHROOM, 6TH STORY SECTION A. INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION B INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION A. INSTALL HINGES AT COMMUNITY BATHROOM, 4TH STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION D. INSTALL HINGES AT COMMUNITY BATHROOM, 4TH STORY SECTION A. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 4TH STORY SECTION C. MAKE ALL NECESSARY REPAIRS AND INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION C. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 3RD STORY SECTION D. INSTALL HINGES AT FIRE DOOR, 3RD STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION A. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 2ND STORY SECTION D. INSTALL HINGES AT COMMUNITY BATHROOM, 2ND STORY SECTION C. INSTALL HINGES AT COMMUNITY BATHROOM, 1ST STORY SECTION B. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 1ST STORY SECTION A. ENSURE ALL DOORS SELF CLOSES AND LATCHING IN SAFE ORDER. TOTAL NOS OF DOOR = (19) REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1791393601000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 501,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.8,
-          "y": 45.5,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 44.2,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496.6,
-          "y": 45.5,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.5,
-          "y": 44.9,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.8,
-          "y": 88.6,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 88.6,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 268.1,
-          "y": 467.6,
-          "rotate": 0,
-          "width": 493.9
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "emailedBy": "Department of Housing Preservation and Development",
-      "lat": 40.796179,
-      "lng": -73.973832
-    },
     {
       "omo": "ER04466",
       "bidDue": "2026-10-09",
@@ -37879,6 +36708,396 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.828117,
       "lng": -73.941401
+    },
+    {
+      "omo": "ER10223",
+      "bidDue": "2026-11-22",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-23",
+      "workCompletion": "2026-11-30",
+      "address": "2237 GRAND AVENUE",
+      "borough": "BX",
+      "itbFile": "ER10223_111926090426.pdf",
+      "description": "REPLACE LITE AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK PROPERLY REPAIR REPLACE THE BROKEN / DEFECTIVE CRACKED GLASS AT AT BUILDING FRONT ENTRANCE DOOR AT PUBLIC HALL. APPROX 80”X28”. RETURN DOOR TO SAFE CONDITION. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1795140268000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.858141,
+      "lng": -73.906513
+    },
+    {
+      "omo": "ER10367",
+      "bidDue": "2026-11-22",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-23",
+      "workCompletion": "2026-11-30",
+      "address": "1018 EASTERN PARKWAY",
+      "borough": "BK",
+      "itbFile": "ER10367_112026054608.pdf",
+      "description": "AEP AT APT # 16L REPLACE WINDOW GLASS PANE AT KITCHEN. *** SAFELY REMOVE AND DISPOSE OF THE CRACKED GLASS PANE FROM THE LOWER SASH OF THE KITCHEN WINDOW. SUPPLY AND INSTALL NEW GLASS MATCHING THE EXISTING TYPE AND THICKNESS. PROPERLY SECURE AND SEAL THE NEW GLASS PANE. ENSURE THE WINDOW OPERATES SMOOTHLY AND THE LOWER SASH OPENS AND CLOSES PROPERLY. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: • FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. • CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. • ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. • VENDOR MUST FOLLOW OSHA AND DOB REGULATION. • VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. • REMOVE ALL WORK-RELATED DEBRIS. • VENDOR MUST CALL CPM MOHAMMAD ALAM AT 212 863-5971, (phone: sign in to see) EMAIL ALAMMO@HPD.NYC.GOV, OR SUPERVISOR DELLITURRI PASQUALE 212 863-5111 TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1795214771000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.668516,
+      "lng": -73.934715
+    },
+    {
+      "omo": "KR00830",
+      "bidDue": "2026-11-22",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-23",
+      "workCompletion": "2026-12-04",
+      "address": "34 MORNINGSIDE AVENUE",
+      "borough": "MN",
+      "itbFile": "KR00830_112026124430.pdf",
+      "description": "34 Morningside Ave, Apt 2B: Replace defective Kitchen base cabinet & radiator metal cover. Building contact is TA Collins Ekhator (phone: sign in to see). The inspector monitoring this job is Nzeribe Azukwu 212-863-7374 or (phone: sign in to see). KITCHEN: 1Replace with new, the defective base cabinet (its top and sink should not be replaced) 36\" long, in kind & color to the removed. Proper care should be taken to avoid creating big hole at the bottom floor of the cabinet since there exists plumbing pipe higher than the bottom floor of the cabinet.Each1 2Properly patch up holes on the wall and floor around base cabinet and between gas piping & its floorSF2 3Provide & Install new escutcheon plate at the base of the gas pipingEach1 4Replace defective receptacle behind the gas cooker. Leave in good working order.LS1 5Touch up paints in kind and color to around the repaired holes; includes the replaced radiator cover & all surfaces around itSF10 LIVING ROOM: 1Replace with new, the defective VTC floor tiles around the radiatorSF6 2Provide & install new radiator metal cover 32\" x 24\"Each1 NOTE TO CONTRACTORS• All work and materials must comply with NYC Building Codes and/or other jurisdictional regulatory rules including a tenant protection plan as required by Chapter 1 of Title 28 of the Administrative Code.• The Contractor will take all reasonable and responsible precautions to protect people and property from damage, loss or injury resulting from the contractor’s operations. As necessary precautions for safety and health, the Contractor shall implement the installation and maintenance of protective measures against hazards and nuisances such as barricades, signs, and drop cloths. • The Contractor is responsible for the safe handling of lead-based materials, mold and mildew and asbestos. Only persons trained and authorized to perform such work will be in compliance with all regulations related to containing materials. Throughout the duration of the repairs in the building, the contractors will ensure that safe work practices are used including necessary dust and debris management procedures to protect occupants and their possessions. GRAND TOTAL",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1795196673000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.806465,
+      "lng": -73.957221
     }
   ]
 }
