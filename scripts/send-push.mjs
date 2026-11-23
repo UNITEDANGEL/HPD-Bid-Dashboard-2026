@@ -163,6 +163,9 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   // ⏰ Jobs due soon (plan, 21 Nov): once each weekday from 7 AM, the awarded jobs late or due in the next 2 days.
   const due = await dueSoonAlert({ awards, sent, closed, now, loadLib });
   if (due) out.push(due);
+  // 🔔 3 PM check (plan item 28, 22 Nov): weekdays from 3 PM, jobs due today (HPD finish date) still not done.
+  const dueToday = await dueTodayAlert({ awards, sent, closed, now, loadLib });
+  if (dueToday) out.push(dueToday);
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
   const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib, records });
   if (brief) out.push(brief);
@@ -369,6 +372,26 @@ export async function dueSoonAlert({ awards, sent, closed, now = Date.now(), loa
     title: `⏰ Finish dates: ${head}`,
     body: list.slice(0, 6).map((c) => `${c.omo} ${daysLeftText(c.days)}`).join(" · ") + (list.length > 6 ? ` · +${list.length - 6} more` : ""),
     url: "/", tag: "due-soon",
+  };
+}
+
+// 🔔 3 PM check for jobs due today (plan item 28, 22 Nov 2026): weekdays from 3 PM New York (until 8 PM), once a day,
+// one alert if an open awarded job's HPD finish date is today and its paperwork isn't sent / it isn't closed. OMO numbers only.
+export async function dueTodayAlert({ awards, sent, closed, now = Date.now(), loadLib, force = false }) {
+  if (!loadLib || !Array.isArray(awards) || !awards.length) return null;
+  const p = nyParts(now);
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(new Date(now));
+  if (!force && (["Sat", "Sun"].includes(weekday) || Number(p.hour) < 15 || Number(p.hour) >= 20)) return null;
+  const today = `${p.year}-${p.month}-${p.day}`;
+  const { awardCountdown } = await loadLib("award-countdown");
+  const list = awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today }).filter((c) => c.days === 0);
+  if (!list.length) return null;
+  const n = list.length;
+  return {
+    key: `dt:${today}`, kind: "urgent",
+    title: `🔔 ${n} job${n === 1 ? "" : "s"} due today not done yet`,
+    body: `${list.slice(0, 6).map((c) => c.omo).join(" · ")}${n > 6 ? ` · +${n - 6} more` : ""}: HPD's finish date is today. Finish the work and send the paperwork.`,
+    url: n === 1 ? `/map/?view=all&map=1&omo=${list[0].omo}` : "/", tag: "due-today",
   };
 }
 

@@ -5,7 +5,8 @@
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [
-        "⏱ Notices list: the ones you can still answer on time come first (soonest first), then the late ones. The top line says how many are due soon and how many are late, like \"⏱ 11 due soon · next: … 9h left · 15 late\"."
+        "⏱ Notices list: the ones you can still answer on time come first (soonest first), then the late ones. The top line says how many are due soon and how many are late, like \"⏱ 11 due soon · next: … 9h left · 15 late\".",
+        "🔔 3 PM check: on weekdays at 3 PM your phone gets one alert if a job is due today (HPD's finish date) and still isn't done, with the job numbers. Tap it to open the job."
       ]
     },
     {

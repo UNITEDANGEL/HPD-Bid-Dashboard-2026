@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { handlePushSubscribe } from "../server/drive-packages.mjs";
-import { dueSoonAlert, eveningWrapup, findAlerts, lostReview, moneyReport, morningBriefing, holdQuiet, openSealed, quietHours, workingHours } from "./send-push.mjs";
+import { dueSoonAlert, dueTodayAlert, eveningWrapup, findAlerts, lostReview, moneyReport, morningBriefing, holdQuiet, openSealed, quietHours, workingHours } from "./send-push.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const key = crypto.randomBytes(32);
@@ -499,4 +499,30 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   const viaFind = await findAlerts({ conversations: { threads: [] }, bids: [], sent, requests: {}, awards, closed: {}, now: Date.parse("2026-11-23T12:05:00Z"), loadLib });
   assert.ok(viaFind.some((x) => x.key === "ds:2026-11-23"), "findAlerts includes the due-soon alert");
   console.log("due soon alert ok");
+}
+
+// 🔔 3 PM check for jobs due today (plan item 28): weekdays 3-8 PM, open awarded jobs whose finish date is today.
+{
+  const awards = [
+    { OMO: "ER07567", AwardDate: "11/10/26", WorkCompletionDate: "11/23/26" }, // due today (Mon 11/23)
+    { OMO: "ER07568", AwardDate: "11/10/26", WorkCompletionDate: "11/23/26" }, // due today but paperwork sent: left out
+    { OMO: "ER09417", AwardDate: "11/05/26", WorkCompletionDate: "11/20/26" }, // late, not due today: left out
+    { OMO: "ER09500", AwardDate: "11/05/26", WorkCompletionDate: "11/24/26" }, // tomorrow: left out
+  ];
+  const sent = { ER07568: { sentAt: "2026-11-23" } };
+  const a = await dueTodayAlert({ awards, sent, closed: {}, now: Date.parse("2026-11-23T20:05:00Z"), loadLib }); // Mon 3:05 PM NY
+  assert.equal(a.key, "dt:2026-11-23");
+  assert.equal(a.title, "🔔 1 job due today not done yet");
+  assert.ok(a.body.startsWith("ER07567: "), a.body);
+  assert.equal(a.kind, "urgent");
+  assert.equal(a.url, "/map/?view=all&map=1&omo=ER07567");
+  assert.equal(await dueTodayAlert({ awards, sent, closed: {}, now: Date.parse("2026-11-23T19:55:00Z"), loadLib }), null, "not before 3 PM");
+  assert.equal(await dueTodayAlert({ awards, sent, closed: {}, now: Date.parse("2026-11-21T20:05:00Z"), loadLib }), null, "not on Saturday");
+  assert.equal(await dueTodayAlert({ awards, sent: { ...sent, ER07567: { sentAt: "2026-11-23" } }, closed: {}, now: Date.parse("2026-11-23T20:05:00Z"), loadLib }), null, "all done: no alert");
+  const two = await dueTodayAlert({ awards: [...awards, { OMO: "ER01234", AwardDate: "11/10/26", WorkCompletionDate: "11/23/26" }], sent, closed: {}, now: Date.parse("2026-11-23T20:05:00Z"), loadLib });
+  assert.equal(two.title, "🔔 2 jobs due today not done yet");
+  assert.equal(two.url, "/");
+  const viaFind = await findAlerts({ conversations: { threads: [] }, bids: [], sent, requests: {}, awards, closed: {}, now: Date.parse("2026-11-23T20:05:00Z"), loadLib });
+  assert.ok(viaFind.some((x) => x.key === "dt:2026-11-23"), "findAlerts includes the due-today alert");
+  console.log("due today alert ok");
 }
