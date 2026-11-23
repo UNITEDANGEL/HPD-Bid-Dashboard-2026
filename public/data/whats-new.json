@@ -5,6 +5,7 @@
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [
+        "📅 The date menu on the map fits on the screen now, no scrolling: ⏳ Maturity, 🏆 Award, 🔨 Start and 🏁 Finish each say what they mean, every choice shows its real dates (like Nov 23 – Dec 23), and a line tells the next date and how many days are left.",
         "➕ The + and − zoom buttons now always sit just under 📍 Locate, so they never cover it on an iPhone (the notch at the top used to push Locate down onto them).",
         "📍 Nothing covers the Locate button any more: the \"Couldn't get your location\" line and the \"🔨 Working at…\" banner now stop before the Map / Locate / + − buttons on the right.",
         "💬 Nothing overlaps at the bottom of the map: the Talk to Claude bar now sits above the round Working button, and it's solid so the map doesn't show through.",

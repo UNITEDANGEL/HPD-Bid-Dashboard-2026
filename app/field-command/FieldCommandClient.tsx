@@ -200,6 +200,13 @@ const QUICK_DATE_RANGES = [
 type QuickDateKey = (typeof QUICK_DATE_RANGES)[number]["key"];
 // Short names of the dates for the 📅 Any date menu and button.
 const DAYS_FIELD_SHORT: Record<JobDateField, string> = { maturity: "Maturity", award: "Award", start: "Start", finish: "Finish" };
+const DAYS_FIELD_ICON: Record<JobDateField, string> = { maturity: "⏳", award: "🏆", start: "🔨", finish: "🏁" };
+const DAYS_FIELD_HINT: Record<JobDateField, string> = { maturity: "HPD complete-by", award: "job given", start: "work starts", finish: "contract finish" };
+// "Nov 23" for a yyyy-mm-dd day.
+function shortDay(day: string) {
+  const t = Date.parse(`${day}T12:00:00`);
+  return Number.isNaN(t) ? "" : new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 function shiftDay(iso: string, days: number) {
   const date = new Date(`${iso}T12:00:00Z`);
@@ -4174,6 +4181,33 @@ export default function FieldCommandClient() {
     return out;
   }, [daysMenuOpen, jobs, status, borough, search, dateRange.field, calendarDate, openJobKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // One line under the date choices (owner, 23 Nov: "more info, not just days ... days to mature"): the soonest
+  // date coming up for the date picked (or the latest award), how many days away, and how many are past due.
+  const daysInfo = useMemo(() => {
+    if (!daysMenuOpen) return "";
+    const field = dateRange.field;
+    const today = calendarDay(calendarDate);
+    if (today === null) return "";
+    const days = jobs.filter((job) => inStatus(job, status) && (borough === "ALL" || jobBorough(job) === borough))
+      .map((job) => calendarDay(jobDate(job, field))).filter((d): d is number => d !== null);
+    if (!days.length) return "";
+    const toDay = (d: number) => new Date(d * 86400000).toISOString().slice(0, 10);
+    const icon = DAYS_FIELD_ICON[field];
+    const name = DAYS_FIELD_SHORT[field].toLowerCase();
+    if (field === "award") {
+      const last = Math.max(...days.filter((d) => d <= today));
+      if (!Number.isFinite(last)) return "";
+      const ago = today - last;
+      return `${icon} Last award ${shortDay(toDay(last))} · ${ago === 0 ? "today" : `${ago} day${ago === 1 ? "" : "s"} ago`}`;
+    }
+    const ahead = days.filter((d) => d >= today);
+    if (!ahead.length) return `${icon} No ${name} dates coming up`;
+    const next = Math.min(...ahead);
+    const left = next - today;
+    const sameDay = ahead.filter((d) => d === next).length;
+    return `${icon} Next ${name} ${shortDay(toDay(next))} · ${left === 0 ? "today" : `${left} day${left === 1 ? "" : "s"} left`}${sameDay > 1 ? ` · ${sameDay} jobs` : ""}`;
+  }, [daysMenuOpen, jobs, status, borough, dateRange.field, calendarDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function applyQuickDate(key: QuickDateKey) {
     setDaysBack(null);
     setCustomDateRange(false);
@@ -7951,18 +7985,32 @@ export default function FieldCommandClient() {
               <div className="fc-days-menu" role="menu" data-hpd-smoke="fc-days-menu">
                 {/* Which date (owner, 23 Nov: "more options ... maturity, award date is also important"): the days below
                     count on the date picked here. The menu stays open so the numbers update. */}
+                {/* Owner, 23 Nov: "it scrolls why ... make icons better, more info not just days: start date, finish
+                    date, award date, days to mature". Wider, in a grid so it fits an iPhone without scrolling; each date
+                    has an icon and what it means; each window shows its real dates; a line tells the soonest date. */}
                 <div className="fc-days-field" role="group" aria-label="Which date" data-hpd-smoke="fc-days-field">
                   {(Object.keys(JOB_DATE_FIELDS) as JobDateField[]).map((field) => (
                     <button key={field} type="button" role="menuitemradio" aria-checked={dateRange.field === field} className={dateRange.field === field ? "is-active" : ""} data-hpd-smoke={`fc-days-field-${field}`} onClick={() => { setShowOlderLayer(false); setDateRange((prev) => ({ ...prev, field })); }}>
-                      {DAYS_FIELD_SHORT[field]}
+                      <span className="fc-days-field-icon" aria-hidden="true">{DAYS_FIELD_ICON[field]}</span>
+                      <span className="fc-days-field-words"><b>{DAYS_FIELD_SHORT[field]}</b><small>{DAYS_FIELD_HINT[field]}</small></span>
                     </button>
                   ))}
                 </div>
-                {(["next7", "next30", "next60", "last7", "last15", "last30", "last45", "last60", "last90", "year", "all"] as const).map((key) => (
-                  <button key={key} type="button" role="menuitemradio" aria-checked={quickDateKey === key && !showOlderLayer} className={quickDateKey === key && !showOlderLayer ? "is-active" : ""} data-hpd-smoke={`fc-days-${key}`} onClick={() => { applyQuickDate(key); setShowOlderLayer(false); setDaysMenuOpen(false); }}>
-                    {QUICK_DATE_RANGES.find((r) => r.key === key)?.label}
-                    {dayCounts[key] !== undefined ? <b className="fc-days-count" data-hpd-smoke={`fc-days-count-${key}`}>{dayCounts[key]} {dayCounts[key] === 1 ? "job" : "jobs"}</b> : null}
-                  </button>
+                {daysInfo ? <p className="fc-days-info" data-hpd-smoke="fc-days-info">{daysInfo}</p> : null}
+                {([["Coming up", ["next7", "next30", "next60"]], ["Past", ["last7", "last15", "last30", "last45", "last60", "last90"]], ["More", ["year", "all"]]] as const).map(([title, keys]) => (
+                  <div key={title} className={`fc-days-group${keys.length === 2 ? " is-two" : ""}`} role="group" aria-label={title}>
+                    {keys.map((key) => {
+                      const b = quickDateBounds(key, calendarDate);
+                      const span = key === "all" ? "every job" : key === "year" ? calendarDate.slice(0, 4) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
+                      return (
+                        <button key={key} type="button" role="menuitemradio" aria-checked={quickDateKey === key && !showOlderLayer} className={`fc-days-range${quickDateKey === key && !showOlderLayer ? " is-active" : ""}`} data-hpd-smoke={`fc-days-${key}`} onClick={() => { applyQuickDate(key); setShowOlderLayer(false); setDaysMenuOpen(false); }}>
+                          <b className="fc-days-range-name">{QUICK_DATE_RANGES.find((r) => r.key === key)?.label}</b>
+                          <small className="fc-days-range-span">{span}</small>
+                          {dayCounts[key] !== undefined ? <b className="fc-days-count" data-hpd-smoke={`fc-days-count-${key}`}>{dayCounts[key]} {dayCounts[key] === 1 ? "job" : "jobs"}</b> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
                 ))}
                 {/* Pick From and Through right here: the menu closes by itself once both are in (owner, 10 Nov: "the
                     calendar: just pick the date and it goes away, no drop-down menu"). "change" fires when the phone's

@@ -44,8 +44,26 @@ try {
   await page.waitForTimeout(400);
   assert.equal(await badge(), mat30, `maturity next 30 days: the map shows the ${mat30} jobs the menu said`);
   assert.match(await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').innerText(), /Maturity Next 30/);
+  // Roomier menu (owner, 23 Nov: "it scrolls why, fix it, make icons better, more info not just days"): on an iPhone the
+  // whole menu fits with no scrolling, each date has its icon and meaning, each window shows its real dates, and a line
+  // tells the next maturity date and the days left.
+  await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
+  await page.locator('[data-hpd-smoke="fc-days-menu"]').waitFor();
+  await page.waitForTimeout(300);
+  const fit = await page.locator('[data-hpd-smoke="fc-days-menu"]').evaluate((m) => { const r = m.getBoundingClientRect(); return { bg: getComputedStyle(m).backgroundColor, scroll: m.scrollHeight - m.clientHeight, left: r.left, right: r.right, bottom: r.bottom, w: innerWidth, h: innerHeight }; });
+  assert.ok(fit.scroll <= 1, `the date menu fits without scrolling (${JSON.stringify(fit)})`);
+  assert.ok(fit.left >= 0 && fit.right <= fit.w && fit.bottom <= fit.h - 130, `the date menu stays on the screen, above the dock and Talk to Claude bar (${JSON.stringify(fit)})`);
+  assert.match(await page.locator('[data-hpd-smoke="fc-days-field-maturity"]').innerText(), /⏳[\s\S]*Maturity[\s\S]*complete-by/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-days-field-award"]').innerText(), /🏆[\s\S]*Award/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-days-next30"]').innerText(), /Next 30 days[\s\S]*[A-Z][a-z]{2} \d{1,2} – [A-Z][a-z]{2} \d{1,2}/);
+  const info = await page.locator('[data-hpd-smoke="fc-days-info"]').innerText();
+  assert.match(info, /⏳ (Next maturity [A-Z][a-z]{2} \d{1,2} · (today|\d+ days? left)|No maturity dates coming up)/);
+  if (shots) await page.screenshot({ path: `${shots}/day-menu-roomy.png` });
+  await page.locator('[data-hpd-smoke="fc-days-field-award"]').click();
+  assert.match(await page.locator('[data-hpd-smoke="fc-days-info"]').innerText(), /🏆 Last award [A-Z][a-z]{2} \d{1,2} · (today|\d+ days? ago)/);
+  await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
   assert.deepEqual(errors, []);
-  console.log(`PASS day counts: menu counts match the map after picking: 15 days ${seen.last15}, 30 days ${seen.last30}, 90 days ${seen.last90}, this year ${seen.year}; maturity next 30 days ${mat30}`);
+  console.log(`PASS day counts: menu counts match the map after picking: 15 days ${seen.last15}, 30 days ${seen.last30}, 90 days ${seen.last90}, this year ${seen.year}; maturity next 30 days ${mat30}; menu fits with no scrolling; next maturity: ${info}`);
   await c.close();
 } finally {
   await browser.close();
