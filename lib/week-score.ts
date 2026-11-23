@@ -59,7 +59,10 @@ export function weekScore(input: {
 // 📊 On time vs late (plan item 27, 22 Nov): jobs finished this week (paperwork sent to HPD, Monday to today) on or
 // before HPD's finish date (the award's WorkCompletionDate) vs after it, and the same days of last week.
 // Jobs with no award / no finish date on file aren't counted. OMO numbers and dates only.
-export type OnTimeNumbers = { onTime: number; late: number; lateJobs: string[] };
+// 📋 See the late jobs (plan item 30, 23 Nov): lateList = each late job with the days between HPD's finish date and the
+// day the paperwork went, most late first.
+export type LateJob = { omo: string; days: number; sent: string; due: string };
+export type OnTimeNumbers = { onTime: number; late: number; lateJobs: string[]; lateList: LateJob[] };
 export type OnTimeLate = OnTimeNumbers & { last: OnTimeNumbers };
 export function onTimeLate(input: {
   sent?: Record<string, { sentAt?: string }> | null;
@@ -77,15 +80,21 @@ export function onTimeLate(input: {
   }
   const from = weekStart(input.today);
   const count = (start: string, end: string): OnTimeNumbers => {
-    const out: OnTimeNumbers = { onTime: 0, late: 0, lateJobs: [] };
+    const out: OnTimeNumbers = { onTime: 0, late: 0, lateJobs: [], lateList: [] };
     for (const [key, s] of Object.entries(input.sent || {})) {
       const day = String(s?.sentAt || "").slice(0, 10);
       const d = due[key.trim().toUpperCase()];
       if (!d || day < start || day > end) continue;
       if (day <= d.due) out.onTime += 1;
-      else { out.late += 1; out.lateJobs.push(key.trim().toUpperCase()); }
+      else {
+        const omo = key.trim().toUpperCase();
+        out.late += 1;
+        out.lateJobs.push(omo);
+        out.lateList.push({ omo, days: Math.round((Date.parse(`${day}T12:00:00Z`) - Date.parse(`${d.due}T12:00:00Z`)) / 86400000), sent: day, due: d.due });
+      }
     }
     out.lateJobs.sort();
+    out.lateList.sort((a, b) => b.days - a.days || a.omo.localeCompare(b.omo));
     return out;
   };
   return { ...count(from, input.today), last: count(shift(from, -7), shift(input.today, -7)) };

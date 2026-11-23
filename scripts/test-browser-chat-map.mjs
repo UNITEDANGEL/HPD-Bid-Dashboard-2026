@@ -50,7 +50,7 @@ try {
   // 1. The bar sits right above the bottom buttons, on the screen, clear of the "Next:" chip.
   await bar.waitFor();
   const onMap = { bar: await rect('[data-hpd-smoke="fc-chatbar"]'), dock: await rect('[data-hpd-smoke="fc-dock"]'), chip: await rect(".fc-focus-chip") };
-  assert.ok(onMap.bar.bottom <= onMap.dock.top + 1 && onMap.dock.top - onMap.bar.bottom < 20 && onMap.bar.left >= 0 && onMap.bar.right <= 390, `bar above the buttons: ${JSON.stringify(onMap)}`);
+  assert.ok(onMap.bar.bottom <= onMap.dock.top + 1 && onMap.dock.top - onMap.bar.bottom < 32 /* 23 Nov: lifted 18 px clear of the round Working button */ && onMap.bar.left >= 0 && onMap.bar.right <= 390, `bar above the buttons: ${JSON.stringify(onMap)}`);
   assert.ok(clear(onMap.bar, onMap.chip), `the Next chip moved up, clear of the bar: ${JSON.stringify(onMap)}`);
   assert.equal(await page.locator('[data-hpd-smoke="fc-chatbar-send"]').count(), 0, "empty: no Send");
   if (shots) await page.screenshot({ path: `${shots}/chat-bar-map.png` });

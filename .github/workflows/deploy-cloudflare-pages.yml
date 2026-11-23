@@ -381,6 +381,7 @@ jobs:
             scripts/test-browser-job-made.mjs \
             scripts/test-browser-who-owes.mjs \
             scripts/test-browser-week-score.mjs \
+            scripts/test-browser-no-overlap.mjs \
             scripts/test-browser-pays-best.mjs \
             scripts/test-browser-award-countdown.mjs \
             scripts/test-browser-map-days-left.mjs \

@@ -186,7 +186,10 @@ const BOROUGH_ICONS: Record<BoroughKey, string> = { MN: "🏙️", BK: "🌉", Q
 // One-tap date windows for the quick filters, on whichever date type is picked.
 const QUICK_DATE_RANGES = [
   { key: "year", label: "This year" },
+  { key: "next7", label: "Next 7 days" },
   { key: "next30", label: "Next 30 days" },
+  { key: "next60", label: "Next 60 days" },
+  { key: "last7", label: "Last 7 days" },
   { key: "last15", label: "Last 15 days" },
   { key: "last30", label: "Last 30 days" },
   { key: "last45", label: "Last 45 days" },
@@ -195,6 +198,8 @@ const QUICK_DATE_RANGES = [
   { key: "all", label: "All dates" },
 ] as const;
 type QuickDateKey = (typeof QUICK_DATE_RANGES)[number]["key"];
+// Short names of the dates for the 📅 Any date menu and button.
+const DAYS_FIELD_SHORT: Record<JobDateField, string> = { maturity: "Maturity", award: "Award", start: "Start", finish: "Finish" };
 
 function shiftDay(iso: string, days: number) {
   const date = new Date(`${iso}T12:00:00Z`);
@@ -209,7 +214,10 @@ const pickedYear = () => ({ ...currentYearRange(), preset: false });
 
 function quickDateBounds(key: QuickDateKey, today: string) {
   if (key === "year") return { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` };
+  if (key === "next7") return { from: today, to: shiftDay(today, 7) };
   if (key === "next30") return { from: today, to: shiftDay(today, 30) };
+  if (key === "next60") return { from: today, to: shiftDay(today, 60) };
+  if (key === "last7") return { from: shiftDay(today, -7), to: today };
   if (key === "last15") return { from: shiftDay(today, -15), to: today };
   if (key === "last30") return { from: shiftDay(today, -30), to: today };
   if (key === "last45") return { from: shiftDay(today, -45), to: today };
@@ -1441,13 +1449,17 @@ export default function FieldCommandClient() {
   };
   // Morning summary (owner, 17 Oct): the first time the app opens each day, what needs doing today, one tap to each.
   const [summaryToday, setSummaryToday] = useState(false);
+  // In the corner (owner, 23 Nov: "it overlaps ... make it hide in the corner, expand when I click it"): the morning
+  // box opens by itself as a small ☀️ Today button in the corner; a tap opens the full box, ▼ Hide puts it back.
+  const [todayMini, setTodayMini] = useState(false);
   useEffect(() => {
-    // Automated test browsers open it with ?today=1 (so it doesn't cover the map buttons they tap).
-    if (new URLSearchParams(window.location.search).get("today") === "1") { setSummaryToday(true); return; }
+    // Automated test browsers open it with ?today=1 (so it doesn't cover the map buttons they tap); ?today=mini = the corner button.
+    const q = new URLSearchParams(window.location.search).get("today");
+    if (q === "1" || q === "mini") { setSummaryToday(true); setTodayMini(q === "mini"); return; }
     if (navigator.webdriver) return;
-    try { if (localStorage.getItem("hpd-summary-seen") !== new Date().toLocaleDateString("en-CA")) setSummaryToday(true); } catch { setSummaryToday(true); }
+    try { if (localStorage.getItem("hpd-summary-seen") !== new Date().toLocaleDateString("en-CA")) { setSummaryToday(true); setTodayMini(true); } } catch { setSummaryToday(true); setTodayMini(true); }
   }, []);
-  const closeSummary = () => { setSummaryToday(false); try { localStorage.setItem("hpd-summary-seen", new Date().toLocaleDateString("en-CA")); } catch { /* private mode */ } };
+  const closeSummary = () => { setSummaryToday(false); setTodayMini(false); try { localStorage.setItem("hpd-summary-seen", new Date().toLocaleDateString("en-CA")); } catch { /* private mode */ } };
   const [boardMarks, setBoardMarks] = useState<BoardMarks>({});
   useEffect(() => { try { setBoardMarks(JSON.parse(localStorage.getItem("hpd-notice-board-v1") || "{}")); } catch { /* private mode */ } }, []);
   // Every button / link pops for a moment when touched (iPhone has no hover); the touch listener turns on :active in Safari.
@@ -4136,6 +4148,9 @@ export default function FieldCommandClient() {
         const bounds = quickDateBounds(key, calendarDate);
         return bounds.from === dateRange.from && bounds.to === dateRange.to;
       })?.key ?? null;
+  // 📅 button words: the range, or the date picked when it isn't Award ("Maturity", "Maturity 30d").
+  const daysRange = showOlderLayer ? "2024-25" : statusIgnoresDefaultDates(status, dateRange.preset) ? "Any date" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey?.startsWith("next") ? `Next ${quickDateKey.slice(4)}` : "Custom";
+  const daysLabel = dateRange.field !== "award" && !showOlderLayer ? `${DAYS_FIELD_SHORT[dateRange.field]}${daysRange === "Any date" ? "" : ` ${daysRange}`}` : daysRange;
   const activeFilterCount = (status !== "pending" ? 1 : 0) + (borough !== "ALL" ? 1 : 0)
     + (dateRange.field !== "award" || quickDateKey !== "year" ? 1 : 0);
 
@@ -7930,11 +7945,20 @@ export default function FieldCommandClient() {
           <div className="fc-bar-days">
             {staleJobs.length && status === "pending" ? <button type="button" className="fc-stale-btn" data-hpd-smoke="fc-stale-open" aria-label={`${staleJobs.length} old jobs with nothing on file (faded on the map): check them`} onClick={() => setStaleOpen(true)}><span aria-hidden="true">🧹</span><small>{staleJobs.length}</small><small className="fc-stale-word">old</small></button> : null}
             <button type="button" className={`fc-days-btn${daysMenuOpen ? " is-open" : ""}${showOlderLayer ? " is-older" : ""}`} data-hpd-smoke="fc-days-menu-btn" aria-expanded={daysMenuOpen} aria-label="Pick the days" onClick={() => setDaysMenuOpen((o) => !o)}>
-              <span aria-hidden="true">📅</span><small>{showOlderLayer ? "2024-25" : statusIgnoresDefaultDates(status, dateRange.preset) ? "Any date" : quickDateKey === "year" ? "Year" : quickDateKey === "all" ? "All" : quickDateKey?.startsWith("last") ? `${quickDateKey.slice(4)}d` : quickDateKey === "next30" ? "Next 30" : "Custom"} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
+              <span aria-hidden="true">📅</span><small>{daysLabel} ▾</small><b className="fc-days-btn-count" data-hpd-smoke="fc-days-btn-count">{filteredJobs.length}</b>
             </button>
             {daysMenuOpen ? (
               <div className="fc-days-menu" role="menu" data-hpd-smoke="fc-days-menu">
-                {(["last15", "last30", "last45", "last60", "last90", "year", "all"] as const).map((key) => (
+                {/* Which date (owner, 23 Nov: "more options ... maturity, award date is also important"): the days below
+                    count on the date picked here. The menu stays open so the numbers update. */}
+                <div className="fc-days-field" role="group" aria-label="Which date" data-hpd-smoke="fc-days-field">
+                  {(Object.keys(JOB_DATE_FIELDS) as JobDateField[]).map((field) => (
+                    <button key={field} type="button" role="menuitemradio" aria-checked={dateRange.field === field} className={dateRange.field === field ? "is-active" : ""} data-hpd-smoke={`fc-days-field-${field}`} onClick={() => { setShowOlderLayer(false); setDateRange((prev) => ({ ...prev, field })); }}>
+                      {DAYS_FIELD_SHORT[field]}
+                    </button>
+                  ))}
+                </div>
+                {(["next7", "next30", "next60", "last7", "last15", "last30", "last45", "last60", "last90", "year", "all"] as const).map((key) => (
                   <button key={key} type="button" role="menuitemradio" aria-checked={quickDateKey === key && !showOlderLayer} className={quickDateKey === key && !showOlderLayer ? "is-active" : ""} data-hpd-smoke={`fc-days-${key}`} onClick={() => { applyQuickDate(key); setShowOlderLayer(false); setDaysMenuOpen(false); }}>
                     {QUICK_DATE_RANGES.find((r) => r.key === key)?.label}
                     {dayCounts[key] !== undefined ? <b className="fc-days-count" data-hpd-smoke={`fc-days-count-${key}`}>{dayCounts[key]} {dayCounts[key] === 1 ? "job" : "jobs"}</b> : null}
@@ -8288,7 +8312,7 @@ export default function FieldCommandClient() {
             const tap = (smoke: string) => { setMoreOpen(false); window.setTimeout(() => document.querySelector<HTMLElement>(`[data-hpd-smoke="${smoke}"]`)?.click(), 0); };
             const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
               // ☀️ The day's summary again (11 Nov): its only way back was the notices header, hidden since Notices opens the board.
-              { key: "today", icon: "☀️", label: "Today's summary", info: "Notices, bids and money for today", go: () => { setMoreOpen(false); closeScreens("today"); setBoardWithMap(false); setSummaryToday(true); } },
+              { key: "today", icon: "☀️", label: "Today's summary", info: "Notices, bids and money for today", go: () => { setMoreOpen(false); closeScreens("today"); setBoardWithMap(false); setSummaryToday(true); setTodayMini(false); } },
               { key: "week", icon: "📅", label: "Next 7 days", info: "Appointments, bids due, notices and 2nd tries, day by day", go: () => { setMoreOpen(false); closeScreens(); setWeekOpen(true); } },
               { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
               { key: "parking", icon: "🅿️", label: "Parking (street cleaning)", info: aspOffToday ? `No street cleaning today · ${aspOffToday}` : "Street cleaning rules today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
@@ -10091,7 +10115,7 @@ export default function FieldCommandClient() {
         <div className={`fc-notice-chooser${noticeMini ? " is-mini" : ""}${boardOpen && !noticeMini ? " is-on-board" : ""}${boardOpen && !boardWithMap && !noticeMini ? " is-full" : ""}`} role="dialog" aria-label="Notices on the map" data-hpd-smoke="fc-notice-chooser">
           <header>
             <strong data-hpd-smoke="fc-notice-chooser-title">{NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.icon} {NOTICE_KINDS.find((k) => k.key === (noticeKind || "all"))?.short}{noticeMini ? ` · ${filteredJobs.length}` : `: ${filteredJobs.length} on the map${noticeKind && noticeSets[noticeKind].size > filteredJobs.length ? ` (of ${noticeSets[noticeKind].size})` : ""}`}</strong>
-            {!noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-today-open" onClick={() => { setNoticeChooser(false); setSummaryToday(true); }}>☀️ Today</button> : null}
+            {!noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-today-open" onClick={() => { setNoticeChooser(false); setSummaryToday(true); setTodayMini(false); }}>☀️ Today</button> : null}
             {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-change" onClick={() => setNoticeMini(false)}>Change ▴</button> : null}
             {noticeMini ? <button type="button" className="fc-notice-mini-btn" data-hpd-smoke="fc-notice-mini-list" onClick={() => { setBoardOpen(false); setBoardWithMap(false); setNoticesOpen(true); }}>List</button> : null}
             <button type="button" data-hpd-smoke="fc-notice-chooser-close" aria-label="Fold" title="Fold (the notices stay on the map)" onClick={() => { setNoticeMini(true); setBoardOpen(false); setBoardWithMap(false); }}>✕</button>
@@ -11264,11 +11288,19 @@ export default function FieldCommandClient() {
           onClose={() => { setBoardOpen(false); setBoardWithMap(false); setSelectedJob(null); setFollowFilter("notices"); setNoticeKind((k) => k || "priority"); setNoticeChooser(true); setNoticeMini(true); }}
         />
       ) : null}
-      {summaryToday && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen ? (
+      {summaryToday && todayMini && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen ? (
+        <button type="button" className={`fc-today-mini${dueToday.length ? " is-hot" : ""}`} data-hpd-smoke="fc-today-mini" aria-label="Open today's summary" onClick={() => setTodayMini(false)}>
+          <span aria-hidden="true">☀️</span> Today{dueToday.length ? <b data-hpd-smoke="fc-today-mini-count">{dueToday.length}</b> : null}
+        </button>
+      ) : null}
+      {summaryToday && !todayMini && !boardOpen && !selectedJob && !noticesOpen && !noticeChooser && !bidsOpen ? (
         <div className="fc-today" role="dialog" aria-label="Today" data-hpd-smoke="fc-today">
           <header>
             <strong>☀️ Today · {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</strong>
-            <button type="button" aria-label="Close" data-hpd-smoke="fc-today-close" onClick={closeSummary}>Got it</button>
+            <span style={{ display: "flex", gap: 6 }}>
+              <button type="button" aria-label="Hide in the corner" data-hpd-smoke="fc-today-hide" onClick={() => setTodayMini(true)}>▼ Hide</button>
+              <button type="button" aria-label="Close" data-hpd-smoke="fc-today-close" onClick={closeSummary}>Got it</button>
+            </span>
           </header>
           {/* 📋 One dashboard card (plan item 14): ✅ done today, 🔔 what the helper told you, ⏭ coming up, as in the chat. */}
           <div className="fc-today-recap" data-hpd-smoke="fc-today-recap">{recapBoxes(recapNow())}</div>

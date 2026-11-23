@@ -49,6 +49,7 @@ export default function HomeScreen() {
   const [owed, setOwed] = useState<ReturnType<typeof whoOwes> | null>(null);
   const [week, setWeek] = useState<WeekScore | null>(null);
   const [ontime, setOntime] = useState<OnTimeLate | null>(null);
+  const [lateOpen, setLateOpen] = useState(false); // 📋 See the late jobs (plan item 30)
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [countdown, setCountdown] = useState<Countdown[]>([]);
   const [calls, setCalls] = useState<Record<string, CallWho>>({});
@@ -168,21 +169,34 @@ export default function HomeScreen() {
       ) : null}
 
       {week ? (
-        <a className="home-card" href="/payments/" data-hpd-smoke="home-week">
+        <div className="home-card" data-hpd-smoke="home-week">
           <span className="home-icon">{week.trophy ? "🏆" : "📈"}</span>
           <span className="home-text">
-            <strong>{week.trophy ? "Great week so far" : "Your week so far"}</strong>
-            <b className="home-big">{week.sent} sent <Arrow now={week.sent} before={week.last.sent} /> · {week.won} won <Arrow now={week.won} before={week.last.won} /></b>
-            <em>${Math.round(week.moneyIn).toLocaleString()} in this week (Monday to today) <Arrow now={week.moneyIn} before={week.last.moneyIn} /></em>
-            <small data-hpd-smoke="home-week-last">Same days last week: {week.last.sent} sent · {week.last.won} won · ${Math.round(week.last.moneyIn).toLocaleString()} in</small>
+            <a href="/payments/" style={{ display: "flex", flexDirection: "column", gap: 4, color: "inherit", textDecoration: "none" }}>
+              <strong>{week.trophy ? "Great week so far" : "Your week so far"}</strong>
+              <b className="home-big">{week.sent} sent <Arrow now={week.sent} before={week.last.sent} /> · {week.won} won <Arrow now={week.won} before={week.last.won} /></b>
+              <em>${Math.round(week.moneyIn).toLocaleString()} in this week (Monday to today) <Arrow now={week.moneyIn} before={week.last.moneyIn} /></em>
+              <small data-hpd-smoke="home-week-last">Same days last week: {week.last.sent} sent · {week.last.won} won · ${Math.round(week.last.moneyIn).toLocaleString()} in</small>
+            </a>
             {ontime && (ontime.onTime + ontime.late + ontime.last.onTime + ontime.last.late) > 0 ? (
               <span data-hpd-smoke="home-week-ontime" style={{ display: "block", marginTop: 6, fontSize: 16, lineHeight: 1.35 }}>
-                <b style={{ color: "#15803d" }}>✅ {ontime.onTime} on time</b> · <b style={{ color: ontime.late ? "#b91c1c" : "#64748b" }}>⏰ {ontime.late} late</b> this week
+                <b style={{ color: "#15803d" }}>✅ {ontime.onTime} on time</b> · {ontime.late ? (
+                  <button type="button" data-hpd-smoke="home-week-late-toggle" aria-expanded={lateOpen} onClick={() => setLateOpen(!lateOpen)} style={{ background: "#7f1d1d", color: "#fff", border: "1px solid #b91c1c", borderRadius: 999, padding: "6px 12px", minHeight: 40, fontSize: 16, fontWeight: 800 }}>⏰ {ontime.late} late {lateOpen ? "▲" : "▼"}</button>
+                ) : <b style={{ color: "#64748b" }}>⏰ 0 late</b>} this week
                 <small style={{ display: "block" }} data-hpd-smoke="home-week-ontime-last">Last week (same days): {ontime.last.onTime} on time · {ontime.last.late} late. On time = paperwork sent by HPD&apos;s finish date.</small>
+                {lateOpen && ontime.lateList.length ? (
+                  <span data-hpd-smoke="home-week-late-list" style={{ display: "block", marginTop: 8 }}>
+                    {ontime.lateList.map((j) => (
+                      <a key={j.omo} href={`/map/?omo=${encodeURIComponent(j.omo)}`} data-hpd-smoke="home-week-late-row" data-days={j.days} style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: "inherit", textDecoration: "none", fontSize: 17 }}>
+                        <b>{j.omo}</b>: <b style={{ color: "#f87171" }}>{j.days} day{j.days === 1 ? "" : "s"} late</b> <small>(HPD finish {Number(j.due.slice(5, 7))}/{Number(j.due.slice(8, 10))}, sent {Number(j.sent.slice(5, 7))}/{Number(j.sent.slice(8, 10))})</small> <span aria-hidden>→</span>
+                      </a>
+                    ))}
+                  </span>
+                ) : null}
               </span>
             ) : null}
           </span>
-        </a>
+        </div>
       ) : null}
 
       {countdown.length ? (

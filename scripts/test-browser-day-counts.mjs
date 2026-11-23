@@ -32,8 +32,20 @@ try {
     seen[key] = n;
   }
   assert.ok(seen.last15 <= seen.last30 && seen.last30 <= seen.last90, `longer windows never have fewer jobs (${JSON.stringify(seen)})`);
+  // Which date (owner, 23 Nov: "more options ... maturity, award date is also important"): Maturity / Award / Start /
+  // Finish at the top of the menu; the menu stays open, the counts follow the date picked, and the button says it.
+  await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').click();
+  await page.locator('[data-hpd-smoke="fc-days-field-maturity"]').click();
+  await page.locator('[data-hpd-smoke="fc-days-menu"]').waitFor();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-days-field-maturity"]').getAttribute("aria-checked"), "true");
+  for (const key of ["next7", "next30", "next60", "last7"]) assert.equal(await page.locator(`[data-hpd-smoke="fc-days-${key}"]`).count(), 1, `${key} in the menu`);
+  const mat30 = await count("next30");
+  await page.locator('[data-hpd-smoke="fc-days-next30"]').click();
+  await page.waitForTimeout(400);
+  assert.equal(await badge(), mat30, `maturity next 30 days: the map shows the ${mat30} jobs the menu said`);
+  assert.match(await page.locator('[data-hpd-smoke="fc-days-menu-btn"]').innerText(), /Maturity Next 30/);
   assert.deepEqual(errors, []);
-  console.log(`PASS day counts: menu counts match the map after picking: 15 days ${seen.last15}, 30 days ${seen.last30}, 90 days ${seen.last90}, this year ${seen.year}`);
+  console.log(`PASS day counts: menu counts match the map after picking: 15 days ${seen.last15}, 30 days ${seen.last30}, 90 days ${seen.last90}, this year ${seen.year}; maturity next 30 days ${mat30}`);
   await c.close();
 } finally {
   await browser.close();

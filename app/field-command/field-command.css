@@ -2987,6 +2987,10 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-bar-boroughs button small, .fc-days-btn small { font-size: 13px; font-weight: 900; }
 .fc-borough-bar .fc-days-menu button { height: 46px; font-size: 16px; }
 .fc-days-menu { width: 210px; }
+/* Which date: Maturity / Award / Start / Finish, two by two at the top of the 📅 menu (23 Nov); the menu scrolls on short phones. */
+.fc-days-menu { max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 310px); overflow-y: auto; }
+.fc-days-field { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding-bottom: 6px; margin-bottom: 2px; border-bottom: 1px solid #d2dad9; }
+.fc-borough-bar .fc-days-menu .fc-days-field button { height: 40px; padding: 0 6px; justify-content: center; text-align: center; font: 800 14px system-ui; }
 .fc-glow-tag { top: -26px; padding: 2px 8px; font: 900 13px/18px system-ui; }
 .fc-notice-pick { min-height: 72px; }
 .fc-notice-pick b { font-size: 14.5px; }
@@ -3108,6 +3112,15 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-today-line.is-hot { border-color: #ef4444; background: #450a0a; animation: fc-board-pulse 1.6s ease-in-out infinite; }
 .fc-today-line.is-money { border-color: #22c55e; }
 .fc-today-line:active { transform: scale(0.97); }
+/* ☀️ Today in the corner (owner, 23 Nov): small button above the bottom bar, right side; a tap opens the full box. */
+.fc-today-mini { position: fixed; z-index: 1650; left: 10px; top: calc(env(safe-area-inset-top, 0px) + 136px); display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 16px; border-radius: 999px; border: 2px solid #fde68a; background: #0b1220f2; color: #fde68a; font: 900 16px system-ui; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.fc-today-mini span { font-size: 22px; }
+.fc-today-mini b { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: #dc2626; color: #fff; font: 900 14px/24px system-ui; text-align: center; }
+.fc-today-mini.is-hot { border-color: #ef4444; }
+.fc-today-mini:active { transform: scale(0.96); }
+/* The round Working button sticks out above the bottom bar (owner, 23 Nov: "fix the overlapping button"): the Talk to Claude
+   bar, the alert above it and what sits on them move up by --fc-chat-lift so nothing covers the bar; the bar is solid. */
+.fc-app { --fc-chat-lift: 18px; }
 
 /* Notices under 6 hours: the Notices button pulses red with an hours tag (17 Oct; replaces the banner over the map). */
 .fc-app .fc-map-controls .fc-map-fab.is-urgent > svg { animation: fc-urgent 1.2s ease-in-out infinite; }
@@ -3922,14 +3935,14 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 @media (prefers-reduced-motion: reduce) { .fc-working-dots i { animation: none; opacity: 1; } }
 
 /* The chat on the map (2 Nov, owner: "a chat on the map, better flow"): type or talk right above the buttons. */
-.fc-chatbar { position: absolute; z-index: 1580; left: 10px; right: 10px; bottom: calc(var(--fc-dock-h) + 8px); max-width: 560px; margin: 0 auto; box-sizing: border-box; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 5px 0 12px; border-radius: 23px; background: rgba(15, 23, 42, 0.94); border: 1.5px solid #8b5cf6; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.fc-chatbar { position: absolute; z-index: 1580; left: 10px; right: 10px; bottom: calc(var(--fc-dock-h) + 8px + var(--fc-chat-lift, 0px)); max-width: 560px; margin: 0 auto; box-sizing: border-box; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 5px 0 12px; border-radius: 23px; background: #0f172a; border: 1.5px solid #8b5cf6; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
 .fc-chatbar > span { flex: none; font-size: 17px; }
 .fc-chatbar input { flex: 1; min-width: 0; height: 38px; border: 0; background: transparent; color: #fff; font: 500 16px system-ui, sans-serif; outline: none; }
 .fc-chatbar input::placeholder { color: #a5b4fc; }
 .fc-chatbar button { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; background: #6366f1; color: #fff; font: 700 17px/1 system-ui, sans-serif; }
 .fc-app:has(.fc-bid-sheet, .fc-bid-arriving, .fc-itb-full, .fc-bids-list:not([data-size="peek"])) .fc-chatbar { display: none; }
-.fc-app:has(.fc-chatbar) .fc-bids-list[data-size="peek"] { bottom: calc(var(--fc-dock-h) + 62px) !important; }
-.fc-app:has(.fc-chatbar) .fc-focus-chip { bottom: calc(var(--fc-dock-total) + 74px) !important; }
+.fc-app:has(.fc-chatbar) .fc-bids-list[data-size="peek"] { bottom: calc(var(--fc-dock-h) + 62px + var(--fc-chat-lift, 0px)) !important; }
+.fc-app:has(.fc-chatbar) .fc-focus-chip { bottom: calc(var(--fc-dock-total) + 74px + var(--fc-chat-lift, 0px)) !important; }
 .fc-map-dragging .fc-chatbar { opacity: 0.4; }
 .fc-agent .fc-chat-card-n { float: left; display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 1px 8px 0 0; border-radius: 50%; background: #6366f1; color: #fff; font: 800 12px/1 system-ui, sans-serif; font-style: normal; }
 .fc-agent [data-hpd-smoke="fc-agent-reply"] { white-space: pre-line; }
@@ -3957,7 +3970,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-agent .fc-chat-card.is-notice .fc-chat-card-main { border-color: #b45309; background: #2a1606; }
 .fc-agent .fc-chat-card.is-bid .fc-chat-card-main { border-color: #c2410c; background: #1c1917; }
 .fc-agent .fc-chat-card-act { flex: none; padding: 0 10px; border-radius: 12px; border: 0; background: #6366f1; color: #fff; font: 800 13px system-ui, sans-serif; white-space: nowrap; }
-.fc-chat-nudge { position: absolute; z-index: 1585; left: 10px; right: 10px; bottom: calc(var(--fc-dock-h) + 62px); max-width: 560px; margin: 0 auto; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 8px 6px 8px 12px; border-radius: 16px; background: #1e1b4b; border: 1.5px solid #f59e0b; color: #fff; font: 700 14px/1.3 system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); animation: fc-arrive-in-up .3s ease-out; }
+.fc-chat-nudge { position: absolute; z-index: 1585; left: 10px; right: 10px; bottom: calc(var(--fc-dock-h) + 62px + var(--fc-chat-lift, 0px)); max-width: 560px; margin: 0 auto; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 8px 6px 8px 12px; border-radius: 16px; background: #1e1b4b; border: 1.5px solid #f59e0b; color: #fff; font: 700 14px/1.3 system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); animation: fc-arrive-in-up .3s ease-out; }
 .fc-chat-nudge > span { flex: 1; min-width: 0; }
 .fc-chat-nudge > a, .fc-chat-nudge > button[data-hpd-smoke="fc-chat-nudge-go"] { flex: none; padding: 8px 12px; border-radius: 12px; border: 0; background: #f59e0b; color: #1c1917; font: 800 14px system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
 .fc-chat-nudge-x { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #c7d2fe; font: 700 15px system-ui, sans-serif; }
@@ -4399,8 +4412,8 @@ html.hpd-saver *, html.hpd-saver *::before, html.hpd-saver *::after { animation:
 @keyframes fc-teach-pulse { from { outline-color: #facc15; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); } to { outline-color: #fde68a; box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); } }
 @media (prefers-reduced-motion: reduce) { [data-teach] { animation: none; } }
 /* Claude's card (and the other map hints) sit above the ask bar and the Next bar, never under them (owner's screenshot, 5 Nov). */
-.fc-app:has(.fc-chatbar) .fc-map-wrap .fc-map-hints { top: auto; align-content: end; bottom: calc(var(--fc-dock-total) + 66px); max-height: calc(100% - var(--fc-dock-total) - 66px - 190px); overflow-y: auto; }
-.fc-app:has(.fc-chatbar):has(.fc-focus-chip) .fc-map-wrap .fc-map-hints { bottom: calc(var(--fc-dock-total) + 128px); max-height: calc(100% - var(--fc-dock-total) - 128px - 190px); }
+.fc-app:has(.fc-chatbar) .fc-map-wrap .fc-map-hints { top: auto; align-content: end; bottom: calc(var(--fc-dock-total) + 66px + var(--fc-chat-lift, 0px)); max-height: calc(100% - var(--fc-dock-total) - 66px - 190px); overflow-y: auto; }
+.fc-app:has(.fc-chatbar):has(.fc-focus-chip) .fc-map-wrap .fc-map-hints { bottom: calc(var(--fc-dock-total) + 128px + var(--fc-chat-lift, 0px)); max-height: calc(100% - var(--fc-dock-total) - 128px - 190px); }
 /* A chat line (new notice, bid due…) sits where the map's notes end; with 🔨 Your Jobs list · ✕ All showing it covered that bar (18 Nov, ✕ All could not be tapped). Then the line goes to the top of the map instead (like one-hand mode). */
 .fc-app:has(.fc-chatbar):has(.fc-jobs-kept) .fc-chat-nudge { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 136px); }
 /* A menu you just opened up there (the date picker) comes first: the line waits behind it. */

@@ -5,6 +5,10 @@
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [
+        "💬 Nothing overlaps at the bottom of the map: the Talk to Claude bar now sits above the round Working button, and it's solid so the map doesn't show through.",
+        "☀️ The morning Today box waits as a small ☀️ Today button in the corner. Tap it to open; ▼ Hide puts it back in the corner.",
+        "📅 More choices in the date button on the map: pick which date counts (Maturity, Award, Start or Finish), and new ranges: next 7, 30 or 60 days and last 7 days. The button shows the date you picked, like \"Maturity 30d\".",
+        "📋 See the late jobs: on the Home week card, tap the red \"⏰ late\" button. It lists this week's late jobs and how many days after HPD's finish date the paperwork went (most late first). Tap a job to open it.",
         "⏱ Notices list: the ones you can still answer on time come first (soonest first), then the late ones. The top line says how many are due soon and how many are late, like \"⏱ 11 due soon · next: … 9h left · 15 late\".",
         "🔔 3 PM check: on weekdays at 3 PM your phone gets one alert if a job is due today (HPD's finish date) and still isn't done, with the job numbers. Tap it to open the job."
       ]

@@ -37,6 +37,6 @@ const ot = onTimeLate({
     { OMO: 'TEST-0001', AwardDate: '10/01/26', WorkCompletionDate: '10/02/26' },
   ],
 });
-assert.deepEqual(ot, { onTime: 2, late: 1, lateJobs: ['C'], last: { onTime: 0, late: 1, lateJobs: ['D'] } });
-assert.deepEqual(onTimeLate({ today: '2026-11-13' }), { onTime: 0, late: 0, lateJobs: [], last: { onTime: 0, late: 0, lateJobs: [] } });
+assert.deepEqual(ot, { onTime: 2, late: 1, lateJobs: ['C'], lateList: [{ omo: 'C', days: 6, sent: '2026-11-11', due: '2026-11-05' }], last: { onTime: 0, late: 1, lateJobs: ['D'], lateList: [{ omo: 'D', days: 3, sent: '2026-11-04', due: '2026-11-01' }] } });
+assert.deepEqual(onTimeLate({ today: '2026-11-13' }), { onTime: 0, late: 0, lateJobs: [], lateList: [], last: { onTime: 0, late: 0, lateJobs: [], lateList: [] } });
 console.log('week-score tests passed');

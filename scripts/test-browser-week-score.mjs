@@ -38,8 +38,17 @@ try {
   const ot = page2.locator('[data-hpd-smoke="home-week-ontime"]');
   await ot.waitFor({ timeout: 10000 });
   const otText = await ot.innerText();
-  assert.match(otText, /2 on time · ⏰ 1 late this week/);
+  assert.match(otText, /2 on time · ⏰ 1 late ▼ this week/);
   assert.match(otText, /Last week \(same days\): 0 on time · 1 late/);
+  // 📋 See the late jobs (plan item 30): a tap on "⏰ 1 late" lists J3 with the days after HPD's finish date.
+  assert.equal(await page2.locator('[data-hpd-smoke="home-week-late-list"]').count(), 0);
+  await page2.locator('[data-hpd-smoke="home-week-late-toggle"]').click();
+  const rows = page2.locator('[data-hpd-smoke="home-week-late-row"]');
+  await rows.first().waitFor({ timeout: 5000 });
+  assert.equal(await rows.count(), 1);
+  assert.match(await rows.first().innerText(), /J3: 30 days late/);
+  assert.equal(await rows.first().getAttribute("href"), "/map/?omo=J3");
+  assert.equal(page2.url().replace(/\/$/, ""), baseUrl.replace(/\/$/, "")); // the tap opened the list, not the payments page
   console.log("week-score browser test passed");
 } finally {
   await browser.close();
