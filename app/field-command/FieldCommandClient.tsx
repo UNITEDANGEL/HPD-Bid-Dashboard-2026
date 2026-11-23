@@ -10140,7 +10140,7 @@ export default function FieldCommandClient() {
         return (
           <div className={`fc-notice-tray${trayOpen ? " is-open" : ""}`} data-hpd-smoke="fc-notice-tray">
             <button type="button" className="fc-notice-tray-head" data-hpd-smoke="fc-notice-tray-toggle" aria-expanded={trayOpen} onClick={() => setTrayOpen((v) => !v)}>
-              <b>{(noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? (() => { const left = items.filter((x) => x.due && Date.parse(x.due) >= dueNow).length; const late = items.filter((x) => x.due && Date.parse(x.due) < dueNow).length; const first = `${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}`; return left ? `⏱ ${left} due soon · next: ${first}${late ? ` · ${late} late` : ""}` : `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${first}`; })() : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
+              <b>{(noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? (() => { const left = items.filter((x) => x.due && Date.parse(x.due) >= dueNow).length; const late = items.filter((x) => x.due && Date.parse(x.due) < dueNow).length; const first = `${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}`; return left ? `⏱ ${left} due soon${late ? ` · ${late} late` : ""} · next: ${first}` : `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${first}`; })() : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
             </button>
             {trayOpen ? (
               <ol>

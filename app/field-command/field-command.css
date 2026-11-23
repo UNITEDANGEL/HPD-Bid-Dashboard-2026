@@ -5187,3 +5187,7 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-face-halo { filter: drop-shadow(0 0 1.2px #facc15); animation: fc-halo-float 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes fc-halo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
 @media (prefers-reduced-motion: reduce) { .fc-face-halo { animation: none; } }
+
+/* ⏱ 23 Nov: the top line of the notices list stays on one line (the counts first, the rest trails off) so the bar under it never hides it */
+.fc-notice-tray-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.fc-notice-tray-head span { flex-shrink: 0; margin-left: 8px; }

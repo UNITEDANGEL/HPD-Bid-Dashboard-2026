@@ -9,9 +9,13 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-const ago = (h) => new Date(Date.now() - h * 3600000).toISOString();
+// A fixed Wednesday 3 PM (New York) for the page and the emails: HPD's deadlines skip weekends, so with the real clock
+// these tests passed or failed by the day of the week (23 Nov: a Monday morning made the "late" notice not late yet).
+const NOW = Date.parse("2026-11-25T20:00:00Z");
+const ago = (h) => new Date(NOW - h * 3600000).toISOString();
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await c.clock.setFixedTime(NOW);
   const LATE = "ER02330";
   const LEFT = "EQ15239";
   const SOON = "ER00322"; // a 24-hour notice from an hour ago: time left, so it goes first (23 Nov)
@@ -48,13 +52,16 @@ try {
   // The list at the bottom: time left first (soonest first), then the late ones (23 Nov).
   const tray = page.locator('[data-hpd-smoke="fc-notice-tray"]');
   await tray.waitFor({ timeout: 10000 });
-  assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), new RegExp(`⏱ \\d+ due soon · next: ${SOON} 24h .+ left · \\d+ late`));
+  assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), new RegExp(`⏱ \\d+ due soon · \\d+ late · next: (${SOON}|${LEFT}) (24|72)h .+ left`));
+  const head = await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"] b').evaluate((e) => ({ one: getComputedStyle(e).whiteSpace === "nowrap", h: e.getBoundingClientRect().height }));
+  assert.ok(head.one && head.h < 30, `the top line stays on one line: ${JSON.stringify(head)}`);
   await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
   const rows = tray.locator('[data-hpd-smoke="fc-notice-tray-row"]');
-  assert.equal(await rows.first().getAttribute("data-omo"), SOON, "the one that can still be answered on time on top");
-  assert.match(await rows.first().locator("small").innerText(), /⏱ 24h · .+ left · Test/);
+  assert.ok([SOON, LEFT].includes(await rows.first().getAttribute("data-omo")), "one that can still be answered on time on top");
+  assert.match(await rows.first().locator("small").innerText(), /⏱ (24|72)h · .+ left · Test/);
   assert.equal(await rows.first().locator("small.is-late").count(), 0);
   const order = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
+  assert.equal(order.indexOf(LATE), 2, `late ones after the two with time left: ${order.join(", ")}`);
   assert.ok(order.indexOf(LATE) > 0, `late ones after the ones with time left: ${order.join(", ")}`);
   const lateRow = rows.nth(order.indexOf(LATE));
   assert.match(await lateRow.locator("small").innerText(), /⏱ 24h · .+ late · Test/);

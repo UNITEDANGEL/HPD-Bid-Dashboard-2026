@@ -12,14 +12,18 @@ import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-const ago = (h) => new Date(Date.now() - h * 3600000).toISOString();
+// A fixed Wednesday 3 PM (New York) for the page and the emails: HPD's deadlines skip weekends, so with the real clock
+// these tests passed or failed by the day of the week (23 Nov: a Monday morning made the "late" notice not late yet).
+const NOW = Date.parse("2026-11-25T20:00:00Z");
+const ago = (h) => new Date(NOW - h * 3600000).toISOString();
 const JOB = "ER02330";
 const FIX = "EQ15239";
-const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(NOW)) /* the fixed Wednesday */;
 const weekday = new Date(`${today}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long", month: "numeric", day: "numeric" });
 const esc = (t) => t.replace(/[/.]/g, "\\$&");
 try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await c.clock.setFixedTime(NOW);
   const msg = (at, from, text, mine = false, files = []) => ({ at, from, hpd: !mine, mine, subject: "x", text, files });
   const L = "Joy-Ann Lewis <lewis.test@hpd.nyc.gov>";
   await routePrivate(c, { conversations: (d) => ({ ...d, threads: [

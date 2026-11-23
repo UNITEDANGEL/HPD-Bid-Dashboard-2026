@@ -16,7 +16,9 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 1. ✅ **Time left first**: on the ⏱ 24 / 72 h map the list put 15 jobs 3-23 days late above the 11 due today at 3:49 PM
    (9 h left). Now the ones that can still be answered on time come first (soonest first), then the late ones (most recent
-   first); the top line says "⏱ 11 due soon · next: … · 15 late". Test: test-browser-notice-clock.mjs.
+   first); the top line says "⏱ 11 due soon · 15 late · next: …" on one line (it was cut off under the bar). Test: test-browser-notice-clock.mjs.
+2. ✅ **Tests no longer depend on the day of the week**: the notice-clock and vendor-tracking tests failed on a Monday morning
+   (HPD deadlines skip weekends); they now run at a fixed Wednesday 3 PM.
 
 ## ✓ 20 Nov: one Claude, and a full worker package (owner: "duplicate Claudes ... we only have one Claude", "the package I send the worker is very important")
 1. ✅ One Claude on the phone: the middle mascot only. No side icon / strip on the map, no bottom text bar, no bubble that pops up at app open. Tap = Ask for a change with the cursor in the box; hold = talk to the AI. Test: test-browser-claude-side-icon.mjs.
