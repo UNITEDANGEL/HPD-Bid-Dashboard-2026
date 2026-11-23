@@ -24,6 +24,22 @@ try {
   assert.match(text, /Same days last week: 7 sent/);
   const trends = await card.locator('[data-hpd-smoke="home-week-arrow"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-trend")));
   assert.deepEqual(trends, ["down", "same", "up"]);
+  assert.equal(await page.locator('[data-hpd-smoke="home-week-ontime"]').count(), 0); // no finish dates on file: no line
+  // 📊 On time vs late (plan item 27): J1-J2 sent by HPD's finish date, J3 after it; L1 last week late.
+  const page2 = await c.newPage();
+  const later = new Date(new Date(`${today}T12:00:00Z`).getTime() + 5 * 86400000).toISOString().slice(0, 10);
+  const earlier = new Date(new Date(`${today}T12:00:00Z`).getTime() - 30 * 86400000).toISOString().slice(0, 10);
+  await page2.route("**/data/sent_paperwork.json*", (r) => r.fulfill({ json: { jobs } }));
+  await page2.route("**/data/COA_Fetcher_2026.json*", (r) => r.fulfill({ json: [
+    { OMO: "J1", AwardDate: earlier, WorkCompletionDate: later }, { OMO: "J2", AwardDate: earlier, WorkCompletionDate: today },
+    { OMO: "J3", AwardDate: earlier, WorkCompletionDate: earlier }, { OMO: "L1", AwardDate: earlier, WorkCompletionDate: earlier },
+  ] }));
+  await page2.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  const ot = page2.locator('[data-hpd-smoke="home-week-ontime"]');
+  await ot.waitFor({ timeout: 10000 });
+  const otText = await ot.innerText();
+  assert.match(otText, /2 on time · ⏰ 1 late this week/);
+  assert.match(otText, /Last week \(same days\): 0 on time · 1 late/);
   console.log("week-score browser test passed");
 } finally {
   await browser.close();

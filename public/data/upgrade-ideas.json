@@ -531,12 +531,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-on-time-rate",
-        "icon": "📊",
-        "title": "On time vs late",
-        "why": "The week card shows how many jobs you finished before HPD's finish date and how many after."
-      },
-      {
         "id": "plan-3pm-due-check",
         "icon": "🔔",
         "title": "3 PM check for jobs due today",

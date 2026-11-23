@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { monthGlance, type MonthGlance } from "../lib/month-glance";
 import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
-import { weekScore, trend, trendMark, type WeekScore } from "../lib/week-score";
+import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
 import { awardCountdown, daysLeftText, finishMonth, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
@@ -48,6 +48,7 @@ export default function HomeScreen() {
   const [glance, setGlance] = useState<MonthGlance | null>(null);
   const [owed, setOwed] = useState<ReturnType<typeof whoOwes> | null>(null);
   const [week, setWeek] = useState<WeekScore | null>(null);
+  const [ontime, setOntime] = useState<OnTimeLate | null>(null);
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [countdown, setCountdown] = useState<Countdown[]>([]);
   const [calls, setCalls] = useState<Record<string, CallWho>>({});
@@ -82,6 +83,8 @@ export default function HomeScreen() {
         setCalls(whoToCall({ rows: cd, tenants: null, addresses, contacts }));
         loadPrivate().then((p) => { if (p) setCalls(whoToCall({ rows: cd, tenants: p.jobs, addresses, contacts })); });
         setWeek(weekScore({ sent: sent?.jobs, awards: Array.isArray(awardList) ? awardList : [], payments, today: nyDay(new Date()) }));
+        // 📊 On time vs late (plan item 27): paperwork sent by HPD's finish date or after it.
+        setOntime(onTimeLate({ sent: sent?.jobs, awards: Array.isArray(awardList) ? awardList : [], today: nyDay(new Date()) }));
       });
     });
     setSoon(expiringSoon(loadPapers(), Date.now()).map((p) => ({ name: p.name, days: daysLeft(p.expires, Date.now()) })));
@@ -172,6 +175,12 @@ export default function HomeScreen() {
             <b className="home-big">{week.sent} sent <Arrow now={week.sent} before={week.last.sent} /> · {week.won} won <Arrow now={week.won} before={week.last.won} /></b>
             <em>${Math.round(week.moneyIn).toLocaleString()} in this week (Monday to today) <Arrow now={week.moneyIn} before={week.last.moneyIn} /></em>
             <small data-hpd-smoke="home-week-last">Same days last week: {week.last.sent} sent · {week.last.won} won · ${Math.round(week.last.moneyIn).toLocaleString()} in</small>
+            {ontime && (ontime.onTime + ontime.late + ontime.last.onTime + ontime.last.late) > 0 ? (
+              <span data-hpd-smoke="home-week-ontime" style={{ display: "block", marginTop: 6, fontSize: 16, lineHeight: 1.35 }}>
+                <b style={{ color: "#15803d" }}>✅ {ontime.onTime} on time</b> · <b style={{ color: ontime.late ? "#b91c1c" : "#64748b" }}>⏰ {ontime.late} late</b> this week
+                <small style={{ display: "block" }} data-hpd-smoke="home-week-ontime-last">Last week (same days): {ontime.last.onTime} on time · {ontime.last.late} late. On time = paperwork sent by HPD&apos;s finish date.</small>
+              </span>
+            ) : null}
           </span>
         </a>
       ) : null}
