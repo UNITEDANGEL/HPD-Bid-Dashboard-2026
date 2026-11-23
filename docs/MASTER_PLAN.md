@@ -12,6 +12,15 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📍 23 Nov: nothing under the Locate button (owner: "Locate button still overlap on map fix now I asked you before")
+
+1. ✅ **Locate stays clear**: the "Couldn't get your location" line and the "🔨 Working at…" banner reached under the
+   Map / Locate / + − column on an iPhone (the line ran to 62 px from the right edge, the banner to 60 px; the column is 76 px).
+   Both now stop 86 px from the right and wrap their words. Test: test-browser-locate-clear.mjs (375 and 390 px wide).
+2. ✅ **+ / − under Locate** (owner: "Plus and minus button overlap the locate me icon fix"): + / − were at a fixed 234 px, but on an iPhone
+   the notch pushes the Map / Locate column down about 59 px, onto them. + / − now measure the column and sit 12 px under it in every
+   map state. Test: test-browser-locate-clear.mjs checks 7 map states, one with a 59 px notch.
+
 ## ⏱ 23 Nov: notices due soon on top (owner: "keep upgrading, what else can we improve"; found live)
 
 1. ✅ **Time left first**: on the ⏱ 24 / 72 h map the list put 15 jobs 3-23 days late above the 11 due today at 3:49 PM

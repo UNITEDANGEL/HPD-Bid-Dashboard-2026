@@ -386,6 +386,7 @@ jobs:
             scripts/test-browser-award-countdown.mjs \
             scripts/test-browser-map-days-left.mjs \
             scripts/test-browser-map-overlap.mjs \
+            scripts/test-browser-locate-clear.mjs \
             scripts/test-browser-photo-checklist.mjs \
             scripts/test-browser-already-sent.mjs \
             scripts/test-browser-bid-voice.mjs \

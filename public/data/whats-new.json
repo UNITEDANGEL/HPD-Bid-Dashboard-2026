@@ -5,6 +5,8 @@
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [
+        "➕ The + and − zoom buttons now always sit just under 📍 Locate, so they never cover it on an iPhone (the notch at the top used to push Locate down onto them).",
+        "📍 Nothing covers the Locate button any more: the \"Couldn't get your location\" line and the \"🔨 Working at…\" banner now stop before the Map / Locate / + − buttons on the right.",
         "💬 Nothing overlaps at the bottom of the map: the Talk to Claude bar now sits above the round Working button, and it's solid so the map doesn't show through.",
         "☀️ The morning Today box waits as a small ☀️ Today button in the corner. Tap it to open; ▼ Hide puts it back in the corner.",
         "📅 More choices in the date button on the map: pick which date counts (Maturity, Award, Start or Finish), and new ranges: next 7, 30 or 60 days and last 7 days. The button shows the date you picked, like \"Maturity 30d\".",

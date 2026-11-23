@@ -5204,3 +5204,12 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 /* ⏱ 23 Nov: the top line of the notices list stays on one line (the counts first, the rest trails off) so the bar under it never hides it */
 .fc-notice-tray-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .fc-notice-tray-head span { flex-shrink: 0; margin-left: 8px; }
+
+/* 📍 23 Nov (owner: "Locate button still overlap on map"): the right-hand column (Map, Locate, + / −) is 76 px wide, so the
+   middle of the map stops 86 px from the right: the "Couldn't get your location" line and the "🔨 Working at…" banner wrap
+   their words instead of sliding under Locate. */
+.fc-app.fc-reference .fc-map-wrap .fc-map-hints { right: calc(86px + env(safe-area-inset-right)); }
+.fc-app .fc-map-wrap .fc-map-hints .fc-map-hint { white-space: normal; max-width: 100%; }
+.fc-onsite-wrap { left: 12px; right: calc(86px + env(safe-area-inset-right)); transform: none; max-width: none; justify-content: center; pointer-events: none; }
+.fc-onsite-wrap > * { pointer-events: auto; }
+.fc-onsite:not(.fc-onsite-wrap .fc-onsite) { left: 12px; right: calc(86px + env(safe-area-inset-right)); transform: none; max-width: none; }
