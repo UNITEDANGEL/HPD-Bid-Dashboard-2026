@@ -10122,6 +10122,10 @@ export default function FieldCommandClient() {
           Answer / Fix. Folds to one line. */}
       {noticeChooser && noticeMini && !noticesOpen && !selectedJob && !boardOpen && !bidsOpen && noticeKind && noticeKind !== "archive" ? (() => {
         const asks = new Map(vtAsks(threads, handledMap, (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>).map((a) => [a.omo, a]));
+        // Time left first (owner, 23 Nov: 11 jobs due today at 3:49 PM sat under 15 that were 3-23 days late): the ones that can
+        // still be answered on time come first, soonest first; then the late ones, the most recent first.
+        const dueNow = Date.now();
+        const dueOrder = (d: string) => { const t = Date.parse(d); return t >= dueNow ? t : 1e15 - t; };
         const items = [...noticeSets[noticeKind]].map((omo) => {
           const job = findAnyJob(omo);
           const row = boardRows.find((r) => r.omo === omo && r.next);
@@ -10130,13 +10134,13 @@ export default function FieldCommandClient() {
           const what = ask ? `${ask.who}: ${ask.subject.replace(/\s+/g, " ").slice(0, 70)}` : row ? `${row.kind === "docs" ? "Gafur" : (row.who || "Lewis").split(/\s+/)[0]}: ${row.subject ? row.subject.slice(0, 70) : "notice"}` : String(job?.HpdAskedFor || "HPD asked");
           const ck = (noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? clockRow.get(omo) : undefined;
           return { omo, job, row: ck || row, at, what: ck ? `⏱ ${clockLine(ck)} · ${(ck.who || "Lewis").split(/\s+/)[0]}` : what, due: ck?.dueAt || "" };
-        }).filter((x) => x.job).sort((a, b) => (a.due && b.due ? Date.parse(a.due) - Date.parse(b.due) : 0) || (a.at || "9").localeCompare(b.at || "9"));
+        }).filter((x) => x.job).sort((a, b) => (a.due && b.due ? dueOrder(a.due) - dueOrder(b.due) : 0) || (a.at || "9").localeCompare(b.at || "9"));
         if (!items.length) return null;
         const day = (iso: string) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
         return (
           <div className={`fc-notice-tray${trayOpen ? " is-open" : ""}`} data-hpd-smoke="fc-notice-tray">
             <button type="button" className="fc-notice-tray-head" data-hpd-smoke="fc-notice-tray-toggle" aria-expanded={trayOpen} onClick={() => setTrayOpen((v) => !v)}>
-              <b>{(noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}` : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
+              <b>{(noticeKind === "clock" || noticeKind === "h24" || noticeKind === "h72") ? (() => { const left = items.filter((x) => x.due && Date.parse(x.due) >= dueNow).length; const late = items.filter((x) => x.due && Date.parse(x.due) < dueNow).length; const first = `${items[0].omo} ${items[0].what.replace(/^⏱ /, "").split(" · ").slice(0, 2).join(" ")}`; return left ? `⏱ ${left} due soon · next: ${first}${late ? ` · ${late} late` : ""}` : `⏱ ${items.length} notice${items.length === 1 ? "" : "s"} · most urgent: ${first}`; })() : `📋 ${items.length} to do · oldest first`}</b><span>{trayOpen ? "▾ Hide" : "▴ Show"}</span>
             </button>
             {trayOpen ? (
               <ol>

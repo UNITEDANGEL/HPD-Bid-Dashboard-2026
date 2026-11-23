@@ -12,6 +12,12 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ⏱ 23 Nov: notices due soon on top (owner: "keep upgrading, what else can we improve"; found live)
+
+1. ✅ **Time left first**: on the ⏱ 24 / 72 h map the list put 15 jobs 3-23 days late above the 11 due today at 3:49 PM
+   (9 h left). Now the ones that can still be answered on time come first (soonest first), then the late ones (most recent
+   first); the top line says "⏱ 11 due soon · next: … · 15 late". Test: test-browser-notice-clock.mjs.
+
 ## ✓ 20 Nov: one Claude, and a full worker package (owner: "duplicate Claudes ... we only have one Claude", "the package I send the worker is very important")
 1. ✅ One Claude on the phone: the middle mascot only. No side icon / strip on the map, no bottom text bar, no bubble that pops up at app open. Tap = Ask for a change with the cursor in the box; hold = talk to the AI. Test: test-browser-claude-side-icon.mjs.
 2. ✅ Worker package: 🚪 where the work is (apartment or public part, read from HPD's description), HPD's full description (no prices), tenant name + phone by default, Before / After photo spots always. Tests: test-work-where.mjs, test-browser-crew-share.mjs, test-browser-worker.mjs.

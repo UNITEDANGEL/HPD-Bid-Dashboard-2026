@@ -14,10 +14,13 @@ try {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   const LATE = "ER02330";
   const LEFT = "EQ15239";
+  const SOON = "ER00322"; // a 24-hour notice from an hour ago: time left, so it goes first (23 Nov)
   const text = `Kindly see attached.\n\nOMO#${LATE}- 24 HR POOR PERFORMANCE NOTICE\nOMO#${LEFT}-72 HR POOR PERFORMANCE NOTICE\n\nTest Tracker\ntest.tracker@hpd.nyc.gov`;
   await routePrivate(c, { conversations: (d) => ({ ...d, threads: [
     { id: "t-list", subject: "24 HR & 72 HR POOR PERFORMANCE NOTICES", omos: [LATE, LEFT], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: ago(80), waiting: true,
       messages: [{ at: ago(80), from: "Test Tracker <test.tracker@hpd.nyc.gov>", hpd: true, mine: false, subject: "24 HR & 72 HR POOR PERFORMANCE NOTICES", text, files: [] }] },
+    { id: "t-soon", subject: `OMO#${SOON} 24 HR POOR PERFORMANCE NOTICE`, omos: [SOON], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: ago(1), waiting: true,
+      messages: [{ at: ago(1), from: "Test Tracker <test.tracker@hpd.nyc.gov>", hpd: true, mine: false, subject: `OMO#${SOON} 24 HR POOR PERFORMANCE NOTICE`, text: "Kindly see attached.\n\nTest Tracker", files: [] }] },
   ] }) });
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const page = await c.newPage();
@@ -42,15 +45,20 @@ try {
   assert.ok(tags.some((t) => /⏱ 72h · .+ (left|late)/.test(t)), `72-hour pin has its time: ${tags.join(" | ")}`);
   assert.ok(tags.every((t) => /^⏱ (24|72)h · /.test(t)), `only the 24 / 72-hour notices are lit: ${tags.join(" | ")}`);
 
-  // The list at the bottom: most urgent first.
+  // The list at the bottom: time left first (soonest first), then the late ones (23 Nov).
   const tray = page.locator('[data-hpd-smoke="fc-notice-tray"]');
   await tray.waitFor({ timeout: 10000 });
-  assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), new RegExp(`⏱ \\d+ notices? · most urgent: ${LATE} 24h`));
+  assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), new RegExp(`⏱ \\d+ due soon · next: ${SOON} 24h .+ left · \\d+ late`));
   await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
-  const first = tray.locator('[data-hpd-smoke="fc-notice-tray-row"]').first();
-  assert.equal(await first.getAttribute("data-omo"), LATE, "the late 24-hour one on top");
-  assert.match(await first.locator("small").innerText(), /⏱ 24h · .+ late · Test/);
-  assert.equal(await first.locator("small.is-late").count(), 1, "late in red");
+  const rows = tray.locator('[data-hpd-smoke="fc-notice-tray-row"]');
+  assert.equal(await rows.first().getAttribute("data-omo"), SOON, "the one that can still be answered on time on top");
+  assert.match(await rows.first().locator("small").innerText(), /⏱ 24h · .+ left · Test/);
+  assert.equal(await rows.first().locator("small.is-late").count(), 0);
+  const order = await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-omo")));
+  assert.ok(order.indexOf(LATE) > 0, `late ones after the ones with time left: ${order.join(", ")}`);
+  const lateRow = rows.nth(order.indexOf(LATE));
+  assert.match(await lateRow.locator("small").innerText(), /⏱ 24h · .+ late · Test/);
+  assert.equal(await lateRow.locator("small.is-late").count(), 1, "late in red");
   await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
 
   // The other picks and the board are one tap away; ⏱ 24 / 72 h is the first pick.
@@ -60,7 +68,7 @@ try {
   assert.match(await picks.first().innerText(), /24 \/ 72 h/);
   // 24 hour and 72 hour are picks of their own (owner, 20 Nov), each with only its own jobs, and nothing overlaps in the menu.
   await page.locator('[data-hpd-smoke="fc-notice-pick-h24"]').click();
-  assert.match(await page.locator('[data-hpd-smoke="fc-notice-chooser-title"]').innerText(), /24 hour · 1/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-notice-chooser-title"]').innerText(), /24 hour · 2/); // the late one and the new one
   await page.locator('[data-hpd-smoke="fc-notice-change"]').click();
   await page.locator('[data-hpd-smoke="fc-notice-pick-h72"]').click();
   assert.match(await page.locator('[data-hpd-smoke="fc-notice-chooser-title"]').innerText(), /72 hour · 1/);
