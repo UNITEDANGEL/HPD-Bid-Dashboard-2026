@@ -531,12 +531,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-work-done-send",
-        "icon": "🏁",
-        "title": "Work done, send it",
-        "why": "A Home card lists the jobs where the work is marked done but the paperwork isn't sent to HPD yet, oldest first, so nothing finished sits waiting."
-      },
-      {
         "id": "plan-maturity-money",
         "icon": "💲",
         "title": "Money in this week's maturity",

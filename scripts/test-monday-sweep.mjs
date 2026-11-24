@@ -21,3 +21,26 @@ assert.equal(isMondaySweepTime(1, 8), true);
 assert.equal(isMondaySweepTime(1, 7), false);
 assert.equal(isMondaySweepTime(2, 9), false);
 console.log("PASS Monday sweep: finished jobs with paperwork not sent, oldest first, Monday from 8 AM");
+
+// 🏁 Work done, send it (plan item 37): work done (job or app step), not sent, not closed, oldest first.
+const { workDoneToSend } = await loadLib("monday-sweep");
+const done = workDoneToSend({
+  today: "2026-11-24",
+  jobs: [
+    { OMO: "ER00010", FieldOutcome: "WORK_COMPLETED", ActualWorkCompletionDate: "11/20/26" },
+    { OMO: "ER00011" },
+    { OMO: "ER00012", FieldOutcome: "PARTIAL_WORK", OutcomeLockedAt: "2026-11-10T15:00:00Z" },
+    { OMO: "ER00013", FieldOutcome: "WORK_COMPLETED" },
+    { OMO: "ER00014", FieldOutcome: "WORK_COMPLETED" },
+    { OMO: "ER00015", FieldOutcome: "REFUSED_ACCESS" },
+    { OMO: "ER00016", FieldOutcome: "WORK_COMPLETED", ArchivedFromMap: true },
+    { OMO: "TEST-1", FieldOutcome: "WORK_COMPLETED" },
+  ],
+  overrides: { ER00011: { FieldOutcome: "WORK_COMPLETED", OutcomeLockedAt: "2026-11-22T20:00:00Z" } },
+  sent: { ER00013: { sentAt: "2026-11-21" } },
+  closed: { ER00014: { reason: "closed" } },
+});
+assert.deepEqual(done.map((d) => d.omo), ["ER00012", "ER00010", "ER00011"]);
+assert.deepEqual(done.map((d) => d.days), [14, 4, 2]);
+assert.equal(done[0].outcome, "PARTIAL_WORK");
+console.log("work-done-to-send tests passed");

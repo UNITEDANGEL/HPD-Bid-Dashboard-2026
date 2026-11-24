@@ -384,6 +384,7 @@ jobs:
             scripts/test-browser-no-overlap.mjs \
             scripts/test-browser-pays-best.mjs \
             scripts/test-browser-award-countdown.mjs \
+            scripts/test-browser-done-send.mjs \r
             scripts/test-browser-map-days-left.mjs \
             scripts/test-browser-map-overlap.mjs \
             scripts/test-browser-locate-clear.mjs \

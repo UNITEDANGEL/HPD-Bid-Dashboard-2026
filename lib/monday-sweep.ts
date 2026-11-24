@@ -26,3 +26,39 @@ export function mondaySweepLine(left: { id: string }[]) {
 
 // Monday from 8 AM (New York).
 export const isMondaySweepTime = (weekday: number, hour: number) => weekday === 1 && hour >= 8;
+
+// 🏁 Work done, send it (plan item 37, 24 Nov): the awarded jobs where the work is marked done (work completed or
+// partial work, from the job or the step saved in the app) but the paperwork isn't sent to HPD yet and HPD hasn't
+// closed them, oldest first (by the work date). OMO numbers and dates only.
+export type DoneToSend = { omo: string; outcome: string; at: string; days: number | null };
+const WORK_DONE = /^(WORK_COMPLETED|PARTIAL_WORK)$/;
+const dayKey = (v: unknown) => {
+  const x = String(v || "").trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(x);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(x);
+  if (m) return `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+  const n = Date.parse(x);
+  return Number.isFinite(n) ? new Date(n).toLocaleDateString("en-CA", { timeZone: "America/New_York" }) : "";
+};
+export function workDoneToSend(opts: { jobs: Job[]; overrides?: Record<string, Job> | null; sent?: Record<string, unknown> | null; closed?: Record<string, unknown> | null; today: string }): DoneToSend[] {
+  const seen = new Set<string>();
+  const out: DoneToSend[] = [];
+  const now = Date.parse(`${opts.today}T12:00:00Z`);
+  const ids = [...(opts.jobs || []).map((j) => String(j.OMO || j.id || "").trim().toUpperCase())];
+  const byId = new Map<string, Job>();
+  (opts.jobs || []).forEach((j, i) => { if (ids[i] && !byId.has(ids[i])) byId.set(ids[i], j); });
+  for (const [omo, base] of byId) {
+    if (/^TEST/i.test(omo) || seen.has(omo)) continue;
+    seen.add(omo);
+    const j: Job = { ...base, ...(opts.overrides?.[omo] || {}) };
+    const outcome = String(j.FieldOutcome || j.fieldOutcome || j.WorkflowStatus || "").trim().toUpperCase();
+    if (!WORK_DONE.test(outcome)) continue;
+    if (opts.sent?.[omo] || opts.closed?.[omo] || j.PaperworkSentAt || j.PackageEmailedAt || j.InvoiceSentAt || j.HpdClosedReason) continue;
+    if (/archived/i.test(String(j.status || j.StatusOverride || "")) || j.ArchivedFromMap || j.ArchivedAt) continue;
+    const at = dayKey(j.ActualWorkCompletionDate || j.OutcomeLockedAt || j.outcomeLockedAt || j.LastFieldVisitAt || j.OnSiteEndedAt);
+    const d = at ? Date.parse(`${at}T12:00:00Z`) : NaN;
+    out.push({ omo, outcome, at, days: Number.isFinite(d) && Number.isFinite(now) ? Math.max(0, Math.round((now - d) / 86400000)) : null });
+  }
+  return out.sort((a, b) => (a.at || "9999").localeCompare(b.at || "9999") || a.omo.localeCompare(b.omo));
+}

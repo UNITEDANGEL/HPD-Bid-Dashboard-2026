@@ -13,6 +13,10 @@ import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-wait
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
 import { loadPrivate } from "../lib/private-data";
+import { workDoneToSend, type DoneToSend } from "../lib/monday-sweep";
+import { fetchServerWorkflowOverrides } from "../lib/paperwork";
+import { readLocalOverrides } from "../lib/override-sync";
+import { paperworkNextHref } from "../lib/field-next-action";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string };
@@ -52,6 +56,7 @@ export default function HomeScreen() {
   const [lateOpen, setLateOpen] = useState(false); // 📋 See the late jobs (plan item 30)
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [countdown, setCountdown] = useState<Countdown[]>([]);
+  const [doneSend, setDoneSend] = useState<DoneToSend[]>([]); // 🏁 Work done, send it (plan item 37)
   const [calls, setCalls] = useState<Record<string, CallWho>>({});
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(() => nyDay(new Date()).slice(0, 7));
@@ -76,6 +81,16 @@ export default function HomeScreen() {
         const hpd = await get("/data/hpd_job_status.json");
         const cd = awardCountdown({ awards: Array.isArray(awardList) ? awardList : [], sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) });
         setCountdown(cd);
+        // 🏁 Work done, send it (plan item 37): work marked done (job or the step saved in the app), paperwork not sent.
+        const jobsList = Array.isArray(awardList) ? awardList : [];
+        const local = readLocalOverrides() as Record<string, Record<string, unknown>>;
+        const upper = (o: Record<string, Record<string, unknown>>) => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k.toUpperCase(), v]));
+        setDoneSend(workDoneToSend({ jobs: jobsList, overrides: upper(local), sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
+        fetchServerWorkflowOverrides().then((server) => {
+          const merged: Record<string, Record<string, unknown>> = { ...upper(server) };
+          for (const [k, v] of Object.entries(upper(local))) merged[k] = { ...(merged[k] || {}), ...v };
+          setDoneSend(workDoneToSend({ jobs: jobsList, overrides: merged, sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
+        });
         // 📞 Late jobs: who to call (plan item 23): tenant (signed in only) or the super saved for the building.
         const addresses: Record<string, string> = {};
         for (const a of Array.isArray(awardList) ? awardList : []) { const o = String(a?.OMO || "").toUpperCase(); if (o && !addresses[o]) addresses[o] = String(a?.BuildingAddress || ""); }
@@ -195,6 +210,22 @@ export default function HomeScreen() {
                 ) : null}
               </span>
             ) : null}
+          </span>
+        </div>
+      ) : null}
+
+      {doneSend.length ? (
+        <div className="home-card" data-hpd-smoke="home-done-send">
+          <span className="home-icon">🏁</span>
+          <span className="home-text">
+            <strong>Work done, send it</strong>
+            <b className="home-big">{doneSend.length} finished job{doneSend.length === 1 ? "" : "s"} with paperwork not sent to HPD</b>
+            {doneSend.map((d) => (
+              <a key={d.omo} href={paperworkNextHref(d.omo, d.outcome)} data-hpd-smoke="home-done-send-row" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: d.days !== null && d.days >= 7 ? "#b91c1c" : d.days !== null && d.days >= 3 ? "#b45309" : "inherit", fontSize: 17, fontWeight: 800, textDecoration: "none" }}>
+                {d.omo}: {d.outcome === "PARTIAL_WORK" ? "partial work" : "work done"}{d.days === null ? "" : d.days === 0 ? " today" : ` ${d.days} day${d.days === 1 ? "" : "s"} ago`} <span aria-hidden>→</span>
+              </a>
+            ))}
+            <small>Oldest first. Tap a job to open its paperwork (you see a preview before anything is sent).</small>
           </span>
         </div>
       ) : null}
