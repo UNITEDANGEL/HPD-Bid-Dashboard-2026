@@ -2,16 +2,10 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
-      "date": "Nov 24, 2026",
-      "title": "Maturity this week",
-      "items": [
-        "💵 New Home card \"Maturity this week\": the jobs whose maturity date (HPD's finish date) is today or in the next 7 days, closest first, each with its day and days left (like \"Tue, Nov 24 (1 day left)\"). Tap a job to open it."
-      ]
-    },
-    {
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [
+        "💵 New Home card \"Maturity this week\": the jobs whose maturity date is today or in the next 7 days, closest first, each with its day and days left (like \"Tue, Nov 24 (1 day left)\"). Tap a job to open it.",
         "🌆 The 6 PM wrap-up alert now also names the jobs whose HPD finish date is tomorrow and still aren't done (like \"🏁 finish tomorrow: ER09500\"), so you can plan the morning for them.",
         "📱 The Dashboard fits a phone now: the Live Bids table turns into one card per job with every word showing (OMO, status, full address, borough, award, start and finish dates), no sliding sideways and no cut-off addresses.",
         "📅 The date menu on the map fits on the screen now, no scrolling: ⏳ Maturity, 🏆 Award, 🔨 Start and 🏁 Finish each say what they mean, every choice shows its real dates (like Nov 23 – Dec 23), and a line tells the next date and how many days are left.",
