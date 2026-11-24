@@ -1450,7 +1450,7 @@ export default function FieldCommandClient() {
     const root = document.documentElement;
     let ro: ResizeObserver | null = null;
     let seen: Element | null = null;
-    const set = () => { const el = document.querySelector(".fc-notice-chooser"); root.style.setProperty("--fc-chooser-h", el ? `${Math.ceil(el.getBoundingClientRect().height)}px` : "0px"); };
+    const set = () => { const el = document.querySelector(".fc-notice-chooser"); const h = el ? Math.ceil(el.getBoundingClientRect().height) : 0; if (h) root.style.setProperty("--fc-chooser-h", `${h}px`); };
     const watch = () => { const el = document.querySelector(".fc-notice-chooser"); if (el !== seen) { ro?.disconnect(); seen = el; if (el) { ro = new ResizeObserver(set); ro.observe(el); } } set(); };
     watch();
     let raf = 0;

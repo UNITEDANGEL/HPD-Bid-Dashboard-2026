@@ -55,6 +55,7 @@ try {
   assert.match(await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').innerText(), new RegExp(`⏱ \\d+ due soon · \\d+ late · next: (${SOON}|${LEFT}) (24|72)h .+ left`));
   const head = await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"] b').evaluate((e) => ({ one: getComputedStyle(e).whiteSpace === "nowrap", h: e.getBoundingClientRect().height }));
   assert.ok(head.one && head.h < 30, `the top line stays on one line: ${JSON.stringify(head)}`);
+  await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-notice-tray-toggle"]')?.getBoundingClientRect(); const c = document.querySelector('[data-hpd-smoke="fc-notice-chooser"]')?.getBoundingClientRect(); return t && c && t.bottom <= c.top + 1; }, null, { timeout: 5000 }).catch(() => {});
   const gap = await page.evaluate(() => { const t = document.querySelector('[data-hpd-smoke="fc-notice-tray-toggle"]').getBoundingClientRect(); const c = document.querySelector('[data-hpd-smoke="fc-notice-chooser"]').getBoundingClientRect(); return { trayBottom: t.bottom, chooserTop: c.top }; });
   assert.ok(gap.trayBottom <= gap.chooserTop + 1, `the red notices bar sits above the black 24 / 72 h bar, not on it (24 Nov): ${JSON.stringify(gap)}`);
   await tray.locator('[data-hpd-smoke="fc-notice-tray-toggle"]').click();
