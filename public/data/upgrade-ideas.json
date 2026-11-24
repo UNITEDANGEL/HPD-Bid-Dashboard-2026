@@ -566,6 +566,41 @@
       "kind": "upgrade",
       "title": "Answer a tenant from the replies list",
       "why": "In Tenant replies, a ready answer under each text: one tap to send it, without opening the job first."
+    },
+    {
+      "id": "miles-for-taxes",
+      "icon": "🚗",
+      "kind": "new",
+      "title": "Miles driven, for taxes",
+      "why": "The app adds up the miles of each day's route and keeps a monthly total you can give your accountant."
+    },
+    {
+      "id": "why-rejected",
+      "icon": "📉",
+      "kind": "new",
+      "title": "Why HPD rejects you",
+      "why": "A short count of the reasons HPD sent jobs back in the last 3 months, so you fix the one that happens most."
+    },
+    {
+      "id": "tenant-morning-reminder",
+      "icon": "⏰",
+      "kind": "new",
+      "title": "Tenant reminder the morning of the visit",
+      "why": "At 8 AM the tenant gets a short text: \"We come today between ... and ...\", so fewer no-access trips."
+    },
+    {
+      "id": "after-photo-same-angle",
+      "icon": "📸",
+      "kind": "upgrade",
+      "title": "After photo from the same spot",
+      "why": "When you take the after photo, the before photo shows faded on the camera so both are taken from the same angle."
+    },
+    {
+      "id": "money-next-month",
+      "icon": "💵",
+      "kind": "new",
+      "title": "Money coming next month",
+      "why": "From the invoices you sent and how long HPD usually takes to pay, one number: what should come in next month."
     }
   ],
   "plan": {
