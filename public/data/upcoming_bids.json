@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T21:07:31.885376+00:00",
+  "generatedAt": "2026-11-24T21:17:45.836802+00:00",
   "days": 14,
   "bids": [
     {
@@ -266,6 +266,137 @@
       "lng": -73.94309
     },
     {
+      "omo": "ER10855",
+      "bidDue": "2026-11-25",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-27",
+      "workCompletion": "2026-12-20",
+      "address": "538 82 STREET",
+      "borough": "BK",
+      "itbFile": "ER10855_112426041143.pdf",
+      "description": "LOCATION: 2ND STORY PUBLIC HALL/ INTERMEDIATE LANDING (METAL BULLNOSE TRIM) -EMERGENCY OPERATIONS DIVISION \"ESSENTIAL SERVICE REPAIRS\"- AT THE 2ND STORY PUBLIC HALL/ INTERMEDIATE LANDING: REPLACE THE BROKEN/ DEFECTIVE METAL BULLNOSE TRIM WITH SIMILAR MATERIALS, APPROX. 38\" IN LENGTH. RESTORE STAIRWAY TO IT'S ORIGINAL SAFE CONDITION. REMOVE ALL WORK RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATOINS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD – S. HUGHES@ 212-863-5754; B. CARR@212-863-5518; S. CROSSLAND@212-863-6132; E. ORR@ 212-863-6875; A. MARTINEZ@212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @212-863-5496; R. REED @ 212-863-5481; SUPERVISOR D. SAUL@212-863-5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212-863-6008.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1795554708000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.2,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 44.9,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.6,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.623531,
+      "lng": -74.023889
+    },
+    {
       "omo": "ER10976",
       "bidDue": "2026-11-25",
       "bidDueTime": "11:00 AM",
@@ -396,6 +527,137 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.574283,
       "lng": -73.987292
+    },
+    {
+      "omo": "ER11504",
+      "bidDue": "2026-11-25",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-11-27",
+      "workCompletion": "2026-12-15",
+      "address": "15 WEST 137 STREET",
+      "borough": "MN",
+      "itbFile": "ER11504_112426041000.pdf",
+      "description": "REPLACE GLASS PANE AT BUILDING ENTRANCE DOOR LEADING AT 1st STORY NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ GLASS PANE AT BUILDING ENTRANCE DOOR LEADING AT 1st STORY MAKE ALL NECESSARY REPAIRS TO REPLACE THE BROKEN DOOR GLASS PANES WITH NEW WIRE GLASS,AT UPPER AND LOWER SECTION AND LEFT LITE WIRE GLASS PANE APROX. (22” * 27”) , RESTORE DOOR GLASS PANES TO PROPER SAFE MANNER. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT H.P.D. @ (212) 863-6161, 6135, 6231, 6175 OR 6046 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. --- IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETE WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE AT (212) 863-6009.",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1795554605000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.814665,
+      "lng": -73.937696
     },
     {
       "omo": "ER11346",
