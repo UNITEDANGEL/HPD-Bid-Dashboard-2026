@@ -5277,3 +5277,13 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 @keyframes fc-magic-float { 0% { opacity: 0; transform: translateY(12px) scale(.6); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-30px) scale(1.2); } }
 @keyframes fc-magic-wave { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(14deg); } }
 @media (prefers-reduced-motion: reduce) { .fc-newupdate.is-magic, .fc-magic-backdrop, .fc-magic-backdrop i, .fc-newupdate.is-magic .fc-magic-wand { animation: none; } .fc-magic-backdrop i { opacity: .8; } }
+/* 🚪 Before you leave: photo check when ✕ I left is tapped (LeaveCheck.tsx). */
+.fc-leave-check { position: fixed; left: 12px; right: 12px; top: calc(max(12px, env(safe-area-inset-top)) + 120px); z-index: 1700; max-height: calc(100dvh - 260px); overflow-y: auto; display: grid; gap: 8px; padding: 14px 16px; border-radius: 18px; border: 2px solid #f59e0b; background: #1c1917f7; color: #fff; font: 700 17px/1.35 system-ui, sans-serif; box-shadow: 0 12px 32px #0009; max-width: 520px; margin: 0 auto; }
+.fc-leave-check b { font: 900 19px system-ui; }
+.fc-leave-check .fc-leave-addr { font-size: 15px; color: #fde68a; }
+.fc-leave-check ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.fc-leave-bad { display: flex; gap: 6px; }
+.fc-leave-bad img { width: 72px; height: 54px; object-fit: cover; border-radius: 8px; border: 2px solid #f87171; }
+.fc-leave-actions { display: grid; gap: 8px; }
+.fc-leave-actions button { min-height: 50px; border-radius: 14px; border: 1px solid #a8a29e; background: #292524; color: #fff; font: 800 17px system-ui; }
+.fc-leave-actions button.is-go { background: #16a34a; border-color: #22c55e; }

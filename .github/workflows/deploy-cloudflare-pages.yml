@@ -555,5 +555,6 @@ jobs:
             scripts/test-browser-paperwork-relationship.mjs \
             scripts/test-browser-claude-side-icon.mjs \
             scripts/test-browser-onsite-left.mjs \
+            scripts/test-browser-leave-check.mjs \
             scripts/test-browser-two-tap.mjs \
             scripts/test-browser-dashboard-small.mjs

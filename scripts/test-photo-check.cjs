@@ -6,7 +6,7 @@ const ts = require('typescript');
 const code = ts.transpileModule(fs.readFileSync(path.resolve('lib/photo-check.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
 const mod = { exports: {} };
 new Function('require', 'module', 'exports', code)(require, mod, mod.exports);
-const { judgePixels, summarizePhotoCheck, photoComment } = mod.exports;
+const { judgePixels, summarizePhotoCheck, photoComment, leaveProblems, leaveRetakeKind } = mod.exports;
 
 const W = 120, H = 90;
 let seed = 7;
@@ -50,4 +50,16 @@ assert.match(photoComment('ok', 'after'), /^Nice after photo, that one looks goo
 assert.match(photoComment('blurry', 'before'), /before photo looks a bit blurry.*take another/);
 assert.match(photoComment('dark', 'after'), /a bit dark.*flash/);
 assert.match(photoComment('bright', 'after'), /too bright/);
+// 🚪 Before you leave: a saved "why no after photo" reason answers the missing after photo; what to retake.
+{
+  const none = summarizePhotoCheck([], { before: 0, after: 0 }, true);
+  assert.deepEqual(leaveProblems(none, false).length, 2);
+  assert.equal(leaveRetakeKind(none, leaveProblems(none, false)), 'before');
+  const noAfter = summarizePhotoCheck([{ id: 'b', kind: 'before', verdict: 'ok', dataUrl: 'x' }], { before: 1, after: 0 }, true);
+  assert.equal(leaveRetakeKind(noAfter, leaveProblems(noAfter, false)), 'after');
+  assert.deepEqual(leaveProblems(noAfter, true), [], 'no access reason saved: nothing left to ask');
+  const blurBefore = summarizePhotoCheck([{ id: 'b', kind: 'before', verdict: 'blurry', dataUrl: 'x' }, { id: 'a', kind: 'after', verdict: 'ok', dataUrl: 'y' }], { before: 1, after: 1 }, true);
+  assert.equal(leaveRetakeKind(blurBefore, leaveProblems(blurBefore, true)), 'before');
+  assert.deepEqual(leaveProblems(summarizePhotoCheck([], { before: 0, after: 0 }, false), false), [], 'just arrived, no work: leave');
+}
 console.log('photo check ok');

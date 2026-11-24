@@ -42,7 +42,8 @@ const { assertEmailPackageSize, emailMediaCopies, fitEmailVideos, emailPhotoBudg
   // no-access 2nd try -- all open the same picker.
   // + the work order's "Start the work" at the job (6 Nov).
   // + the photo checklist's tiles (one call for all four, 8 Nov).
-  assert.equal((card.match(/requestMediaUpload\(/g) || []).length, 9, 'definition + tile handler + 2 guided steps + 2 more-media buttons + got in + work order start + photo checklist');
+  // + Before you leave's "Take it now" (24 Nov).
+  assert.equal((card.match(/requestMediaUpload\(/g) || []).length, 10, 'definition + tile handler + 2 guided steps + 2 more-media buttons + got in + work order start + photo checklist + before you leave');
   assert.ok(card.includes('{(["before", "after"] as const).map((kind) => {') && card.includes('onClick={() => requestMediaUpload(kind)}'));
   assert.ok(!card.includes('fc-quick-action is-photos'));
   const mediaSource = fs.readFileSync('lib/field-photo-store.ts', 'utf8');

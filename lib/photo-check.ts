@@ -84,3 +84,16 @@ export function photoComment(verdict: PhotoVerdict, kind: "before" | "after") {
     : verdict === "dark" ? `That ${what} is a bit dark. Turn on a light or the flash and take another.`
     : `That ${what} is too bright. Step out of the glare and take another.`;
 }
+
+// 🚪 Before you leave (owner idea, 24 Nov): what to fix before driving away from a job. A saved "Why no after photo?"
+// reason (no access, tenant refused) answers the missing after photo, so it isn't asked again.
+export function leaveProblems(summary: PhotoCheckSummary, reasonSaved: boolean): string[] {
+  return summary.problems.filter((p) => !(reasonSaved && /^No after photo yet/.test(p)));
+}
+
+// What still needs the camera: "after" when an after photo is missing or bad, else "before".
+export function leaveRetakeKind(summary: PhotoCheckSummary, problems: string[]): "before" | "after" {
+  if (problems.some((p) => /^No before photo/.test(p))) return "before";
+  if (problems.some((p) => /after photo/.test(p))) return "after";
+  return summary.bad.some((b) => b.kind === "before") ? "before" : "after";
+}

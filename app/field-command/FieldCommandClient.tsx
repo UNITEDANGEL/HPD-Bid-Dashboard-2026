@@ -77,6 +77,7 @@ import { FREED_KEY } from "../../lib/free-space";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import JobAssistant from "./JobAssistant";
 import PhotoCheck from "./PhotoCheck";
+import LeaveCheck from "./LeaveCheck";
 import JobNotes from "./JobNotes";
 import HelperFace, { helperFaceHtml } from "./HelperFace";
 import { onSiteNote } from "../../lib/job-time";
@@ -1184,6 +1185,7 @@ export default function FieldCommandClient() {
   const [wxAlways, setWxAlways] = useState(false);
   useEffect(() => { try { const v = localStorage.getItem("hpd-weather-chip"); setWxAlways(v === "1" || (v === null && typeof navigator !== "undefined" && navigator.webdriver && localStorage.getItem("hpd-test-clean-map") !== "1")); } catch { /* private mode */ } }, []);
   const [, setFixTick] = useState(0); // redraws the "Working at" bar after ✕ I left
+  const [leaveAsk, setLeaveAsk] = useState<{ id: string; since: number } | null>(null); // 🚪 photo check before ✕ I left
   // The pill at the bottom of the map as last shown (it hides while the helper is open): "what's next?" reads it (27 Oct).
   const nextStepRef = useRef<{ text: string; go: () => void } | null>(null);
   // 💬 "How did it go?" after a job (4 Nov): what's said next becomes the job's note. 🚗 leadDayRef: the hands-free day.
@@ -11301,16 +11303,20 @@ export default function FieldCommandClient() {
           return !(fix && at && Date.now() - fix.at < 10 * 60000 && (fix.accuracy || 0) < 250 && distanceMiles({ lat: fix.lat, lng: fix.lng }, at) * 1609.34 > 400);
         }).sort((a, b) => b.h!.since - a.h!.since)[0];
         if (!here) return null;
-        return (
+        return (<>
           <div className="fc-onsite-wrap">
           <button type="button" className="fc-onsite" data-hpd-smoke="fc-onsite" onClick={() => { setSelectedJob(here.j); }}>
             <b>🔨 Working at {jobId(here.j)}</b>
             <span>{jobAddress(here.j).replace(/,\s*\d{5}$/, "")} · since {clockAt(here.h!.since)} · {duration(here.h!.minutes)}</span>
             {(() => { const at = jobLatLng(here.j); const ns = at ? nextStopFrom(at, jobId(here.j)) : null; return ns ? <small data-hpd-smoke="fc-onsite-next">Next: {ns.id} · {ns.address.replace(/,\s*\d{5}$/, "")} · {ns.miles} mi · ~{ns.minutes} min{ns.work ? ` · ${ns.work}` : ""}</small> : null; })()}
           </button>
-          <button type="button" className="fc-onsite-x" data-hpd-smoke="fc-onsite-left" aria-label="I left this job" title="I left" onClick={() => { try { const m = JSON.parse(localStorage.getItem("hpd-onsite-left") || "{}"); m[jobId(here.j)] = here.h!.since; localStorage.setItem("hpd-onsite-left", JSON.stringify(m)); } catch { /* private mode */ } setFixTick((n) => n + 1); }}>✕<small>I left</small></button>
+          <button type="button" className="fc-onsite-x" data-hpd-smoke="fc-onsite-left" aria-label="I left this job" title="I left" onClick={() => setLeaveAsk({ id: jobId(here.j), since: here.h!.since })}>✕<small>I left</small></button>
           </div>
-        );
+          {leaveAsk && leaveAsk.id === jobId(here.j) ? <LeaveCheck jobId={leaveAsk.id} address={jobAddress(here.j).replace(/,\s*\d{5}$/, "")}
+            work={["WORK_STARTED", "WORK_COMPLETED", "PARTIAL_WORK"].includes(value(here.j, ["FieldOutcome", "fieldOutcome"]))}
+            onTake={(kind) => { const job = here.j; setLeaveAsk(null); setSelectedJob(job); window.setTimeout(() => requestMediaUpload(kind), 300); }}
+            onLeave={(good) => { const ask = leaveAsk; setLeaveAsk(null); try { const m = JSON.parse(localStorage.getItem("hpd-onsite-left") || "{}"); m[ask.id] = ask.since; localStorage.setItem("hpd-onsite-left", JSON.stringify(m)); } catch { /* private mode */ } if (good) setOutcomeMessage(`✓ ${ask.id}: photos look good for HPD. Drive safe.`); setFixTick((n) => n + 1); }} /> : null}
+        </>);
       })()}
       {arrivePrompt && !selectedJob ? (
         <div className="fc-arrive" role="dialog" aria-label="Have you arrived?" data-hpd-smoke="fc-arrive">

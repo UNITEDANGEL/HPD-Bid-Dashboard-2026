@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📸 24 Nov: AI checks photos before you leave (idea: "It looks at the before / after photos on site and says if one is blurry, dark or missing")
+
+1. ✅ **Before you leave**: ✕ I left on the "Working at" bar first checks that job's before / after photos on the phone (lib/photo-check.ts leaveProblems / leaveRetakeKind, app/field-command/LeaveCheck.tsx). Missing, blurry, dark or washed out -> one box with the problems, 📷 Take the before/after photo now (opens the job card on the photo buttons) or Leave anyway. A saved "Why no after photo?" reason counts as answered. All good -> leaves with "photos look good for HPD. Drive safe." Nothing is sent. Tests: test-photo-check.cjs, test-browser-leave-check.mjs.
+
 ## ✨ 24 Nov: magic popup on every upgrade + proof it was sent (owner: "every time there is a upgrade I want ai to jump up in screen ... like a magic popup"; idea: "Proof it was sent")
 
 1. ✅ **Magic popup on every upgrade**: the "🆕 New update includes" card no longer waits behind the side tab; it pops up in the middle with a glow, sparkles and a waving wand, the update's title and its first lines; Got it (or a tap outside) marks it seen, once per update. Calm (no motion) when the phone asks for reduced motion. Test: newupdate.

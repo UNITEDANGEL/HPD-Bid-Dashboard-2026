@@ -540,11 +540,11 @@
       "why": "At 7 AM tap once: it reads what is due today, the first job, the notices and the bids closing, in under a minute."
     },
     {
-      "id": "ai-photo-check",
-      "icon": "📸",
+      "id": "photo-check-on-done",
+      "icon": "✅",
       "kind": "upgrade",
-      "title": "AI checks photos before you leave",
-      "why": "It looks at the before / after photos on site and says if one is blurry, dark or missing, so HPD does not reject the package."
+      "title": "Photo check when you mark the work done",
+      "why": "Tapping Work completed on the job card checks the after photos first, the same way ✕ I left does, so a job is never marked done with a blurry or missing after photo."
     },
     {
       "id": "ai-hpd-email-to-task",
