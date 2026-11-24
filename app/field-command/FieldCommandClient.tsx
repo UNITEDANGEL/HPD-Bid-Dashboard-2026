@@ -10010,6 +10010,70 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-broken-btn" data-hpd-smoke="fc-broken-send" onClick={() => { const n = changeText; void reportBroken(n).then((ok) => { if (ok) setChangeText(""); }); }}>🐞 Something&apos;s not working: send my last taps</button>
               {changeStatus ? <p className="fc-follow-note" data-hpd-smoke="fc-ask-change-status">{changeStatus}</p> : null}
             </section>
+            {/* Owner, 24 Nov: "Upgrade ideas should be on top after the ask for a change box": ideas right under the ask box, then your requests. */}
+            <section className="fc-ideas" data-hpd-smoke="fc-ideas">
+              <h4>💡 Upgrade ideas from Claude</h4>
+              <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
+              {(() => {
+                // 👍 Ideas you picked (owner, 24 Nov: "ideas are not in the what's new, I click them they don't appear"): a tapped
+                // idea left the list with nothing to show for it. Now each one stays here with where Claude is on it.
+                const sent = (changeThreads || []).filter((t) => t.text.startsWith("(idea) ") && !t.text.startsWith("(idea) Give me more")).sort((a, b) => b.at.localeCompare(a.at));
+                const sentTitles = new Set(sent.map((t) => t.text.slice(7).split(":")[0].trim()));
+                const waiting = (ideas || []).filter((x) => (ideasPicked[x.id] || "").startsWith("do") && !sentTitles.has(withEdit(x).title));
+                if (!sent.length && !waiting.length) return null;
+                const label = (t: ChangeThread) => (t.status === "Done" ? "✅ Done: live" : t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? "🔧 Claude is building it" : t.status === "Waiting for you" ? "💬 Waiting for you" : "📨 Sent, in line");
+                return (
+                  <div className="fc-ideas-picked" data-hpd-smoke="fc-ideas-picked">
+                    <b>👍 Ideas you picked ({sent.length + waiting.length})</b>
+                    <ul>
+                      {waiting.map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span><small>📨 Sent, in line</small></li>; })}
+                      {sent.slice(0, 8).map((t) => <li key={t.id}><span>💡 {t.text.slice(7).split(":")[0].slice(0, 80)}</span><small>{label(t)}</small></li>)}
+                    </ul>
+                  </div>
+                );
+              })()}
+              {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
+                <ol className="fc-idea-list">
+                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x0) => { const x = withEdit(x0); return (
+                    <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
+                      {ideaEditing === x.id ? (
+                        <span className="fc-idea-edit" data-hpd-smoke="fc-idea-edit">
+                          <input data-hpd-smoke="fc-idea-edit-title" aria-label="Idea title" value={ideaDraft.title} maxLength={80} onChange={(e) => setIdeaDraft((d) => ({ ...d, title: e.target.value }))} />
+                          <textarea rows={3} data-hpd-smoke="fc-idea-edit-why" aria-label="What it should do" value={ideaDraft.why} maxLength={240} onChange={(e) => setIdeaDraft((d) => ({ ...d, why: e.target.value }))} />
+                          <span className="fc-idea-btns">
+                            <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-edit-save" onClick={() => saveIdeaEdit(x.id)}>💾 Save my words</button>
+                            <button type="button" className="fc-idea-skip" onClick={() => setIdeaEditing("")}>Cancel</button>
+                          </span>
+                        </span>
+                      ) : (<>
+                        <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}{ideaEdits[x.id] ? <small> · your words</small> : null}</b>
+                        <span>{x.why}</span>
+                        <span className="fc-idea-btns">
+                          <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
+                          <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-change" onClick={() => { setIdeaDraft({ title: x.title, why: x.why }); setIdeaEditing(x.id); }}>✏️ Change</button>
+                          <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
+                        </span>
+                      </>)}
+                    </li>
+                  ); })}
+                </ol>
+              )}
+              {openIdeas().length > 6 ? <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-showmore" onClick={() => setIdeasAll((v) => !v)}>{ideasAll ? "Show fewer" : `Show more (${openIdeas().length - 6} more)`}</button> : null}
+              <div className="fc-idea-row">
+                <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
+                <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
+              </div>
+              {skippedIdeas().length ? (
+                <div className="fc-idea-skipped" data-hpd-smoke="fc-ideas-skipped">
+                  <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-skipped-toggle" onClick={() => setSkippedOpen((v) => !v)}>↩ Skipped ideas ({skippedIdeas().length}): {skippedOpen ? "hide" : "bring one back"}</button>
+                  {skippedOpen ? <ul>{skippedIdeas().map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span> <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-restore" data-id={x.id} onClick={() => unmarkIdea(x.id)}>↩ Bring back</button></li>; })}</ul> : null}
+                </div>
+              ) : null}
+              <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-features-toggle" onClick={() => { setFeaturesOpen(true); void loadWhatsNew(); }}>✅ Upgrades done ({featureList().length || "…"}): see, edit, add</button>
+              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
+              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
+              {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
+            </section>
             <section className="fc-change-threads" data-hpd-smoke="fc-change-threads">
               <h4>💬 Your requests and progress</h4>
               <p className={`fc-claude-online is-${claudeIsOn(claudeSeenAt) ? "on" : "off"}`} data-hpd-smoke="fc-claude-online"><i aria-hidden="true" />{claudeIsOn(claudeSeenAt) || claudeNowFresh(claudeNow) ? "Claude is on: checking for requests every 20 seconds. This list updates by itself." : pickupLabel(claudeSeenAt)}</p>
@@ -10083,69 +10147,6 @@ export default function FieldCommandClient() {
               </section>
             ) : null}
             {planNote ? <p className="fc-follow-note" data-hpd-smoke="fc-plan-note" role="status">{planNote}</p> : null}
-            <section className="fc-ideas" data-hpd-smoke="fc-ideas">
-              <h4>💡 Ideas from Claude</h4>
-              <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
-              {(() => {
-                // 👍 Ideas you picked (owner, 24 Nov: "ideas are not in the what's new, I click them they don't appear"): a tapped
-                // idea left the list with nothing to show for it. Now each one stays here with where Claude is on it.
-                const sent = (changeThreads || []).filter((t) => t.text.startsWith("(idea) ") && !t.text.startsWith("(idea) Give me more")).sort((a, b) => b.at.localeCompare(a.at));
-                const sentTitles = new Set(sent.map((t) => t.text.slice(7).split(":")[0].trim()));
-                const waiting = (ideas || []).filter((x) => (ideasPicked[x.id] || "").startsWith("do") && !sentTitles.has(withEdit(x).title));
-                if (!sent.length && !waiting.length) return null;
-                const label = (t: ChangeThread) => (t.status === "Done" ? "✅ Done: live" : t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? "🔧 Claude is building it" : t.status === "Waiting for you" ? "💬 Waiting for you" : "📨 Sent, in line");
-                return (
-                  <div className="fc-ideas-picked" data-hpd-smoke="fc-ideas-picked">
-                    <b>👍 Ideas you picked ({sent.length + waiting.length})</b>
-                    <ul>
-                      {waiting.map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span><small>📨 Sent, in line</small></li>; })}
-                      {sent.slice(0, 8).map((t) => <li key={t.id}><span>💡 {t.text.slice(7).split(":")[0].slice(0, 80)}</span><small>{label(t)}</small></li>)}
-                    </ul>
-                  </div>
-                );
-              })()}
-              {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
-                <ol className="fc-idea-list">
-                  {openIdeas().slice(0, ideasAll ? 60 : 6).map((x0) => { const x = withEdit(x0); return (
-                    <li key={x.id} className="fc-idea" data-hpd-smoke="fc-idea" data-id={x.id}>
-                      {ideaEditing === x.id ? (
-                        <span className="fc-idea-edit" data-hpd-smoke="fc-idea-edit">
-                          <input data-hpd-smoke="fc-idea-edit-title" aria-label="Idea title" value={ideaDraft.title} maxLength={80} onChange={(e) => setIdeaDraft((d) => ({ ...d, title: e.target.value }))} />
-                          <textarea rows={3} data-hpd-smoke="fc-idea-edit-why" aria-label="What it should do" value={ideaDraft.why} maxLength={240} onChange={(e) => setIdeaDraft((d) => ({ ...d, why: e.target.value }))} />
-                          <span className="fc-idea-btns">
-                            <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-edit-save" onClick={() => saveIdeaEdit(x.id)}>💾 Save my words</button>
-                            <button type="button" className="fc-idea-skip" onClick={() => setIdeaEditing("")}>Cancel</button>
-                          </span>
-                        </span>
-                      ) : (<>
-                        <b>{x.icon} {x.title}{x.kind === "check" ? <small> · check-up</small> : null}{ideaEdits[x.id] ? <small> · your words</small> : null}</b>
-                        <span>{x.why}</span>
-                        <span className="fc-idea-btns">
-                          <button type="button" className="fc-idea-do" data-hpd-smoke="fc-idea-do" onClick={() => void pickIdea(x)}>👍 Do it</button>
-                          <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-change" onClick={() => { setIdeaDraft({ title: x.title, why: x.why }); setIdeaEditing(x.id); }}>✏️ Change</button>
-                          <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-skip" onClick={() => markIdea(x.id, "skip")}>Not now</button>
-                        </span>
-                      </>)}
-                    </li>
-                  ); })}
-                </ol>
-              )}
-              {openIdeas().length > 6 ? <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-showmore" onClick={() => setIdeasAll((v) => !v)}>{ideasAll ? "Show fewer" : `Show more (${openIdeas().length - 6} more)`}</button> : null}
-              <div className="fc-idea-row">
-                <button type="button" data-hpd-smoke="fc-ideas-more" onClick={() => void askMoreIdeas()}>💬 Ask Claude for more ideas</button>
-                <button type="button" className={`fc-auto-upgrade${autoUpgrade ? " is-on" : ""}`} data-hpd-smoke="fc-auto-upgrade" aria-pressed={autoUpgrade} onClick={() => void setAutoUpgradeOn(!autoUpgrade)}>🔁 Keep upgrading on its own: {autoUpgrade ? "ON" : "off"}</button>
-              </div>
-              {skippedIdeas().length ? (
-                <div className="fc-idea-skipped" data-hpd-smoke="fc-ideas-skipped">
-                  <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-ideas-skipped-toggle" onClick={() => setSkippedOpen((v) => !v)}>↩ Skipped ideas ({skippedIdeas().length}): {skippedOpen ? "hide" : "bring one back"}</button>
-                  {skippedOpen ? <ul>{skippedIdeas().map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span> <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-idea-restore" data-id={x.id} onClick={() => unmarkIdea(x.id)}>↩ Bring back</button></li>; })}</ul> : null}
-                </div>
-              ) : null}
-              <button type="button" className="fc-idea-skip" data-hpd-smoke="fc-features-toggle" onClick={() => { setFeaturesOpen(true); void loadWhatsNew(); }}>✅ Upgrades done ({featureList().length || "…"}): see, edit, add</button>
-              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-note">When you have no requests open, Claude builds the next idea by itself (up to 3 a day), tests it, puts it live and tells you. Your requests always go first.</p> : null}
-              {autoUpgrade ? <p className="fc-follow-note" data-hpd-smoke="fc-auto-upgrade-status" role="status">{autoInfo.lastAt ? `Last one it built: “${autoInfo.lastTitle}” (${new Date(autoInfo.lastAt).toLocaleString()}). Today: ${autoInfo.doneToday} of 3.` : "It is on and waiting. Nothing built yet. It starts when no request of yours is open."}</p> : null}
-              {ideasNote ? <p className="fc-follow-note" data-hpd-smoke="fc-ideas-note" role="status">{ideasNote}</p> : null}
-            </section>
             {whatsNew === null ? <p className="fc-follow-note">Couldn&apos;t load the list of changes.</p> : !whatsNew ? <p className="fc-follow-note">Loading…</p> : whatsNew.map((v) => (
               <section key={v.date + v.title} className="fc-whatsnew-day" data-hpd-smoke="fc-whatsnew-day">
                 <h4>{v.date} · {v.title}</h4>

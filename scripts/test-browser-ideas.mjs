@@ -34,6 +34,9 @@ try {
   const idea = page.locator('[data-hpd-smoke="fc-idea"]');
   await idea.first().waitFor({ timeout: 15000 });
   const n0 = await idea.count();
+  // Owner, 24 Nov: the ideas sit right under the Ask for a change box, before the list of your requests.
+  const order = await page.evaluate(() => [...document.querySelectorAll('[data-hpd-smoke="fc-whatsnew"] .fc-summary-body > section')].map((e) => e.getAttribute("data-hpd-smoke")));
+  assert.deepEqual(order.slice(0, 3), ["fc-ask-change", "fc-ideas", "fc-change-threads"], `order: ${order.join(", ")}`);
   // Newest first: the last idea in the file is the first one shown (owner, 13 Nov).
   const fileIdeas = (await (await fetch(`${baseUrl}/data/upgrade-ideas.json`)).json()).ideas;
   assert.equal(await idea.first().getAttribute("data-id"), fileIdeas[fileIdeas.length - 1].id, "newest idea first");

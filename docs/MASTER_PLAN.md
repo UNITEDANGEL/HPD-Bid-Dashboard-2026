@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 💡 24 Nov: Upgrade ideas right under Ask for a change (owner: "Upgrade ideas should be on top after the ask for a change box it's not showing now fix it")
+
+1. ✅ What's new now goes: ✏️ Ask for a change box, then 💡 Upgrade ideas from Claude (with 👍 Ideas you picked), then 💬 Your requests and progress. Before, the ideas were below every past request. Test: ideas (checks the order).
+
 ## 👷 24 Nov: Send to a worker with HPD's pages (owner: "fix send to worker he should be able to see the actual pdf work description and the 2nd page which contain tenant inform if available also worker should be able to take pics and update the job card")
 
 1. ✅ **Job + HPD's pages in one share**: a moment after a job card opens, HPD's pages (work description page + page 2 with the tenant contact) are drawn quietly on the phone (kept after the first time); 👷 Send to a worker then shows "+ HPD's N pages" and shares the worker link and the pages together. Nothing goes on the public site. **Worker page**: a big 📷 Take before / after photo button per spot (opens the camera) + 🖼 From photos; "They go on job X's card when your boss taps 📥 Photos from your worker". Tests: crew-share, worker.
