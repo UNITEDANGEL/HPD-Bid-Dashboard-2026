@@ -526,3 +526,21 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.ok(viaFind.some((x) => x.key === "dt:2026-11-23"), "findAlerts includes the due-today alert");
   console.log("due today alert ok");
 }
+
+// 🏁 Due tomorrow in the 6 PM wrap-up (plan item 31): open awarded jobs whose HPD finish date is tomorrow.
+{
+  const awards = [
+    { OMO: "ER09500", AwardDate: "11/05/26", WorkCompletionDate: "11/24/26" }, // tomorrow (Tue 11/24)
+    { OMO: "ER09501", AwardDate: "11/05/26", WorkCompletionDate: "11/24/26" }, // tomorrow but paperwork sent: left out
+    { OMO: "ER07567", AwardDate: "11/10/26", WorkCompletionDate: "11/23/26" }, // today: left out
+    { OMO: "ER09600", AwardDate: "11/05/26", WorkCompletionDate: "11/30/26" }, // next week: left out
+  ];
+  const sent = { ER09501: { sentAt: "2026-11-23" } };
+  const w = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent, records: {}, now: Date.parse("2026-11-23T23:30:00Z"), loadLib, awards, closed: {} }); // Mon 6:30 PM NY
+  assert.match(w.body, /🏁 finish tomorrow: ER09500$/, w.body);
+  const none = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: { ...sent, ER09500: { sentAt: "2026-11-23" } }, records: {}, now: Date.parse("2026-11-23T23:30:00Z"), loadLib, awards, closed: {} });
+  assert.doesNotMatch(none.body, /finish tomorrow/, "all done: not named");
+  const viaFind = await findAlerts({ conversations: { threads: [] }, bids: [], sent, requests: {}, awards, closed: {}, now: Date.parse("2026-11-23T23:30:00Z"), loadLib });
+  assert.ok(viaFind.some((x) => x.key === "w:2026-11-23" && /finish tomorrow: ER09500/.test(x.body)), "findAlerts passes the jobs to the wrap-up");
+  console.log(`PASS wrap-up names jobs due tomorrow: "${w.body}"`);
+}

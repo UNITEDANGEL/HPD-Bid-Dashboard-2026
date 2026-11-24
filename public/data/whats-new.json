@@ -5,6 +5,7 @@
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [
+        "🌆 The 6 PM wrap-up alert now also names the jobs whose HPD finish date is tomorrow and still aren't done (like \"🏁 finish tomorrow: ER09500\"), so you can plan the morning for them.",
         "📱 The Dashboard fits a phone now: the Live Bids table turns into one card per job with every word showing (OMO, status, full address, borough, award, start and finish dates), no sliding sideways and no cut-off addresses.",
         "📅 The date menu on the map fits on the screen now, no scrolling: ⏳ Maturity, 🏆 Award, 🔨 Start and 🏁 Finish each say what they mean, every choice shows its real dates (like Nov 23 – Dec 23), and a line tells the next date and how many days are left.",
         "➕ The + and − zoom buttons now always sit just under 📍 Locate, so they never cover it on an iPhone (the notch at the top used to push Locate down onto them).",

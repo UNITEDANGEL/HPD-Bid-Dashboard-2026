@@ -170,7 +170,7 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib, records });
   if (brief) out.push(brief);
   // 🌆 Evening wrap-up (owner, 21 Oct "next upgrade"): once each weekday from 6 PM, what got done and what's left.
-  const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib });
+  const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib, awards, closed });
   if (wrap) out.push(wrap);
   // 📞 Call the tenant (owner, 22 Oct: "if they follow up, remind me to give them a call"): texted from the job card and
   // no visit / appointment by the next morning, or they replied. Once per text, working hours only.
@@ -266,7 +266,7 @@ export function lostReview({ market, records, now = Date.now(), force = false })
 }
 
 // The day's results from the bid records on the status server (BID-<OMO> / NOBID-<OMO>), the emails and tomorrow's bids.
-export async function eveningWrapup({ conversations, bids, sent, records = {}, now = Date.now(), loadLib, force = false }) {
+export async function eveningWrapup({ conversations, bids, sent, records = {}, now = Date.now(), loadLib, force = false, awards = null, closed = null }) {
   const p = nyParts(now);
   const hour = Number(p.hour);
   if (!force && (!workingHours(now - 2 * 3600000) || hour < 18 || hour >= 22)) return null; // weekdays 6-10 PM
@@ -302,6 +302,15 @@ export async function eveningWrapup({ conversations, bids, sent, records = {}, n
   const sentFor = new Set(Object.entries(records).filter(([k, v]) => k.startsWith("BID-") && v?.sentAt && v.bidDue === tomorrow).map(([k]) => k.slice(4)));
   const toBid = dueTomorrow.filter((b) => !sentFor.has(b.omo));
   if (toBid.length) lines.push(`🧾 tomorrow: ${toBid.length} bid${toBid.length === 1 ? "" : "s"} to send (first ${toBid[0].bidDueTime})`);
+  // 🏁 Jobs due tomorrow (plan item 31, 23 Nov): open awarded jobs whose HPD finish date is tomorrow, so the morning is
+  // planned for them. OMO numbers only (the alert is not private).
+  if (loadLib && Array.isArray(awards) && awards.length) {
+    try {
+      const { awardCountdown } = await loadLib("award-countdown");
+      const jobs = awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today }).filter((c) => c.days === 1);
+      if (jobs.length) lines.push(`🏁 finish tomorrow: ${jobs.slice(0, 4).map((c) => c.omo).join(", ")}${jobs.length > 4 ? ` +${jobs.length - 4}` : ""}`);
+    } catch (e) { console.log(`wrap-up jobs due tomorrow skipped: ${e.message}`); }
+  }
   return {
     key: `w:${today}`, kind: "message",
     title: "🌆 Today's wrap-up",
@@ -493,7 +502,7 @@ async function main() {
   const closedJobs = JSON.parse(read(path.join(ROOT, "public/data/hpd_job_status.json")) || "{}").jobs || {};
   const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions, market, awards: Array.isArray(coa) ? coa : coa.jobs || [], closed: closedJobs });
   if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
-  if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
+  if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true, awards: Array.isArray(coa) ? coa : coa.jobs || [], closed: closedJobs }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
   if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
