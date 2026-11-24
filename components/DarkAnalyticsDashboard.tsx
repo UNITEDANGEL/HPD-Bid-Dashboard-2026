@@ -787,7 +787,7 @@ export default function DarkAnalyticsDashboard() {
               <Link href="/jobs">Open jobs</Link>
             </div>
             <div className="bid-table" style={{ overflowX: "auto", width: "100%" }}>
-  <table style={{ width: "100%", minWidth: "940px", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "0 8px" }}>
+  <table className="live-bids-table" style={{ width: "100%", minWidth: "940px", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "0 8px" }}>
     <colgroup>
       <col style={{ width: "90px" }} />
       <col style={{ width: "270px" }} />
@@ -811,15 +811,15 @@ export default function DarkAnalyticsDashboard() {
     <tbody>
       {model.liveJobs.map((job) => (
         <tr key={jobId(job) || jobAddress(job)} style={{ background: "rgba(15, 23, 42, 0.72)" }}>
-          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 900, borderTopLeftRadius: "14px", borderBottomLeftRadius: "14px" }}>
+          <td data-label="OMO" style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 900, borderTopLeftRadius: "14px", borderBottomLeftRadius: "14px" }}>
             <Link href={`/map?omo=${encodeURIComponent(jobId(job))}&view=all`}>{jobId(job) || "New"}</Link>
           </td>
-          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobAddress(job) || "Address pending"}</td>
-          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobBorough(job)}</td>
-          <td style={{ padding: "14px 8px", fontSize: "16px" }}><StatusPill job={job} /></td>
-          <td style={{ padding: "14px 8px", fontSize: "19px", fontWeight: 950, color: "#fbbf24" }}>{money(parseAmount(job))}</td>
-          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800 }}>{jobWorkStart(job)}</td>
-          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800, borderTopRightRadius: "14px", borderBottomRightRadius: "14px" }}>{jobWorkCompletion(job)}</td>
+          <td data-label="Address" className="cell-address" style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobAddress(job) || "Address pending"}</td>
+          <td data-label="Borough" style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobBorough(job)}</td>
+          <td data-label="Status" style={{ padding: "14px 8px", fontSize: "16px" }}><StatusPill job={job} /></td>
+          <td data-label="COA Award" style={{ padding: "14px 8px", fontSize: "19px", fontWeight: 950, color: "#fbbf24" }}>{money(parseAmount(job))}</td>
+          <td data-label="Start" style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800 }}>{jobWorkStart(job)}</td>
+          <td data-label="Finish" style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800, borderTopRightRadius: "14px", borderBottomRightRadius: "14px" }}>{jobWorkCompletion(job)}</td>
         </tr>
       ))}
     </tbody>
@@ -1582,9 +1582,9 @@ export default function DarkAnalyticsDashboard() {
           margin-top: 3px;
           color: var(--dash-muted);
           max-width: 100%;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          line-height: 1.3;
         }
 
         .status-pill {
@@ -1701,6 +1701,74 @@ export default function DarkAnalyticsDashboard() {
 
           .table-row.table-head {
             display: none;
+          }
+          /* Small screens (owner, 23 Nov): the Live Bids table turns into one card per job,
+             every word shown (no side-scroll, no "..."). */
+          .table-panel .bid-table {
+            overflow-x: visible !important;
+          }
+
+          .bid-table table.live-bids-table,
+          .bid-table table.live-bids-table tbody {
+            display: block !important;
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+
+          .bid-table table.live-bids-table colgroup,
+          .bid-table table.live-bids-table thead {
+            display: none !important;
+          }
+
+          .bid-table table.live-bids-table tr {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 14px;
+            margin: 0 0 10px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+          }
+
+          .bid-table table.live-bids-table td {
+            display: block !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            min-width: 0;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            overflow-wrap: anywhere;
+            line-height: 1.3;
+          }
+
+          .bid-table table.live-bids-table td::before {
+            content: attr(data-label);
+            display: block;
+            margin-bottom: 3px;
+            color: var(--dash-muted);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+          }
+
+          .bid-table table.live-bids-table td.cell-address {
+            grid-column: 1 / -1;
+          }
+
+          /* OMO + Status on top, address full width, then Borough/Award, Start/Finish. */
+          .bid-table table.live-bids-table td:nth-child(1) {
+            order: -2;
+          }
+
+          .bid-table table.live-bids-table td:nth-child(4) {
+            order: -1;
+          }
+
+          .bid-table table.live-bids-table .status-pill {
+            white-space: normal;
+            text-align: left;
           }
         }
       `}

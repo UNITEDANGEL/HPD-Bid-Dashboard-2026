@@ -12,6 +12,13 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📱 23 Nov: Dashboard words fit on a phone (owner: "when it gets smaller, half of the words are not showing")
+
+1. ✅ **Live Bids as cards on a phone**: the Dashboard (Overview) Live Bids table was 940 px wide, so on a phone Borough, Status,
+   COA Award, Start and Finish were off the side of the screen and long addresses ended in "…". Under 860 px each job is now a card:
+   OMO + Status on top, the full address, then Borough / Award and Start / Finish, each with its label. Recent Activity addresses
+   wrap instead of being cut. Test: test-browser-dashboard-small.mjs (340, 390 and 760 px: nothing cut, nothing off the side).
+
 ## 📍 23 Nov: nothing under the Locate button (owner: "Locate button still overlap on map fix now I asked you before")
 
 1. ✅ **Locate stays clear**: the "Couldn't get your location" line and the "🔨 Working at…" banner reached under the
