@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-24T16:44:21.885633+00:00",
+"generatedAt": "2026-11-24T16:54:07.402023+00:00",
 "since": "2026/11/10",
 "jobs": {
 "EN04541": [
@@ -22268,6 +22268,14 @@
 "file": "SIGNED - ER08795 - Work Completed.pdf",
 "outcome": "work_completed",
 "subject": "SIGNED - ER08795 - Work Completed - 1515 WEST 1 STREET, 11204"
+},
+{
+"date": "2026-11-24",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-11-20-16-19-23.mp4",
+"outcome": "",
+"subject": "OMO No: ER08795 Issuer: JUAN ISIDRO CARVAJAL DIMAS Boro: Brooklyn Bldg Address: 1515, WEST 1 STREET",
+"via": "hpd-staff"
 }
 ],
 "ER09460": [
