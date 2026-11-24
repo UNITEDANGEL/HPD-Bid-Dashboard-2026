@@ -5,6 +5,7 @@
       "date": "Nov 24, 2026",
       "title": "Dates on the job card, bigger buttons",
       "items": [
+        "💬 New: All → Tenant replies. Every tenant text answer in one list, newest first, with its job. Tap one to open the job.",
         "📅 The job card shows its dates at the top: Award, Start and Complete (the work-done date once it's in, else the HPD complete-by date). The full date list below is open.",
         "⏳ Picking Maturity (or Start / Finish) 7 days now shows only jobs in those 7 days: due 2nd tries outside it no longer show.",
         "👆 The bottom buttons (Bids, Jobs, Notices…) are bigger with bigger words, and light up when you press them.",

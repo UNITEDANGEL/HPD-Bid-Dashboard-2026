@@ -1962,6 +1962,8 @@ export default function FieldCommandClient() {
   const [featuresOpen, setFeaturesOpen] = useState(false);
   // 📅 Next 7 days (plan, 19 Nov): All → Next 7 days.
   const [weekOpen, setWeekOpen] = useState(false);
+  // 💬 Tenant replies in one place (idea, 24 Nov): every tenant text answer, newest first, with its job.
+  const [tenantRepliesOpen, setTenantRepliesOpen] = useState(false);
   useEffect(() => { try { setIdeaEdits(JSON.parse(localStorage.getItem("hpd-idea-edits") || "{}")); } catch { /* private mode */ } }, []);
   const withEdit = (x: Idea): Idea => (ideaEdits[x.id] ? { ...x, ...ideaEdits[x.id] } : x);
   const saveIdeaEdit = (id: string) => {
@@ -4073,6 +4075,7 @@ export default function FieldCommandClient() {
     if (keep !== "summary") setSummaryOpen(false);
     if (keep !== "closeout") setCloseOutOpen(false);
     if (keep !== "secondtry") setSecondTryOpen(false);
+    if (keep !== "tenantreplies") setTenantRepliesOpen(false);
     if (keep !== "jobs") setJobsOpen(false);
     if (keep !== "route") setRouteCloseRequest((n) => n + 1);
     setSelectedJob(null);
@@ -8380,6 +8383,7 @@ export default function FieldCommandClient() {
             const rows: { key: string; icon: string; label: string; info: string; go: () => void }[] = [
               // ☀️ The day's summary again (11 Nov): its only way back was the notices header, hidden since Notices opens the board.
               { key: "today", icon: "☀️", label: "Today's summary", info: "Notices, bids and money for today", go: () => { setMoreOpen(false); closeScreens("today"); setBoardWithMap(false); setSummaryToday(true); setTodayMini(false); } },
+              { key: "tenant-replies", icon: "💬", label: "Tenant replies", info: (() => { let n = 0; try { n = (JSON.parse(localStorage.getItem("hpd-tenant-replies") || "[]") as unknown[]).length; } catch { /* private mode */ } return n ? `${n} answer${n === 1 ? "" : "s"} from tenants, newest first` : "Every tenant text answer, with its job"; })(), go: () => { setMoreOpen(false); closeScreens("tenantreplies"); setTenantRepliesOpen(true); } },
               { key: "week", icon: "📅", label: "Next 7 days", info: "Appointments, bids due, notices and 2nd tries, day by day", go: () => { setMoreOpen(false); closeScreens(); setWeekOpen(true); } },
               { key: "weather", icon: wxChip?.icon || "🌤", label: "Weather", info: wxChip ? `${wxChip.temp}°${wxChip.note ? ` · ${wxChip.note}` : ""}` : "Today and tomorrow", go: () => { setMoreOpen(false); agentRef.current("what's the weather"); } },
               { key: "parking", icon: "🅿️", label: "Parking (street cleaning)", info: aspOffToday ? `No street cleaning today · ${aspOffToday}` : "Street cleaning rules today", go: () => { setMoreOpen(false); agentRef.current("is alternate side on today"); } },
@@ -11499,6 +11503,47 @@ export default function FieldCommandClient() {
         });
         const open = (item: WeekAheadItem) => { setWeekOpen(false); goTo(item.kind === "bid" ? "bids" : item.kind === "notice" ? "board" : "job", item.omo); };
         return <WeekAhead week={week} onClose={() => setWeekOpen(false)} onOpen={open} />;
+      })() : null}
+      {tenantRepliesOpen ? (() => {
+        // Their words stay on this phone only (hpd-tenant-replies); jobs marked "replied" from another phone show too.
+        let kept: { omo: string; body: string; at: string }[] = [];
+        try { kept = JSON.parse(localStorage.getItem("hpd-tenant-replies") || "[]"); } catch { /* private mode */ }
+        const rows = [...kept].filter((r) => r && r.at).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+        const have = new Set(rows.map((r) => r.omo).filter(Boolean));
+        const marked = jobs.filter((j) => value(j, ["TenantRepliedAt"]) && !have.has(jobId(j))).sort((a, b) => String(value(b, ["TenantRepliedAt"])).localeCompare(String(value(a, ["TenantRepliedAt"]))));
+        const when = (iso: string) => { const t = Date.parse(iso); return Number.isFinite(t) ? new Date(t).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) : ""; };
+        const open = (omo: string) => { const job = jobs.find((j) => jobId(j) === omo); setTenantRepliesOpen(false); if (job) openIssueJob(job); };
+        return (
+          <div className="fc-package-sheet fc-summary-sheet fc-tenant-replies" role="dialog" aria-label="Tenant replies" data-hpd-smoke="fc-tenant-replies">
+            <header>
+              <button type="button" onClick={() => setTenantRepliesOpen(false)}>← Map</button>
+              <strong>💬 Tenant replies ({rows.length + marked.length})</strong>
+            </header>
+            <div className="fc-summary-body">
+              {!rows.length && !marked.length ? <p>No tenant answers yet. When a tenant texts back, it shows here with the job.</p> : null}
+              {rows.length ? (
+                <section>
+                  <h3>Newest first</h3>
+                  {rows.map((r, i) => { const job = r.omo ? jobs.find((j) => jobId(j) === r.omo) : undefined; return (
+                    <button type="button" key={`${r.at}-${i}`} data-hpd-smoke="fc-tenant-reply" data-omo={r.omo} disabled={!job} onClick={() => open(r.omo)}>
+                      <b>{r.omo || "Unknown number"}</b> <span>{job ? jobAddress(job) : "No job matched this phone number"}</span><small>{when(r.at)} · “{String(r.body || "").slice(0, 300)}”</small>
+                    </button>
+                  ); })}
+                </section>
+              ) : null}
+              {marked.length ? (
+                <section>
+                  <h3>Replied (text on another phone) <small>({marked.length})</small></h3>
+                  {marked.map((j) => (
+                    <button type="button" key={jobId(j)} data-hpd-smoke="fc-tenant-reply-marked" onClick={() => open(jobId(j))}>
+                      <b>{jobId(j)}</b> <span>{jobAddress(j)}</span><small>Replied {when(String(value(j, ["TenantRepliedAt"])))}</small>
+                    </button>
+                  ))}
+                </section>
+              ) : null}
+            </div>
+          </div>
+        );
       })() : null}
       {summary ? (
         <div className="fc-package-sheet fc-summary-sheet" role="dialog" aria-label="Today's summary" data-hpd-smoke="fc-summary-sheet">

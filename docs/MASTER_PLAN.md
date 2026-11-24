@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 💬 24 Nov: tenant replies in one place (idea: "Every tenant text answer shows in one list with the job")
+
+1. ✅ All → 💬 Tenant replies: the answers kept on this phone, newest first, each with its job (tap opens it); jobs marked replied from another phone listed below. Test: tenant-replies.
+
 ## 📅 24 Nov: job card dates, Maturity filter, bigger buttons, picked ideas (owner: "I need to see all dates on job card award start complete"; "I selected maturity 7 days why 2nd try is open also"; "make bids jobs etc buttons a bit bigger and better interaction ... ideas are not in the what's new, I click them they don't appear")
 
 1. ✅ **Dates at the top of the job card**: Award · Start (work started, else contract) · Complete (work done, else HPD complete-by), one mm/dd/yy style; the full date list is open. Test: job-dates.

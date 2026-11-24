@@ -423,13 +423,6 @@
       "why": "Bids due in under 24 hours get a red badge on the list, so none is missed."
     },
     {
-      "id": "tenant-reply-inbox",
-      "icon": "💬",
-      "kind": "new",
-      "title": "Tenant replies in one place",
-      "why": "Every tenant text answer shows in one list with the job, so you never hunt for who answered."
-    },
-    {
       "id": "receipt-photo",
       "icon": "🧾",
       "kind": "new",
@@ -559,6 +552,13 @@
       "kind": "upgrade",
       "title": "Ask the AI anything about a job",
       "why": "\"When did I send ER03395?\" or \"Is 73 Eastern Pkwy paid?\" gets one clear answer from your own records."
+    },
+    {
+      "id": "tenant-reply-answer-list",
+      "icon": "↩️",
+      "kind": "upgrade",
+      "title": "Answer a tenant from the replies list",
+      "why": "In Tenant replies, a ready answer under each text: one tap to send it, without opening the job first."
     }
   ],
   "plan": {
