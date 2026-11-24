@@ -608,12 +608,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-maturity-money",
-        "icon": "💲",
-        "title": "Money in this week's maturity",
-        "why": "The Maturity this week card shows each job's award amount and the total, so you see how much money is riding on this week."
-      },
-      {
         "id": "plan-maturity-route",
         "icon": "🗺",
         "title": "Route for this week's maturity",

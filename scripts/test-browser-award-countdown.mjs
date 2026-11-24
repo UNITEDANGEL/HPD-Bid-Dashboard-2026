@@ -26,6 +26,9 @@ try {
   assert.match(mwRows[0], /^ZZ00002: \w{3}, \w{3} \d+ \(1 day left\)/);
   assert.match(mwRows[1], /^ZZ00003: \w{3}, \w{3} \d+ \(6 days left\)/);
   assert.match(await mw.innerText(), /2 jobs to finish and send by/);
+  // 💲 Money in this week's maturity: each row shows its award, plus the total ($500 + $500).
+  assert.match(mwRows[0], /· \$500/);
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-total"]').innerText(), "💲 $1,000 riding on this week");
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').first().getAttribute("href"), "/map/?omo=ZZ00002");
   const mwBox = await mw.boundingBox();
   assert.ok(mwBox && mwBox.width <= 390, "maturity card fits the iPhone width");

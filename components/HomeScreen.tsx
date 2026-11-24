@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityWeek, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityMoney, maturityWeek, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
@@ -242,9 +242,10 @@ export default function HomeScreen() {
               <b className="home-big">{mw.length} job{mw.length === 1 ? "" : "s"} to finish and send by {finishByText(mw[mw.length - 1].due, today).split(" (")[0]}</b>
               {mw.map((c) => (
                 <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} data-hpd-smoke="home-maturity-week-row" data-days={c.days} style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: c.days <= 1 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontSize: 17, fontWeight: 800, textDecoration: "none" }}>
-                  {c.omo}: {finishByText(c.due, today)} <span aria-hidden>→</span>
+                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null} <span aria-hidden>→</span>
                 </a>
               ))}
+              {maturityMoney(mw) > 0 ? <b data-hpd-smoke="home-maturity-week-total" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", fontSize: 18 }}>💲 ${Math.round(maturityMoney(mw)).toLocaleString()} riding on this week</b> : null}
               <small>Maturity = HPD&apos;s finish date. Tap a job to open it.</small>
             </span>
           </div>

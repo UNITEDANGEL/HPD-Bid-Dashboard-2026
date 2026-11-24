@@ -2,8 +2,8 @@
 // closed them), with the days left until HPD's completion date, late ones and the closest first. OMO numbers and dates only.
 import { calendarDay } from "./job-priority";
 
-type Award = { OMO?: string; AwardDate?: string; WorkCompletionDate?: string };
-export type Countdown = { omo: string; due: string; days: number; given: number | null };
+type Award = { OMO?: string; AwardDate?: string; WorkCompletionDate?: string; AwardAmount?: string | number };
+export type Countdown = { omo: string; due: string; days: number; given: number | null; amount?: number | null };
 
 const iso = (d: number) => new Date(d * 86400000).toISOString().slice(0, 10);
 
@@ -22,7 +22,8 @@ export function awardCountdown(opts: { awards: Award[] | null | undefined; sent?
     const due = calendarDay(String(a.WorkCompletionDate || "").trim());
     if (aw === null || due === null || aw > t || t - aw > lookback) continue;
     seen.add(omo);
-    out.push({ omo, due: iso(due), days: due - t, given: due >= aw ? due - aw : null });
+    const amt = Number(String(a.AwardAmount ?? "").replace(/[$,\s]/g, ""));
+    out.push({ omo, due: iso(due), days: due - t, given: due >= aw ? due - aw : null, amount: amt > 0 ? amt : null });
   }
   return out.sort((x, y) => x.days - y.days || x.omo.localeCompare(y.omo));
 }
@@ -111,4 +112,9 @@ export function finishStopLabel(days: number): string {
 // on the ⏳ card.
 export function maturityWeek(list: Countdown[]): Countdown[] {
   return list.filter((c) => c.days >= 0 && c.days <= 7).sort((x, y) => x.days - y.days || x.omo.localeCompare(y.omo));
+}
+
+// 💲 Money in this week's maturity (plan, 24 Nov): the award money riding on this week's maturity jobs.
+export function maturityMoney(list: Countdown[]): number {
+  return list.reduce((t, c) => t + (c.amount && c.amount > 0 ? c.amount : 0), 0);
 }

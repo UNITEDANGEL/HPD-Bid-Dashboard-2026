@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -73,3 +73,11 @@ assert.equal(finishStopLabel(-3), '3 days late (HPD finish date)');
 // 💵 Maturity this week (plan item 35): today to 7 days on, closest first; late and later ones left out.
 assert.deepEqual(maturityWeek([{ omo: 'B', due: '', days: 7, given: 1 }, { omo: 'L', due: '', days: -1, given: 1 }, { omo: 'A', due: '', days: 0, given: 1 }, { omo: 'X', due: '', days: 8, given: 1 }, { omo: 'C', due: '', days: 3, given: 1 }]).map((x) => x.omo), ['A', 'C', 'B']);
 console.log('award-countdown tests passed');
+// 💲 Money in this week's maturity: award amounts parsed ("$1,250.50"), missing ones count as 0.
+{
+  const cd = awardCountdown({ awards: [{ OMO: 'M1', AwardDate: '11/20/26', WorkCompletionDate: '11/26/26', AwardAmount: '$1,250.50' }, { OMO: 'M2', AwardDate: '11/20/26', WorkCompletionDate: '11/27/26' }], today: '2026-11-24' });
+  assert.equal(cd.find((c) => c.omo === 'M1').amount, 1250.5);
+  assert.equal(cd.find((c) => c.omo === 'M2').amount, null);
+  assert.equal(maturityMoney(cd), 1250.5);
+  assert.equal(maturityMoney([]), 0);
+}
