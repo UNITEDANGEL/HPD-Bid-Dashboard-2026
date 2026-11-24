@@ -2,6 +2,13 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 24, 2026",
+      "title": "Notices bars no longer overlap",
+      "items": [
+        "⏱ The red notices bar (with Show) now sits above the black 24 / 72 h bar instead of covering it."
+      ]
+    },
+    {
       "date": "Nov 23, 2026",
       "title": "Notices due soon on top",
       "items": [

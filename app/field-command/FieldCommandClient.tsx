@@ -1444,6 +1444,20 @@ export default function FieldCommandClient() {
   boardOverMapRef.current = boardOpen && boardWithMap;
   // 📋 The notice list at the bottom of the map (10 Nov): open / folded.
   const [trayOpen, setTrayOpen] = useState(false);
+  // The red notices bar sits right above the black 24 / 72 h bar, never on it (owner, 24 Nov: they overlapped). The black
+  // bar's height changes with the text size and the phone width, so it is measured.
+  useEffect(() => {
+    const root = document.documentElement;
+    let ro: ResizeObserver | null = null;
+    let seen: Element | null = null;
+    const set = () => { const el = document.querySelector(".fc-notice-chooser"); root.style.setProperty("--fc-chooser-h", el ? `${Math.ceil(el.getBoundingClientRect().height)}px` : "0px"); };
+    const watch = () => { const el = document.querySelector(".fc-notice-chooser"); if (el !== seen) { ro?.disconnect(); seen = el; if (el) { ro = new ResizeObserver(set); ro.observe(el); } } set(); };
+    watch();
+    let raf = 0;
+    const mo = new MutationObserver(() => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; watch(); }); });
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => { mo.disconnect(); ro?.disconnect(); cancelAnimationFrame(raf); };
+  }, []);
   const [boardShow, setBoardShow] = useState<"all" | "ppn" | "docs">("all");
   // ✅ "Already sent / fixed" (owner, 5 Nov): job -> when, on every phone (HANDLED-<job> on the status server, and this
   // phone at once). The notice drops to Done.
