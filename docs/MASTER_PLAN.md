@@ -12,6 +12,11 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✨ 24 Nov: magic popup on every upgrade + proof it was sent (owner: "every time there is a upgrade I want ai to jump up in screen ... like a magic popup"; idea: "Proof it was sent")
+
+1. ✅ **Magic popup on every upgrade**: the "🆕 New update includes" card no longer waits behind the side tab; it pops up in the middle with a glow, sparkles and a waving wand, the update's title and its first lines; Got it (or a tap outside) marks it seen, once per update. Calm (no motion) when the phone asks for reduced motion. Test: newupdate.
+2. ✅ **📨 Proof it was sent on the job card**: a job whose paperwork went to HPD (sent email, or sent from the app) shows "Affidavit + invoice sent to HPD on <date>" and 📄 See what you sent (the email + PDF, Open in Gmail). Test: job-proof.
+
 ## 💬 24 Nov: tenant replies in one place (idea: "Every tenant text answer shows in one list with the job")
 
 1. ✅ All → 💬 Tenant replies: the answers kept on this phone, newest first, each with its job (tap opens it); jobs marked replied from another phone listed below. Test: tenant-replies.

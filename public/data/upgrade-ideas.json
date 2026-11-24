@@ -367,11 +367,18 @@
       "why": "Every HPD email shows as three lines on the job card: what they want, what you already sent, what is missing."
     },
     {
-      "id": "sent-proof",
-      "icon": "📎",
+      "id": "popup-try-it",
+      "icon": "🪄",
+      "kind": "better",
+      "title": "Try it from the update popup",
+      "why": "Each line in the ✨ new upgrade popup gets a ▶ Try it that opens the screen that changed, so you see it in one tap."
+    },
+    {
+      "id": "proof-month-list",
+      "icon": "🗂️",
       "kind": "new",
-      "title": "Proof it was sent",
-      "why": "Each job shows the sent affidavit and invoice with the date, so you can answer HPD in one tap with the proof."
+      "title": "All proofs for the month",
+      "why": "One list of every job you sent to HPD this month with its date and PDF, so you answer vendor tracking for many jobs at once."
     },
     {
       "id": "repeat-ask",

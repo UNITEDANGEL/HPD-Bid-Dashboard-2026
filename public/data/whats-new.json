@@ -5,6 +5,8 @@
       "date": "Nov 24, 2026",
       "title": "Dates on the job card, bigger buttons",
       "items": [
+        "✨ Every new upgrade now jumps up in the middle of the screen with a magic popup: what's new in plain words, then Got it. It no longer hides behind the side tab.",
+        "📨 Proof it was sent: a job whose affidavit + invoice went to HPD shows the date on its card, and 📄 See what you sent opens the email and PDF right there, ready to show HPD.",
         "💬 New: All → Tenant replies. Every tenant text answer in one list, newest first, with its job. Tap one to open the job.",
         "📅 The job card shows its dates at the top: Award, Start and Complete (the work-done date once it's in, else the HPD complete-by date). The full date list below is open.",
         "⏳ Picking Maturity (or Start / Finish) 7 days now shows only jobs in those 7 days: due 2nd tries outside it no longer show.",

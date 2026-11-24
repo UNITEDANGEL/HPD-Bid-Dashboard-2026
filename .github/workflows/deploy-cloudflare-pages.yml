@@ -362,6 +362,7 @@ jobs:
             scripts/test-browser-paperwork.mjs \
             scripts/test-browser-map-zoom.mjs \
             scripts/test-browser-job-dates.mjs \
+            scripts/test-browser-job-proof.mjs \
             scripts/test-browser-tenant-replies.mjs \
             scripts/test-browser-notice-clock.mjs \
             scripts/test-browser-jobs-count-load.mjs \

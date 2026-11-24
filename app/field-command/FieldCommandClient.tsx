@@ -9334,9 +9334,26 @@ export default function FieldCommandClient() {
                         const href = `/paperwork/?job=${encodeURIComponent(id)}`;
                         return <a className="jc-status-go is-late" data-hpd-smoke="jc-late-media" href={href} onClick={packageLinkClick(id, href)}>📎 {what} taken after it was sent: send {late.length === 1 ? "it" : "them"} →</a>;
                       })() : null}
-                      {approved ? <SentPaperworkLink omo={id} /> : null}
+                      {approved && !value(selectedJob, ["PaperworkSentAt"]) && !value(selectedJob, ["PackageEmailedAt"]) ? <SentPaperworkLink omo={id} /> : null}
                       <button type="button" className="jc-status-change jc-hpd-say" data-hpd-smoke="jc-hpd-say" onClick={() => agentRef.current(`what do I say to HPD about ${id}`)}>☎️ HPD calling? What to say</button>
                       {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>{armedTap === `clear:${jobId(selectedJob)}` ? "✅ Tap again: clear the outcome" : "Change outcome"}</button> : null}
+                    </div>
+                  );
+                })()}
+                {(() => {
+                  // 📨 Proof it was sent (owner idea, 24 Nov): the affidavit and invoice that went to HPD, with the date,
+                  // and one tap to open the PDFs from your sent email, so you can answer HPD with the proof.
+                  const gmailDay = String(value(selectedJob, ["PaperworkSentAt"]) || "");
+                  const appAt = String(value(selectedJob, ["PackageEmailedAt"]) || "");
+                  const day = gmailDay || appAt.slice(0, 10);
+                  if (!/^\d{4}-\d{2}-\d{2}/.test(day)) return null;
+                  const shown = new Date(`${day.slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                  const emails = Number((followRef.current?.sent?.[id] as { count?: number } | undefined)?.count || 0);
+                  return (
+                    <div className="jc-proof" data-hpd-smoke="jc-proof">
+                      <strong>📨 Proof it was sent</strong>
+                      <span data-hpd-smoke="jc-proof-date">Affidavit + invoice sent to HPD on <b>{shown}</b>{emails > 1 ? ` · ${emails} emails` : ""}</span>
+                      <SentPaperworkLink omo={id} />
                     </div>
                   );
                 })()}
@@ -9914,8 +9931,15 @@ export default function FieldCommandClient() {
         );
       })() : null}
 
-      {sideOpen && newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
-        <div className="fc-newupdate" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
+      {/* ✨ Magic popup (owner, 24 Nov: "every time there is an upgrade I want it to jump up on screen ... something very
+          nice like a magic popup"): no longer waits behind the side tab; it pops up in the middle with sparkles, once per
+          update (Got it, or a tap outside, marks it seen). */}
+      {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? <div className="fc-magic-backdrop" data-hpd-smoke="fc-magic-backdrop" aria-hidden="true" onClick={seenNewItems}><i>✨</i><i>⭐</i><i>✨</i><i>💫</i><i>✨</i><i>⭐</i></div> : null}
+      {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
+        <div className="fc-newupdate is-magic" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
+          <span className="fc-magic-wand" aria-hidden="true">🪄</span>
+          <b className="fc-magic-title" data-hpd-smoke="fc-magic-title">New upgrade is live!</b>
+          {whatsNew?.[0]?.title ? <em className="fc-magic-sub">{whatsNew[0].title}</em> : null}
           <strong>🆕 New update includes</strong>
           {/* Short (3 Nov): the first 2 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
           <ul>{newItems.slice(0, 2).map((x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return <li key={x}>{one.length > 90 ? `${one.slice(0, 88)}…` : one}</li>; })}</ul>

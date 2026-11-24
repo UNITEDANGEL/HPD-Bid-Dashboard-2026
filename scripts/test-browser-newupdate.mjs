@@ -14,7 +14,7 @@ async function open(seed) {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
   await routePrivate(c);
   await c.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => (r.request().method() === "POST" ? r.fulfill({ json: { ok: true } }) : r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } })));
-  if (seed) await c.addInitScript((known) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-version-seen", "older"); localStorage.setItem("hpd-whatsnew-seen", JSON.stringify(known)); sessionStorage.setItem("seeded", "1"); } }, all.slice(2));
+  if (seed) await c.addInitScript((known) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-version-seen", "older"); localStorage.setItem("hpd-side-open", "0"); localStorage.setItem("hpd-whatsnew-seen", JSON.stringify(known)); sessionStorage.setItem("seeded", "1"); } }, all.slice(2));
   const p = await c.newPage();
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
@@ -31,9 +31,15 @@ try {
     const short = (x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return one.length > 90 ? `${one.slice(0, 88)}…` : one; };
     assert.deepEqual(items, all.slice(0, 2).map(short), "only the lines not seen yet, first sentence each (2 at most)");
     assert.match(await card.innerText(), /🆕 New update includes/);
+    // ✨ Magic popup (24 Nov): it jumps up in the middle even with the side tab closed, over a sparkle backdrop.
+    assert.match(await card.innerText(), /New upgrade is live!/);
+    assert.equal(await p.locator('[data-hpd-smoke="fc-magic-backdrop"]').count(), 1, "sparkle backdrop");
+    const mid = await card.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: window.innerHeight, left: r.left, right: r.right, w: window.innerWidth }; });
+    assert.ok(mid.top > 0 && mid.bottom < mid.h && mid.left >= 0 && mid.right <= mid.w, `popup fully on screen: ${JSON.stringify(mid)}`);
     if (shots) await p.screenshot({ path: `${shots}/newupdate.png` });
     await card.locator('[data-hpd-smoke="fc-newupdate-ok"]').click();
     assert.equal(await card.count(), 0);
+    assert.equal(await p.locator('[data-hpd-smoke="fc-magic-backdrop"]').count(), 0, "backdrop gone too");
     await p.reload({ waitUntil: "load" });
     await p.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
     await p.waitForTimeout(2500);
