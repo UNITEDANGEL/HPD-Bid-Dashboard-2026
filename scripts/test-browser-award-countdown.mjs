@@ -18,6 +18,17 @@ try {
   await page.route("**/api/private/tenants*", (r) => r.fulfill({ json: { jobs: { ZZ00001: { ItbTenantName: "ANA SMITH", ItbTenantPhone: "718 555 0142" }, ZZ00003: { ItbTenantName: "FAR AWAY", ItbTenantPhone: "718 555 0100" } }, bids: {} } }));
   await page.addInitScript(() => localStorage.setItem("hpd-building-contacts", JSON.stringify({ "2 TEST AVENUE": { name: "Super Joe", phone: "6465550177", savedAt: "2026-11-22" } })));
   await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+  // 💵 Maturity this week (plan item 35): ZZ00002 (1 day) then ZZ00003 (6 days); the late ZZ00001 stays on the ⏳ card.
+  const mw = page.locator('[data-hpd-smoke="home-maturity-week"]');
+  await mw.waitFor({ timeout: 10000 });
+  const mwRows = await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').allInnerTexts();
+  assert.equal(mwRows.length, 2, mwRows.join(" | "));
+  assert.match(mwRows[0], /^ZZ00002: \w{3}, \w{3} \d+ \(1 day left\)/);
+  assert.match(mwRows[1], /^ZZ00003: \w{3}, \w{3} \d+ \(6 days left\)/);
+  assert.match(await mw.innerText(), /2 jobs to finish and send by/);
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').first().getAttribute("href"), "/map/?omo=ZZ00002");
+  const mwBox = await mw.boundingBox();
+  assert.ok(mwBox && mwBox.width <= 390, "maturity card fits the iPhone width");
   const card = page.locator('[data-hpd-smoke="home-countdown"]');
   await card.waitFor({ timeout: 10000 });
   const rows = await card.locator('[data-hpd-smoke="home-countdown-row"]').allInnerTexts();

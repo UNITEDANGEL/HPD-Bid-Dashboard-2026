@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, finishMonth, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityWeek, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
@@ -198,6 +198,27 @@ export default function HomeScreen() {
           </span>
         </div>
       ) : null}
+
+      {(() => {
+        // 💵 Maturity this week (plan item 35): jobs whose maturity date is today or in the next 7 days, closest first.
+        const mw = maturityWeek(countdown);
+        if (!mw.length) return null;
+        return (
+          <div className="home-card" data-hpd-smoke="home-maturity-week">
+            <span className="home-icon">💵</span>
+            <span className="home-text">
+              <strong>Maturity this week</strong>
+              <b className="home-big">{mw.length} job{mw.length === 1 ? "" : "s"} to finish and send by {finishByText(mw[mw.length - 1].due, today).split(" (")[0]}</b>
+              {mw.map((c) => (
+                <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} data-hpd-smoke="home-maturity-week-row" data-days={c.days} style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: c.days <= 1 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontSize: 17, fontWeight: 800, textDecoration: "none" }}>
+                  {c.omo}: {finishByText(c.due, today)} <span aria-hidden>→</span>
+                </a>
+              ))}
+              <small>Maturity = HPD&apos;s finish date. Tap a job to open it.</small>
+            </span>
+          </div>
+        );
+      })()}
 
       {countdown.length ? (
         <div className="home-card" data-hpd-smoke="home-countdown">

@@ -527,14 +527,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-22-a",
+    "id": "2026-11-24-a",
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-maturity-week",
-        "icon": "💵",
-        "title": "Maturity this week",
-        "why": "A Home card lists the jobs whose maturity date comes in the next 7 days, closest first, so you know which ones to finish and send first."
+        "id": "plan-work-done-send",
+        "icon": "🏁",
+        "title": "Work done, send it",
+        "why": "A Home card lists the jobs where the work is marked done but the paperwork isn't sent to HPD yet, oldest first, so nothing finished sits waiting."
+      },
+      {
+        "id": "plan-maturity-money",
+        "icon": "💲",
+        "title": "Money in this week's maturity",
+        "why": "The Maturity this week card shows each job's award amount and the total, so you see how much money is riding on this week."
+      },
+      {
+        "id": "plan-maturity-route",
+        "icon": "🗺",
+        "title": "Route for this week's maturity",
+        "why": "A button on the Maturity this week card opens Plan my day with just those jobs, closest date first."
       }
     ]
   }

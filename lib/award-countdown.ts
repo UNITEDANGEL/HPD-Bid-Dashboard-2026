@@ -105,3 +105,10 @@ export function finishStopLabel(days: number): string {
   if (days === 0) return "Due today (HPD finish date)";
   return `Due in ${days} day${days === 1 ? "" : "s"} (HPD finish date)`;
 }
+
+// 💵 Maturity this week (plan item 35, 23 Nov): the open awarded jobs whose maturity date (HPD's finish date)
+// is today or in the next 7 days, closest first, so the owner knows which to finish and send first. Late ones stay
+// on the ⏳ card.
+export function maturityWeek(list: Countdown[]): Countdown[] {
+  return list.filter((c) => c.days >= 0 && c.days <= 7).sort((x, y) => x.days - y.days || x.omo.localeCompare(y.omo));
+}
