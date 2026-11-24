@@ -77,19 +77,32 @@ export default function WorkerPage() {
         {job.photos.length ? <>
           <h2>📸 Photos to take ({left} left)</h2>
           <p style={{ opacity: 0.7, marginTop: 0 }}>Same spot before and after, lights on.</p>
-          {job.photos.map((p) => (
-            <label key={p} style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 0" }}>
-              <input type="checkbox" style={{ width: 28, height: 28 }} checked={!!done[p]} onChange={(e) => save({ ...done, [p]: e.target.checked }, finished)} data-hpd-smoke="worker-photo" /> {p}
-              <span style={{ marginLeft: "auto", padding: "8px 12px", borderRadius: 10, background: "#0a84ff", color: "#fff", fontWeight: 700 }}>📷 {files[p]?.length ? `${files[p].length} added` : "Add"}
-                <input type="file" accept="image/*" multiple hidden data-hpd-smoke="worker-photo-file" onChange={(e) => { const fl = Array.from(e.target.files || []); e.target.value = ""; void (async () => { const good: File[] = []; const bad: string[] = []; for (const f of fl) { const v = await judgePhoto(f); if (v.ok) good.push(f); else bad.push(v.reason || "Not clear."); } if (good.length) { setFiles((o) => ({ ...o, [p]: [...(o[p] || []), ...good] })); save({ ...done, [p]: true }, finished); } setMsg(bad.length ? `📷 ${p}: ${bad[0]}${bad.length > 1 ? ` (${bad.length} photos need a retake)` : ""}` : good.length ? `✓ ${p}: ${good.length} photo(s) look good.` : ""); })(); }} />
-              </span>
-            </label>
-          ))}</> : null}
+          {job.photos.map((p) => {
+            // 👷 Owner, 24 Nov: "the worker should be able to take pics and update the job card": a big 📷 Take button opens
+            // the camera; 🖼 From photos picks ones already taken. Named "<job>-Before-…" so they land on the right job card.
+            const add = (e: React.ChangeEvent<HTMLInputElement>) => { const fl = Array.from(e.target.files || []); e.target.value = ""; void (async () => { const good: File[] = []; const bad: string[] = []; for (const f of fl) { const v = await judgePhoto(f); if (v.ok) good.push(f); else bad.push(v.reason || "Not clear."); } if (good.length) { setFiles((o) => ({ ...o, [p]: [...(o[p] || []), ...good] })); save({ ...done, [p]: true }, finished); } setMsg(bad.length ? `📷 ${p}: ${bad[0]}${bad.length > 1 ? ` (${bad.length} photos need a retake)` : ""}` : good.length ? `✓ ${p}: ${good.length} photo(s) look good.` : ""); })(); };
+            return (
+              <div key={p} style={{ padding: "10px 0", borderBottom: "1px solid rgba(128,128,128,.25)" }} data-hpd-smoke="worker-photo-row">
+                <label style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  <input type="checkbox" style={{ width: 28, height: 28 }} checked={!!done[p]} onChange={(e) => save({ ...done, [p]: e.target.checked }, finished)} data-hpd-smoke="worker-photo" /> {p}{files[p]?.length ? <span style={{ marginLeft: "auto", fontWeight: 700, color: "#30a14e" }}>✓ {files[p].length} added</span> : null}
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginTop: 8 }}>
+                  <label style={{ ...big, marginTop: 0, padding: "14px 8px", fontSize: 19 }} data-hpd-smoke="worker-photo-take">📷 Take {/after/i.test(p) ? "after" : /before/i.test(p) ? "before" : ""} photo
+                    <input type="file" accept="image/*" capture="environment" multiple hidden data-hpd-smoke="worker-photo-file" onChange={add} />
+                  </label>
+                  <label style={{ ...big, marginTop: 0, padding: "14px 8px", fontSize: 17, background: "#3a3a3c" }}>🖼 From photos
+                    <input type="file" accept="image/*" multiple hidden data-hpd-smoke="worker-photo-lib" onChange={add} />
+                  </label>
+                </div>
+              </div>
+            );
+          })}</> : null}
         {Object.values(files).some((a) => a.length) ? <button type="button" style={{ ...big, background: "#25d366" }} data-hpd-smoke="worker-send-photos" onClick={async () => {
           const all = Object.entries(files).flatMap(([label, a]) => a.map((f, i) => new File([f], `${job.id}-${label.replace(/[^A-Za-z0-9]+/g, "-")}-${i + 1}.jpg`, { type: f.type || "image/jpeg" })));
           const nav = navigator as Navigator & { share?: (d: { files?: File[]; text?: string }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
           try { if (nav.share && (!nav.canShare || nav.canShare({ files: all }))) { await nav.share({ files: all, text: `HPD job ${job.id}: ${all.length} photo(s)` }); setMsg("Photos sent."); } else setMsg("This phone can't send photos from here: open the link in Safari or Chrome."); } catch { setMsg("Not sent."); }
         }}>📤 Send {Object.values(files).reduce((n, a) => n + a.length, 0)} photo(s) to your boss (WhatsApp)</button> : null}
+        {Object.values(files).some((a) => a.length) ? <p style={{ fontSize: 16, opacity: 0.75, margin: "6px 0 0" }} data-hpd-smoke="worker-photos-go">They go on job {job.id}&apos;s card when your boss taps 📥 Photos from your worker.</p> : null}
         <button type="button" style={{ ...big, background: finished ? "#6e6e73" : "#ff9f0a" }} data-hpd-smoke="worker-done" onClick={async () => {
           const f = !finished; save(done, f);
           if (!f) return;

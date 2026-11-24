@@ -70,6 +70,16 @@ try {
       assert.ok(shared.names.every((n) => /^EQ15239-HPD-page-\d\.jpg$/.test(n)), shared.names.join(","));
       assert.match(shared.text, /show them to the tenant/);
       console.log(`HPD pages shared: ${shared.names.join(", ")}`);
+      // 24 Nov (owner: "fix send to worker, he should be able to see the actual pdf work description and the 2nd page"):
+      // once the pages are ready, 👷 Send to a worker sends the job and HPD's pages together in one share.
+      assert.match(await page.locator('[data-hpd-smoke="jc-crew-send"]').innerText(), /Send to a worker \+ HPD's \d page/);
+      await page.evaluate(() => { window.__shared = null; });
+      await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
+      await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
+      const both = await page.evaluate(() => ({ names: (window.__shared.files || []).map((f) => f.name), text: window.__shared.text }));
+      assert.equal(both.names.length, Number(ready), "HPD's pages go with the job");
+      assert.match(both.text, /\/worker\/#o=EQ15239/);
+      assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /the job \+ HPD's \d pages? \(work description and tenant page\)/);
     }
   }
   // Untick the tenant: left out.

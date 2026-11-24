@@ -28,6 +28,12 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="worker-call-tenant"]').getAttribute("href"), "tel:7185550100");
   await page.locator('[data-hpd-smoke="worker-photo"]').first().check();
   await page.locator('[data-hpd-smoke="worker-photo-file"]').nth(1).setInputFiles({ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") });
+  // 24 Nov (owner: "worker should be able to take pics and update the job card"): a big 📷 Take button per spot opens
+  // the camera; the page says the photos go on the job card.
+  assert.equal(await page.locator('[data-hpd-smoke="worker-photo-take"]').count(), await page.locator('[data-hpd-smoke="worker-photo"]').count());
+  assert.equal(await page.locator('[data-hpd-smoke="worker-photo-file"]').first().getAttribute("capture"), "environment");
+  { const r = await page.locator('[data-hpd-smoke="worker-photo-take"]').first().boundingBox(); assert.ok(r && r.height >= 44 && r.x + r.width <= 390, "big enough and fits the phone"); }
+  assert.match(await page.locator('[data-hpd-smoke="worker-photos-go"]').innerText(), /go on job EQ15239's card/);
   await page.locator('[data-hpd-smoke="worker-send-photos"]').click();
   await page.waitForFunction(() => window.__shared && window.__shared.files, null, { timeout: 5000 });
   assert.equal(await page.evaluate(() => window.__shared.files.length), 1);

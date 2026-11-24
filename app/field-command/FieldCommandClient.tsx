@@ -2864,10 +2864,10 @@ export default function FieldCommandClient() {
   // page and the second page with the contact number"): the invitation's page 2 (contact) and its description page, drawn
   // on this phone (signed in) and handed to the share sheet as pictures. Nothing goes on the public site.
   const [hpdPages, setHpdPages] = useState<{ id: string; files: File[] } | { id: string; busy: true } | null>(null);
-  async function readyHpdPages(job: JobRecord) {
+  async function readyHpdPages(job: JobRecord, quiet = false) {
     const id = jobId(job);
     const fileName = itbFileName(job);
-    if (!fileName) { setCrewMsg("This job has no HPD invitation PDF."); return; }
+    if (!fileName) { if (!quiet) setCrewMsg("This job has no HPD invitation PDF."); return; }
     setHpdPages({ id, busy: true });
     try {
       if (!itbManifestRef.current) itbManifestRef.current = (await (await fetch("/data/itb_source_manifest.json")).json()).entries || {};
@@ -2880,12 +2880,25 @@ export default function FieldCommandClient() {
       if (!pics.length) pics = await pagePictures(pdf, [1]);
       if (!pics.length) throw new Error("no pages");
       setHpdPages({ id, files: pics.map((p) => new File([p.blob], `${id}-HPD-page-${p.page}.jpg`, { type: "image/jpeg" })) });
-      setCrewMsg(`${pics.length} HPD page${pics.length === 1 ? "" : "s"} ready: tap Send.`);
+      if (!quiet) setCrewMsg(`${pics.length} HPD page${pics.length === 1 ? "" : "s"} ready: tap Send.`);
     } catch {
       setHpdPages(null);
-      setCrewMsg("Couldn't open HPD's PDF on this phone: sign in with Google in the app first, then try again.");
+      if (!quiet) setCrewMsg("Couldn't open HPD's PDF on this phone: sign in with Google in the app first, then try again.");
     }
   }
+  // 👷 Owner, 24 Nov: "fix send to worker, he should be able to see the actual pdf work description and the 2nd page
+  // which contains tenant info": HPD's pages are drawn quietly once the job card has been open a moment (kept on the
+  // phone after the first time), so 👷 Send to a worker hands them over with the job in one share.
+  const hpdPagesIdRef = useRef("");
+  hpdPagesIdRef.current = hpdPages?.id || "";
+  const selectedJobId = selectedJob ? jobId(selectedJob) : "";
+  useEffect(() => {
+    const job = selectedJob;
+    if (!job || !itbFileName(job) || isTestJob(jobId(job))) return;
+    const t = window.setTimeout(() => { if (hpdPagesIdRef.current !== jobId(job)) void readyHpdPages(job, true); }, 1500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedJobId]);
   async function openItbPage(job: JobRecord) {
     const fileName = itbFileName(job);
     if (!fileName) return;
@@ -9518,10 +9531,13 @@ export default function FieldCommandClient() {
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
                       const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due ? finishByText(due, nyToday()) : undefined, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
                       const text = crewText(crewJob, workerLink(window.location.origin, crewJob));
-                      const nav = navigator as Navigator & { share?: (d: { title: string; text: string }) => Promise<void> };
-                      if (nav.share) { try { await nav.share({ title: `HPD job ${id}`, text }); setCrewMsg("Sent to your worker's app."); } catch { /* closed the share sheet */ } }
+                      const nav = navigator as Navigator & { share?: (d: { title: string; text: string; files?: File[] }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
+                      // HPD's pages (work description + page 2 with the tenant's contact) go with the job when they're ready.
+                      const pages = hpdPages && hpdPages.id === id && "files" in hpdPages ? hpdPages.files : null;
+                      const withPages = Boolean(pages && nav.share && (!nav.canShare || nav.canShare({ files: pages })));
+                      if (nav.share) { try { await nav.share(withPages && pages ? { title: `HPD job ${id}`, text, files: pages } : { title: `HPD job ${id}`, text }); setCrewMsg(withPages && pages ? `Sent to your worker: the job + HPD's ${pages.length} page${pages.length === 1 ? "" : "s"} (work description and tenant page).` : "Sent to your worker's app."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
-                    }}>👷 Send to a worker</button>
+                    }}>{(() => { const hp = hpdPages && hpdPages.id === id ? hpdPages : null; return hp && "files" in hp ? `👷 Send to a worker + HPD's ${hp.files.length} page${hp.files.length === 1 ? "" : "s"}` : "👷 Send to a worker"; })()}</button>
                     <button type="button" className="jc-email" data-hpd-smoke="jc-crew-whatsapp" onClick={() => {
                       const t = tenantInfo(selectedJob);
                       let contact = null;
