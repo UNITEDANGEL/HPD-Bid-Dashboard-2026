@@ -51,6 +51,8 @@ try {
   await idea.first().locator('[data-hpd-smoke="fc-idea-skip"]').click();
   const left = await idea.evaluateAll((els) => els.map((e) => e.getAttribute("data-id")));
   assert.ok(id1 !== id2 && !left.includes(id1) && !left.includes(id2), "the picked and the skipped one leave the list");
+  // 👍 Ideas you picked (owner, 24 Nov: "I click them they don't appear"): the picked idea shows above the list.
+  await page.waitForFunction((t) => (document.querySelector('[data-hpd-smoke="fc-ideas-picked"]')?.textContent || "").includes(t), firstTitle, { timeout: 15000 });
   // 2) Keep upgrading.
   await page.locator('[data-hpd-smoke="fc-auto-upgrade"]').click();
   assert.equal(await page.locator('[data-hpd-smoke="fc-auto-upgrade"]').getAttribute("aria-pressed"), "true");

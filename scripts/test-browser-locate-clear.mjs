@@ -70,7 +70,7 @@ try {
         const zoom = [...document.querySelectorAll(".fc-map-zoom button")].filter((e) => box(e).width > 0);
         return { n: zoom.length, out: zoom.flatMap((z) => col.filter((c) => hit(box(z), box(c))).map((c) => `${z.getAttribute("aria-label")} on ${(c.getAttribute("aria-label") || "").slice(0, 12)}`)) };
       });
-      assert.equal(clash.n, 2, "+ and − on the map");
+      assert.equal(clash.n, 0, "no + / − buttons on the map (owner, 24 Nov: pinch to zoom)");
       assert.deepEqual(clash.out, [], `${viewport.width}px [${extra || "plain"}]: ${clash.out.join("; ")}`);
     }
     assert.deepEqual(errors, []);

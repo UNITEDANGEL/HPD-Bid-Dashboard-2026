@@ -3795,6 +3795,10 @@ export default function FieldCommandClient() {
         if (!inStatus(job, status)) return false;
         if (!matchesAwardLookback(job, daysBack)) return false;
         if (!anyDate && !matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
+      } else if (!isTheTestJob && dateRange.field !== "award" && !anyDate && !matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) {
+        // 24 Nov (owner: "I selected maturity 7 days why 2nd try is open also"): a Maturity / Start / Finish window you
+        // pick yourself keeps only those jobs; a due 2nd try or appointment outside it no longer shows.
+        return false;
       }
       if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
       if (q) {
@@ -4188,6 +4192,7 @@ export default function FieldCommandClient() {
         if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
         const isTheTestJob = jobId(job) === TEST_JOB_ID;
         if (!dueOnMap(job) && !isTheTestJob && (!inStatus(job, status) || !matchesJobDateRange(job, dateRange.field, b.from, b.to))) return false;
+        if (dueOnMap(job) && !isTheTestJob && dateRange.field !== "award" && !matchesJobDateRange(job, dateRange.field, b.from, b.to)) return false;
         if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
         return !q || [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase().includes(q);
       }).length;
@@ -4282,7 +4287,7 @@ export default function FieldCommandClient() {
           try { localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); } catch {}
         });
         // Big + / - buttons on the map (owner 14 Nov: "I want to zoom in and out").
-        { const Zoom = L.Control.extend({ onAdd: () => { const box = L.DomUtil.create("div", "fc-map-zoom"); box.innerHTML = '<button type="button" aria-label="Zoom in" data-hpd-smoke="fc-zoom-in">+</button><button type="button" aria-label="Zoom out" data-hpd-smoke="fc-zoom-out">−</button>'; L.DomEvent.disableClickPropagation(box); const [zi, zo] = Array.from(box.querySelectorAll("button")) as HTMLButtonElement[]; zi.addEventListener("click", () => map.zoomIn(1)); zo.addEventListener("click", () => map.zoomOut(1)); /* 23 Nov (owner: "Plus and minus button overlap the locate me icon"): the Map / Locate column moves down when the top bar opens, so + / − always sit 12 px under it instead of at a fixed height. */ let seen = false; const place = () => { if (!box.isConnected) { if (seen) window.clearInterval(tick); return; } seen = true; const col = map.getContainer().closest(".fc-app")?.querySelector(".fc-map-controls") as HTMLElement | null; const r = col?.getBoundingClientRect(); const top = box.parentElement?.getBoundingClientRect().top ?? 0; const v = r && r.height > 0 ? `${Math.max(12, Math.round(r.bottom - top + 12))}px` : ""; if (box.style.marginTop !== v) box.style.marginTop = v; }; const tick = window.setInterval(place, 400); window.setTimeout(place, 0); return box; } }); new Zoom({ position: "topright" }).addTo(map); }
+        /* 24 Nov (owner: "Fix + and - button overlap job card I don't need them I can pinch and zoom"): no + / − zoom buttons on the map; pinch to zoom. */
         mapRef.current = map;
         setRouteMapReady(true);
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
@@ -8830,6 +8835,25 @@ export default function FieldCommandClient() {
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
               </header>
               {(() => {
+                // 📅 All the dates up top (owner, 24 Nov: "I need to see all dates on job card award start complete"):
+                // award, start (actual, else contract) and complete (work done, else HPD complete-by), big and clear.
+                const award = value(selectedJob, ["AwardDate", "awardDate"]);
+                const workStart = value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]);
+                const workDone = value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]);
+                const rows: [string, string, string, string][] = [
+                  ["🏆", "Award", String(award || ""), ""],
+                  ["🔨", workStart ? "Work started" : "Start", String(workStart || jobDate(selectedJob, "start") || ""), workStart ? "" : "contract"],
+                  ["🏁", workDone ? "Work done" : "Complete by", String(workDone || maturityDate(selectedJob) || ""), workDone ? "" : "HPD"],
+                ];
+                return (
+                  <div className="jc-date-strip" data-hpd-smoke="jc-date-strip" role="group" aria-label="Job dates">
+                    {rows.map(([icon, label, day, hint]) => (
+                      <div key={label}><span>{icon} {label}</span><b>{(/^(\d{4})-(\d{2})-(\d{2})/.exec(day) || []).length ? day.replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, (_m, y, mo, d) => `${mo}/${d}/${y.slice(2)}`) : day || "—"}</b>{hint ? <small>{hint}</small> : null}</div>
+                    ))}
+                  </div>
+                );
+              })()}
+              {(() => {
                 const f = line2List.find((x) => x.omo === id);
                 return f ? (
                   <div className="jc-line2" data-hpd-smoke="jc-line2">
@@ -9775,8 +9799,8 @@ export default function FieldCommandClient() {
                 }}>{armedTap === `revisit:${jobId(selectedJob)}` ? "✅ Tap again: approve return visit" : "Approve return visit"}</button>}
               </div>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
-              <details className="jc-dates">
-                <summary>Job dates</summary>
+              <details className="jc-dates" open>
+                <summary>All job dates</summary>
                 <dl>
                   <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
                   <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
@@ -10016,6 +10040,24 @@ export default function FieldCommandClient() {
             <section className="fc-ideas" data-hpd-smoke="fc-ideas">
               <h4>💡 Ideas from Claude</h4>
               <p className="fc-follow-note">Tap 👍 and Claude builds it. Or tell the chat “do idea 2”.</p>
+              {(() => {
+                // 👍 Ideas you picked (owner, 24 Nov: "ideas are not in the what's new, I click them they don't appear"): a tapped
+                // idea left the list with nothing to show for it. Now each one stays here with where Claude is on it.
+                const sent = (changeThreads || []).filter((t) => t.text.startsWith("(idea) ") && !t.text.startsWith("(idea) Give me more")).sort((a, b) => b.at.localeCompare(a.at));
+                const sentTitles = new Set(sent.map((t) => t.text.slice(7).split(":")[0].trim()));
+                const waiting = (ideas || []).filter((x) => (ideasPicked[x.id] || "").startsWith("do") && !sentTitles.has(withEdit(x).title));
+                if (!sent.length && !waiting.length) return null;
+                const label = (t: ChangeThread) => (t.status === "Done" ? "✅ Done: live" : t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? "🔧 Claude is building it" : t.status === "Waiting for you" ? "💬 Waiting for you" : "📨 Sent, in line");
+                return (
+                  <div className="fc-ideas-picked" data-hpd-smoke="fc-ideas-picked">
+                    <b>👍 Ideas you picked ({sent.length + waiting.length})</b>
+                    <ul>
+                      {waiting.map((x0) => { const x = withEdit(x0); return <li key={x.id}><span>{x.icon} {x.title}</span><small>📨 Sent, in line</small></li>; })}
+                      {sent.slice(0, 8).map((t) => <li key={t.id}><span>💡 {t.text.slice(7).split(":")[0].slice(0, 80)}</span><small>{label(t)}</small></li>)}
+                    </ul>
+                  </div>
+                );
+              })()}
               {ideas === null ? <p className="fc-follow-note">Loading ideas…</p> : !openIdeas().length ? <p className="fc-follow-note">You picked them all. Ask for more below.</p> : (
                 <ol className="fc-idea-list">
                   {openIdeas().slice(0, ideasAll ? 60 : 6).map((x0) => { const x = withEdit(x0); return (

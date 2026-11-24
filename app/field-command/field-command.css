@@ -5238,3 +5238,18 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-notice-tray { bottom: calc(var(--fc-dock-total, 78px) + 14px + var(--fc-chooser-h, 64px)) !important; }
 /* ...and the same width as the black bar, left of the round map buttons, so + / − / Locate stay tappable. */
 @media (orientation: portrait), (min-height: 541px) { .fc-notice-tray { right: calc(78px + env(safe-area-inset-right)); left: 8px; margin: 0; max-width: none; } }
+/* 24 Nov (owner: "make bids jobs etc buttons a bit bigger and better interaction"): bigger bottom buttons and labels,
+   and a clear press: the button sinks and lights up under your finger. Short screens (landscape) keep the small size. */
+@media (min-height: 501px) {
+  .fc-app { --fc-dock-h: calc(74px + env(safe-area-inset-bottom, 0px)); --fc-dock-total: calc(var(--fc-dock-h) + 74px); }
+  .fc-dock-btn svg, .fc-dock-chip:not(.fc-version-chip) svg { width: 24px !important; height: 24px !important; padding: 10px; }
+  .fc-dock .fc-dock-btn .fc-fab-label, .fc-dock-strip .fc-dock-chip:not(.fc-version-chip) .fc-fab-label { font-size: 13px !important; line-height: 17px !important; padding: 0 7px !important; }
+  .fc-dock .fc-ai-orb.fc-dock-ai .fc-fab-label { font-size: 13px !important; line-height: 17px !important; }
+}
+.fc-dock-btn:active svg, .fc-dock-chip:not(.fc-version-chip):active svg { filter: brightness(1.25); box-shadow: 0 0 0 5px color-mix(in srgb, var(--b, #334155) 55%, transparent), 0 0 16px color-mix(in srgb, var(--b, #334155) 80%, transparent); }
+/* 👍 Ideas you picked, in What's new (owner, 24 Nov). */
+.fc-ideas-picked { margin: 8px 0 10px; padding: 10px 12px; border-radius: 14px; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.4); }
+.fc-ideas-picked > b { font-size: 16px; }
+.fc-ideas-picked ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.fc-ideas-picked li { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; }
+.fc-ideas-picked li small { font-size: 13px; opacity: 0.85; white-space: nowrap; }

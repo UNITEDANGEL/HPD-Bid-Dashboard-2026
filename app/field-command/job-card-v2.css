@@ -1166,3 +1166,40 @@
 /* Layout sweep (9 Nov): "✉️ Email Lewis about this job" and "👷 Send to a worker" had near-white words on their light
    button (a global button colour won); dark blue again. */
 #fc-job-card .jc-email, .jc-email { color: #1e3a8a !important; font-weight: 800 !important; }
+
+/* 📅 Dates strip at the top of the job card (owner, 24 Nov: "I need to see all dates on job card award start complete"). */
+#fc-job-card .jc-date-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+#fc-job-card .jc-date-strip > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  background: var(--jc-card);
+  border: 1px solid var(--jc-card-line);
+  text-align: center;
+  min-width: 0;
+}
+
+#fc-job-card .jc-date-strip span {
+  font-size: 14px;
+  color: var(--jc-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#fc-job-card .jc-date-strip b {
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+#fc-job-card .jc-date-strip small {
+  font-size: 12px;
+  color: var(--jc-muted);
+}

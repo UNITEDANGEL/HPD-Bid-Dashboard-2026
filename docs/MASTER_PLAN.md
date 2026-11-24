@@ -12,6 +12,17 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📅 24 Nov: job card dates, Maturity filter, bigger buttons, picked ideas (owner: "I need to see all dates on job card award start complete"; "I selected maturity 7 days why 2nd try is open also"; "make bids jobs etc buttons a bit bigger and better interaction ... ideas are not in the what's new, I click them they don't appear")
+
+1. ✅ **Dates at the top of the job card**: Award · Start (work started, else contract) · Complete (work done, else HPD complete-by), one mm/dd/yy style; the full date list is open. Test: job-dates.
+2. ✅ **Maturity / Start / Finish window is strict**: a due 2nd try or appointment outside the window you picked no longer shows (award windows keep showing due ones).
+3. ✅ **Bigger bottom buttons**: icons 24 px, labels 13 px, dock 74 px; a press lights the button up.
+4. ✅ **👍 Ideas you picked** in What's new, with where Claude is on each (sent / building / done). Test: ideas. 5 new AI ideas added.
+
+## 🔍 24 Nov: no + / − buttons on the map (owner: "Fix + and - button over lap job card I don't need them I can pinch and zoom fix now")
+
+1. ✅ The map's + / − zoom buttons are removed (they covered the job card); pinch to zoom. Test: map-zoom checks there are no zoom buttons and pinch zoom is on; locate-clear expects none.
+
 ## 📱 23 Nov: Dashboard words fit on a phone (owner: "when it gets smaller, half of the words are not showing")
 
 1. ✅ **Live Bids as cards on a phone**: the Dashboard (Overview) Live Bids table was 940 px wide, so on a phone Borough, Status,

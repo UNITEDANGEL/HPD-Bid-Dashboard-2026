@@ -3,8 +3,13 @@
   "versions": [
     {
       "date": "Nov 24, 2026",
-      "title": "Notices bars no longer overlap",
+      "title": "Dates on the job card, bigger buttons",
       "items": [
+        "📅 The job card shows its dates at the top: Award, Start and Complete (the work-done date once it's in, else the HPD complete-by date). The full date list below is open.",
+        "⏳ Picking Maturity (or Start / Finish) 7 days now shows only jobs in those 7 days: due 2nd tries outside it no longer show.",
+        "👆 The bottom buttons (Bids, Jobs, Notices…) are bigger with bigger words, and light up when you press them.",
+        "👍 Ideas you tap now stay in What's new under \"Ideas you picked\", with where Claude is on each one. 5 new ideas to make the AI smarter.",
+        "🔍 The + and − zoom buttons are gone from the map, so they no longer cover the job card. Pinch with two fingers to zoom.",
         "⏱ The red notices bar (with Show) now sits above the black 24 / 72 h bar instead of covering it."
       ]
     },

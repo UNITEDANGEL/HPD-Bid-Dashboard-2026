@@ -1,6 +1,6 @@
 {
   "note": "Claude's next upgrade ideas, shown in the app (🤖 Claude > 💡 Ideas, or ask the chat \"give me ideas\"). 👍 Do it turns one into a request. Claude keeps this list fresh: take out what was built, add new ones. Plain words, no tenant data. \"plan\" = the next items of docs/MASTER_PLAN.md: the app asks the owner \"✅ Do all\" and sends them as one request (\"(plan) Do all, in order ...\"); when they are live, put the next plan items here with a new id.",
-  "updated": "2026-11-22",
+  "updated": "2026-11-24",
   "ideas": [
     {
       "id": "helper-call-tenant",
@@ -524,6 +524,41 @@
       "kind": "new",
       "title": "HPD's pages with the job message",
       "why": "Send to a worker sends the text and HPD's description pages together in one share, so it's one tap instead of two."
+    },
+    {
+      "id": "ai-remembers-you",
+      "icon": "🧠",
+      "kind": "upgrade",
+      "title": "The AI remembers how you work",
+      "why": "It learns your usual prices, workers and the order you like jobs in, so its answers fit you without you explaining again."
+    },
+    {
+      "id": "ai-morning-call",
+      "icon": "☀️",
+      "kind": "new",
+      "title": "AI tells you the day out loud",
+      "why": "At 7 AM tap once: it reads what is due today, the first job, the notices and the bids closing, in under a minute."
+    },
+    {
+      "id": "ai-photo-check",
+      "icon": "📸",
+      "kind": "upgrade",
+      "title": "AI checks photos before you leave",
+      "why": "It looks at the before / after photos on site and says if one is blurry, dark or missing, so HPD does not reject the package."
+    },
+    {
+      "id": "ai-hpd-email-to-task",
+      "icon": "📨",
+      "kind": "new",
+      "title": "HPD email becomes a to-do",
+      "why": "When HPD writes, the AI puts what they want on that job card as a task with the due date, and reminds you."
+    },
+    {
+      "id": "ai-ask-anything-job",
+      "icon": "🔎",
+      "kind": "upgrade",
+      "title": "Ask the AI anything about a job",
+      "why": "\"When did I send ER03395?\" or \"Is 73 Eastern Pkwy paid?\" gets one clear answer from your own records."
     }
   ],
   "plan": {

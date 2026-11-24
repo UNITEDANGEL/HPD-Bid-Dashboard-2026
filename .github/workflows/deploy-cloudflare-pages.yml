@@ -361,6 +361,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/run-browser-tests.mjs --jobs 3 \
             scripts/test-browser-paperwork.mjs \
             scripts/test-browser-map-zoom.mjs \
+            scripts/test-browser-job-dates.mjs \
             scripts/test-browser-notice-clock.mjs \
             scripts/test-browser-jobs-count-load.mjs \
             scripts/test-browser-week-ahead.mjs \
