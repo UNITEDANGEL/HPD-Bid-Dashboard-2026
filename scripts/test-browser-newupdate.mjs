@@ -36,6 +36,15 @@ try {
     assert.equal(await p.locator('[data-hpd-smoke="fc-magic-backdrop"]').count(), 1, "sparkle backdrop");
     const mid = await card.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: window.innerHeight, left: r.left, right: r.right, w: window.innerWidth }; });
     assert.ok(mid.top > 0 && mid.bottom < mid.h && mid.left >= 0 && mid.right <= mid.w, `popup fully on screen: ${JSON.stringify(mid)}`);
+    // Nothing on top of it (24 Nov: the red notices bar and the black 24 / 72 h bar covered it): put both bars on the page
+    // and tap-test points across the popup.
+    const covered = await card.evaluate((el) => {
+      const bars = ["fc-notice-tray", "fc-notice-chooser"].map((k) => { const d = document.createElement("div"); d.className = k; d.style.cssText = "top:0;bottom:0;left:0;right:0;height:100vh"; document.querySelector(".fc-app")?.appendChild(d); return d; });
+      const r = el.getBoundingClientRect(); const bad = [];
+      for (const fy of [0.2, 0.5, 0.8]) for (const fx of [0.2, 0.5, 0.8]) { const x = r.left + r.width * fx, y = r.top + r.height * fy; const hit = document.elementFromPoint(x, y); if (!el.contains(hit)) bad.push(`${Math.round(x)},${Math.round(y)}: ${hit?.className}`); }
+      bars.forEach((d) => d.remove()); return bad;
+    });
+    assert.deepEqual(covered, [], "the New update popup sits over the notices bars");
     if (shots) await p.screenshot({ path: `${shots}/newupdate.png` });
     await card.locator('[data-hpd-smoke="fc-newupdate-ok"]').click();
     assert.equal(await card.count(), 0);

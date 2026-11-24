@@ -41,7 +41,8 @@ export async function runCheckup(fetchFn = fetch) {
   return { at: new Date().toISOString(), ok, line, broken, slow, errorCount, errors };
 }
 
-if (process.argv[1] && process.argv[1].endsWith("weekly-checkup.mjs")) {
+// Only when run itself: test-weekly-checkup.mjs also ends in "weekly-checkup.mjs", and it ran the real check-up and saved it (24 Nov).
+if (process.argv[1] && /(^|[\\/])weekly-checkup\.mjs$/.test(process.argv[1])) {
   const res = await runCheckup();
   console.log(res.line);
   for (const b of res.broken) console.log(`  not opening: ${b}`);

@@ -59,6 +59,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 2. ✅ **+ / − under Locate** (owner: "Plus and minus button overlap the locate me icon fix"): + / − were at a fixed 234 px, but on an iPhone
    the notch pushes the Map / Locate column down about 59 px, onto them. + / − now measure the column and sit 12 px under it in every
    map state. Test: test-browser-locate-clear.mjs checks 7 map states, one with a 59 px notch.
+## ✓ 24 Nov: New update popup over the notices bars (owner: "new upgrade live is overlapping notices")
+
+1. ✓ The ✨ New update popup (and its backdrop) now sit above the red notices bar and the black 24 / 72 h bar. Test: newupdate checks nothing covers the popup.
+
 ## ✓ 24 Nov: red notices bar no longer covers the black 24 / 72 h bar (owner: "26 notices red with show over lap 24/72 in black, look at screen and fix it")
 
 1. ✓ The red "⏱ … notices · Show" bar now sits right above the black "⏱ 24 / 72 h" bar (its height is measured, so bigger text or a narrow phone still fits). Test: notice-clock checks they never overlap.

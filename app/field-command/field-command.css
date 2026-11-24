@@ -5287,3 +5287,7 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 .fc-leave-actions { display: grid; gap: 8px; }
 .fc-leave-actions button { min-height: 50px; border-radius: 14px; border: 1px solid #a8a29e; background: #292524; color: #fff; font: 800 17px system-ui; }
 .fc-leave-actions button.is-go { background: #16a34a; border-color: #22c55e; }
+/* ✨ 24 Nov (owner: "new upgrade live is overlapping notices"): the New update popup and its backdrop go over the red notices
+   bar (3100) and the black 24 / 72 h bar (3200), not under them. */
+.fc-magic-backdrop { z-index: 3399; }
+.fc-newupdate.is-magic { z-index: 3400; }
