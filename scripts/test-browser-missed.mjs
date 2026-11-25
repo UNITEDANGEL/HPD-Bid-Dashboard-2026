@@ -33,6 +33,8 @@ try {
   assert.match(await card.innerText(), /Play 2 new alerts/);
   if (shots) await page.screenshot({ path: `${shots}/missed.png` });
   // A chat nudge (a bid due soon, by the clock) may sit on top: close it first.
+  // The ✨ New update popup may sit on top too: close it first.
+  await page.locator('[data-hpd-smoke="fc-newupdate-ok"]').click({ timeout: 4000 }).catch(() => {});
   while (await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').count()) await page.locator('[data-hpd-smoke="fc-chat-nudge-close"]').first().click();
   await card.locator('[data-hpd-smoke="fc-missed-play"]').click();
   await page.waitForFunction(() => window.__said.some((t) => /new alerts/.test(t)), null, { timeout: 5000 });
