@@ -2,6 +2,16 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 25, 2026",
+      "title": "Worker photos and videos straight to the job card",
+      "items": [
+        "👷 Worker page: a BEFORE part and an AFTER part, each with 📷 Photo, 🎥 Video and 🖼 From phone. Take as many as you need; every one is labeled BEFORE or AFTER.",
+        "📥 What the worker takes goes straight to your job card (no WhatsApp step): send the job to the worker again so the link has the upload pass, then open the job card and the photos and videos come in by themselves, ready for the affidavit package.",
+        "🏷 Every worker photo and video on the job card is stamped: BEFORE / AFTER, OMO, location in the building, address and the date the worker took it; the date is in the file name too.",
+        "☀️ The weather line no longer sits under the Today button."
+      ]
+    },
+    {
       "date": "Nov 24, 2026",
       "title": "Route for this week's maturity",
       "items": [

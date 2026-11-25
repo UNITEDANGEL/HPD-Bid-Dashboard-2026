@@ -12,6 +12,16 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 👷 25 Nov: worker Before / After photos and videos straight to the job card (owner: "the workers should be able to take before and after pictures, send it back to the job card like I would do it from the app"; app requests 20261125101700 "labels for the before and after pictures ... a video button ... multiple before photos, multiple before videos, same as after" and 20261125103241 "send the jobs back to the job card as a package so I can email them when I generate the AFFIDAVIT"; also "fix overlap today and weather")
+
+1. ✓ Worker page: BEFORE and AFTER parts, each with 📷 Photo, 🎥 Video, 🖼 From phone, as many as needed; each thumbnail labeled BEFORE / AFTER (🎥 for videos).
+2. ✓ Upload pass: when the owner opens a job card the app gets a short pass for that job (/api/drive/worker-ticket, ~30 characters, 45 days) and the worker link carries it (k=...). The worker's phone sends each file as soon as it's taken, in 4 MB pieces, to the owner's Drive (HPD Worker Uploads / <job>, named "<job> BEFORE photo 1.jpg"). The pass can only add photos / videos to that one job's folder. Server: server/worker-uploads.mjs; test: scripts/test-worker-uploads.mjs.
+3. ✓ Job card: opening it pulls the worker's new files in by themselves as Before / After work evidence (so they go in the affidavit package with the rest), marks them as on the card in Drive (never twice), and has 🔄 Check for your worker's photos & videos. Test: crew-share.
+4. ✓ Older links (no pass) still work: the WhatsApp button sends them labeled BEFORE / AFTER.
+5. ✓ ☀️ Today button no longer covers the weather line (test: no-overlap, with and without the chat bar).
+7. ✓ Stamp (owner: "omo number, address and location printed on the photo and video as well as before and after; the date in the file name"): each worker photo / video on the job card is stamped BEFORE / AFTER, OMO, LOCATION (where in the building), ADDRESS, DATE (the day the worker took it); the date is in the Drive name and the saved file name (…_PHOTO_20261120.jpg). Checked by eye on a real photo and a real video, and in crew-share.
+6. ☐ Owner: send each job to the worker again once, so the link carries the pass.
+
 ## 💡 24 Nov: Upgrade ideas right under Ask for a change (owner: "Upgrade ideas should be on top after the ask for a change box it's not showing now fix it")
 
 1. ✅ What's new now goes: ✏️ Ask for a change box, then 💡 Upgrade ideas from Claude (with 👍 Ideas you picked), then 💬 Your requests and progress. Before, the ideas were below every past request. Test: ideas (checks the order).

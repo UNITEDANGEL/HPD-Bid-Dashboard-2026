@@ -2,7 +2,7 @@
 // (https://…/worker/#j=…). The # part never goes to any server, so no tenant data is stored on the public site.
 import type { CrewJob } from "./crew-share";
 
-export type WorkerJob = { id: string; address: string; apt?: string; by?: string; work: string[]; photos: string[]; contact?: { name: string; phone: string; note?: string } | null; tenant?: { name?: string; phone?: string } | null; where?: string; full?: string };
+export type WorkerJob = { pass?: string; id: string; address: string; apt?: string; by?: string; work: string[]; photos: string[]; contact?: { name: string; phone: string; note?: string } | null; tenant?: { name?: string; phone?: string } | null; where?: string; full?: string };
 
 export function toWorkerJob(j: CrewJob): WorkerJob {
   return { id: j.id, address: j.address, apt: j.apt, by: j.completeBy, work: j.work.slice(0, 8).map((w) => w.slice(0, 160)), photos: workerPhotos(j), contact: j.contact || null, tenant: j.tenant || null, where: j.where ? j.where.slice(0, 120) : undefined, full: j.full || undefined };
@@ -28,8 +28,10 @@ function unb64(s: string) { const bin = atob(s.replace(/-/g, "+").replace(/_/g, 
 // building contact), e.g. …/worker/#o=ER08795&a=4B&t=Maria&p=7185550100. The worker page reads the address, the work,
 // where it is and HPD's full description from the site's public job list by the job number.
 const digits = (p: string) => String(p || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
-export function workerLink(origin: string, j: CrewJob) {
+// k = the upload pass (25 Nov): the worker's Before / After photos and videos go straight to this job's card.
+export function workerLink(origin: string, j: CrewJob, pass?: string) {
   const q: [string, string][] = [["o", j.id]];
+  if (pass && /^[0-9a-z]{1,6}\.[A-Za-z0-9_-]{22}$/.test(pass)) q.push(["k", pass]);
   if (j.apt) q.push(["a", j.apt.replace(/^apt\.?\s*/i, "")]);
   if (j.tenant?.name) q.push(["t", j.tenant.name.split(/\s+/)[0]]);
   if (j.tenant?.phone) q.push(["p", digits(j.tenant.phone)]);
@@ -38,6 +40,11 @@ export function workerLink(origin: string, j: CrewJob) {
 }
 
 export function readWorkerHash(hash: string): WorkerJob | null {
+  const job = readWorkerJob(hash);
+  const k = new URLSearchParams(String(hash || "").replace(/^#/, "")).get("k") || "";
+  return job && /^[0-9a-z]{1,6}\.[A-Za-z0-9_-]{22}$/.test(k) ? { ...job, pass: k } : job;
+}
+function readWorkerJob(hash: string): WorkerJob | null {
   const short = /^#?o=|[#&]o=/.test(hash || "") ? new URLSearchParams(String(hash).replace(/^#/, "")) : null;
   if (short) {
     const id = (short.get("o") || "").trim().toUpperCase();

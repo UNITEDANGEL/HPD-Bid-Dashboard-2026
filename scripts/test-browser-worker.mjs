@@ -26,25 +26,34 @@ try {
   assert.match(await page.locator('[data-hpd-smoke="worker-where"]').innerText(), /Where: Inside the apartment \(apt 4B\): kitchen/);
   assert.match(await page.locator('[data-hpd-smoke="worker-full"]').innerText(), /REPLACE THE KITCHEN FAUCET\.\nPATCH THE CEILING\./);
   assert.equal(await page.locator('[data-hpd-smoke="worker-call-tenant"]').getAttribute("href"), "tel:7185550100");
-  await page.locator('[data-hpd-smoke="worker-photo"]').first().check();
-  await page.locator('[data-hpd-smoke="worker-photo-file"]').nth(1).setInputFiles({ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") });
-  // 24 Nov (owner: "worker should be able to take pics and update the job card"): a big 📷 Take button per spot opens
-  // the camera; the page says the photos go on the job card.
-  assert.equal(await page.locator('[data-hpd-smoke="worker-photo-take"]').count(), await page.locator('[data-hpd-smoke="worker-photo"]').count());
-  assert.equal(await page.locator('[data-hpd-smoke="worker-photo-file"]').first().getAttribute("capture"), "environment");
-  { const r = await page.locator('[data-hpd-smoke="worker-photo-take"]').first().boundingBox(); assert.ok(r && r.height >= 44 && r.x + r.width <= 390, "big enough and fits the phone"); }
+  // 25 Nov (owner: "labels for the before and after pictures ... a video button ... multiple before photos, multiple before
+  // videos, same as after"): a BEFORE part and an AFTER part, each with 📷 Photo, 🎥 Video and 🖼 From phone; every one is
+  // labeled. This link has no upload pass (an older link): they wait for the WhatsApp button.
+  for (const side of ["before", "after"]) {
+    const sec = page.locator(`[data-hpd-smoke="worker-side-${side}"]`);
+    assert.match(await sec.innerText(), side === "before" ? /BEFORE the work/ : /AFTER the work/);
+    assert.equal(await page.locator(`[data-hpd-smoke="worker-photo-file-${side}"]`).getAttribute("capture"), "environment");
+    assert.equal(await page.locator(`[data-hpd-smoke="worker-video-file-${side}"]`).getAttribute("accept"), "video/*");
+    for (const k of ["photo", "video"]) { const r = await page.locator(`[data-hpd-smoke="worker-${k}-${side}"]`).boundingBox(); assert.ok(r && r.height >= 44 && r.x + r.width <= 390, `${side} ${k}: big enough and fits the phone`); }
+  }
+  await page.locator('[data-hpd-smoke="worker-photo-file-before"]').setInputFiles([{ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") }, { name: "b.jpg", mimeType: "image/jpeg", buffer: Buffer.from("y") }]);
+  await page.locator('[data-hpd-smoke="worker-video-file-before"]').setInputFiles({ name: "v.mp4", mimeType: "video/mp4", buffer: Buffer.from("video") });
+  await page.locator('[data-hpd-smoke="worker-photo-file-after"]').setInputFiles({ name: "c.jpg", mimeType: "image/jpeg", buffer: Buffer.from("z") });
+  await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="worker-item"]').length === 4, null, { timeout: 5000 });
+  assert.equal(await page.locator('[data-hpd-smoke="worker-item"][data-side="before"]').count(), 3);
+  assert.deepEqual(await page.locator('[data-hpd-smoke="worker-item"] b').allInnerTexts(), ["BEFORE", "BEFORE", "BEFORE 🎥", "AFTER"]);
+  assert.match(await page.locator('[data-hpd-smoke="worker-count-before"]').innerText(), /3 taken/);
   assert.match(await page.locator('[data-hpd-smoke="worker-photos-go"]').innerText(), /go on job EQ15239's card/);
   await page.locator('[data-hpd-smoke="worker-send-photos"]').click();
   await page.waitForFunction(() => window.__shared && window.__shared.files, null, { timeout: 5000 });
-  assert.equal(await page.evaluate(() => window.__shared.files.length), 1);
+  assert.deepEqual(await page.evaluate(() => window.__shared.files.map((f) => f.name)), ["EQ15239 BEFORE photo 1.jpg", "EQ15239 BEFORE photo 2.jpg", "EQ15239 BEFORE video 3.mp4", "EQ15239 AFTER photo 4.jpg"]);
   await page.evaluate(() => { window.__shared = null; });
   await page.locator('[data-hpd-smoke="worker-done"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
-  assert.match(await page.evaluate(() => window.__shared.text), /EQ15239 is done\. Photos taken: 2 of 2/);
+  assert.match(await page.evaluate(() => window.__shared.text), /EQ15239 is done\. Before: 3, after: 1\./);
   await page.reload({ waitUntil: "load" });
   await page.locator('[data-hpd-smoke="worker-done"]').waitFor();
   assert.match(await page.locator('[data-hpd-smoke="worker-done"]').innerText(), /Done/);
-  assert.ok(await page.locator('[data-hpd-smoke="worker-photo"]').first().isChecked(), "photo tick kept on the phone");
   const body = await page.locator("body").innerText();
   assert.ok(!/\b(bid|price|invoice|\$\d)/i.test(body), "no money words");
   assert.ok(!requests.some((u) => u.includes("EQ15239") || u.includes("Jose")), "job never sent to a server");
@@ -58,11 +67,27 @@ try {
   assert.ok((await page.locator('[data-hpd-smoke="worker-work"] li').count()) >= 1, "the work lines from HPD's description");
   assert.equal(await page.locator('[data-hpd-smoke="worker-call-tenant"]').getAttribute("href"), "tel:7185550100");
   assert.match(await page.locator('[data-hpd-smoke="worker-call-tenant"]').innerText(), /Ana/);
-  assert.equal(await page.locator('[data-hpd-smoke="worker-photo"]').count(), 2, "Before and After spots");
+  assert.equal(await page.locator('[data-hpd-smoke^="worker-side-"]').count(), 2, "Before and After parts");
   await page.goto(`${baseUrl}/worker/#j=${b64(JSON.stringify(job)).slice(0, 60)}`, { waitUntil: "load" });
   await page.reload({ waitUntil: "load" });
   await page.locator('[data-hpd-smoke="worker-cut"]').waitFor({ timeout: 30000 });
   assert.ok(!requests.some((u) => u.includes("EQ15239") || u.includes("Jose")), "job never sent to a server");
+  // With the upload pass (k=…, 25 Nov): each one goes straight to the job card as soon as it's taken, in pieces, labeled.
+  const ups = [];
+  await c.route(/\/api\/drive\/worker-(start|piece)/, async (r) => {
+    const h = r.request().headers();
+    if (r.request().url().endsWith("worker-start")) { const b = JSON.parse(r.request().postData()); ups.push({ job: h["x-hpd-job"], pass: h["x-hpd-pass"], side: b.side, type: b.mimeType, n: b.n }); return r.fulfill({ json: { session: "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=abc" } }); }
+    return r.fulfill({ json: { done: true, id: "f1" } });
+  });
+  await page.goto(`${baseUrl}/worker/#o=EQ15239&k=1a2.ABCDEFGHIJKLMNOPQRSTUV`, { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await page.locator('[data-hpd-smoke="worker-job"]').waitFor({ timeout: 30000 });
+  await page.locator('[data-hpd-smoke="worker-photo-file-before"]').setInputFiles({ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") });
+  await page.locator('[data-hpd-smoke="worker-video-file-after"]').setInputFiles({ name: "v.mov", mimeType: "video/quicktime", buffer: Buffer.from("video") });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-hpd-smoke="worker-item"]')].filter((e) => e.dataset.state === "sent").length === 2, null, { timeout: 10000 });
+  assert.deepEqual(ups, [{ job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "before", type: "image/jpeg", n: 1 }, { job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "after", type: "video/quicktime", n: 1 }]);
+  assert.match(await page.locator('[data-hpd-smoke="worker-sent-line"]').innerText(), /All 2 are on job EQ15239's card/);
+  assert.equal(await page.locator('[data-hpd-smoke="worker-send-photos"]').count(), 0, "no WhatsApp step with a pass");
   assert.deepEqual(errors, []);
-  console.log("PASS worker view: job, navigate, call, photo ticks, done; nothing about bids or money; job stays in the link");
+  console.log("PASS worker view: job, navigate, call, BEFORE / AFTER photos and videos (labeled; straight to the job card with the pass, WhatsApp without), done; nothing about bids or money; job stays in the link");
 } finally { await browser.close(); }

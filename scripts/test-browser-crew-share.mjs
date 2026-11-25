@@ -19,21 +19,45 @@ try {
     navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
     localStorage.setItem("hpd-building-contacts", JSON.stringify({ [k]: { name: "Super Jose", phone: "2125550147", note: "basement door", savedAt: "2026-11-08T12:00:00Z" } }));
   }, buildingKey(job.BuildingAddress));
+  // 👷 25 Nov: the worker link carries the job's upload pass; what the worker sent comes onto the card by itself (faked Drive).
+  const PASS = "1a2.ABCDEFGHIJKLMNOPQRSTUV";
+  const pulled = { done: [] };
+  const jpg0 = Buffer.from("/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", "base64");
+  await c.route(/\/api\/drive\/worker-(ticket|list|file|done)/, async (r) => {
+    const a = r.request().url().split("/").pop();
+    const b = JSON.parse(r.request().postData() || "{}");
+    if (a === "worker-ticket") return r.fulfill({ json: { pass: PASS } });
+    if (a === "worker-list") return r.fulfill({ json: { files: pulled.done.length ? [] : [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: false, taken: "2026-11-20T15:00:00Z" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: false, taken: "2026-11-22T16:00:00Z" }] } });
+    if (a === "worker-file") return r.fulfill({ body: jpg0, contentType: "image/jpeg" });
+    pulled.done.push(...b.fileIds); return r.fulfill({ json: { ok: true } });
+  });
   const page = await c.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?omo=${JOB}&view=all`, { waitUntil: "load", timeout: 180000 });
   await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
+  await page.waitForFunction(() => /From your worker: 1 before \+ 1 after added to job/.test(document.querySelector('[data-hpd-smoke="jc-crew-in-pulled"]')?.textContent || ""), null, { timeout: 30000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-crew-in-pulled"]').innerText(), /ready for the affidavit package/);
+  assert.deepEqual(pulled.done, ["f0000000001", "f0000000002"], "marked as on the card in Drive (not pulled twice)");
+  // Stamped (owner, 25 Nov: "omo number, address and location printed on the photo and video as well as before and after; the
+  // date in the file name"): saved as stamped evidence, dated the day the worker took it, the date in the file name.
+  const rows = await page.evaluate((id) => new Promise((res) => { const q = indexedDB.open("hpd-field-photos-v1"); q.onsuccess = () => { const t = q.result.transaction("photos").objectStore("photos").getAll(); t.onsuccess = () => res(t.result.filter((x) => x.jobId === id).map((x) => [x.kind, x.stamped, x.capturedAt, x.name]).sort()); }; }), JOB);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map((r) => [r[0], r[1], r[2]]), [["after", true, "2026-11-22T16:00:00.000Z"], ["before", true, "2026-11-20T15:00:00.000Z"]]);
+  assert.match(rows[1][3], /^EQ15239_.+_BEFORE-WORK-EVIDENCE_PHOTO_20261120\.jpg$/);
+  assert.match(rows[0][3], /^EQ15239_.+_AFTER-WORK-EVIDENCE_PHOTO_20261122\.jpg$/);
   const tenantPhone = ((await page.locator('[data-hpd-smoke="jc-tenant-call"]').getAttribute("href").catch(() => "")) || "").replace(/^tel:/, "").replace(/\D/g, "").slice(-10);
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
   const t1 = await page.evaluate(() => window.__shared.text);
   // 20 Nov: the job card link comes first (the phone opens the first link), no map link (the card has Navigate).
   assert.match(t1, new RegExp(`^HPD job ${JOB}\\n👷 Open your job card \\(photos, call, navigate\\): https?://\\S+/worker/#o=\\S+\\n📍 1207 1 AVENUE`));
+  assert.ok(t1.includes(`&k=${PASS}`), "the link carries the job's upload pass");
   assert.match(t1, /\nThe work:\n• /);
   // 👷 Finish-by date (plan, 21 Nov): HPD's completion date in plain words with the days left / late.
   assert.match(t1, /\n⏰ HPD expects it done by (Sun|Mon|Tue|Wed|Thu|Fri|Sat), [A-Z][a-z]{2} \d{1,2}(, \d{4})? \((\d+ days? (left|late)|due today)\)\n/);
-  assert.match(t1, /📸 Photos HPD needs: before photos, before video, after photos, after video\./);
+  // The worker's Before / After photos came in by themselves (above), so only the videos are still needed.
+  assert.match(t1, /📸 Photos HPD needs: before video, after video\./);
   assert.match(t1, /🏢 Building: Super Jose \(212\) 555-0147 \(basement door\)/);
   assert.ok(!/Map: https:/.test(t1), "no map link to tap by mistake");
   // 20 Nov: the tenant's name and phone go in by default; HPD's full description and where the work is too.
@@ -50,7 +74,7 @@ try {
   await wp.goto(href.replace(/^https?:\/\/[^/]+/, baseUrl), { waitUntil: "load" });
   await wp.locator('[data-hpd-smoke="worker-job"]').waitFor({ timeout: 30000 });
   await wp.waitForFunction(() => (document.querySelector('[data-hpd-smoke="worker-full"]')?.textContent || "").length > 30, null, { timeout: 30000 });
-  { const body = await wp.locator("body").innerText(); assert.ok(/Before photos/.test(body) && /After photos/.test(body), "before and after spots for the worker"); }
+  { const body = await wp.locator("body").innerText(); assert.ok(/BEFORE the work/.test(body) && /AFTER the work/.test(body), "before and after parts for the worker"); }
   assert.doesNotMatch(await wp.locator('[data-hpd-smoke="worker-address"]').innerText(), /Loading|not found/);
   assert.match(await wp.locator('[data-hpd-smoke="worker-finish-by"]').innerText(), /⏰ HPD expects it done by \w{3}, \w{3} \d{1,2}.*\((\d+ days? (left|late)|due today)\)/);
   await wp.close();

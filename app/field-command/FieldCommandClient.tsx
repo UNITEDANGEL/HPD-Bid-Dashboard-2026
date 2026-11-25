@@ -5895,9 +5895,10 @@ export default function FieldCommandClient() {
   }
 
   // A photo the worker's page named "<job>-After-photos-1.jpg" goes to After even from the Before button, and the other way.
-  async function handleWorkerFiles(files: FileList | null) {
-    if (!selectedJob || !files?.length) return;
-    const id = jobId(selectedJob);
+  async function handleWorkerFiles(files: FileList | File[] | null, forJob?: JobRecord) {
+    const job = forJob || selectedJob;
+    if (!job || !files?.length) return;
+    const id = jobId(job);
     const all = Array.from(files);
     const kindOf = (f: File): "before" | "after" => /after/i.test(f.name) ? "after" : /before/i.test(f.name) ? "before" : workerKindRef.current;
     const got = { before: 0, after: 0 };
@@ -5906,15 +5907,94 @@ export default function FieldCommandClient() {
       for (const kind of ["before", "after"] as const) {
         const group = all.filter((f) => kindOf(f) === kind);
         if (!group.length) continue;
-        const saved = await saveFieldPhotos(id, kind, group, { jobId: id, address: jobAddress(selectedJob), location: jobAddress(selectedJob), borough: String(jobBorough(selectedJob)), outcome: workflowStamps[id]?.status || jobStatus(selectedJob), label: kind === "before" ? "Before Work Evidence" : "After Work Evidence" });
+        // 25 Nov (owner: "omo number, address and location printed on the photo and video as well as before and after"): the
+        // stamp's LOCATION is where in the building the work is (apartment / room), the date is when the worker took it.
+        const apt = tenantInfo(job).apt;
+        const where = workWhere(jobScope(job), apt) || (apt ? `Apt ${String(apt).replace(/^apt\.?\s*/i, "")}` : "");
+        const saved = await saveFieldPhotos(id, kind, group, { jobId: id, address: jobAddress(job), location: where || String(jobBorough(job)), borough: where ? String(jobBorough(job)) : "", outcome: workflowStamps[id]?.status || jobStatus(job), label: kind === "before" ? "Before Work Evidence" : "After Work Evidence", fileTime: true });
         got[kind] = saved.length;
       }
-      await refreshMediaCounts(selectedJob);
+      await refreshMediaCounts(job);
       setCrewMsg(`✓ Saved on job ${id}: ${[got.before ? `${got.before} before` : "", got.after ? `${got.after} after` : ""].filter(Boolean).join(" + ")}. They go to your Drive (HPD Photo Backup / ${id}) by themselves.`);
+      return got;
     } catch {
       setCrewMsg("Couldn't save the photos on this phone. Try again.");
+      return null;
     }
   }
+
+  // 👷 25 Nov (owner: "the workers should be able to take before and after pictures, send it back to the job card like I
+  // would do it from the app" + "as a package so I can email them when I generate the AFFIDAVIT"): the worker link carries a
+  // short pass for this one job; the worker's Before / After photos and videos go to Drive (HPD Worker Uploads / <job>) and
+  // come onto this job card by themselves when it opens, as Before / After work evidence (so they go in the package).
+  const workerPassRef = useRef<Record<string, string>>({});
+  const workerPullRef = useRef<Set<string>>(new Set());
+  const [workerPulled, setWorkerPulled] = useState<Record<string, string>>({});
+  async function workerPass(id: string) {
+    try {
+      const kept = JSON.parse(localStorage.getItem(`hpd-worker-pass-${id}`) || "null") as { pass: string; at: number } | null;
+      if (kept?.pass && Date.now() - kept.at < 30 * 86400000) { workerPassRef.current[id] = kept.pass; return kept.pass; }
+    } catch { /* private mode */ }
+    try {
+      const r = await fetch("/api/drive/worker-ticket", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobId: id }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && typeof d.pass === "string") {
+        workerPassRef.current[id] = d.pass;
+        try { localStorage.setItem(`hpd-worker-pass-${id}`, JSON.stringify({ pass: d.pass, at: Date.now() })); } catch { /* private mode */ }
+        return d.pass as string;
+      }
+    } catch { /* offline */ }
+    return "";
+  }
+  async function pullFromWorker(job: JobRecord, loud = false) {
+    const id = jobId(job);
+    if (workerPullRef.current.has(id)) return;
+    workerPullRef.current.add(id);
+    const post = (action: string, body: unknown) => fetch(`/api/drive/${action}`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    try {
+      if (loud) setCrewMsg("Looking for your worker's photos and videos…");
+      const r = await post("worker-list", { jobId: id });
+      if (!r.ok) { if (loud) setCrewMsg(r.status === 401 ? "Sign in to Google first (☰ → Google), then try again." : "Couldn't check right now. Try again."); return; }
+      const list = ((await r.json()).files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string }[];
+      const fresh = list.filter((f) => !f.done);
+      if (!fresh.length) {
+        const msg = list.length ? `All ${list.length} from your worker are already on this job.` : "Nothing from your worker yet.";
+        setWorkerPulled((o) => ({ ...o, [id]: msg }));
+        if (loud) setCrewMsg(msg);
+        return;
+      }
+      setCrewMsg(`📥 Bringing in ${fresh.length} from your worker…`);
+      const got: File[] = [];
+      const ids: string[] = [];
+      for (const f of fresh) {
+        const d = await post("worker-file", { fileId: f.id });
+        if (!d.ok) continue;
+        const blob = await d.blob();
+        // The name says BEFORE / AFTER, so handleWorkerFiles files it on the right side.
+        got.push(new File([blob], f.name || `${id} ${f.side.toUpperCase()}`, { type: f.mimeType || blob.type, lastModified: Date.parse(f.taken || "") || Date.now() }));
+        ids.push(f.id);
+      }
+      if (!got.length) { setCrewMsg("Couldn't bring in your worker's files. Try again."); return; }
+      const saved = await handleWorkerFiles(got, job);
+      if (!saved) return;
+      await post("worker-done", { fileIds: ids });
+      const videos = got.filter((f) => f.type.startsWith("video/")).length;
+      const msg = `📥 From your worker: ${[saved.before ? `${saved.before} before` : "", saved.after ? `${saved.after} after` : ""].filter(Boolean).join(" + ")}${videos ? ` (${videos} video${videos === 1 ? "" : "s"})` : ""} added to job ${id}, ready for the affidavit package.`;
+      setWorkerPulled((o) => ({ ...o, [id]: msg }));
+      setCrewMsg(msg);
+    } catch {
+      if (loud) setCrewMsg("Couldn't check right now. Try again.");
+    } finally {
+      workerPullRef.current.delete(id);
+    }
+  }
+  useEffect(() => {
+    if (!selectedJob) return;
+    const id = jobId(selectedJob);
+    void workerPass(id);
+    void pullFromWorker(selectedJob);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedJobId]);
 
   async function handleMediaFiles(files: FileList | null) {
     if (!selectedJob || !files?.length) return;
@@ -9530,7 +9610,7 @@ export default function FieldCommandClient() {
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
                       const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due ? finishByText(due, nyToday()) : undefined, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
-                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob));
+                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob, workerPassRef.current[id]));
                       const nav = navigator as Navigator & { share?: (d: { title: string; text: string; files?: File[] }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
                       // HPD's pages (work description + page 2 with the tenant's contact) go with the job when they're ready.
                       const pages = hpdPages && hpdPages.id === id && "files" in hpdPages ? hpdPages.files : null;
@@ -9545,18 +9625,20 @@ export default function FieldCommandClient() {
                       const sum = jobSummary(jobScope(selectedJob));
                       const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
                       const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due ? finishByText(due, nyToday()) : undefined, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
-                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob));
+                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob, workerPassRef.current[id]));
                       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
                       setCrewMsg("WhatsApp opened: pick your worker and tap send.");
                     }}>💬 Send on WhatsApp</button>
                     <div className="jc-crew-in" data-hpd-smoke="jc-crew-in">
                       <b>📥 Photos from your worker</b>
-                      <small>Saved on this job and backed up to your Drive by themselves.</small>
+                      <small>What your worker sends from the link comes here by itself, as Before / After (photos and videos), and goes in the affidavit package.</small>
+                      {workerPulled[id] ? <small data-hpd-smoke="jc-crew-in-pulled">{workerPulled[id]}</small> : null}
+                      <button type="button" className="jc-email" data-hpd-smoke="jc-crew-in-check" onClick={() => { void pullFromWorker(selectedJob, true); }}>🔄 Check for your worker&apos;s photos &amp; videos</button>
                       <span>
                         <button type="button" className="jc-email" data-hpd-smoke="jc-crew-in-before" onClick={() => { workerKindRef.current = "before"; workerInputRef.current?.click(); }}>📥 Add Before</button>
                         <button type="button" className="jc-email" data-hpd-smoke="jc-crew-in-after" onClick={() => { workerKindRef.current = "after"; workerInputRef.current?.click(); }}>📥 Add After</button>
                       </span>
-                      <input ref={workerInputRef} type="file" accept="image/*" multiple hidden data-hpd-smoke="jc-crew-in-file" onChange={(e) => { const f = e.target.files; void handleWorkerFiles(f).finally(() => { e.target.value = ""; }); }} />
+                      <input ref={workerInputRef} type="file" accept="image/*,video/*" multiple hidden data-hpd-smoke="jc-crew-in-file" onChange={(e) => { const f = e.target.files; void handleWorkerFiles(f).finally(() => { e.target.value = ""; }); }} />
                     </div>
                     {itbFileName(selectedJob) ? (() => {
                       const hp = hpdPages && hpdPages.id === id ? hpdPages : null;

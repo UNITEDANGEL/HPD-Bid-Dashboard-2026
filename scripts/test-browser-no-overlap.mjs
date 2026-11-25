@@ -27,7 +27,25 @@ try {
     assert.equal(await page.locator('[data-hpd-smoke="fc-today"]').count(), 0, "the full box waits for a tap");
     const m = await mini.boundingBox();
     assert.ok(m && m.width < 160 && m.height <= 60, `corner button is small (${m && Math.round(m.width)}x${m && Math.round(m.height)})`);
-    assert.ok(m.y + m.height < b.y, "corner button is clear of the Talk to Claude bar");
+    assert.ok(m.y + m.height < b.y, "corner button is clear of the Talk to Claude bar");
+    // 25 Nov (owner: "fix overlap today and weather"): the weather / hint lines never sit under ☀️ Today, with or without the chat bar.
+    const hitsToday = () => page.evaluate(() => { const t = document.querySelector('[data-hpd-smoke="fc-today-mini"]').getBoundingClientRect(); return [...document.querySelectorAll(".fc-map-hints > *")].map((e) => e.getBoundingClientRect()).filter((r) => r.height && r.bottom > t.top && r.top < t.bottom && r.right > t.left && r.left < t.right).length; });
+    assert.equal(await hitsToday(), 0, "weather line clear of ☀️ Today");
+    // The owner's phone has one Claude button and no chat bar: the hint lines then sit at the top, under ☀️ Today.
+    await page.evaluate(() => localStorage.setItem("hpd-test-one-claude", "1"));
+    await page.reload({ waitUntil: "load" });
+    await mini.waitFor({ timeout: 20000 });
+    await page.locator(".fc-map-hints > *").first().waitFor({ timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    assert.equal(await page.locator(".fc-chatbar").count(), 0, "one Claude: no chat bar");
+    assert.equal(await hitsToday(), 0, "weather line clear of ☀️ Today without the chat bar");
+    await page.evaluate(() => localStorage.removeItem("hpd-test-one-claude"));
+    await page.reload({ waitUntil: "load" });
+    await mini.waitFor({ timeout: 20000 });
+    await page.waitForTimeout(1500);
+    // A reload can show the ✨ New update popup: Got it, like the owner would.
+    const gotIt = page.locator('[data-hpd-smoke="fc-newupdate-ok"]');
+    if (await gotIt.count()) await gotIt.click();
     await mini.click();
     const full = page.locator('[data-hpd-smoke="fc-today"]');
     await full.waitFor({ timeout: 5000 });

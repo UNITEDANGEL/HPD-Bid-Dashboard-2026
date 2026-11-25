@@ -16,6 +16,8 @@ export type FieldEvidenceMeta = {
   borough?: string;
   outcome?: string;
   label?: string;
+  // 25 Nov: the worker's photos carry the time they were taken (the file's time), not the time they reached the job card.
+  fileTime?: boolean;
 };
 
 export type FieldMedia = {
@@ -867,7 +869,7 @@ export async function saveFieldPhotos(
       throw new Error("Video is too large. Keep evidence clips under 90 MB.");
     }
 
-    const capturedAt = new Date().toISOString();
+    const capturedAt = meta.fileTime && file.lastModified > 0 ? new Date(file.lastModified).toISOString() : new Date().toISOString();
     const defaultLabel = `${evidenceLabel(kind)} ${mediaType === "video" ? "Video" : "Photo"}`;
     const label = meta.label || defaultLabel;
     const stampMeta: EvidenceStampMeta = {

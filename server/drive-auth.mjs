@@ -2,6 +2,7 @@ import { smsReady } from "./tenant-sms.mjs";
 import { handleDriveBackups } from "./drive-backups.mjs";
 import { handleDrivePackages, handlePushSubscribe } from "./drive-packages.mjs";
 import { handleDriveVideos } from "./drive-videos.mjs";
+import { WORKER_OWNER_ACTIONS, WORKER_PUBLIC_ACTIONS, handleWorkerOwner, handleWorkerPublic } from "./worker-uploads.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
 const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status", "hpd-reply", "hpd-draft", "hpd-ask", "hpd-photo", "hpd-scan", "hpd-sent", "hpd-sent-pdf", "hpd-thread-pdf", "signatures", "pricing", "tenant-sms", "tenant-sms-inbox"];
 const VIDEO_ACTIONS = ["video-start", "video-piece", "video-to-package"];
@@ -89,11 +90,25 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect", "check", "push-subscribe", "claim", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
-  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", "push-subscribe", "claim", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action) ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check", "push-subscribe", "claim", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS, ...WORKER_OWNER_ACTIONS, ...WORKER_PUBLIC_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", "push-subscribe", "claim", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS, ...WORKER_OWNER_ACTIONS, ...WORKER_PUBLIC_ACTIONS].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
+    // 👷 The worker's phone sends Before / After photos and videos with the job's pass (server/worker-uploads.mjs): the
+    // owner's Google access comes from the encrypted copy kept when the owner made the pass.
+    if (WORKER_PUBLIC_ACTIONS.includes(action)) {
+      const getAccess = async () => {
+        let owner = null;
+        try { const stored = await env.HPD_DRIVE_SESSIONS.get("worker-owner"); owner = stored && await unseal(env, stored, "worker-owner"); } catch { owner = null; }
+        if (!owner?.refreshToken || owner.email !== cfg.email) return "";
+        const r = await fetcher("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, client_secret: env.HPD_DRIVE_CLIENT_SECRET, refresh_token: owner.refreshToken, grant_type: "refresh_token" }), signal: AbortSignal.timeout(15000) });
+        const t = await r.json().catch(() => ({}));
+        return r.ok && t.access_token ? t.access_token : "";
+      };
+      return await handleWorkerPublic(request, action, env, fetcher, getAccess);
+    }
     // Phone alerts register without a Google sign-in (21 Oct: "this has to be automatic").
     if (action === "push-subscribe") {
       const saved = await session(request, env, cfg).catch(() => null);
@@ -121,7 +136,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       // aiReady: the helper's AI is connected (Workers AI binding or Anthropic key); just yes / no, the AI isn't called.
       return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false, smsReady: smsReady(env), aiReady: Boolean(env.AI || env.ANTHROPIC_API_KEY) });
     }
-    if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action)) {
+    if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action) || WORKER_OWNER_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);
       if (!saved) { console.error(`drive ${action}: not signed in (no saved Google sign-in on this device)`); return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401); }
       const renew = () => fetcher("https://oauth2.googleapis.com/token", {
@@ -168,6 +183,14 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
           ? await handleDrivePackages(request, action, authHeaders, fetcher, env, cfg.email)
           : VIDEO_ACTIONS.includes(action)
             ? await handleDriveVideos(request, action, authHeaders, fetcher)
+            : WORKER_OWNER_ACTIONS.includes(action)
+            ? await handleWorkerOwner(request, action, authHeaders, fetcher, env, async () => {
+              // Keep the owner's Google access (encrypted) for the worker uploads; written only when it changed or is a week old.
+              let kept = null;
+              try { const stored = await env.HPD_DRIVE_SESSIONS.get("worker-owner"); kept = stored && await unseal(env, stored, "worker-owner"); } catch { kept = null; }
+              if (kept && kept.refreshToken === value.refreshToken && Date.now() - (kept.keptAt || 0) < 7 * 86400000) return;
+              await env.HPD_DRIVE_SESSIONS.put("worker-owner", await seal(env, { refreshToken: value.refreshToken, email: cfg.email, keptAt: Date.now(), expires: Date.now() + 400 * 86400000 }, "worker-owner"));
+            })
             : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
       if (renewedCookie) response.headers.append("Set-Cookie", renewedCookie);
       return response;

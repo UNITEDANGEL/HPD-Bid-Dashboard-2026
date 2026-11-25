@@ -100,6 +100,7 @@ jobs:
           node scripts/test-drive-backups.mjs
           node scripts/test-drive-full-backup.mjs
           node scripts/test-drive-videos.mjs
+          node scripts/test-worker-uploads.mjs
           node scripts/test-phone-storage.mjs
           node scripts/test-overnight.mjs
           node scripts/test-hpd-contact.mjs
