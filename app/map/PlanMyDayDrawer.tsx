@@ -469,6 +469,27 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     }).catch(() => {});
   }, [records]);
 
+  // 🗺 Route for this week's maturity (plan item 39, 24 Nov): /map/?route=OMO1,OMO2 (from the Home card) opens Plan my day
+  // with just those jobs, in the card's order (closest finish date first). No location asked; the owner can still edit the list.
+  const routeLoaded = useRef(false);
+  useEffect(() => {
+    if (routeLoaded.current || !records.length) return;
+    const ids = unique((new URLSearchParams(window.location.search).get("route") || "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean));
+    if (!ids.length) return;
+    routeLoaded.current = true;
+    const today = nyToday();
+    const found = ids.map((id) => records.find((r) => jobId(r).toUpperCase() === id)).filter((r): r is JobRecord => !!r);
+    const stops = found.map((r) => { const d = jobFinishDays(r, today); return selectableJob(r, undefined, d === null ? "Maturity this week" : finishStopLabel(d)); });
+    setPlan((p) => ({ ...p, includeOmo: stops.map((s) => s.id), stopCount: Math.max(stops.length, 1) }));
+    setResults(stops);
+    setLateLeft([]);
+    setSelectedIds(stops.map((s) => s.id));
+    const missing = ids.length - stops.length;
+    setMessages((m) => [...m, { role: "assistant", text: stops.length ? `This week's maturity: ${stops.length} job${stops.length === 1 ? "" : "s"}, closest finish date first.${missing ? ` ${missing} job${missing === 1 ? " is" : "s are"} no longer open.` : ""} Review the stops below.` : "Those maturity jobs are no longer open." }]);
+    setOpen(true);
+    setMediaPaused(false);
+  }, [records]);
+
   useEffect(() => {
     const chat = chatRef.current;
     if (!chat || viewingJob) return;

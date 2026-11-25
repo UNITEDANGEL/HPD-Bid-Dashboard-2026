@@ -32,6 +32,12 @@ try {
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').first().getAttribute("href"), "/map/?omo=ZZ00002");
   const mwBox = await mw.boundingBox();
   assert.ok(mwBox && mwBox.width <= 390, "maturity card fits the iPhone width");
+  // 🗺 Route for this week's maturity (plan item 39): one button with just those jobs, closest date first.
+  const routeBtn = mw.locator('[data-hpd-smoke="home-maturity-week-route"]');
+  assert.equal(await routeBtn.getAttribute("href"), "/map/?route=ZZ00002,ZZ00003");
+  assert.equal(await routeBtn.innerText(), "🗺 Route for these 2 jobs");
+  const routeBox = await routeBtn.boundingBox();
+  assert.ok(routeBox && routeBox.height >= 44 && routeBox.x + routeBox.width <= 390, "route button is big enough and on screen");
   const card = page.locator('[data-hpd-smoke="home-countdown"]');
   await card.waitFor({ timeout: 10000 });
   const rows = await card.locator('[data-hpd-smoke="home-countdown-row"]').allInnerTexts();
@@ -65,6 +71,13 @@ try {
   const calBox = await cal.boundingBox();
   assert.ok(calBox && calBox.width <= 390, `calendar fits the iPhone width (${calBox?.width})`);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), "no sideways scroll");
+  // Tapping 🗺 opens Plan my day with just ZZ00002 then ZZ00003 (no other job, no location asked).
+  await routeBtn.click();
+  await page.waitForURL(/\/map\/\?route=/);
+  const stops = page.locator(".plan-my-day__results article strong");
+  await stops.first().waitFor({ timeout: 20000 });
+  assert.deepEqual(await stops.allInnerTexts(), ["ZZ00002", "ZZ00003"]);
+  assert.match(await page.locator(".plan-my-day__results").innerText(), /Due in 1 day \(HPD finish date\)/);
   console.log("award-countdown browser test passed");
 } finally {
   await browser.close();

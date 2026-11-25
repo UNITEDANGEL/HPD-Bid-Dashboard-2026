@@ -246,7 +246,8 @@ export default function HomeScreen() {
                 </a>
               ))}
               {maturityMoney(mw) > 0 ? <b data-hpd-smoke="home-maturity-week-total" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", fontSize: 18 }}>💲 ${Math.round(maturityMoney(mw)).toLocaleString()} riding on this week</b> : null}
-              <small>Maturity = HPD&apos;s finish date. Tap a job to open it.</small>
+              <a href={`/map/?route=${mw.map((c) => encodeURIComponent(c.omo)).join(",")}`} data-hpd-smoke="home-maturity-week-route" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "8px 0", minHeight: 48, borderRadius: 12, background: "#1d4ed8", color: "#fff", fontSize: 18, fontWeight: 800, textDecoration: "none" }}>🗺 Route for these {mw.length} job{mw.length === 1 ? "" : "s"}</a>
+              <small>Maturity = HPD&apos;s finish date. Tap a job to open it, or 🗺 to plan the route (closest date first).</small>
             </span>
           </div>
         );
