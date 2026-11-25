@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -80,4 +80,11 @@ console.log('award-countdown tests passed');
   assert.equal(cd.find((c) => c.omo === 'M2').amount, null);
   assert.equal(maturityMoney(cd), 1250.5);
   assert.equal(maturityMoney([]), 0);
+}
+// 📤 Send this week's list to the worker: OMO, address, finish date; no money; empty list = empty text.
+{
+  const t = maturityWorkerText([{ omo: 'ZZ1', due: '2026-11-25', days: 1, given: 9, amount: 900 }, { omo: 'ZZ2', due: '2026-11-30', days: 6, given: 9 }], { ZZ1: ' 12  Main St, 10472 ' }, '2026-11-24');
+  assert.equal(t, 'Jobs to finish this week (2), closest date first:\n1. ZZ1 - 12 Main St, 10472\n   Finish by Wed, Nov 25 (1 day left)\n2. ZZ2\n   Finish by Mon, Nov 30 (6 days left)\nSend me the photos when each one is done. Thanks!');
+  assert.ok(!t.includes('$'));
+  assert.equal(maturityWorkerText([], {}, '2026-11-24'), '');
 }

@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityMoney, maturityWeek, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityMoney, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
@@ -19,7 +19,7 @@ import { readLocalOverrides } from "../lib/override-sync";
 import { paperworkNextHref } from "../lib/field-next-action";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
-type Award = { OMO?: string; AwardDate?: string };
+type Award = { OMO?: string; AwardDate?: string; BuildingAddress?: string };
 
 const NY = "America/New_York";
 const nyDay = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: NY }); // YYYY-MM-DD
@@ -57,6 +57,7 @@ export default function HomeScreen() {
   const [noAccess, setNoAccess] = useState<AccessWaiting[]>([]);
   const [countdown, setCountdown] = useState<Countdown[]>([]);
   const [doneSend, setDoneSend] = useState<DoneToSend[]>([]); // 🏁 Work done, send it (plan item 37)
+  const [workerNote, setWorkerNote] = useState(""); // 📤 Send this week's list to the worker
   const [calls, setCalls] = useState<Record<string, CallWho>>({});
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(() => nyDay(new Date()).slice(0, 7));
@@ -247,7 +248,18 @@ export default function HomeScreen() {
               ))}
               {maturityMoney(mw) > 0 ? <b data-hpd-smoke="home-maturity-week-total" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", fontSize: 18 }}>💲 ${Math.round(maturityMoney(mw)).toLocaleString()} riding on this week</b> : null}
               <a href={`/map/?route=${mw.map((c) => encodeURIComponent(c.omo)).join(",")}`} data-hpd-smoke="home-maturity-week-route" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "8px 0", minHeight: 48, borderRadius: 12, background: "#1d4ed8", color: "#fff", fontSize: 18, fontWeight: 800, textDecoration: "none" }}>🗺 Route for these {mw.length} job{mw.length === 1 ? "" : "s"}</a>
-              <small>Maturity = HPD&apos;s finish date. Tap a job to open it, or 🗺 to plan the route (closest date first).</small>
+              <button type="button" data-hpd-smoke="home-maturity-week-share" onClick={async () => {
+                // 📤 Send this week's list to the worker: OMO, address and finish date only (no tenant names, phones or money).
+                const addresses: Record<string, string> = {};
+                for (const a of awards || []) { const o = String(a?.OMO || "").trim().toUpperCase(); if (o && !addresses[o]) addresses[o] = String(a?.BuildingAddress || ""); }
+                const text = maturityWorkerText(mw, addresses, today);
+                try {
+                  if (navigator.share) { await navigator.share({ title: "Jobs to finish this week", text }); setWorkerNote("Shared ✓"); return; }
+                  await navigator.clipboard.writeText(text); setWorkerNote("Copied ✓ Paste it in a text to your worker.");
+                } catch (e) { if ((e as Error)?.name !== "AbortError") setWorkerNote("Couldn't share. Try again."); }
+              }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", margin: "8px 0", minHeight: 48, borderRadius: 12, border: "none", background: "#15803d", color: "#fff", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>📤 Send this list to my worker</button>
+              {workerNote ? <small data-hpd-smoke="home-maturity-week-share-note" style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{workerNote}</small> : null}
+              <small>Maturity = HPD&apos;s finish date. Tap a job to open it, 🗺 to plan the route (closest date first), or 📤 to send the jobs, addresses and finish dates to your worker (no tenant names or phones).</small>
             </span>
           </div>
         );

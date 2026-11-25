@@ -118,3 +118,14 @@ export function maturityWeek(list: Countdown[]): Countdown[] {
 export function maturityMoney(list: Countdown[]): number {
   return list.reduce((t, c) => t + (c.amount && c.amount > 0 ? c.amount : 0), 0);
 }
+
+// 📤 Send this week's list to the worker (plan, 24 Nov): the maturity jobs, closest first, with the building address
+// and finish date only (no tenant names, phones or money), ready for the phone's Share menu.
+export function maturityWorkerText(list: Countdown[], addresses: Record<string, string>, today: string): string {
+  if (!list.length) return "";
+  const lines = list.map((c, i) => {
+    const addr = String(addresses[c.omo] || "").replace(/\s+/g, " ").trim();
+    return `${i + 1}. ${c.omo}${addr ? ` - ${addr}` : ""}\n   Finish by ${finishByText(c.due, today)}`;
+  });
+  return [`Jobs to finish this week (${list.length}), closest date first:`, ...lines, "Send me the photos when each one is done. Thanks!"].join("\n");
+}

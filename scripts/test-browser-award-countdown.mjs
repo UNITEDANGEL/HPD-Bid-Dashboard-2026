@@ -38,6 +38,19 @@ try {
   assert.equal(await routeBtn.innerText(), "🗺 Route for these 2 jobs");
   const routeBox = await routeBtn.boundingBox();
   assert.ok(routeBox && routeBox.height >= 44 && routeBox.x + routeBox.width <= 390, "route button is big enough and on screen");
+  // 📤 Send this week's list to the worker: the Share menu gets OMO, address and finish date; no tenant names, phones or money.
+  await page.evaluate(() => { window.__shared = null; navigator.share = async (d) => { window.__shared = d; }; });
+  const shareBtn = mw.locator('[data-hpd-smoke="home-maturity-week-share"]');
+  const shareBox = await shareBtn.boundingBox();
+  assert.ok(shareBox && shareBox.height >= 44 && shareBox.x + shareBox.width <= 390, "share button is big enough and on screen");
+  await shareBtn.click();
+  await mw.locator('[data-hpd-smoke="home-maturity-week-share-note"]').waitFor({ timeout: 5000 });
+  const shared = await page.evaluate(() => window.__shared);
+  assert.ok(shared && shared.text, "the Share menu opened with the list");
+  assert.match(shared.text, /^Jobs to finish this week \(2\)/);
+  assert.match(shared.text, /1\. ZZ00002 - 2 Test Ave\., 10472\n   Finish by \w{3}, \w{3} \d+ \(1 day left\)/);
+  assert.match(shared.text, /2\. ZZ00003 - 3 Test Ave\., 10472/);
+  assert.ok(!/\$|ANA SMITH|555/.test(shared.text), "no money, tenant names or phones");
   const card = page.locator('[data-hpd-smoke="home-countdown"]');
   await card.waitFor({ timeout: 10000 });
   const rows = await card.locator('[data-hpd-smoke="home-countdown-row"]').allInnerTexts();

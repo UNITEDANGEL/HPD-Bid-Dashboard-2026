@@ -608,12 +608,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-maturity-share",
-        "icon": "📤",
-        "title": "Send this week's list to the worker",
-        "why": "A button on the Maturity this week card shares the jobs, addresses and finish dates with your worker (no tenant names or phones)."
-      },
-      {
         "id": "plan-maturity-morning",
         "icon": "🌅",
         "title": "This week's maturity in the morning alert",
