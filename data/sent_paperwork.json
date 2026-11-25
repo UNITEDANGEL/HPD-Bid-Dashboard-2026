@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-25T15:38:11.023192+00:00",
+"generatedAt": "2026-11-25T15:47:19.076767+00:00",
 "since": "2026/11/11",
 "jobs": {
 "EN04541": [
@@ -20744,6 +20744,14 @@
 "file": "PHOTO-2026-09-16-16-34-27.jpg",
 "outcome": "",
 "subject": "Fwd: OMO No: EQ30935 Issuer: VLADIMIR GORODNICHENKO Boro: Bronx Bldg Address: 165, EAST 205 STREET",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-25",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ30935 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Fwd: OMO No: EQ30935 Issuer: VLADIMIR GORODNICHENKO Boro: Bronx Bldg Address: 165, EAST 205 STREET",
 "via": "hpd-staff"
 }
 ],
