@@ -604,7 +604,7 @@
     }
   ],
   "plan": {
-    "id": "2026-11-24-b",
+    "id": "2026-11-25-a",
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
@@ -612,6 +612,18 @@
         "icon": "🚧",
         "title": "Not started yet",
         "why": "Jobs on the Maturity this week card with no visit or photo yet get a red \"not started\" tag, so you see which ones are at risk."
+      },
+      {
+        "id": "plan-worker-new-photos",
+        "icon": "📸",
+        "title": "New worker photos",
+        "why": "When your worker's Before / After photos come in, the job shows a \"new from worker\" tag on the map and the Maturity this week card."
+      },
+      {
+        "id": "plan-before-no-after",
+        "icon": "🟠",
+        "title": "Before but no After",
+        "why": "Jobs due this week with Before photos but no After get an orange tag, so the affidavit isn't held up."
       }
     ]
   }

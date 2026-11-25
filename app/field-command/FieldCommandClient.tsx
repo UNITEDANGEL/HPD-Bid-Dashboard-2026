@@ -2060,9 +2060,13 @@ export default function FieldCommandClient() {
       if (fresh.length) setNewItems(fresh.slice(0, 6));
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const seenNewItems = () => {
-    setNewItems([]);
+  const markNewItemsSeen = () => {
+    if (!whatsNew?.length) return;
     try { localStorage.setItem("hpd-whatsnew-seen", JSON.stringify((whatsNew || []).flatMap((v) => v.items).slice(0, 60))); } catch { /* private mode */ }
+  };
+  const seenNewItems = () => {
+    setNewItems([]); setMagicLeaving(false);
+    markNewItemsSeen();
   };
   // A newer version is live but a job card is open: offer it instead of waiting.
   const [updateReady, setUpdateReady] = useState(false);
@@ -2086,6 +2090,19 @@ export default function FieldCommandClient() {
   const [routeBuildRequest, setRouteBuildRequest] = useState(0);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
+  // ✨ One pop-up per update (owner, 25 Nov: "double messages pop-up for updates ... it needs to go in and go out by itself,
+  // like 10 seconds"): it counts as seen the moment it shows (a reload or the Home Screen icon doesn't bring it back), the
+  // small "✨ App updated" note doesn't follow it, it slides in, and after 10 s slides out by itself (a tap on it keeps it).
+  const [magicLeaving, setMagicLeaving] = useState(false);
+  const [magicHold, setMagicHold] = useState(false);
+  const magicUp = newItems.length > 0 && !selectedJob && !whatsNewOpen && !bidsOpen;
+  useEffect(() => { if (magicUp) { markNewItemsSeen(); setJustUpdated(false); } }, [magicUp, whatsNew]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!magicUp || magicHold) return;
+    const out = window.setTimeout(() => setMagicLeaving(true), 9600);
+    const gone = window.setTimeout(() => seenNewItems(), 10000);
+    return () => { window.clearTimeout(out); window.clearTimeout(gone); };
+  }, [magicUp, magicHold]); // eslint-disable-line react-hooks/exhaustive-deps
   freshRef.current.busy = !!selectedJob || bidsOpen; // a job card or the bids open: never reloaded under you
   // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number; unsentToday?: number; sentToday?: number; firstTime?: string }>({ today: 0, tomorrow: 0, open: 0 });
@@ -10064,9 +10081,10 @@ export default function FieldCommandClient() {
       {/* ✨ Magic popup (owner, 24 Nov: "every time there is an upgrade I want it to jump up on screen ... something very
           nice like a magic popup"): no longer waits behind the side tab; it pops up in the middle with sparkles, once per
           update (Got it, or a tap outside, marks it seen). */}
-      {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? <div className="fc-magic-backdrop" data-hpd-smoke="fc-magic-backdrop" aria-hidden="true" onClick={seenNewItems}><i>✨</i><i>⭐</i><i>✨</i><i>💫</i><i>✨</i><i>⭐</i></div> : null}
-      {newItems.length && !selectedJob && !whatsNewOpen && !bidsOpen ? (
-        <div className="fc-newupdate is-magic" role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate">
+      {magicUp ? <div className={`fc-magic-backdrop${magicLeaving ? " is-leaving" : ""}`} data-hpd-smoke="fc-magic-backdrop" aria-hidden="true" onClick={seenNewItems}><i>✨</i><i>⭐</i><i>✨</i><i>💫</i><i>✨</i><i>⭐</i></div> : null}
+      {magicUp ? (
+        <div className={`fc-newupdate is-magic${magicLeaving ? " is-leaving" : ""}`} role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate" onPointerDown={() => { setMagicHold(true); setMagicLeaving(false); }}>
+          {!magicHold ? <i className="fc-magic-timer" data-hpd-smoke="fc-magic-timer" aria-hidden="true" /> : null}
           <span className="fc-magic-wand" aria-hidden="true">🪄</span>
           <b className="fc-magic-title" data-hpd-smoke="fc-magic-title">New upgrade is live!</b>
           {whatsNew?.[0]?.title ? <em className="fc-magic-sub">{whatsNew[0].title}</em> : null}

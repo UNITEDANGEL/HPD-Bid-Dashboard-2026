@@ -5294,3 +5294,14 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 /* ☀️ 25 Nov (owner: "fix overlap today and weather"): with the folded ☀️ Today button showing (136-184 px), the weather /
    hint lines start under it, not behind it. */
 .fc-app.fc-reference:has(.fc-today-mini):not(:has(.fc-chatbar)) .fc-map-wrap .fc-map-hints { top: calc(env(safe-area-inset-top, 0px) + 194px); }
+/* ✨ 25 Nov (owner: "the pop-up needs to go in and go out by itself, like 10 seconds"): the purple New update pop-up slides
+   down into place, a thin gold bar shows the 10 s running out, then it slides back up and the sparkles fade (a tap keeps it). */
+.fc-newupdate.is-magic { animation: fc-magic-in .6s cubic-bezier(.2,1.25,.4,1) both; overflow: hidden auto; }
+.fc-newupdate.is-magic.is-leaving { animation: fc-magic-out .4s ease-in forwards; pointer-events: none; }
+.fc-magic-backdrop.is-leaving { animation: fc-magic-fadeout .4s ease-in forwards; pointer-events: none; }
+.fc-newupdate.is-magic .fc-magic-timer { position: absolute; left: 0; top: 0; height: 5px; width: 100%; background: linear-gradient(90deg, #fde68a, #f59e0b, #ec4899); transform-origin: left; animation: fc-magic-timer 9.6s linear forwards; }
+@keyframes fc-magic-in { 0% { opacity: 0; transform: translateY(-140%) scale(.92); } 70% { opacity: 1; } 100% { opacity: 1; transform: translateY(-50%) scale(1); } }
+@keyframes fc-magic-out { 0% { opacity: 1; transform: translateY(-50%) scale(1); } 100% { opacity: 0; transform: translateY(-160%) scale(.9); } }
+@keyframes fc-magic-fadeout { to { opacity: 0; } }
+@keyframes fc-magic-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .fc-newupdate.is-magic, .fc-newupdate.is-magic.is-leaving, .fc-magic-backdrop.is-leaving { animation: none; } }

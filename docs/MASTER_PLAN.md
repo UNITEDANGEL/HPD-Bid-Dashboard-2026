@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ✨ 25 Nov: one update pop-up that leaves by itself (app request 20261125134827, owner: "there are double messages pop-up for updates ... I like the purple one ... it needs to go in and go out by itself, like 10 seconds")
+
+1. ✓ The purple New update pop-up counts as seen the moment it shows (a reload, the auto-update reload or the Home Screen icon don't show it again) and the small "✨ App updated" note no longer follows it. It slides down into place, a gold bar counts down 10 s, then it slides up and the sparkles fade; a tap on it keeps it open until Got it. Test: test-browser-newupdate.
+
 ## 👷 25 Nov: worker Before / After photos and videos straight to the job card (owner: "the workers should be able to take before and after pictures, send it back to the job card like I would do it from the app"; app requests 20261125101700 "labels for the before and after pictures ... a video button ... multiple before photos, multiple before videos, same as after" and 20261125103241 "send the jobs back to the job card as a package so I can email them when I generate the AFFIDAVIT"; also "fix overlap today and weather")
 
 1. ✓ Worker page: BEFORE and AFTER parts, each with 📷 Photo, 🎥 Video, 🖼 From phone, as many as needed; each thumbnail labeled BEFORE / AFTER (🎥 for videos).
@@ -133,6 +137,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 40. ✅ 📤 Send this week's list to the worker (plan, 24 Nov, Claude's recommendation): a button on the Maturity this week card opens the phone's share sheet with the jobs, addresses and finish dates (no tenant names or phones).
 41. ✅ 🌅 This week's maturity in the morning alert (plan, 24 Nov; built 25 Nov as an auto upgrade): the 8 AM phone alert adds "🏁 N jobs to finish this week ($X)" (open awarded jobs due in the next 7 days, award money; OMO counts only). scripts/send-push.mjs morningBriefing; test: scripts/test-push.mjs.
 42. ☐ 🚧 Not started yet (plan, 24 Nov, Claude's recommendation): on the Maturity this week card, jobs with no visit or photo yet get a red "not started" tag, so you see which ones are at risk.
+43. ☐ 📸 New worker photos (plan, 25 Nov, Claude's recommendation): when your worker's Before / After photos or videos come in, the job shows a "📸 new from worker" tag on the map and on the Maturity this week card, so you know without opening each job card.
+44. ☐ 🟠 Before but no After (plan, 25 Nov, Claude's recommendation): jobs on the Maturity this week card that have Before photos but no After yet get an orange "needs After" tag, so the affidavit isn't held up by a missing photo.
 
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
 - 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.

@@ -27,6 +27,9 @@ try {
     const { c, p, errors } = await open(true);
     const card = p.locator('[data-hpd-smoke="fc-newupdate"]');
     await card.waitFor({ timeout: 20000 });
+    await p.waitForTimeout(900); // it slides in (0.6 s)
+    assert.equal(await p.locator('[data-hpd-smoke="fc-magic-timer"]').count(), 1, "10 s bar shows");
+    await card.dispatchEvent("pointerdown"); // hold it open (it leaves by itself after 10 s; block 2 checks that)
     const items = await card.locator("li").allInnerTexts();
     const short = (x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return one.length > 90 ? `${one.slice(0, 88)}…` : one; };
     assert.deepEqual(items, all.slice(0, 2).map(short), "only the lines not seen yet, first sentence each (2 at most)");
@@ -63,7 +66,41 @@ try {
     assert.deepEqual(errors, []);
     await c.close();
   }
-  console.log(`PASS new update card: 2 unseen What's new lines -> "🆕 New update includes" with just those; Got it -> gone, also after a reload; a fresh install sees none`);
+  {
+    // 25 Nov (owner: "double messages pop-up for updates ... go in and go out by itself, like 10 seconds"): left alone, it
+    // slides away by itself after about 10 s, the small "✨ App updated" note doesn't follow it, and a reload doesn't bring it back.
+    const { c, p, errors } = await open(true);
+    const card = p.locator('[data-hpd-smoke="fc-newupdate"]');
+    await card.waitFor({ timeout: 20000 });
+    const t0 = Date.now();
+    await card.waitFor({ state: "detached", timeout: 15000 });
+    const took = Date.now() - t0;
+    assert.ok(took > 7000, `left by itself after about 10 s, not too early (${took} ms)`);
+    assert.equal(await p.locator('[data-hpd-smoke="fc-magic-backdrop"]').count(), 0, "sparkles gone too");
+    await p.evaluate(() => localStorage.setItem("hpd-side-open", "1"));
+    await p.reload({ waitUntil: "load" });
+    await p.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon, .fc-pin").length > 3, null, { timeout: 120000 });
+    await p.waitForTimeout(2500);
+    assert.equal(await card.count(), 0, "shown once: not again after a reload");
+    assert.equal(await p.locator('[data-hpd-smoke="fc-updated-banner"]').count(), 0, "no second 'App updated' note");
+    assert.deepEqual(errors, []);
+    await c.close();
+  }
+  {
+    // A tap on it keeps it open (the owner is reading), and the 10 s bar goes away.
+    const { c, p } = await open(true);
+    const card = p.locator('[data-hpd-smoke="fc-newupdate"]');
+    await card.waitFor({ timeout: 20000 });
+    await p.waitForTimeout(900);
+    await card.locator("strong").tap();
+    await p.waitForTimeout(11000);
+    assert.equal(await card.count(), 1, "tapped: stays");
+    assert.equal(await p.locator('[data-hpd-smoke="fc-magic-timer"]').count(), 0);
+    await card.locator('[data-hpd-smoke="fc-newupdate-ok"]').click();
+    assert.equal(await card.count(), 0);
+    await c.close();
+  }
+  console.log(`PASS new update card: 2 unseen What's new lines -> "🆕 New update includes" with just those; Got it -> gone, also after a reload; a fresh install sees none; left alone it slides away after ~10 s and never shows twice; a tap keeps it`);
 } finally {
   await browser.close();
 }
