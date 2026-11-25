@@ -20,6 +20,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 4. ✓ Older links (no pass) still work: the WhatsApp button sends them labeled BEFORE / AFTER.
 5. ✓ ☀️ Today button no longer covers the weather line (test: no-overlap, with and without the chat bar).
 7. ✓ Stamp (owner: "omo number, address and location printed on the photo and video as well as before and after; the date in the file name"): each worker photo / video on the job card is stamped BEFORE / AFTER, OMO, LOCATION (where in the building), ADDRESS, DATE (the day the worker took it); the date is in the Drive name and the saved file name (…_PHOTO_20261120.jpg). Checked by eye on a real photo and a real video, and in crew-share.
+8. ✓ One package (owner: "when I send the job to the worker it should go as one package, with the second page: work description page, then the whole complete message; right now it sends the message, then a separate work description page"): 👷 Send to a worker shares ONE PDF (lib/worker-packet.ts): HPD's work description page, HPD's page 2, then the whole message with a tappable "Open the job page" button (HPD's full description not repeated). Built before the tap (iPhone share needs the tap). Test: crew-share (one file, no separate text, the link tappable, tenant left out when unticked).
 6. ☐ Owner: send each job to the worker again once, so the link carries the pass.
 
 ## 💡 24 Nov: Upgrade ideas right under Ask for a change (owner: "Upgrade ideas should be on top after the ask for a change box it's not showing now fix it")

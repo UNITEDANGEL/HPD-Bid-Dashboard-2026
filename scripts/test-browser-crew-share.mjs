@@ -22,6 +22,8 @@ try {
   // 👷 25 Nov: the worker link carries the job's upload pass; what the worker sent comes onto the card by itself (faked Drive).
   const PASS = "1a2.ABCDEFGHIJKLMNOPQRSTUV";
   const pulled = { done: [] };
+  const itb = { open: false };
+  await c.route(/\/api\/private\/itb\//, (r) => (itb.open ? r.fallback() : r.fulfill({ status: 503, body: "" })));
   const jpg0 = Buffer.from("/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", "base64");
   await c.route(/\/api\/drive\/worker-(ticket|list|file|done)/, async (r) => {
     const a = r.request().url().split("/").pop();
@@ -38,7 +40,7 @@ try {
   await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
   await page.waitForFunction(() => /From your worker: 1 before \+ 1 after added to job/.test(document.querySelector('[data-hpd-smoke="jc-crew-in-pulled"]')?.textContent || ""), null, { timeout: 30000 });
   assert.match(await page.locator('[data-hpd-smoke="jc-crew-in-pulled"]').innerText(), /ready for the affidavit package/);
-  assert.deepEqual(pulled.done, ["f0000000001", "f0000000002"], "marked as on the card in Drive (not pulled twice)");
+  assert.deepEqual(pulled.done, ["f0000000001", "f0000000002"], "marked as on the card in Drive (not pulled twice)");
   // Stamped (owner, 25 Nov: "omo number, address and location printed on the photo and video as well as before and after; the
   // date in the file name"): saved as stamped evidence, dated the day the worker took it, the date in the file name.
   const rows = await page.evaluate((id) => new Promise((res) => { const q = indexedDB.open("hpd-field-photos-v1"); q.onsuccess = () => { const t = q.result.transaction("photos").objectStore("photos").getAll(); t.onsuccess = () => res(t.result.filter((x) => x.jobId === id).map((x) => [x.kind, x.stamped, x.capturedAt, x.name]).sort()); }; }), JOB);
@@ -46,6 +48,7 @@ try {
   assert.deepEqual(rows.map((r) => [r[0], r[1], r[2]]), [["after", true, "2026-11-22T16:00:00.000Z"], ["before", true, "2026-11-20T15:00:00.000Z"]]);
   assert.match(rows[1][3], /^EQ15239_.+_BEFORE-WORK-EVIDENCE_PHOTO_20261120\.jpg$/);
   assert.match(rows[0][3], /^EQ15239_.+_AFTER-WORK-EVIDENCE_PHOTO_20261122\.jpg$/);
+  // (HPD's PDF is held back until the pages step below, so these first shares are the plain message to check word by word.)
   const tenantPhone = ((await page.locator('[data-hpd-smoke="jc-tenant-call"]').getAttribute("href").catch(() => "")) || "").replace(/^tel:/, "").replace(/\D/g, "").slice(-10);
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
@@ -81,6 +84,7 @@ try {
   assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /Sent to your worker/);
   // 📄 HPD's pages for the worker (21 Nov): drawn from the invitation PDF (signed in), then shared as pictures.
   if (job.ITBFile) {
+    itb.open = true;
     await page.locator('[data-hpd-smoke="jc-crew-pages"]').click();
     const ready = await page.waitForFunction(() => { const b = document.querySelector('[data-hpd-smoke="jc-crew-pages"]'); return b?.getAttribute("data-ready") || (/Couldn't open/.test(document.querySelector('[data-hpd-smoke="jc-crew-msg"]')?.textContent || "") ? "none" : ""); }, null, { timeout: 60000 }).then((h) => h.jsonValue());
     if (ready === "none") console.log("HPD pages: PDF not readable here (no key)");
@@ -94,16 +98,25 @@ try {
       assert.ok(shared.names.every((n) => /^EQ15239-HPD-page-\d\.jpg$/.test(n)), shared.names.join(","));
       assert.match(shared.text, /show them to the tenant/);
       console.log(`HPD pages shared: ${shared.names.join(", ")}`);
-      // 24 Nov (owner: "fix send to worker, he should be able to see the actual pdf work description and the 2nd page"):
-      // once the pages are ready, 👷 Send to a worker sends the job and HPD's pages together in one share.
-      assert.match(await page.locator('[data-hpd-smoke="jc-crew-send"]').innerText(), /Send to a worker \+ HPD's \d page/);
+      // 25 Nov (owner: "it should go as one package, with the second page: work description page, then the whole complete
+      // message"): 👷 Send to a worker sends ONE PDF: HPD's pages first (work description, then page 2), the whole message
+      // last with the job link; no separate text.
+      await page.waitForFunction(() => /one PDF/.test(document.querySelector('[data-hpd-smoke="jc-crew-send"]')?.textContent || ""), null, { timeout: 20000 });
       await page.evaluate(() => { window.__shared = null; });
       await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
       await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
-      const both = await page.evaluate(() => ({ names: (window.__shared.files || []).map((f) => f.name), text: window.__shared.text }));
-      assert.equal(both.names.length, Number(ready), "HPD's pages go with the job");
-      assert.match(both.text, /\/worker\/#o=EQ15239/);
-      assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /the job \+ HPD's \d pages? \(work description and tenant page\)/);
+      const one = await page.evaluate(async () => { const f = (window.__shared.files || [])[0]; const b = f ? new Uint8Array(await f.arrayBuffer()) : new Uint8Array(); let bin = ""; for (const x of b) bin += String.fromCharCode(x); return { n: (window.__shared.files || []).length, name: f?.name, type: f?.type, text: window.__shared.text || "", b64: btoa(bin) }; });
+      assert.equal(one.n, 1, "one file");
+      assert.equal(one.text, "", "no separate message");
+      assert.equal(one.name, "EQ15239 job for worker.pdf");
+      assert.equal(one.type, "application/pdf");
+      const { PDFDocument } = await import("pdf-lib");
+      const pdf = await PDFDocument.load(Buffer.from(one.b64, "base64"));
+      assert.ok(pdf.getPageCount() >= Number(ready) + 1, `HPD's pages, then the message (${pdf.getPageCount()} pages)`);
+      if (process.env.SHOTS) (await import("node:fs")).writeFileSync(`${process.env.SHOTS}/worker-packet.pdf`, Buffer.from(one.b64, "base64"));
+      const raw = Buffer.from(one.b64, "base64").toString("latin1");
+      assert.ok(/\/URI \(https?:\/\/[^)]+\/worker\/#o=EQ15239/.test(raw), "the job link is tappable in the PDF");
+      assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /one PDF: HPD's work description page, the second page, then the whole message/);
     }
   }
   // Untick the tenant: left out.
@@ -111,7 +124,20 @@ try {
   await page.locator('[data-hpd-smoke="jc-crew-tenant"]').uncheck();
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
-  const t2 = await page.evaluate(() => window.__shared.text);
+  // With HPD's pages ready the share is one PDF: read the message from it.
+  const got2 = await page.evaluate(async () => { const f = (window.__shared.files || [])[0]; if (!f) return { text: window.__shared.text }; const b = new Uint8Array(await f.arrayBuffer()); let bin = ""; for (const x of b) bin += String.fromCharCode(x); return { b64: btoa(bin) }; });
+  let t2 = got2.text || "";
+  if (got2.b64) {
+    // The PDF's page text sits in compressed streams: open each and read the drawn words.
+    const zlib = await import("node:zlib");
+    const raw = Buffer.from(got2.b64, "base64").toString("latin1");
+    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)endstream/g)) {
+      let body = "";
+      try { body = zlib.inflateSync(Buffer.from(m[1], "latin1")).toString("latin1"); } catch { continue; }
+      t2 += [...body.matchAll(/<([0-9A-Fa-f]+)> Tj/g)].map((x) => x[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join("")).join(" ");
+    }
+  }
+  assert.match(t2, /1207 1 AVENUE/, "the message is in the PDF");
   assert.ok(!/Tenant:/.test(t2) && (!tenantPhone || !t2.replace(/\D/g, "").includes(tenantPhone)), "no tenant when unticked");
   // 📥 The worker's photos back into the job card: named Before / After by the worker's page, sorted by their name
   // (even from the After button), saved on the job (backed up to Drive by itself).

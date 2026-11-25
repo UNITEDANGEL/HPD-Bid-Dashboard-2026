@@ -133,6 +133,7 @@ function paperLine(p: Paper, nowMs: number): string {
   return d < 0 ? `ran out ${-d} day${d === -1 ? "" : "s"} ago` : d === 0 ? "runs out today" : `${d} day${d === 1 ? "" : "s"} left`;
 }
 import { crewText, workWhere, workFull } from "../../lib/crew-share";
+import { workerPacket } from "../../lib/worker-packet";
 import { workerLink } from "../../lib/worker-link";
 import { outsideWord } from "../../lib/rain-route";
 import { dayMoney, dayMoneyAnswer, dollars } from "../../lib/day-money";
@@ -5933,19 +5934,45 @@ export default function FieldCommandClient() {
   async function workerPass(id: string) {
     try {
       const kept = JSON.parse(localStorage.getItem(`hpd-worker-pass-${id}`) || "null") as { pass: string; at: number } | null;
-      if (kept?.pass && Date.now() - kept.at < 30 * 86400000) { workerPassRef.current[id] = kept.pass; return kept.pass; }
+      if (kept?.pass && Date.now() - kept.at < 30 * 86400000) { workerPassRef.current[id] = kept.pass; setPassTick((n) => n + 1); return kept.pass; }
     } catch { /* private mode */ }
     try {
       const r = await fetch("/api/drive/worker-ticket", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobId: id }) });
       const d = await r.json().catch(() => ({}));
       if (r.ok && typeof d.pass === "string") {
         workerPassRef.current[id] = d.pass;
+        setPassTick((n) => n + 1);
         try { localStorage.setItem(`hpd-worker-pass-${id}`, JSON.stringify({ pass: d.pass, at: Date.now() })); } catch { /* private mode */ }
         return d.pass as string;
       }
     } catch { /* offline */ }
     return "";
   }
+  // The whole message for the worker (the share text and the PDF's last page).
+  function crewMessage(job: JobRecord) {
+    const id = jobId(job);
+    const t = tenantInfo(job);
+    let contact = null;
+    try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(job))] || null; } catch { /* private mode */ }
+    const sum = jobSummary(jobScope(job));
+    const due = String(value(job, ["WorkCompletionDate", "MaturityDate"]) || "");
+    const crewJob = { id, address: jobAddress(job), apt: t.apt, completeBy: due ? finishByText(due, nyToday()) : undefined, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(job).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(job), t.apt), full: workFull(jobScope(job)) };
+    const link = workerLink(window.location.origin, crewJob, workerPassRef.current[id]);
+    return { text: crewText(crewJob, link), link };
+  }
+  const [workerPdf, setWorkerPdf] = useState<{ key: string; file: File } | null>(null);
+  const [passTick, setPassTick] = useState(0);
+  useEffect(() => {
+    if (!selectedJob || !hpdPages || hpdPages.id !== jobId(selectedJob) || !("files" in hpdPages)) return;
+    const id = jobId(selectedJob);
+    const { text, link } = crewMessage(selectedJob);
+    const key = `${id}|${text}`;
+    if (workerPdf?.key === key) return;
+    let gone = false;
+    void workerPacket(id, hpdPages.files, text, link).then((file) => { if (!gone) setWorkerPdf({ key, file }); }).catch(() => { /* the share falls back to the message */ });
+    return () => { gone = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedJobId, hpdPages, crewTenant, mediaCounts, passTick]);
   async function pullFromWorker(job: JobRecord, loud = false) {
     const id = jobId(job);
     if (workerPullRef.current.has(id)) return;
@@ -9604,20 +9631,15 @@ export default function FieldCommandClient() {
                 {!isTestJob(id) ? (
                   <div className="jc-crew" data-hpd-smoke="jc-crew">
                     <button type="button" className="jc-email" data-hpd-smoke="jc-crew-send" onClick={async () => {
-                      const t = tenantInfo(selectedJob);
-                      let contact = null;
-                      try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
-                      const sum = jobSummary(jobScope(selectedJob));
-                      const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
-                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due ? finishByText(due, nyToday()) : undefined, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
-                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob, workerPassRef.current[id]));
-                      const nav = navigator as Navigator & { share?: (d: { title: string; text: string; files?: File[] }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
-                      // HPD's pages (work description + page 2 with the tenant's contact) go with the job when they're ready.
-                      const pages = hpdPages && hpdPages.id === id && "files" in hpdPages ? hpdPages.files : null;
-                      const withPages = Boolean(pages && nav.share && (!nav.canShare || nav.canShare({ files: pages })));
-                      if (nav.share) { try { await nav.share(withPages && pages ? { title: `HPD job ${id}`, text, files: pages } : { title: `HPD job ${id}`, text }); setCrewMsg(withPages && pages ? `Sent to your worker: the job + HPD's ${pages.length} page${pages.length === 1 ? "" : "s"} (work description and tenant page).` : "Sent to your worker's app."); } catch { /* closed the share sheet */ } }
+                      const { text } = crewMessage(selectedJob);
+                      const nav = navigator as Navigator & { share?: (d: { title: string; text?: string; files?: File[] }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
+                      // One package (owner, 25 Nov): HPD's work description page, the second page, then the whole message, in one
+                      // PDF; ready before the tap (an iPhone only opens the share sheet straight after a tap).
+                      const pdf = workerPdf && workerPdf.key === `${id}|${text}` ? workerPdf.file : null;
+                      const withPdf = Boolean(pdf && nav.share && (!nav.canShare || nav.canShare({ files: [pdf] })));
+                      if (nav.share) { try { await nav.share(withPdf && pdf ? { title: `HPD job ${id}`, files: [pdf] } : { title: `HPD job ${id}`, text }); setCrewMsg(withPdf ? "Sent to your worker as one PDF: HPD's work description page, the second page, then the whole message with the job link." : "Sent to your worker's app."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
-                    }}>{(() => { const hp = hpdPages && hpdPages.id === id ? hpdPages : null; return hp && "files" in hp ? `👷 Send to a worker + HPD's ${hp.files.length} page${hp.files.length === 1 ? "" : "s"}` : "👷 Send to a worker"; })()}</button>
+                    }}>{(() => { const hp = hpdPages && hpdPages.id === id ? hpdPages : null; return hp && "files" in hp && workerPdf?.key.startsWith(`${id}|`) ? "👷 Send to a worker (one PDF: HPD's pages + the job)" : hp && "busy" in hp ? "👷 Send to a worker (getting HPD's pages…)" : "👷 Send to a worker"; })()}</button>
                     <button type="button" className="jc-email" data-hpd-smoke="jc-crew-whatsapp" onClick={() => {
                       const t = tenantInfo(selectedJob);
                       let contact = null;
