@@ -1155,7 +1155,8 @@ export default function FieldCommandClient() {
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
   const sheetTouchStart = useRef<number | null>(null);
   // date: the day it happened (YYYY-MM-DD, blank = today); who: the person who refused access (30 Oct).
-  type OutcomeDraft = { outcome: string; note: string; date?: string; who?: string };
+  // rel / name / phone: who they are (Super, Tenant, Manager... 25 Nov, ER00332), their name and phone if given.
+  type OutcomeDraft = { outcome: string; note: string; date?: string; who?: string; rel?: string; name?: string; phone?: string };
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, OutcomeDraft>>({});
   // ✏️ Change outcome or date: the job whose saved outcome is being changed on the card.
   const [changeOutcomeFor, setChangeOutcomeFor] = useState("");
@@ -5791,7 +5792,13 @@ export default function FieldCommandClient() {
       // A past day picked (30 Oct: "I'm closing a refused access today, but it was in the past"): saved at noon New York
       // that day, so the affidavit and the invoice carry that date.
       const when = draft.date && draft.date < nyToday() ? new Date(`${draft.date}T16:00:00Z`).toISOString() : new Date().toISOString();
-      const extra: Record<string, unknown> = draft.outcome === "REFUSED_ACCESS" ? { DeniedDescription: String(draft.who || "").trim().toUpperCase() } : {};
+      const extra: Record<string, unknown> = draft.outcome === "REFUSED_ACCESS" ? {
+        DeniedDescription: String(draft.who || "").trim().toUpperCase(),
+        // Who they are, their name and phone (25 Nov, ER00332): only when picked, so the voice helper's save stays as it was.
+        ...(draft.rel !== undefined ? { DeniedRelationship: String(draft.rel || "").trim().toUpperCase() } : {}),
+        ...(draft.name !== undefined ? { DeniedName: String(draft.name || "").trim().toUpperCase() } : {}),
+        ...(draft.phone !== undefined ? { DeniedPhone: String(draft.phone || "").trim() } : {}),
+      } : {};
       // Changing a saved outcome replaces it: no access starts again at the 1st try.
       const changing = changeOutcomeFor === id && Boolean(draft.outcome);
       const restart = changing ? { NoAccessFirstAttemptAt: "", NoAccessSecondAttemptAt: "", SecondAttemptAvailableAt: "" } : {};
@@ -9210,7 +9217,7 @@ export default function FieldCommandClient() {
                 const startChange = () => {
                   const savedAt = savedOutcome === "REFUSED_ACCESS" ? value(selectedJob, ["RefusalDate"]) : savedOutcome === "WORK_COMPLETED_BY_OTHERS" ? value(selectedJob, ["CompletedByOthersDate"])
                     : savedOutcome === "NO_ACCESS_1_WAITING_72H" ? value(selectedJob, ["NoAccessFirstAttemptAt"]) : value(selectedJob, ["ActualWorkCompletionDate"]);
-                  setDraft({ outcome: savedOutcome, note: "", date: newYorkDay(savedAt) || "", who: value(selectedJob, ["DeniedDescription"]) });
+                  setDraft({ outcome: savedOutcome, note: "", date: newYorkDay(savedAt) || "", who: value(selectedJob, ["DeniedDescription"]), rel: value(selectedJob, ["DeniedRelationship"]) || undefined, name: value(selectedJob, ["DeniedName"]) || undefined, phone: value(selectedJob, ["DeniedPhone"]) || undefined });
                   setChangeOutcomeFor(id);
                   window.setTimeout(() => document.querySelector('[data-hpd-smoke="jc-affidavit-only"]')?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
                 };
@@ -9233,6 +9240,18 @@ export default function FieldCommandClient() {
                       </div>
                     ) : null}
                     <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
+                        {/* Who they are (owner, 25 Nov, ER00332: "I should have been able to pick Tenant instead of the super ... it
+                            could be the super, the tenant, the manager, and they could have a phone number"): blank = SUPER. */}
+                        <label>🏠 Who are they?
+                          <input data-hpd-smoke="jc-refused-rel" value={draft.rel || ""} placeholder="SUPER (or type anyone)" onChange={(event) => setDraft({ rel: event.target.value })} />
+                        </label>
+                        <div className="jc-refused-chips" data-hpd-smoke="jc-refused-rel-chips">{["Super", "Tenant", "Manager", "Owner", "Doorman"].map((r) => <button key={r} type="button" className={(draft.rel || "Super").toUpperCase() === r.toUpperCase() ? "is-picked" : undefined} onClick={() => setDraft({ rel: r.toUpperCase() })}>{r}</button>)}</div>
+                        <label>Their name (optional)
+                          <input data-hpd-smoke="jc-refused-name" value={draft.name || ""} placeholder="DID NOT PROVIDE" onChange={(event) => setDraft({ name: event.target.value })} />
+                        </label>
+                        <label>📞 Their phone (optional)
+                          <input data-hpd-smoke="jc-refused-phone" type="tel" inputMode="tel" value={draft.phone || ""} placeholder="DID NOT PROVIDE" onChange={(event) => setDraft({ phone: event.target.value })} />
+                        </label>
                     <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>
                   </div>
                 ) : null;

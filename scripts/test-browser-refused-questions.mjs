@@ -47,13 +47,19 @@ try {
   await page.locator('[data-hpd-smoke="jc-step-save-outcome"]').click();
   await page.getByText("Describe who refused access first").first().waitFor({ timeout: 5000 });
   await q.locator("button", { hasText: "Male, tall, dark hair" }).click();
-  assert.equal(await q.locator("input").count(), 1, "only the description (and the date) asked");
+  // Who they are (25 Nov, ER00332: "I should have been able to pick Tenant instead of the super"), and their phone.
+  assert.equal(await q.locator('[data-hpd-smoke="jc-refused-rel-chips"] button.is-picked').innerText(), "Super", "Super unless picked");
+  await q.locator('[data-hpd-smoke="jc-refused-rel-chips"] button', { hasText: "Tenant" }).click();
+  assert.equal(await page.locator('[data-hpd-smoke="jc-refused-rel"]').inputValue(), "TENANT");
+  await page.locator('[data-hpd-smoke="jc-refused-phone"]').fill("718-555-0100");
   if (shots) await page.locator('[data-hpd-smoke="jc-refused-questions"]').screenshot({ path: `${shots}/refused-questions.png` });
   await page.locator('[data-hpd-smoke="jc-step-save-outcome"]').click();
   await page.waitForFunction((j) => (JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j] || {}).FieldOutcome === "REFUSED_ACCESS", JOB, { timeout: 10000 });
   const saved = await page.evaluate((j) => JSON.parse(localStorage.getItem("hpd-job-workflow-overrides-v2") || "{}")[j], JOB);
   assert.equal(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date(saved.RefusalDate)), PAST, "saved on the past day");
   assert.equal(saved.DeniedDescription, "MALE, TALL, DARK HAIR");
+  assert.equal(saved.DeniedRelationship, "TENANT", "who they are saved");
+  assert.equal(saved.DeniedPhone, "718-555-0100", "their phone saved");
   for (let i = 0; i < 20 && !posted.some((p) => p.includes("REFUSED_ACCESS")); i++) await page.waitForTimeout(250);
   assert.ok(posted.some((p) => p.includes("REFUSED_ACCESS")), "outcome on the status server");
   // The affidavit: that date and the description.
@@ -67,7 +73,11 @@ try {
   const cardText = await card.innerText();
   assert.ok(cardText.indexOf("1. Date refused") < cardText.indexOf("2. Person who refused"), cardText);
   assert.match(cardText, new RegExp(`invoice is made with this affidavit, dated ${SHORT.replace(/\//g, "\/")}`, "i"));
-  assert.equal(await page.locator('[data-hpd-smoke="paperwork-refused-more"]').getAttribute("open"), null, "name / relationship / phone folded");
+  // Who they are, their name and phone: out in the open (not folded), as picked on the card; not the super's name.
+  assert.equal(await page.locator('[data-hpd-smoke="paperwork-refused-relationship"]').inputValue(), "TENANT", "tenant on the affidavit");
+  assert.equal(await page.locator('[data-hpd-smoke="paperwork-refused-phone"]').inputValue(), "718-555-0100", "their phone on the affidavit");
+  assert.equal(await page.locator('[data-hpd-smoke="paperwork-refused-name"]').inputValue(), "", "no super's name for a tenant");
+  assert.ok(cardText.indexOf("2. Person who refused") < cardText.indexOf("3. Who refused"), cardText);
   if (shots) await card.screenshot({ path: `${shots}/refused-card.png` });
   assert.deepEqual(errors, []);
   console.log(`PASS refused access questions: just the date (past day ${PAST}) and the description (required) on the job card; saved with that day; the affidavit opens with ${SHORT} and the description`);

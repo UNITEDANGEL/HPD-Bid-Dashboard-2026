@@ -432,6 +432,10 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const actualStartAt = String(job.ActualWorkStartDate || job.actualWorkStartDate || "").trim();
   const actualCompleteAt = String(job.ActualWorkCompletionDate || job.actualWorkCompletionDate || "").trim();
   const lastEvidenceAt = String(job.LastEvidenceCapturedAt || job.lastEvidenceCapturedAt || "").trim();
+  const deniedRelationship = refusedAccessRelationship(job, outcome);
+  // 25 Nov (owner, ER00332: "I should have been able to pick Tenant instead of the super"): when someone else refused
+  // (tenant, manager...), the super's name and phone are not filled in for them.
+  const refuserIsSuper = !deniedRelationship.trim() || /^(SUPER|SUPERINTENDENT)$/i.test(deniedRelationship.trim());
   const deniedName = cleanRefusedName(jobText(job, [
     "DeniedName",
     "deniedName",
@@ -441,6 +445,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     "refusedByName",
     "AccessDeniedByName",
     "accessDeniedByName",
+    ...(refuserIsSuper ? [
     "SuperName",
     "superName",
     "BuildingSuperName",
@@ -451,8 +456,8 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     "ownerEmployeeName",
     "AgentName",
     "agentName",
+    ] : []),
   ]));
-  const deniedRelationship = refusedAccessRelationship(job, outcome);
   const deniedDescription = jobText(job, [
     "DeniedDescription",
     "deniedDescription",
@@ -480,10 +485,12 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     "refusedByPhone",
     "IndividualPhone",
     "individualPhone",
+    ...(refuserIsSuper ? [
     "SuperPhone",
     "superPhone",
     "SuperintendentPhone",
     "superintendentPhone",
+    ] : []),
   ]);
   const lockedAt = String(job.OutcomeLockedAt || job.outcomeLockedAt || "").trim();
   const sourceStatus = getJobWorkflowStatus(job);
@@ -2122,6 +2129,13 @@ export default function PaperworkPage() {
     if (DRAFT_FIELDS.includes(key)) editedRef.current.add(key);
     clearPackagePreview();
     setForm((current) => ({ ...current, [key]: value }));
+  }
+  // Who refused (25 Nov, ER00332): switching from the super to a tenant / manager / anyone clears the super's name and
+  // phone that were filled in, so they don't print under someone else.
+  function pickRefuser(relationship: string) {
+    const was = (form.deniedRelationship || "SUPER").trim().toUpperCase();
+    update("deniedRelationship", relationship);
+    if (was === "SUPER" && relationship !== "SUPER") { update("deniedName", ""); update("deniedPhone", ""); }
   }
 
   async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean; emailTo?: string[]; receipt?: { messageId: string; inInbox: boolean } }) {
@@ -5763,23 +5777,26 @@ export default function PaperworkPage() {
                   Use Male Tall Dark Hair
                 </button>
               </label>
-              <details className="paperwork-optional" data-hpd-smoke="paperwork-refused-more">
-                <summary>Name, relationship, phone (optional){form.deniedName || form.deniedRelationship ? `: ${[form.deniedName || "DID NOT PROVIDE", form.deniedRelationship || "SUPER"].join(", ")}` : ""}</summary>
+              {/* 3-4. Who they are (owner, 25 Nov, ER00332: "I should have been able to pick Tenant instead of the super ... it
+                  could be the super, the tenant, the manager, and they could have a phone number I can provide"): out in the
+                  open, not folded. Picking someone other than the super clears the super's name and phone. */}
+              <div className="paperwork-refused-whois" data-hpd-smoke="paperwork-refused-more">
+                <label className="paperwork-field">
+                  3. Who refused: Super, Tenant, Manager… (7a)
+                  <input data-hpd-smoke="paperwork-refused-relationship" value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER (or type anyone)" />
+                  <span className="paperwork-rel-chips" data-hpd-smoke="paperwork-rel-chips">{RELATIONSHIP_CHIPS.map((r) => <button key={r} type="button" className={(form.deniedRelationship || "SUPER").toUpperCase() === r ? "is-on" : undefined} onClick={() => pickRefuser(r)}>{r}</button>)}</span>
+                </label>
                 <div className="paperwork-grid">
                   <label className="paperwork-field">
-                    Name Given (7a)
-                    <input value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} placeholder="DID NOT PROVIDE" />
+                    4. Their name (optional)
+                    <input data-hpd-smoke="paperwork-refused-name" value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} placeholder="DID NOT PROVIDE" />
                   </label>
                   <label className="paperwork-field">
-                    Relationship (7a)
-                    <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" /><span className="paperwork-rel-chips" data-hpd-smoke="paperwork-rel-chips">{RELATIONSHIP_CHIPS.map((r) => <button key={r} type="button" className={form.deniedRelationship.toUpperCase() === r ? "is-on" : undefined} onClick={() => update("deniedRelationship", r)}>{r}</button>)}</span>
+                    Their phone (optional)
+                    <input data-hpd-smoke="paperwork-refused-phone" type="tel" inputMode="tel" value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
                   </label>
                 </div>
-                <label className="paperwork-field">
-                  Their Telephone (7b)
-                  <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
-                </label>
-              </details>
+              </div>
               <small>🧾 The invoice is made with this affidavit, dated {displayDate(form.secondAttempt || form.fieldDate) || "the refusal day"}.</small>
             </div>
           ) : null}

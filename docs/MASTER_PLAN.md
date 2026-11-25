@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## ⛔ 25 Nov: who refused access can be anyone (app request 20261125143637, owner, ER00332: "I should have been able to pick Tenant instead of the super for the refused access ... it could be the super, the tenant, the manager, and they could have a phone number I can provide")
+
+1. ✓ Job card Refused access asks 🏠 Who are they? (Super / Tenant / Manager / Owner / Doorman or typed), their name and 📞 phone; saved with the outcome. The affidavit's refused card shows 3. Who refused and 4. name / phone in the open (no folded box); someone other than the super never gets the super's name or phone filled in. Tests: test-browser-refused-questions, test-browser-paperwork-relationship.
+
 ## ✨ 25 Nov: one update pop-up that leaves by itself (app request 20261125134827, owner: "there are double messages pop-up for updates ... I like the purple one ... it needs to go in and go out by itself, like 10 seconds")
 
 1. ✓ The purple New update pop-up counts as seen the moment it shows (a reload, the auto-update reload or the Home Screen icon don't show it again) and the small "✨ App updated" note no longer follows it. It slides down into place, a gold bar counts down 10 s, then it slides up and the sparkles fade; a tap on it keeps it open until Got it. Test: test-browser-newupdate.
