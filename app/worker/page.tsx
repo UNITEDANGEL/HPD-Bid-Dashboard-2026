@@ -175,7 +175,7 @@ export default function WorkerPage() {
                 {mine.map((x) => (
                   <figure key={x.key} data-hpd-smoke="worker-item" data-side={side} data-state={x.state} style={{ margin: 0, position: "relative", borderRadius: 10, overflow: "hidden", background: "#000", aspectRatio: "1" }}>
                     {x.video ? <video src={x.url} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <img src={x.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                    <b style={{ position: "absolute", left: 4, top: 4, padding: "2px 6px", borderRadius: 6, background: color, color: "#fff", fontSize: 12 }}>{side.toUpperCase()}{x.video ? " 🎥" : ""}{x.spot ? ` · ${x.spot}` : ""}</b>
+                    <b style={{ position: "absolute", left: 4, bottom: 26, maxWidth: "calc(100% - 8px)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "1px 5px", borderRadius: 6, background: color, color: "#fff", fontSize: 11 }}>{side.toUpperCase()}{x.video ? " 🎥" : ""}{x.spot ? ` · ${x.spot}` : ""}</b>
                     <figcaption style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "3px 4px", background: "rgba(0,0,0,.65)", color: "#fff", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
                       {x.state === "sent" ? "✓ Sent" : x.state === "sending" ? `Sending ${x.pct}%` : x.state === "failed" ? <button type="button" onClick={() => void send(x)} style={{ border: 0, background: "#dc2626", color: "#fff", borderRadius: 6, fontWeight: 800 }}>↻ Send again</button> : "On this phone"}
                     </figcaption>
