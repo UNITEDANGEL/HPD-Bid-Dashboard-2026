@@ -8,13 +8,20 @@ import { useMemo, useState } from "react";
 import { EMAIL_LINES, ERP_COPIES, emailDraft, firstName, isHpdAddress, withLewis, type EmailPerson } from "../../lib/email-people";
 import { VT_LINES, vtDay } from "../../lib/notice-fix";
 
-export type EmailJob = { omo: string; address: string; unit: "erp" | "aep" } | null;
+// contacts: the HPD people the work order says to email (25 Nov, ER09991), first one gets it, the rest copied.
+export type EmailJob = { omo: string; address: string; unit: "erp" | "aep"; contacts?: EmailPerson[] } | null;
 
 // vt: "📣 Update vendor tracking" from a job card (9 Nov): Lewis, a copy to Saul and Rishi on ERP jobs, the short
 // "in touch, going on <day>" line written in. visitDate: the job's next visit (yyyy-mm-dd), for that line.
 export default function EmailSheet({ people: given, job, onClose, onSent, vt = false, visitDate = "", line = "touch" }: { people: EmailPerson[]; job: EmailJob; onClose: () => void; onSent?: (line: string) => void; vt?: boolean; visitDate?: string; line?: string }) {
-  const people = useMemo(() => (job?.unit === "erp" || vt ? withLewis(given) : given), [given, job, vt]);
-  const start = useMemo(() => (job ? people.find((p) => p.unit === job.unit) : null) || people[0] || null, [people, job]);
+  // The work order names its own vendor trackers (25 Nov, ER09991, a lead abatement job: Campbell, not Lewis): they come
+  // first, the first one picked and the others copied (3 at most); Lewis / Gafur stay one tap away.
+  const named = useMemo(() => (vt ? job?.contacts || [] : []), [job, vt]);
+  const people = useMemo(() => {
+    const base = job?.unit === "erp" || vt ? withLewis(given) : given;
+    return named.length ? [...named, ...base.filter((p) => !named.some((n) => n.to === p.to))] : base;
+  }, [given, job, vt, named]);
+  const start = useMemo(() => named[0] || (job ? people.find((p) => p.unit === job.unit) : null) || people[0] || null, [people, job, named]);
   const [to, setTo] = useState(start?.to || "");
   const [other, setOther] = useState("");
   const who = people.find((p) => p.to === to)?.who || "";
@@ -23,7 +30,8 @@ export default function EmailSheet({ people: given, job, onClose, onSent, vt = f
   if (vt && job) first.subject = `${first.subject} - update`.slice(0, 200);
   // Copies to Saul and Rishi (ERP jobs): on for a vendor tracking update, off for other emails.
   const erp = job?.unit === "erp";
-  const [cc, setCc] = useState<string[]>(() => (vt && erp ? ERP_COPIES.map((p) => p.to) : []));
+  const copyTo = named.length ? named.slice(1, 4) : erp ? ERP_COPIES : [];
+  const [cc, setCc] = useState<string[]>(() => (vt ? copyTo.map((p) => p.to) : []));
   const [subject, setSubject] = useState(first.subject);
   const [text, setText] = useState(first.text);
   const [status, setStatus] = useState("");
@@ -50,10 +58,10 @@ export default function EmailSheet({ people: given, job, onClose, onSent, vt = f
     setBusy(true);
     setStatus(toSelf ? "Sending to you…" : "Sending…");
     try {
-      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: subject.trim(), text: text.trim() } : { to: address, subject: subject.trim(), text: text.trim(), ...(erp && cc.length ? { cc: cc.filter((x) => x !== address) } : {}) }) });
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: subject.trim(), text: text.trim() } : { to: address, subject: subject.trim(), text: text.trim(), ...(copyTo.length && cc.length ? { cc: cc.filter((x) => x !== address) } : {}) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(r.status === 401 ? "sign in with Google on this phone" : d.error || `HTTP ${r.status}`);
-      const copied = !toSelf && Array.isArray(d.cc) && d.cc.length ? ` (copy to ${ERP_COPIES.filter((p) => d.cc.includes(p.to)).map((p) => p.who.split(/\s+/).pop()).join(" and ")})` : "";
+      const copied = !toSelf && Array.isArray(d.cc) && d.cc.length ? ` (copy to ${copyTo.filter((p) => d.cc.includes(p.to)).map((p) => (named.length ? firstName(p.who) : p.who.split(/\s+/).pop())).join(" and ")})` : "";
       const line = toSelf ? "✓ Sent to your own Gmail to check." : `✓ Sent to ${firstName(who) || address}${copied}.`;
       setStatus(line);
       if (!toSelf) { onSent?.(line); window.setTimeout(onClose, 1500); }
@@ -81,10 +89,10 @@ export default function EmailSheet({ people: given, job, onClose, onSent, vt = f
           <button type="button" role="radio" aria-checked={to === "other"} className={to === "other" ? "is-on" : ""} data-hpd-smoke="fc-email-other" onClick={() => pick("other")}>Someone else at HPD</button>
         </div>
         {to === "other" ? <input type="email" inputMode="email" placeholder="name@hpd.nyc.gov" value={other} onChange={(e) => setOther(e.target.value)} data-hpd-smoke="fc-email-other-input" /> : null}
-        {erp ? (
+        {copyTo.length ? (
           <div className="fc-email-cc" data-hpd-smoke="fc-email-cc">
             <small>Copy to</small>
-            {ERP_COPIES.map((p) => (
+            {copyTo.map((p) => (
               <label key={p.to} className={cc.includes(p.to) ? "is-on" : ""}>
                 <input type="checkbox" data-hpd-smoke={`fc-email-cc-${p.who.split(/\s+/).pop()!.toLowerCase()}`} checked={cc.includes(p.to)} onChange={(e) => setCc((c) => (e.target.checked ? [...c, p.to] : c.filter((x) => x !== p.to)))} /> {p.who}
               </label>

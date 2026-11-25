@@ -12,6 +12,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 **Owner rule (12 Nov):** do not build ideas on your own. Build only plan items, or an idea after the owner taps Build. Auto-upgrade stays within the plan.
 ---
 
+## 📣 25 Nov: vendor tracking = the people on that work order (app request 20261125143952, owner, ER09991: "this is a lead abatement job ... the email is on the third page underneath the description for Campbell and then CC everybody else ... most of them is gonna be Louis, but this is a special case")
+
+1. ✓ When HPD's page 3 names people to email ("CONTRACTOR MUST CONTACT HPD / EHU via email Campbell Camille CAMPBELC@hpd.nyc.gov, ..."), 📣 Update vendor tracking and the "tell …" buttons pick the first one, copy the next 3, and keep Lewis one tap away; other jobs unchanged (Lewis, Saul and Rishi copied). Tests: test-work-order-contacts, test-browser-job-vt-update.
+
 ## ⛔ 25 Nov: who refused access can be anyone (app request 20261125143637, owner, ER00332: "I should have been able to pick Tenant instead of the super for the refused access ... it could be the super, the tenant, the manager, and they could have a phone number I can provide")
 
 1. ✓ Job card Refused access asks 🏠 Who are they? (Super / Tenant / Manager / Owner / Doorman or typed), their name and 📞 phone; saved with the outcome. The affidavit's refused card shows 3. Who refused and 4. name / phone in the open (no folded box); someone other than the super never gets the super's name or phone filled in. Tests: test-browser-refused-questions, test-browser-paperwork-relationship.

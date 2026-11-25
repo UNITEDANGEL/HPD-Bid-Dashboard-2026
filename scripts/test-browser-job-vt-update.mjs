@@ -81,6 +81,22 @@ try {
   assert.deepEqual(mails[0].cc, ["sauld@hpd.nyc.gov"]);
   assert.ok(!/\b\d{3}[-. ]\d{3}[-. ]\d{4}\b/.test(JSON.stringify(mails[0])), "no phone numbers in it");
 
+  // 1b) A work order that names its own vendor trackers (25 Nov, ER09991, lead abatement: "the email is on the third page
+  // ... for Campbell and then CC everybody else"): Campbell picked, the others on HPD's page 3 copied, Lewis one tap away.
+  await page.goto(`${baseUrl}/map/?job=ER09991`, { waitUntil: "load", timeout: 180000 });
+  await page.locator("#fc-job-card").waitFor({ timeout: 20000 });
+  await page.locator('[data-hpd-smoke="jc-vt"]').click();
+  await sheet.waitFor();
+  assert.match(await page.locator('[data-hpd-smoke="fc-email-person"].is-on').innerText(), /Campbell/, "the work order's tracker, not Lewis");
+  assert.ok(await page.locator('[data-hpd-smoke="fc-email-person"]', { hasText: "Joy-Ann Lewis" }).count(), "Lewis still there");
+  const ccBoxes = page.locator('[data-hpd-smoke="fc-email-cc"] input[type="checkbox"]');
+  assert.ok((await ccBoxes.count()) >= 2 && (await ccBoxes.count()) <= 3, "the others copied (3 at most)");
+  await page.locator('[data-hpd-smoke="fc-email-send"]').click();
+  await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-email-sheet"]'), null, { timeout: 8000 });
+  assert.equal(mails[1].to, "campbelc@hpd.nyc.gov");
+  assert.ok(mails[1].cc.includes("tos@hpd.nyc.gov") && mails[1].cc.every((x) => /@hpd\.nyc\.gov$/.test(x)), JSON.stringify(mails[1].cc));
+  mails.length = 1;
+
   // 2) Notices board: 👉 Do this.
   await page.goto(`${baseUrl}/map/?view=all&map=1&board=1`, { waitUntil: "load", timeout: 180000 });
   const board = page.locator('[data-hpd-smoke="fc-board"]');

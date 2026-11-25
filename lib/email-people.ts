@@ -52,3 +52,25 @@ export const ERP_COPIES: EmailPerson[] = [
 ];
 // The people list with Lewis always in it (first), even before her emails have loaded on this phone.
 export const withLewis = (people: EmailPerson[]) => (people.some((p) => p.unit === "erp") ? people : [VT_LEWIS, ...people]);
+
+// 📣 The job's own vendor tracking (owner, 25 Nov, ER09991: "this is a lead abatement job ... the email is on the third
+// page underneath the description for Campbell, then CC everybody else regarding the work start date ... most of them is
+// gonna be Louis, but this is a special case"): HPD's page 3 sometimes names who to email with the start date
+// ("CONTRACTOR MUST CONTACT HPD / EHU via email Campbell Camille CAMPBELC@hpd.nyc.gov, Serene To Tos@hpd.nyc.gov, ...").
+// Those people, in HPD's order: the first gets the email, the rest a copy. Only @hpd.nyc.gov addresses; none = Lewis.
+export function workOrderContacts(text: string): EmailPerson[] {
+  const src = String(text || "");
+  const out: EmailPerson[] = [];
+  const re = /[a-z0-9._%+-]+@hpd\.nyc\.gov/gi;
+  let last = 0;
+  for (let m = re.exec(src); m; m = re.exec(src)) {
+    const to = m[0].toLowerCase();
+    // The name is the last few words before the address (after "via email", a comma or the address before it).
+    const before = src.slice(last, m.index).split(/via e-?mail|[,;:]|\bAND\b|\n\s*\n/i).pop() || "";
+    last = m.index + m[0].length;
+    const words = before.replace(/\s+/g, " ").trim().split(" ").filter((w) => /^[A-Za-z'.-]+$/.test(w) && !/^(email|e-mail|to|at|or|and|hpd|ehu|the|contact|with)$/i.test(w));
+    const name = words.slice(-3).join(" ");
+    if (!out.some((p) => p.to === to)) out.push({ to, who: name || to, unit: "" });
+  }
+  return out;
+}

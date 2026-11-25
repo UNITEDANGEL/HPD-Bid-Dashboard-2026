@@ -28,7 +28,7 @@ import { loadConversations, reloadConversations, loadNotices, loadPrivate, loadS
 import ItbPages, { pagePictures } from "./ItbPages";
 import MediaViewer from "./MediaViewer";
 import EmailSheet, { type EmailJob } from "./EmailSheet";
-import { ERP_COPIES, VT_LEWIS, emailPeople } from "../../lib/email-people";
+import { ERP_COPIES, VT_LEWIS, emailPeople, firstName, workOrderContacts } from "../../lib/email-people";
 import { vtAsks } from "../../lib/vt-asks";
 import { line2Fixes, line2Href, usDay, type SentDates } from "../../lib/affidavit-line2";
 import { buildingHistory, buildingKey, historyLine } from "../../lib/building-history";
@@ -3789,7 +3789,10 @@ export default function FieldCommandClient() {
       setCostReading("No connection: type the amount.");
     }
   };
-  const emailJobOf = (j: JobRecord | null): EmailJob => (j ? { omo: jobId(j), address: jobAddress(j), unit: unitOf(String(j.JobDescription || j.Job_Description || "")) } : null);
+  // contacts: the vendor trackers the work order names (page 3, 25 Nov, ER09991: Campbell on a lead abatement job).
+  const emailJobOf = (j: JobRecord | null): EmailJob => (j ? { omo: jobId(j), address: jobAddress(j), unit: unitOf(String(j.JobDescription || j.Job_Description || "")), contacts: workOrderContacts(String(j.ItbPage3Description || j.JobDescription || j.Job_Description || "")) } : null);
+  // Who the vendor tracking update goes to, for the button: the work order's first contact, else Lewis / Gafur.
+  const vtName = (j: JobRecord) => firstName(emailJobOf(j)?.contacts?.[0]?.who || "") || UNIT_NAMES[unitOf(String(j.JobDescription || j.Job_Description || ""))];
   const [staleOpen, setStaleOpen] = useState(false);
   const staleMark = (job: JobRecord, closed: boolean) => {
     const id = jobId(job);
@@ -9093,8 +9096,8 @@ export default function FieldCommandClient() {
                         tell me they're available next week ... we need to reply back to Lewis"): one tap writes it. */}
                     {!isTestJob(id) && !activeAppointment(selectedJob) && (reachedAt || tries) ? (
                       <div className="jc-contact-tell" data-hpd-smoke="jc-contact-tell">
-                        {reachedAt ? <button type="button" data-hpd-smoke="jc-contact-tell-nextweek" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, line: "nextweek" })}>🗓 They said next week: tell {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]}</button> : null}
-                        {!reachedAt ? <button type="button" data-hpd-smoke="jc-contact-tell-calling" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, line: "tenant" })}>📞 Still calling the tenant: tell {UNIT_NAMES[unitOf(String(selectedJob.JobDescription || selectedJob.Job_Description || ""))]}</button> : null}
+                        {reachedAt ? <button type="button" data-hpd-smoke="jc-contact-tell-nextweek" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, line: "nextweek" })}>🗓 They said next week: tell {vtName(selectedJob)}</button> : null}
+                        {!reachedAt ? <button type="button" data-hpd-smoke="jc-contact-tell-calling" onClick={() => setEmailFor({ job: emailJobOf(selectedJob), vt: true, line: "tenant" })}>📞 Still calling the tenant: tell {vtName(selectedJob)}</button> : null}
                       </div>
                     ) : null}
                     {hist.length ? (
@@ -9237,9 +9240,6 @@ export default function FieldCommandClient() {
                           <input data-hpd-smoke="jc-refused-who" value={draft.who || ""} placeholder="MALE, TALL, DARK HAIR" onChange={(event) => setDraft({ who: event.target.value })} />
                         </label>
                         <div className="jc-refused-chips">{["Male, tall, dark hair", "Female, short, dark hair", "Male, short, gray hair"].map((d) => <button key={d} type="button" onClick={() => setDraft({ who: d })}>{d}</button>)}</div>
-                      </div>
-                    ) : null}
-                    <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                         {/* Who they are (owner, 25 Nov, ER00332: "I should have been able to pick Tenant instead of the super ... it
                             could be the super, the tenant, the manager, and they could have a phone number"): blank = SUPER. */}
                         <label>🏠 Who are they?
@@ -9252,6 +9252,9 @@ export default function FieldCommandClient() {
                         <label>📞 Their phone (optional)
                           <input data-hpd-smoke="jc-refused-phone" type="tel" inputMode="tel" value={draft.phone || ""} placeholder="DID NOT PROVIDE" onChange={(event) => setDraft({ phone: event.target.value })} />
                         </label>
+                      </div>
+                    ) : null}
+                    <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                     <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>
                   </div>
                 ) : null;
