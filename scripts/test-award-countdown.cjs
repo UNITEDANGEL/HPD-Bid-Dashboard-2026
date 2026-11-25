@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -87,4 +87,10 @@ console.log('award-countdown tests passed');
   assert.equal(t, 'Jobs to finish this week (2), closest date first:\n1. ZZ1 - 12 Main St, 10472\n   Finish by Wed, Nov 25 (1 day left)\n2. ZZ2\n   Finish by Mon, Nov 30 (6 days left)\nSend me the photos when each one is done. Thanks!');
   assert.ok(!t.includes('$'));
   assert.equal(maturityWorkerText([], {}, '2026-11-24'), '');
+}
+// 🚧 Not started yet: a visit / on-site step / photo count on the saved job, or a visit or photo on this phone, counts as started.
+{
+  const mw = ['A', 'B', 'C', 'D', 'E'].map((omo) => ({ omo, due: '', days: 1, given: 1 }));
+  assert.deepEqual(maturityNotStarted(mw, { overrides: { A: { LastFieldVisitAt: '2026-11-24' }, B: { BeforePhotoCount: 3 }, D: { FieldOutcome: '' } }, started: ['c'] }), ['D', 'E']);
+  assert.deepEqual(maturityNotStarted(mw.slice(0, 1), { overrides: null, started: null }), ['A']);
 }

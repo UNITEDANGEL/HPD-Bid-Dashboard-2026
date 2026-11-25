@@ -14,6 +14,8 @@ try {
   ] }));
   await page.route("**/data/sent_paperwork.json*", (r) => r.fulfill({ json: { jobs: { ZZ00009: { sentAt: "2026-11-20", count: 6 } } } }));
   await page.route("**/data/hpd_job_status.json*", (r) => r.fulfill({ json: { jobs: {} } }));
+  // 🚧 Not started yet: ZZ00003 had a visit (saved on the status server), ZZ00002 has nothing yet.
+  await page.route(/hpd-status-worker\.[^/]+\.workers\.dev\/overrides/, (r) => r.fulfill({ json: { ok: true, overrides: { ZZ00003: { OMO: "ZZ00003", LastFieldVisitAt: "2026-11-24T15:00:00Z" } } } }));
   // 📞 Late jobs: who to call (plan item 23): the tenant from the signed-in private data, or the super saved for the building.
   await page.route("**/api/private/tenants*", (r) => r.fulfill({ json: { jobs: { ZZ00001: { ItbTenantName: "ANA SMITH", ItbTenantPhone: "718 555 0142" }, ZZ00003: { ItbTenantName: "FAR AWAY", ItbTenantPhone: "718 555 0100" } }, bids: {} } }));
   await page.addInitScript(() => localStorage.setItem("hpd-building-contacts", JSON.stringify({ "2 TEST AVENUE": { name: "Super Joe", phone: "6465550177", savedAt: "2026-11-22" } })));
@@ -26,6 +28,12 @@ try {
   assert.match(mwRows[0], /^ZZ00002: \w{3}, \w{3} \d+ \(1 day left\)/);
   assert.match(mwRows[1], /^ZZ00003: \w{3}, \w{3} \d+ \(6 days left\)/);
   assert.match(await mw.innerText(), /2 jobs to finish and send by/);
+  // 🚧 Not started yet (plan, 25 Nov): red tag on ZZ00002 only (ZZ00003 had a visit), plus the count line.
+  await mw.locator('[data-hpd-smoke="home-maturity-week-notstarted-count"]').waitFor({ timeout: 10000 });
+  await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="home-maturity-week-notstarted"]').length === 1, null, { timeout: 10000 });
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').nth(0).locator('[data-hpd-smoke="home-maturity-week-notstarted"]').count(), 1);
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').nth(1).locator('[data-hpd-smoke="home-maturity-week-notstarted"]').count(), 0);
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-notstarted-count"]').innerText(), "🚧 1 not started yet (no visit or photo)");
   // 💲 Money in this week's maturity: each row shows its award, plus the total ($500 + $500).
   assert.match(mwRows[0], /· \$500/);
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-total"]').innerText(), "💲 $1,000 riding on this week");

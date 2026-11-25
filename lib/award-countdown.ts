@@ -129,3 +129,18 @@ export function maturityWorkerText(list: Countdown[], addresses: Record<string, 
   });
   return [`Jobs to finish this week (${list.length}), closest date first:`, ...lines, "Send me the photos when each one is done. Thanks!"].join("\n");
 }
+
+// 🚧 Not started yet (plan, 25 Nov): maturity jobs with no visit and no photo yet (from the job's saved steps, or the
+// visits / photos on this phone), so the owner sees which ones are at risk of missing HPD's finish date.
+const STARTED_KEYS = ["TravelStartedAt", "FieldArrivedAt", "VisitStartedAt", "JobStartedAt", "OnSiteStartedAt", "OnSiteEndedAt", "LastFieldVisitAt", "lastFieldVisitAt", "ActualWorkCompletionDate", "FieldOutcome", "fieldOutcome", "OutcomeLockedAt"];
+export function maturityNotStarted(list: Countdown[], opts: { overrides?: Record<string, Record<string, unknown>> | null; started?: Iterable<string> | null }): string[] {
+  const seen = new Set([...(opts.started || [])].map((s) => String(s).trim().toUpperCase()));
+  return list.filter((c) => {
+    const omo = c.omo.toUpperCase();
+    if (seen.has(omo)) return false;
+    const o = opts.overrides?.[omo] || {};
+    if (STARTED_KEYS.some((k) => String(o[k] ?? "").trim())) return false;
+    if (Number(o.BeforePhotoCount) > 0 || Number(o.AfterPhotoCount) > 0) return false;
+    return true;
+  }).map((c) => c.omo);
+}

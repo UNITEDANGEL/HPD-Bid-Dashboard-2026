@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityMoney, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityMoney, maturityNotStarted, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
@@ -17,6 +17,8 @@ import { workDoneToSend, type DoneToSend } from "../lib/monday-sweep";
 import { fetchServerWorkflowOverrides } from "../lib/paperwork";
 import { readLocalOverrides } from "../lib/override-sync";
 import { paperworkNextHref } from "../lib/field-next-action";
+import { countFieldPhotos } from "../lib/field-photo-store";
+import { listFieldVisits } from "../lib/field-visit-store";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string; BuildingAddress?: string };
@@ -58,6 +60,8 @@ export default function HomeScreen() {
   const [countdown, setCountdown] = useState<Countdown[]>([]);
   const [doneSend, setDoneSend] = useState<DoneToSend[]>([]); // 🏁 Work done, send it (plan item 37)
   const [workerNote, setWorkerNote] = useState(""); // 📤 Send this week's list to the worker
+  const [wfOverrides, setWfOverrides] = useState<Record<string, Record<string, unknown>>>({}); // 🚧 Not started yet
+  const [startedHere, setStartedHere] = useState<string[]>([]); // 🚧 visits / photos saved on this phone
   const [calls, setCalls] = useState<Record<string, CallWho>>({});
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(() => nyDay(new Date()).slice(0, 7));
@@ -87,10 +91,19 @@ export default function HomeScreen() {
         const local = readLocalOverrides() as Record<string, Record<string, unknown>>;
         const upper = (o: Record<string, Record<string, unknown>>) => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k.toUpperCase(), v]));
         setDoneSend(workDoneToSend({ jobs: jobsList, overrides: upper(local), sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
+        setWfOverrides(upper(local));
+        // 🚧 Not started yet (plan, 25 Nov): a visit or a photo saved on this phone counts as started.
+        Promise.all(maturityWeek(cd).map(async (c) => {
+          try {
+            const [photos, visits] = await Promise.all([countFieldPhotos(c.omo).catch(() => null), listFieldVisits(c.omo).catch(() => [])]);
+            return (photos && photos.total > 0) || (Array.isArray(visits) && visits.length > 0) ? c.omo : "";
+          } catch { return ""; }
+        })).then((ids) => setStartedHere(ids.filter(Boolean)));
         fetchServerWorkflowOverrides().then((server) => {
           const merged: Record<string, Record<string, unknown>> = { ...upper(server) };
           for (const [k, v] of Object.entries(upper(local))) merged[k] = { ...(merged[k] || {}), ...v };
           setDoneSend(workDoneToSend({ jobs: jobsList, overrides: merged, sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
+          setWfOverrides(merged);
         });
         // 📞 Late jobs: who to call (plan item 23): tenant (signed in only) or the super saved for the building.
         const addresses: Record<string, string> = {};
@@ -235,6 +248,7 @@ export default function HomeScreen() {
         // 💵 Maturity this week (plan item 35): jobs whose maturity date is today or in the next 7 days, closest first.
         const mw = maturityWeek(countdown);
         if (!mw.length) return null;
+        const notStarted = new Set(maturityNotStarted(mw, { overrides: wfOverrides, started: startedHere }));
         return (
           <div className="home-card" data-hpd-smoke="home-maturity-week">
             <span className="home-icon">💵</span>
@@ -243,9 +257,10 @@ export default function HomeScreen() {
               <b className="home-big">{mw.length} job{mw.length === 1 ? "" : "s"} to finish and send by {finishByText(mw[mw.length - 1].due, today).split(" (")[0]}</b>
               {mw.map((c) => (
                 <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} data-hpd-smoke="home-maturity-week-row" data-days={c.days} style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: c.days <= 1 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontSize: 17, fontWeight: 800, textDecoration: "none" }}>
-                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null} <span aria-hidden>→</span>
+                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null}{notStarted.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-notstarted" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#b91c1c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🚧 not started</span> : null} <span aria-hidden>→</span>
                 </a>
               ))}
+              {notStarted.size ? <b data-hpd-smoke="home-maturity-week-notstarted-count" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: "#b91c1c", fontSize: 18 }}>🚧 {notStarted.size} not started yet (no visit or photo)</b> : null}
               {maturityMoney(mw) > 0 ? <b data-hpd-smoke="home-maturity-week-total" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", fontSize: 18 }}>💲 ${Math.round(maturityMoney(mw)).toLocaleString()} riding on this week</b> : null}
               <a href={`/map/?route=${mw.map((c) => encodeURIComponent(c.omo)).join(",")}`} data-hpd-smoke="home-maturity-week-route" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "8px 0", minHeight: 48, borderRadius: 12, background: "#1d4ed8", color: "#fff", fontSize: 18, fontWeight: 800, textDecoration: "none" }}>🗺 Route for these {mw.length} job{mw.length === 1 ? "" : "s"}</a>
               <button type="button" data-hpd-smoke="home-maturity-week-share" onClick={async () => {
