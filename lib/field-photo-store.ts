@@ -738,6 +738,16 @@ async function processVideoEvidenceWithFallback(file: File, stampMeta: EvidenceS
   }
 }
 
+// 👷 25 Nov (owner: "it's not labeling them ... the work order number, address, location, bathroom or public hallway"): the
+// worker's page prints the same label on each photo right on the worker's phone (BEFORE / AFTER, OMO, LOCATION, ADDRESS,
+// DATE taken), so the worker sees it and the job card keeps it as it is ("labeled" in the name).
+export async function labelWorkerPhoto(file: File, meta: { jobId: string; side: "before" | "after"; address: string; location: string }): Promise<File> {
+  const capturedAt = new Date(file.lastModified > 0 ? file.lastModified : Date.now()).toISOString();
+  const out = await processImageEvidence(file, { jobId: meta.jobId, kind: meta.side, label: meta.side === "before" ? "Before Work Evidence" : "After Work Evidence", address: meta.address, location: meta.location, borough: "", capturedAt }, file.type || "image/jpeg");
+  const blob = await (await fetch(out.dataUrl)).blob();
+  return new File([blob], `${meta.jobId} ${meta.side.toUpperCase()} photo labeled.jpg`, { type: "image/jpeg", lastModified: file.lastModified || Date.now() });
+}
+
 async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta, mimeType: string) {
   const original = await readFileAsDataUrl(file, mimeType || "image/jpeg");
   let decoded: DecodedImageEvidence | null = null;
@@ -881,8 +891,12 @@ export async function saveFieldPhotos(
       borough: String(meta.borough || "").trim(),
       capturedAt,
     };
+    // 25 Nov: a worker photo named "... labeled" already carries the label (printed on the worker's phone): kept as it is.
+    const preLabeled = mediaType === "image" && /labeled/i.test(file.name);
     const source: ProcessedEvidenceSource =
-      mediaType === "image"
+      preLabeled
+        ? { dataUrl: await readFileAsDataUrl(file, mimeType || "image/jpeg"), type: file.type || "image/jpeg", size: file.size, stamped: true }
+        : mediaType === "image"
         ? await processImageEvidence(file, stampMeta, mimeType)
         : await processVideoEvidenceWithFallback(file, stampMeta, mimeType);
     const posterDataUrl = mediaType === "video" ? await makeVideoPoster(source.dataUrl, stampMeta) : "";

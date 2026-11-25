@@ -608,12 +608,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-maturity-morning",
-        "icon": "🌅",
-        "title": "This week's maturity in the morning alert",
-        "why": "The 8 AM phone alert adds one line: how many jobs must finish this week and the money on them."
-      },
-      {
         "id": "plan-maturity-notstarted",
         "icon": "🚧",
         "title": "Not started yet",

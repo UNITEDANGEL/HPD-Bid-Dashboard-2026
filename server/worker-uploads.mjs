@@ -149,7 +149,9 @@ export async function handleWorkerPublic(request, action, env, fetcher, getAcces
     // The day it was taken in the name (owner, 25 Nov: "the date you can save in the file name itself").
     const taken = Number.isFinite(Date.parse(body.takenAt)) ? new Date(body.takenAt) : new Date();
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(taken);
-    const name = `${job} ${side === "after" ? "AFTER" : "BEFORE"} ${mime.startsWith("video/") ? "video" : "photo"} ${n} ${day}.${ext}`;
+    // 25 Nov: "labeled" = the worker's phone already printed OMO / location / address / date on the photo (not printed twice).
+    const labeled = body.labeled === true && !mime.startsWith("video/") ? " labeled" : "";
+    const name = `${job} ${side === "after" ? "AFTER" : "BEFORE"} ${mime.startsWith("video/") ? "video" : "photo"} ${n} ${day}${labeled}.${ext}`;
     const start = await call(`${UPLOAD}?uploadType=resumable&fields=id`, { method: "POST",
       headers: { "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": mime, "X-Upload-Content-Length": String(size) },
       body: JSON.stringify({ name, parents: [dir], appProperties: { hpdKind: FILE_KIND, hpdMediaId: mediaId, hpdSide: side, hpdJob: job, hpdTaken: taken.toISOString() } }) });

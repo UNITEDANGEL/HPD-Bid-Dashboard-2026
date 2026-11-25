@@ -47,6 +47,9 @@ try {
   // to ask for the job again.
   assert.equal(await page.locator('[data-hpd-smoke="worker-send-photos"]').count(), 0, "no WhatsApp step");
   assert.match(await page.locator('[data-hpd-smoke="worker-old-link"]').innerText(), /old link.+Ask your boss to send you the job again/);
+  // 🏷 25 Nov (owner: "label for the work order number, address, location, bathroom or public hallway"): what's printed on each photo.
+  assert.match(await page.locator('[data-hpd-smoke="worker-label-before"]').innerText(), /BEFORE · OMO EQ15239 · Inside the apartment \(apt 4B\): kitchen · .+, apt 4B · date taken/);
+  assert.match(await page.locator('[data-hpd-smoke="worker-label-after"]').innerText(), /AFTER · OMO EQ15239/);
   await page.evaluate(() => { window.__shared = null; });
   await page.locator('[data-hpd-smoke="worker-done"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
@@ -88,6 +91,14 @@ try {
   assert.deepEqual(ups, [{ job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "before", type: "image/jpeg", n: 1 }, { job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "after", type: "video/quicktime", n: 1 }]);
   assert.match(await page.locator('[data-hpd-smoke="worker-sent-line"]').innerText(), /All 2 are on job EQ15239's card/);
   assert.equal(await page.locator('[data-hpd-smoke="worker-send-photos"]').count(), 0, "no WhatsApp step with a pass");
+  // A real photo is labeled on the worker's phone (OMO / location / address / date printed on it) and sent as "labeled".
+  const jpg = Buffer.from(await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 800; c.height = 600; const x = c.getContext("2d"); for (let i = 0; i < 400; i++) { x.fillStyle = `hsl(${(i * 37) % 360},70%,${30 + (i % 40)}%)`; x.fillRect((i * 53) % 800, (i * 29) % 600, 60, 40); } return c.toDataURL("image/jpeg", 0.9).split(",")[1]; }), "base64");
+  const bodies = [];
+  page.on("request", (r) => { if (r.url().endsWith("worker-start")) bodies.push(JSON.parse(r.postData())); });
+  await page.locator('[data-hpd-smoke="worker-photo-file-after"]').setInputFiles({ name: "IMG_1.jpg", mimeType: "image/jpeg", buffer: jpg });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-hpd-smoke="worker-item"]')].filter((e) => e.dataset.state === "sent").length === 3, null, { timeout: 15000 });
+  assert.equal(bodies.length, 1);
+  assert.equal(bodies[0].labeled, true, "photo labeled on the worker's phone");
   assert.deepEqual(errors, []);
   console.log("PASS worker view: job, navigate, call, BEFORE / AFTER photos and videos (labeled; straight to the job card with the pass, WhatsApp without), done; nothing about bids or money; job stays in the link");
 } finally { await browser.close(); }

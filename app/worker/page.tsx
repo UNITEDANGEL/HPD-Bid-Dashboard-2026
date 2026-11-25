@@ -7,6 +7,7 @@ import { workFull, workWhere } from "../../lib/crew-share";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { judgePhoto } from "../../lib/worker-photo-quality";
 import { finishByText, nyDay } from "../../lib/award-countdown";
+import { labelWorkerPhoto } from "../../lib/field-photo-store";
 
 const tel = (p: string) => `tel:${String(p).replace(/[^\d+]/g, "")}`;
 const key = (id: string) => `hpd-worker-${id}`;
@@ -57,7 +58,7 @@ export default function WorkerPage() {
     const head = { "X-HPD-Job": job.id, "X-HPD-Pass": job.pass };
     const type = x.file.type || (x.video ? "video/mp4" : "image/jpeg");
     try {
-      const r = await fetch("/api/drive/worker-start", { method: "POST", headers: { ...head, "Content-Type": "application/json" }, body: JSON.stringify({ mediaId: x.key, size: x.file.size, mimeType: type, side: x.side, n: x.n, takenAt: new Date(x.file.lastModified || Date.now()).toISOString() }) });
+      const r = await fetch("/api/drive/worker-start", { method: "POST", headers: { ...head, "Content-Type": "application/json" }, body: JSON.stringify({ mediaId: x.key, size: x.file.size, mimeType: type, side: x.side, n: x.n, takenAt: new Date(x.file.lastModified || Date.now()).toISOString(), labeled: !x.video && /\blabeled\b/i.test(x.file.name) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { set({ state: "failed" }); setMsg(d.error || "Not sent. Tap ↻ Send again."); return; }
       if (!d.done) {
@@ -77,15 +78,21 @@ export default function WorkerPage() {
       setSentCount((c) => { const next = { ...c, [x.side]: c[x.side] + 1 }; try { const k = key(job.id); const o = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...o, sent: next })); } catch { /* private mode */ } return next; });
     } catch { set({ state: "failed" }); setMsg("No signal? Tap ↻ Send again."); }
   }
+  // 🏷 The label printed on each photo (owner, 25 Nov): OMO, where in the building (from HPD's description: apartment /
+  // bathroom / public hallway...), the address and the day it was taken.
+  const spot = (j: WorkerJob) => j.where || (j.apt ? `Apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : "");
+  const place = (j: WorkerJob) => `${j.address.replace(/,\s*\d{5}$/, "")}${j.apt ? `, apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : ""}`;
   function addFiles(side: "before" | "after", e: React.ChangeEvent<HTMLInputElement>) {
     const fl = Array.from(e.target.files || []);
     e.target.value = "";
     void (async () => {
       const good: Item[] = [];
       const bad: string[] = [];
-      for (const f of fl) {
+      for (const f0 of fl) {
+        let f = f0;
         const video = f.type.startsWith("video/") || /\.(mov|mp4|m4v|3gp|webm)$/i.test(f.name);
         if (!video) { const v = await judgePhoto(f); if (!v.ok) { bad.push(v.reason || "Not clear."); continue; } }
+        if (!video && job) { try { f = await labelWorkerPhoto(f, { jobId: job.id, side, address: place(job), location: spot(job) }); } catch { /* kept as taken: the job card labels it */ } }
         const n = items.filter((y) => y.side === side && y.video === video).length + good.filter((y) => y.video === video).length + 1;
         good.push({ key: `${job?.id}-${side}-${f.size}-${f.lastModified}-${n}`.replace(/[^\w:.+-]/g, "").slice(0, 100), side, file: f, url: URL.createObjectURL(f), video, state: "local", pct: 0, n });
       }
@@ -143,6 +150,7 @@ export default function WorkerPage() {
                   <input type="file" accept="image/*,video/*" multiple hidden data-hpd-smoke={`worker-lib-${side}`} onChange={(e) => addFiles(side, e)} />
                 </label>
               </div>
+              <small data-hpd-smoke={`worker-label-${side}`} style={{ display: "block", marginTop: 8, fontSize: 15, fontWeight: 700, opacity: 0.85 }}>🏷 Printed on each photo: {side.toUpperCase()} · OMO {job.id}{spot(job) ? ` · ${spot(job)}` : ""}{job.address ? ` · ${place(job)}` : ""} · date taken</small>
               {mine.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 10 }}>
                 {mine.map((x) => (
                   <figure key={x.key} data-hpd-smoke="worker-item" data-side={side} data-state={x.state} style={{ margin: 0, position: "relative", borderRadius: 10, overflow: "hidden", background: "#000", aspectRatio: "1" }}>

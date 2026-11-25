@@ -179,6 +179,19 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.equal(b2.url, "/map/?bids=1");
   const quiet = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
   assert.match(quiet.title, /nothing urgent today/);
+  // 🌅 This week's maturity (plan, 25 Nov): open awarded jobs finishing in the next 7 days, with their money; sent/closed/late ones left out.
+  const awards = [
+    { OMO: "EM1", AwardDate: "2026-10-01", WorkCompletionDate: "2026-10-23", AwardAmount: "$1,200" },
+    { OMO: "EM2", AwardDate: "2026-10-01", WorkCompletionDate: "2026-10-29", AwardAmount: "3,050" },
+    { OMO: "EM3", AwardDate: "2026-10-01", WorkCompletionDate: "2026-10-25", AwardAmount: "900" },
+    { OMO: "EM4", AwardDate: "2026-10-01", WorkCompletionDate: "2026-10-20", AwardAmount: "500" },
+    { OMO: "EM5", AwardDate: "2026-10-01", WorkCompletionDate: "2026-11-15", AwardAmount: "700" },
+  ];
+  const b3 = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: { EM3: { sentAt: "2026-10-21" } }, requests: {}, awards, closed: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
+  assert.equal(b3.body, "🏁 2 jobs to finish this week ($4,250)");
+  assert.equal(b3.title, "☀️ Good morning: your day");
+  const b4 = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, awards: [awards[3], awards[4]], closed: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
+  assert.doesNotMatch(b4.body, /finish this week/, "no line when nothing matures this week");
   console.log(`PASS morning briefing: weekdays from 8 AM, once a day: "${b.body}"; nothing before 8 or on weekends; a quiet day says so`);
 }
 

@@ -167,7 +167,7 @@ export async function findAlerts({ conversations, bids, sent, requests, now = Da
   const dueToday = await dueTodayAlert({ awards, sent, closed, now, loadLib });
   if (dueToday) out.push(dueToday);
   // ☀️ Morning briefing (owner, 21 Oct "next upgrade"): once each weekday from 8 AM New York, the day in one alert.
-  const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib, records });
+  const brief = await morningBriefing({ conversations, bids, sent, requests, now, loadLib, records, awards, closed });
   if (brief) out.push(brief);
   // 🌆 Evening wrap-up (owner, 21 Oct "next upgrade"): once each weekday from 6 PM, what got done and what's left.
   const wrap = await eveningWrapup({ conversations, bids, sent, records, now, loadLib, awards, closed });
@@ -404,7 +404,7 @@ export async function dueTodayAlert({ awards, sent, closed, now = Date.now(), lo
   };
 }
 
-export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib, force = false, records = {} }) {
+export async function morningBriefing({ conversations, bids, sent, requests, now = Date.now(), loadLib, force = false, records = {}, awards = null, closed = null }) {
   if (!force && !workingHours(now)) return null;
   const p = nyParts(now);
   const today = `${p.year}-${p.month}-${p.day}`;
@@ -436,6 +436,16 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
   // Payment rejections not answered yet (rejected after the paperwork on record, last 120 days).
   const toFix = Object.entries(requests?.jobs || {}).filter(([omo, j]) => j?.rejectedAt && now - Date.parse(j.rejectedAt) < 120 * 86400000 && !(sent?.[omo]?.sentAt && sent[omo].sentAt > j.rejectedAt));
   if (toFix.length) lines.push(`💵 ${toFix.length} payment rejection${toFix.length === 1 ? "" : "s"} to fix`);
+  // 🌅 This week's maturity (plan, 25 Nov): how many open awarded jobs must finish in the next 7 days (the Home card's
+  // "Maturity this week") and the award money on them. Counts and money only (no tenant data).
+  if (loadLib && Array.isArray(awards) && awards.length) {
+    try {
+      const { awardCountdown, maturityWeek, maturityMoney } = await loadLib("award-countdown");
+      const mw = maturityWeek(awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today }));
+      const money = maturityMoney(mw);
+      if (mw.length) lines.push(`🏁 ${mw.length} job${mw.length === 1 ? "" : "s"} to finish this week${money > 0 ? ` ($${Math.round(money).toLocaleString("en-US")})` : ""}`);
+    } catch (e) { console.log(`briefing maturity skipped: ${e.message}`); }
+  }
   return {
     key: `m:${today}`, kind: "message",
     title: dueToday.length ? `☀️ Good morning: ${dueToday.length} bid${dueToday.length === 1 ? "" : "s"} due today` : lines.length ? "☀️ Good morning: your day" : "☀️ Good morning: nothing urgent today",
@@ -503,7 +513,7 @@ async function main() {
   const alerts = TEST || BRIEF_NOW || WRAP_NOW || MONEY_NOW ? [] : await findAlerts({ conversations, bids, sent, requests, loadLib, records, pip, payments, addresses, descriptions, market, awards: Array.isArray(coa) ? coa : coa.jobs || [], closed: closedJobs });
   if (MONEY_NOW) { const f = await moneyReport({ pip, payments, requests, sent, loadLib, force: true }); if (f) alerts.push({ ...f, key: `f:now:${Date.now()}` }); }
   if (WRAP_NOW) { const w = await eveningWrapup({ conversations, bids, sent, records, loadLib, force: true, awards: Array.isArray(coa) ? coa : coa.jobs || [], closed: closedJobs }); if (w) alerts.push({ ...w, key: `w:now:${Date.now()}` }); }
-  if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
+  if (BRIEF_NOW) { const b = await morningBriefing({ conversations, bids, sent, requests, loadLib, force: true, awards: Array.isArray(coa) ? coa : coa.jobs || [], closed: closedJobs }); if (b) alerts.push({ ...b, key: `m:now:${Date.now()}` }); }
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : null;
   const seen = new Set(state?.seen || []);
   const fresh00 = alerts.filter((a) => !seen.has(a.key));
