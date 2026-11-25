@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-25T15:47:19.076767+00:00",
+"generatedAt": "2026-11-25T16:27:10.882030+00:00",
 "since": "2026/11/11",
 "jobs": {
 "EN04541": [
@@ -21214,6 +21214,14 @@
 "file": "ER00272-work-completed-PRINT-COPY-unsigned-affidavit-invoice.pdf",
 "outcome": "",
 "subject": "OMO# ER00272 - corrected affidavit and invoice",
+"via": "hpd-staff"
+},
+{
+"date": "2026-11-25",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-08-06-11-35-34.mp4",
+"outcome": "",
+"subject": "OMO No: ER00272 Issuer: AREWA AJEWOLE Boro: Brooklyn Bldg Address: 2324, PITKIN AVENUE  2026-08-06",
 "via": "hpd-staff"
 }
 ],
