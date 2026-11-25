@@ -18,7 +18,7 @@ try {
   await c.clock.setFixedTime(NOW);
   const LATE = "ER02330";
   const LEFT = "EQ15239";
-  const SOON = "ER00322"; // a 24-hour notice from an hour ago: time left, so it goes first (23 Nov)
+  const SOON = "ER00436"; // (ER00322 until 25 Nov: its paperwork was really sent, so it left the notices) // a 24-hour notice from an hour ago: time left, so it goes first (23 Nov)
   const text = `Kindly see attached.\n\nOMO#${LATE}- 24 HR POOR PERFORMANCE NOTICE\nOMO#${LEFT}-72 HR POOR PERFORMANCE NOTICE\n\nTest Tracker\ntest.tracker@hpd.nyc.gov`;
   await routePrivate(c, { conversations: (d) => ({ ...d, threads: [
     { id: "t-list", subject: "24 HR & 72 HR POOR PERFORMANCE NOTICES", omos: [LATE, LEFT], kind: "past due", people: ["Test Tracker"], count: 1, lastAt: ago(80), waiting: true,
