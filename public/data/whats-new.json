@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Nov 25, 2026",
+      "title": "Worker: details + PDF, photos only to the job card",
+      "items": [
+        "👷 Send to a worker: the job details again (job card link, 🧭 Navigate, the work, the super, the tenant) with HPD's pages as a separate PDF.",
+        "🔒 A worker link always has the upload pass now: if it isn't ready yet, the button gets it first and asks you to tap again.",
+        "📸 The worker page has no WhatsApp button any more: Before / After photos and videos only go to your job card, stamped BEFORE / AFTER with the OMO, location, address and date. An old link tells the worker to ask you for the job again."
+      ]
+    },
+    {
+      "date": "Nov 25, 2026",
       "title": "Worker photos and videos straight to the job card",
       "items": [
         "📄 Send to a worker sends ONE PDF: HPD's work description page, then the second page, then the whole message with a big button that opens the job page. No more separate message and pages.",

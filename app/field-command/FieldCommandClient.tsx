@@ -5965,14 +5965,14 @@ export default function FieldCommandClient() {
   useEffect(() => {
     if (!selectedJob || !hpdPages || hpdPages.id !== jobId(selectedJob) || !("files" in hpdPages)) return;
     const id = jobId(selectedJob);
-    const { text, link } = crewMessage(selectedJob);
-    const key = `${id}|${text}`;
+    // HPD's pages as one PDF (the message goes as the share's text, next to it).
+    const key = `${id}|pages|${hpdPages.files.length}`;
     if (workerPdf?.key === key) return;
     let gone = false;
-    void workerPacket(id, hpdPages.files, text, link).then((file) => { if (!gone) setWorkerPdf({ key, file }); }).catch(() => { /* the share falls back to the message */ });
+    void workerPacket(id, hpdPages.files, "", "").then((file) => { if (!gone) setWorkerPdf({ key, file }); }).catch(() => { /* the share falls back to the message */ });
     return () => { gone = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedJobId, hpdPages, crewTenant, mediaCounts, passTick]);
+  }, [selectedJobId, hpdPages]);
   async function pullFromWorker(job: JobRecord, loud = false) {
     const id = jobId(job);
     if (workerPullRef.current.has(id)) return;
@@ -9631,16 +9631,24 @@ export default function FieldCommandClient() {
                 {!isTestJob(id) ? (
                   <div className="jc-crew" data-hpd-smoke="jc-crew">
                     <button type="button" className="jc-email" data-hpd-smoke="jc-crew-send" onClick={async () => {
+                      // 25 Nov (owner: "send the details like before with the navigation link and everything, but just send the pdf
+                      // separate; the before / after pictures go back to the job card, not WhatsApp, labeled"): never a link without
+                      // the job's upload pass (without it the worker's photos can't reach the job card).
+                      if (!workerPassRef.current[id]) {
+                        setCrewMsg("Getting the upload pass for your worker's photos…");
+                        const got = await workerPass(id);
+                        setCrewMsg(got ? "✓ Ready: tap 👷 Send to a worker again." : "Sign in to Google in the app first (☰ → Google): the worker's photos go to the job card through it.");
+                        return;
+                      }
                       const { text } = crewMessage(selectedJob);
                       const nav = navigator as Navigator & { share?: (d: { title: string; text?: string; files?: File[] }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
-                      // One package (owner, 25 Nov): HPD's work description page, the second page, then the whole message, in one
-                      // PDF; ready before the tap (an iPhone only opens the share sheet straight after a tap).
-                      const pdf = workerPdf && workerPdf.key === `${id}|${text}` ? workerPdf.file : null;
+                      const pdf = workerPdf && workerPdf.key.startsWith(`${id}|pages|`) ? workerPdf.file : null;
                       const withPdf = Boolean(pdf && nav.share && (!nav.canShare || nav.canShare({ files: [pdf] })));
-                      if (nav.share) { try { await nav.share(withPdf && pdf ? { title: `HPD job ${id}`, files: [pdf] } : { title: `HPD job ${id}`, text }); setCrewMsg(withPdf ? "Sent to your worker as one PDF: HPD's work description page, the second page, then the whole message with the job link." : "Sent to your worker's app."); } catch { /* closed the share sheet */ } }
+                      if (nav.share) { try { await nav.share(withPdf && pdf ? { title: `HPD job ${id}`, text, files: [pdf] } : { title: `HPD job ${id}`, text }); setCrewMsg(withPdf ? "Sent to your worker: the job details (job card link, navigation, the work, the super, the tenant) + HPD's PDF." : "Sent to your worker: the job details (job card link, navigation, the work, the super, the tenant)."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
-                    }}>{(() => { const hp = hpdPages && hpdPages.id === id ? hpdPages : null; return hp && "files" in hp && workerPdf?.key.startsWith(`${id}|`) ? "👷 Send to a worker (one PDF: HPD's pages + the job)" : hp && "busy" in hp ? "👷 Send to a worker (getting HPD's pages…)" : "👷 Send to a worker"; })()}</button>
+                    }}>{(() => { const hp = hpdPages && hpdPages.id === id ? hpdPages : null; return hp && "files" in hp && workerPdf?.key.startsWith(`${id}|pages|`) ? "👷 Send to a worker (details + HPD's PDF)" : hp && "busy" in hp ? "👷 Send to a worker (getting HPD's pages…)" : "👷 Send to a worker"; })()}</button>
                     <button type="button" className="jc-email" data-hpd-smoke="jc-crew-whatsapp" onClick={() => {
+                      if (!workerPassRef.current[id]) { setCrewMsg("Getting the upload pass for your worker's photos…"); void workerPass(id).then((got) => setCrewMsg(got ? "✓ Ready: tap 💬 Send on WhatsApp again." : "Sign in to Google in the app first (☰ → Google): the worker's photos go to the job card through it.")); return; }
                       const t = tenantInfo(selectedJob);
                       let contact = null;
                       try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }

@@ -43,10 +43,10 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="worker-item"][data-side="before"]').count(), 3);
   assert.deepEqual(await page.locator('[data-hpd-smoke="worker-item"] b').allInnerTexts(), ["BEFORE", "BEFORE", "BEFORE 🎥", "AFTER"]);
   assert.match(await page.locator('[data-hpd-smoke="worker-count-before"]').innerText(), /3 taken/);
-  assert.match(await page.locator('[data-hpd-smoke="worker-photos-go"]').innerText(), /go on job EQ15239's card/);
-  await page.locator('[data-hpd-smoke="worker-send-photos"]').click();
-  await page.waitForFunction(() => window.__shared && window.__shared.files, null, { timeout: 5000 });
-  assert.deepEqual(await page.evaluate(() => window.__shared.files.map((f) => f.name)), ["EQ15239 BEFORE photo 1.jpg", "EQ15239 BEFORE photo 2.jpg", "EQ15239 BEFORE video 3.mp4", "EQ15239 AFTER photo 4.jpg"]);
+  // 25 Nov (owner: "I don't need them to send me back on WhatsApp"): no WhatsApp button; an old link (no upload pass) says
+  // to ask for the job again.
+  assert.equal(await page.locator('[data-hpd-smoke="worker-send-photos"]').count(), 0, "no WhatsApp step");
+  assert.match(await page.locator('[data-hpd-smoke="worker-old-link"]').innerText(), /old link.+Ask your boss to send you the job again/);
   await page.evaluate(() => { window.__shared = null; });
   await page.locator('[data-hpd-smoke="worker-done"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });

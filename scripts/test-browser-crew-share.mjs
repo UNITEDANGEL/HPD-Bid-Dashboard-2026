@@ -98,25 +98,25 @@ try {
       assert.ok(shared.names.every((n) => /^EQ15239-HPD-page-\d\.jpg$/.test(n)), shared.names.join(","));
       assert.match(shared.text, /show them to the tenant/);
       console.log(`HPD pages shared: ${shared.names.join(", ")}`);
-      // 25 Nov (owner: "it should go as one package, with the second page: work description page, then the whole complete
-      // message"): 👷 Send to a worker sends ONE PDF: HPD's pages first (work description, then page 2), the whole message
-      // last with the job link; no separate text.
-      await page.waitForFunction(() => /one PDF/.test(document.querySelector('[data-hpd-smoke="jc-crew-send"]')?.textContent || ""), null, { timeout: 20000 });
+      // 25 Nov, later (owner: "send the details like before with the navigation link and everything, but just send the pdf
+      // separate"): the job details as the message (job card link, 🧭 Navigate, the work, the super, the tenant) + HPD's pages
+      // as one PDF next to it.
+      await page.waitForFunction(() => /details \+ HPD's PDF/.test(document.querySelector('[data-hpd-smoke="jc-crew-send"]')?.textContent || ""), null, { timeout: 20000 });
       await page.evaluate(() => { window.__shared = null; });
       await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
       await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
       const one = await page.evaluate(async () => { const f = (window.__shared.files || [])[0]; const b = f ? new Uint8Array(await f.arrayBuffer()) : new Uint8Array(); let bin = ""; for (const x of b) bin += String.fromCharCode(x); return { n: (window.__shared.files || []).length, name: f?.name, type: f?.type, text: window.__shared.text || "", b64: btoa(bin) }; });
-      assert.equal(one.n, 1, "one file");
-      assert.equal(one.text, "", "no separate message");
-      assert.equal(one.name, "EQ15239 job for worker.pdf");
+      assert.equal(one.n, 1, "one PDF");
+      assert.equal(one.name, "EQ15239 HPD work description.pdf");
       assert.equal(one.type, "application/pdf");
+      assert.match(one.text, /^HPD job EQ15239\n👷 Open your job card \(photos, call, navigate\): https?:\/\/\S+\/worker\/#o=EQ15239&k=/);
+      assert.match(one.text, /\n🧭 Navigate: https:\/\/www\.google\.com\/maps\//);
+      assert.match(one.text, /They go straight to the boss's job card, labeled\. No WhatsApp needed\./);
       const { PDFDocument } = await import("pdf-lib");
       const pdf = await PDFDocument.load(Buffer.from(one.b64, "base64"));
-      assert.ok(pdf.getPageCount() >= Number(ready) + 1, `HPD's pages, then the message (${pdf.getPageCount()} pages)`);
+      assert.equal(pdf.getPageCount(), Number(ready), "HPD's pages only");
       if (process.env.SHOTS) (await import("node:fs")).writeFileSync(`${process.env.SHOTS}/worker-packet.pdf`, Buffer.from(one.b64, "base64"));
-      const raw = Buffer.from(one.b64, "base64").toString("latin1");
-      assert.ok(/\/URI \(https?:\/\/[^)]+\/worker\/#o=EQ15239/.test(raw), "the job link is tappable in the PDF");
-      assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /one PDF: HPD's work description page, the second page, then the whole message/);
+      assert.match(await page.locator('[data-hpd-smoke="jc-crew-msg"]').innerText(), /the job details \(job card link, navigation, the work, the super, the tenant\) \+ HPD's PDF/);
     }
   }
   // Untick the tenant: left out.
@@ -124,20 +124,8 @@ try {
   await page.locator('[data-hpd-smoke="jc-crew-tenant"]').uncheck();
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();
   await page.waitForFunction(() => window.__shared, null, { timeout: 5000 });
-  // With HPD's pages ready the share is one PDF: read the message from it.
-  const got2 = await page.evaluate(async () => { const f = (window.__shared.files || [])[0]; if (!f) return { text: window.__shared.text }; const b = new Uint8Array(await f.arrayBuffer()); let bin = ""; for (const x of b) bin += String.fromCharCode(x); return { b64: btoa(bin) }; });
-  let t2 = got2.text || "";
-  if (got2.b64) {
-    // The PDF's page text sits in compressed streams: open each and read the drawn words.
-    const zlib = await import("node:zlib");
-    const raw = Buffer.from(got2.b64, "base64").toString("latin1");
-    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)endstream/g)) {
-      let body = "";
-      try { body = zlib.inflateSync(Buffer.from(m[1], "latin1")).toString("latin1"); } catch { continue; }
-      t2 += [...body.matchAll(/<([0-9A-Fa-f]+)> Tj/g)].map((x) => x[1].match(/../g).map((h) => String.fromCharCode(parseInt(h, 16))).join("")).join(" ");
-    }
-  }
-  assert.match(t2, /1207 1 AVENUE/, "the message is in the PDF");
+  const t2 = await page.evaluate(() => window.__shared.text || "");
+  assert.match(t2, /1207 1 AVENUE/, "the details go as the message");
   assert.ok(!/Tenant:/.test(t2) && (!tenantPhone || !t2.replace(/\D/g, "").includes(tenantPhone)), "no tenant when unticked");
   // 📥 The worker's photos back into the job card: named Before / After by the worker's page, sorted by their name
   // (even from the After button), saved on the job (backed up to Drive by itself).

@@ -24,6 +24,12 @@ export async function workerPacket(id: string, pages: File[], message: string, l
     const page = doc.addPage([w, h]);
     page.drawImage(img, { x: 0, y: 0, width: w, height: h });
   }
+  // 25 Nov, later (owner: "send the details like before with the navigation link and everything, but just send the pdf
+  // separate"): with no message, the PDF is HPD's pages only; the message goes as the share's text.
+  if (!message) {
+    const only = await doc.save({ useObjectStreams: false });
+    return new File([only.slice().buffer as ArrayBuffer], `${id} HPD work description.pdf`, { type: "application/pdf" });
+  }
   // The whole message.
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);

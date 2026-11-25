@@ -158,12 +158,9 @@ export default function WorkerPage() {
           );
         })}
         {job.pass && items.length ? <p data-hpd-smoke="worker-sent-line" style={{ fontSize: 17, fontWeight: 700 }}>{items.every((x) => x.state === "sent") ? `✓ All ${items.length} are on job ${job.id}'s card for your boss.` : `Sending to job ${job.id}'s card… keep this page open.`}</p> : null}
-        {!job.pass && items.length ? <button type="button" style={{ ...big, background: "#25d366" }} data-hpd-smoke="worker-send-photos" onClick={async () => {
-          const all = items.map((x, i) => new File([x.file], `${job.id} ${x.side.toUpperCase()} ${x.video ? "video" : "photo"} ${i + 1}.${x.video ? "mp4" : "jpg"}`, { type: x.file.type || (x.video ? "video/mp4" : "image/jpeg") }));
-          const nav = navigator as Navigator & { share?: (d: { files?: File[]; text?: string }) => Promise<void>; canShare?: (d: { files: File[] }) => boolean };
-          try { if (nav.share && (!nav.canShare || nav.canShare({ files: all }))) { await nav.share({ files: all, text: `HPD job ${job.id}: ${all.length} before / after` }); setMsg("Sent."); } else setMsg("This phone can't send from here: open the link in Safari or Chrome."); } catch { setMsg("Not sent."); }
-        }}>📤 Send {items.length} to your boss (WhatsApp)</button> : null}
-        {!job.pass && items.length ? <p style={{ fontSize: 16, opacity: 0.75, margin: "6px 0 0" }} data-hpd-smoke="worker-photos-go">They go on job {job.id}&apos;s card when your boss adds them.</p> : null}
+        {/* No WhatsApp step (owner, 25 Nov: "I don't need them to send me back on WhatsApp ... they're not labeled"): the
+            photos only go to the job card; an old link without the upload pass says so. */}
+        {!job.pass ? <p data-hpd-smoke="worker-old-link" style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,69,58,.15)", fontWeight: 700, fontSize: 18 }}>⚠️ This is an old link: your photos can&apos;t reach the job card from it. Ask your boss to send you the job again, then take the photos from the new link.</p> : null}
         <button type="button" style={{ ...big, background: finished ? "#6e6e73" : "#ff9f0a" }} data-hpd-smoke="worker-done" onClick={async () => {
           const f = !finished; save(done, f);
           if (!f) return;

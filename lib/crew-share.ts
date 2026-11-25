@@ -40,12 +40,15 @@ const mapsLink = (address: string) => `https://www.google.com/maps/search/?api=1
 // link comes right under the job number (the phone opens the first link of a message), and no map link (the card has Navigate).
 export function crewText(j: CrewJob, cardLink = "") {
   const out = [`HPD job ${j.id}`, ...(cardLink ? [`👷 Open your job card (photos, call, navigate): ${cardLink}`] : []), `📍 ${j.address.replace(/,\s*\d{5}$/, "")}${j.apt ? `, apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : ""}`];
+  // 🧭 Navigation link right under the address (owner, 25 Nov: "send the details ... with the navigation link and everything").
+  if (cardLink) out.push(`🧭 Navigate: ${mapsLink(j.address)}`);
   if (j.where) out.push(`🚪 Where: ${j.where}`);
   if (j.completeBy) out.push(`⏰ HPD expects it done by ${j.completeBy}`);
   if (j.work.length) out.push("", "The work:", ...j.work.slice(0, 10).map((w) => `• ${w}`));
   if (j.full) out.push("", "HPD's full description:", j.full);
   const missing = (j.photos || []).filter((p) => !p.done).map((p) => p.label.toLowerCase());
   out.push("", `📸 Photos HPD needs: ${missing.length ? missing.join(", ") : "all taken already"}. Same spot before and after, lights on.`);
+  if (cardLink) out.push("Take them on your job card (first link): tap BEFORE or AFTER, then Photo or Video. They go straight to the boss's job card, labeled. No WhatsApp needed.");
   if (j.contact) out.push("", `🏢 Building: ${j.contact.name} ${phone(j.contact.phone)}${j.contact.note ? ` (${j.contact.note})` : ""}`);
   if (j.tenant && (j.tenant.name || j.tenant.phone)) out.push(`🔔 Tenant: ${[j.tenant.name, j.tenant.phone ? phone(j.tenant.phone) : ""].filter(Boolean).join(" ")}`);
   if (!cardLink) out.push("", `Map: ${mapsLink(j.address)}`);
