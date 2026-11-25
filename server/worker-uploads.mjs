@@ -145,13 +145,25 @@ export async function handleWorkerPublic(request, action, env, fetcher, getAcces
     const existing = await findOne(`'${dir}' in parents and appProperties has { key='hpdMediaId' and value='${quote(mediaId)}' }`);
     if (existing) return reply({ done: true, id: existing });
     const ext = mime.startsWith("video/") ? (mime.includes("quicktime") ? "mov" : "mp4") : (mime.includes("png") ? "png" : mime.includes("heic") ? "heic" : "jpg");
-    const n = Math.max(1, Math.min(999, Number(body.n) || 1));
+    // Numbering counts what is already in the job's folder (owner, 25 Nov: "is photo numbering good"): a fresh opening of
+    // the worker link no longer starts again at 1, so there are never two "BEFORE photo 1" files.
+    const label = `${job} ${side === "after" ? "AFTER" : "BEFORE"} ${mime.startsWith("video/") ? "video" : "photo"} `;
+    let n = Math.max(1, Math.min(999, Number(body.n) || 1));
+    const have = await call(`${DRIVE}/files?${new URLSearchParams({ q: `trashed = false and '${dir}' in parents and appProperties has { key='hpdKind' and value='${FILE_KIND}' }`, fields: "files(name)", pageSize: "1000" })}`);
+    if (have.ok) {
+      let top = 0;
+      for (const f of (await have.json()).files || []) {
+        const name = String(f.name || "");
+        if (name.startsWith(label)) top = Math.max(top, parseInt(name.slice(label.length), 10) || 0);
+      }
+      n = Math.min(999, top + 1);
+    }
     // The day it was taken in the name (owner, 25 Nov: "the date you can save in the file name itself").
     const taken = Number.isFinite(Date.parse(body.takenAt)) ? new Date(body.takenAt) : new Date();
     const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(taken);
     // 25 Nov: "labeled" = the worker's phone already printed OMO / location / address / date on the photo (not printed twice).
     const labeled = body.labeled === true && !mime.startsWith("video/") ? " labeled" : "";
-    const name = `${job} ${side === "after" ? "AFTER" : "BEFORE"} ${mime.startsWith("video/") ? "video" : "photo"} ${n} ${day}${labeled}.${ext}`;
+    const name = `${label}${n} ${day}${labeled}.${ext}`;
     const start = await call(`${UPLOAD}?uploadType=resumable&fields=id`, { method: "POST",
       headers: { "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": mime, "X-Upload-Content-Length": String(size) },
       body: JSON.stringify({ name, parents: [dir], appProperties: { hpdKind: FILE_KIND, hpdMediaId: mediaId, hpdSide: side, hpdJob: job, hpdTaken: taken.toISOString() } }) });

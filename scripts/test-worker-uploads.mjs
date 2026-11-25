@@ -69,6 +69,14 @@ assert.deepEqual(names, ["ER08795 BEFORE photo 1 2026-11-20.jpg", "ER08795 AFTER
 r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, photo), "worker-start", env, fake, async () => "tok");
 assert.equal((await r.json()).done, true);
 assert.equal(files.filter((f) => f.appProperties.hpdKind === "hpd-worker-file").length, 2);
+// The worker opens the link again later: the phone starts counting at 1, the server keeps going.
+r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { ...photo, mediaId: "w-3", n: 1 }), "worker-start", env, fake, async () => "tok");
+assert.equal(r.status, 200);
+r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { ...photo, mediaId: "w-4", n: 1, side: "after", mimeType: "image/jpeg" }), "worker-start", env, fake, async () => "tok");
+assert.deepEqual(files.filter((f) => f.appProperties.hpdKind === "hpd-worker-file").slice(2).map((f) => f.name),
+  ["ER08795 BEFORE photo 2 2026-11-20.jpg", "ER08795 AFTER photo 1 2026-11-20.jpg"], "numbers keep going per Before / After and photo / video");
+files.splice(files.findIndex((f) => f.appProperties.hpdMediaId === "w-3"), 1);
+files.splice(files.findIndex((f) => f.appProperties.hpdMediaId === "w-4"), 1);
 
 // Owner: list, download, mark on the card.
 const own = (body) => new Request("https://app.example.test/api/drive/x", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
