@@ -524,7 +524,14 @@ export default function BidsMode({ open, map, history, onClose, notifUnread = 0,
         map.options.zoomSnap = 0.25;
         // The real band between the header and the list when it's at least 30 px; else the old caps.
         const thin = area.height - (top + 30) - (below + 14) < 30;
-        map.fitBounds(layerRef.current.getBounds(), thin
+        // Very thin (a sideways phone with the bigger dock, 24 Nov): use the exact strip between the header and the list's
+        // bar, half a pin (they sit centred on their point) clear of each.
+        const bTop = banner ? banner.bottom - area.top : 100;
+        const bBelow = bar && bar.top > area.top ? area.bottom - bar.top : 110;
+        const strip = area.height - (bTop + 24) - (bBelow + 24);
+        map.fitBounds(layerRef.current.getBounds(), thin && strip >= 6
+          ? { paddingTopLeft: [40, bTop + 24], paddingBottomRight: [104, bBelow + 24], maxZoom: 14 }
+          : thin
           ? { paddingTopLeft: [40, Math.min(top + 30, Math.max(50, area.height - 200))], paddingBottomRight: [104, Math.min(below + 14, Math.max(60, area.height - top - 110))], maxZoom: 14 }
           : { paddingTopLeft: [40, top + 30], paddingBottomRight: [104, below + 14], maxZoom: 14 });
         map.options.zoomSnap = snap;

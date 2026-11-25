@@ -61,6 +61,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
    map state. Test: test-browser-locate-clear.mjs checks 7 map states, one with a 59 px notch.
 ## ✓ 24 Nov: New update popup over the notices bars (owner: "new upgrade live is overlapping notices")
 
+2. ✓ Found while testing: on a sideways phone the bigger dock left a thin strip of map, and half the bid pins sat under the bids bar. The map now fits them in that exact strip (test: bids-panel 844×340).
+3. ✓ Found while testing: test-weekly-checkup.mjs also ran the real weekly check-up and saved it to the status server (its name ends in weekly-checkup.mjs). It only tests now.
 1. ✓ The ✨ New update popup (and its backdrop) now sit above the red notices bar and the black 24 / 72 h bar. Test: newupdate checks nothing covers the popup.
 
 ## ✓ 24 Nov: red notices bar no longer covers the black 24 / 72 h bar (owner: "26 notices red with show over lap 24/72 in black, look at screen and fix it")
