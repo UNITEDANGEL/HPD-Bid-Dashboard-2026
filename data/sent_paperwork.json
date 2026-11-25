@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-11-25T13:47:10.349113+00:00",
+"generatedAt": "2026-11-25T13:56:56.061546+00:00",
 "since": "2026/11/11",
 "jobs": {
 "EN04541": [
@@ -21219,6 +21219,15 @@
 "outcome": "",
 "subject": "Fwd: ER00318_1R_complete-package_20260708",
 "via": "hpd-staff"
+}
+],
+"ER00322": [
+{
+"date": "2026-11-25",
+"to": "uac525@gmail.com",
+"file": "SIGNED - ER00322 - Refused Access.pdf",
+"outcome": "refused_access",
+"subject": "SIGNED - ER00322 - Refused Access - 73 EASTERN PARKWAY, 11238"
 }
 ],
 "ER00414": [
