@@ -5,6 +5,7 @@
       "date": "Nov 25, 2026",
       "title": "Worker: details + PDF, photos only to the job card",
       "items": [
+        "📍 The worker taps the room first (Kitchen, Bathroom, Hallway… or types one): it's printed on the photo, in the file name, and the numbers go by room (BEFORE Kitchen photo 1, 2…).",
         "🔢 Worker photo numbers keep going (BEFORE photo 1, 2, 3…) even if the worker opens the link again: no more two \"photo 1\" files.",
         "📣 Update vendor tracking goes to the people HPD names on that job's page 3 when there are any (e.g. ER09991, lead abatement: Campbell, the others copied). Other jobs still go to Louis. The \"tell …\" buttons on the job card say the right name.",
         "⛔ Refused access: pick who refused (Super, Tenant, Manager, Owner, Doorman or type anyone) with their name and phone, on the job card and on the affidavit. Picking a tenant no longer leaves the super's name and phone on it.",

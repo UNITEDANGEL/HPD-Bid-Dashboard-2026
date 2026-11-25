@@ -5923,24 +5923,29 @@ export default function FieldCommandClient() {
   }
 
   // A photo the worker's page named "<job>-After-photos-1.jpg" goes to After even from the Before button, and the other way.
-  async function handleWorkerFiles(files: FileList | File[] | null, forJob?: JobRecord) {
+  async function handleWorkerFiles(files: FileList | File[] | null, forJob?: JobRecord, meta?: Map<File, { side: "before" | "after"; where: string }>) {
     const job = forJob || selectedJob;
     if (!job || !files?.length) return;
     const id = jobId(job);
     const all = Array.from(files);
-    const kindOf = (f: File): "before" | "after" => /after/i.test(f.name) ? "after" : /before/i.test(f.name) ? "before" : workerKindRef.current;
+    const kindOf = (f: File): "before" | "after" => meta?.get(f)?.side || (/after/i.test(f.name) ? "after" : /before/i.test(f.name) ? "before" : workerKindRef.current);
     const got = { before: 0, after: 0 };
     setCrewMsg("Saving your worker's photos…");
     try {
       for (const kind of ["before", "after"] as const) {
-        const group = all.filter((f) => kindOf(f) === kind);
+        const ofKind = all.filter((f) => kindOf(f) === kind);
+        // 📍 Grouped by the spot the worker tapped (Kitchen, Bathroom…): it goes first in the stamp's LOCATION.
+        for (const spot of [...new Set(ofKind.map((f) => meta?.get(f)?.where || ""))]) {
+        const group = ofKind.filter((f) => (meta?.get(f)?.where || "") === spot);
         if (!group.length) continue;
         // 25 Nov (owner: "omo number, address and location printed on the photo and video as well as before and after"): the
         // stamp's LOCATION is where in the building the work is (apartment / room), the date is when the worker took it.
         const apt = tenantInfo(job).apt;
-        const where = workWhere(jobScope(job), apt) || (apt ? `Apt ${String(apt).replace(/^apt\.?\s*/i, "")}` : "");
+        const building = workWhere(jobScope(job), apt) || (apt ? `Apt ${String(apt).replace(/^apt\.?\s*/i, "")}` : "");
+        const where = spot ? (building ? `${spot.toUpperCase()} · ${building}` : spot.toUpperCase()) : building;
         const saved = await saveFieldPhotos(id, kind, group, { jobId: id, address: jobAddress(job), location: where || String(jobBorough(job)), borough: where ? String(jobBorough(job)) : "", outcome: workflowStamps[id]?.status || jobStatus(job), label: kind === "before" ? "Before Work Evidence" : "After Work Evidence", fileTime: true });
-        got[kind] = saved.length;
+        got[kind] += saved.length;
+        }
       }
       await refreshMediaCounts(job);
       setCrewMsg(`✓ Saved on job ${id}: ${[got.before ? `${got.before} before` : "", got.after ? `${got.after} after` : ""].filter(Boolean).join(" + ")}. They go to your Drive (HPD Photo Backup / ${id}) by themselves.`);
@@ -6009,7 +6014,7 @@ export default function FieldCommandClient() {
       if (loud) setCrewMsg("Looking for your worker's photos and videos…");
       const r = await post("worker-list", { jobId: id });
       if (!r.ok) { if (loud) setCrewMsg(r.status === 401 ? "Sign in to Google first (☰ → Google), then try again." : "Couldn't check right now. Try again."); return; }
-      const list = ((await r.json()).files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string }[];
+      const list = ((await r.json()).files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string; where?: string }[];
       const fresh = list.filter((f) => !f.done);
       if (!fresh.length) {
         const msg = list.length ? `All ${list.length} from your worker are already on this job.` : "Nothing from your worker yet.";
@@ -6020,16 +6025,19 @@ export default function FieldCommandClient() {
       setCrewMsg(`📥 Bringing in ${fresh.length} from your worker…`);
       const got: File[] = [];
       const ids: string[] = [];
+      const meta = new Map<File, { side: "before" | "after"; where: string }>();
       for (const f of fresh) {
         const d = await post("worker-file", { fileId: f.id });
         if (!d.ok) continue;
         const blob = await d.blob();
         // The name says BEFORE / AFTER, so handleWorkerFiles files it on the right side.
-        got.push(new File([blob], f.name || `${id} ${f.side.toUpperCase()}`, { type: f.mimeType || blob.type, lastModified: Date.parse(f.taken || "") || Date.now() }));
+        const file = new File([blob], f.name || `${id} ${f.side.toUpperCase()}`, { type: f.mimeType || blob.type, lastModified: Date.parse(f.taken || "") || Date.now() });
+        meta.set(file, { side: f.side === "after" ? "after" : "before", where: String(f.where || "") });
+        got.push(file);
         ids.push(f.id);
       }
       if (!got.length) { setCrewMsg("Couldn't bring in your worker's files. Try again."); return; }
-      const saved = await handleWorkerFiles(got, job);
+      const saved = await handleWorkerFiles(got, job, meta);
       if (!saved) return;
       await post("worker-done", { fileIds: ids });
       const videos = got.filter((f) => f.type.startsWith("video/")).length;

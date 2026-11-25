@@ -75,6 +75,14 @@ assert.equal(r.status, 200);
 r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { ...photo, mediaId: "w-4", n: 1, side: "after", mimeType: "image/jpeg" }), "worker-start", env, fake, async () => "tok");
 assert.deepEqual(files.filter((f) => f.appProperties.hpdKind === "hpd-worker-file").slice(2).map((f) => f.name),
   ["ER08795 BEFORE photo 2 2026-11-20.jpg", "ER08795 AFTER photo 1 2026-11-20.jpg"], "numbers keep going per Before / After and photo / video");
+// 📍 Where it was taken: in the name, numbered per spot, kept for the job card's stamp.
+for (const [mid, where] of [["w-5", "kitchen"], ["w-6", "Kitchen"], ["w-7", "Bathroom<script>"]]) {
+  r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { ...photo, mediaId: mid, n: 1, where }), "worker-start", env, fake, async () => "tok");
+  assert.equal(r.status, 200);
+}
+assert.deepEqual(files.filter((f) => ["w-5", "w-6", "w-7"].includes(f.appProperties.hpdMediaId)).map((f) => [f.name, f.appProperties.hpdWhere]),
+  [["ER08795 BEFORE Kitchen photo 1 2026-11-20.jpg", "Kitchen"], ["ER08795 BEFORE Kitchen photo 2 2026-11-20.jpg", "Kitchen"], ["ER08795 BEFORE Bathroomscript photo 1 2026-11-20.jpg", "Bathroomscript"]]);
+for (const mid of ["w-5", "w-6", "w-7"]) files.splice(files.findIndex((f) => f.appProperties.hpdMediaId === mid), 1);
 files.splice(files.findIndex((f) => f.appProperties.hpdMediaId === "w-3"), 1);
 files.splice(files.findIndex((f) => f.appProperties.hpdMediaId === "w-4"), 1);
 
@@ -86,6 +94,7 @@ assert.equal(kept, 1, "keeps the owner's access for the uploads");
 assert.equal(await checkPass(env, "ER08795", (await r.json()).pass), true);
 r = await handleWorkerOwner(own({ jobId: "ER08795" }), "worker-list", {}, fake, env, async () => {});
 const list = (await r.json()).files;
+assert.ok(list.every((f) => f.where === ""), "no spot: empty");
 assert.deepEqual(list.map((f) => [f.side, f.mimeType, f.done, f.taken]), [["before", "image/jpeg", false, "2026-11-20T15:00:00.000Z"], ["after", "video/quicktime", false, "2026-11-21T02:30:00.000Z"]]);
 r = await handleWorkerOwner(own({ fileId: list[0].id }), "worker-file", {}, fake, env, async () => {});
 assert.equal(await r.text(), "JPEGBYTES");

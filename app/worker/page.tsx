@@ -11,7 +11,11 @@ import { labelWorkerPhoto } from "../../lib/field-photo-store";
 
 const tel = (p: string) => `tel:${String(p).replace(/[^\d+]/g, "")}`;
 const key = (id: string) => `hpd-worker-${id}`;
-type Item = { key: string; side: "before" | "after"; file: File; url: string; video: boolean; state: "local" | "sending" | "sent" | "failed"; pct: number; n: number };
+type Item = { key: string; side: "before" | "after"; file: File; url: string; video: boolean; state: "local" | "sending" | "sent" | "failed"; pct: number; n: number; spot: string };
+// 📍 Where in the apartment / building the photo is taken (owner, 25 Nov: "are we able to label the location where the picture
+// is taken? Then you can do the numbering"): the worker taps one before taking photos; it is on the photo and in its name.
+const SPOTS = ["Kitchen", "Bathroom", "Bedroom", "Living room", "Hallway", "Ceiling", "Window", "Door", "Stairs", "Basement", "Boiler room", "Roof", "Outside"];
+const cleanSpot = (v: string) => { const t = String(v || "").replace(/[^\p{L}\p{N} #'-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 30); return t ? t[0].toUpperCase() + t.slice(1) : ""; };
 
 export default function WorkerPage() {
   const [job, setJob] = useState<WorkerJob | null>(null);
@@ -22,6 +26,8 @@ export default function WorkerPage() {
   const [cut, setCut] = useState(false);
   const [lookup, setLookup] = useState<"" | "ok" | "missing">("");
   const [items, setItems] = useState<Item[]>([]);
+  const [spot, setSpot] = useState("");
+  const [typing, setTyping] = useState(false);
   const [sentCount, setSentCount] = useState<{ before: number; after: number }>({ before: 0, after: 0 });
 
   useEffect(() => {
@@ -29,7 +35,7 @@ export default function WorkerPage() {
     setJob(j);
     setCut(workerHashCut(window.location.hash));
     setReady(true);
-    if (j) { try { const s = JSON.parse(localStorage.getItem(key(j.id)) || "{}"); setDone(s.done || {}); setFinished(!!s.finished); if (s.sent) setSentCount({ before: Number(s.sent.before) || 0, after: Number(s.sent.after) || 0 }); } catch { /* private mode */ } }
+    if (j) { try { const s = JSON.parse(localStorage.getItem(key(j.id)) || "{}"); setDone(s.done || {}); setFinished(!!s.finished); if (s.spot) setSpot(cleanSpot(s.spot)); if (s.sent) setSentCount({ before: Number(s.sent.before) || 0, after: Number(s.sent.after) || 0 }); } catch { /* private mode */ } }
     // The short link has only the job number (+ apartment / tenant / super): the address, the work, where it is and HPD's
     // full description come from the site's public job list (no tenant data there).
     if (j && (!j.full || !j.address)) {
@@ -58,7 +64,7 @@ export default function WorkerPage() {
     const head = { "X-HPD-Job": job.id, "X-HPD-Pass": job.pass };
     const type = x.file.type || (x.video ? "video/mp4" : "image/jpeg");
     try {
-      const r = await fetch("/api/drive/worker-start", { method: "POST", headers: { ...head, "Content-Type": "application/json" }, body: JSON.stringify({ mediaId: x.key, size: x.file.size, mimeType: type, side: x.side, n: x.n, takenAt: new Date(x.file.lastModified || Date.now()).toISOString(), labeled: !x.video && /\blabeled\b/i.test(x.file.name) }) });
+      const r = await fetch("/api/drive/worker-start", { method: "POST", headers: { ...head, "Content-Type": "application/json" }, body: JSON.stringify({ mediaId: x.key, size: x.file.size, mimeType: type, side: x.side, where: x.spot, n: x.n, takenAt: new Date(x.file.lastModified || Date.now()).toISOString(), labeled: !x.video && /\blabeled\b/i.test(x.file.name) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { set({ state: "failed" }); setMsg(d.error || "Not sent. Tap ↻ Send again."); return; }
       if (!d.done) {
@@ -80,7 +86,7 @@ export default function WorkerPage() {
   }
   // 🏷 The label printed on each photo (owner, 25 Nov): OMO, where in the building (from HPD's description: apartment /
   // bathroom / public hallway...), the address and the day it was taken.
-  const spot = (j: WorkerJob) => j.where || (j.apt ? `Apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : "");
+  const buildingSpot = (j: WorkerJob) => j.where || (j.apt ? `Apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : "");
   const place = (j: WorkerJob) => `${j.address.replace(/,\s*\d{5}$/, "")}${j.apt ? `, apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : ""}`;
   function addFiles(side: "before" | "after", e: React.ChangeEvent<HTMLInputElement>) {
     const fl = Array.from(e.target.files || []);
@@ -92,16 +98,16 @@ export default function WorkerPage() {
         let f = f0;
         const video = f.type.startsWith("video/") || /\.(mov|mp4|m4v|3gp|webm)$/i.test(f.name);
         if (!video) { const v = await judgePhoto(f); if (!v.ok) { bad.push(v.reason || "Not clear."); continue; } }
-        if (!video && job) { try { f = await labelWorkerPhoto(f, { jobId: job.id, side, address: place(job), location: spot(job) }); } catch { /* kept as taken: the job card labels it */ } }
-        const n = items.filter((y) => y.side === side && y.video === video).length + good.filter((y) => y.video === video).length + 1;
-        good.push({ key: `${job?.id}-${side}-${f.size}-${f.lastModified}-${n}`.replace(/[^\w:.+-]/g, "").slice(0, 100), side, file: f, url: URL.createObjectURL(f), video, state: "local", pct: 0, n });
+        if (!video && job) { try { f = await labelWorkerPhoto(f, { jobId: job.id, side, address: place(job), location: spot ? `${spot.toUpperCase()} · ${buildingSpot(job)}`.replace(/ · $/, "") : buildingSpot(job) }); } catch { /* kept as taken: the job card labels it */ } }
+        const n = items.filter((y) => y.side === side && y.video === video && y.spot === spot).length + good.filter((y) => y.video === video).length + 1;
+        good.push({ key: `${job?.id}-${side}-${spot}-${f.size}-${f.lastModified}-${n}`.replace(/[^\w:.+-]/g, "").slice(0, 100), side, file: f, url: URL.createObjectURL(f), video, state: "local", pct: 0, n, spot });
       }
       if (good.length) { setItems((o) => [...o, ...good]); save({ ...done, [side === "before" ? "Before photos" : "After photos"]: true }, finished); }
-      setMsg(bad.length ? `📷 ${bad[0]}${bad.length > 1 ? ` (${bad.length} photos need a retake)` : ""}` : good.length ? `✓ ${good.length} ${side.toUpperCase()} added.` : "");
+      setMsg(bad.length ? `📷 ${bad[0]}${bad.length > 1 ? ` (${bad.length} photos need a retake)` : ""}` : good.length ? `✓ ${good.length} ${side.toUpperCase()}${spot ? ` (${spot})` : ""} added.` : "");
       if (job?.pass) for (const x of good) await send(x);
     })();
   }
-  function save(d: Record<string, boolean>, f: boolean) { setDone(d); setFinished(f); if (job) { try { localStorage.setItem(key(job.id), JSON.stringify({ done: d, finished: f, sent: sentCount })); } catch { /* private mode */ } } }
+  function save(d: Record<string, boolean>, f: boolean) { setDone(d); setFinished(f); if (job) { try { localStorage.setItem(key(job.id), JSON.stringify({ done: d, finished: f, sent: sentCount, spot })); } catch { /* private mode */ } } }
 
   if (!ready) return <main className="ios-app" />;
   if (!job) return (
@@ -133,6 +139,20 @@ export default function WorkerPage() {
             needed; each one is labeled BEFORE or AFTER and, with the link's pass, goes straight to the boss's job card. */}
         <h2 style={{ marginBottom: 4 }}>📸 Before and after</h2>
         <p style={{ opacity: 0.75, marginTop: 0, fontSize: 17 }}>Same spot before and after, lights on. Take as many photos and videos as you need.{extra.length ? ` Also: ${extra.join(", ")}.` : ""}</p>
+        <div data-hpd-smoke="worker-spots" style={{ padding: 12, borderRadius: 16, background: "rgba(10,132,255,.10)", border: spot ? "2px solid transparent" : "2px dashed #0a84ff" }}>
+          <p style={{ margin: "0 0 8px", fontWeight: 800 }} data-hpd-smoke="worker-spot-now">📍 {spot ? <>Taking photos in: <span style={{ color: "#0a84ff" }}>{spot}</span></> : "First tap where you are:"}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {[...(job.where && /: (.+)$/.exec(job.where) ? [cleanSpot(/: (.+)$/.exec(job.where)![1])] : []), ...SPOTS].filter((v, i, a) => v && a.indexOf(v) === i).map((v) => (
+              <button key={v} type="button" data-hpd-smoke="worker-spot" data-spot={v} aria-pressed={spot === v} onClick={() => { setSpot(v); setTyping(false); setMsg(""); try { const k = key(job.id); const o = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...o, spot: v })); } catch { /* private mode */ } }}
+                style={{ padding: "10px 12px", borderRadius: 999, border: 0, fontSize: 17, fontWeight: 700, background: spot === v ? "#0a84ff" : "rgba(120,120,128,.2)", color: spot === v ? "#fff" : "inherit" }}>{v}</button>
+            ))}
+            <button type="button" data-hpd-smoke="worker-spot-other" onClick={() => setTyping(true)} style={{ padding: "10px 12px", borderRadius: 999, border: 0, fontSize: 17, fontWeight: 700, background: spot && !SPOTS.includes(spot) ? "#0a84ff" : "rgba(120,120,128,.2)", color: spot && !SPOTS.includes(spot) ? "#fff" : "inherit" }}>✏️ Other</button>
+          </div>
+          {typing ? <input autoFocus data-hpd-smoke="worker-spot-type" placeholder="e.g. Back bedroom closet" maxLength={30} style={{ marginTop: 8, width: "100%", fontSize: 18, padding: 10, borderRadius: 10, border: "1px solid #8e8e93" }}
+            onBlur={(e) => { const v = cleanSpot(e.target.value); if (v) { setSpot(v); try { const k = key(job.id); const o = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...o, spot: v })); } catch { /* private mode */ } } setTyping(false); }}
+            onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} /> : null}
+          <p style={{ margin: "8px 0 0", fontSize: 15, opacity: 0.75 }}>Moving to another room? Tap it first. Use the same spot for its before and after.</p>
+        </div>
         {(["before", "after"] as const).map((side) => {
           const mine = items.filter((x) => x.side === side);
           const color = side === "before" ? "#ff9f0a" : "#30a14e";
@@ -140,22 +160,22 @@ export default function WorkerPage() {
             <section key={side} data-hpd-smoke={`worker-side-${side}`} style={{ margin: "12px 0", padding: 12, borderRadius: 16, border: `3px solid ${color}` }}>
               <h3 style={{ margin: "0 0 8px", fontSize: 22, color }}>{side === "before" ? "1️⃣ BEFORE the work" : "2️⃣ AFTER the work"}{mine.length || sentCount[side] ? <span style={{ fontSize: 16, marginLeft: 8, color: "inherit", opacity: 0.8 }} data-hpd-smoke={`worker-count-${side}`}>{Math.max(mine.length, sentCount[side])} taken</span> : null}</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                <label style={{ ...big, marginTop: 0, padding: "14px 4px", fontSize: 18, background: color }} data-hpd-smoke={`worker-photo-${side}`}>📷 Photo
+                <label style={{ ...big, marginTop: 0, padding: "14px 4px", fontSize: 18, background: color }} data-hpd-smoke={`worker-photo-${side}`} onClick={(e) => { if (!spot) { e.preventDefault(); setMsg("📍 First tap where you are (Kitchen, Bathroom…), then take the photo."); document.querySelector("[data-hpd-smoke=worker-spots]")?.scrollIntoView({ block: "center", behavior: "smooth" }); } }}>📷 Photo
                   <input type="file" accept="image/*" capture="environment" multiple hidden data-hpd-smoke={`worker-photo-file-${side}`} onChange={(e) => addFiles(side, e)} />
                 </label>
-                <label style={{ ...big, marginTop: 0, padding: "14px 4px", fontSize: 18, background: color }} data-hpd-smoke={`worker-video-${side}`}>🎥 Video
+                <label style={{ ...big, marginTop: 0, padding: "14px 4px", fontSize: 18, background: color }} data-hpd-smoke={`worker-video-${side}`} onClick={(e) => { if (!spot) { e.preventDefault(); setMsg("📍 First tap where you are (Kitchen, Bathroom…), then take the photo."); document.querySelector("[data-hpd-smoke=worker-spots]")?.scrollIntoView({ block: "center", behavior: "smooth" }); } }}>🎥 Video
                   <input type="file" accept="video/*" capture="environment" hidden data-hpd-smoke={`worker-video-file-${side}`} onChange={(e) => addFiles(side, e)} />
                 </label>
-                <label style={{ ...big, marginTop: 0, padding: "14px 4px", fontSize: 16, background: "#3a3a3c" }}>🖼 From phone
+                <label style={{ ...big, marginTop: 0, padding: "14px 4px", fontSize: 16, background: "#3a3a3c" }} onClick={(e) => { if (!spot) { e.preventDefault(); setMsg("📍 First tap where you are (Kitchen, Bathroom…), then take the photo."); document.querySelector("[data-hpd-smoke=worker-spots]")?.scrollIntoView({ block: "center", behavior: "smooth" }); } }}>🖼 From phone
                   <input type="file" accept="image/*,video/*" multiple hidden data-hpd-smoke={`worker-lib-${side}`} onChange={(e) => addFiles(side, e)} />
                 </label>
               </div>
-              <small data-hpd-smoke={`worker-label-${side}`} style={{ display: "block", marginTop: 8, fontSize: 15, fontWeight: 700, opacity: 0.85 }}>🏷 Printed on each photo: {side.toUpperCase()} · OMO {job.id}{spot(job) ? ` · ${spot(job)}` : ""}{job.address ? ` · ${place(job)}` : ""} · date taken</small>
+              <small data-hpd-smoke={`worker-label-${side}`} style={{ display: "block", marginTop: 8, fontSize: 15, fontWeight: 700, opacity: 0.85 }}>🏷 Printed on each photo: {side.toUpperCase()} · OMO {job.id}{spot || buildingSpot(job) ? ` · ${[spot.toUpperCase(), buildingSpot(job)].filter(Boolean).join(" · ")}` : ""}{job.address ? ` · ${place(job)}` : ""} · date taken</small>
               {mine.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 10 }}>
                 {mine.map((x) => (
                   <figure key={x.key} data-hpd-smoke="worker-item" data-side={side} data-state={x.state} style={{ margin: 0, position: "relative", borderRadius: 10, overflow: "hidden", background: "#000", aspectRatio: "1" }}>
                     {x.video ? <video src={x.url} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <img src={x.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                    <b style={{ position: "absolute", left: 4, top: 4, padding: "2px 6px", borderRadius: 6, background: color, color: "#fff", fontSize: 12 }}>{side.toUpperCase()}{x.video ? " 🎥" : ""}</b>
+                    <b style={{ position: "absolute", left: 4, top: 4, padding: "2px 6px", borderRadius: 6, background: color, color: "#fff", fontSize: 12 }}>{side.toUpperCase()}{x.video ? " 🎥" : ""}{x.spot ? ` · ${x.spot}` : ""}</b>
                     <figcaption style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "3px 4px", background: "rgba(0,0,0,.65)", color: "#fff", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
                       {x.state === "sent" ? "✓ Sent" : x.state === "sending" ? `Sending ${x.pct}%` : x.state === "failed" ? <button type="button" onClick={() => void send(x)} style={{ border: 0, background: "#dc2626", color: "#fff", borderRadius: 6, fontWeight: 800 }}>↻ Send again</button> : "On this phone"}
                     </figcaption>

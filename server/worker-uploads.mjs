@@ -94,7 +94,7 @@ export async function handleWorkerOwner(request, action, authHeaders, fetcher, e
       const r = await call(`${DRIVE}/files?${new URLSearchParams({ q, fields: "files(id,name,mimeType,size,createdTime,appProperties)", pageSize: "200", orderBy: "createdTime" })}`);
       if (!r.ok) fail(`Could not read Google Drive (HTTP ${r.status}).`);
       const files = ((await r.json()).files || []).map((f) => ({ id: f.id, name: f.name, mimeType: f.mimeType, size: Number(f.size || 0), at: f.createdTime,
-        side: f.appProperties?.hpdSide === "after" ? "after" : "before", done: f.appProperties?.hpdOnCard === "1", taken: f.appProperties?.hpdTaken || f.createdTime }));
+        side: f.appProperties?.hpdSide === "after" ? "after" : "before", done: f.appProperties?.hpdOnCard === "1", taken: f.appProperties?.hpdTaken || f.createdTime, where: f.appProperties?.hpdWhere || "" }));
       return reply({ files });
     }
     if (action === "worker-file" || action === "worker-done") {
@@ -147,7 +147,10 @@ export async function handleWorkerPublic(request, action, env, fetcher, getAcces
     const ext = mime.startsWith("video/") ? (mime.includes("quicktime") ? "mov" : "mp4") : (mime.includes("png") ? "png" : mime.includes("heic") ? "heic" : "jpg");
     // Numbering counts what is already in the job's folder (owner, 25 Nov: "is photo numbering good"): a fresh opening of
     // the worker link no longer starts again at 1, so there are never two "BEFORE photo 1" files.
-    const label = `${job} ${side === "after" ? "AFTER" : "BEFORE"} ${mime.startsWith("video/") ? "video" : "photo"} `;
+    // 📍 Where it was taken (Kitchen, Bathroom…): in the name and numbered per spot.
+    const spotRaw = String(body.where || "").replace(/[^\p{L}\p{N} #'-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 30);
+    const spot = spotRaw ? spotRaw[0].toUpperCase() + spotRaw.slice(1) : "";
+    const label = `${job} ${side === "after" ? "AFTER" : "BEFORE"} ${spot ? `${spot} ` : ""}${mime.startsWith("video/") ? "video" : "photo"} `;
     let n = Math.max(1, Math.min(999, Number(body.n) || 1));
     const have = await call(`${DRIVE}/files?${new URLSearchParams({ q: `trashed = false and '${dir}' in parents and appProperties has { key='hpdKind' and value='${FILE_KIND}' }`, fields: "files(name)", pageSize: "1000" })}`);
     if (have.ok) {
@@ -166,7 +169,7 @@ export async function handleWorkerPublic(request, action, env, fetcher, getAcces
     const name = `${label}${n} ${day}${labeled}.${ext}`;
     const start = await call(`${UPLOAD}?uploadType=resumable&fields=id`, { method: "POST",
       headers: { "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": mime, "X-Upload-Content-Length": String(size) },
-      body: JSON.stringify({ name, parents: [dir], appProperties: { hpdKind: FILE_KIND, hpdMediaId: mediaId, hpdSide: side, hpdJob: job, hpdTaken: taken.toISOString() } }) });
+      body: JSON.stringify({ name, parents: [dir], appProperties: { hpdKind: FILE_KIND, hpdMediaId: mediaId, hpdSide: side, hpdJob: job, hpdTaken: taken.toISOString(), ...(spot ? { hpdWhere: spot } : {}) } }) });
     const session = start.headers.get("Location") || "";
     if (!start.ok || !SESSION_URL.test(session)) fail(`The upload could not start (HTTP ${start.status}).`);
     return reply({ session });

@@ -29,7 +29,7 @@ try {
     const a = r.request().url().split("/").pop();
     const b = JSON.parse(r.request().postData() || "{}");
     if (a === "worker-ticket") return r.fulfill({ json: { pass: PASS } });
-    if (a === "worker-list") return r.fulfill({ json: { files: pulled.done.length ? [] : [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: false, taken: "2026-11-20T15:00:00Z" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: false, taken: "2026-11-22T16:00:00Z" }] } });
+    if (a === "worker-list") return r.fulfill({ json: { files: pulled.done.length ? [] : [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: false, taken: "2026-11-20T15:00:00Z", where: "Kitchen" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: false, taken: "2026-11-22T16:00:00Z" }] } });
     if (a === "worker-file") return r.fulfill({ body: jpg0, contentType: "image/jpeg" });
     pulled.done.push(...b.fileIds); return r.fulfill({ json: { ok: true } });
   });
@@ -46,7 +46,7 @@ try {
   const rows = await page.evaluate((id) => new Promise((res) => { const q = indexedDB.open("hpd-field-photos-v1"); q.onsuccess = () => { const t = q.result.transaction("photos").objectStore("photos").getAll(); t.onsuccess = () => res(t.result.filter((x) => x.jobId === id).map((x) => [x.kind, x.stamped, x.capturedAt, x.name]).sort()); }; }), JOB);
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.map((r) => [r[0], r[1], r[2]]), [["after", true, "2026-11-22T16:00:00.000Z"], ["before", true, "2026-11-20T15:00:00.000Z"]]);
-  assert.match(rows[1][3], /^EQ15239_.+_BEFORE-WORK-EVIDENCE_PHOTO_20261120\.jpg$/);
+  assert.match(rows[1][3], /^EQ15239_KITCHEN.+_BEFORE-WORK-EVIDENCE_PHOTO_20261120\.jpg$/); // 📍 the spot the worker tapped
   assert.match(rows[0][3], /^EQ15239_.+_AFTER-WORK-EVIDENCE_PHOTO_20261122\.jpg$/);
   // (HPD's PDF is held back until the pages step below, so these first shares are the plain message to check word by word.)
   const tenantPhone = ((await page.locator('[data-hpd-smoke="jc-tenant-call"]').getAttribute("href").catch(() => "")) || "").replace(/^tel:/, "").replace(/\D/g, "").slice(-10);

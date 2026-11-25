@@ -36,19 +36,26 @@ try {
     assert.equal(await page.locator(`[data-hpd-smoke="worker-video-file-${side}"]`).getAttribute("accept"), "video/*");
     for (const k of ["photo", "video"]) { const r = await page.locator(`[data-hpd-smoke="worker-${k}-${side}"]`).boundingBox(); assert.ok(r && r.height >= 44 && r.x + r.width <= 390, `${side} ${k}: big enough and fits the phone`); }
   }
+  // 📍 Spot first (owner, 25 Nov: "label the location where the picture is taken"): tapping Photo before a spot asks for it.
+  assert.match(await page.locator('[data-hpd-smoke="worker-spot-now"]').innerText(), /First tap where you are/);
+  assert.equal(await page.locator('[data-hpd-smoke="worker-spot"]').first().getAttribute("data-spot"), "Kitchen", "the job's own spot comes first");
+  await page.locator('[data-hpd-smoke="worker-photo-before"]').click();
+  assert.match(await page.locator('[data-hpd-smoke="worker-msg"]').innerText(), /First tap where you are/);
+  await page.locator('[data-hpd-smoke="worker-spot"][data-spot="Kitchen"]').click();
+  assert.match(await page.locator('[data-hpd-smoke="worker-spot-now"]').innerText(), /Taking photos in: Kitchen/);
   await page.locator('[data-hpd-smoke="worker-photo-file-before"]').setInputFiles([{ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") }, { name: "b.jpg", mimeType: "image/jpeg", buffer: Buffer.from("y") }]);
   await page.locator('[data-hpd-smoke="worker-video-file-before"]').setInputFiles({ name: "v.mp4", mimeType: "video/mp4", buffer: Buffer.from("video") });
   await page.locator('[data-hpd-smoke="worker-photo-file-after"]').setInputFiles({ name: "c.jpg", mimeType: "image/jpeg", buffer: Buffer.from("z") });
   await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="worker-item"]').length === 4, null, { timeout: 5000 });
   assert.equal(await page.locator('[data-hpd-smoke="worker-item"][data-side="before"]').count(), 3);
-  assert.deepEqual(await page.locator('[data-hpd-smoke="worker-item"] b').allInnerTexts(), ["BEFORE", "BEFORE", "BEFORE 🎥", "AFTER"]);
+  assert.deepEqual(await page.locator('[data-hpd-smoke="worker-item"] b').allInnerTexts(), ["BEFORE · Kitchen", "BEFORE · Kitchen", "BEFORE 🎥 · Kitchen", "AFTER · Kitchen"]);
   assert.match(await page.locator('[data-hpd-smoke="worker-count-before"]').innerText(), /3 taken/);
   // 25 Nov (owner: "I don't need them to send me back on WhatsApp"): no WhatsApp button; an old link (no upload pass) says
   // to ask for the job again.
   assert.equal(await page.locator('[data-hpd-smoke="worker-send-photos"]').count(), 0, "no WhatsApp step");
   assert.match(await page.locator('[data-hpd-smoke="worker-old-link"]').innerText(), /old link.+Ask your boss to send you the job again/);
   // 🏷 25 Nov (owner: "label for the work order number, address, location, bathroom or public hallway"): what's printed on each photo.
-  assert.match(await page.locator('[data-hpd-smoke="worker-label-before"]').innerText(), /BEFORE · OMO EQ15239 · Inside the apartment \(apt 4B\): kitchen · .+, apt 4B · date taken/);
+  assert.match(await page.locator('[data-hpd-smoke="worker-label-before"]').innerText(), /BEFORE · OMO EQ15239 · KITCHEN · Inside the apartment \(apt 4B\): kitchen · .+, apt 4B · date taken/);
   assert.match(await page.locator('[data-hpd-smoke="worker-label-after"]').innerText(), /AFTER · OMO EQ15239/);
   await page.evaluate(() => { window.__shared = null; });
   await page.locator('[data-hpd-smoke="worker-done"]').click();
@@ -79,16 +86,19 @@ try {
   const ups = [];
   await c.route(/\/api\/drive\/worker-(start|piece)/, async (r) => {
     const h = r.request().headers();
-    if (r.request().url().endsWith("worker-start")) { const b = JSON.parse(r.request().postData()); ups.push({ job: h["x-hpd-job"], pass: h["x-hpd-pass"], side: b.side, type: b.mimeType, n: b.n }); return r.fulfill({ json: { session: "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=abc" } }); }
+    if (r.request().url().endsWith("worker-start")) { const b = JSON.parse(r.request().postData()); ups.push({ job: h["x-hpd-job"], pass: h["x-hpd-pass"], side: b.side, type: b.mimeType, n: b.n, where: b.where }); return r.fulfill({ json: { session: "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=abc" } }); }
     return r.fulfill({ json: { done: true, id: "f1" } });
   });
   await page.goto(`${baseUrl}/worker/#o=EQ15239&k=1a2.ABCDEFGHIJKLMNOPQRSTUV`, { waitUntil: "load" });
   await page.reload({ waitUntil: "load" });
   await page.locator('[data-hpd-smoke="worker-job"]').waitFor({ timeout: 30000 });
+  await page.locator('[data-hpd-smoke="worker-spot-other"]').click();
+  await page.locator('[data-hpd-smoke="worker-spot-type"]').fill("back bedroom closet");
+  await page.locator('[data-hpd-smoke="worker-spot-type"]').press("Enter");
   await page.locator('[data-hpd-smoke="worker-photo-file-before"]').setInputFiles({ name: "a.jpg", mimeType: "image/jpeg", buffer: Buffer.from("x") });
   await page.locator('[data-hpd-smoke="worker-video-file-after"]').setInputFiles({ name: "v.mov", mimeType: "video/quicktime", buffer: Buffer.from("video") });
   await page.waitForFunction(() => [...document.querySelectorAll('[data-hpd-smoke="worker-item"]')].filter((e) => e.dataset.state === "sent").length === 2, null, { timeout: 10000 });
-  assert.deepEqual(ups, [{ job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "before", type: "image/jpeg", n: 1 }, { job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "after", type: "video/quicktime", n: 1 }]);
+  assert.deepEqual(ups, [{ job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "before", type: "image/jpeg", n: 1, where: "Back bedroom closet" }, { job: "EQ15239", pass: "1a2.ABCDEFGHIJKLMNOPQRSTUV", side: "after", type: "video/quicktime", n: 1, where: "Back bedroom closet" }]);
   assert.match(await page.locator('[data-hpd-smoke="worker-sent-line"]').innerText(), /All 2 are on job EQ15239's card/);
   assert.equal(await page.locator('[data-hpd-smoke="worker-send-photos"]').count(), 0, "no WhatsApp step with a pass");
   // A real photo is labeled on the worker's phone (OMO / location / address / date printed on it) and sent as "labeled".
