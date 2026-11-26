@@ -6010,9 +6010,13 @@ export default function FieldCommandClient() {
   }, [selectedJobId, hpdPages]);
   // 📸 New worker photos (plan item 43): the job card brought the worker's files in, so the "new from worker" tag goes away
   // on every phone (one small write, only when the tag was on).
+  const workerSeenRef = useRef(new Map<string, string>()); // the 2-minute re-check may hold an older copy of the job: one write per batch
   function markWorkerSeen(job: JobRecord) {
     if (!workerNew(job as Record<string, unknown>)) return;
     const id = jobId(job);
+    const stamp = String((job as Record<string, unknown>).WorkerNewAt || "");
+    if (workerSeenRef.current.get(id) === stamp) return;
+    workerSeenRef.current.set(id, stamp);
     const WorkerSeenAt = new Date().toISOString();
     setJobs((rows) => rows.map((r) => (jobId(r) === id ? { ...r, WorkerSeenAt } : r)));
     void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: id, patch: { WorkerSeenAt } }) }).catch(() => {});
