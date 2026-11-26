@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted, maturityNeedsAfter } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted, maturityNeedsAfter, pinNeedsAfter } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -99,4 +99,13 @@ console.log('award-countdown tests passed');
   const mw = ['A', 'B', 'C', 'D', 'E'].map((omo) => ({ omo, due: '', days: 1, given: 1 }));
   assert.deepEqual(maturityNeedsAfter(mw, { overrides: { B: { BeforePhotoCount: 2 }, C: { BeforePhotoCount: 1, AfterPhotoCount: 1 }, D: { AfterPhotoCount: 3 } }, photos: { a: { before: 2, after: 0 }, d: { before: 1, after: 0 }, e: { before: 0, after: 0 } } }), ['A', 'B']);
   assert.deepEqual(maturityNeedsAfter(mw, { overrides: null, photos: null }), []);
+}
+// 🟠 Needs After on the map (plan item 45): due within 7 days or late, Before saved on the job, no After.
+{
+  assert.equal(pinNeedsAfter({ BeforePhotoCount: 2 }, 3), true);
+  assert.equal(pinNeedsAfter({ BeforePhotoCount: 2 }, -2), true, 'late still needs After');
+  assert.equal(pinNeedsAfter({ BeforePhotoCount: 2 }, 9), false, 'not due this week');
+  assert.equal(pinNeedsAfter({ BeforePhotoCount: 2, AfterPhotoCount: 1 }, 3), false);
+  assert.equal(pinNeedsAfter({ BeforePhotoCount: 2 }, undefined), false, 'not awarded / already sent');
+  assert.equal(pinNeedsAfter(null, 1), false);
 }

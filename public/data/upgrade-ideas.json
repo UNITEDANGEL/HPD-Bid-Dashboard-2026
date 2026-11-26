@@ -608,12 +608,6 @@
     "title": "Next on the plan: no job held up by a missing After photo",
     "items": [
       {
-        "id": "plan-needs-after-map",
-        "icon": "🟠",
-        "title": "Needs After on the map",
-        "why": "The same orange \"needs After\" tag on the job's map pin, so you see it while driving the route."
-      },
-      {
         "id": "plan-ask-worker-after",
         "icon": "📷",
         "title": "Ask the worker for the After photo",

@@ -153,8 +153,21 @@ export function maturityNeedsAfter(list: Countdown[], opts: { overrides?: Record
     const omo = c.omo.toUpperCase();
     const o = opts.overrides?.[omo] || {};
     const p = here[omo] || {};
-    const before = Math.max(Number(p.before) || 0, Number(o.BeforePhotoCount) || 0);
-    const after = Math.max(Number(p.after) || 0, Number(o.AfterPhotoCount) || 0);
-    return before > 0 && after === 0;
+    return photosNeedAfter(o, p);
   }).map((c) => c.omo);
+}
+
+// Before photos (on this phone or saved on the job) and no After anywhere.
+export function photosNeedAfter(row: Record<string, unknown> | null | undefined, here?: { before?: number; after?: number } | null): boolean {
+  const o = row || {};
+  const p = here || {};
+  const before = Math.max(Number(p.before) || 0, Number(o.BeforePhotoCount) || 0);
+  const after = Math.max(Number(p.after) || 0, Number(o.AfterPhotoCount) || 0);
+  return before > 0 && after === 0;
+}
+
+// 🟠 Needs After on the map (plan item 45, 26 Nov): an awarded job not sent yet, due within 7 days (or late), with Before
+// photos saved on the job and no After: the same orange tag on its map pin, so it's seen while driving the route.
+export function pinNeedsAfter(row: Record<string, unknown> | null | undefined, daysLeft: number | null | undefined): boolean {
+  return typeof daysLeft === "number" && daysLeft <= 7 && photosNeedAfter(row);
 }

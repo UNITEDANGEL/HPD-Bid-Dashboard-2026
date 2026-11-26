@@ -155,7 +155,7 @@ import { sayOmo } from "../../lib/alert-summary";
 import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
-import { awardCountdown, finishByText } from "../../lib/award-countdown";
+import { awardCountdown, finishByText, pinNeedsAfter } from "../../lib/award-countdown";
 import { workerNew } from "../../lib/worker-new";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
@@ -4452,6 +4452,7 @@ export default function FieldCommandClient() {
               const daysBadge = left && !(lit && showLabel) && (showLabel || left.days <= 0)
                 ? `<span class="fc-days-badge${left.days < 0 ? " is-late" : left.days <= 3 ? " is-soon" : ""}" data-hpd-smoke="fc-days-badge" data-days="${left.days}">${left.days < 0 ? `${-left.days}d late` : left.days === 0 ? "today" : `${left.days}d`}</span>`
                 : "";
+              const fromWorker = workerNew(job as Record<string, unknown>) && Boolean(showLabel || lit);
               const html = (showLabel || lit
                 ? jobPinHtml(job, meta, priority, visit.count, showLabel)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`)
@@ -4460,7 +4461,9 @@ export default function FieldCommandClient() {
                 + (lit && (showLabel || /is-glow-(24h|near)/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : "")
                 + daysBadge // 24-hour notices always show their time (20 Nov); a job near you its distance
                 // 📸 New worker photos (plan item 43): the worker's Before / After came in and the job card wasn't opened yet.
-                + (workerNew(job as Record<string, unknown>) && (showLabel || lit) ? `<span class="fc-worker-new" data-hpd-smoke="fc-worker-new">📸 new from worker</span>` : "");
+                + (fromWorker ? `<span class="fc-worker-new" data-hpd-smoke="fc-worker-new">📸 new from worker</span>` : "")
+                // 🟠 Needs After (plan item 45): Before photos but no After on a job due this week or late.
+                + ((showLabel || lit) && pinNeedsAfter(job as Record<string, unknown>, left?.days) ? `<span class="fc-needs-after${fromWorker ? " is-second" : ""}" data-hpd-smoke="fc-needs-after">🟠 needs After</span>` : "");
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
