@@ -11,6 +11,7 @@ const { photosStillNeeded } = await loadLib("photo-checklist");
 assert.equal(photosStillNeeded(null).left, 8);
 assert.equal(photosStillNeeded({ before: 4, beforeVideos: 1, after: 2, afterVideos: 0 }).left, 2);
 assert.equal(photosStillNeeded({ before: 4, beforeVideos: 1, after: 4, afterVideos: 1 }).line, "📷 All photos and videos done ✓");
+assert.equal(photosStillNeeded({ before: 2, beforeVideos: 1, after: 2, afterVideos: 1 }).line, "📷 4 photos/videos still needed: 2 before photos, 2 after photos (you have 2 before, 2 after)");
 const { bidsBriefLine } = await loadLib("photo-checklist");
 assert.equal(bidsBriefLine({}), "");
 assert.equal(bidsBriefLine({ unsentToday: 3, tomorrow: 2, firstTime: "11:00 AM" }), "3 bids due today, the closest closes at 11:00 AM and 2 due tomorrow");

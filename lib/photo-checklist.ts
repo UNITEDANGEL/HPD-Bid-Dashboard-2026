@@ -36,7 +36,11 @@ export function photosStillNeeded(c: MediaCounts | null | undefined, outcome?: s
   const bv = m.beforeVideos || 0, av = m.afterVideos || 0;
   const bp = Math.max(0, (m.before || 0) - bv), ap = Math.max(0, (m.after || 0) - av);
   const left = Math.max(0, 3 - bp) + Math.max(0, 3 - ap) + (bv ? 0 : 1) + (av ? 0 : 1);
-  return { left, line: left ? `📷 ${left} photo${left === 1 ? "" : "s"}/video${left === 1 ? "" : "s"} still needed` : "📷 All photos and videos done ✓" };
+  // 26 Nov (owner saw "4 still needed" after the worker's photos came in): say which ones, so it's clear what came in.
+  const more = (n: number, side: string) => (n > 0 ? [`${n} ${side} photo${n === 1 ? "" : "s"}`] : []);
+  const what = [...more(3 - bp, "before"), ...(bv ? [] : ["a before video"]), ...more(3 - ap, "after"), ...(av ? [] : ["an after video"])];
+  const has = bp + ap + bv + av;
+  return { left, line: left ? `📷 ${left} photo${left === 1 ? "" : "s"}/video${left === 1 ? "" : "s"} still needed: ${what.join(", ")}${has ? ` (you have ${bp + bv} before, ${ap + av} after)` : ""}` : "📷 All photos and videos done ✓" };
 }
 
 // 7 AM bids brief (plan, 14 Nov): "3 bids due today, the closest at 11:00 AM, and 2 due tomorrow."
