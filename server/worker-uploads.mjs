@@ -8,8 +8,8 @@
 //   - the owner's job card lists and pulls them in (worker-list, worker-file, worker-done, signed in), labeled Before / After.
 import { handleDriveVideos } from "./drive-videos.mjs";
 
-export const WORKER_OWNER_ACTIONS = ["worker-ticket", "worker-list", "worker-file", "worker-done"];
-export const WORKER_PUBLIC_ACTIONS = ["worker-start", "worker-piece"];
+export const WORKER_OWNER_ACTIONS = ["worker-ticket", "worker-list", "worker-file", "worker-done", "worker-chat-boss"];
+export const WORKER_PUBLIC_ACTIONS = ["worker-start", "worker-piece", "worker-chat"];
 
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -17,6 +17,7 @@ const FOLDER_MIME = "application/vnd.google-apps.folder";
 const ROOT_KIND = "hpd-worker-root";
 const JOB_KIND = "hpd-worker-job";
 const FILE_KIND = "hpd-worker-file";
+const CHAT_KIND = "hpd-worker-chat";
 const MAX_BYTES = 200 * 1024 * 1024;
 const PASS_DAYS = 45;
 const SESSION_URL = /^https:\/\/www\.googleapis\.com\/upload\/drive\/v3\/files\?[^\s#]*upload_id=[\w-]+[^\s#]*$/;
@@ -74,13 +75,47 @@ function driveCalls(authHeaders, fetcher) {
   return { call, findOne, jobFolder };
 }
 
+// 💬 Chat between the boss and the worker, per job (owner, 26 Nov: "instead of WhatsApp can we communicate ... a chat or
+// an app"): one small file in the job's folder (HPD Worker Uploads / <job> / chat.json), last 200 messages.
+const cleanText = (v) => String(v || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1000);
+async function chat({ call, findOne, jobFolder }, job, add) {
+  const dir = await jobFolder(job, Boolean(add));
+  if (!dir) return [];
+  const id = await findOne(`'${dir}' in parents and appProperties has { key='hpdKind' and value='${CHAT_KIND}' }`);
+  let messages = [];
+  if (id) {
+    const r = await call(`${DRIVE}/files/${id}?alt=media`);
+    if (!r.ok) fail(`Could not read the chat (HTTP ${r.status}).`);
+    try { const d = JSON.parse(await r.text()); messages = Array.isArray(d.messages) ? d.messages : []; } catch { messages = []; }
+  }
+  if (!add) return messages;
+  messages = [...messages, add].slice(-200);
+  let fileId = id;
+  if (!fileId) {
+    const c = await call(`${DRIVE}/files?fields=id`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "chat.json", mimeType: "application/json", parents: [dir], appProperties: { hpdKind: CHAT_KIND, hpdJob: job } }) });
+    if (!c.ok) fail(`Could not start the chat (HTTP ${c.status}).`);
+    fileId = (await c.json()).id;
+    if (!validId(fileId)) fail("Drive did not return the chat.");
+  }
+  const w = await call(`${UPLOAD}/${fileId}?uploadType=media&fields=id`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages }) });
+  if (!w.ok) fail(`Could not send it (HTTP ${w.status}).`);
+  return messages;
+}
+
 // Signed-in owner (called from handleDriveAuth after its Google identity checks).
 export async function handleWorkerOwner(request, action, authHeaders, fetcher, env, keepOwner) {
-  const { call, jobFolder } = driveCalls(authHeaders, fetcher);
+  const drive = driveCalls(authHeaders, fetcher);
+  const { call, jobFolder } = drive;
   try {
     let body = {};
     try { body = JSON.parse(await request.text() || "{}"); } catch { fail("Invalid request.", 400); }
     const job = String(body.jobId || "").toUpperCase();
+    if (action === "worker-chat-boss") {
+      if (!JOB_ID.test(job)) fail("Invalid job.", 400);
+      const text = cleanText(body.text);
+      return reply({ messages: await chat(drive, job, text ? { at: new Date().toISOString(), from: "boss", text } : null) });
+    }
     if (action === "worker-ticket") {
       if (!JOB_ID.test(job)) fail("Invalid job.", 400);
       await keepOwner();
@@ -137,6 +172,14 @@ export async function handleWorkerPublic(request, action, env, fetcher, getAcces
     const job = String(request.headers.get("X-HPD-Job") || "").toUpperCase();
     if (!(await checkPass(env, job, request.headers.get("X-HPD-Pass")))) fail("This link has no upload pass or it ended: ask your boss to send the job again.", 403);
     if (action === "worker-piece") return handleDriveVideos(request, "video-piece", {}, fetcher);
+    if (action === "worker-chat") {
+      let b = {};
+      try { b = JSON.parse(await request.text() || "{}"); } catch { fail("Invalid request.", 400); }
+      const access = await getAccess();
+      if (!access) fail("Your boss's Google sign-in needs renewing: ask your boss to open the app.", 503);
+      const text = cleanText(b.text);
+      return reply({ messages: await chat(driveCalls({ Authorization: `Bearer ${access}` }, fetcher), job, text ? { at: new Date().toISOString(), from: "worker", text } : null) });
+    }
     if (!request.headers.get("Content-Type")?.startsWith("application/json")) fail("JSON request required.", 415);
     let body;
     try { body = JSON.parse(await request.text()); } catch { fail("Invalid request.", 400); }

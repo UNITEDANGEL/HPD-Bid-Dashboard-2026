@@ -23,21 +23,19 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?view=all&map=1&updated=1`, { waitUntil: "load", timeout: 180000 });
+  // 26 Nov (owner: "it's 2 now, I want only the purple one"): the white bubble is gone; the purple pop-up tells what's new.
   const pop = page.locator('[data-hpd-smoke="fc-updated-pop"]');
-  await pop.waitFor({ timeout: 30000 });
-  const text = await pop.innerText();
-  assert.match(text, /^✨ New update · enjoy!/);
-  assert.ok(text.includes(news.versions[0].items[0].slice(0, 40)), "the newest change is listed");
+  void news;
   // Picked up where you left off: the board is open again, over the map.
   await page.locator('[data-hpd-smoke="fc-board"][data-with-map="1"]').waitFor({ timeout: 30000 });
-  // Hides by itself.
-  await pop.waitFor({ state: "detached", timeout: 12000 });
+  await page.waitForTimeout(3000);
+  assert.equal(await pop.count(), 0, "no white bubble after an update");
   // Same version next time: no bubble.
   await page.reload({ waitUntil: "load" });
   await page.waitForTimeout(4000);
   assert.equal(await pop.count(), 0, "no bubble on the same version");
   assert.deepEqual(errors, []);
-  console.log(`PASS updated pop-up: "${text.split("\n")[0]}" with the newest changes, hid by itself; the board came back over the map; nothing on the same version`);
+  console.log("PASS updated pop-up: no white bubble after an update (only the purple one); the board came back over the map; nothing on the same version");
 } finally {
   await browser.close();
 }

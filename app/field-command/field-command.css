@@ -5310,3 +5310,28 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 /* 👷 26 Nov: the worker's photos status right above "See the before / after", red when they can't come in. */
 .jc-worker-status { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: rgba(48, 161, 78, 0.14); font-weight: 700; font-size: 14px; line-height: 1.35; }
 .jc-worker-status.is-error { background: rgba(255, 69, 58, 0.16); color: #ff453a; }
+
+/* ✨ 26 Nov (owner: "only the purple one and make it better"): the changes as small cards with a big icon each, a gold
+   Got it, a hint to swipe it away; swiping moves it with the finger feel (leaves with the same slide-out). */
+.fc-newupdate.is-magic ul.fc-magic-list { list-style: none; margin: 8px 0 6px; padding: 0; display: grid; gap: 8px; }
+.fc-newupdate.is-magic ul.fc-magic-list li { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.10); border: 1px solid rgba(196,181,253,.35); line-height: 1.35; color: #fff; animation: fc-magic-item .45s ease-out both; }
+.fc-newupdate.is-magic ul.fc-magic-list li:nth-child(2) { animation-delay: .12s; }
+.fc-newupdate.is-magic ul.fc-magic-list li:nth-child(3) { animation-delay: .24s; }
+.fc-newupdate.is-magic .fc-magic-ico { flex: 0 0 auto; font-size: 26px; line-height: 1; }
+.fc-newupdate.is-magic .fc-magic-hint { display: block; text-align: center; font-size: 12px; color: #c4b5fd; margin: 6px 0 2px; }
+.fc-newupdate.is-magic [data-hpd-smoke="fc-newupdate-ok"] { background: linear-gradient(180deg, #fde68a, #f59e0b); color: #3b0764; font-weight: 800; border: 0; }
+.fc-newupdate.is-magic { touch-action: none; }
+@keyframes fc-magic-item { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fc-newupdate.is-magic ul.fc-magic-list li { animation: none; } }
+
+/* 💬 26 Nov: chat with the worker on the job card. */
+.jc-chat { display: grid; gap: 8px; margin: 10px 0; padding: 10px; border-radius: 14px; border: 2px solid #0a84ff; }
+.jc-chat-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+.jc-chat-msg { margin: 0; max-width: 85%; padding: 7px 11px; border-radius: 14px; white-space: pre-wrap; font-size: 15px; line-height: 1.35; }
+.jc-chat-msg small { display: block; font-size: 11px; opacity: .75; }
+.jc-chat-msg.is-boss { align-self: flex-end; background: #0a84ff; color: #fff; }
+.jc-chat-msg.is-worker { align-self: flex-start; background: rgba(120,120,128,.22); }
+.jc-chat-form { display: flex; gap: 8px; align-items: stretch; }
+.jc-chat-form textarea { flex: 1; font-size: 16px; padding: 8px 10px; border-radius: 10px; border: 1px solid #8e8e93; resize: vertical; background: transparent; color: inherit; }
+.jc-chat-note { color: #ff453a; }
+button.jc-worker-status.is-chat { display: block; width: 100%; text-align: left; border: 0; background: rgba(10,132,255,.18); color: inherit; cursor: pointer; }

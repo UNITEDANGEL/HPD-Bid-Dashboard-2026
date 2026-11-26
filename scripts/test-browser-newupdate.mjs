@@ -30,9 +30,11 @@ try {
     await p.waitForTimeout(900); // it slides in (0.6 s)
     assert.equal(await p.locator('[data-hpd-smoke="fc-magic-timer"]').count(), 1, "10 s bar shows");
     await card.dispatchEvent("pointerdown"); // hold it open (it leaves by itself after 10 s; block 2 checks that)
-    const items = await card.locator("li").allInnerTexts();
-    const short = (x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return one.length > 90 ? `${one.slice(0, 88)}…` : one; };
-    assert.deepEqual(items, all.slice(0, 2).map(short), "only the lines not seen yet, first sentence each (2 at most)");
+    // 26 Nov: up to 3 cards, each with its own big icon and the first sentence.
+    const items = await card.locator("li").evaluateAll((els) => els.map((e) => [e.querySelector(".fc-magic-ico")?.textContent || "", e.lastElementChild?.textContent || ""]));
+    const short = (x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; const m = /^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*/u.exec(one); const w = m ? one.slice(m[0].length) : one; return [m ? m[1] : "✨", w.length > 110 ? `${w.slice(0, 108)}…` : w]; };
+    assert.deepEqual(items, all.slice(0, 2).map(short), "only the lines not seen yet (2 here), first sentence each, icon apart");
+    assert.match(await card.innerText(), /Swipe it away/);
     assert.match(await card.innerText(), /🆕 New update includes/);
     // ✨ Magic popup (24 Nov): it jumps up in the middle even with the side tab closed, over a sparkle backdrop.
     assert.match(await card.innerText(), /New upgrade is live!/);

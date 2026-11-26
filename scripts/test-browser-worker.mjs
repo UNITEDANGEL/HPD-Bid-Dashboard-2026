@@ -85,6 +85,15 @@ try {
   assert.ok(!requests.some((u) => u.includes("EQ15239") || u.includes("Jose")), "job never sent to a server");
   // With the upload pass (k=…, 25 Nov): each one goes straight to the job card as soon as it's taken, in pieces, labeled.
   const ups = [];
+  // 💬 26 Nov: the chat with the boss on the job page (same pass).
+  const chatLog = [{ at: "2026-11-26T14:00:00.000Z", from: "boss", text: "Call me when you get there" }];
+  await c.route(/\/api\/drive\/worker-chat$/, async (r) => {
+    const h = r.request().headers();
+    if (h["x-hpd-pass"] !== "1a2.ABCDEFGHIJKLMNOPQRSTUV") return r.fulfill({ status: 403, json: { error: "no pass" } });
+    const b = JSON.parse(r.request().postData() || "{}");
+    if (b.text) chatLog.push({ at: new Date().toISOString(), from: "worker", text: b.text });
+    return r.fulfill({ json: { messages: chatLog } });
+  });
   await c.route(/\/api\/drive\/worker-(start|piece)/, async (r) => {
     const h = r.request().headers();
     if (r.request().url().endsWith("worker-start")) { const b = JSON.parse(r.request().postData()); ups.push({ job: h["x-hpd-job"], pass: h["x-hpd-pass"], side: b.side, type: b.mimeType, n: b.n, where: b.where }); return r.fulfill({ json: { session: "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=abc" } }); }
@@ -110,6 +119,18 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('[data-hpd-smoke="worker-item"]')].filter((e) => e.dataset.state === "sent").length === 3, null, { timeout: 15000 });
   assert.equal(bodies.length, 1);
   assert.equal(bodies[0].labeled, true, "photo labeled on the worker's phone");
+  await page.locator('[data-hpd-smoke="worker-chat-msg"][data-from="boss"]').waitFor({ timeout: 10000 });
+  assert.match(await page.locator('[data-hpd-smoke="worker-chat-msg"]').first().innerText(), /Boss · .*Call me when you get there/s);
+  await page.locator('[data-hpd-smoke="worker-chat-input"]').fill("I'm here, door is open");
+  await page.locator('[data-hpd-smoke="worker-chat-send"]').click();
+  await page.locator('[data-hpd-smoke="worker-chat-msg"][data-from="worker"]').waitFor({ timeout: 10000 });
+  assert.equal(await page.locator('[data-hpd-smoke="worker-chat-input"]').inputValue(), "", "box empties after sending");
+  assert.match(chatLog.slice(-1)[0].text, /I'm here, door is open/);
+  // ✅ Job done goes into the chat (no WhatsApp). (Marked done earlier in this test: undo first.)
+  if (/tap to undo/.test(await page.locator('[data-hpd-smoke="worker-done"]').innerText())) await page.locator('[data-hpd-smoke="worker-done"]').click();
+  await page.locator('[data-hpd-smoke="worker-done"]').click();
+  await page.waitForFunction(() => /Your boss sees it in the chat/.test(document.querySelector('[data-hpd-smoke="worker-msg"]')?.textContent || ""), null, { timeout: 10000 });
+  assert.match(chatLog.slice(-1)[0].text, /HPD job EQ15239 is done/);
   assert.deepEqual(errors, []);
   console.log("PASS worker view: job, navigate, call, BEFORE / AFTER photos and videos (labeled; straight to the job card with the pass, WhatsApp without), done; nothing about bids or money; job stays in the link");
 } finally { await browser.close(); }

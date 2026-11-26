@@ -29,6 +29,10 @@ export default function WorkerPage() {
   const announced = useRef(false); // 📸 the first photo of this visit tells the boss's map "new from worker" (plan item 43)
   const [spot, setSpot] = useState("");
   const [typing, setTyping] = useState(false);
+  const [chat, setChat] = useState<{ at: string; from: "boss" | "worker"; text: string }[]>([]);
+  const [draft, setDraft] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatErr, setChatErr] = useState("");
   const [sentCount, setSentCount] = useState<{ before: number; after: number }>({ before: 0, after: 0 });
 
   useEffect(() => {
@@ -86,6 +90,26 @@ export default function WorkerPage() {
       setSentCount((c) => { const next = { ...c, [x.side]: c[x.side] + 1 }; try { const k = key(job.id); const o = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...o, sent: next })); } catch { /* private mode */ } return next; });
     } catch { set({ state: "failed" }); setMsg("No signal? Tap ↻ Send again."); }
   }
+  // 💬 Chat with the boss (owner, 26 Nov: "instead of WhatsApp can we communicate ... a chat or an app"): on this page, with
+  // the link's pass; the boss answers from the job card. Looks for new messages every 15 seconds while the page is open.
+  async function talk(text = "") {
+    if (!job?.pass) return false;
+    try {
+      const r = await fetch("/api/drive/worker-chat", { method: "POST", headers: { "X-HPD-Job": job.id, "X-HPD-Pass": job.pass, "Content-Type": "application/json" }, body: JSON.stringify(text ? { text } : {}) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setChatErr(d.error || "No signal? Try again."); return false; }
+      setChat(Array.isArray(d.messages) ? d.messages : []);
+      setChatErr("");
+      return true;
+    } catch { setChatErr("No signal? Try again."); return false; }
+  }
+  useEffect(() => {
+    if (!job?.pass) return;
+    void talk();
+    const t = window.setInterval(() => { if (document.visibilityState === "visible") void talk(); }, 15000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, job?.pass]);
   // 🏷 The label printed on each photo (owner, 25 Nov): OMO, where in the building (from HPD's description: apartment /
   // bathroom / public hallway...), the address and the day it was taken.
   const buildingSpot = (j: WorkerJob) => j.where || (j.apt ? `Apt ${j.apt.replace(/^apt\.?\s*/i, "")}` : "");
@@ -190,6 +214,23 @@ export default function WorkerPage() {
           );
         })}
         {job.pass && items.length ? <p data-hpd-smoke="worker-sent-line" style={{ fontSize: 17, fontWeight: 700 }}>{items.every((x) => x.state === "sent") ? `✓ All ${items.length} are on job ${job.id}'s card for your boss.` : `Sending to job ${job.id}'s card… keep this page open.`}</p> : null}
+        {job.pass ? (
+          <section data-hpd-smoke="worker-chat" style={{ margin: "16px 0", padding: 12, borderRadius: 16, border: "2px solid #0a84ff" }}>
+            <h3 style={{ margin: "0 0 8px", fontSize: 22 }}>💬 Chat with your boss</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 320, overflowY: "auto" }} data-hpd-smoke="worker-chat-list">
+              {chat.length ? chat.map((m, i) => (
+                <p key={i} data-hpd-smoke="worker-chat-msg" data-from={m.from} style={{ margin: 0, maxWidth: "85%", alignSelf: m.from === "worker" ? "flex-end" : "flex-start", padding: "8px 12px", borderRadius: 14, background: m.from === "worker" ? "#0a84ff" : "rgba(120,120,128,.22)", color: m.from === "worker" ? "#fff" : "inherit", fontSize: 17, whiteSpace: "pre-wrap" }}>
+                  <small style={{ display: "block", opacity: 0.75, fontSize: 12 }}>{m.from === "worker" ? "You" : "Boss"} · {new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{m.text}
+                </p>
+              )) : <small style={{ opacity: 0.7 }}>Ask your boss anything about this job here (no WhatsApp needed).</small>}
+            </div>
+            <form style={{ display: "flex", gap: 8, marginTop: 10 }} onSubmit={async (e) => { e.preventDefault(); const t = draft.trim(); if (!t || chatBusy) return; setChatBusy(true); if (await talk(t)) setDraft(""); setChatBusy(false); }}>
+              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={2} maxLength={1000} placeholder="Write to your boss…" data-hpd-smoke="worker-chat-input" style={{ flex: 1, fontSize: 17, padding: 10, borderRadius: 12, border: "1px solid #8e8e93", resize: "vertical" }} />
+              <button type="submit" disabled={chatBusy || !draft.trim()} data-hpd-smoke="worker-chat-send" style={{ ...big, width: "auto", marginTop: 0, padding: "0 18px", fontSize: 18, opacity: chatBusy || !draft.trim() ? 0.5 : 1 }}>{chatBusy ? "…" : "Send"}</button>
+            </form>
+            {chatErr ? <small role="status" style={{ color: "#ff453a" }} data-hpd-smoke="worker-chat-error">{chatErr}</small> : null}
+          </section>
+        ) : null}
         {/* No WhatsApp step (owner, 25 Nov: "I don't need them to send me back on WhatsApp ... they're not labeled"): the
             photos only go to the job card; an old link without the upload pass says so. */}
         {!job.pass ? <p data-hpd-smoke="worker-old-link" style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,69,58,.15)", fontWeight: 700, fontSize: 18 }}>⚠️ This is an old link: your photos can&apos;t reach the job card from it. Ask your boss to send you the job again, then take the photos from the new link.</p> : null}
@@ -198,6 +239,7 @@ export default function WorkerPage() {
           if (!f) return;
           const b = Math.max(items.filter((x) => x.side === "before").length, sentCount.before), a = Math.max(items.filter((x) => x.side === "after").length, sentCount.after);
           const text = `HPD job ${job.id} is done. Before: ${b}, after: ${a}${job.pass ? " (on the job card)" : ""}.`;
+          if (job.pass) { if (await talk(text)) setMsg("✓ Your boss sees it in the chat below."); return; }
           const nav = navigator as Navigator & { share?: (d: { text: string }) => Promise<void> };
           try { if (nav.share) { await nav.share({ text }); setMsg("Sent."); } else { await navigator.clipboard.writeText(text); setMsg("Copied: paste it in a text to your boss."); } } catch { setMsg("Marked done on this phone."); }
         }}>{finished ? "✓ Done (tap to undo)" : "✅ Job done"}</button>

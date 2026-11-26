@@ -29,6 +29,8 @@ const fake = async (url, opt = {}) => {
   if (u.pathname === "/drive/v3/files" && method === "POST") {
     const b = JSON.parse(opt.body); const f = { id: String(nextId++), ...b, ownedByMe: true }; files.push(f); return Response.json({ id: f.id });
   }
+  const up1 = /^\/upload\/drive\/v3\/files\/(\d+)$/.exec(u.pathname);
+  if (up1 && method === "PATCH") { const f = files.find((x) => x.id === up1[1]); f.content = opt.body; return Response.json({ id: f.id }); }
   if (u.pathname === "/upload/drive/v3/files") {
     const b = JSON.parse(opt.body); const f = { id: String(nextId++), ...b, mimeType: opt.headers["X-Upload-Content-Type"], ownedByMe: true }; files.push(f);
     return new Response(null, { status: 200, headers: { Location: `https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=up${f.id}` } });
@@ -37,7 +39,7 @@ const fake = async (url, opt = {}) => {
   if (m) {
     const f = files.find((x) => x.id === m[1]);
     if (!f) return new Response("", { status: 404 });
-    if (u.searchParams.get("alt") === "media") return new Response("JPEGBYTES", { headers: { "Content-Type": f.mimeType } });
+    if (u.searchParams.get("alt") === "media") return new Response(f.content ?? "JPEGBYTES", { headers: { "Content-Type": f.mimeType } });
     if (method === "PATCH") { Object.assign(f.appProperties, JSON.parse(opt.body).appProperties); return Response.json({ id: f.id }); }
     return Response.json(f);
   }
@@ -117,4 +119,20 @@ assert.equal(stamps.length, 1, "announce: one stamp");
 assert.equal(stamps[0].key, "ER08795");
 assert.deepEqual(Object.keys(stamps[0].patch), ["WorkerNewAt"], "only the time, nothing private");
 assert.ok(Date.parse(stamps[0].patch.WorkerNewAt) > Date.now() - 60000);
+
+// 💬 Chat (26 Nov): the worker with the pass, the boss signed in; one chat.json per job.
+const say = (headers, body) => new Request("https://app.example.test/api/drive/worker-chat", { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
+r = await handleWorkerPublic(say({ "X-HPD-Job": "ER08795" }, { text: "hi" }), "worker-chat", env, fake, async () => "tok");
+assert.equal(r.status, 403, "no pass: no chat");
+r = await handleWorkerPublic(say({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, {}), "worker-chat", env, fake, async () => "tok");
+assert.deepEqual((await r.json()).messages, [], "nothing yet");
+r = await handleWorkerPublic(say({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { text: "  Door is done, need hinges?  " }), "worker-chat", env, fake, async () => "tok");
+assert.deepEqual((await r.json()).messages.map((m) => [m.from, m.text]), [["worker", "Door is done, need hinges?"]]);
+r = await handleWorkerOwner(own({ jobId: "ER08795", text: "Yes, 2 hinges in the van" }), "worker-chat-boss", {}, fake, env, async () => {});
+assert.deepEqual((await r.json()).messages.map((m) => [m.from, m.text]), [["worker", "Door is done, need hinges?"], ["boss", "Yes, 2 hinges in the van"]]);
+r = await handleWorkerPublic(say({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, {}), "worker-chat", env, fake, async () => "tok");
+assert.equal((await r.json()).messages.length, 2, "the worker sees the boss's answer");
+assert.equal(files.filter((f) => f.appProperties.hpdKind === "hpd-worker-chat").length, 1, "one chat file");
+r = await handleWorkerOwner(own({ jobId: "ER09998" }), "worker-chat-boss", {}, fake, env, async () => {});
+assert.deepEqual((await r.json()).messages, [], "no folder: empty, nothing created");
 console.log("worker upload tests passed");

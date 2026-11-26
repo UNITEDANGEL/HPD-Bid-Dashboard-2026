@@ -25,6 +25,13 @@ try {
   const itb = { open: false };
   await c.route(/\/api\/private\/itb\//, (r) => (itb.open ? r.fallback() : r.fulfill({ status: 503, body: "" })));
   const jpg0 = Buffer.from("/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", "base64");
+  // 💬 26 Nov: the chat with the worker on the job card.
+  const chatLog = [{ at: "2026-11-26T14:00:00.000Z", from: "worker", text: "Need the super's key" }];
+  await c.route(/\/api\/drive\/worker-chat-boss$/, async (r) => {
+    const b = JSON.parse(r.request().postData() || "{}");
+    if (b.text) chatLog.push({ at: new Date().toISOString(), from: "boss", text: b.text });
+    return r.fulfill({ json: { messages: chatLog } });
+  });
   await c.route(/\/api\/drive\/worker-(ticket|list|file|done)/, async (r) => {
     const a = r.request().url().split("/").pop();
     const b = JSON.parse(r.request().postData() || "{}");
@@ -48,6 +55,15 @@ try {
   assert.deepEqual(rows.map((r) => [r[0], r[1], r[2]]), [["after", true, "2026-11-22T16:00:00.000Z"], ["before", true, "2026-11-20T15:00:00.000Z"]]);
   assert.match(rows[1][3], /^EQ15239_KITCHEN.+_BEFORE-WORK-EVIDENCE_PHOTO_20261120\.jpg$/); // 📍 the spot the worker tapped
   assert.match(rows[0][3], /^EQ15239_.+_AFTER-WORK-EVIDENCE_PHOTO_20261122\.jpg$/);
+  await page.locator('[data-hpd-smoke="jc-chat-new"]').waitFor({ timeout: 20000 });
+  assert.match(await page.locator('[data-hpd-smoke="jc-chat-new"]').innerText(), /1 new from your worker: “Need the super's key”/);
+  assert.equal(await page.locator('[data-hpd-smoke="jc-crew-whatsapp"]').count(), 0, "chat instead of the WhatsApp button");
+  await page.locator('[data-hpd-smoke="jc-chat-new"]').click();
+  await page.locator('[data-hpd-smoke="jc-chat-new"]').waitFor({ state: "detached", timeout: 5000 });
+  await page.locator('[data-hpd-smoke="jc-chat-input"]').fill("Jose has it, basement door");
+  await page.locator('[data-hpd-smoke="jc-chat-send"]').click();
+  await page.locator('[data-hpd-smoke="jc-chat-msg"][data-from="boss"]').waitFor({ timeout: 10000 });
+  assert.deepEqual(chatLog.map((m) => m.from), ["worker", "boss"]);
   // 26 Nov (owner: "it didn't save to the job card ... I should be able to see it from anywhere"): the status sits on the card;
   // opening it again doesn't bring them in twice; another phone (nothing saved there yet) brings them in even though Drive
   // already says "on the card".

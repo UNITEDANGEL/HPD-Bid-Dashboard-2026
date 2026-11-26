@@ -2097,6 +2097,7 @@ export default function FieldCommandClient() {
   // small "✨ App updated" note doesn't follow it, it slides in, and after 10 s slides out by itself (a tap on it keeps it).
   const [magicLeaving, setMagicLeaving] = useState(false);
   const [magicHold, setMagicHold] = useState(false);
+  const magicSwipeRef = useRef<number | null>(null);
   const magicUp = newItems.length > 0 && !selectedJob && !whatsNewOpen && !bidsOpen;
   useEffect(() => { if (magicUp) { markNewItemsSeen(); setJustUpdated(false); } }, [magicUp, whatsNew]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -3932,11 +3933,9 @@ export default function FieldCommandClient() {
       if (r?.filter === "notices") { setFollowFilter("notices"); setNoticeKind((r.kind || "priority") as NoticeKind); if (!r.board) { setNoticeChooser(true); setNoticeMini(true); } }
       if (r?.board) { setBoardShow("all"); setBoardWithMap(r.withMap); setBoardOpen(true); }
     } catch { /* nothing to resume */ }
-    if (!seen || seen === BUILT_CODE || navigator.webdriver && !new URLSearchParams(window.location.search).get("updated")) return;
-    void fetch("/data/whats-new.json", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).then((d: { versions?: { items?: string[] }[] } | null) => {
-      const items = (d?.versions?.[0]?.items || []).slice(0, 3);
-      setUpdatedPop(items.length ? items : ["The app was updated."]);
-    }).catch(() => {});
+    // 26 Nov (owner: "make better the update pop-up, it's 2 now, I want only the purple one"): the small white "New update ·
+    // enjoy!" bubble no longer shows; the purple one says what's new.
+    void seen;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // "Overlapping fix" (owner, 22 Nov): the New update card waits until the top alert (e.g. Claude: your request) is
   // closed instead of covering it, then stays 7 seconds.
@@ -5966,6 +5965,34 @@ export default function FieldCommandClient() {
   const workerPassRef = useRef<Record<string, string>>({});
   const workerPullRef = useRef<Set<string>>(new Set());
   const [workerPulled, setWorkerPulled] = useState<Record<string, string>>({});
+  // 💬 Chat with the worker (owner, 26 Nov: "instead of WhatsApp can we communicate ... a chat or an app"): the same chat
+  // the worker sees on the job link (Drive: HPD Worker Uploads / <job> / chat.json).
+  type ChatMsg = { at: string; from: "boss" | "worker"; text: string };
+  const [workerChat, setWorkerChat] = useState<Record<string, ChatMsg[]>>({});
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatNote, setChatNote] = useState("");
+  const [chatSeen, setChatSeen] = useState<Record<string, string>>({});
+  async function bossChat(id: string, text = "") {
+    try {
+      const r = await fetch("/api/drive/worker-chat-boss", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(text ? { jobId: id, text } : { jobId: id }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setChatNote(r.status === 401 ? "Sign in to Google on this phone (☰ → Google) to chat with your worker." : d.error || "Couldn't reach the chat. Try again."); return false; }
+      setWorkerChat((o) => ({ ...o, [id]: Array.isArray(d.messages) ? d.messages : [] }));
+      setChatNote("");
+      return true;
+    } catch { setChatNote("No connection? Try again."); return false; }
+  }
+  function chatSeenNow(id: string) {
+    const last = workerChat[id]?.slice(-1)[0]?.at || "";
+    if (!last) return;
+    setChatSeen((o) => ({ ...o, [id]: last }));
+    try { localStorage.setItem(`hpd-worker-chat-seen-${id}`, last); } catch { /* private mode */ }
+  }
+  const chatUnread = (id: string) => {
+    const seen = chatSeen[id] ?? (typeof window !== "undefined" ? (() => { try { return localStorage.getItem(`hpd-worker-chat-seen-${id}`) || ""; } catch { return ""; } })() : "");
+    return (workerChat[id] || []).filter((m) => m.from === "worker" && m.at > seen).length;
+  };
   async function workerPass(id: string) {
     try {
       const kept = JSON.parse(localStorage.getItem(`hpd-worker-pass-${id}`) || "null") as { pass: string; at: number } | null;
@@ -6087,12 +6114,14 @@ export default function FieldCommandClient() {
     const id = jobId(selectedJob);
     void workerPass(id);
     void pullFromWorker(selectedJob);
-    // While the card is open, look again every 2 minutes (the worker may be sending right now).
+    void bossChat(id);
+    // While the card is open, look again every 2 minutes (the worker may be sending right now); the chat every 20 s.
     const job = selectedJob;
     const t = window.setInterval(() => { if (document.visibilityState === "visible") void pullFromWorker(job); }, 120000);
-    const back = () => { if (document.visibilityState === "visible") void pullFromWorker(job); };
+    const tc = window.setInterval(() => { if (document.visibilityState === "visible") void bossChat(id); }, 20000);
+    const back = () => { if (document.visibilityState === "visible") { void pullFromWorker(job); void bossChat(id); } };
     document.addEventListener("visibilitychange", back);
-    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", back); };
+    return () => { window.clearInterval(t); window.clearInterval(tc); document.removeEventListener("visibilitychange", back); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedJobId]);
 
@@ -9732,18 +9761,20 @@ export default function FieldCommandClient() {
                       if (nav.share) { try { await nav.share(withPdf && pdf ? { title: `HPD job ${id}`, text, files: [pdf] } : { title: `HPD job ${id}`, text }); setCrewMsg(withPdf ? "Sent to your worker: the job details (job card link, navigation, the work, the super, the tenant) + HPD's PDF." : "Sent to your worker: the job details (job card link, navigation, the work, the super, the tenant)."); } catch { /* closed the share sheet */ } }
                       else { try { await navigator.clipboard.writeText(text); setCrewMsg("Copied: paste it in a text to your worker."); } catch { setCrewMsg(text); } }
                     }}>{(() => { const hp = hpdPages && hpdPages.id === id ? hpdPages : null; return hp && "files" in hp && workerPdf?.key.startsWith(`${id}|pages|`) ? "👷 Send to a worker (details + HPD's PDF)" : hp && "busy" in hp ? "👷 Send to a worker (getting HPD's pages…)" : "👷 Send to a worker"; })()}</button>
-                    <button type="button" className="jc-email" data-hpd-smoke="jc-crew-whatsapp" onClick={() => {
-                      if (!workerPassRef.current[id]) { setCrewMsg("Getting the upload pass for your worker's photos…"); void workerPass(id).then((got) => setCrewMsg(got ? "✓ Ready: tap 💬 Send on WhatsApp again." : "Sign in to Google in the app first (☰ → Google): the worker's photos go to the job card through it.")); return; }
-                      const t = tenantInfo(selectedJob);
-                      let contact = null;
-                      try { contact = JSON.parse(localStorage.getItem("hpd-building-contacts") || "{}")[buildingKey(jobAddress(selectedJob))] || null; } catch { /* private mode */ }
-                      const sum = jobSummary(jobScope(selectedJob));
-                      const due = String(value(selectedJob, ["WorkCompletionDate", "MaturityDate"]) || "");
-                      const crewJob = { id, address: jobAddress(selectedJob), apt: t.apt, completeBy: due ? finishByText(due, nyToday()) : undefined, work: sum.lines.length ? sum.lines.map(lineText) : [jobScope(selectedJob).replace(/\s+/g, " ").slice(0, 300)], contact, tenant: crewTenant ? { name: t.name, phone: t.phone } : null, photos: photoChecklist(mediaCounts[id]).map((p) => ({ label: p.label, done: p.done })), where: workWhere(jobScope(selectedJob), t.apt), full: workFull(jobScope(selectedJob)) };
-                      const text = crewText(crewJob, workerLink(window.location.origin, crewJob, workerPassRef.current[id]));
-                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
-                      setCrewMsg("WhatsApp opened: pick your worker and tap send.");
-                    }}>💬 Send on WhatsApp</button>
+                    {/* 💬 26 Nov: the chat with the worker replaces the WhatsApp button (owner: "instead of WhatsApp ... a chat"). */}
+                    <div className="jc-chat" data-hpd-smoke="jc-chat" onPointerDown={() => chatSeenNow(id)}>
+                      <b>💬 Chat with your worker</b>
+                      <div className="jc-chat-list" data-hpd-smoke="jc-chat-list">
+                        {(workerChat[id] || []).length ? (workerChat[id] || []).map((m, i) => (
+                          <p key={i} className={`jc-chat-msg is-${m.from}`} data-hpd-smoke="jc-chat-msg" data-from={m.from}><small>{m.from === "boss" ? "You" : "Worker"} · {new Date(m.at).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{m.text}</p>
+                        )) : <small>Messages with your worker for this job show here (they write from the job link you sent).</small>}
+                      </div>
+                      <form className="jc-chat-form" onSubmit={async (e) => { e.preventDefault(); const t = chatDraft.trim(); if (!t || chatBusy) return; setChatBusy(true); if (await bossChat(id, t)) { setChatDraft(""); chatSeenNow(id); } setChatBusy(false); }}>
+                        <textarea value={chatDraft} onChange={(e) => setChatDraft(e.target.value)} rows={2} maxLength={1000} placeholder="Write to your worker…" data-hpd-smoke="jc-chat-input" />
+                        <button type="submit" className="jc-email" disabled={chatBusy || !chatDraft.trim()} data-hpd-smoke="jc-chat-send">{chatBusy ? "…" : "Send"}</button>
+                      </form>
+                      {chatNote ? <small role="status" className="jc-chat-note" data-hpd-smoke="jc-chat-note">{chatNote}</small> : null}
+                    </div>
                     <div className="jc-crew-in" data-hpd-smoke="jc-crew-in">
                       <b>📥 Photos from your worker</b>
                       <small>What your worker sends from the link comes here by itself, as Before / After (photos and videos), and goes in the affidavit package.</small>
@@ -9772,6 +9803,7 @@ export default function FieldCommandClient() {
                     {crewMsg ? <small role="status" data-hpd-smoke="jc-crew-msg">{crewMsg}</small> : null}
                   </div>
                 ) : null}
+                {chatUnread(id) ? <button type="button" className="jc-worker-status is-chat" data-hpd-smoke="jc-chat-new" onClick={() => { document.querySelector('[data-hpd-smoke="jc-chat"]')?.scrollIntoView({ block: "center", behavior: "smooth" }); chatSeenNow(id); }}>💬 {chatUnread(id)} new from your worker: “{(workerChat[id] || []).filter((m) => m.from === "worker").slice(-1)[0]?.text.slice(0, 80)}” · Open the chat</button> : null}
                 {workerPulled[id] && !/^Nothing from your worker/.test(workerPulled[id]) ? <p className={`jc-worker-status ${/^⚠️|Couldn't/.test(workerPulled[id]) ? "is-error" : ""}`} data-hpd-smoke="jc-worker-status">👷 {workerPulled[id]}</p> : null}
                 {counts.total > 0 ? (
                   <div className="jc-media-see" data-hpd-smoke="jc-media-see-row">
@@ -10152,15 +10184,23 @@ export default function FieldCommandClient() {
           update (Got it, or a tap outside, marks it seen). */}
       {magicUp ? <div className={`fc-magic-backdrop${magicLeaving ? " is-leaving" : ""}`} data-hpd-smoke="fc-magic-backdrop" aria-hidden="true" onClick={seenNewItems}><i>✨</i><i>⭐</i><i>✨</i><i>💫</i><i>✨</i><i>⭐</i></div> : null}
       {magicUp ? (
-        <div className={`fc-newupdate is-magic${magicLeaving ? " is-leaving" : ""}`} role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate" onPointerDown={() => { setMagicHold(true); setMagicLeaving(false); }}>
+        <div className={`fc-newupdate is-magic${magicLeaving ? " is-leaving" : ""}`} role="dialog" aria-label="New update" data-hpd-smoke="fc-newupdate" onPointerDown={(e) => { magicSwipeRef.current = e.clientY; setMagicHold(true); setMagicLeaving(false); }}
+          onPointerUp={(e) => { const y0 = magicSwipeRef.current; magicSwipeRef.current = null; if (y0 !== null && Math.abs(e.clientY - y0) > 60) { setMagicLeaving(true); window.setTimeout(seenNewItems, 300); } }}>
           {!magicHold ? <i className="fc-magic-timer" data-hpd-smoke="fc-magic-timer" aria-hidden="true" /> : null}
           <span className="fc-magic-wand" aria-hidden="true">🪄</span>
           <b className="fc-magic-title" data-hpd-smoke="fc-magic-title">New upgrade is live!</b>
           {whatsNew?.[0]?.title ? <em className="fc-magic-sub">{whatsNew[0].title}</em> : null}
           <strong>🆕 New update includes</strong>
           {/* Short (3 Nov): the first 2 changes, first sentence each, so a big update doesn't cover the map; the rest under All changes. */}
-          <ul>{newItems.slice(0, 2).map((x) => { const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0]; return <li key={x}>{one.length > 90 ? `${one.slice(0, 88)}…` : one}</li>; })}</ul>
-          {newItems.length > 2 ? <small className="fc-newupdate-more-n" data-hpd-smoke="fc-newupdate-more-n">…and {newItems.length - 2} more: tap All changes</small> : null}
+          {/* 26 Nov (owner: "make it better"): up to 3 changes as cards, each with its own big icon, short first sentence. */}
+          <ul className="fc-magic-list">{newItems.slice(0, 3).map((x) => {
+            const one = x.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0];
+            const m = /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*/u.exec(one);
+            const words = m ? one.slice(m[0].length) : one;
+            return <li key={x}><span className="fc-magic-ico" aria-hidden="true">{m ? m[1] : "✨"}</span><span>{words.length > 110 ? `${words.slice(0, 108)}…` : words}</span></li>;
+          })}</ul>
+          {newItems.length > 3 ? <small className="fc-newupdate-more-n" data-hpd-smoke="fc-newupdate-more-n">…and {newItems.length - 3} more: tap All changes</small> : null}
+          <small className="fc-magic-hint">Swipe it away, or it leaves by itself. Tap it to keep it.</small>
           {planAsk && plan ? (
             <div className="fc-plan-ask" data-hpd-smoke="fc-plan-ask">
               <b>📋 Next on the plan</b>
@@ -11599,7 +11639,7 @@ export default function FieldCommandClient() {
           <button type="button" aria-label="Close" data-hpd-smoke="fc-hpd-ping-ok" onClick={() => setPing(null)}>OK</button>
         </div>
       ) : null}
-      {updatedPop && !ping ? (
+      {updatedPop && !ping && false ? (
         <div className="fc-updated-pop" role="status" data-hpd-smoke="fc-updated-pop" onClick={() => setUpdatedPop(null)}>
           <b>✨ New update · enjoy!</b>
           <ul>{updatedPop.map((t) => <li key={t}>{t}</li>)}</ul>
