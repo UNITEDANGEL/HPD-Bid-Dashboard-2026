@@ -6013,11 +6013,24 @@ export default function FieldCommandClient() {
     try {
       if (loud) setCrewMsg("Looking for your worker's photos and videos…");
       const r = await post("worker-list", { jobId: id });
-      if (!r.ok) { if (loud) setCrewMsg(r.status === 401 ? "Sign in to Google first (☰ → Google), then try again." : "Couldn't check right now. Try again."); return; }
+      if (!r.ok) {
+        // 26 Nov (owner: "it didn't save to the job card"): without Google on this phone the photos can't come in: say so on the card.
+        const why = r.status === 401 ? "⚠️ Your worker's photos can't come onto this card: sign in to Google on this phone (☰ → Google), then tap 🔄 Check." : "Couldn't check for your worker's photos right now. Tap 🔄 Check to try again.";
+        setWorkerPulled((o) => ({ ...o, [id]: why }));
+        if (loud) setCrewMsg(why);
+        return;
+      }
       const list = ((await r.json()).files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string; where?: string }[];
-      const fresh = list.filter((f) => !f.done);
+      // 26 Nov (owner: "I should be able to see it from anywhere"): each phone / computer brings them in for itself (not only
+      // the first one that opened the card): what this device already has is kept here and checked against its own photos.
+      const gotKey = `hpd-worker-got-${id}`;
+      let gotIds: string[] = [];
+      try { gotIds = JSON.parse(localStorage.getItem(gotKey) || "[]"); } catch { /* private mode */ }
+      const here = new Set((await listFieldEvidenceLite(id).catch(() => [])).map((m) => `${m.kind}|${m.capturedAt}`));
+      const takenAt = (f: { taken?: string }) => { const t = Date.parse(f.taken || ""); return Number.isFinite(t) ? new Date(t).toISOString() : ""; };
+      const fresh = list.filter((f) => !gotIds.includes(f.id) && !here.has(`${f.side}|${takenAt(f)}`));
       if (!fresh.length) {
-        const msg = list.length ? `All ${list.length} from your worker are already on this job.` : "Nothing from your worker yet.";
+        const msg = list.length ? `✓ All ${list.length} from your worker are on this job card (👁 See below).` : "Nothing from your worker yet.";
         setWorkerPulled((o) => ({ ...o, [id]: msg }));
         if (loud) setCrewMsg(msg);
         return;
@@ -6039,6 +6052,7 @@ export default function FieldCommandClient() {
       if (!got.length) { setCrewMsg("Couldn't bring in your worker's files. Try again."); return; }
       const saved = await handleWorkerFiles(got, job, meta);
       if (!saved) return;
+      try { localStorage.setItem(gotKey, JSON.stringify([...gotIds, ...ids].slice(-500))); } catch { /* private mode */ }
       await post("worker-done", { fileIds: ids });
       const videos = got.filter((f) => f.type.startsWith("video/")).length;
       const msg = `📥 From your worker: ${[saved.before ? `${saved.before} before` : "", saved.after ? `${saved.after} after` : ""].filter(Boolean).join(" + ")}${videos ? ` (${videos} video${videos === 1 ? "" : "s"})` : ""} added to job ${id}, ready for the affidavit package.`;
@@ -6055,6 +6069,12 @@ export default function FieldCommandClient() {
     const id = jobId(selectedJob);
     void workerPass(id);
     void pullFromWorker(selectedJob);
+    // While the card is open, look again every 2 minutes (the worker may be sending right now).
+    const job = selectedJob;
+    const t = window.setInterval(() => { if (document.visibilityState === "visible") void pullFromWorker(job); }, 120000);
+    const back = () => { if (document.visibilityState === "visible") void pullFromWorker(job); };
+    document.addEventListener("visibilitychange", back);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", back); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedJobId]);
 
@@ -9734,6 +9754,7 @@ export default function FieldCommandClient() {
                     {crewMsg ? <small role="status" data-hpd-smoke="jc-crew-msg">{crewMsg}</small> : null}
                   </div>
                 ) : null}
+                {workerPulled[id] && !/^Nothing from your worker/.test(workerPulled[id]) ? <p className={`jc-worker-status ${/^⚠️|Couldn't/.test(workerPulled[id]) ? "is-error" : ""}`} data-hpd-smoke="jc-worker-status">👷 {workerPulled[id]}</p> : null}
                 {counts.total > 0 ? (
                   <div className="jc-media-see" data-hpd-smoke="jc-media-see-row">
                     {(["before", "after"] as const).filter((k) => counts[k]).map((k) => (

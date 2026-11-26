@@ -5305,3 +5305,7 @@ html[data-text-size="1.3"] #fc-job-card, html[data-text-size="1.3"] .fc-package-
 @keyframes fc-magic-fadeout { to { opacity: 0; } }
 @keyframes fc-magic-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .fc-newupdate.is-magic, .fc-newupdate.is-magic.is-leaving, .fc-magic-backdrop.is-leaving { animation: none; } }
+
+/* 👷 26 Nov: the worker's photos status right above "See the before / after", red when they can't come in. */
+.jc-worker-status { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: rgba(48, 161, 78, 0.14); font-weight: 700; font-size: 14px; line-height: 1.35; }
+.jc-worker-status.is-error { background: rgba(255, 69, 58, 0.16); color: #ff453a; }

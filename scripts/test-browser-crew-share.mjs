@@ -29,7 +29,7 @@ try {
     const a = r.request().url().split("/").pop();
     const b = JSON.parse(r.request().postData() || "{}");
     if (a === "worker-ticket") return r.fulfill({ json: { pass: PASS } });
-    if (a === "worker-list") return r.fulfill({ json: { files: pulled.done.length ? [] : [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: false, taken: "2026-11-20T15:00:00Z", where: "Kitchen" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: false, taken: "2026-11-22T16:00:00Z" }] } });
+    if (a === "worker-list") return r.fulfill({ json: { files: [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: pulled.done.includes("f0000000001"), taken: "2026-11-20T15:00:00Z", where: "Kitchen" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: pulled.done.includes("f0000000002"), taken: "2026-11-22T16:00:00Z" }] } });
     if (a === "worker-file") return r.fulfill({ body: jpg0, contentType: "image/jpeg" });
     pulled.done.push(...b.fileIds); return r.fulfill({ json: { ok: true } });
   });
@@ -48,6 +48,20 @@ try {
   assert.deepEqual(rows.map((r) => [r[0], r[1], r[2]]), [["after", true, "2026-11-22T16:00:00.000Z"], ["before", true, "2026-11-20T15:00:00.000Z"]]);
   assert.match(rows[1][3], /^EQ15239_KITCHEN.+_BEFORE-WORK-EVIDENCE_PHOTO_20261120\.jpg$/); // 📍 the spot the worker tapped
   assert.match(rows[0][3], /^EQ15239_.+_AFTER-WORK-EVIDENCE_PHOTO_20261122\.jpg$/);
+  // 26 Nov (owner: "it didn't save to the job card ... I should be able to see it from anywhere"): the status sits on the card;
+  // opening it again doesn't bring them in twice; another phone (nothing saved there yet) brings them in even though Drive
+  // already says "on the card".
+  const idbRows = (id) => page.evaluate((jid) => new Promise((res) => { const q = indexedDB.open("hpd-field-photos-v1"); q.onsuccess = () => { const t = q.result.transaction("photos").objectStore("photos").getAll(); t.onsuccess = () => res(t.result.filter((x) => x.jobId === jid).length); }; }), id);
+  assert.match(await page.locator('[data-hpd-smoke="jc-worker-status"]').innerText(), /From your worker: 1 before \+ 1 after/);
+  await page.goto(`${baseUrl}/map/?omo=${JOB}&view=all`, { waitUntil: "load", timeout: 180000 });
+  await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
+  await page.waitForFunction(() => /All 2 from your worker are on this job card/.test(document.querySelector('[data-hpd-smoke="jc-worker-status"]')?.textContent || ""), null, { timeout: 30000 });
+  assert.equal(await idbRows(JOB), 2, "opened again: not brought in twice");
+  await page.evaluate((jid) => new Promise((res) => { localStorage.removeItem(`hpd-worker-got-${jid}`); const q = indexedDB.open("hpd-field-photos-v1"); q.onsuccess = () => { const st = q.result.transaction("photos", "readwrite").objectStore("photos"); const g = st.getAll(); g.onsuccess = () => { for (const x of g.result.filter((y) => y.jobId === jid)) st.delete(x.id); st.transaction.oncomplete = () => res(); }; }; }), JOB);
+  await page.goto(`${baseUrl}/map/?omo=${JOB}&view=all`, { waitUntil: "load", timeout: 180000 });
+  await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
+  await page.waitForFunction(() => /From your worker: 1 before \+ 1 after/.test(document.querySelector('[data-hpd-smoke="jc-worker-status"]')?.textContent || ""), null, { timeout: 30000 });
+  assert.equal(await idbRows(JOB), 2, "another phone: brought in there too");
   // (HPD's PDF is held back until the pages step below, so these first shares are the plain message to check word by word.)
   const tenantPhone = ((await page.locator('[data-hpd-smoke="jc-tenant-call"]').getAttribute("href").catch(() => "")) || "").replace(/^tel:/, "").replace(/\D/g, "").slice(-10);
   await page.locator('[data-hpd-smoke="jc-crew-send"]').click();

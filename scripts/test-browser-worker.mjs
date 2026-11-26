@@ -38,7 +38,8 @@ try {
   }
   // 📍 Spot first (owner, 25 Nov: "label the location where the picture is taken"): tapping Photo before a spot asks for it.
   assert.match(await page.locator('[data-hpd-smoke="worker-spot-now"]').innerText(), /First tap where you are/);
-  assert.equal(await page.locator('[data-hpd-smoke="worker-spot"]').first().getAttribute("data-spot"), "Kitchen", "the job's own spot comes first");
+  assert.deepEqual(await page.locator('[data-hpd-smoke="worker-spot"][data-from-hpd="1"]').evaluateAll((els) => els.map((e) => [e.dataset.spot, e.textContent])), [["Kitchen faucet", "📄 Kitchen faucet"], ["Kitchen", "📄 Kitchen"]], "the spots HPD's description names come first (26 Nov)");
+  assert.equal(await page.locator('[data-hpd-smoke="worker-spot"]').first().getAttribute("data-spot"), "Kitchen faucet");
   await page.locator('[data-hpd-smoke="worker-photo-before"]').click();
   assert.match(await page.locator('[data-hpd-smoke="worker-msg"]').innerText(), /First tap where you are/);
   await page.locator('[data-hpd-smoke="worker-spot"][data-spot="Kitchen"]').click();

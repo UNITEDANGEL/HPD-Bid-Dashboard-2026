@@ -54,3 +54,25 @@ export function crewText(j: CrewJob, cardLink = "") {
   if (!cardLink) out.push("", `Map: ${mapsLink(j.address)}`);
   return out.join("\n");
 }
+
+// 📍 The rooms / spots HPD's description names (owner, 26 Nov: "the description tells you where you are ... the kitchen
+// window, add it in the list"): "AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY" -> "Building entrance door",
+// "Public hall 1st story"; "WASH BASIN IN THE BATHROOM" -> "Bathroom wash basin"; "AT BEDROOM:" -> "Bedroom".
+const ROOM = "KITCHEN|BATHROOM|BEDROOM|LIVING ROOM|DINING ROOM|FOYER|HALLWAY|PUBLIC HALL(?:WAY)?|HALL|LOBBY|VESTIBULE|CORRIDOR|STAIR(?:S|CASE|WELL)?|ROOF|BASEMENT|CELLAR|BOILER ROOM|CLOSET|ENTRANCE|COURTYARD|YARD|FIRE ESCAPE";
+const FIX = "WINDOWS?|DOORS?|CEILING|WALLS?|FLOOR(?:ING)?|SINK|WASH BASIN|BASIN|TUB|BATHTUB|SHOWER|TOILET|RADIATORS?|OUTLETS?|LIGHT(?:ING)?|FIXTURES?|CABINETS?|STOVE|RANGE|REFRIGERATOR|FAUCET|TILES?|PIPES?|BELL|INTERCOM|SMOKE DETECTOR|CARBON MONOXIDE DETECTOR";
+const nice = (v: string) => { const t = v.toLowerCase().replace(/\s+/g, " ").trim(); const cut = t.length > 30 ? t.slice(0, 30).replace(/\s+\S*$/, "").replace(/\s+(and|or|&|to|the|of|at|in)$/, "") : t; return cut ? cut[0].toUpperCase() + cut.slice(1) : ""; };
+export function workRooms(desc: string): string[] {
+  const text = String(desc || "").replace(/\r?\n/g, " ").split(/CONTRACTOR MUST|NOTE\s*\d*\s*[:-]/i)[0].replace(/\s+/g, " ").toUpperCase();
+  const out: string[] = [];
+  const add = (v: string) => { const n = nice(v); if (n && n.length > 2 && !out.some((o) => o.toLowerCase() === n.toLowerCase())) out.push(n); };
+  for (const m of text.matchAll(/\bAT\s+(?:THE\s+)?([A-Z0-9 /&-]+?)(?=[.:;,]|\bLOCATED\b|\bAT\b|\bIN PROPER\b|$)/g)) {
+    const v = m[1].trim().replace(/\s+(AND|OR|&)$/, "");
+    if (/\b(IN THE|LEADING|FROM)\b/.test(v)) continue;
+    if (/^(APT|APARTMENT)\b/.test(v) || /^\d/.test(v) || /^(LEAST|ALL|EACH|ONCE|NO|A|AN)\b/.test(v) || v.split(" ").length > 6) continue;
+    if (new RegExp(`\\b(${ROOM}|${FIX})\\b`).test(v)) add(v);
+  }
+  for (const m of text.matchAll(new RegExp(`\\b(${FIX})\\s+(?:IN|OF|AT|ON)\\s+(?:THE\\s+)?(${ROOM})\\b`, "g"))) add(`${m[2]} ${m[1]}`);
+  for (const m of text.matchAll(new RegExp(`\\b(${ROOM})\\s+(${FIX})\\b`, "g"))) add(`${m[1]} ${m[2]}`);
+  for (const m of text.matchAll(new RegExp(`\\b(${ROOM})\\b`, "g"))) add(m[1]);
+  return out.slice(0, 6);
+}

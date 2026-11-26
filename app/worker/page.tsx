@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import "../ios-app.css";
 import { readWorkerHash, workerHashCut, type WorkerJob } from "../../lib/worker-link";
-import { workFull, workWhere } from "../../lib/crew-share";
+import { workFull, workRooms, workWhere } from "../../lib/crew-share";
 import { jobSummary, lineText } from "../../lib/job-summary";
 import { judgePhoto } from "../../lib/worker-photo-quality";
 import { finishByText, nyDay } from "../../lib/award-countdown";
@@ -121,6 +121,7 @@ export default function WorkerPage() {
   );
   const addr = `${job.address.replace(/,\s*\d{5}$/, "")}${job.apt ? `, apt ${job.apt.replace(/^apt\.?\s*/i, "")}` : ""}`;
   const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${job.address}, NY`)}`;
+  const hpdRooms = workRooms(job.full || job.work.join("\n"));
   const extra = job.photos.filter((p) => !/before|after/i.test(p));
   const big: React.CSSProperties = { display: "block", padding: "16px", borderRadius: 14, fontSize: 20, fontWeight: 700, textAlign: "center", textDecoration: "none", background: "#0a84ff", color: "#fff", border: 0, width: "100%", marginTop: 10 };
   return (
@@ -140,11 +141,12 @@ export default function WorkerPage() {
         <h2 style={{ marginBottom: 4 }}>📸 Before and after</h2>
         <p style={{ opacity: 0.75, marginTop: 0, fontSize: 17 }}>Same spot before and after, lights on. Take as many photos and videos as you need.{extra.length ? ` Also: ${extra.join(", ")}.` : ""}</p>
         <div data-hpd-smoke="worker-spots" style={{ padding: 12, borderRadius: 16, background: "rgba(10,132,255,.10)", border: spot ? "2px solid transparent" : "2px dashed #0a84ff" }}>
-          <p style={{ margin: "0 0 8px", fontWeight: 800 }} data-hpd-smoke="worker-spot-now">📍 {spot ? <>Taking photos in: <span style={{ color: "#0a84ff" }}>{spot}</span></> : "First tap where you are:"}</p>
+          <p style={{ margin: "0 0 8px", fontWeight: 800 }} data-hpd-smoke="worker-spot-now">📍 {spot ? <>Taking photos in: <span style={{ color: "#0a84ff" }}>{spot}</span></> : "First tap where you are (📄 = from HPD's description):"}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {[...(job.where && /: (.+)$/.exec(job.where) ? [cleanSpot(/: (.+)$/.exec(job.where)![1])] : []), ...SPOTS].filter((v, i, a) => v && a.indexOf(v) === i).map((v) => (
-              <button key={v} type="button" data-hpd-smoke="worker-spot" data-spot={v} aria-pressed={spot === v} onClick={() => { setSpot(v); setTyping(false); setMsg(""); try { const k = key(job.id); const o = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...o, spot: v })); } catch { /* private mode */ } }}
-                style={{ padding: "10px 12px", borderRadius: 999, border: 0, fontSize: 17, fontWeight: 700, background: spot === v ? "#0a84ff" : "rgba(120,120,128,.2)", color: spot === v ? "#fff" : "inherit" }}>{v}</button>
+            {/* HPD's description names the spots first (owner, 26 Nov: "the description tells you where you are ... the kitchen window"). */}
+            {[...hpdRooms, ...SPOTS].filter((v, i, a) => v && a.findIndex((x) => x.toLowerCase() === v.toLowerCase()) === i).map((v) => (
+              <button key={v} type="button" data-hpd-smoke="worker-spot" data-spot={v} aria-pressed={spot === v} data-from-hpd={hpdRooms.includes(v) ? "1" : undefined} onClick={() => { setSpot(v); setTyping(false); setMsg(""); try { const k = key(job.id); const o = JSON.parse(localStorage.getItem(k) || "{}"); localStorage.setItem(k, JSON.stringify({ ...o, spot: v })); } catch { /* private mode */ } }}
+                style={{ padding: "10px 12px", borderRadius: 999, border: 0, fontSize: 17, fontWeight: 700, background: spot === v ? "#0a84ff" : "rgba(120,120,128,.2)", color: spot === v ? "#fff" : "inherit" }}>{hpdRooms.includes(v) ? `📄 ${v}` : v}</button>
             ))}
             <button type="button" data-hpd-smoke="worker-spot-other" onClick={() => setTyping(true)} style={{ padding: "10px 12px", borderRadius: 999, border: 0, fontSize: 17, fontWeight: 700, background: spot && !SPOTS.includes(spot) ? "#0a84ff" : "rgba(120,120,128,.2)", color: spot && !SPOTS.includes(spot) ? "#fff" : "inherit" }}>✏️ Other</button>
           </div>

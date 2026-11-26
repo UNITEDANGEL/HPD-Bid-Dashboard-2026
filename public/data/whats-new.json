@@ -2,6 +2,16 @@
   "note": "Plain-words list of changes, newest first. Add an entry with every change (shown in the app: tap the version at the bottom of the map).",
   "versions": [
     {
+      "date": "Nov 26, 2026",
+      "title": "Worker photos on every phone, rooms from HPD's description",
+      "items": [
+        "📥 Your worker's Before / After photos and videos now come onto the job card on every phone or computer you open it on (before, only the first one got them).",
+        "👷 A line right above 👁 See the before / after says how many came from your worker, or in red if this phone needs the Google sign-in to bring them in.",
+        "🔄 The open job card looks for new ones every 2 minutes and when you come back to the app.",
+        "📄 On the worker's page the spots HPD's description names come first (e.g. Building entrance door, Public hall 1st story, Bathroom wash basin), then Kitchen, Bathroom and the rest."
+      ]
+    },
+    {
       "date": "Nov 25, 2026",
       "title": "Worker: details + PDF, photos only to the job card",
       "items": [
