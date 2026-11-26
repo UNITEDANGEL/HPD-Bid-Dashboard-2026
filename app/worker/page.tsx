@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../ios-app.css";
 import { readWorkerHash, workerHashCut, type WorkerJob } from "../../lib/worker-link";
 import { workFull, workRooms, workWhere } from "../../lib/crew-share";
@@ -26,6 +26,7 @@ export default function WorkerPage() {
   const [cut, setCut] = useState(false);
   const [lookup, setLookup] = useState<"" | "ok" | "missing">("");
   const [items, setItems] = useState<Item[]>([]);
+  const announced = useRef(false); // 📸 the first photo of this visit tells the boss's map "new from worker" (plan item 43)
   const [spot, setSpot] = useState("");
   const [typing, setTyping] = useState(false);
   const [sentCount, setSentCount] = useState<{ before: number; after: number }>({ before: 0, after: 0 });
@@ -64,9 +65,10 @@ export default function WorkerPage() {
     const head = { "X-HPD-Job": job.id, "X-HPD-Pass": job.pass };
     const type = x.file.type || (x.video ? "video/mp4" : "image/jpeg");
     try {
-      const r = await fetch("/api/drive/worker-start", { method: "POST", headers: { ...head, "Content-Type": "application/json" }, body: JSON.stringify({ mediaId: x.key, size: x.file.size, mimeType: type, side: x.side, where: x.spot, n: x.n, takenAt: new Date(x.file.lastModified || Date.now()).toISOString(), labeled: !x.video && /\blabeled\b/i.test(x.file.name) }) });
+      const r = await fetch("/api/drive/worker-start", { method: "POST", headers: { ...head, "Content-Type": "application/json" }, body: JSON.stringify({ mediaId: x.key, size: x.file.size, mimeType: type, side: x.side, where: x.spot, n: x.n, takenAt: new Date(x.file.lastModified || Date.now()).toISOString(), labeled: !x.video && /\blabeled\b/i.test(x.file.name), ...(announced.current ? {} : { announce: true }) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { set({ state: "failed" }); setMsg(d.error || "Not sent. Tap ↻ Send again."); return; }
+      announced.current = true;
       if (!d.done) {
         const PIECE = 4 * 1024 * 1024;
         let at = 0;

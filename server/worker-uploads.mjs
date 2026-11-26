@@ -121,6 +121,15 @@ export async function handleWorkerOwner(request, action, authHeaders, fetcher, e
   }
 }
 
+export async function announceWorkerNew(env, fetcher, job, now = new Date()) {
+  if (!JOB_ID.test(job)) return false;
+  const worker = String(env?.HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev").replace(/\/$/, "");
+  try {
+    const r = await fetcher(`${worker}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: job, patch: { WorkerNewAt: now.toISOString() } }) });
+    return r.ok;
+  } catch { return false; }
+}
+
 // The worker's phone (no sign-in): only with a valid pass for that job. getAccess() renews the owner's Google access
 // from the saved, encrypted sign-in.
 export async function handleWorkerPublic(request, action, env, fetcher, getAccess) {
@@ -172,6 +181,9 @@ export async function handleWorkerPublic(request, action, env, fetcher, getAcces
       body: JSON.stringify({ name, parents: [dir], appProperties: { hpdKind: FILE_KIND, hpdMediaId: mediaId, hpdSide: side, hpdJob: job, hpdTaken: taken.toISOString(), ...(spot ? { hpdWhere: spot } : {}) } }) });
     const session = start.headers.get("Location") || "";
     if (!start.ok || !SESSION_URL.test(session)) fail(`The upload could not start (HTTP ${start.status}).`);
+    // 📸 New worker photos (plan item 43): the first photo of the worker's visit stamps the job's shared entry, so the
+    // boss's map and Home card show "new from worker". Job number and time only; once per visit (status server limits).
+    if (body.announce === true) await announceWorkerNew(env, fetcher, job);
     return reply({ session });
   } catch (e) {
     return reply({ error: e.status ? e.message : "The upload could not start. Try again." }, e.status || 503);

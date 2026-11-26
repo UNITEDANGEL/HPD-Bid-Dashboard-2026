@@ -41,12 +41,15 @@ const fake = async (url, opt = {}) => {
     if (method === "PATCH") { Object.assign(f.appProperties, JSON.parse(opt.body).appProperties); return Response.json({ id: f.id }); }
     return Response.json(f);
   }
+  if (u.hostname.endsWith(".workers.dev") && u.pathname === "/override") { stamps.push(JSON.parse(opt.body)); return Response.json({ ok: true }); }
   throw new Error(`unexpected ${method} ${url}`);
 };
+const stamps = [];
 const up = (headers, body) => new Request("https://app.example.test/api/drive/worker-start", { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
 const photo = { mediaId: "w-1", size: 1234, mimeType: "image/jpeg", side: "before", n: 1, takenAt: "2026-11-20T15:00:00Z" };
 
-let r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795" }, photo), "worker-start", env, fake, async () => "tok");
+let r;
+r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795" }, photo), "worker-start", env, fake, async () => "tok");
 assert.equal(r.status, 403, "no pass: no upload");
 r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08796", "X-HPD-Pass": pass }, photo), "worker-start", env, fake, async () => "tok");
 assert.equal(r.status, 403, "pass for another job: no upload");
@@ -58,6 +61,7 @@ assert.match((await r.json()).error, /boss/);
 r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, photo), "worker-start", env, fake, async () => "tok");
 assert.equal(r.status, 200);
 assert.match((await r.json()).session, /upload_id=/);
+assert.equal(stamps.length, 0, "no announce: the status server isn't written");
 r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { ...photo, mediaId: "w-2", mimeType: "video/quicktime", side: "after", n: 1, takenAt: "2026-11-21T02:30:00Z" }), "worker-start", env, fake, async () => "tok");
 assert.equal(r.status, 200);
 const job = files.find((f) => f.appProperties.hpdKind === "hpd-worker-job");
@@ -106,4 +110,11 @@ r = await handleWorkerOwner(own({ jobId: "ER08795" }), "worker-list", {}, fake, 
 assert.ok((await r.json()).files.every((f) => f.done), "marked: on the job card");
 r = await handleWorkerOwner(own({ jobId: "ER09999" }), "worker-list", {}, fake, env, async () => {});
 assert.deepEqual((await r.json()).files, [], "no folder yet: nothing");
+// 📸 New worker photos (plan item 43): the visit's first photo stamps the job (number + time only).
+r = await handleWorkerPublic(up({ "X-HPD-Job": "ER08795", "X-HPD-Pass": pass }, { ...photo, mediaId: "w-ann", announce: true }), "worker-start", env, fake, async () => "tok");
+assert.equal(r.status, 200);
+assert.equal(stamps.length, 1, "announce: one stamp");
+assert.equal(stamps[0].key, "ER08795");
+assert.deepEqual(Object.keys(stamps[0].patch), ["WorkerNewAt"], "only the time, nothing private");
+assert.ok(Date.parse(stamps[0].patch.WorkerNewAt) > Date.now() - 60000);
 console.log("worker upload tests passed");

@@ -2906,6 +2906,7 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-days-badge { position: absolute; left: 26px; top: -6px; padding: 0 5px; border-radius: 8px; background: #166534; color: #fff; border: 2px solid #fff; font: 900 11px/15px system-ui; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
 .fc-days-badge.is-soon { background: #b45309; }
 .fc-days-badge.is-late { background: #b91c1c; }
+.fc-worker-new { position: absolute; left: 26px; top: 12px; padding: 0 6px; border-radius: 8px; background: #7c3aed; color: #fff; border: 2px solid #fff; font: 900 11px/15px system-ui; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
 .is-glow-rejected .fc-glow-tag { border-color: #22c55e; }
 .is-glow-corrections .fc-glow-tag { border-color: #eab308; }
 .is-glow-print .fc-glow-tag { border-color: #a78bfa; }

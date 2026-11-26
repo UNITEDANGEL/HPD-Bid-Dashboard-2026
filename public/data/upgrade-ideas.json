@@ -608,12 +608,6 @@
     "title": "Next on the plan: finish every job on time",
     "items": [
       {
-        "id": "plan-worker-new-photos",
-        "icon": "📸",
-        "title": "New worker photos",
-        "why": "When your worker's Before / After photos come in, the job shows a \"new from worker\" tag on the map and the Maturity this week card."
-      },
-      {
         "id": "plan-before-no-after",
         "icon": "🟠",
         "title": "Before but no After",

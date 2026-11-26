@@ -19,6 +19,7 @@ import { readLocalOverrides } from "../lib/override-sync";
 import { paperworkNextHref } from "../lib/field-next-action";
 import { countFieldPhotos } from "../lib/field-photo-store";
 import { listFieldVisits } from "../lib/field-visit-store";
+import { workerNewSet } from "../lib/worker-new";
 
 type Bid = { omo: string; bidDue: string; bidDueTime: string; receivedAt?: number };
 type Award = { OMO?: string; AwardDate?: string; BuildingAddress?: string };
@@ -249,6 +250,7 @@ export default function HomeScreen() {
         const mw = maturityWeek(countdown);
         if (!mw.length) return null;
         const notStarted = new Set(maturityNotStarted(mw, { overrides: wfOverrides, started: startedHere }));
+        const fromWorker = workerNewSet(wfOverrides); // 📸 New worker photos (plan item 43)
         return (
           <div className="home-card" data-hpd-smoke="home-maturity-week">
             <span className="home-icon">💵</span>
@@ -257,7 +259,7 @@ export default function HomeScreen() {
               <b className="home-big">{mw.length} job{mw.length === 1 ? "" : "s"} to finish and send by {finishByText(mw[mw.length - 1].due, today).split(" (")[0]}</b>
               {mw.map((c) => (
                 <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} data-hpd-smoke="home-maturity-week-row" data-days={c.days} style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: c.days <= 1 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontSize: 17, fontWeight: 800, textDecoration: "none" }}>
-                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null}{notStarted.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-notstarted" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#b91c1c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🚧 not started</span> : null} <span aria-hidden>→</span>
+                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null}{notStarted.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-notstarted" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#b91c1c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🚧 not started</span> : null}{fromWorker.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-worker-new" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#7c3aed", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>📸 new from worker</span> : null} <span aria-hidden>→</span>
                 </a>
               ))}
               {notStarted.size ? <b data-hpd-smoke="home-maturity-week-notstarted-count" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: "#b91c1c", fontSize: 18 }}>🚧 {notStarted.size} not started yet (no visit or photo)</b> : null}

@@ -156,6 +156,7 @@ import { addToLog, readLog, unreadCount } from "../../lib/notify-log";
 import { ALERT_KINDS, emailKind, emailTitle, kindOf, type AlertKind } from "../../lib/alert-kinds";
 import { milesLabel, nextJob } from "../../lib/next-job";
 import { awardCountdown, finishByText } from "../../lib/award-countdown";
+import { workerNew } from "../../lib/worker-new";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
@@ -4458,7 +4459,9 @@ export default function FieldCommandClient() {
                 // The notice tag only where there's room (10 Nov: "overlapping pins information"): close pins stay lit
                 // without piling their words on each other; zoom in and each gets its tag.
                 + (lit && (showLabel || /is-glow-(24h|near)/.test(lit.cls)) ? `<span class="fc-glow-tag">${lit.tag}</span>` : "")
-                + daysBadge; // 24-hour notices always show their time (20 Nov); a job near you its distance
+                + daysBadge // 24-hour notices always show their time (20 Nov); a job near you its distance
+                // 📸 New worker photos (plan item 43): the worker's Before / After came in and the job card wasn't opened yet.
+                + (workerNew(job as Record<string, unknown>) && (showLabel || lit) ? `<span class="fc-worker-new" data-hpd-smoke="fc-worker-new">📸 new from worker</span>` : "");
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
@@ -6005,6 +6008,15 @@ export default function FieldCommandClient() {
     return () => { gone = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedJobId, hpdPages]);
+  // 📸 New worker photos (plan item 43): the job card brought the worker's files in, so the "new from worker" tag goes away
+  // on every phone (one small write, only when the tag was on).
+  function markWorkerSeen(job: JobRecord) {
+    if (!workerNew(job as Record<string, unknown>)) return;
+    const id = jobId(job);
+    const WorkerSeenAt = new Date().toISOString();
+    setJobs((rows) => rows.map((r) => (jobId(r) === id ? { ...r, WorkerSeenAt } : r)));
+    void fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: id, patch: { WorkerSeenAt } }) }).catch(() => {});
+  }
   async function pullFromWorker(job: JobRecord, loud = false) {
     const id = jobId(job);
     if (workerPullRef.current.has(id)) return;
@@ -6033,6 +6045,7 @@ export default function FieldCommandClient() {
         const msg = list.length ? `✓ All ${list.length} from your worker are on this job card (👁 See below).` : "Nothing from your worker yet.";
         setWorkerPulled((o) => ({ ...o, [id]: msg }));
         if (loud) setCrewMsg(msg);
+        if (list.length) markWorkerSeen(job);
         return;
       }
       setCrewMsg(`📥 Bringing in ${fresh.length} from your worker…`);
@@ -6054,6 +6067,7 @@ export default function FieldCommandClient() {
       if (!saved) return;
       try { localStorage.setItem(gotKey, JSON.stringify([...gotIds, ...ids].slice(-500))); } catch { /* private mode */ }
       await post("worker-done", { fileIds: ids });
+      markWorkerSeen(job);
       const videos = got.filter((f) => f.type.startsWith("video/")).length;
       const msg = `📥 From your worker: ${[saved.before ? `${saved.before} before` : "", saved.after ? `${saved.after} after` : ""].filter(Boolean).join(" + ")}${videos ? ` (${videos} video${videos === 1 ? "" : "s"})` : ""} added to job ${id}, ready for the affidavit package.`;
       setWorkerPulled((o) => ({ ...o, [id]: msg }));

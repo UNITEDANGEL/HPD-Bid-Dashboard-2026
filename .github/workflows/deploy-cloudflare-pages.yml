@@ -102,6 +102,7 @@ jobs:
           node scripts/test-drive-full-backup.mjs
           node scripts/test-drive-videos.mjs
           node scripts/test-worker-uploads.mjs
+          node scripts/test-worker-new.cjs
           node scripts/test-phone-storage.mjs
           node scripts/test-overnight.mjs
           node scripts/test-hpd-contact.mjs
@@ -391,6 +392,7 @@ jobs:
             scripts/test-browser-award-countdown.mjs \
             scripts/test-browser-done-send.mjs \
             scripts/test-browser-map-days-left.mjs \
+            scripts/test-browser-worker-new.mjs \
             scripts/test-browser-map-overlap.mjs \
             scripts/test-browser-locate-clear.mjs \
             scripts/test-browser-photo-checklist.mjs \
