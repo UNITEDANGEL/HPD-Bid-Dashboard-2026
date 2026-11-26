@@ -36,7 +36,7 @@ try {
     const a = r.request().url().split("/").pop();
     const b = JSON.parse(r.request().postData() || "{}");
     if (a === "worker-ticket") return r.fulfill({ json: { pass: PASS } });
-    if (a === "worker-list") return r.fulfill({ json: { files: [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: pulled.done.includes("f0000000001"), taken: "2026-11-20T15:00:00Z", where: "Kitchen" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: pulled.done.includes("f0000000002"), taken: "2026-11-22T16:00:00Z" }] } });
+    if (a === "worker-list") return r.fulfill({ json: { files: [{ id: "f0000000001", name: `${JOB} BEFORE photo 1.jpg`, mimeType: "image/jpeg", side: "before", done: pulled.done.includes("f0000000001"), taken: "2026-11-20T15:00:00Z", where: "Kitchen" }, { id: "f0000000002", name: `${JOB} AFTER photo 1.jpg`, mimeType: "image/jpeg", side: "after", done: pulled.done.includes("f0000000002"), taken: "2026-11-22T16:00:00Z" }], folder: "fold00000001" } });
     if (a === "worker-file") return r.fulfill({ body: jpg0, contentType: "image/jpeg" });
     pulled.done.push(...b.fileIds); return r.fulfill({ json: { ok: true } });
   });
@@ -69,6 +69,9 @@ try {
   // already says "on the card".
   const idbRows = (id) => page.evaluate((jid) => new Promise((res) => { const q = indexedDB.open("hpd-field-photos-v1"); q.onsuccess = () => { const t = q.result.transaction("photos").objectStore("photos").getAll(); t.onsuccess = () => res(t.result.filter((x) => x.jobId === jid).length); }; }), id);
   assert.match(await page.locator('[data-hpd-smoke="jc-worker-status"]').innerText(), /From your worker: 1 before \+ 1 after/);
+  // 📂 The worker's files are saved in Google Drive by themselves; one tap opens that job's folder.
+  assert.equal(await page.locator('[data-hpd-smoke="jc-worker-drive"]').getAttribute("href"), "https://drive.google.com/drive/folders/fold00000001");
+  assert.match(await page.locator('[data-hpd-smoke="jc-worker-drive"]').innerText(), /saved in your Google Drive by themselves/);
   await page.goto(`${baseUrl}/map/?omo=${JOB}&view=all`, { waitUntil: "load", timeout: 180000 });
   await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
   await page.waitForFunction(() => /All 2 from your worker are on this job card/.test(document.querySelector('[data-hpd-smoke="jc-worker-status"]')?.textContent || ""), null, { timeout: 30000 });

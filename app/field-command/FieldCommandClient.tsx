@@ -5968,6 +5968,8 @@ export default function FieldCommandClient() {
   const workerPassRef = useRef<Record<string, string>>({});
   const workerPullRef = useRef<Set<string>>(new Set());
   const [workerPulled, setWorkerPulled] = useState<Record<string, string>>({});
+  // 26 Nov (owner: "they automatically save for me" in Google): the job's folder in Drive where the worker's files are saved.
+  const [workerFolder, setWorkerFolder] = useState<Record<string, string>>({});
   // 💬 Chat with the worker (owner, 26 Nov: "instead of WhatsApp can we communicate ... a chat or an app"): the same chat
   // the worker sees on the job link (Drive: HPD Worker Uploads / <job> / chat.json).
   type ChatMsg = { at: string; from: "boss" | "worker"; text: string };
@@ -6066,7 +6068,9 @@ export default function FieldCommandClient() {
         if (loud) setCrewMsg(why);
         return;
       }
-      const list = ((await r.json()).files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string; where?: string }[];
+      const listed = await r.json();
+      if (typeof listed.folder === "string" && /^[A-Za-z0-9_-]{10,200}$/.test(listed.folder)) setWorkerFolder((o) => ({ ...o, [id]: listed.folder }));
+      const list = (listed.files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string; where?: string }[];
       // 26 Nov (owner: "I should be able to see it from anywhere"): each phone / computer brings them in for itself (not only
       // the first one that opened the card): what this device already has is kept here and checked against its own photos.
       const gotKey = `hpd-worker-got-${id}`;
@@ -9808,6 +9812,7 @@ export default function FieldCommandClient() {
                 ) : null}
                 {chatUnread(id) ? <button type="button" className="jc-worker-status is-chat" data-hpd-smoke="jc-chat-new" onClick={() => { document.querySelector('[data-hpd-smoke="jc-chat"]')?.scrollIntoView({ block: "center", behavior: "smooth" }); chatSeenNow(id); }}>💬 {chatUnread(id)} new from your worker: “{(workerChat[id] || []).filter((m) => m.from === "worker").slice(-1)[0]?.text.slice(0, 80)}” · Open the chat</button> : null}
                 {workerPulled[id] && !/^Nothing from your worker/.test(workerPulled[id]) ? <p className={`jc-worker-status ${/^⚠️|Couldn't/.test(workerPulled[id]) ? "is-error" : ""}`} data-hpd-smoke="jc-worker-status">👷 {workerPulled[id]}</p> : null}
+                {workerFolder[id] ? <a className="jc-worker-drive" data-hpd-smoke="jc-worker-drive" href={`https://drive.google.com/drive/folders/${workerFolder[id]}`} target="_blank" rel="noopener noreferrer">📂 Your worker's photos &amp; videos are saved in your Google Drive by themselves (HPD Worker Uploads › {id}) · Open</a> : null}
                 {counts.total > 0 ? (
                   <div className="jc-media-see" data-hpd-smoke="jc-media-see-row">
                     {(["before", "after"] as const).filter((k) => counts[k]).map((k) => (

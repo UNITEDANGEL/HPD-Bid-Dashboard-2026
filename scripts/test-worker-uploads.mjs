@@ -99,7 +99,9 @@ r = await handleWorkerOwner(own({ jobId: "ER08795" }), "worker-ticket", {}, fake
 assert.equal(kept, 1, "keeps the owner's access for the uploads");
 assert.equal(await checkPass(env, "ER08795", (await r.json()).pass), true);
 r = await handleWorkerOwner(own({ jobId: "ER08795" }), "worker-list", {}, fake, env, async () => {});
-const list = (await r.json()).files;
+const listed = await r.json();
+const list = listed.files;
+assert.ok(typeof listed.folder === "string" && listed.folder.length > 0, "the job's Drive folder for the 📂 button");
 assert.ok(list.every((f) => f.where === ""), "no spot: empty");
 assert.deepEqual(list.map((f) => [f.side, f.mimeType, f.done, f.taken]), [["before", "image/jpeg", false, "2026-11-20T15:00:00.000Z"], ["after", "video/quicktime", false, "2026-11-21T02:30:00.000Z"]]);
 r = await handleWorkerOwner(own({ fileId: list[0].id }), "worker-file", {}, fake, env, async () => {});

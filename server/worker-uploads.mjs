@@ -130,7 +130,8 @@ export async function handleWorkerOwner(request, action, authHeaders, fetcher, e
       if (!r.ok) fail(`Could not read Google Drive (HTTP ${r.status}).`);
       const files = ((await r.json()).files || []).map((f) => ({ id: f.id, name: f.name, mimeType: f.mimeType, size: Number(f.size || 0), at: f.createdTime,
         side: f.appProperties?.hpdSide === "after" ? "after" : "before", done: f.appProperties?.hpdOnCard === "1", taken: f.appProperties?.hpdTaken || f.createdTime, where: f.appProperties?.hpdWhere || "" }));
-      return reply({ files });
+      // 26 Nov (owner: "they should save automatically in my Google"): the job's Drive folder, for the card's 📂 button.
+      return reply({ files, folder: dir });
     }
     if (action === "worker-file" || action === "worker-done") {
       const ids = (action === "worker-file" ? [body.fileId] : Array.isArray(body.fileIds) ? body.fileIds : []).map(String).slice(0, 200);
