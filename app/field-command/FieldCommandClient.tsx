@@ -5970,6 +5970,7 @@ export default function FieldCommandClient() {
   const [workerPulled, setWorkerPulled] = useState<Record<string, string>>({});
   // 26 Nov (owner: "they automatically save for me" in Google): the job's folder in Drive where the worker's files are saved.
   const [workerFolder, setWorkerFolder] = useState<Record<string, string>>({});
+  const [workerCount, setWorkerCount] = useState<Record<string, number>>({});
   // 💬 Chat with the worker (owner, 26 Nov: "instead of WhatsApp can we communicate ... a chat or an app"): the same chat
   // the worker sees on the job link (Drive: HPD Worker Uploads / <job> / chat.json).
   type ChatMsg = { at: string; from: "boss" | "worker"; text: string };
@@ -6071,6 +6072,7 @@ export default function FieldCommandClient() {
       const listed = await r.json();
       if (typeof listed.folder === "string" && /^[A-Za-z0-9_-]{10,200}$/.test(listed.folder)) setWorkerFolder((o) => ({ ...o, [id]: listed.folder }));
       const list = (listed.files || []) as { id: string; name: string; mimeType: string; side: "before" | "after"; done: boolean; taken?: string; where?: string }[];
+      setWorkerCount((o) => ({ ...o, [id]: list.length }));
       // 26 Nov (owner: "I should be able to see it from anywhere"): each phone / computer brings them in for itself (not only
       // the first one that opened the card): what this device already has is kept here and checked against its own photos.
       const gotKey = `hpd-worker-got-${id}`;
@@ -9821,9 +9823,11 @@ export default function FieldCommandClient() {
                   </div>
                 ) : null}
                 {backup && counts.total > 0 ? (
-                  <p className={`jc-backup ${backup.auto && !backup.error ? "is-on" : "is-off"}`} data-hpd-smoke="jc-backup">
-                    {!backup.auto ? (
-                      <>⚠ These photos are only on this phone. <button type="button" data-hpd-smoke="jc-backup-on" onClick={() => void turnOnDriveBackup()}>Back up to Drive</button></>
+                  <p className={`jc-backup ${(backup.auto && !backup.error) || (!backup.auto && workerFolder[id] && (workerCount[id] || 0) >= counts.total) ? "is-on" : "is-off"}`} data-hpd-smoke="jc-backup">
+                    {!backup.auto && workerFolder[id] && (workerCount[id] || 0) >= counts.total ? (
+                      <>☁️ All of these came from your worker and are already saved in your Google Drive.</>
+                    ) : !backup.auto ? (
+                      <>⚠ {workerCount[id] ? `${Math.max(0, counts.total - workerCount[id])} of these (yours) are` : "These photos are"} only on this phone. <button type="button" data-hpd-smoke="jc-backup-on" onClick={() => void turnOnDriveBackup()}>Back up to Drive</button></>
                     ) : backup.error ? (
                       <>⚠ Drive backup: {backup.error}</>
                     ) : backup.queued ? (

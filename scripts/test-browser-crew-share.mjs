@@ -72,6 +72,9 @@ try {
   // 📂 The worker's files are saved in Google Drive by themselves; one tap opens that job's folder.
   assert.equal(await page.locator('[data-hpd-smoke="jc-worker-drive"]').getAttribute("href"), "https://drive.google.com/drive/folders/fold00000001");
   assert.match(await page.locator('[data-hpd-smoke="jc-worker-drive"]').innerText(), /saved in your Google Drive by themselves/);
+  // Only the worker's files on the card: no "only on this phone" warning (they are in Drive already).
+  const bk = page.locator('[data-hpd-smoke="jc-backup"]');
+  if (await bk.count()) assert.doesNotMatch(await bk.innerText(), /These photos are only on this phone/);
   await page.goto(`${baseUrl}/map/?omo=${JOB}&view=all`, { waitUntil: "load", timeout: 180000 });
   await page.locator("#fc-job-card").waitFor({ timeout: 60000 });
   await page.waitForFunction(() => /All 2 from your worker are on this job card/.test(document.querySelector('[data-hpd-smoke="jc-worker-status"]')?.textContent || ""), null, { timeout: 30000 });
