@@ -604,14 +604,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-25-a",
-    "title": "Next on the plan: finish every job on time",
+    "id": "2026-11-26-a",
+    "title": "Next on the plan: no job held up by a missing After photo",
     "items": [
       {
-        "id": "plan-before-no-after",
+        "id": "plan-needs-after-map",
         "icon": "🟠",
-        "title": "Before but no After",
-        "why": "Jobs due this week with Before photos but no After get an orange tag, so the affidavit isn't held up."
+        "title": "Needs After on the map",
+        "why": "The same orange \"needs After\" tag on the job's map pin, so you see it while driving the route."
+      },
+      {
+        "id": "plan-ask-worker-after",
+        "icon": "📷",
+        "title": "Ask the worker for the After photo",
+        "why": "A button on a \"needs After\" job sends your worker a short note for that job (job number, address, finish date)."
+      },
+      {
+        "id": "plan-evening-after-alert",
+        "icon": "🌆",
+        "title": "Evening After-photo reminder",
+        "why": "A 6 PM phone alert when jobs due in the next 2 days still have Before but no After photos."
       }
     ]
   }

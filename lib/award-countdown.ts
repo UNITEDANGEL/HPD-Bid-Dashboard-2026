@@ -144,3 +144,17 @@ export function maturityNotStarted(list: Countdown[], opts: { overrides?: Record
     return true;
   }).map((c) => c.omo);
 }
+
+// 🟠 Before but no After (plan item 44, 26 Nov): maturity jobs with Before photos but no After yet (on this phone, or the
+// counts saved on the job), so the affidavit isn't held up by a missing After photo.
+export function maturityNeedsAfter(list: Countdown[], opts: { overrides?: Record<string, Record<string, unknown>> | null; photos?: Record<string, { before?: number; after?: number }> | null }): string[] {
+  const here = Object.fromEntries(Object.entries(opts.photos || {}).map(([k, v]) => [k.trim().toUpperCase(), v || {}]));
+  return list.filter((c) => {
+    const omo = c.omo.toUpperCase();
+    const o = opts.overrides?.[omo] || {};
+    const p = here[omo] || {};
+    const before = Math.max(Number(p.before) || 0, Number(o.BeforePhotoCount) || 0);
+    const after = Math.max(Number(p.after) || 0, Number(o.AfterPhotoCount) || 0);
+    return before > 0 && after === 0;
+  }).map((c) => c.omo);
+}

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted, maturityNeedsAfter } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -93,4 +93,10 @@ console.log('award-countdown tests passed');
   const mw = ['A', 'B', 'C', 'D', 'E'].map((omo) => ({ omo, due: '', days: 1, given: 1 }));
   assert.deepEqual(maturityNotStarted(mw, { overrides: { A: { LastFieldVisitAt: '2026-11-24' }, B: { BeforePhotoCount: 3 }, D: { FieldOutcome: '' } }, started: ['c'] }), ['D', 'E']);
   assert.deepEqual(maturityNotStarted(mw.slice(0, 1), { overrides: null, started: null }), ['A']);
+}
+// 🟠 Before but no After (plan item 44): Before on this phone or saved on the job, and no After anywhere.
+{
+  const mw = ['A', 'B', 'C', 'D', 'E'].map((omo) => ({ omo, due: '', days: 1, given: 1 }));
+  assert.deepEqual(maturityNeedsAfter(mw, { overrides: { B: { BeforePhotoCount: 2 }, C: { BeforePhotoCount: 1, AfterPhotoCount: 1 }, D: { AfterPhotoCount: 3 } }, photos: { a: { before: 2, after: 0 }, d: { before: 1, after: 0 }, e: { before: 0, after: 0 } } }), ['A', 'B']);
+  assert.deepEqual(maturityNeedsAfter(mw, { overrides: null, photos: null }), []);
 }

@@ -15,7 +15,7 @@ try {
   await page.route("**/data/sent_paperwork.json*", (r) => r.fulfill({ json: { jobs: { ZZ00009: { sentAt: "2026-11-20", count: 6 } } } }));
   await page.route("**/data/hpd_job_status.json*", (r) => r.fulfill({ json: { jobs: {} } }));
   // 🚧 Not started yet: ZZ00003 had a visit (saved on the status server), ZZ00002 has nothing yet.
-  await page.route(/hpd-status-worker\.[^/]+\.workers\.dev\/overrides/, (r) => r.fulfill({ json: { ok: true, overrides: { ZZ00003: { OMO: "ZZ00003", LastFieldVisitAt: "2026-11-24T15:00:00Z" } } } }));
+  await page.route(/hpd-status-worker\.[^/]+\.workers\.dev\/overrides/, (r) => r.fulfill({ json: { ok: true, overrides: { ZZ00003: { OMO: "ZZ00003", LastFieldVisitAt: "2026-11-24T15:00:00Z", BeforePhotoCount: 2 } } } }));
   // 📞 Late jobs: who to call (plan item 23): the tenant from the signed-in private data, or the super saved for the building.
   await page.route("**/api/private/tenants*", (r) => r.fulfill({ json: { jobs: { ZZ00001: { ItbTenantName: "ANA SMITH", ItbTenantPhone: "718 555 0142" }, ZZ00003: { ItbTenantName: "FAR AWAY", ItbTenantPhone: "718 555 0100" } }, bids: {} } }));
   await page.addInitScript(() => localStorage.setItem("hpd-building-contacts", JSON.stringify({ "2 TEST AVENUE": { name: "Super Joe", phone: "6465550177", savedAt: "2026-11-22" } })));
@@ -34,6 +34,10 @@ try {
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').nth(0).locator('[data-hpd-smoke="home-maturity-week-notstarted"]').count(), 1);
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').nth(1).locator('[data-hpd-smoke="home-maturity-week-notstarted"]').count(), 0);
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-notstarted-count"]').innerText(), "🚧 1 not started yet (no visit or photo)");
+  // 🟠 Before but no After (plan item 44): ZZ00003 has 2 Before photos saved and no After: orange tag on that row only.
+  await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="home-maturity-week-needs-after"]').length === 1, null, { timeout: 10000 });
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').nth(1).locator('[data-hpd-smoke="home-maturity-week-needs-after"]').innerText(), "🟠 needs After");
+  assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-needs-after-count"]').innerText(), "🟠 1 with Before but no After photo yet");
   // 💲 Money in this week's maturity: each row shows its award, plus the total ($500 + $500).
   assert.match(mwRows[0], /· \$500/);
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-total"]').innerText(), "💲 $1,000 riding on this week");
