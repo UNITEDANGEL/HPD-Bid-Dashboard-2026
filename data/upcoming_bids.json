@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-27T15:28:49.008592+00:00",
+  "generatedAt": "2026-11-27T15:38:18.442465+00:00",
   "days": 14,
   "bids": [
     {
@@ -1050,6 +1050,138 @@
       "emailedBy": "Department of Housing Preservation and Development",
       "lat": 40.828117,
       "lng": -73.941401
+    },
+    {
+      "omo": "ER09019",
+      "bidDue": "2026-11-30",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-12-01",
+      "workCompletion": "2026-12-11",
+      "address": "557 WEST 150 STREET",
+      "borough": "MN",
+      "itbFile": "ER09019_112726102248.pdf",
+      "description": "ALTERNATIVE ENFORCEMENT PROGRAN (AEP) LOCATION= APT 2 REPAIR CEILING LEAK AT BATHROOM. REPLACE KITCHEN BASE CABINETS, INSTALL LOWER SASH WINDOW BALANCES. BATHROOM: 1) DEMO COLLAPSING CEILING approx.= 30sqft. 2) TRACE LOCATE AND REPAIR LEAK FROM ABOVE. 3) SUPPLY & INSTALL NEW GWB AT CEILING,PRIME AND PAINT WITH 2 COATS OF SEMI-GLOSS PAINT approx.= 30sqft. 4) SUPPLY & INSTALL NEW CEILING ELECTRICAL EXHAUST AIR VENT INCLUDING CEILING LIGHT FIXTURE AT BATHROOM. PRIVATE HALL OUTSIDE OF BATHROOM: SCRAPE, PLASTER, PRIME AND PAINT WITH 2 COATS OF SEMI GLOSS PAINT THE CEILING. approx.= 22sqft. KITCHEN: 1) REMOVE AND PROPERLY DISCARD THE BASE CABINET WITH SINK AND THE SMALL 13in. BASE CABINET NEXT TO DISH WASHER. 2) SUPPLY & INSTALL NEW 36in. BASE CABINET WITH SINK INCLUDE NEW DECK FAUCET, NEW SUPPLY AND WASTE PIPES. 3) SUPPLY & INSTALL NEW 13in BASE CABINET NEXT TO DISH WASHER INCLUDE NEW COUNTERTOP WITH BACK SPLASH approx= 74in. LENGTH. LIVINGROOM LEFT WINDOW: REPLACE WITH NEW THE LOWER SASH BALANCES 2 BALANCES IN TOTAL. *VENDOR IS RESPONSIBLE FOR BIDDING ACCURATELY BASED ON THEIR FIELD INSPECTION. ALL FIELD DIMENSION, QUALITY AND QUANTITY MUST BE VERIFIED PRIOR TO BIDDING* *ALL WORK MUST COMPLY WITH HPD STANDARDS SPECIFICATION . CONTRACTOR MUST SIGN AND RETURN BID. .*** MUST TAKE PICTURES BEFORE, DURING AND AFTER TO BE SUBMITTED WITH AFFIDAVIT REMOVE ALL WORK-RELATED DEBRIS, VENDOR IS RESPONSIBLE FOR ANY DAMAGE THAT MAY OCCUR DURING THE PROJECT",
+      "notes": "CONTRACTOR MUST CONTACT HPD CPM ROBERT TREECE @ 212 863 8215 CELL CONTRACTOR MUST CONTACT HPD CPM ROBERT TREECE @ 212-863-8215 CELL (phone: sign in to see) EMAIL TREECER@HPD.NYC.GOV OR SUPERVISOR JAVARAL HOLMES@ 212-863-8969 WITH A START DATE. ALL AFFIDAVIT AND PICTURES MUST BE EMAILED TO PEREZBIA@HPD.NYC.GOV, REDDINGS@HPD.NYC.GOV, GAFURD@HPD.NYC.GOV. ** IF LANDLORD REFUSED ACCESS, VENDOR MUST CONTACT HPD @ 212-863-8215 OR (phone: sign in to see) FOR TECH VERIFICATION GLYINS FRANCO= (phone: sign in to see)",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1795792973000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "emailedBy": "Department of Housing Preservation and Development",
+      "lat": 40.829472,
+      "lng": -73.94721
     },
     {
       "omo": "ER11235",
