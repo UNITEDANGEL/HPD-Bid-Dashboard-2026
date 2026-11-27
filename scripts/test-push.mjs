@@ -188,7 +188,11 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
     { OMO: "EM5", AwardDate: "2026-10-01", WorkCompletionDate: "2026-11-15", AwardAmount: "700" },
   ];
   const b3 = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: { EM3: { sentAt: "2026-10-21" } }, requests: {}, awards, closed: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
-  assert.equal(b3.body, "🏁 2 jobs to finish this week ($4,250)");
+  assert.equal(b3.body, "🏁 2 jobs to finish this week ($4,250) · 📷 After photos needed (due today/tomorrow): EM1");
+  // 📷 After photos in the morning alert (plan, 27 Nov): a job due today/tomorrow with an After photo saved drops out; late ones are not named.
+  const b5 = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, awards, closed: {}, records: { em1: { AfterPhotoCount: 2 } }, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
+  assert.doesNotMatch(b5.body, /After photos needed/, "After photo saved: not named");
+  assert.doesNotMatch(b3.body, /EM4/, "late job not in the After line");
   assert.equal(b3.title, "☀️ Good morning: your day");
   const b4 = await morningBriefing({ conversations: { threads: [] }, bids: [], sent: {}, requests: {}, awards: [awards[3], awards[4]], closed: {}, now: Date.parse("2026-10-22T12:30:00Z"), loadLib });
   assert.doesNotMatch(b4.body, /finish this week/, "no line when nothing matures this week");

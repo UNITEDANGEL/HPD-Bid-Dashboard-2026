@@ -457,6 +457,16 @@ export async function morningBriefing({ conversations, bids, sent, requests, now
       if (mw.length) lines.push(`🏁 ${mw.length} job${mw.length === 1 ? "" : "s"} to finish this week${money > 0 ? ` ($${Math.round(money).toLocaleString("en-US")})` : ""}`);
     } catch (e) { console.log(`briefing maturity skipped: ${e.message}`); }
   }
+  // 📷 After photos in the morning alert (plan, 27 Nov): open awarded jobs due today or tomorrow with no After photo saved
+  // on the job yet, so the day starts with them. OMO numbers only.
+  if (loadLib && Array.isArray(awards) && awards.length) {
+    try {
+      const { awardCountdown } = await loadLib("award-countdown");
+      const overrides = Object.fromEntries(Object.entries(records || {}).map(([k, v]) => [k.trim().toUpperCase(), v || {}]));
+      const need = awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today }).filter((c) => c.days >= 0 && c.days <= 1 && !(Number(overrides[c.omo.toUpperCase()]?.AfterPhotoCount) > 0)).map((c) => c.omo);
+      if (need.length) lines.push(`📷 After photos needed (due today/tomorrow): ${need.slice(0, 4).join(", ")}${need.length > 4 ? ` +${need.length - 4}` : ""}`);
+    } catch (e) { console.log(`briefing After photos skipped: ${e.message}`); }
+  }
   return {
     key: `m:${today}`, kind: "message",
     title: dueToday.length ? `☀️ Good morning: ${dueToday.length} bid${dueToday.length === 1 ? "" : "s"} due today` : lines.length ? "☀️ Good morning: your day" : "☀️ Good morning: nothing urgent today",

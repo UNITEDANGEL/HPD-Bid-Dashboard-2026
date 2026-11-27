@@ -608,12 +608,6 @@
     "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
       {
-        "id": "plan-morning-after",
-        "icon": "🌅",
-        "title": "After photos in the morning alert",
-        "why": "The 8 AM alert also names jobs due today or tomorrow that still have no After photos, so the day starts with them."
-      },
-      {
         "id": "plan-photos-stuck",
         "icon": "⏳",
         "title": "Photos stuck",
