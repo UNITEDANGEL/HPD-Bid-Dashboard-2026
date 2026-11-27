@@ -604,14 +604,26 @@
     }
   ],
   "plan": {
-    "id": "2026-11-26-a",
-    "title": "Next on the plan: no job held up by a missing After photo",
+    "id": "2026-11-27-a",
+    "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
       {
-        "id": "plan-evening-after-alert",
-        "icon": "🌆",
-        "title": "Evening After-photo reminder",
-        "why": "A 6 PM phone alert when jobs due in the next 2 days still have Before but no After photos."
+        "id": "plan-morning-after",
+        "icon": "🌅",
+        "title": "After photos in the morning alert",
+        "why": "The 8 AM alert also names jobs due today or tomorrow that still have no After photos, so the day starts with them."
+      },
+      {
+        "id": "plan-photos-stuck",
+        "icon": "⏳",
+        "title": "Photos stuck",
+        "why": "A job whose Before photos are 3 or more days old with no After yet gets a \"stuck\" tag on Home, so you call the worker."
+      },
+      {
+        "id": "plan-done-not-sent-alert",
+        "icon": "🏁",
+        "title": "Work done, not sent: evening alert",
+        "why": "The 6 PM alert names jobs with After photos whose paperwork still isn't sent to HPD after 2 days."
       }
     ]
   }
