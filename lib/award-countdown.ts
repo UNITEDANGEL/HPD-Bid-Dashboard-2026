@@ -130,6 +130,13 @@ export function maturityWorkerText(list: Countdown[], addresses: Record<string, 
   return [`Jobs to finish this week (${list.length}), closest date first:`, ...lines, "Send me the photos when each one is done. Thanks!"].join("\n");
 }
 
+// 📷 Ask the worker for the After photo (plan item 46, 26 Nov): a short note for one "needs After" job (job number,
+// address, finish date; no tenant names or phones) for the share sheet.
+export function afterAskText(c: Countdown, address: string | null | undefined, today: string): string {
+  const addr = String(address || "").replace(/\s+/g, " ").trim();
+  return [`Job ${c.omo}${addr ? ` - ${addr}` : ""}`, `Finish by ${finishByText(c.due, today)}`, "I have the Before photos but no After photos yet. Please take the After photos (and video) when the work is done and send them to me. Thanks!"].join("\n");
+}
+
 // 🚧 Not started yet (plan, 25 Nov): maturity jobs with no visit and no photo yet (from the job's saved steps, or the
 // visits / photos on this phone), so the owner sees which ones are at risk of missing HPD's finish date.
 const STARTED_KEYS = ["TravelStartedAt", "FieldArrivedAt", "VisitStartedAt", "JobStartedAt", "OnSiteStartedAt", "OnSiteEndedAt", "LastFieldVisitAt", "lastFieldVisitAt", "ActualWorkCompletionDate", "FieldOutcome", "fieldOutcome", "OutcomeLockedAt"];

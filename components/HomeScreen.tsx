@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, finishByText, finishMonth, maturityMoney, maturityNeedsAfter, maturityNotStarted, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishByText, finishMonth, afterAskText, maturityMoney, maturityNeedsAfter, maturityNotStarted, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
@@ -267,6 +267,17 @@ export default function HomeScreen() {
                 </a>
               ))}
               {needsAfter.size ? <b data-hpd-smoke="home-maturity-week-needs-after-count" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: "#c2410c", fontSize: 18 }}>🟠 {needsAfter.size} with Before but no After photo yet</b> : null}
+              {mw.filter((c) => needsAfter.has(c.omo)).map((c) => (
+                <button key={`ask-${c.omo}`} type="button" data-hpd-smoke="home-maturity-week-ask-after" data-omo={c.omo} onClick={async () => {
+                  // 📷 Ask the worker for the After photo (plan item 46): job number, address and finish date only.
+                  const a = (awards || []).find((x) => String(x?.OMO || "").trim().toUpperCase() === c.omo.toUpperCase());
+                  const text = afterAskText(c, String(a?.BuildingAddress || ""), today);
+                  try {
+                    if (navigator.share) { await navigator.share({ title: `After photos for ${c.omo}`, text }); setWorkerNote(`Asked for ${c.omo}'s After photos ✓`); return; }
+                    await navigator.clipboard.writeText(text); setWorkerNote(`Copied ✓ Paste it in a text to your worker (${c.omo}).`);
+                  } catch (e) { if ((e as Error)?.name !== "AbortError") setWorkerNote("Couldn't share. Try again."); }
+                }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", margin: "6px 0", minHeight: 48, borderRadius: 12, border: "none", background: "#c2410c", color: "#fff", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>📷 Ask worker for {c.omo}&apos;s After photo</button>
+              ))}
               {notStarted.size ? <b data-hpd-smoke="home-maturity-week-notstarted-count" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: "#b91c1c", fontSize: 18 }}>🚧 {notStarted.size} not started yet (no visit or photo)</b> : null}
               {maturityMoney(mw) > 0 ? <b data-hpd-smoke="home-maturity-week-total" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", fontSize: 18 }}>💲 ${Math.round(maturityMoney(mw)).toLocaleString()} riding on this week</b> : null}
               <a href={`/map/?route=${mw.map((c) => encodeURIComponent(c.omo)).join(",")}`} data-hpd-smoke="home-maturity-week-route" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "8px 0", minHeight: 48, borderRadius: 12, background: "#1d4ed8", color: "#fff", fontSize: 18, fontWeight: 800, textDecoration: "none" }}>🗺 Route for these {mw.length} job{mw.length === 1 ? "" : "s"}</a>

@@ -5342,3 +5342,7 @@ button.jc-worker-status.is-chat { display: block; width: 100%; text-align: left;
 
 /* 26 Nov: the worker's files are saved in the owner's Google Drive; one tap opens that job's folder. */
 .jc-worker-drive { display: block; margin: 6px 0; padding: 8px 12px; border-radius: 10px; font: 700 14px/1.35 system-ui, sans-serif; background: #e0f2fe; color: #075985; border: 1px solid #0284c7; text-decoration: none; }
+/* ☀️ 26 Nov: on a small iPhone (375x667) with the "Claude is working" line, the hint lines grew past their room and the top
+   one slid under the folded ☀️ Today button. "safe end" keeps them at the bottom but, when they do not fit, starts them at
+   the top of their room (under ☀️ Today) and the rest scrolls. */
+.fc-app:has(.fc-chatbar) .fc-map-wrap .fc-map-hints { align-content: safe end; }

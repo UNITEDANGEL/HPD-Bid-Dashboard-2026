@@ -38,6 +38,20 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="home-maturity-week-needs-after"]').length === 1, null, { timeout: 10000 });
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-row"]').nth(1).locator('[data-hpd-smoke="home-maturity-week-needs-after"]').innerText(), "🟠 needs After");
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-needs-after-count"]').innerText(), "🟠 1 with Before but no After photo yet");
+  // 📷 Ask the worker for the After photo (plan item 46): one orange button for ZZ00003 only; the share sheet gets job, address, finish date.
+  const askBtns = mw.locator('[data-hpd-smoke="home-maturity-week-ask-after"]');
+  assert.equal(await askBtns.count(), 1);
+  assert.equal(await askBtns.first().innerText(), "📷 Ask worker for ZZ00003's After photo");
+  const askBox = await askBtns.first().boundingBox();
+  assert.ok(askBox && askBox.height >= 44 && askBox.x + askBox.width <= 390, "ask button is big enough and on screen");
+  await page.evaluate(() => { window.__asked = null; navigator.share = async (d) => { window.__asked = d; }; });
+  await askBtns.first().click();
+  await page.waitForFunction(() => window.__asked, null, { timeout: 5000 });
+  const asked = await page.evaluate(() => window.__asked);
+  assert.equal(asked.title, "After photos for ZZ00003");
+  assert.match(asked.text, /^Job ZZ00003 - 3 Test Ave\., 10472\nFinish by .*6 days left/);
+  assert.doesNotMatch(asked.text, /FAR AWAY|718|\$/,"no tenant name, phone or money");
+  assert.match(await mw.locator('[data-hpd-smoke="home-maturity-week-share-note"]').innerText(), /Asked for ZZ00003's After photos ✓/);
   // 💲 Money in this week's maturity: each row shows its award, plus the total ($500 + $500).
   assert.match(mwRows[0], /· \$500/);
   assert.equal(await mw.locator('[data-hpd-smoke="home-maturity-week-total"]').innerText(), "💲 $1,000 riding on this week");
