@@ -173,6 +173,27 @@ export function photosNeedAfter(row: Record<string, unknown> | null | undefined,
   return before > 0 && after === 0;
 }
 
+// ⏳ Photos stuck (plan, 27 Nov): a job with Before photos and no After whose first Before photo is 3 or more days old
+// (taken on this phone, or the time the worker's photos reached the job). Returns job number -> days since the Before photo.
+export const STUCK_DAYS = 3;
+export function photosStuckDays(row: Record<string, unknown> | null | undefined, here?: { before?: number; after?: number; beforeAt?: string } | null, now = Date.now()): number | null {
+  if (!photosNeedAfter(row, here)) return null;
+  const times = [here?.beforeAt, row?.BeforePhotoAt, row?.WorkerNewAt].map((v) => Date.parse(String(v || ""))).filter((t) => Number.isFinite(t) && t > 0);
+  if (!times.length) return null;
+  const days = Math.floor((now - Math.min(...times)) / 86400000);
+  return days >= STUCK_DAYS ? days : null;
+}
+export function maturityStuck(list: Countdown[], opts: { overrides?: Record<string, Record<string, unknown>> | null; photos?: Record<string, { before?: number; after?: number; beforeAt?: string }> | null; now?: number }): Record<string, number> {
+  const here = Object.fromEntries(Object.entries(opts.photos || {}).map(([k, v]) => [k.trim().toUpperCase(), v || {}]));
+  const out: Record<string, number> = {};
+  for (const c of list) {
+    const omo = c.omo.toUpperCase();
+    const d = photosStuckDays(opts.overrides?.[omo] || {}, here[omo] || {}, opts.now ?? Date.now());
+    if (d !== null) out[c.omo] = d;
+  }
+  return out;
+}
+
 // 🟠 Needs After on the map (plan item 45, 26 Nov): an awarded job not sent yet, due within 7 days (or late), with Before
 // photos saved on the job and no After: the same orange tag on its map pin, so it's seen while driving the route.
 export function pinNeedsAfter(row: Record<string, unknown> | null | undefined, daysLeft: number | null | undefined): boolean {

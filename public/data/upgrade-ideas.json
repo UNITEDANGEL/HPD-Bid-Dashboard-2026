@@ -24,6 +24,13 @@
       "why": "When you open the app, the robot sums up new HPD emails out loud: who wrote, which job, what they want."
     },
     {
+      "id": "idea-stuck-on-map",
+      "icon": "⏳",
+      "kind": "new",
+      "title": "Stuck jobs on the map",
+      "why": "The same red stuck tag on the map pin when a job's Before photos are 3+ days old with no After, so you see it while driving."
+    },
+    {
       "id": "quick-price-voice",
       "icon": "💲",
       "kind": "new",
@@ -607,12 +614,6 @@
     "id": "2026-11-27-a",
     "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
-      {
-        "id": "plan-photos-stuck",
-        "icon": "⏳",
-        "title": "Photos stuck",
-        "why": "A job whose Before photos are 3 or more days old with no After yet gets a \"stuck\" tag on Home, so you call the worker."
-      },
       {
         "id": "plan-done-not-sent-alert",
         "icon": "🏁",

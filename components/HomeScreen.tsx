@@ -8,7 +8,7 @@ import { whoOwes, lateLine } from "../lib/who-owes";
 import { daysLeft, expiringSoon, loadPapers } from "../lib/papers";
 import { weekScore, onTimeLate, trend, trendMark, type WeekScore, type OnTimeLate } from "../lib/week-score";
 import { paysBest } from "../lib/pays-best";
-import { awardCountdown, daysLeftText, finishByText, finishMonth, afterAskText, maturityMoney, maturityNeedsAfter, maturityNotStarted, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
+import { awardCountdown, daysLeftText, finishByText, finishMonth, afterAskText, maturityMoney, maturityNeedsAfter, maturityNotStarted, maturityStuck, STUCK_DAYS, maturityWeek, maturityWorkerText, shiftMonth, MONTH_NAMES, type Countdown } from "../lib/award-countdown";
 import { accessWaiting, triesText, type AccessWaiting } from "../lib/access-waiting";
 import { allJobNotes } from "../lib/job-notes";
 import { whoToCall, type CallWho } from "../lib/late-call";
@@ -17,7 +17,7 @@ import { workDoneToSend, type DoneToSend } from "../lib/monday-sweep";
 import { fetchServerWorkflowOverrides } from "../lib/paperwork";
 import { readLocalOverrides } from "../lib/override-sync";
 import { paperworkNextHref } from "../lib/field-next-action";
-import { countFieldPhotos } from "../lib/field-photo-store";
+import { countFieldPhotos, firstBeforeAt } from "../lib/field-photo-store";
 import { listFieldVisits } from "../lib/field-visit-store";
 import { workerNewSet } from "../lib/worker-new";
 
@@ -63,7 +63,7 @@ export default function HomeScreen() {
   const [workerNote, setWorkerNote] = useState(""); // 📤 Send this week's list to the worker
   const [wfOverrides, setWfOverrides] = useState<Record<string, Record<string, unknown>>>({}); // 🚧 Not started yet
   const [startedHere, setStartedHere] = useState<string[]>([]); // 🚧 visits / photos saved on this phone
-  const [photosHere, setPhotosHere] = useState<Record<string, { before: number; after: number }>>({}); // 🟠 Before / After on this phone
+  const [photosHere, setPhotosHere] = useState<Record<string, { before: number; after: number; beforeAt?: string }>>({}); // 🟠 Before / After on this phone
   const [calls, setCalls] = useState<Record<string, CallWho>>({});
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(() => nyDay(new Date()).slice(0, 7));
@@ -95,11 +95,11 @@ export default function HomeScreen() {
         setDoneSend(workDoneToSend({ jobs: jobsList, overrides: upper(local), sent: sent?.jobs, closed: hpd?.jobs, today: nyDay(new Date()) }));
         setWfOverrides(upper(local));
         // 🚧 Not started yet (plan, 25 Nov): a visit or a photo saved on this phone counts as started.
-        const counted: Record<string, { before: number; after: number }> = {};
+        const counted: Record<string, { before: number; after: number; beforeAt?: string }> = {};
         Promise.all(maturityWeek(cd).map(async (c) => {
           try {
-            const [photos, visits] = await Promise.all([countFieldPhotos(c.omo).catch(() => null), listFieldVisits(c.omo).catch(() => [])]);
-            if (photos) counted[c.omo] = { before: photos.before, after: photos.after };
+            const [photos, visits, beforeAt] = await Promise.all([countFieldPhotos(c.omo).catch(() => null), listFieldVisits(c.omo).catch(() => []), firstBeforeAt(c.omo).catch(() => "")]);
+            if (photos) counted[c.omo] = { before: photos.before, after: photos.after, beforeAt };
             return (photos && photos.total > 0) || (Array.isArray(visits) && visits.length > 0) ? c.omo : "";
           } catch { return ""; }
         })).then((ids) => { setStartedHere(ids.filter(Boolean)); setPhotosHere(counted); });
@@ -255,6 +255,7 @@ export default function HomeScreen() {
         const notStarted = new Set(maturityNotStarted(mw, { overrides: wfOverrides, started: startedHere }));
         const fromWorker = workerNewSet(wfOverrides); // 📸 New worker photos (plan item 43)
         const needsAfter = new Set(maturityNeedsAfter(mw, { overrides: wfOverrides, photos: photosHere })); // 🟠 plan item 44
+        const stuck = maturityStuck(mw, { overrides: wfOverrides, photos: photosHere }); // ⏳ Photos stuck (27 Nov)
         return (
           <div className="home-card" data-hpd-smoke="home-maturity-week">
             <span className="home-icon">💵</span>
@@ -263,10 +264,11 @@ export default function HomeScreen() {
               <b className="home-big">{mw.length} job{mw.length === 1 ? "" : "s"} to finish and send by {finishByText(mw[mw.length - 1].due, today).split(" (")[0]}</b>
               {mw.map((c) => (
                 <a key={c.omo} href={`/map/?omo=${encodeURIComponent(c.omo)}`} data-hpd-smoke="home-maturity-week-row" data-days={c.days} style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: c.days <= 1 ? "#b91c1c" : c.days <= 3 ? "#b45309" : "inherit", fontSize: 17, fontWeight: 800, textDecoration: "none" }}>
-                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null}{notStarted.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-notstarted" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#b91c1c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🚧 not started</span> : null}{fromWorker.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-worker-new" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#7c3aed", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>📸 new from worker</span> : null}{needsAfter.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-needs-after" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#c2410c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🟠 needs After</span> : null} <span aria-hidden>→</span>
+                  {c.omo}: {finishByText(c.due, today)}{c.amount ? <span data-hpd-smoke="home-maturity-week-amount"> · ${Math.round(c.amount).toLocaleString()}</span> : null}{notStarted.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-notstarted" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#b91c1c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🚧 not started</span> : null}{fromWorker.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-worker-new" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#7c3aed", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>📸 new from worker</span> : null}{needsAfter.has(c.omo) ? <span data-hpd-smoke="home-maturity-week-needs-after" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#c2410c", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>🟠 needs After</span> : null}{stuck[c.omo] !== undefined ? <span data-hpd-smoke="home-maturity-week-stuck" style={{ display: "inline-block", marginLeft: 8, padding: "2px 10px", borderRadius: 999, background: "#991b1b", color: "#fff", fontSize: 15, fontWeight: 800, verticalAlign: "middle" }}>⏳ stuck {stuck[c.omo]} days: call the worker</span> : null} <span aria-hidden>→</span>
                 </a>
               ))}
               {needsAfter.size ? <b data-hpd-smoke="home-maturity-week-needs-after-count" style={{ display: "block", padding: "8px 0", borderTop: "1px solid #24324f", color: "#c2410c", fontSize: 18 }}>🟠 {needsAfter.size} with Before but no After photo yet</b> : null}
+              {Object.keys(stuck).length ? <b data-hpd-smoke="home-maturity-week-stuck-count" style={{ display: "block", padding: "8px 0", color: "#f87171", fontSize: 18 }}>⏳ {Object.keys(stuck).length} stuck: Before photos {STUCK_DAYS}+ days old and still no After. Call the worker.</b> : null}
               {mw.filter((c) => needsAfter.has(c.omo)).map((c) => (
                 <button key={`ask-${c.omo}`} type="button" data-hpd-smoke="home-maturity-week-ask-after" data-omo={c.omo} onClick={async () => {
                   // 📷 Ask the worker for the After photo (plan item 46): job number, address and finish date only.

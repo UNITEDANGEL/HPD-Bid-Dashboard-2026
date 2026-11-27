@@ -1218,6 +1218,18 @@ export async function countFieldPhotos(jobId: string) {
   }, emptyCounts());
 }
 
+// ⏳ Photos stuck (plan, 27 Nov): when the first Before photo on this phone was taken (ISO), or "" when none.
+export async function firstBeforeAt(jobId: string) {
+  const rows = await listFieldPhotos(jobId);
+  let first = 0;
+  for (const media of rows) {
+    if (media.kind !== "before") continue;
+    const t = Date.parse(String(media.originalCapturedAt || media.capturedAt || ""));
+    if (Number.isFinite(t) && t > 0 && (!first || t < first)) first = t;
+  }
+  return first ? new Date(first).toISOString() : "";
+}
+
 export async function countFieldEvidence(jobId: string) {
   return countFieldPhotos(jobId);
 }

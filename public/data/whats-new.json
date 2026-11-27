@@ -3,8 +3,9 @@
   "versions": [
     {
       "date": "Nov 27, 2026",
-      "title": "After-photo reminders in the 8 AM and 6 PM alerts",
+      "title": "After-photo reminders and a stuck-photos tag",
       "items": [
+        "⏳ Photos stuck: on Home's Maturity this week card, a job whose Before photos are 3 or more days old and still has no After photo gets a red \"⏳ stuck N days: call the worker\" tag, with a count line under the list.",
         "🌅 The 8 AM morning alert now also names jobs due today or tomorrow that still have no After photos: \"📷 After photos needed (due today/tomorrow): <job numbers>\", so the day starts with them.",
         "🌆 The 6 PM wrap-up alert now also names jobs due in the next 2 days (or late) that have Before photos but no After yet: \"📷 After photos still missing: <job numbers>\", so the affidavit isn't held up."
       ]
