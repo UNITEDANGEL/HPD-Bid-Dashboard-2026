@@ -160,6 +160,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 48. ✅ 🌅 After photos in the morning alert (plan, 27 Nov, Claude's recommendation; built 27 Nov as an auto upgrade): the 8 AM alert adds "📷 After photos needed (due today/tomorrow): <OMOs>" for open awarded jobs due today or tomorrow with no After photo saved on the job (late jobs not named; OMO numbers only). scripts/send-push.mjs morningBriefing; test: scripts/test-push.mjs.
 49. ✅ ⏳ Photos stuck (plan, 27 Nov, Claude's recommendation; built 27 Nov as an auto upgrade): a job on Home's Maturity this week card whose first Before photo (taken on this phone, BeforePhotoAt, or when the worker's photos arrived) is 3+ days old with no After gets a red "⏳ stuck N days: call the worker" tag + a count line (lib/award-countdown.ts photosStuckDays / maturityStuck). Tests: award-countdown unit + browser.
 50. ☐ 🏁 Work done, not sent: evening alert (plan, 27 Nov, Claude's recommendation): the 6 PM alert names jobs with After photos whose paperwork still isn't sent to HPD after 2 days.
+51. ☐ ⏳ Stuck jobs on the map (plan, 27 Nov, Claude's recommendation): the red stuck tag (Before 3+ days old, no After) on the job's map pin too.
+52. ☐ 🌆 Stuck jobs in the 6 PM alert (plan, 27 Nov, Claude's recommendation): the evening alert also names stuck jobs (OMO numbers only).
 
 ## ✓ 20 Nov: screen clean-up and notices (owner: "nothing should be overlapping", "24 hour / 72 hour like jobs", "Claude small icon on the side")
 - 24 h and 72 h are their own Notices picks; the folded notice bar and the 📋 list wrap their text; the menu scrolls.

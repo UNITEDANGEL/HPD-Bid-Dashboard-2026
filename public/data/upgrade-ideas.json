@@ -24,13 +24,6 @@
       "why": "When you open the app, the robot sums up new HPD emails out loud: who wrote, which job, what they want."
     },
     {
-      "id": "idea-stuck-on-map",
-      "icon": "⏳",
-      "kind": "new",
-      "title": "Stuck jobs on the map",
-      "why": "The same red stuck tag on the map pin when a job's Before photos are 3+ days old with no After, so you see it while driving."
-    },
-    {
       "id": "quick-price-voice",
       "icon": "💲",
       "kind": "new",
@@ -611,7 +604,7 @@
     }
   ],
   "plan": {
-    "id": "2026-11-27-a",
+    "id": "2026-11-27-b",
     "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
       {
@@ -619,6 +612,18 @@
         "icon": "🏁",
         "title": "Work done, not sent: evening alert",
         "why": "The 6 PM alert names jobs with After photos whose paperwork still isn't sent to HPD after 2 days."
+      },
+      {
+        "id": "plan-stuck-on-map",
+        "icon": "⏳",
+        "title": "Stuck jobs on the map",
+        "why": "The same red stuck tag on the map pin when a job's Before photos are 3+ days old with no After, so you see it while driving."
+      },
+      {
+        "id": "plan-stuck-evening",
+        "icon": "🌆",
+        "title": "Stuck jobs in the 6 PM alert",
+        "why": "The evening alert also names jobs whose Before photos are 3+ days old with no After, so you call the worker before the next day."
       }
     ]
   }
