@@ -311,6 +311,17 @@ export async function eveningWrapup({ conversations, bids, sent, records = {}, n
       if (jobs.length) lines.push(`🏁 finish tomorrow: ${jobs.slice(0, 4).map((c) => c.omo).join(", ")}${jobs.length > 4 ? ` +${jobs.length - 4}` : ""}`);
     } catch (e) { console.log(`wrap-up jobs due tomorrow skipped: ${e.message}`); }
   }
+  // 📷 Evening After-photo reminder (plan item 47, 27 Nov): open awarded jobs due in the next 2 days (or late) that have
+  // Before photos saved on the job but no After yet, so the affidavit isn't held up. OMO numbers only.
+  if (loadLib && Array.isArray(awards) && awards.length) {
+    try {
+      const { awardCountdown, maturityNeedsAfter } = await loadLib("award-countdown");
+      const soon = awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today }).filter((c) => c.days <= 2);
+      const overrides = Object.fromEntries(Object.entries(records || {}).map(([k, v]) => [k.trim().toUpperCase(), v || {}]));
+      const need = maturityNeedsAfter(soon, { overrides });
+      if (need.length) lines.push(`📷 After photos still missing: ${need.slice(0, 4).join(", ")}${need.length > 4 ? ` +${need.length - 4}` : ""}`);
+    } catch (e) { console.log(`wrap-up After photos skipped: ${e.message}`); }
+  }
   return {
     key: `w:${today}`, kind: "message",
     title: "🌆 Today's wrap-up",

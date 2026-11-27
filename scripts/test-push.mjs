@@ -557,3 +557,20 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.ok(viaFind.some((x) => x.key === "w:2026-11-23" && /finish tomorrow: ER09500/.test(x.body)), "findAlerts passes the jobs to the wrap-up");
   console.log(`PASS wrap-up names jobs due tomorrow: "${w.body}"`);
 }
+
+// 📷 Evening After-photo reminder (plan item 47): jobs due in 2 days or late with Before photos but no After.
+{
+  const awards = [
+    { OMO: "ER09500", AwardDate: "11/05/26", WorkCompletionDate: "11/24/26" }, // tomorrow, Before only: named
+    { OMO: "ER09501", AwardDate: "11/05/26", WorkCompletionDate: "11/25/26" }, // in 2 days, Before + After: left out
+    { OMO: "ER09502", AwardDate: "11/05/26", WorkCompletionDate: "11/20/26" }, // late, Before only: named
+    { OMO: "ER09600", AwardDate: "11/05/26", WorkCompletionDate: "11/30/26" }, // next week, Before only: left out
+    { OMO: "ER09700", AwardDate: "11/05/26", WorkCompletionDate: "11/24/26" }, // tomorrow, no photos: left out
+  ];
+  const records = { ER09500: { BeforePhotoCount: 3 }, ER09501: { BeforePhotoCount: 2, AfterPhotoCount: 2 }, ER09502: { BeforePhotoCount: 1 }, ER09600: { BeforePhotoCount: 4 } };
+  const w = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: {}, records, now: Date.parse("2026-11-23T23:30:00Z"), loadLib, awards, closed: {} });
+  assert.match(w.body, /📷 After photos still missing: (ER09500, ER09502|ER09502, ER09500)$/, w.body);
+  const none = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: {}, records: { ...records, ER09500: { BeforePhotoCount: 3, AfterPhotoCount: 1 }, ER09502: { BeforePhotoCount: 1, AfterPhotoCount: 2 } }, now: Date.parse("2026-11-23T23:30:00Z"), loadLib, awards, closed: {} });
+  assert.doesNotMatch(none.body, /After photos/, "all have After: not named");
+  console.log(`PASS wrap-up names jobs missing After photos: "${w.body}"`);
+}
