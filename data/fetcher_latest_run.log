@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-26T23:57:43.010Z
+Fetcher run started: 2026-11-27T00:11:48.894Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,19 +15,19 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/11/12 before:2026/11/27
-COA items parsed (latest per OMO): 13
-ITB items parsed (latest per OMO): 13
-Final JobRows: 13
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/11/13 before:2026/11/28
+COA items parsed (latest per OMO): 10
+ITB items parsed (latest per OMO): 10
+Final JobRows: 10
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/14 [00:00<?, ?it/s]Downloading COA messages:  14%|█▍        | 2/14 [00:00<00:01, 10.03it/s]Downloading COA messages:  29%|██▊       | 4/14 [00:00<00:00, 10.32it/s]Downloading COA messages:  43%|████▎     | 6/14 [00:00<00:00, 10.86it/s]Downloading COA messages:  57%|█████▋    | 8/14 [00:00<00:00, 10.85it/s]Downloading COA messages:  71%|███████▏  | 10/14 [00:00<00:00, 10.71it/s]Downloading COA messages:  86%|████████▌ | 12/14 [00:01<00:00, 10.73it/s]Downloading COA messages: 100%|██████████| 14/14 [00:01<00:00, 10.92it/s]Downloading COA messages: 100%|██████████| 14/14 [00:01<00:00, 10.77it/s]
-Geocoding COA addresses:   0%|          | 0/13 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 13/13 [00:00<00:00, 324559.24it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/13 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   8%|▊         | 1/13 [00:00<00:06,  1.88it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 2/13 [00:00<00:05,  2.19it/s]Fetching ITBs for COA OMOs:  23%|██▎       | 3/13 [00:01<00:04,  2.45it/s]Fetching ITBs for COA OMOs:  31%|███       | 4/13 [00:01<00:04,  1.97it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 5/13 [00:02<00:04,  1.94it/s]Fetching ITBs for COA OMOs:  46%|████▌     | 6/13 [00:02<00:03,  2.16it/s]Fetching ITBs for COA OMOs:  54%|█████▍    | 7/13 [00:03<00:02,  2.09it/s]Fetching ITBs for COA OMOs:  62%|██████▏   | 8/13 [00:03<00:02,  2.06it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 9/13 [00:04<00:01,  2.29it/s]Fetching ITBs for COA OMOs:  77%|███████▋  | 10/13 [00:04<00:01,  2.45it/s]Fetching ITBs for COA OMOs:  85%|████████▍ | 11/13 [00:04<00:00,  2.58it/s]Fetching ITBs for COA OMOs:  92%|█████████▏| 12/13 [00:05<00:00,  2.63it/s]Fetching ITBs for COA OMOs: 100%|██████████| 13/13 [00:05<00:00,  2.73it/s]Fetching ITBs for COA OMOs: 100%|██████████| 13/13 [00:05<00:00,  2.34it/s]
+Downloading COA messages:   0%|          | 0/11 [00:00<?, ?it/s]Downloading COA messages:   9%|▉         | 1/11 [00:00<00:01,  7.42it/s]Downloading COA messages:  27%|██▋       | 3/11 [00:00<00:00,  9.67it/s]Downloading COA messages:  45%|████▌     | 5/11 [00:00<00:00,  9.78it/s]Downloading COA messages:  64%|██████▎   | 7/11 [00:01<00:00,  5.98it/s]Downloading COA messages:  82%|████████▏ | 9/11 [00:01<00:00,  6.95it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00,  7.97it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00,  7.71it/s]
+Geocoding COA addresses:   0%|          | 0/10 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 10/10 [00:00<00:00, 267153.12it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/10 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  10%|█         | 1/10 [00:00<00:03,  2.75it/s]Fetching ITBs for COA OMOs:  20%|██        | 2/10 [00:00<00:03,  2.28it/s]Fetching ITBs for COA OMOs:  30%|███       | 3/10 [00:01<00:03,  2.26it/s]Fetching ITBs for COA OMOs:  40%|████      | 4/10 [00:01<00:02,  2.45it/s]Fetching ITBs for COA OMOs:  50%|█████     | 5/10 [00:02<00:02,  2.27it/s]Fetching ITBs for COA OMOs:  60%|██████    | 6/10 [00:02<00:01,  2.21it/s]Fetching ITBs for COA OMOs:  70%|███████   | 7/10 [00:02<00:01,  2.48it/s]Fetching ITBs for COA OMOs:  80%|████████  | 8/10 [00:03<00:00,  2.59it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 9/10 [00:03<00:00,  2.71it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.94it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.57it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -42,14 +42,11 @@ Award amount check ER10208: stored 390.00, COA 390.00
 Award amount check ER10374: stored 980.00, COA 980.00
 Award amount check ER09849: stored 390.00, COA 390.00
 Award amount check ER09846: stored 390.00, COA 390.00
-Award amount check ER09865: stored 509.00, COA 509.00
-Award amount check ER10189: stored 390.00, COA 390.00
-Award amount check ER09245: stored 401.00, COA 401.00
 Safe merge complete
 Master before: 720
-Incoming rows: 13
+Incoming rows: 10
 Added new OMOs: 0
-Skipped existing OMOs: 13
+Skipped existing OMOs: 10
 Updated existing OMOs: 0
 Need geocode: 0
 Missing ITB: 0
@@ -115,9 +112,9 @@ $ python scripts/sync-itb-page3-descriptions.py
 {
   "jobs": 720,
   "manifestEntries": 719,
-  "descriptionsAdded": 9,
+  "descriptionsAdded": 6,
   "legacyDescriptionReplaced": 0,
-  "missingManifestEntry": 711,
+  "missingManifestEntry": 714,
   "extractFailed": 0
 }
 
@@ -274,13 +271,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-27T00:04:20.574Z
+Fetcher run finished: 2026-11-27T00:17:43.691Z
 {
-  "fetchedCoaItems": 13,
-  "fetchedItbItems": 13,
-  "fetchedFinalJobRows": 13,
+  "fetchedCoaItems": 10,
+  "fetchedItbItems": 10,
+  "fetchedFinalJobRows": 10,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 13,
+  "skippedExistingOmos": 10,
   "rawRows": 720,
   "rows2026": 669,
   "mapped2026": 669,
