@@ -1,4 +1,4 @@
-Fetcher run started: 2026-11-27T15:53:09.491Z
+Fetcher run started: 2026-11-27T16:03:16.651Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/11 [00:00<?, ?it/s]Downloading COA messages:  18%|█▊        | 2/11 [00:00<00:00, 13.87it/s]Downloading COA messages:  36%|███▋      | 4/11 [00:00<00:00, 13.67it/s]Downloading COA messages:  55%|█████▍    | 6/11 [00:00<00:00, 14.16it/s]Downloading COA messages:  73%|███████▎  | 8/11 [00:00<00:00, 14.12it/s]Downloading COA messages:  91%|█████████ | 10/11 [00:00<00:00, 14.79it/s]Downloading COA messages: 100%|██████████| 11/11 [00:00<00:00, 14.47it/s]
-Geocoding COA addresses:   0%|          | 0/10 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 10/10 [00:00<00:00, 217321.45it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/10 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  10%|█         | 1/10 [00:00<00:02,  3.17it/s]Fetching ITBs for COA OMOs:  20%|██        | 2/10 [00:00<00:03,  2.66it/s]Fetching ITBs for COA OMOs:  30%|███       | 3/10 [00:01<00:02,  2.69it/s]Fetching ITBs for COA OMOs:  40%|████      | 4/10 [00:01<00:02,  2.94it/s]Fetching ITBs for COA OMOs:  50%|█████     | 5/10 [00:01<00:02,  2.31it/s]Fetching ITBs for COA OMOs:  60%|██████    | 6/10 [00:02<00:01,  2.37it/s]Fetching ITBs for COA OMOs:  70%|███████   | 7/10 [00:02<00:01,  2.61it/s]Fetching ITBs for COA OMOs:  80%|████████  | 8/10 [00:02<00:00,  2.84it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 9/10 [00:03<00:00,  2.99it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  3.12it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:03<00:00,  2.81it/s]
+Downloading COA messages:   0%|          | 0/11 [00:00<?, ?it/s]Downloading COA messages:   9%|▉         | 1/11 [00:00<00:01,  5.42it/s]Downloading COA messages:  18%|█▊        | 2/11 [00:00<00:01,  6.21it/s]Downloading COA messages:  27%|██▋       | 3/11 [00:00<00:01,  6.40it/s]Downloading COA messages:  36%|███▋      | 4/11 [00:00<00:01,  6.90it/s]Downloading COA messages:  45%|████▌     | 5/11 [00:00<00:01,  5.99it/s]Downloading COA messages:  55%|█████▍    | 6/11 [00:00<00:00,  6.84it/s]Downloading COA messages:  73%|███████▎  | 8/11 [00:01<00:00,  7.91it/s]Downloading COA messages:  82%|████████▏ | 9/11 [00:01<00:00,  8.30it/s]Downloading COA messages:  91%|█████████ | 10/11 [00:01<00:00,  7.90it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00,  7.97it/s]Downloading COA messages: 100%|██████████| 11/11 [00:01<00:00,  7.33it/s]
+Geocoding COA addresses:   0%|          | 0/10 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 10/10 [00:00<00:00, 207638.81it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/10 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  10%|█         | 1/10 [00:00<00:03,  2.26it/s]Fetching ITBs for COA OMOs:  20%|██        | 2/10 [00:01<00:04,  1.76it/s]Fetching ITBs for COA OMOs:  30%|███       | 3/10 [00:01<00:04,  1.58it/s]Fetching ITBs for COA OMOs:  40%|████      | 4/10 [00:02<00:04,  1.28it/s]Fetching ITBs for COA OMOs:  50%|█████     | 5/10 [00:03<00:03,  1.44it/s]Fetching ITBs for COA OMOs:  60%|██████    | 6/10 [00:03<00:02,  1.51it/s]Fetching ITBs for COA OMOs:  70%|███████   | 7/10 [00:04<00:01,  1.74it/s]Fetching ITBs for COA OMOs:  80%|████████  | 8/10 [00:04<00:01,  1.94it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 9/10 [00:05<00:00,  2.10it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:05<00:00,  2.20it/s]Fetching ITBs for COA OMOs: 100%|██████████| 10/10 [00:05<00:00,  1.80it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -271,7 +271,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-11-27T15:59:29.978Z
+Fetcher run finished: 2026-11-27T16:09:13.645Z
 {
   "fetchedCoaItems": 10,
   "fetchedItbItems": 10,
