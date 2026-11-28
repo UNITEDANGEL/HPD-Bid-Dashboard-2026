@@ -199,3 +199,10 @@ export function maturityStuck(list: Countdown[], opts: { overrides?: Record<stri
 export function pinNeedsAfter(row: Record<string, unknown> | null | undefined, daysLeft: number | null | undefined): boolean {
   return typeof daysLeft === "number" && daysLeft <= 7 && photosNeedAfter(row);
 }
+
+// ⏳ Stuck jobs on the map (plan, 28 Nov): an awarded job not sent yet whose Before photos are 3+ days old with no After
+// gets the same red stuck tag on its map pin as on Home. Returns the days since the Before photo, or null.
+export function pinStuckDays(row: Record<string, unknown> | null | undefined, daysLeft: number | null | undefined, now = Date.now()): number | null {
+  if (typeof daysLeft !== "number") return null;
+  return photosStuckDays(row, null, now);
+}

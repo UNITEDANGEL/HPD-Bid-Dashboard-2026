@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (f) => { const code = ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, (p) => p === './job-priority' ? load('lib/job-priority.ts') : require(p)); return m.exports; };
-const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted, maturityNeedsAfter, maturityStuck, photosStuckDays, pinNeedsAfter, afterAskText } = load('lib/award-countdown.ts');
+const { awardCountdown, daysLeftText, finishByText, nyDay, finishMonth, shiftMonth, jobFinishDays, finishPlanBoost, finishStopLabel, maturityWeek, maturityMoney, maturityWorkerText, maturityNotStarted, maturityNeedsAfter, maturityStuck, photosStuckDays, pinNeedsAfter, pinStuckDays, afterAskText } = load('lib/award-countdown.ts');
 const r = awardCountdown({
   today: '2026-11-21',
   awards: [
@@ -125,5 +125,9 @@ console.log('award-countdown tests passed');
   assert.equal(photosStuckDays({ BeforePhotoCount: 1, AfterPhotoCount: 1, WorkerNewAt: "2026-11-01T00:00:00Z" }, null, now), null, "has After");
   assert.equal(photosStuckDays({ BeforePhotoCount: 1 }, null, now), null, "no date known");
   const mw = ["A", "B", "C"].map((omo) => ({ omo, due: "", days: 1, given: 1 }));
-  assert.deepEqual(maturityStuck(mw, { now, overrides: { B: { BeforePhotoCount: 2, WorkerNewAt: "2026-11-20T15:00:00Z" } }, photos: { a: { before: 1, after: 0, beforeAt: "2026-11-24T14:00:00Z" }, c: { before: 1, after: 0, beforeAt: "2026-11-27T10:00:00Z" } } }), { A: 3, B: 7 });
+  assert.equal(pinStuckDays({ BeforePhotoCount: 2, WorkerNewAt: "2026-11-22T15:00:00Z" }, 12, now), 5, "map pin: stuck even when due later");
+  assert.equal(pinStuckDays({ BeforePhotoCount: 2, WorkerNewAt: "2026-11-22T15:00:00Z" }, undefined, now), null, "map pin: not awarded / already sent");
+  assert.equal(pinStuckDays({ BeforePhotoCount: 2, AfterPhotoCount: 1, WorkerNewAt: "2026-11-22T15:00:00Z" }, 2, now), null, "map pin: has After");
+  assert.equal(pinStuckDays({ BeforePhotoCount: 2, BeforePhotoAt: "2026-11-26T15:00:00Z" }, 2, now), null, "map pin: only 1 day");
+  assert.deepEqual(maturityStuck(mw,{ now, overrides: { B: { BeforePhotoCount: 2, WorkerNewAt: "2026-11-20T15:00:00Z" } }, photos: { a: { before: 1, after: 0, beforeAt: "2026-11-24T14:00:00Z" }, c: { before: 1, after: 0, beforeAt: "2026-11-27T10:00:00Z" } } }), { A: 3, B: 7 });
 }

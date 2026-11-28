@@ -608,12 +608,6 @@
     "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
       {
-        "id": "plan-stuck-on-map",
-        "icon": "⏳",
-        "title": "Stuck jobs on the map",
-        "why": "The same red stuck tag on the map pin when a job's Before photos are 3+ days old with no After, so you see it while driving."
-      },
-      {
         "id": "plan-stuck-evening",
         "icon": "🌆",
         "title": "Stuck jobs in the 6 PM alert",
@@ -624,6 +618,12 @@
         "icon": "🏁",
         "title": "Done, not sent: on the map",
         "why": "A tag on the map pin when a job's work is done 2+ days ago but the paperwork isn't sent to HPD, so it's not forgotten."
+      },
+      {
+        "id": "plan-stuck-first-route",
+        "icon": "🗺",
+        "title": "Stuck jobs first in Plan my day",
+        "why": "Plan my day puts jobs stuck 3+ days (Before photos, no After) at the front of the route, so you stop by and get the After photos."
       }
     ]
   }
