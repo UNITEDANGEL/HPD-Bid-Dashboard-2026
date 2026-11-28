@@ -49,7 +49,8 @@ try {
   await page.locator('[data-hpd-smoke="worker-photo-file-after"]').setInputFiles({ name: "c.jpg", mimeType: "image/jpeg", buffer: Buffer.from("z") });
   await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="worker-item"]').length === 4, null, { timeout: 5000 });
   assert.equal(await page.locator('[data-hpd-smoke="worker-item"][data-side="before"]').count(), 3);
-  assert.deepEqual(await page.locator('[data-hpd-smoke="worker-item"] b').allInnerTexts(), ["BEFORE · Kitchen", "BEFORE · Kitchen", "BEFORE 🎥 · Kitchen", "AFTER · Kitchen"]);
+  // The video can finish before the photos (28 Nov: CI saw it first), so the labels are compared in any order.
+  assert.deepEqual((await page.locator('[data-hpd-smoke="worker-item"] b').allInnerTexts()).sort(), ["BEFORE · Kitchen", "BEFORE · Kitchen", "BEFORE 🎥 · Kitchen", "AFTER · Kitchen"].sort());
   assert.match(await page.locator('[data-hpd-smoke="worker-count-before"]').innerText(), /3 taken/);
   // 25 Nov (owner: "I don't need them to send me back on WhatsApp"): no WhatsApp button; an old link (no upload pass) says
   // to ask for the job again.
