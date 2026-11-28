@@ -604,15 +604,9 @@
     }
   ],
   "plan": {
-    "id": "2026-11-27-b",
+    "id": "2026-11-27-c",
     "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
-      {
-        "id": "plan-done-not-sent-alert",
-        "icon": "🏁",
-        "title": "Work done, not sent: evening alert",
-        "why": "The 6 PM alert names jobs with After photos whose paperwork still isn't sent to HPD after 2 days."
-      },
       {
         "id": "plan-stuck-on-map",
         "icon": "⏳",
@@ -624,6 +618,12 @@
         "icon": "🌆",
         "title": "Stuck jobs in the 6 PM alert",
         "why": "The evening alert also names jobs whose Before photos are 3+ days old with no After, so you call the worker before the next day."
+      },
+      {
+        "id": "plan-done-not-sent-map",
+        "icon": "🏁",
+        "title": "Done, not sent: on the map",
+        "why": "A tag on the map pin when a job's work is done 2+ days ago but the paperwork isn't sent to HPD, so it's not forgotten."
       }
     ]
   }

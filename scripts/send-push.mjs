@@ -322,6 +322,16 @@ export async function eveningWrapup({ conversations, bids, sent, records = {}, n
       if (need.length) lines.push(`📷 After photos still missing: ${need.slice(0, 4).join(", ")}${need.length > 4 ? ` +${need.length - 4}` : ""}`);
     } catch (e) { console.log(`wrap-up After photos skipped: ${e.message}`); }
   }
+  // 🏁 Work done, not sent (plan item 50, 27 Nov): jobs whose work is done (or After photos saved) 2+ days ago and whose
+  // paperwork still isn't sent to HPD, oldest first. OMO numbers only.
+  if (loadLib && Array.isArray(awards) && awards.length) {
+    try {
+      const { doneNotSent } = await loadLib("monday-sweep");
+      const overrides = Object.fromEntries(Object.entries(records || {}).map(([k, v]) => [k.trim().toUpperCase(), v || {}]));
+      const late = doneNotSent({ awards, overrides, sent: sent || {}, closed: closed || {}, today, now });
+      if (late.length) lines.push(`🏁 work done, not sent to HPD: ${late.slice(0, 4).map((c) => `${c.omo} (${c.days}d)`).join(", ")}${late.length > 4 ? ` +${late.length - 4}` : ""}`);
+    } catch (e) { console.log(`wrap-up done-not-sent skipped: ${e.message}`); }
+  }
   return {
     key: `w:${today}`, kind: "message",
     title: "🌆 Today's wrap-up",

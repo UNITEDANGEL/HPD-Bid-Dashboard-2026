@@ -578,3 +578,28 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.doesNotMatch(none.body, /After photos/, "all have After: not named");
   console.log(`PASS wrap-up names jobs missing After photos: "${w.body}"`);
 }
+
+// 🏁 Work done, not sent (plan item 50): work done or After photos saved 2+ days ago, paperwork not sent to HPD.
+{
+  const awards = [
+    { OMO: "ER09800", AwardDate: "11/05/26", WorkCompletionDate: "11/28/26" }, // work completed 11/20, not sent: named
+    { OMO: "ER09801", AwardDate: "11/05/26", WorkCompletionDate: "11/28/26" }, // After photos arrived 11/20: named
+    { OMO: "ER09802", AwardDate: "11/05/26", WorkCompletionDate: "11/28/26" }, // After photos arrived last night: too new
+    { OMO: "ER09803", AwardDate: "11/05/26", WorkCompletionDate: "11/28/26" }, // work completed 11/19 but sent: left out
+    { OMO: "ER09804", AwardDate: "11/05/26", WorkCompletionDate: "11/28/26" }, // After photos 11/19 but HPD closed it: left out
+  ];
+  const records = {
+    ER09800: { FieldOutcome: "WORK_COMPLETED", ActualWorkCompletionDate: "2026-11-20" },
+    ER09801: { BeforePhotoCount: 2, AfterPhotoCount: 3, WorkerNewAt: "2026-11-20T15:00:00Z" },
+    ER09802: { BeforePhotoCount: 2, AfterPhotoCount: 1, WorkerNewAt: "2026-11-23T01:00:00Z" },
+    ER09803: { FieldOutcome: "WORK_COMPLETED", ActualWorkCompletionDate: "2026-11-19" },
+    ER09804: { AfterPhotoCount: 2, AfterPhotoAt: "2026-11-19T15:00:00Z" },
+  };
+  const now = Date.parse("2026-11-23T23:30:00Z");
+  const w = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: { ER09803: { at: "2026-11-21" } }, records, now, loadLib, awards, closed: { ER09804: true } });
+  assert.match(w.body, /🏁 work done, not sent to HPD: ER09800 \(3d\), ER09801 \(3d\)$/, w.body);
+  assert.doesNotMatch(w.body, /ER0980[234]/, "too new, sent or closed: left out");
+  const quiet = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: { ER09800: true, ER09801: true, ER09803: true }, records, now, loadLib, awards, closed: { ER09804: true } });
+  assert.doesNotMatch(quiet.body, /not sent to HPD/, "all sent: no line");
+  console.log(`PASS wrap-up names work done, not sent: "${w.body}"`);
+}

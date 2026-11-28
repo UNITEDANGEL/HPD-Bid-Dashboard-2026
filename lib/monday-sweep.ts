@@ -62,3 +62,30 @@ export function workDoneToSend(opts: { jobs: Job[]; overrides?: Record<string, J
   }
   return out.sort((a, b) => (a.at || "9999").localeCompare(b.at || "9999") || a.omo.localeCompare(b.omo));
 }
+
+// 🏁 Work done, not sent: evening alert (plan item 50, 27 Nov): awarded jobs whose work is done (marked work completed /
+// partial work, or After photos saved on the job) 2+ days ago and whose paperwork still isn't sent to HPD. The After
+// photo time is AfterPhotoAt, or the last time the worker's photos arrived (WorkerNewAt, stamped on every upload, so
+// After photos are at least that old). OMO numbers and days only (the alert is not private).
+export const DONE_NOT_SENT_DAYS = 2;
+export function doneNotSent(opts: { awards: Job[] | null | undefined; overrides?: Record<string, Job> | null; sent?: Record<string, unknown> | null; closed?: Record<string, unknown> | null; today: string; now?: number }): { omo: string; days: number }[] {
+  const jobs = (opts.awards || []).filter((a) => String(a.OMO || a.id || "").trim());
+  const out = new Map<string, number>();
+  for (const d of workDoneToSend({ jobs, overrides: opts.overrides, sent: opts.sent, closed: opts.closed, today: opts.today })) {
+    if (d.days !== null && d.days >= DONE_NOT_SENT_DAYS) out.set(d.omo, d.days);
+  }
+  const now = opts.now ?? Date.parse(`${opts.today}T12:00:00Z`);
+  for (const a of jobs) {
+    const omo = String(a.OMO || a.id || "").trim().toUpperCase();
+    if (/^TEST/i.test(omo) || out.has(omo)) continue;
+    const j: Job = { ...a, ...(opts.overrides?.[omo] || {}) };
+    if (!(Number(j.AfterPhotoCount) > 0)) continue;
+    if (opts.sent?.[omo] || opts.closed?.[omo] || j.PaperworkSentAt || j.PackageEmailedAt || j.InvoiceSentAt || j.HpdClosedReason) continue;
+    if (/archived/i.test(String(j.status || j.StatusOverride || "")) || j.ArchivedFromMap || j.ArchivedAt) continue;
+    const t = Date.parse(String(j.AfterPhotoAt || j.WorkerNewAt || ""));
+    if (!Number.isFinite(t)) continue;
+    const days = Math.floor((now - t) / 86400000);
+    if (days >= DONE_NOT_SENT_DAYS) out.set(omo, days);
+  }
+  return [...out].map(([omo, days]) => ({ omo, days })).sort((a, b) => b.days - a.days || a.omo.localeCompare(b.omo));
+}
