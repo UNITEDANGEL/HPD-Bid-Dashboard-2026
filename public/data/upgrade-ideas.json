@@ -604,15 +604,9 @@
     }
   ],
   "plan": {
-    "id": "2026-11-27-c",
+    "id": "2026-11-28-a",
     "title": "Next on the plan: every finished job sent to HPD fast",
     "items": [
-      {
-        "id": "plan-stuck-evening",
-        "icon": "🌆",
-        "title": "Stuck jobs in the 6 PM alert",
-        "why": "The evening alert also names jobs whose Before photos are 3+ days old with no After, so you call the worker before the next day."
-      },
       {
         "id": "plan-done-not-sent-map",
         "icon": "🏁",
@@ -624,6 +618,12 @@
         "icon": "🗺",
         "title": "Stuck jobs first in Plan my day",
         "why": "Plan my day puts jobs stuck 3+ days (Before photos, no After) at the front of the route, so you stop by and get the After photos."
+      },
+      {
+        "id": "plan-stuck-morning",
+        "icon": "🌅",
+        "title": "Stuck jobs in the 8 AM alert",
+        "why": "The morning alert also names jobs stuck 3+ days (Before photos, no After), even when they are not due yet, so they go on the day's route."
       }
     ]
   }

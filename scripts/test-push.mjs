@@ -603,3 +603,27 @@ console.log("PASS phone alert finder: a different alert per kind: 💰 award (ch
   assert.doesNotMatch(quiet.body, /not sent to HPD/, "all sent: no line");
   console.log(`PASS wrap-up names work done, not sent: "${w.body}"`);
 }
+// ⏳ Stuck jobs in the 6 PM alert (plan item 52): Before photos 3+ days old, no After yet, longest stuck first.
+{
+  const awards = [
+    { OMO: "ER09810", AwardDate: "11/05/26", WorkCompletionDate: "11/30/26" }, // Before 11/18, no After: stuck 5d
+    { OMO: "ER09811", AwardDate: "11/05/26", WorkCompletionDate: "12/10/26" }, // worker Before 11/15, no After: stuck 8d
+    { OMO: "ER09812", AwardDate: "11/05/26", WorkCompletionDate: "11/30/26" }, // Before yesterday: too new
+    { OMO: "ER09813", AwardDate: "11/05/26", WorkCompletionDate: "11/30/26" }, // Before 11/15 but After saved: left out
+    { OMO: "ER09814", AwardDate: "11/05/26", WorkCompletionDate: "11/30/26" }, // stuck but sent to HPD: left out
+  ];
+  const records = {
+    ER09810: { BeforePhotoCount: 2, BeforePhotoAt: "2026-11-18T15:00:00Z" },
+    ER09811: { BeforePhotoCount: 3, WorkerNewAt: "2026-11-15T15:00:00Z" },
+    ER09812: { BeforePhotoCount: 1, BeforePhotoAt: "2026-11-22T15:00:00Z" },
+    ER09813: { BeforePhotoCount: 2, AfterPhotoCount: 2, BeforePhotoAt: "2026-11-15T15:00:00Z" },
+    ER09814: { BeforePhotoCount: 2, BeforePhotoAt: "2026-11-15T15:00:00Z" },
+  };
+  const now = Date.parse("2026-11-23T23:30:00Z");
+  const w = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: { ER09814: { at: "2026-11-21" } }, records, now, loadLib, awards, closed: {} });
+  assert.match(w.body, /⏳ stuck, call the worker: ER09811 \(8d\), ER09810 \(5d\)/, w.body);
+  assert.doesNotMatch(w.body.split("⏳")[1] || "", /ER0981[234]/, "too new, has After or sent: left out");
+  const quiet = await eveningWrapup({ conversations: { threads: [] }, bids: [], sent: { ER09810: true, ER09811: true, ER09814: true }, records, now, loadLib, awards, closed: {} });
+  assert.doesNotMatch(quiet.body, /stuck/, "none stuck: no line");
+  console.log(`PASS wrap-up names stuck jobs: "${w.body}"`);
+}

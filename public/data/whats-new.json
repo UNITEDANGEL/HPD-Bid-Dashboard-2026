@@ -3,8 +3,9 @@
   "versions": [
     {
       "date": "Nov 28, 2026",
-      "title": "Stuck jobs on the map",
+      "title": "Stuck jobs on the map and in the 6 PM alert",
       "items": [
+        "🌆 The 6 PM wrap-up alert now also names stuck jobs (Before photos 3 or more days old, still no After photo): \"⏳ stuck, call the worker: <job numbers> (days)\", longest stuck first, so you call the worker before the next day.",
         "⏳ Stuck jobs on the map: an awarded job whose Before photos are 3 or more days old and still has no After photo now shows a red \"⏳ stuck N days\" tag on its map pin (in place of the orange \"needs After\"), so you see it while driving."
       ]
     },

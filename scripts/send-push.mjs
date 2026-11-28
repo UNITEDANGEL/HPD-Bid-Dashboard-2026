@@ -322,6 +322,17 @@ export async function eveningWrapup({ conversations, bids, sent, records = {}, n
       if (need.length) lines.push(`📷 After photos still missing: ${need.slice(0, 4).join(", ")}${need.length > 4 ? ` +${need.length - 4}` : ""}`);
     } catch (e) { console.log(`wrap-up After photos skipped: ${e.message}`); }
   }
+  // ⏳ Stuck jobs (plan item 52, 28 Nov): open awarded jobs whose first Before photo is 3+ days old with no After yet,
+  // longest stuck first, so the worker gets a call before the next day. OMO numbers and days only.
+  if (loadLib && Array.isArray(awards) && awards.length) {
+    try {
+      const { awardCountdown, maturityStuck } = await loadLib("award-countdown");
+      const open = awardCountdown({ awards, sent: sent || {}, closed: closed || {}, today });
+      const overrides = Object.fromEntries(Object.entries(records || {}).map(([k, v]) => [k.trim().toUpperCase(), v || {}]));
+      const stuck = Object.entries(maturityStuck(open, { overrides, now })).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      if (stuck.length) lines.push(`⏳ stuck, call the worker: ${stuck.slice(0, 4).map(([omo, d]) => `${omo} (${d}d)`).join(", ")}${stuck.length > 4 ? ` +${stuck.length - 4}` : ""}`);
+    } catch (e) { console.log(`wrap-up stuck jobs skipped: ${e.message}`); }
+  }
   // 🏁 Work done, not sent (plan item 50, 27 Nov): jobs whose work is done (or After photos saved) 2+ days ago and whose
   // paperwork still isn't sent to HPD, oldest first. OMO numbers only.
   if (loadLib && Array.isArray(awards) && awards.length) {
